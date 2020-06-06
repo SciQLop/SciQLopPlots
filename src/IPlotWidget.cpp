@@ -41,8 +41,26 @@ void IPlotWidget::wheelEvent(QWheelEvent* event)
     event->accept();
 }
 
+void IPlotWidget::keyPressEvent(QKeyEvent* event)
+{
+    switch (event->key())
+    {
+    case Qt::Key_M:
+        autoScaleY();
+        break;
+    default:
+        break;
+    }
+    event->accept();
+}
+
+void IPlotWidget::keyReleaseEvent(QKeyEvent* event)
+{
+    event->accept();
+}
+
 
 }
 
 
-#include "SciQLopPlot.moc"
+#include "IPlotWidget.moc"

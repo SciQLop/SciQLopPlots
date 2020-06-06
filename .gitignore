@@ -1,0 +1,12 @@
+build/
+subprojects/range-v3-*
+subprojects/Catch2-*
+subprojects/cpp_utils
+subprojects/QCustomPlot
+subprojects/packagecache/*
+*.srctrl*
+*.kdev4
+.vscode
+*.pyc
+*.swp
+*.user

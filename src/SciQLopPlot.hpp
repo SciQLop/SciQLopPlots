@@ -21,12 +21,12 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "IPlotWidget.hpp"
+
 #include <types/detectors.hpp>
 
 #include <QObject>
 #include <QWidget>
-#include <plottables/plottable-graph.h>
-#include <qcp.h>
 
 namespace SciQLopPlots
 {
@@ -45,33 +45,18 @@ namespace SciQLopPlots
  * - time interval selection boxes
  */
 
-class IPlotWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
-    Q_SIGNAL void xRangeChanged(double xStart, double xEnd);
-    virtual void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) = 0;
-    virtual void zoom(
-        double factor, double center, Qt::Orientation orientation = Qt::Horizontal)
-        = 0;
-    virtual void move(double factor, Qt::Orientation orientation) = 0;
-
-protected:
-    void setWidget(QWidget* widget);
-    void wheelEvent(QWheelEvent* event) override;
-};
-
 HAS_METHOD(has_zoom1, zoom, double, Qt::Orientation);
 HAS_METHOD(has_zoom2, zoom, double, double, Qt::Orientation);
 HAS_METHOD(has_move, move, double, Qt::Orientation);
+HAS_METHOD(has_xRange, xRange);
 
 template <typename PlotImpl>
 class PlotWidget : public IPlotWidget
 {
-    static_assert(has_zoom1_v<PlotImpl>, "missing zoom method.");
-    static_assert(has_zoom2_v<PlotImpl>, "missing zoom method.");
-    static_assert(has_move_v<PlotImpl>, "missing move method.");
+    static_assert(has_zoom1_v<PlotImpl>, "PlotImpl is missing zoom method.");
+    static_assert(has_zoom2_v<PlotImpl>, "PlotImpl is missing zoom method.");
+    static_assert(has_move_v<PlotImpl>, "PlotImpl is missing move method.");
+    static_assert(has_xRange_v<PlotImpl>, "PlotImpl is missing xRange method.");
 
 protected:
     PlotImpl* m_plot;
@@ -88,17 +73,42 @@ public:
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) override
     {
         m_plot->zoom(factor, orientation);
+        if (orientation == Qt::Horizontal)
+            emit xRangeChanged(m_plot->xRange());
     }
 
     inline void zoom(
         double factor, double center, Qt::Orientation orientation = Qt::Horizontal) override
     {
-        m_plot->zoom(factor, center,orientation);
+        m_plot->zoom(factor, center, orientation);
+        if (orientation == Qt::Horizontal)
+            emit xRangeChanged(m_plot->xRange());
     }
 
     inline void move(double factor, Qt::Orientation orientation) override
     {
         m_plot->move(factor, orientation);
+        if (orientation == Qt::Horizontal)
+            emit xRangeChanged(m_plot->xRange());
+    }
+
+    inline void autoScaleY() override { m_plot->autoScaleY(); }
+
+    inline void setXRange(const AxisRange& range) override
+    {
+        m_plot->setXRange(range);
+        emit xRangeChanged(range);
+    }
+
+    inline int addGraph(QColor color = Qt::blue) override
+    {
+        return m_plot->addGraph(color);
+    }
+
+    template<typename ...Args>
+    inline void plot(Args&&... args)
+    {
+        m_plot->plot(std::forward<Args>(args)...);
     }
 
 protected:
@@ -118,39 +128,5 @@ void plot(plot_t& plot, const data_t& data);
 
 template <typename plot_t>
 void zoom(plot_t& plot, double factor);
-
-
-class QCustomPlotWrapper : public QCustomPlot
-{
-    Q_OBJECT
-public:
-    QCustomPlotWrapper(QWidget* parent = nullptr) : QCustomPlot { parent }
-    {
-        setPlottingHint(QCP::phFastPolylines, true);
-    }
-
-    inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal)
-    {
-        QCPAxis* axis = axisRect()->rangeZoomAxis(orientation);
-        axis->scaleRange(factor);
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-
-    inline void zoom(
-        double factor, double center, Qt::Orientation orientation = Qt::Horizontal)
-    {
-        QCPAxis* axis = axisRect()->rangeZoomAxis(orientation);
-        axis->scaleRange(factor, axis->pixelToCoord(center));
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-
-    inline void move(double factor, Qt::Orientation orientation)
-    {
-        auto axis = axisRect()->rangeDragAxis(orientation);
-        auto distance = abs(axis->range().upper - axis->range().lower)*factor;
-        axis->setRange(QCPRange(axis->range().lower + distance, axis->range().upper + distance));
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-};
 
 }
