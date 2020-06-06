@@ -4,7 +4,6 @@ qt5 = import('qt5')
 qt5core = dependency('qt5', modules : 'Core')
 qt5widgets = dependency('qt5', modules : 'Widgets')
 qt5gui = dependency('qt5', modules : 'Gui')
-qt5concurent = dependency('qt5', modules : 'Concurrent')
 qt5svg = dependency('qt5', modules : 'Svg')
 qt5test = dependency('qt5', modules : 'Test')
 

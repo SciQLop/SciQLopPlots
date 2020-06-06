@@ -1,9 +1,10 @@
 [wrap-file]
 directory = range-v3-0.10.0
-source_url = https://github.com/ericniebler/range-v3/archive/0.3.6.zip
-source_filename = range-v3-0.3.6.zip
-source_hash = 42cafd42fd51555844eb129018188f4cc7d9a60cbcc1fcb98496cd8942e5fadf
+source_url = https://github.com/ericniebler/range-v3/archive/0.10.0.zip
+source_filename = range-v3-0.10.0.zip
+source_hash = 4884dc4f62cb9fdc3b803cb44a862448853146f6a26bc37c6f3d53d786168a87
 
-patch_url = https://wrapdb.mesonbuild.com/v1/projects/range-v3/0.3.6/1/get_zip
-patch_filename = range-v3-0.3.6-1-wrap.zip
-patch_hash = 1dea6165a0549b2a0633a89d3e07ac822c9adbb3399427aec583d9ab90c909ff
+
+patch_url = https://wrapdb.mesonbuild.com/v1/projects/range-v3/0.10.0/1/get_zip
+patch_filename = range-v3-0.10.0-1-wrap.zip
+patch_hash = bf8ae02c72fb449b1a6ed7d75d174a6935369fe921a692115c36192b4d41c8a0
