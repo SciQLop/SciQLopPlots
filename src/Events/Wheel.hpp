@@ -32,6 +32,10 @@ inline void handleWheelEvent(const QWheelEvent* event, plot_t* plot)
         if (event->orientation() == Qt::Vertical)
             plot->zoom(pow(factor, wheelSteps), event->pos().y(), Qt::Vertical);
     }
+    else if (event->modifiers() == Qt::AltModifier)
+    {
+            plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
+    }
     else if (event->modifiers() == Qt::ShiftModifier)
     {
         if (event->orientation() == Qt::Vertical)
