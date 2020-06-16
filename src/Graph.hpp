@@ -41,14 +41,15 @@ struct Grapgh
     {
         QObject::connect(
             plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
-        QObject::connect(
-            plot, &plot_t::closed, [this]() {data_in.close();transformations_out.close(); });
+        QObject::connect(plot, &plot_t::closed, [this]() {
+            data_in.close();
+            transformations_out.close();
+        });
         m_updateThread = std::thread([this]() {
             while (!data_in.closed())
             {
-                auto data = data_in.take();
-                if(!data_in.closed())
-                    SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(data));
+                if (auto data = data_in.take(); data)
+                    SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*data));
             }
         });
     }

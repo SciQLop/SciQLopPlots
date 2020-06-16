@@ -41,10 +41,9 @@ struct DataProducer
                                     graphIndex = index]() {
             while (!in.closed())
             {
-                auto newRange = in.take();
-                if (!in.closed())
+                if (auto newRange = in.take();newRange)
                     out << DataProducer::generate(
-                        newRange, nPoints, graphIndex * 120., (graphIndex * 0.3) + 1.);
+                        *newRange, nPoints, graphIndex * 120., (graphIndex * 0.3) + 1.);
             }
         });
     }
