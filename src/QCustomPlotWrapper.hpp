@@ -27,6 +27,7 @@
 #include <qcp.h>
 
 #include "IPlotWidget.hpp"
+#include "SciQLopPlot.hpp"
 
 namespace SciQLopPlots
 {
@@ -38,6 +39,7 @@ public:
     QCustomPlotWrapper(QWidget* parent = nullptr) : QCustomPlot(parent)
     {
         setPlottingHint(QCP::phFastPolylines, true);
+        connect(this, &QCustomPlotWrapper::_plot,this,&QCustomPlotWrapper::_plot_stl,Qt::AutoConnection);
     }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal)
@@ -85,6 +87,13 @@ public:
         return graphCount() - 1;
     }
 
+    using data_t = std::pair<std::vector<double>,std::vector<double>>;
+
+    inline void plot(int graphIdex, const data_t& data)
+    {
+        plot(graphIdex,data.first,data.second);
+    }
+
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y)
     {
         QVector<QCPGraphData> data;
@@ -92,7 +101,19 @@ public:
             [](double x, double y) {
                 return QCPGraphData { x, y };
             });
-        graph(graphIndex)->data()->set(data, true);
+        emit _plot(graphIndex,data);
+        // graph(graphIndex)->data()->set(data, true);
     }
+
+    Q_SIGNAL void dataChanged();
+
+private:
+    Q_SIGNAL void _plot(int graphIndex, const QVector<QCPGraphData>& data);
+    Q_SLOT void _plot_stl(int graphIndex, const QVector<QCPGraphData>& data);
 };
+
+using SciQLopPlot = PlotWidget<QCustomPlotWrapper>;
+
+
+
 }

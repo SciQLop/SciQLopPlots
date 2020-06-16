@@ -61,6 +61,8 @@ public:
     virtual void setXRange(const AxisRange& range)=0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
+    Q_SIGNAL void dataChanged();
+    Q_SIGNAL void closed();
 protected:
     void setWidget(QWidget* widget);
     void wheelEvent(QWheelEvent* event) override;

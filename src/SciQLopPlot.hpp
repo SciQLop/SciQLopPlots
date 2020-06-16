@@ -25,6 +25,10 @@
 
 #include <types/detectors.hpp>
 
+#include <channels/channels.hpp>
+
+#include <mutex>
+
 #include <QObject>
 #include <QWidget>
 
@@ -60,6 +64,7 @@ class PlotWidget : public IPlotWidget
 
 protected:
     PlotImpl* m_plot;
+    std::mutex m_plot_mutex;
 
 public:
     PlotWidget(QWidget* parent = nullptr) : IPlotWidget { parent }, m_plot { new PlotImpl { this } }
@@ -68,6 +73,12 @@ public:
         this->setFocusPolicy(Qt::WheelFocus);
         this->setMouseTracking(true);
         m_plot->setAttribute(Qt::WA_TransparentForMouseEvents);
+        connect(m_plot, &PlotImpl::dataChanged,this, &PlotWidget::dataChanged);
+    }
+
+    ~PlotWidget()
+    {
+        emit closed();
     }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) override
@@ -105,10 +116,10 @@ public:
         return m_plot->addGraph(color);
     }
 
-    template<typename ...Args>
-    inline void plot(Args&&... args)
+    template <typename data_t>
+    void plot(int graphIdex, const data_t& data)
     {
-        m_plot->plot(std::forward<Args>(args)...);
+        m_plot->plot(graphIdex,data);
     }
 
 protected:
@@ -123,10 +134,13 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;*/
 };
 
-template <typename plot_t, typename data_t>
-void plot(plot_t& plot, const data_t& data);
-
 template <typename plot_t>
 void zoom(plot_t& plot, double factor);
+
+template <typename plot_t, typename data_t>
+inline void plot(plot_t& plot, int graphIdex, const data_t& data)
+{
+    plot.plot(graphIdex,data);
+}
 
 }

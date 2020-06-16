@@ -2,8 +2,8 @@
 #define SIMPLEPLOT_H
 
 #include <QMainWindow>
-#include <QCustomPlotWrapper.hpp>
 #include <SciQLopPlot.hpp>
+#include <QCustomPlotWrapper.hpp>
 #include "DataGenerator.hpp"
 
 QT_BEGIN_NAMESPACE
@@ -12,7 +12,6 @@ QT_END_NAMESPACE
 
 class SimplePlot : public QMainWindow
 {
-    using Plot = SciQLopPlots::PlotWidget<SciQLopPlots::QCustomPlotWrapper>;
     Q_OBJECT
 
 public:
@@ -21,6 +20,6 @@ public:
 
 private:
     Ui::SimplePlot *ui;
-    std::vector<std::unique_ptr<DataProducer<Plot>>> m_gens;
+    std::vector<std::unique_ptr<DataProducer<SciQLopPlots::SciQLopPlot>>> m_gens;
 };
 #endif // SIMPLEPLOT_H
