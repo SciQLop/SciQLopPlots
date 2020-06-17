@@ -19,9 +19,9 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "./SciQLopPlot.hpp"
 #include "./Events/Keyboard.hpp"
 #include "./Events/Wheel.hpp"
+#include "./SciQLopPlot.hpp"
 
 #include <QVBoxLayout>
 
@@ -45,11 +45,23 @@ void IPlotWidget::keyPressEvent(QKeyEvent* event)
 {
     switch (event->key())
     {
-    case Qt::Key_M:
-        autoScaleY();
-        break;
-    default:
-        break;
+        case Qt::Key_M:
+            autoScaleY();
+            break;
+        case Qt::Key_Right:
+            move(0.2, Qt::Horizontal);
+            break;
+        case Qt::Key_Left:
+            move(-0.2, Qt::Horizontal);
+            break;
+        case Qt::Key_Up:
+            move(0.2, Qt::Vertical);
+            break;
+        case Qt::Key_Down:
+            move(-0.2, Qt::Vertical);
+            break;
+        default:
+            break;
     }
     event->accept();
 }
