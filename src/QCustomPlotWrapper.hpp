@@ -102,7 +102,6 @@ public:
                 return QCPGraphData { x, y };
             });
         emit _plot(graphIndex,data);
-        // graph(graphIndex)->data()->set(data, true);
     }
 
     Q_SIGNAL void dataChanged();

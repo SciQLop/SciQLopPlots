@@ -27,8 +27,6 @@
 
 #include <channels/channels.hpp>
 
-#include <mutex>
-
 #include <QObject>
 #include <QWidget>
 
