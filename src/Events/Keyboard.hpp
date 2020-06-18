@@ -19,3 +19,56 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include <QKeyEvent>
+
+namespace SciQLopPlots::details
+{
+template <typename plot_t>
+inline bool handleKeyboardEvent(const QKeyEvent* event, plot_t* plot)
+{
+    if (event->modifiers() == Qt::NoModifier)
+    {
+        switch (event->key())
+        {
+            case Qt::Key_M:
+                plot->autoScaleY();
+                return true;
+            case Qt::Key_Right:
+                plot->move(0.2, Qt::Horizontal);
+                return true;
+            case Qt::Key_Left:
+                plot->move(-0.2, Qt::Horizontal);
+                return true;
+            case Qt::Key_Up:
+                plot->move(0.2, Qt::Vertical);
+                return true;
+            case Qt::Key_Down:
+                plot->move(-0.2, Qt::Vertical);
+                return true;
+            default:
+                break;
+        }
+    }
+    else if (event->modifiers() == Qt::ControlModifier)
+    {
+        switch (event->key())
+        {
+            case Qt::Key_Right:
+                plot->zoom(1.2, Qt::Horizontal);
+                return true;
+            case Qt::Key_Left:
+                plot->zoom(0.8, Qt::Horizontal);
+                return true;
+            case Qt::Key_Up:
+                plot->zoom(1.2, Qt::Vertical);
+                return true;
+            case Qt::Key_Down:
+                plot->zoom(0.8, Qt::Vertical);
+                return true;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+}

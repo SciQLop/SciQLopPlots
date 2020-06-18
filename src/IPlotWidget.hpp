@@ -59,8 +59,10 @@ public:
     virtual int addGraph(QColor color = Qt::blue)=0;
 
     virtual void setXRange(const AxisRange& range)=0;
+    virtual void setYRange(const AxisRange& range)=0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
+    Q_SIGNAL void yRangeChanged(AxisRange newRange);
     Q_SIGNAL void dataChanged();
     Q_SIGNAL void closed();
 protected:
@@ -68,6 +70,18 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+
+    /*void enterEvent(QEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;*/
+
 };
 
 }

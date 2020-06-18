@@ -21,9 +21,10 @@
 ----------------------------------------------------------------------------*/
 #include <QWheelEvent>
 #include <cmath>
-
+namespace SciQLopPlots::details
+{
 template <typename plot_t>
-inline void handleWheelEvent(const QWheelEvent* event, plot_t* plot)
+inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
 {
     constexpr auto factor = 0.85; // stolen from QCP
     double wheelSteps = event->delta() / 120.0; // a single step delta is +/-120 usually
@@ -34,7 +35,7 @@ inline void handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     }
     else if (event->modifiers() == Qt::AltModifier)
     {
-            plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
+        plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
     }
     else if (event->modifiers() == Qt::ShiftModifier)
     {
@@ -48,4 +49,6 @@ inline void handleWheelEvent(const QWheelEvent* event, plot_t* plot)
         else
             plot->move(-wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Horizontal);
     }
+    return true;
+}
 }

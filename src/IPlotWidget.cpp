@@ -37,36 +37,22 @@ void IPlotWidget::setWidget(QWidget* widget)
 
 void IPlotWidget::wheelEvent(QWheelEvent* event)
 {
-    handleWheelEvent(event, this);
-    event->accept();
+    if (details::handleWheelEvent(event, this))
+        event->accept();
 }
 
 void IPlotWidget::keyPressEvent(QKeyEvent* event)
 {
-    switch (event->key())
-    {
-        case Qt::Key_M:
-            autoScaleY();
-            break;
-        case Qt::Key_Right:
-            move(0.2, Qt::Horizontal);
-            break;
-        case Qt::Key_Left:
-            move(-0.2, Qt::Horizontal);
-            break;
-        case Qt::Key_Up:
-            move(0.2, Qt::Vertical);
-            break;
-        case Qt::Key_Down:
-            move(-0.2, Qt::Vertical);
-            break;
-        default:
-            break;
-    }
-    event->accept();
+    if (details::handleKeyboardEvent(event, this))
+        event->accept();
 }
 
 void IPlotWidget::keyReleaseEvent(QKeyEvent* event)
+{
+    event->accept();
+}
+
+void IPlotWidget::mousePressEvent(QMouseEvent* event)
 {
     event->accept();
 }

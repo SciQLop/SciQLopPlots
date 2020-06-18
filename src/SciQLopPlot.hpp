@@ -51,6 +51,9 @@ HAS_METHOD(has_zoom1, zoom, double, Qt::Orientation);
 HAS_METHOD(has_zoom2, zoom, double, double, Qt::Orientation);
 HAS_METHOD(has_move, move, double, Qt::Orientation);
 HAS_METHOD(has_xRange, xRange);
+HAS_METHOD(has_setXRange, setXRange, AxisRange);
+HAS_METHOD(has_setYRange, setYRange, AxisRange);
+
 
 template <typename PlotImpl>
 class PlotWidget : public IPlotWidget
@@ -59,6 +62,9 @@ class PlotWidget : public IPlotWidget
     static_assert(has_zoom2_v<PlotImpl>, "PlotImpl is missing zoom method.");
     static_assert(has_move_v<PlotImpl>, "PlotImpl is missing move method.");
     static_assert(has_xRange_v<PlotImpl>, "PlotImpl is missing xRange method.");
+    static_assert(has_setXRange_v<PlotImpl>, "PlotImpl is missing setXRange method.");
+    static_assert(has_setYRange_v<PlotImpl>, "PlotImpl is missing setYRange method.");
+
 
 protected:
     PlotImpl* m_plot;
@@ -107,6 +113,12 @@ public:
     {
         m_plot->setXRange(range);
         emit xRangeChanged(range);
+    }
+
+    inline void setYRange(const AxisRange& range) override
+    {
+        m_plot->setYRange(range);
+        emit yRangeChanged(range);
     }
 
     inline int addGraph(QColor color = Qt::blue) override

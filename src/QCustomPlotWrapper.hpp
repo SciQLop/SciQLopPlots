@@ -71,10 +71,16 @@ public:
     }
 
     inline AxisRange xRange() { return { xAxis->range().lower, xAxis->range().upper }; }
+    inline AxisRange yRange() { return { yAxis->range().lower, yAxis->range().upper }; }
 
     inline void setXRange(const AxisRange& range)
     {
         xAxis->setRange({ range.first, range.second });
+    }
+
+    inline void setYRange(const AxisRange& range)
+    {
+        yAxis->setRange({ range.first, range.second });
     }
 
     inline int addGraph(QColor color = Qt::blue)

@@ -28,11 +28,15 @@ SimplePlot::SimplePlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::Simple
         m_gens.emplace_back(
             std::make_unique<DataProducer<SciQLopPlots::SciQLopPlot>>(plot, i, colors[i++]));
     };
+
     connect(plot, &SciQLopPlots::SciQLopPlot::dataChanged, this, [this]() {
         auto nPoints = std::accumulate(std::cbegin(m_gens), std::cend(m_gens), 0UL,
             [](auto prev, const auto& gen) { return prev + gen->nPoints; });
         ui->totalPointsNumber->setText(humanize(nPoints));
     });
+
+    plot->setXRange({-100.,100.});
+    plot->setYRange({-2.,2.});
 }
 
 SimplePlot::~SimplePlot()
