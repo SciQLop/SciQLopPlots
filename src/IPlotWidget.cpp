@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "./Events/Keyboard.hpp"
+#include "./Events/Mouse.hpp"
 #include "./Events/Wheel.hpp"
 #include "./SciQLopPlot.hpp"
 
@@ -54,16 +55,20 @@ void IPlotWidget::keyReleaseEvent(QKeyEvent* event)
 
 void IPlotWidget::mousePressEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton)
+        this->m_lastMousePress = event->pos();
     event->accept();
 }
 
 void IPlotWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    event->accept();
+    if (details::handleMouseMoveEvent(event, this, this->m_lastMousePress))
+        event->accept();
 }
 
 void IPlotWidget::mouseReleaseEvent(QMouseEvent* event)
 {
+    this->m_lastMousePress = std::nullopt;
     event->accept();
 }
 

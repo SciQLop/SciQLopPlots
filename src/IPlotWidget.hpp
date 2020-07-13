@@ -54,6 +54,8 @@ public:
     virtual void zoom(double factor, double center, Qt::Orientation orientation = Qt::Horizontal)
         = 0;
     virtual void move(double factor, Qt::Orientation orientation) = 0;
+    virtual void move(double dx, double dy) = 0;
+
     virtual void autoScaleY() = 0;
 
     virtual int addGraph(QColor color = Qt::blue)=0;
@@ -77,11 +79,13 @@ protected:
     /*void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
 
-
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;*/
+private:
 
+    //bool m_mousePressed = false;
+    std::optional<QPoint> m_lastMousePress=std::nullopt;
 };
 
 }

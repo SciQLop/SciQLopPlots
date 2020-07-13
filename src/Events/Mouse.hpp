@@ -19,23 +19,21 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "QCustomPlotWrapper.hpp"
-
-void SciQLopPlots::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
+#include <QMouseEvent>
+namespace SciQLopPlots::details
 {
-    graph(graphIndex)->data()->set(data, true);
-    replot(QCustomPlot::rpQueuedReplot);
-    emit dataChanged();
+template <typename plot_t>
+inline bool handleMouseMoveEvent(
+    const QMouseEvent* event, plot_t* plot, std::optional<QPoint>& last_pressed_pos)
+{
+    if (last_pressed_pos)
+    {
+        auto dx = last_pressed_pos->x() - event->pos().x();
+        auto dy = last_pressed_pos->y() - event->pos().y();
+        plot->move(dx, dy);
+        last_pressed_pos = event->pos();
+        return true;
+    }
+    return false;
 }
-
-
-Q_DECLARE_METATYPE(QVector<QCPGraphData>)
-namespace
-{
-
-struct MetaTypeAutoreg
-{
-    MetaTypeAutoreg() { qRegisterMetaType<QVector<QCPGraphData>>(); }
-};
-static MetaTypeAutoreg _;
 }

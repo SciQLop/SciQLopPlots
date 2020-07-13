@@ -107,6 +107,15 @@ public:
             emit xRangeChanged(m_plot->xRange());
     }
 
+    inline void move(double dx, double dy) override
+    {
+        m_plot->move(dx, dy);
+        if (dx != 0.)
+            emit xRangeChanged(m_plot->xRange());
+        if (dy != 0.)
+            emit yRangeChanged(m_plot->yRange());
+    }
+
     inline void autoScaleY() override { m_plot->autoScaleY(); }
 
     inline void setXRange(const AxisRange& range) override

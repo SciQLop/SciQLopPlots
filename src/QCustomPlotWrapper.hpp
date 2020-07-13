@@ -39,7 +39,8 @@ public:
     QCustomPlotWrapper(QWidget* parent = nullptr) : QCustomPlot(parent)
     {
         setPlottingHint(QCP::phFastPolylines, true);
-        connect(this, &QCustomPlotWrapper::_plot,this,&QCustomPlotWrapper::_plot_stl,Qt::AutoConnection);
+        connect(this, &QCustomPlotWrapper::_plot, this, &QCustomPlotWrapper::_plot_slt,
+            Qt::AutoConnection);
     }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal)
@@ -61,6 +62,19 @@ public:
         auto axis = axisRect()->rangeDragAxis(orientation);
         auto distance = abs(axis->range().upper - axis->range().lower) * factor;
         axis->setRange(QCPRange(axis->range().lower + distance, axis->range().upper + distance));
+        replot(QCustomPlot::rpQueuedReplot);
+    }
+
+    inline void move(double dx, double dy)
+    {
+        for (const auto& [orientation, px_distance] :
+            { std::tuple { Qt::Horizontal, dx }, std::tuple { Qt::Vertical, dy } })
+        {
+            auto axis = axisRect()->rangeDragAxis(orientation);
+            auto distance = axis->pixelToCoord(px_distance) - axis->pixelToCoord(0);
+            axis->setRange(
+                QCPRange(axis->range().lower + distance, axis->range().upper + distance));
+        }
         replot(QCustomPlot::rpQueuedReplot);
     }
 
@@ -93,11 +107,11 @@ public:
         return graphCount() - 1;
     }
 
-    using data_t = std::pair<std::vector<double>,std::vector<double>>;
+    using data_t = std::pair<std::vector<double>, std::vector<double>>;
 
     inline void plot(int graphIdex, const data_t& data)
     {
-        plot(graphIdex,data.first,data.second);
+        plot(graphIdex, data.first, data.second);
     }
 
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y)
@@ -107,18 +121,17 @@ public:
             [](double x, double y) {
                 return QCPGraphData { x, y };
             });
-        emit _plot(graphIndex,data);
+        emit _plot(graphIndex, data);
     }
 
     Q_SIGNAL void dataChanged();
 
 private:
     Q_SIGNAL void _plot(int graphIndex, const QVector<QCPGraphData>& data);
-    Q_SLOT void _plot_stl(int graphIndex, const QVector<QCPGraphData>& data);
+    Q_SLOT void _plot_slt(int graphIndex, const QVector<QCPGraphData>& data);
 };
 
 using SciQLopPlot = PlotWidget<QCustomPlotWrapper>;
-
 
 
 }
