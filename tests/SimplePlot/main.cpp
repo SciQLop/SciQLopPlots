@@ -2,13 +2,13 @@
 #include <QObject>
 
 #include <SciQLopPlot.hpp>
+#include <QCustomPlotWrapper.hpp>
 
-class SimpleTest : public QObject
-
+class ASimplePlot : public QObject
 {
     Q_OBJECT
 public:
-    explicit SimpleTest(QObject *parent = nullptr) : QObject(parent){}
+    explicit ASimplePlot(QObject *parent = nullptr) : QObject(parent){}
 signals:
 
 private slots:
@@ -25,7 +25,7 @@ private:
 };
 
 
-QTEST_MAIN(SimpleTest)
+QTEST_MAIN(ASimplePlot)
 
 #include "main.moc"
 

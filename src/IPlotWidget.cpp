@@ -57,6 +57,16 @@ void IPlotWidget::mousePressEvent(QMouseEvent* event)
     event->accept();
 }
 
+void IPlotWidget::mouseMoveEvent(QMouseEvent* event)
+{
+    event->accept();
+}
+
+void IPlotWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    event->accept();
+}
+
 
 }
 

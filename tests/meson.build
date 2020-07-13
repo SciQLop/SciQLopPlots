@@ -2,7 +2,7 @@ tests = [
     {
         'name':'SimplePlot',
         'sources': ['SimplePlot/main.cpp'],
-        'deps': [qt5test, SciQLopPlots_dep]
+        'deps': [qt5test, SciQLopPlots_dep, QtGuiTestUtils_dep]
     }
 ]
 

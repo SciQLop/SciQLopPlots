@@ -11,7 +11,7 @@ QCustomPlot_dep = dependency('QCustomPlot', fallback : ['QCustomPlot', 'QCustomP
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'])
 range_dep = dependency('range-v3', fallback : ['range-v3', 'range_dep'])
 channels_dep = dependency('channels', fallback : ['channels', 'channels_dep'])
-
+QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'])
 
 subdir('src')
 subdir('tests')
