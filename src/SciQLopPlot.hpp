@@ -118,6 +118,9 @@ public:
 
     inline void autoScaleY() override { m_plot->autoScaleY(); }
 
+    inline AxisRange xRange() { return m_plot->xRange(); }
+    inline AxisRange yRange() { return m_plot->yRange(); }
+
     inline void setXRange(const AxisRange& range) override
     {
         m_plot->setXRange(range);

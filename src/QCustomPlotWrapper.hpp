@@ -41,6 +41,12 @@ public:
         setPlottingHint(QCP::phFastPolylines, true);
         connect(this, &QCustomPlotWrapper::_plot, this, &QCustomPlotWrapper::_plot_slt,
             Qt::AutoConnection);
+        // quick hard coded path, might be abstrated like AxisRenderingUtils.cpp in sciqlop code
+        auto dateTicker = QSharedPointer<QCPAxisTickerDateTime>::create();
+        dateTicker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss");
+        dateTicker->setDateTimeSpec(Qt::UTC);
+        xAxis->setTicker(dateTicker);
+
     }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal)
@@ -71,7 +77,7 @@ public:
             { std::tuple { Qt::Horizontal, dx }, std::tuple { Qt::Vertical, dy } })
         {
             auto axis = axisRect()->rangeDragAxis(orientation);
-            auto distance = axis->pixelToCoord(px_distance) - axis->pixelToCoord(0);
+            const auto distance = axis->pixelToCoord(px_distance) - axis->pixelToCoord(0);
             axis->setRange(
                 QCPRange(axis->range().lower + distance, axis->range().upper + distance));
         }

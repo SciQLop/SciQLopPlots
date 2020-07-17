@@ -15,4 +15,3 @@ QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 
 
 subdir('src')
 subdir('tests')
-subdir('manual-tests')
