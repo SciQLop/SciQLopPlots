@@ -66,11 +66,13 @@ public:
     inline void setXRange(const AxisRange& range)
     {
         xAxis->setRange({ range.first, range.second });
+        replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline void setYRange(const AxisRange& range)
     {
         yAxis->setRange({ range.first, range.second });
+        replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline int addGraph(QColor color = Qt::blue)

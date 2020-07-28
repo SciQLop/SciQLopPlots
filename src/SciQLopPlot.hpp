@@ -101,8 +101,9 @@ public:
     inline void zoom(
         double factor, double center, Qt::Orientation orientation = Qt::Horizontal) override
     {
-        auto newRange = range(orientation) * factor;
-        newRange = newRange - newRange.center() + center;
+        auto newRange = (range(orientation) - range(orientation).center()
+                            + m_plot->pixelToCoord(center, orientation))
+            * factor;
         setRange(newRange, orientation);
         notifyRangeChanged(newRange, orientation);
     }
