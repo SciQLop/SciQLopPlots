@@ -21,11 +21,12 @@ MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlo
     ui->setupUi(this);
     2 * [this]() {
         auto syncPannel = new SciQLopPlots::SyncPannel { this };
+        syncPannel->setXRange({ -100., 100. });
         centralWidget()->layout()->addWidget(syncPannel);
 
-        auto plot1 = makePlot(syncPannel);
-        auto plot2 = makePlot(syncPannel);
-        auto plot3 = makePlot(syncPannel);
+        makePlot(syncPannel);
+        makePlot(syncPannel);
+        makePlot(syncPannel);
     };
 }
 
@@ -51,7 +52,6 @@ SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
         ui->totalPointsNumber->setText(humanize(nPoints));
     });
 
-    plot->setXRange({ -100., 100. });
     plot->setYRange({ -2., 2. });
     return plot;
 }

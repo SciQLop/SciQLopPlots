@@ -47,7 +47,7 @@ public:
 
     ~SyncPannel(){}
 
-    inline void setXrange(AxisRange newRange) noexcept
+    inline void setXRange(AxisRange newRange) noexcept
     {
         if(currentRange!=newRange)
         {
@@ -63,7 +63,7 @@ public:
         plots.push_back(plot);
         this->layout()->addWidget(plot);
         plot->setXRange(currentRange);
-        connect(plot,&IPlotWidget::xRangeChanged, this,&SyncPannel::setXrange);
+        connect(plot,&IPlotWidget::xRangeChanged, this,&SyncPannel::setXRange);
     }
 };
 }
