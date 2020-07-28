@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QWidget>
 
+#include <cmath>
 #include <utility>
 
 namespace SciQLopPlots
@@ -43,7 +44,36 @@ namespace SciQLopPlots
  * - time interval selection boxes
  */
 
-using AxisRange = std::pair<double, double>;
+struct AxisRange : std::pair<double, double>
+{
+    AxisRange(double lower, double upper) : std::pair<double, double> { lower, upper } { }
+
+    double center() const noexcept { return (second + first) / 2.; }
+    double width() const noexcept { return second - first; }
+
+    AxisRange& operator*(double factor)
+    {
+        auto _center = center();
+        auto newHalfWidth = width() * factor / 2;
+        first = _center - newHalfWidth;
+        second = _center + newHalfWidth;
+        return *this;
+    }
+
+    AxisRange& operator+(double offset)
+    {
+        first += offset;
+        second += offset;
+        return *this;
+    }
+
+    AxisRange& operator-(double offset)
+    {
+        first -= offset;
+        second -= offset;
+        return *this;
+    }
+};
 
 class IPlotWidget : public QWidget
 {
@@ -58,15 +88,16 @@ public:
 
     virtual void autoScaleY() = 0;
 
-    virtual int addGraph(QColor color = Qt::blue)=0;
+    virtual int addGraph(QColor color = Qt::blue) = 0;
 
-    virtual void setXRange(const AxisRange& range)=0;
-    virtual void setYRange(const AxisRange& range)=0;
+    virtual void setXRange(const AxisRange& range) = 0;
+    virtual void setYRange(const AxisRange& range) = 0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
     Q_SIGNAL void yRangeChanged(AxisRange newRange);
     Q_SIGNAL void dataChanged();
     Q_SIGNAL void closed();
+
 protected:
     void setWidget(QWidget* widget);
     void wheelEvent(QWheelEvent* event) override;
@@ -83,9 +114,8 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;*/
 private:
-
-    //bool m_mousePressed = false;
-    std::optional<QPoint> m_lastMousePress=std::nullopt;
+    // bool m_mousePressed = false;
+    std::optional<QPoint> m_lastMousePress = std::nullopt;
 };
 
 }

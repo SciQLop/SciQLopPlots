@@ -19,7 +19,8 @@ public:
     ~MultiPlot();
 
 private:
-    Ui::MultiPlot *ui;
+    SciQLopPlots::SciQLopPlot* makePlot();
     std::vector<std::unique_ptr<DataProducer<SciQLopPlots::SciQLopPlot>>> m_gens;
+    Ui::MultiPlot *ui;
 };
 #endif // SIMPLEPLOT_H

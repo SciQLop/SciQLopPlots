@@ -46,42 +46,12 @@ public:
         dateTicker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss");
         dateTicker->setDateTimeSpec(Qt::UTC);
         xAxis->setTicker(dateTicker);
-
     }
 
-    inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal)
-    {
-        QCPAxis* axis = axisRect()->rangeZoomAxis(orientation);
-        axis->scaleRange(factor);
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-
-    inline void zoom(double factor, double center, Qt::Orientation orientation = Qt::Horizontal)
-    {
-        QCPAxis* axis = axisRect()->rangeZoomAxis(orientation);
-        axis->scaleRange(factor, axis->pixelToCoord(center));
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-
-    inline void move(double factor, Qt::Orientation orientation)
+    inline double pixelToCoord(double pixelCoord, Qt::Orientation orientation)
     {
         auto axis = axisRect()->rangeDragAxis(orientation);
-        auto distance = abs(axis->range().upper - axis->range().lower) * factor;
-        axis->setRange(QCPRange(axis->range().lower + distance, axis->range().upper + distance));
-        replot(QCustomPlot::rpQueuedReplot);
-    }
-
-    inline void move(double dx, double dy)
-    {
-        for (const auto& [orientation, px_distance] :
-            { std::tuple { Qt::Horizontal, dx }, std::tuple { Qt::Vertical, dy } })
-        {
-            auto axis = axisRect()->rangeDragAxis(orientation);
-            const auto distance = axis->pixelToCoord(px_distance) - axis->pixelToCoord(0);
-            axis->setRange(
-                QCPRange(axis->range().lower + distance, axis->range().upper + distance));
-        }
-        replot(QCustomPlot::rpQueuedReplot);
+        return axis->pixelToCoord(pixelCoord);
     }
 
     inline void autoScaleY()

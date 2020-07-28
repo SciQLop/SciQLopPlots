@@ -19,12 +19,29 @@ QString humanize(std::size_t number)
 MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlot)
 {
     ui->setupUi(this);
+    auto plot1 = makePlot();
+    auto plot2 = makePlot();
+    auto plot3 = makePlot();
+    connect(plot1, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot2,
+        &SciQLopPlots::SciQLopPlot::setXRange);
+    connect(plot2, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot3,
+        &SciQLopPlots::SciQLopPlot::setXRange);
+    connect(plot3, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot1,
+        &SciQLopPlots::SciQLopPlot::setXRange);
+}
+
+MultiPlot::~MultiPlot()
+{
+    delete ui;
+}
+
+SciQLopPlots::SciQLopPlot* MultiPlot::makePlot()
+{
     auto plot = new SciQLopPlots::SciQLopPlot { this };
     centralWidget()->layout()->addWidget(plot);
     auto colors = std::array { Qt::blue, Qt::red, Qt::darkGreen };
-
-    3 * [plot, this, &colors]() {
-        static std::size_t i = 0;
+    std::size_t i = 0;
+    3 * [plot, this, &colors, &i]() {
         m_gens.emplace_back(
             std::make_unique<DataProducer<SciQLopPlots::SciQLopPlot>>(plot, i, colors[i++]));
     };
@@ -37,9 +54,5 @@ MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlo
 
     plot->setXRange({ -100., 100. });
     plot->setYRange({ -2., 2. });
-}
-
-MultiPlot::~MultiPlot()
-{
-    delete ui;
+    return plot;
 }

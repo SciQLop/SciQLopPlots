@@ -47,24 +47,33 @@ namespace SciQLopPlots
  * - time interval selection boxes
  */
 
-HAS_METHOD(has_zoom1, zoom, double, Qt::Orientation);
-HAS_METHOD(has_zoom2, zoom, double, double, Qt::Orientation);
-HAS_METHOD(has_move, move, double, Qt::Orientation);
 HAS_METHOD(has_xRange, xRange);
+HAS_METHOD(has_yRange, yRange);
 HAS_METHOD(has_setXRange, setXRange, AxisRange);
 HAS_METHOD(has_setYRange, setYRange, AxisRange);
+HAS_METHOD(has_pixelToCoord, pixelToCoord, double, Qt::Orientation);
 
 
 template <typename PlotImpl>
 class PlotWidget : public IPlotWidget
 {
-    static_assert(has_zoom1_v<PlotImpl>, "PlotImpl is missing zoom method.");
-    static_assert(has_zoom2_v<PlotImpl>, "PlotImpl is missing zoom method.");
-    static_assert(has_move_v<PlotImpl>, "PlotImpl is missing move method.");
+    static_assert(has_pixelToCoord_v<PlotImpl>, "PlotImpl is missing pixelToCoord method.");
     static_assert(has_xRange_v<PlotImpl>, "PlotImpl is missing xRange method.");
+    static_assert(has_yRange_v<PlotImpl>, "PlotImpl is missing yRange method.");
     static_assert(has_setXRange_v<PlotImpl>, "PlotImpl is missing setXRange method.");
     static_assert(has_setYRange_v<PlotImpl>, "PlotImpl is missing setYRange method.");
 
+    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation)
+    {
+        if (orientation == Qt::Horizontal)
+        {
+            emit xRangeChanged(range);
+        }
+        else
+        {
+            emit yRangeChanged(range);
+        }
+    }
 
 protected:
     PlotImpl* m_plot;
@@ -77,43 +86,49 @@ public:
         this->setFocusPolicy(Qt::WheelFocus);
         this->setMouseTracking(true);
         m_plot->setAttribute(Qt::WA_TransparentForMouseEvents);
-        connect(m_plot, &PlotImpl::dataChanged,this, &PlotWidget::dataChanged);
+        connect(m_plot, &PlotImpl::dataChanged, this, &PlotWidget::dataChanged);
     }
 
-    ~PlotWidget()
-    {
-        emit closed();
-    }
+    ~PlotWidget() { emit closed(); }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) override
     {
-        m_plot->zoom(factor, orientation);
-        if (orientation == Qt::Horizontal)
-            emit xRangeChanged(m_plot->xRange());
+        auto newRange = range(orientation) * factor;
+        setRange(newRange, orientation);
+        notifyRangeChanged(newRange, orientation);
     }
 
     inline void zoom(
         double factor, double center, Qt::Orientation orientation = Qt::Horizontal) override
     {
-        m_plot->zoom(factor, center, orientation);
-        if (orientation == Qt::Horizontal)
-            emit xRangeChanged(m_plot->xRange());
+        auto newRange = range(orientation) * factor;
+        newRange = newRange - newRange.center() + center;
+        setRange(newRange, orientation);
+        notifyRangeChanged(newRange, orientation);
     }
 
     inline void move(double factor, Qt::Orientation orientation) override
     {
-        m_plot->move(factor, orientation);
-        if (orientation == Qt::Horizontal)
-            emit xRangeChanged(m_plot->xRange());
+
+        auto newRange = range(orientation) + (range(orientation).width() * factor);
+        setRange(newRange, orientation);
+        notifyRangeChanged(newRange, orientation);
     }
 
     inline void move(double dx, double dy) override
     {
-        m_plot->move(dx, dy);
         if (dx != 0.)
+        {
+            setXRange(xRange() + m_plot->pixelToCoord(dx, Qt::Horizontal)
+                - m_plot->pixelToCoord(0., Qt::Horizontal));
             emit xRangeChanged(m_plot->xRange());
+        }
         if (dy != 0.)
+        {
+            setYRange(yRange() + m_plot->pixelToCoord(dy, Qt::Vertical)
+                - m_plot->pixelToCoord(0., Qt::Vertical));
             emit yRangeChanged(m_plot->yRange());
+        }
     }
 
     inline void autoScaleY() override { m_plot->autoScaleY(); }
@@ -121,27 +136,46 @@ public:
     inline AxisRange xRange() { return m_plot->xRange(); }
     inline AxisRange yRange() { return m_plot->yRange(); }
 
+    inline AxisRange range(Qt::Orientation orientation)
+    {
+        if (orientation == Qt::Horizontal)
+            return xRange();
+        else
+            return yRange();
+    }
+
     inline void setXRange(const AxisRange& range) override
     {
-        m_plot->setXRange(range);
-        emit xRangeChanged(range);
+        if (range != xRange())
+        {
+            m_plot->setXRange(range);
+            emit xRangeChanged(range);
+        }
     }
 
     inline void setYRange(const AxisRange& range) override
     {
-        m_plot->setYRange(range);
-        emit yRangeChanged(range);
+        if (range != yRange())
+        {
+            m_plot->setYRange(range);
+            emit yRangeChanged(range);
+        }
     }
 
-    inline int addGraph(QColor color = Qt::blue) override
+    inline void setRange(const AxisRange& range, Qt::Orientation orientation)
     {
-        return m_plot->addGraph(color);
+        if (orientation == Qt::Horizontal)
+            return setXRange(range);
+        else
+            return setYRange(range);
     }
+
+    inline int addGraph(QColor color = Qt::blue) override { return m_plot->addGraph(color); }
 
     template <typename data_t>
     void plot(int graphIdex, const data_t& data)
     {
-        m_plot->plot(graphIdex,data);
+        m_plot->plot(graphIdex, data);
     }
 
 protected:
@@ -162,7 +196,7 @@ void zoom(plot_t& plot, double factor);
 template <typename plot_t, typename data_t>
 inline void plot(plot_t& plot, int graphIdex, const data_t& data)
 {
-    plot.plot(graphIdex,data);
+    plot.plot(graphIdex, data);
 }
 
 }
