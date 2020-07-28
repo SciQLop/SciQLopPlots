@@ -5,6 +5,7 @@
 #include <SciQLopPlot.hpp>
 #include <QCustomPlotWrapper.hpp>
 #include "DataGenerator.hpp"
+#include <SyncPanel.hpp>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MultiPlot; }
@@ -19,7 +20,7 @@ public:
     ~MultiPlot();
 
 private:
-    SciQLopPlots::SciQLopPlot* makePlot();
+    SciQLopPlots::SciQLopPlot* makePlot(SciQLopPlots::SyncPannel* panel);
     std::vector<std::unique_ptr<DataProducer<SciQLopPlots::SciQLopPlot>>> m_gens;
     Ui::MultiPlot *ui;
 };

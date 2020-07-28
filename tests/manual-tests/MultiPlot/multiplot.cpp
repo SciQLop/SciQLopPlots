@@ -19,15 +19,14 @@ QString humanize(std::size_t number)
 MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlot)
 {
     ui->setupUi(this);
-    auto plot1 = makePlot();
-    auto plot2 = makePlot();
-    auto plot3 = makePlot();
-    connect(plot1, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot2,
-        &SciQLopPlots::SciQLopPlot::setXRange);
-    connect(plot2, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot3,
-        &SciQLopPlots::SciQLopPlot::setXRange);
-    connect(plot3, &SciQLopPlots::SciQLopPlot::xRangeChanged, plot1,
-        &SciQLopPlots::SciQLopPlot::setXRange);
+    2 * [this]() {
+        auto syncPannel = new SciQLopPlots::SyncPannel { this };
+        centralWidget()->layout()->addWidget(syncPannel);
+
+        auto plot1 = makePlot(syncPannel);
+        auto plot2 = makePlot(syncPannel);
+        auto plot3 = makePlot(syncPannel);
+    };
 }
 
 MultiPlot::~MultiPlot()
@@ -35,10 +34,10 @@ MultiPlot::~MultiPlot()
     delete ui;
 }
 
-SciQLopPlots::SciQLopPlot* MultiPlot::makePlot()
+SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
 {
-    auto plot = new SciQLopPlots::SciQLopPlot { this };
-    centralWidget()->layout()->addWidget(plot);
+    auto plot = new SciQLopPlots::SciQLopPlot { panel };
+    panel->addPlot(plot);
     auto colors = std::array { Qt::blue, Qt::red, Qt::darkGreen };
     std::size_t i = 0;
     3 * [plot, this, &colors, &i]() {

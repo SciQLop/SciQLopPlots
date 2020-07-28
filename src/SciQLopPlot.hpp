@@ -63,7 +63,7 @@ class PlotWidget : public IPlotWidget
     static_assert(has_setXRange_v<PlotImpl>, "PlotImpl is missing setXRange method.");
     static_assert(has_setYRange_v<PlotImpl>, "PlotImpl is missing setYRange method.");
 
-    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation)
+    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation)  noexcept
     {
         if (orientation == Qt::Horizontal)
         {
@@ -120,15 +120,17 @@ public:
     {
         if (dx != 0.)
         {
-            setXRange(xRange() + m_plot->pixelToCoord(dx, Qt::Horizontal)
-                - m_plot->pixelToCoord(0., Qt::Horizontal));
-            emit xRangeChanged(m_plot->xRange());
+            auto newRange = xRange() + m_plot->pixelToCoord(dx, Qt::Horizontal)
+                - m_plot->pixelToCoord(0., Qt::Horizontal);
+            setXRange(newRange);
+            notifyRangeChanged(newRange, Qt::Horizontal);
         }
         if (dy != 0.)
         {
-            setYRange(yRange() + m_plot->pixelToCoord(dy, Qt::Vertical)
-                - m_plot->pixelToCoord(0., Qt::Vertical));
-            emit yRangeChanged(m_plot->yRange());
+            auto newRange = yRange() + m_plot->pixelToCoord(dy, Qt::Vertical)
+                - m_plot->pixelToCoord(0., Qt::Vertical);
+            setYRange(newRange);
+            notifyRangeChanged(newRange, Qt::Vertical);
         }
     }
 
@@ -150,7 +152,7 @@ public:
         if (range != xRange())
         {
             m_plot->setXRange(range);
-            emit xRangeChanged(range);
+            notifyRangeChanged(range, Qt::Horizontal);
         }
     }
 
@@ -159,7 +161,7 @@ public:
         if (range != yRange())
         {
             m_plot->setYRange(range);
-            emit yRangeChanged(range);
+            notifyRangeChanged(range, Qt::Vertical);
         }
     }
 
