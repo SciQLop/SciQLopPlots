@@ -26,8 +26,8 @@
 
 #include <QVBoxLayout>
 
-#include <list>
 #include <cassert>
+#include <list>
 
 #include "IPlotWidget.hpp"
 
@@ -40,19 +40,20 @@ class SyncPannel : public QWidget
     AxisRange currentRange;
 
 public:
-    explicit SyncPannel(QWidget* parent = nullptr) : QWidget(parent),currentRange(0.,0.)
+    explicit SyncPannel(QWidget* parent = nullptr) : QWidget(parent), currentRange(0., 0.)
     {
         setLayout(new QVBoxLayout);
+        removeAllMargins(this);
     }
 
-    ~SyncPannel(){}
+    ~SyncPannel() { }
 
     inline void setXRange(AxisRange newRange) noexcept
     {
-        if(currentRange!=newRange)
+        if (currentRange != newRange)
         {
             currentRange = newRange;
-            for(auto plot:plots)
+            for (auto plot : plots)
                 plot->setXRange(newRange);
         }
     }
@@ -63,7 +64,8 @@ public:
         plots.push_back(plot);
         this->layout()->addWidget(plot);
         plot->setXRange(currentRange);
-        connect(plot,&IPlotWidget::xRangeChanged, this,&SyncPannel::setXRange);
+        plot->showXAxis(false);
+        connect(plot, &IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
     }
 };
 }

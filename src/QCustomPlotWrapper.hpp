@@ -45,7 +45,11 @@ public:
         auto dateTicker = QSharedPointer<QCPAxisTickerDateTime>::create();
         dateTicker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss");
         dateTicker->setDateTimeSpec(Qt::UTC);
+        removeAllMargins(this);
         xAxis->setTicker(dateTicker);
+        plotLayout()->setMargins(QMargins{0,0,0,0});
+        plotLayout()->setRowSpacing(0);
+        axisRect()->setMargins(QMargins{0,0,0,0});
     }
 
     inline double pixelToCoord(double pixelCoord, Qt::Orientation orientation)

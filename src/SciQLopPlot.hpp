@@ -82,7 +82,10 @@ protected:
 public:
     PlotWidget(QWidget* parent = nullptr) : IPlotWidget { parent }, m_plot { new PlotImpl { this } }
     {
+        setContentsMargins(0,0,0,0);
         setWidget(m_plot);
+        layout()->setSpacing(0);
+        layout()->setContentsMargins(0,0,0,0);
         this->setFocusPolicy(Qt::WheelFocus);
         this->setMouseTracking(true);
         m_plot->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -172,6 +175,12 @@ public:
         else
             return setYRange(range);
     }
+
+    inline void showXAxis(bool show) override
+    {
+        m_plot->xAxis->setVisible(show);
+    }
+
 
     inline int addGraph(QColor color = Qt::blue) override { return m_plot->addGraph(color); }
 

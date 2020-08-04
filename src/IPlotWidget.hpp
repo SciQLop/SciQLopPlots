@@ -23,6 +23,7 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QLayout>
 
 #include <cmath>
 #include <utility>
@@ -43,6 +44,18 @@ namespace SciQLopPlots
  * - x axis sharing and x axis sticky
  * - time interval selection boxes
  */
+
+inline void removeAllMargins(QWidget* widget)
+{
+    widget->setContentsMargins(0,0,0,0);
+    auto layout = widget->layout();
+    if(layout)
+    {
+        layout->setSpacing(0);
+        layout->setMargin(0);
+        layout->setContentsMargins(0,0,0,0);
+    }
+}
 
 struct AxisRange : std::pair<double, double>
 {
@@ -92,6 +105,8 @@ public:
 
     virtual void setXRange(const AxisRange& range) = 0;
     virtual void setYRange(const AxisRange& range) = 0;
+
+    virtual void showXAxis(bool show)=0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
     Q_SIGNAL void yRangeChanged(AxisRange newRange);
