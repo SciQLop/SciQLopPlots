@@ -6,10 +6,7 @@
 #include <QCustomPlotWrapper.hpp>
 #include "DataGenerator.hpp"
 #include <SyncPanel.hpp>
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MultiPlot; }
-QT_END_NAMESPACE
+#include <QLabel>
 
 class MultiPlot : public QMainWindow
 {
@@ -22,6 +19,6 @@ public:
 private:
     SciQLopPlots::SciQLopPlot* makePlot(SciQLopPlots::SyncPannel* panel);
     std::vector<std::unique_ptr<DataProducer<SciQLopPlots::SciQLopPlot>>> m_gens;
-    Ui::MultiPlot *ui;
+    QLabel* m_totalPointNumber;
 };
 #endif // SIMPLEPLOT_H

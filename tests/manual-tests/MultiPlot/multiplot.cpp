@@ -1,6 +1,6 @@
 #include "multiplot.h"
-#include "ui_multiplot.h"
 #include <Graph.hpp>
+#include <QDockWidget>
 #include <cpp_utils.hpp>
 
 QString humanize(std::size_t number)
@@ -16,13 +16,27 @@ QString humanize(std::size_t number)
     return QString { "%1%2" }.arg(value, 0, 'g', 3).arg(prefixes[prefix_index]);
 }
 
-MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlot)
+QDockWidget* dockify(QWidget* widget, QWidget* parent = nullptr)
 {
-    ui->setupUi(this);
-    2 * [this]() {
-        auto syncPannel = new SciQLopPlots::SyncPannel { this };
+    auto dock = new QDockWidget { parent };
+    widget->setParent(dock);
+    dock->setWidget(widget);
+    dock->setAllowedAreas(Qt::DockWidgetArea::AllDockWidgetAreas);
+    dock->setWindowTitle("Plot Frame");
+    SciQLopPlots::removeAllMargins(dock);
+    return dock;
+}
+
+MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent)
+{
+    m_totalPointNumber = new QLabel;
+    statusBar()->addWidget(m_totalPointNumber);
+    setDockNestingEnabled(true);
+    3 * [this]() {
+        auto syncPannel = new SciQLopPlots::SyncPannel {};
         syncPannel->setXRange({ -100., 100. });
-        centralWidget()->layout()->addWidget(syncPannel);
+        auto dock = dockify(syncPannel, this);
+        addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, dock);
 
         makePlot(syncPannel);
         makePlot(syncPannel);
@@ -30,14 +44,12 @@ MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::MultiPlo
     };
 }
 
-MultiPlot::~MultiPlot()
-{
-    delete ui;
-}
+MultiPlot::~MultiPlot() { }
 
 SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
 {
     auto plot = new SciQLopPlots::SciQLopPlot { panel };
+    plot->setMinimumHeight(150);
     panel->addPlot(plot);
     auto colors = std::array { Qt::blue, Qt::red, Qt::darkGreen };
     std::size_t i = 0;
@@ -49,7 +61,7 @@ SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
     connect(plot, &SciQLopPlots::SciQLopPlot::dataChanged, this, [this]() {
         auto nPoints = std::accumulate(std::cbegin(m_gens), std::cend(m_gens), 0UL,
             [](auto prev, const auto& gen) { return prev + gen->nPoints; });
-        ui->totalPointsNumber->setText(humanize(nPoints));
+        m_totalPointNumber->setText(QString("Total number of points: %1").arg(humanize(nPoints)));
     });
 
     plot->setYRange({ -2., 2. });

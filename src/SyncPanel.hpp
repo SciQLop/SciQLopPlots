@@ -23,6 +23,8 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QScrollArea>
+
 
 #include <QVBoxLayout>
 
@@ -33,17 +35,21 @@
 
 namespace SciQLopPlots
 {
-class SyncPannel : public QWidget
+class SyncPannel : public QScrollArea
 {
     Q_OBJECT
     std::list<IPlotWidget*> plots;
     AxisRange currentRange;
 
 public:
-    explicit SyncPannel(QWidget* parent = nullptr) : QWidget(parent), currentRange(0., 0.)
+    explicit SyncPannel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
     {
-        setLayout(new QVBoxLayout);
+        setWidget(new QWidget(this));
+        widget()->setLayout(new QVBoxLayout);
+        setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
         removeAllMargins(this);
+        removeAllMargins(widget());
+        setWidgetResizable(true);
     }
 
     ~SyncPannel() { }
@@ -61,10 +67,11 @@ public:
     inline void addPlot(IPlotWidget* plot)
     {
         assert(plot);
+        if(plots.size())
+            plots.back()->showXAxis(false);
         plots.push_back(plot);
-        this->layout()->addWidget(plot);
+        widget()->layout()->addWidget(plot);
         plot->setXRange(currentRange);
-        plot->showXAxis(false);
         connect(plot, &IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
     }
 };
