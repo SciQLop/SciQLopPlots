@@ -35,8 +35,8 @@ SimplePlot::SimplePlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::Simple
         ui->totalPointsNumber->setText(humanize(nPoints));
     });
 
-    plot->setXRange({-100.,100.});
-    plot->setYRange({-2.,2.});
+    plot->setXRange({ -100., 100. });
+    plot->setYRange({ -2., 2. });
 }
 
 SimplePlot::~SimplePlot()

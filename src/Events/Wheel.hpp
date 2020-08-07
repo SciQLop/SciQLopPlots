@@ -31,7 +31,7 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     if (event->modifiers() == Qt::ControlModifier)
     {
         if (event->orientation() == Qt::Vertical)
-            plot->zoom(pow(factor, wheelSteps), event->pos().y(), Qt::Vertical);
+            plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Vertical);
     }
     else if (event->modifiers() == Qt::AltModifier)
     {
@@ -40,7 +40,7 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     else if (event->modifiers() == Qt::ShiftModifier)
     {
         if (event->orientation() == Qt::Vertical)
-            plot->zoom(pow(factor, wheelSteps), event->pos().x(), Qt::Horizontal);
+            plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Horizontal);
     }
     else
     {

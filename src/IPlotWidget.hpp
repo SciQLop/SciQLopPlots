@@ -21,9 +21,9 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include <QLayout>
 #include <QObject>
 #include <QWidget>
-#include <QLayout>
 
 #include <cmath>
 #include <utility>
@@ -47,13 +47,13 @@ namespace SciQLopPlots
 
 inline void removeAllMargins(QWidget* widget)
 {
-    widget->setContentsMargins(0,0,0,0);
+    widget->setContentsMargins(0, 0, 0, 0);
     auto layout = widget->layout();
-    if(layout)
+    if (layout)
     {
         layout->setSpacing(0);
         layout->setMargin(0);
-        layout->setContentsMargins(0,0,0,0);
+        layout->setContentsMargins(0, 0, 0, 0);
     }
 }
 
@@ -94,7 +94,7 @@ class IPlotWidget : public QWidget
 public:
     IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
     virtual void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) = 0;
-    virtual void zoom(double factor, double center, Qt::Orientation orientation = Qt::Horizontal)
+    virtual void zoom(double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal)
         = 0;
     virtual void move(double factor, Qt::Orientation orientation) = 0;
     virtual void move(double dx, double dy) = 0;
@@ -106,7 +106,7 @@ public:
     virtual void setXRange(const AxisRange& range) = 0;
     virtual void setYRange(const AxisRange& range) = 0;
 
-    virtual void showXAxis(bool show)=0;
+    virtual void showXAxis(bool show) = 0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
     Q_SIGNAL void yRangeChanged(AxisRange newRange);

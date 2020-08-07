@@ -63,7 +63,7 @@ class PlotWidget : public IPlotWidget
     static_assert(has_setXRange_v<PlotImpl>, "PlotImpl is missing setXRange method.");
     static_assert(has_setYRange_v<PlotImpl>, "PlotImpl is missing setYRange method.");
 
-    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation)  noexcept
+    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation) noexcept
     {
         if (orientation == Qt::Horizontal)
         {
@@ -82,10 +82,10 @@ protected:
 public:
     PlotWidget(QWidget* parent = nullptr) : IPlotWidget { parent }, m_plot { new PlotImpl { this } }
     {
-        setContentsMargins(0,0,0,0);
+        setContentsMargins(0, 0, 0, 0);
         setWidget(m_plot);
         layout()->setSpacing(0);
-        layout()->setContentsMargins(0,0,0,0);
+        layout()->setContentsMargins(0, 0, 0, 0);
         this->setFocusPolicy(Qt::WheelFocus);
         this->setMouseTracking(true);
         m_plot->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -102,11 +102,12 @@ public:
     }
 
     inline void zoom(
-        double factor, double center, Qt::Orientation orientation = Qt::Horizontal) override
+        double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal) override
     {
-        auto newRange = (range(orientation) - range(orientation).center()
-                            + m_plot->pixelToCoord(center, orientation))
-            * factor;
+        auto old_range = range(orientation);
+        auto center_val = m_plot->pixelToCoord(m_plot->mapFromParent(center), orientation);
+        AxisRange newRange { factor * old_range.first + center_val * (1 - factor),
+            factor * old_range.second + center_val * (1 - factor) };
         setRange(newRange, orientation);
         notifyRangeChanged(newRange, orientation);
     }
@@ -176,10 +177,7 @@ public:
             return setYRange(range);
     }
 
-    inline void showXAxis(bool show) override
-    {
-        m_plot->xAxis->setVisible(show);
-    }
+    inline void showXAxis(bool show) override { m_plot->xAxis->setVisible(show); }
 
 
     inline int addGraph(QColor color = Qt::blue) override { return m_plot->addGraph(color); }

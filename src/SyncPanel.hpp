@@ -22,8 +22,8 @@
 #pragma once
 
 #include <QObject>
-#include <QWidget>
 #include <QScrollArea>
+#include <QWidget>
 
 
 #include <QVBoxLayout>
@@ -67,7 +67,7 @@ public:
     inline void addPlot(IPlotWidget* plot)
     {
         assert(plot);
-        if(plots.size())
+        if (plots.size())
             plots.back()->showXAxis(false);
         plots.push_back(plot);
         widget()->layout()->addWidget(plot);

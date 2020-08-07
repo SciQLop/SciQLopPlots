@@ -47,13 +47,12 @@ public:
         dateTicker->setDateTimeSpec(Qt::UTC);
         xAxis->setTicker(dateTicker);
         removeAllMargins(this);
-        plotLayout()->setMargins(QMargins{0,0,0,0});
+        plotLayout()->setMargins(QMargins { 0, 0, 0, 0 });
         plotLayout()->setRowSpacing(0);
-        for(auto rect:axisRects())
+        for (auto rect : axisRects())
         {
-            rect->setMargins(QMargins{0,0,0,0});
+            rect->setMargins(QMargins { 0, 0, 0, 0 });
         }
-
     }
 
     inline double pixelToCoord(double pixelCoord, Qt::Orientation orientation)
@@ -61,6 +60,14 @@ public:
         auto axis = axisRect()->rangeDragAxis(orientation);
         return axis->pixelToCoord(pixelCoord);
     }
+
+    inline double pixelToCoord(QPoint pixelCoord, Qt::Orientation orientation)
+    {
+        if (orientation == Qt::Vertical)
+            return pixelToCoord(pixelCoord.y(), Qt::Vertical);
+        return pixelToCoord(pixelCoord.x(), Qt::Horizontal);
+    }
+
 
     inline void autoScaleY()
     {
