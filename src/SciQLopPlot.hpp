@@ -106,8 +106,9 @@ public:
     {
         auto old_range = range(orientation);
         auto center_val = m_plot->pixelToCoord(m_plot->mapFromParent(center), orientation);
-        AxisRange newRange { factor * old_range.first + center_val * (1 - factor),
-            factor * old_range.second + center_val * (1 - factor) };
+        auto offset = center_val * (1 - factor);
+        AxisRange newRange { factor * old_range.first + offset,
+            factor * old_range.second + offset };
         setRange(newRange, orientation);
         notifyRangeChanged(newRange, orientation);
     }
@@ -188,16 +189,6 @@ public:
         m_plot->plot(graphIdex, data);
     }
 
-protected:
-    /*void enterEvent(QEvent* event) override;
-    void leaveEvent(QEvent* event) override;
-
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;*/
 };
 
 template <typename plot_t>

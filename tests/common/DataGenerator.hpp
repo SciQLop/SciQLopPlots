@@ -31,7 +31,7 @@ template <typename Plot>
 struct DataProducer
 {
     using data_t = std::pair<std::vector<double>, std::vector<double>>;
-    SciQLopPlots::Grapgh<data_t, Plot> graph;
+    SciQLopPlots::Graph<data_t, Plot> graph;
     std::size_t nPoints;
     std::thread genThread;
     DataProducer(Plot* plot, int index = 0, QColor color = Qt::blue)

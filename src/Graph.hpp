@@ -33,11 +33,11 @@ namespace SciQLopPlots
 {
 
 template <typename data_type, typename plot_t>
-struct Grapgh
+struct Graph
 {
     channels::channel<AxisRange, 1, channels::full_policy::overwrite_last> transformations_out;
     channels::channel<data_type, 1, channels::full_policy::overwrite_last> data_in;
-    Grapgh(int index, plot_t* plot) : m_plot { plot }, m_graphIndex { index }
+    Graph(int index, plot_t* plot) : m_plot { plot }, m_graphIndex { index }
     {
         QObject::connect(
             plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
@@ -54,7 +54,7 @@ struct Grapgh
         });
     }
 
-    ~Grapgh()
+    ~Graph()
     {
         data_in.close();
         transformations_out.close();
@@ -68,10 +68,10 @@ private:
 };
 
 template <typename data_type, typename PlotImpl>
-Grapgh<data_type, PlotWidget<PlotImpl>> add_graph(
+Graph<data_type, PlotWidget<PlotImpl>> add_graph(
     PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
 {
-    return Grapgh<data_type, PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
+    return Graph<data_type, PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
 }
 
 }
