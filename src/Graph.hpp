@@ -44,11 +44,12 @@ struct Graph
         QObject::connect(plot, &plot_t::closed, [this]() {
             data_in.close();
             transformations_out.close();
+            this->m_plot = nullptr;
         });
         m_updateThread = std::thread([this]() {
             while (!data_in.closed())
             {
-                if (auto data = data_in.take(); data)
+                if (auto data = data_in.take(); m_plot && data)
                     SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*data));
             }
         });
