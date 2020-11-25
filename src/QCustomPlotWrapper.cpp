@@ -24,7 +24,7 @@
 void SciQLopPlots::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
 {
     graph(graphIndex)->data()->set(data, true);
-    replot(QCustomPlot::rpQueuedReplot);
+    p_refresh_timer->start(50);
     emit dataChanged();
 }
 

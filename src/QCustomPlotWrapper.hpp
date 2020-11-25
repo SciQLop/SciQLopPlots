@@ -22,6 +22,7 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 #include <QWidget>
 
 #include <qcp.h>
@@ -35,12 +36,18 @@ namespace SciQLopPlots
 class QCustomPlotWrapper : public QCustomPlot
 {
     Q_OBJECT
+    QTimer* p_refresh_timer;
+
 public:
     QCustomPlotWrapper(QWidget* parent = nullptr) : QCustomPlot(parent)
     {
+        p_refresh_timer = new QTimer{this};
+        p_refresh_timer->setSingleShot(true);
         setPlottingHint(QCP::phFastPolylines, true);
         connect(this, &QCustomPlotWrapper::_plot, this, &QCustomPlotWrapper::_plot_slt,
             Qt::AutoConnection);
+        connect(this->p_refresh_timer, &QTimer::timeout,
+            [this]() { this->replot(QCustomPlot::rpQueuedReplot); });
         // quick hard coded path, might be abstrated like AxisRenderingUtils.cpp in sciqlop code
         auto dateTicker = QSharedPointer<QCPAxisTickerDateTime>::create();
         dateTicker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss");
