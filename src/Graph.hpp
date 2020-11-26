@@ -49,8 +49,8 @@ struct Graph
         m_updateThread = std::thread([this]() {
             while (!data_in.closed())
             {
-                if (auto data = data_in.take(); m_plot && data)
-                    SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*data));
+                if (auto maybeData = data_in.take(); m_plot && maybeData)
+                    SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*maybeData));
             }
         });
     }

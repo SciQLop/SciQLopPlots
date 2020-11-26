@@ -41,9 +41,9 @@ struct DataProducer
                                     &in = graph.transformations_out, graphIndex = index]() {
             while (!in.closed())
             {
-                if (auto newRange = in.take(); newRange)
+                if (auto maybeNewRange = in.take(); maybeNewRange)
                     out << DataProducer::generate(
-                        *newRange, nPoints, graphIndex * 120., (graphIndex * 0.3) + 1.);
+                        *maybeNewRange, nPoints, graphIndex * 120., (graphIndex * 0.3) + 1.);
             }
         });
     }
