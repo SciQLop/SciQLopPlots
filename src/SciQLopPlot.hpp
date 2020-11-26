@@ -183,8 +183,11 @@ public:
 
     inline void showXAxis(bool show) override { m_plot->xAxis->setVisible(show); }
 
+    inline void replot(int ms)override{m_plot->replot(ms);}
 
     inline int addGraph(QColor color = Qt::blue) override { return m_plot->addGraph(color); }
+
+    inline bool addColorMap() override { return m_plot->addColorMap(); }
 
     template <typename data_t>
     void plot(int graphIdex, const data_t& data)

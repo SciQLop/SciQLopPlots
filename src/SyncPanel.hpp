@@ -24,7 +24,7 @@
 #include <QObject>
 #include <QScrollArea>
 #include <QWidget>
-
+#include <QTimer>
 
 #include <QVBoxLayout>
 
@@ -40,10 +40,14 @@ class SyncPannel : public QScrollArea
     Q_OBJECT
     std::list<IPlotWidget*> plots;
     AxisRange currentRange;
-
+    QTimer* refreshTimer;
 public:
     explicit SyncPannel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
     {
+        refreshTimer = new QTimer{this};
+        refreshTimer->setSingleShot(true);
+        connect(this->refreshTimer, &QTimer::timeout,
+            [this]() { std::for_each(std::begin(this->plots),std::end(this->plots), [](auto plot){plot->replot(20);}); });
         setWidget(new QWidget(this));
         widget()->setLayout(new QVBoxLayout);
         setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
@@ -73,6 +77,7 @@ public:
         widget()->layout()->addWidget(plot);
         plot->setXRange(currentRange);
         connect(plot, &IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
+        connect(plot, &IPlotWidget::dataChanged, [this](){this->refreshTimer->start(20);});
     }
 };
 }

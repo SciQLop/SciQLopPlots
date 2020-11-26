@@ -102,11 +102,14 @@ public:
     virtual void autoScaleY() = 0;
 
     virtual int addGraph(QColor color = Qt::blue) = 0;
+    virtual bool addColorMap() = 0;
 
     virtual void setXRange(const AxisRange& range) = 0;
     virtual void setYRange(const AxisRange& range) = 0;
 
     virtual void showXAxis(bool show) = 0;
+
+    virtual void replot(int ms) = 0;
 
     Q_SIGNAL void xRangeChanged(AxisRange newRange);
     Q_SIGNAL void yRangeChanged(AxisRange newRange);

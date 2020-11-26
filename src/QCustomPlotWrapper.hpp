@@ -47,7 +47,7 @@ public:
         connect(this, &QCustomPlotWrapper::_plot, this, &QCustomPlotWrapper::_plot_slt,
             Qt::AutoConnection);
         connect(this->p_refresh_timer, &QTimer::timeout,
-            [this]() { this->replot(QCustomPlot::rpQueuedReplot); });
+            [this]() { QCustomPlot::replot(QCustomPlot::rpQueuedReplot); });
         // quick hard coded path, might be abstrated like AxisRenderingUtils.cpp in sciqlop code
         auto dateTicker = QSharedPointer<QCPAxisTickerDateTime>::create();
         dateTicker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss");
@@ -79,7 +79,7 @@ public:
     inline void autoScaleY()
     {
         yAxis->rescale(true);
-        replot(QCustomPlot::rpQueuedReplot);
+        QCustomPlot::replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline AxisRange xRange() { return { xAxis->range().lower, xAxis->range().upper }; }
@@ -88,13 +88,13 @@ public:
     inline void setXRange(const AxisRange& range)
     {
         xAxis->setRange({ range.first, range.second });
-        replot(QCustomPlot::rpQueuedReplot);
+        QCustomPlot::replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline void setYRange(const AxisRange& range)
     {
         yAxis->setRange({ range.first, range.second });
-        replot(QCustomPlot::rpQueuedReplot);
+        QCustomPlot::replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline int addGraph(QColor color = Qt::blue)
@@ -105,6 +105,11 @@ public:
         pen.setColor(color);
         graph->setPen(pen);
         return graphCount() - 1;
+    }
+
+    inline bool addColorMap()
+    {
+        return false;
     }
 
     using data_t = std::pair<std::vector<double>, std::vector<double>>;
@@ -125,6 +130,8 @@ public:
     }
 
     Q_SIGNAL void dataChanged();
+
+    inline void replot(int ms){this->p_refresh_timer->start(ms);}
 
 private:
     Q_SIGNAL void _plot(int graphIndex, const QVector<QCPGraphData>& data);
