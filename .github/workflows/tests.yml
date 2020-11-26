@@ -26,6 +26,8 @@ jobs:
         
       - name: Meson Build
         uses: BSFishy/meson-build@v1.0.1
+        env:
+          LD_LIBRARY_PATH: "$Qt5_DIR/lib"
         with:
           action: test
           directory: build
