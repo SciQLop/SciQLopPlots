@@ -20,6 +20,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
+          modules: 'qtprintsupport'
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v1
         
