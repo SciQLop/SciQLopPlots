@@ -32,7 +32,7 @@ struct DataProducer
 {
     using data_t = std::pair<std::vector<double>, std::vector<double>>;
     SciQLopPlots::Graph<data_t, Plot> graph;
-    std::size_t nPoints;
+    std::size_t nPoints=0;
     std::thread genThread;
     DataProducer(Plot* plot, int index = 0, QColor color = Qt::blue)
             : graph { SciQLopPlots::add_graph<data_t>(plot, color) }

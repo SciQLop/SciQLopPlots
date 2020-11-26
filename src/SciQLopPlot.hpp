@@ -80,6 +80,9 @@ protected:
     std::mutex m_plot_mutex;
 
 public:
+
+    using plot_impl_t=PlotImpl;
+
     PlotWidget(QWidget* parent = nullptr) : IPlotWidget { parent }, m_plot { new PlotImpl { this } }
     {
         setContentsMargins(0, 0, 0, 0);
