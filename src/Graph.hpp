@@ -28,45 +28,132 @@
 #include <channels/channels.hpp>
 
 #include <thread>
+#include <memory>
 
 namespace SciQLopPlots
 {
 
+namespace details {
 template <typename data_type, typename plot_t>
 struct Graph
 {
+    using channel_tag = struct channel_tag;
     channels::channel<AxisRange, 1, channels::full_policy::overwrite_last> transformations_out;
-    channels::channel<data_type, 1, channels::full_policy::overwrite_last> data_in;
     Graph(int index, plot_t* plot) : m_plot { plot }, m_graphIndex { index }
     {
         QObject::connect(
             plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
         QObject::connect(plot, &plot_t::closed, [this]() {
-            data_in.close();
+            m_data_in.close();
             transformations_out.close();
             this->m_plot = nullptr;
         });
         m_updateThread = std::thread([this]() {
-            while (!data_in.closed())
+            while (!m_data_in.closed())
             {
-                if (auto maybeData = data_in.take(); m_plot && maybeData)
+                if (auto maybeData = m_data_in.take(); m_plot && maybeData)
                     SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*maybeData));
             }
         });
     }
 
+    void add(const data_type& data)
+    {
+        m_data_in.add(data);
+    }
+
+    void add(data_type&& data)
+    {
+        m_data_in.add(std::move(data));
+    }
+
+    inline bool closed()
+    {
+        return m_data_in.closed() or transformations_out.closed();
+    }
+
+    inline void close()
+    {
+        m_data_in.close();
+        transformations_out.close();
+    }
+
     ~Graph()
     {
-        data_in.close();
+        m_data_in.close();
         transformations_out.close();
         m_updateThread.join();
     }
 
 private:
+    channels::channel<data_type, 1, channels::full_policy::overwrite_last> m_data_in;
     plot_t* m_plot = nullptr;
     std::thread m_updateThread;
     int m_graphIndex;
 };
+}
+
+template <typename data_type, typename plot_t>
+struct Graph
+{
+    using channel_tag = struct channel_tag;
+    using in_value_type = data_type;
+    channels::channel<AxisRange, 1, channels::full_policy::overwrite_last> transformations_out;
+    Graph(int index, plot_t* plot) : m_impl { new details::Graph<data_type,plot_t>( index,plot) }
+    {
+    }
+
+    Graph(const Graph& other) : m_impl {other.m_impl}
+    {
+    }
+
+    Graph(Graph&& other) : m_impl {std::move(other.m_impl)}
+    {
+    }
+
+    inline Graph& operator<<(data_type&& data)
+    {
+        m_impl->add(std::move(data));
+        return *this;
+    }
+
+    inline Graph& operator<<(const data_type& data)
+    {
+         m_impl->add(data);
+         return *this;
+    }
+
+    inline Graph& add(data_type&& data)
+    {
+         m_impl->add(std::move(data));
+         return *this;
+    }
+
+    inline Graph& add(const data_type& data)
+    {
+         m_impl->add(data);
+         return *this;
+    }
+
+    inline bool closed()
+    {
+        return m_impl->closed();
+    }
+
+    inline void close()
+    {
+        m_impl->close();
+    }
+
+    ~Graph()
+    {
+    }
+
+private:
+    std::shared_ptr<details::Graph<data_type,plot_t>> m_impl;
+};
+
+
 
 template <typename data_type, typename PlotImpl>
 Graph<data_type, PlotWidget<PlotImpl>> add_graph(

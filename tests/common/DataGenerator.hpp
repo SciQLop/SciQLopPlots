@@ -37,12 +37,12 @@ struct DataProducer
     DataProducer(Plot* plot, int index = 0, QColor color = Qt::blue)
             : graph { SciQLopPlots::add_graph<data_t>(plot, color) }
     {
-        genThread = std::thread([&nPoints = nPoints, &out = graph.data_in,
+        genThread = std::thread([&nPoints = nPoints, &graph=graph,
                                     &in = graph.transformations_out, graphIndex = index]() {
             while (!in.closed())
             {
                 if (auto maybeNewRange = in.take(); maybeNewRange)
-                    out << DataProducer::generate(
+                    graph << DataProducer::generate(
                         *maybeNewRange, nPoints, graphIndex * 120., (graphIndex * 0.3) + 1.);
             }
         });
@@ -50,8 +50,7 @@ struct DataProducer
 
     ~DataProducer()
     {
-        graph.data_in.close();
-        graph.transformations_out.close();
+        graph.close();
         genThread.join();
     }
 
