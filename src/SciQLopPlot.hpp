@@ -95,7 +95,7 @@ public:
         connect(m_plot, &PlotImpl::dataChanged, this, &PlotWidget::dataChanged);
     }
 
-    ~PlotWidget() { emit closed(); }
+    ~PlotWidget() { }
 
     inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) override
     {

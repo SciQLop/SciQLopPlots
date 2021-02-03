@@ -45,8 +45,7 @@ namespace details
             QObject::connect(
                 plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
             QObject::connect(plot, &plot_t::closed, [this]() {
-                m_data_in.close();
-                transformations_out.close();
+                this->close();
                 this->m_plot = nullptr;
             });
             m_updateThread = std::thread([this]() {
