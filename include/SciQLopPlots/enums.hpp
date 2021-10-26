@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2020, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2021, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,25 +19,20 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include <QMouseEvent>
-#include <optional>
+#pragma once
+#include "cpp_utils/types/detectors.hpp"
 
-#include "SciQLopPlots/view.hpp"
 
-namespace SciQLopPlots::details
+namespace SciQLopPlots::enums
 {
-template <typename plot_t>
-inline bool handleMouseMoveEvent(
-    const QMouseEvent* event, plot_t* plot, std::optional<QPoint>& last_pressed_pos)
-{
-    if (last_pressed_pos)
-    {
-        auto dx = last_pressed_pos->x() - event->pos().x();
-        auto dy = last_pressed_pos->y() - event->pos().y();
-        view::move(plot, view::pixel_coordinates { dx, dy });
-        last_pressed_pos = event->pos();
-        return true;
-    }
-    return false;
+    enum class Axis{x=0,y=1,z=2};
 }
+
+namespace SciQLopPlots::tags
+{
+    struct absolute{};
+    struct relative{};
+
+    IS_T(is_absolute, absolute);
+    IS_T(is_relative, relative);
 }

@@ -4,6 +4,7 @@
 #include <DataGenerator.hpp>
 #include <QCustomPlotWrapper.hpp>
 #include <SciQLopPlot.hpp>
+#include <SciQLopPlots/view.hpp>
 
 #include <QtGuiTestUtils/GUITestUtils.h>
 
@@ -12,7 +13,7 @@ class ASimplePlot : public QObject
     Q_OBJECT
 
     SciQLopPlots::SciQLopPlot plot;
-    DataProducer<SciQLopPlots::SciQLopPlot> gen;
+    DataProducer1D<SciQLopPlots::SciQLopPlot> gen;
 
 public:
     explicit ASimplePlot(QObject* parent = nullptr) : QObject(parent), gen(&plot, 0) { }
@@ -25,6 +26,9 @@ private slots:
     void scrolls_left_with_mouse() { mouse_scroll(200); }
 
     void scrolls_right_with_mouse() { mouse_scroll(-200); }
+
+    void zoom_in() { zoom(0.1); }
+    void zoom_out() { zoom(10); }
 
 private:
     void mouse_scroll(int value)
@@ -39,6 +43,14 @@ private:
             QVERIFY(xRange.second > plot.xRange().second);
         else
             QVERIFY(xRange.second < plot.xRange().second);
+    }
+
+    void zoom(double factor)
+    {
+        QVERIFY(prepare_gui_test(&plot));
+        auto xRange = plot.xRange();
+        SciQLopPlots::view::zoom(&plot, factor, SciQLopPlots::enums::Axis::x);
+        QVERIFY(SciQLopPlots::view::range(&plot, SciQLopPlots::enums::Axis::x) == xRange * factor);
     }
 };
 

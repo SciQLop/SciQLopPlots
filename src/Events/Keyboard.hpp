@@ -19,6 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/view.hpp"
 #include <QKeyEvent>
 
 namespace SciQLopPlots::details
@@ -34,16 +36,16 @@ inline bool handleKeyboardEvent(const QKeyEvent* event, plot_t* plot)
                 plot->autoScaleY();
                 return true;
             case Qt::Key_Right:
-                plot->move(0.2, Qt::Horizontal);
+                view::move(plot, 0.2, enums::Axis::x);
                 return true;
             case Qt::Key_Left:
-                plot->move(-0.2, Qt::Horizontal);
+                view::move(plot, -0.2, enums::Axis::x);
                 return true;
             case Qt::Key_Up:
-                plot->move(0.2, Qt::Vertical);
+                view::move(plot, 0.2, enums::Axis::y);
                 return true;
             case Qt::Key_Down:
-                plot->move(-0.2, Qt::Vertical);
+                view::move(plot, -0.2, enums::Axis::y);
                 return true;
             default:
                 break;
@@ -54,16 +56,16 @@ inline bool handleKeyboardEvent(const QKeyEvent* event, plot_t* plot)
         switch (event->key())
         {
             case Qt::Key_Right:
-                plot->zoom(1.2, Qt::Horizontal);
+                view::zoom(plot, 1.2, enums::Axis::x);
                 return true;
             case Qt::Key_Left:
-                plot->zoom(0.8, Qt::Horizontal);
+                view::zoom(plot, 0.8, enums::Axis::x);
                 return true;
             case Qt::Key_Up:
-                plot->zoom(1.2, Qt::Vertical);
+                view::zoom(plot, 1.2, enums::Axis::y);
                 return true;
             case Qt::Key_Down:
-                plot->zoom(0.8, Qt::Vertical);
+                view::zoom(plot, 0.8, enums::Axis::y);
                 return true;
             default:
                 break;

@@ -20,6 +20,6 @@ public:
 
 private:
     Ui::SimplePlot *ui;
-    std::vector<std::unique_ptr<DataProducer<SciQLopPlots::SciQLopPlot>>> m_gens;
+    std::vector<std::unique_ptr<DataProducer>> m_gens;
 };
 #endif // SIMPLEPLOT_H

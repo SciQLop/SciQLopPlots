@@ -30,6 +30,8 @@
 #include <memory>
 #include <thread>
 
+#include "SciQLopPlots/axis_range.hpp"
+
 namespace SciQLopPlots
 {
 
@@ -39,7 +41,7 @@ namespace details
     struct Graph
     {
         using channel_tag = struct channel_tag;
-        channels::channel<AxisRange, 1, channels::full_policy::overwrite_last> transformations_out;
+        channels::channel<axis::range, 1, channels::full_policy::overwrite_last> transformations_out;
         Graph(int index, plot_t* plot) : m_plot { plot }, m_graphIndex { index }
         {
             QObject::connect(
@@ -93,7 +95,7 @@ private:
 public:
     using channel_tag = struct channel_tag;
     using in_value_type = data_type;
-    channels::channel<AxisRange, 1, channels::full_policy::overwrite_last> transformations_out;
+    channels::channel<axis::range, 1, channels::full_policy::overwrite_last> transformations_out;
     Graph(int index, plot_t* plot)
             : m_impl { new details::Graph<data_type, plot_t>(index, plot) }
             , transformations_out { m_impl->transformations_out }
@@ -148,6 +150,13 @@ Graph<data_type, PlotWidget<PlotImpl>> add_graph(
     PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
 {
     return Graph<data_type, PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
+}
+
+template <typename data_type, typename PlotImpl>
+Graph<data_type, PlotWidget<PlotImpl>> add_colormap(
+    PlotWidget<PlotImpl>* plot)
+{
+    return Graph<data_type, PlotWidget<PlotImpl>>(plot->addColorMap(), plot);
 }
 
 }

@@ -26,7 +26,10 @@
 #include <QWidget>
 
 #include <cmath>
+#include <optional>
 #include <utility>
+
+#include "SciQLopPlots/axis_range.hpp"
 
 namespace SciQLopPlots
 {
@@ -57,62 +60,37 @@ inline void removeAllMargins(QWidget* widget)
     }
 }
 
-struct AxisRange : std::pair<double, double>
-{
-    AxisRange(double lower, double upper) : std::pair<double, double> { lower, upper } { }
-
-    double center() const noexcept { return (second + first) / 2.; }
-    double width() const noexcept { return second - first; }
-
-    AxisRange& operator*(double factor)
-    {
-        auto _center = center();
-        auto newHalfWidth = width() * factor / 2;
-        first = _center - newHalfWidth;
-        second = _center + newHalfWidth;
-        return *this;
-    }
-
-    AxisRange& operator+(double offset)
-    {
-        first += offset;
-        second += offset;
-        return *this;
-    }
-
-    AxisRange& operator-(double offset)
-    {
-        first -= offset;
-        second -= offset;
-        return *this;
-    }
-};
 
 class IPlotWidget : public QWidget
 {
     Q_OBJECT
 public:
     IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
-    virtual void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) = 0;
-    virtual void zoom(double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal)
-        = 0;
-    virtual void move(double factor, Qt::Orientation orientation) = 0;
-    virtual void move(double dx, double dy) = 0;
+
+    virtual double map_pixels_to_data_coordinates(double px, enums::Axis axis)const = 0;
+    virtual void set_range(const axis::range& range, enums::Axis axis) = 0;
+    virtual void set_range(const axis::range& x_range, const axis::range& y_range) = 0;
+    virtual axis::range range(enums::Axis axis)const = 0;
+
+    //virtual void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) = 0;
+    //virtual void zoom(double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal)    = 0;
+    //virtual void move(double factor, Qt::Orientation orientation) = 0;
+    //virtual void move(double dx, double dy) = 0;
 
     virtual void autoScaleY() = 0;
 
     virtual int addGraph(QColor color = Qt::blue) = 0;
-    virtual bool addColorMap() = 0;
+    virtual int addColorMap() = 0;
 
-    virtual void setXRange(const AxisRange& range) = 0;
-    virtual void setYRange(const AxisRange& range) = 0;
+    virtual void setXRange(const axis::range& range) = 0;
+    virtual void setYRange(const axis::range& range) = 0;
 
     virtual void showXAxis(bool show) = 0;
 
     virtual void replot(int ms) = 0;
 
-    Q_SIGNAL void xRangeChanged(AxisRange newRange);
-    Q_SIGNAL void yRangeChanged(AxisRange newRange);
+    Q_SIGNAL void xRangeChanged(axis::range newRange);
+    Q_SIGNAL void yRangeChanged(axis::range newRange);
     Q_SIGNAL void dataChanged();
     Q_SIGNAL void closed();
 

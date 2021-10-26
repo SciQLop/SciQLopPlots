@@ -28,6 +28,16 @@ void SciQLopPlots::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<Q
     emit dataChanged();
 }
 
+void SciQLopPlots::QCustomPlotWrapper::_plot_slt(QCPColorMapData* data)
+{
+    if (m_colormap)
+    {
+        m_colormap->setData(data, false);
+        replot(20);
+        emit dataChanged();
+    }
+}
+
 
 Q_DECLARE_METATYPE(QVector<QCPGraphData>)
 namespace

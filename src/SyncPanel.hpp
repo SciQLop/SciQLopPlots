@@ -23,8 +23,8 @@
 
 #include <QObject>
 #include <QScrollArea>
-#include <QWidget>
 #include <QTimer>
+#include <QWidget>
 
 #include <QVBoxLayout>
 
@@ -32,6 +32,9 @@
 #include <list>
 
 #include "IPlotWidget.hpp"
+#include <cpp_utils/containers/algorithms.hpp>
+
+#include "SciQLopPlots/axis_range.hpp"
 
 namespace SciQLopPlots
 {
@@ -39,15 +42,20 @@ class SyncPannel : public QScrollArea
 {
     Q_OBJECT
     std::list<IPlotWidget*> plots;
-    AxisRange currentRange;
+    axis::range currentRange;
     QTimer* refreshTimer;
+
 public:
     explicit SyncPannel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
     {
-        refreshTimer = new QTimer{this};
+        using namespace cpp_utils::containers;
+        refreshTimer = new QTimer { this };
         refreshTimer->setSingleShot(true);
         connect(this->refreshTimer, &QTimer::timeout,
-            [this]() { std::for_each(std::begin(this->plots),std::end(this->plots), [](auto plot){plot->replot(20);}); });
+            [this]()
+            {
+                broadcast(this->plots, &IPlotWidget::replot, 20);
+            });
         setWidget(new QWidget(this));
         widget()->setLayout(new QVBoxLayout);
         setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
@@ -58,13 +66,13 @@ public:
 
     ~SyncPannel() { }
 
-    inline void setXRange(AxisRange newRange) noexcept
+    inline void setXRange(axis::range newRange) noexcept
     {
+        using namespace cpp_utils::containers;
         if (currentRange != newRange)
         {
             currentRange = newRange;
-            for (auto plot : plots)
-                plot->setXRange(newRange);
+            broadcast(plots, &IPlotWidget::setXRange, newRange);
         }
     }
 
@@ -77,7 +85,7 @@ public:
         widget()->layout()->addWidget(plot);
         plot->setXRange(currentRange);
         connect(plot, &IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
-        connect(plot, &IPlotWidget::dataChanged, [this](){this->refreshTimer->start(20);});
+        connect(plot, &IPlotWidget::dataChanged, [this]() { this->refreshTimer->start(20); });
     }
 };
 }

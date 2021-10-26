@@ -30,6 +30,9 @@
 #include <QObject>
 #include <QWidget>
 
+#include "SciQLopPlots/axis_range.hpp"
+#include "SciQLopPlots/enums.hpp"
+
 namespace SciQLopPlots
 {
 
@@ -49,8 +52,8 @@ namespace SciQLopPlots
 
 HAS_METHOD(has_xRange, xRange);
 HAS_METHOD(has_yRange, yRange);
-HAS_METHOD(has_setXRange, setXRange, AxisRange);
-HAS_METHOD(has_setYRange, setYRange, AxisRange);
+HAS_METHOD(has_setXRange, setXRange, axis::range);
+HAS_METHOD(has_setYRange, setYRange, axis::range);
 HAS_METHOD(has_pixelToCoord, pixelToCoord, double, Qt::Orientation);
 
 
@@ -63,7 +66,7 @@ class PlotWidget : public IPlotWidget
     static_assert(has_setXRange_v<PlotImpl>, "PlotImpl is missing setXRange method.");
     static_assert(has_setYRange_v<PlotImpl>, "PlotImpl is missing setYRange method.");
 
-    void notifyRangeChanged(const AxisRange& range, Qt::Orientation orientation) noexcept
+    void notifyRangeChanged(const axis::range& range, Qt::Orientation orientation) noexcept
     {
         if (orientation == Qt::Horizontal)
         {
@@ -80,8 +83,7 @@ protected:
     std::mutex m_plot_mutex;
 
 public:
-
-    using plot_impl_t=PlotImpl;
+    using plot_impl_t = PlotImpl;
 
     PlotWidget(QWidget* parent = nullptr) : IPlotWidget { parent }, m_plot { new PlotImpl { this } }
     {
@@ -97,26 +99,70 @@ public:
 
     ~PlotWidget() { }
 
-    inline void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) override
+    inline double map_pixels_to_data_coordinates(double px, enums::Axis axis) const final
     {
-        auto newRange = range(orientation) * factor;
-        setRange(newRange, orientation);
-        notifyRangeChanged(newRange, orientation);
+        if (axis == enums::Axis::x)
+            return m_plot->pixelToCoord(px, Qt::Horizontal);
+        if (axis == enums::Axis::y)
+            return m_plot->pixelToCoord(px, Qt::Vertical);
+        return nan("");
     }
 
-    inline void zoom(
-        double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal) override
+    inline void set_range(const axis::range& range, enums::Axis axis) final
     {
-        auto old_range = range(orientation);
-        auto center_val = m_plot->pixelToCoord(m_plot->mapFromParent(center), orientation);
-        auto offset = center_val * (1 - factor);
-        AxisRange newRange { factor * old_range.first + offset,
-            factor * old_range.second + offset };
-        setRange(newRange, orientation);
-        notifyRangeChanged(newRange, orientation);
+        switch (axis)
+        {
+            case enums::Axis::x:
+                setXRange(range);
+                break;
+            case enums::Axis::y:
+                setYRange(range);
+                break;
+            case enums::Axis::z:
+                break;
+            default:
+                break;
+        }
     }
 
-    inline void move(double factor, Qt::Orientation orientation) override
+    inline void set_range(const axis::range& x_range, const axis::range& y_range) final
+    {
+        setXRange(x_range);
+        setYRange(y_range);
+    }
+
+    inline axis::range range(enums::Axis axis) const final
+    {
+        switch (axis)
+        {
+            case enums::Axis::x:
+                return m_plot->xRange();
+                break;
+            case enums::Axis::y:
+                return m_plot->yRange();
+                break;
+            case enums::Axis::z:
+                return m_plot->zRange();
+                break;
+            default:
+                throw "Unexpected axis";
+                break;
+        }
+    }
+
+    /* inline void zoom(
+         double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal) override
+     {
+         auto old_range = range(orientation);
+         auto center_val = m_plot->pixelToCoord(m_plot->mapFromParent(center), orientation);
+         auto offset = center_val * (1 - factor);
+         axis::range newRange { factor * old_range.first + offset,
+             factor * old_range.second + offset };
+         setRange(newRange, orientation);
+         notifyRangeChanged(newRange, orientation);
+     }
+ */
+    /*inline void move(double factor, Qt::Orientation orientation) override
     {
 
         auto newRange = range(orientation) + (range(orientation).width() * factor);
@@ -140,22 +186,22 @@ public:
             setYRange(newRange);
             notifyRangeChanged(newRange, Qt::Vertical);
         }
-    }
+    }*/
 
     inline void autoScaleY() override { m_plot->autoScaleY(); }
 
-    inline AxisRange xRange() { return m_plot->xRange(); }
-    inline AxisRange yRange() { return m_plot->yRange(); }
+    inline axis::range xRange() { return m_plot->xRange(); }
+    inline axis::range yRange() { return m_plot->yRange(); }
 
-    inline AxisRange range(Qt::Orientation orientation)
+    /*inline axis::range range(Qt::Orientation orientation)
     {
         if (orientation == Qt::Horizontal)
             return xRange();
         else
             return yRange();
-    }
+    }*/
 
-    inline void setXRange(const AxisRange& range) override
+    inline void setXRange(const axis::range& range) override
     {
         if (range != xRange())
         {
@@ -164,7 +210,7 @@ public:
         }
     }
 
-    inline void setYRange(const AxisRange& range) override
+    inline void setYRange(const axis::range& range) override
     {
         if (range != yRange())
         {
@@ -173,7 +219,7 @@ public:
         }
     }
 
-    inline void setRange(const AxisRange& range, Qt::Orientation orientation)
+    inline void setRange(const axis::range& range, Qt::Orientation orientation)
     {
         if (orientation == Qt::Horizontal)
             return setXRange(range);
@@ -183,18 +229,17 @@ public:
 
     inline void showXAxis(bool show) override { m_plot->xAxis->setVisible(show); }
 
-    inline void replot(int ms)override{m_plot->replot(ms);}
+    inline void replot(int ms) override { m_plot->replot(ms); }
 
     inline int addGraph(QColor color = Qt::blue) override { return m_plot->addGraph(color); }
 
-    inline bool addColorMap() override { return m_plot->addColorMap(); }
+    inline int addColorMap() override { return m_plot->addColorMap(); }
 
     template <typename data_t>
     void plot(int graphIdex, const data_t& data)
     {
         m_plot->plot(graphIdex, data);
     }
-
 };
 
 template <typename plot_t>

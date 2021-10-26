@@ -21,33 +21,44 @@
 ----------------------------------------------------------------------------*/
 #include <QWheelEvent>
 #include <cmath>
+
+#include "SciQLopPlots/view.hpp"
+
 namespace SciQLopPlots::details
 {
 template <typename plot_t>
 inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
 {
     constexpr auto factor = 0.85; // stolen from QCP
-    double wheelSteps = event->delta() / 120.0; // a single step delta is +/-120 usually
+    double wheelSteps = event->angleDelta().y() / 120; // a single step delta is +/-120 usually
     if (event->modifiers() == Qt::ControlModifier)
     {
         if (event->orientation() == Qt::Vertical)
-            plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Vertical);
+        {
+            auto center = plot->mapFromParent(event->pos());
+            view::zoom(plot, view::pixel_coordinates { 0, center.y() },
+                view::pixel_coordinates { 0, event->angleDelta().y()/8 });
+            // plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Vertical);
+        }
     }
     else if (event->modifiers() == Qt::AltModifier)
     {
-        plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
+        // view::move(plot,wheelSteps / 10. * pow(0.85, abs(wheelSteps)), enums::Axis::y);
+        view::move(plot, view::pixel_coordinates { 0, event->pixelDelta().y() });
+        // plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
     }
     else if (event->modifiers() == Qt::ShiftModifier)
     {
+        auto center = plot->mapFromParent(event->pos());
         if (event->orientation() == Qt::Vertical)
-            plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Horizontal);
+            view::zoom(plot, view::pixel_coordinates { center.x(), 0 },
+                view::pixel_coordinates { event->pixelDelta().x()/100, 0 });
+        // plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Horizontal);
     }
     else
     {
-        if (event->orientation() == Qt::Vertical)
-            plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Horizontal);
-        else
-            plot->move(-wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Horizontal);
+        view::move(
+            plot, view::pixel_coordinates { event->pixelDelta().x(), event->pixelDelta().y() });
     }
     return true;
 }

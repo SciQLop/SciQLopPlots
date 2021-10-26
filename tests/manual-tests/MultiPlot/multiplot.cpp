@@ -55,7 +55,7 @@ SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
     std::size_t i = 0;
     3 * [plot, this, &colors, &i]() {
         m_gens.emplace_back(
-            std::make_unique<DataProducer<SciQLopPlots::SciQLopPlot>>(plot, i, colors[i++]));
+            std::make_unique<DataProducer1D<SciQLopPlots::SciQLopPlot>>(plot, i, colors[i++]));
     };
 
     connect(plot, &SciQLopPlots::SciQLopPlot::dataChanged, this, [this]() {
