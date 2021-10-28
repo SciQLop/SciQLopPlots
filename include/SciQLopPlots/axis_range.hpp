@@ -30,6 +30,15 @@ namespace SciQLopPlots::axis
 struct range : std::pair<double, double>
 {
     range(double lower, double upper) : std::pair<double, double> { lower, upper } { }
+    range(const range& other) : std::pair<double, double> { other.first, other.second } { }
+    range(range&& other) : std::pair<double, double> { other.first, other.second } { }
+
+    range& operator=(const range& other)
+    {
+        this->first = other.first;
+        this->second = other.second;
+        return *this;
+    }
 
     double center() const noexcept { return (second + first) / 2.; }
     double width() const noexcept { return second - first; }

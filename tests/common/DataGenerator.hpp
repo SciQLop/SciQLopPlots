@@ -14,16 +14,14 @@ struct MyCos
     std::array<double, 1024 * 32> table;
     MyCos()
     {
-        std::generate(std::begin(table), std::end(table),
-            [size = table.size()]()
-            {
-                static double x = 0.;
-                double res = cos(x * 2 * M_PI / (size));
-                x += 1.;
-                return res;
-            });
+        double x = 0.;
+        for (auto& v : table)
+        {
+            v = cos(x * 2 * M_PI / (std::size(table)));
+            x += 1.;
+        }
     }
-    double operator()(double x)
+    double operator()(double x) const
     {
         auto index = int(x * table.size() / (2 * M_PI)) % table.size();
         return table[index];
@@ -65,10 +63,10 @@ struct DataProducer1D : public DataProducer
         genThread.join();
     }
 
-    static data_t generate(
-        SciQLopPlots::axis::range newRange, std::size_t& nPoints, double shift = 0., double ampl = 1.)
+    static data_t generate(SciQLopPlots::axis::range newRange, std::size_t& nPoints,
+        double shift = 0., double ampl = 1.)
     {
-        static MyCos myCos;
+        static const MyCos myCos;
         constexpr auto step = .1;
         data_t data;
         nPoints = int((newRange.second - newRange.first) / step);
@@ -111,10 +109,10 @@ struct DataProducer2D : public DataProducer
         genThread.join();
     }
 
-    static data_t generate(
-        SciQLopPlots::axis::range newRange, std::size_t& nPoints, double shift = 0., double ampl = 1.)
+    static data_t generate(SciQLopPlots::axis::range newRange, std::size_t& nPoints,
+        double shift = 0., double ampl = 1.)
     {
-        static MyCos myCos;
+        static const MyCos myCos;
         constexpr auto step = .1;
         data_t data;
         nPoints = int((newRange.second - newRange.first) / step);

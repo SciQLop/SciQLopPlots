@@ -51,9 +51,9 @@ public:
         setPlottingHint(QCP::phFastPolylines, true);
         connect(this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot),
             this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot_slt),
-            Qt::AutoConnection);
+            Qt::QueuedConnection);
         connect(this, QOverload<QCPColorMapData*>::of(&QCustomPlotWrapper::_plot), this,
-            QOverload<QCPColorMapData*>::of(&QCustomPlotWrapper::_plot_slt), Qt::AutoConnection);
+            QOverload<QCPColorMapData*>::of(&QCustomPlotWrapper::_plot_slt), Qt::QueuedConnection);
         connect(this->p_refresh_timer, &QTimer::timeout,
             [this]() { QCustomPlot::replot(QCustomPlot::rpQueuedReplot); });
         // quick hard coded path, might be abstrated like AxisRenderingUtils.cpp in sciqlop code

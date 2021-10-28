@@ -72,10 +72,6 @@ public:
     virtual void set_range(const axis::range& x_range, const axis::range& y_range) = 0;
     virtual axis::range range(enums::Axis axis)const = 0;
 
-    //virtual void zoom(double factor, Qt::Orientation orientation = Qt::Horizontal) = 0;
-    //virtual void zoom(double factor, QPoint center, Qt::Orientation orientation = Qt::Horizontal)    = 0;
-    //virtual void move(double factor, Qt::Orientation orientation) = 0;
-    //virtual void move(double dx, double dy) = 0;
 
     virtual void autoScaleY() = 0;
 

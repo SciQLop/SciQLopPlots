@@ -238,6 +238,7 @@ public:
     template <typename data_t>
     void plot(int graphIdex, const data_t& data)
     {
+        std::unique_lock<std::mutex> lock(m_plot_mutex);
         m_plot->plot(graphIdex, data);
     }
 };
@@ -249,6 +250,7 @@ template <typename plot_t, typename data_t>
 inline void plot(plot_t& plot, int graphIdex, const data_t& data)
 {
     plot.plot(graphIdex, data);
+
 }
 
 }

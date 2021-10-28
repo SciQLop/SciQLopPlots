@@ -24,7 +24,7 @@ SimplePlot::SimplePlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::Simple
     centralWidget()->layout()->addWidget(plot);
     auto colors = std::array { Qt::blue, Qt::red, Qt::darkGreen };
 
-    3 * [plot, this, &colors]() {
+    3 * [plot, this, colors]() {
         static std::size_t i = 0;
         m_gens.emplace_back(
             std::make_unique<DataProducer1D<SciQLopPlots::SciQLopPlot>>(plot, i, colors[i++]));
