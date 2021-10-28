@@ -1,7 +1,7 @@
-generated_files = qt5.preprocess(
+generated_files = qtmod.preprocess(
                             moc_headers : 'simpleplot.h',
                             ui_files : 'simpleplot.ui',
-                            dependencies: [qt5widgets])
+                            dependencies: [qtwidgets])
 
 executable('SimplePlot'
         , 'main.cpp'

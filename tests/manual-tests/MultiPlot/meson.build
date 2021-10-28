@@ -1,6 +1,6 @@
-generated_files = qt5.preprocess(
+generated_files = qtmod.preprocess(
                             moc_headers : 'multiplot.h',
-                            dependencies: [qt5widgets])
+                            dependencies: [qtwidgets])
 
 executable('MultiPlot'
         , 'main.cpp'

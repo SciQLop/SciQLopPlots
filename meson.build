@@ -5,14 +5,17 @@ add_global_arguments(
             native: true
 )
 
-qt5 = import('qt5')
-qt5core = dependency('qt5', modules : 'Core')
-qt5widgets = dependency('qt5', modules : 'Widgets')
-qt5gui = dependency('qt5', modules : 'Gui')
-qt5svg = dependency('qt5', modules : 'Svg')
-qt5test = dependency('qt5', modules : 'Test')
+qt_sdk=get_option('qt_version')
 
-QCustomPlot_dep = dependency('QCustomPlot', fallback : ['QCustomPlot', 'QCustomPlot_dep'])
+
+qtmod = import(qt_sdk)
+qtcore = dependency(qt_sdk, modules : 'Core')
+qtwidgets = dependency(qt_sdk, modules : 'Widgets')
+qtgui = dependency(qt_sdk, modules : 'Gui')
+qtsvg = dependency(qt_sdk, modules : 'Svg')
+qttest = dependency(qt_sdk, modules : 'Test')
+
+QCustomPlot_dep = dependency('QCustomPlot', fallback : ['QCustomPlot', 'QCustomPlot_dep'], default_options: ['qt_version='+qt_sdk])
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'])
 range_dep = dependency('range-v3', fallback : ['range-v3', 'range_dep'])
 channels_dep = dependency('channels', fallback : ['channels', 'channels_dep'])

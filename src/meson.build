@@ -1,4 +1,4 @@
-SciQLopPlots_moc_files = qt5.preprocess(
+SciQLopPlots_moc_files = qtmod.preprocess(
                             moc_headers : ['SyncPanel.hpp','IPlotWidget.hpp', 'QCustomPlotWrapper.hpp'],
                             moc_sources : ['IPlotWidget.cpp', 'QCustomPlotWrapper.cpp'],
                             dependencies: [QCustomPlot_dep, range_dep])

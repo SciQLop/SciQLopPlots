@@ -6,12 +6,12 @@ tests = [
     {
         'name':'SimplePlot',
         'sources': ['SimplePlot/main.cpp'],
-        'deps': [qt5test, SciQLopPlots_dep, QtGuiTestUtils_dep, thread_dep]
+        'deps': [qttest, SciQLopPlots_dep, QtGuiTestUtils_dep, thread_dep]
     }
 ]
 
 foreach unit_test : tests
-  test_moc_files = qt5.preprocess(moc_sources : unit_test['sources'])
+  test_moc_files = qtmod.preprocess(moc_sources : unit_test['sources'])
   test_exe = executable(unit_test['name'],unit_test['sources'] , test_moc_files,
                           include_directories : common_inc,
                           dependencies : unit_test['deps'])
