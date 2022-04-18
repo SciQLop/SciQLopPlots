@@ -26,40 +26,51 @@
 
 namespace SciQLopPlots::details
 {
+
+QPoint wheelMovement(const QWheelEvent* event)
+{
+    if (event->pixelDelta().x() != 0. or event->pixelDelta().y() != 0.)
+    {
+        return { event->pixelDelta().x(), event->pixelDelta().y() };
+    }
+    return { event->angleDelta().x() / 8, event->angleDelta().y() / 8 };
+}
+
+
 template <typename plot_t>
 inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
 {
-    constexpr auto factor = 0.85; // stolen from QCP
-    double wheelSteps = event->angleDelta().y() / 120; // a single step delta is +/-120 usually
+
+    const auto deltapixels = event->pixelDelta();
+    const auto deltadegrees = event->angleDelta();
+
     if (event->modifiers() == Qt::ControlModifier)
     {
         if (event->orientation() == Qt::Vertical)
         {
             auto center = plot->mapFromParent(event->pos());
             view::zoom(plot, view::pixel_coordinates { 0, center.y() },
-                view::pixel_coordinates { 0, event->angleDelta().y()/8 });
-            // plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Vertical);
+                view::pixel_coordinates { 0, deltadegrees.y() });
         }
     }
     else if (event->modifiers() == Qt::AltModifier)
     {
-        // view::move(plot,wheelSteps / 10. * pow(0.85, abs(wheelSteps)), enums::Axis::y);
-        view::move(plot, view::pixel_coordinates { 0, event->pixelDelta().y() });
-        // plot->move(wheelSteps / 10. * pow(0.85, abs(wheelSteps)), Qt::Vertical);
+        view::move(plot, view::pixel_coordinates { 0, deltadegrees.y() });
     }
     else if (event->modifiers() == Qt::ShiftModifier)
     {
         auto center = plot->mapFromParent(event->pos());
-        if (event->orientation() == Qt::Vertical)
-            view::zoom(plot, view::pixel_coordinates { center.x(), 0 },
-                view::pixel_coordinates { event->pixelDelta().x()/100, 0 });
-        // plot->zoom(pow(factor, wheelSteps), event->pos(), Qt::Horizontal);
+        view::zoom(plot, view::pixel_coordinates { center.x(),0 },
+            view::pixel_coordinates { deltadegrees.y(), 0 });
     }
     else
     {
-        view::move(
-            plot, view::pixel_coordinates { event->pixelDelta().x(), event->pixelDelta().y() });
+        if (!deltapixels.isNull())
+            view::move(plot, view::pixel_coordinates { deltapixels.x(), deltapixels.y() });
+        else
+            view::move(plot, view::pixel_coordinates { deltadegrees.y(), 0. });
     }
+
     return true;
 }
 }

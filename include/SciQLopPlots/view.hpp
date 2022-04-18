@@ -25,6 +25,8 @@
 #include "enums.hpp"
 #include <hedley.h>
 
+#include <array>
+#include <cmath>
 
 namespace SciQLopPlots::view
 {
@@ -181,7 +183,14 @@ inline void zoom(
     for (const auto axis : { enums::Axis::x, enums::Axis::y })
     {
         const auto _center = to_data_coordinates(widget, center.component(axis)).value;
-        const auto _factor = distance(widget, delta.component(axis)).value;
+        const auto _factor = [widget, delta, axis]()
+        {
+            const auto d
+                = distance(widget, delta.component(axis)).value / range(widget, axis).width();
+            if (d >= 0.)
+                return 1. - d;
+            return 1. / (1. + d);
+        }();
         zoom(widget, _center, _factor, axis);
     }
 }
