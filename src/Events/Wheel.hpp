@@ -27,6 +27,11 @@
 namespace SciQLopPlots::details
 {
 
+inline double zoomFactor(double wheelAngle)
+{
+    return 1. + (wheelAngle / 720);
+}
+
 QPoint wheelMovement(const QWheelEvent* event)
 {
     if (event->pixelDelta().x() != 0. or event->pixelDelta().y() != 0.)
@@ -49,8 +54,8 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
         if (event->orientation() == Qt::Vertical)
         {
             auto center = plot->mapFromParent(event->pos());
-            view::zoom(plot, view::pixel_coordinates { 0, center.y() },
-                view::pixel_coordinates { 0, deltadegrees.y() });
+            view::zoom(plot, view::single_pixel_coordinate { center.y(), enums::Axis::y },
+                zoomFactor(deltadegrees.y()));
         }
     }
     else if (event->modifiers() == Qt::AltModifier)
@@ -60,8 +65,8 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     else if (event->modifiers() == Qt::ShiftModifier)
     {
         auto center = plot->mapFromParent(event->pos());
-        view::zoom(plot, view::pixel_coordinates { center.x(),0 },
-            view::pixel_coordinates { deltadegrees.y(), 0 });
+        view::zoom(plot, view::single_pixel_coordinate { center.x(), enums::Axis::x },
+            zoomFactor(deltadegrees.y()));
     }
     else
     {

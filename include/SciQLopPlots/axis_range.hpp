@@ -22,6 +22,7 @@
 #pragma once
 
 #include "enums.hpp"
+#include <cmath>
 #include <tuple>
 
 namespace SciQLopPlots::axis
@@ -41,7 +42,7 @@ struct range : std::pair<double, double>
     }
 
     double center() const noexcept { return (second + first) / 2.; }
-    double width() const noexcept { return second - first; }
+    double width() const noexcept { return std::abs(second - first); }
 
     range& operator*(double factor)
     {

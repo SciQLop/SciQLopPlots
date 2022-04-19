@@ -65,39 +65,38 @@ struct coordinates
     T& component(const enums::Axis axis) { return _c[static_cast<int>(axis)]; }
 };
 
-
-template <std::size_t ND>
-struct pixel_coordinates : coordinates<int, ND>
+template <typename tag, typename value_type, std::size_t ND>
+struct ND_coordinates : coordinates<value_type, ND>
 {
     template <typename... T>
-    pixel_coordinates(const T&&... values)
-            : coordinates<int, ND> { std::forward<const T>(values)... }
+    ND_coordinates(const T&&... values)
+            : coordinates<value_type, ND> { std::forward<const T>(values)... }
     {
     }
 
     template <typename... T>
-    pixel_coordinates(T&&... values) : coordinates<int, ND> { std::forward<T>(values)... }
+    ND_coordinates(T&&... values) : coordinates<value_type, ND> { std::forward<T>(values)... }
     {
     }
+};
+
+struct pixel_tag;
+template <std::size_t ND>
+struct pixel_coordinates : ND_coordinates<pixel_tag, int, ND>
+{
+    using ND_coordinates<pixel_tag, int, ND>::ND_coordinates;
 };
 template <typename... T>
 pixel_coordinates(const T&&... values) -> pixel_coordinates<sizeof...(T)>;
 template <typename... T>
 pixel_coordinates(T&&... values) -> pixel_coordinates<sizeof...(T)>;
 
-template <std::size_t ND>
-struct data_coordinates : coordinates<double, ND>
-{
-    template <typename... T>
-    data_coordinates(const T&&... values)
-            : coordinates<double, ND> { std::forward<const T>(values)... }
-    {
-    }
 
-    template <typename... T>
-    data_coordinates(T&&... values) : coordinates<double, ND> { std::forward<T>(values)... }
-    {
-    }
+struct data_tag;
+template <std::size_t ND>
+struct data_coordinates : ND_coordinates<data_tag, double, ND>
+{
+    using ND_coordinates<data_tag, double, ND>::ND_coordinates;
 };
 
 template <typename... T>
@@ -127,7 +126,7 @@ template <class Widget>
 HEDLEY_NON_NULL(1)
 inline auto distance(const Widget* widget, const pixel_coordinates<2> delta)
 {
-    return data_coordinates<2> { distance(widget, delta.component(enums::Axis::x)).value,
+    return data_coordinates { distance(widget, delta.component(enums::Axis::x)).value,
         distance(widget, delta.component(enums::Axis::y)).value };
 }
 
@@ -175,24 +174,11 @@ inline void zoom(Widget* widget, const double center, const double factor, const
     set_range(widget, new_range, axis);
 }
 
-template <class Widget, std::size_t ND>
+template <class Widget>
 HEDLEY_NON_NULL(1)
-inline void zoom(
-    Widget* widget, const pixel_coordinates<ND> center, const pixel_coordinates<ND> delta)
+inline void zoom(Widget* widget, const single_pixel_coordinate center, const double factor)
 {
-    for (const auto axis : { enums::Axis::x, enums::Axis::y })
-    {
-        const auto _center = to_data_coordinates(widget, center.component(axis)).value;
-        const auto _factor = [widget, delta, axis]()
-        {
-            const auto d
-                = distance(widget, delta.component(axis)).value / range(widget, axis).width();
-            if (d >= 0.)
-                return 1. - d;
-            return 1. / (1. + d);
-        }();
-        zoom(widget, _center, _factor, axis);
-    }
+    zoom(widget, to_data_coordinates(widget, center).value, factor, center.axis);
 }
 
 template <class Widget>
