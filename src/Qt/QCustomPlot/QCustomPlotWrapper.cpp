@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "QCustomPlotWrapper.hpp"
+#include "SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp"
 
 void SciQLopPlots::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
 {

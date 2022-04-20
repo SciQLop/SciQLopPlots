@@ -19,10 +19,10 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "./Events/Keyboard.hpp"
-#include "./Events/Mouse.hpp"
-#include "./Events/Wheel.hpp"
-#include "./SciQLopPlot.hpp"
+#include "SciQLopPlots/Qt/Events/Keyboard.hpp"
+#include "SciQLopPlots/Qt/Events/Mouse.hpp"
+#include "SciQLopPlots/Qt/Events/Wheel.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
 #include <QVBoxLayout>
 

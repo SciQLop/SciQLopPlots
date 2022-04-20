@@ -2,8 +2,8 @@
 #include <QtTest>
 
 #include <DataGenerator.hpp>
-#include <QCustomPlotWrapper.hpp>
-#include <SciQLopPlot.hpp>
+#include <SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp>
+#include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/view.hpp>
 
 #include <QtGuiTestUtils/GUITestUtils.h>

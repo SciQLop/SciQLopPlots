@@ -1,5 +1,5 @@
 #include "multiplot.h"
-#include <Graph.hpp>
+#include <SciQLopPlots/Graph.hpp>
 #include <QDockWidget>
 #include <cpp_utils.hpp>
 

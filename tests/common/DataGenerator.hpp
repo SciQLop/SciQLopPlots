@@ -1,6 +1,6 @@
-#include <Graph.hpp>
+#include <SciQLopPlots/Graph.hpp>
+#include <SciQLopPlots/SciQLopPlot.hpp>
 #include <QObject>
-#include <SciQLopPlot.hpp>
 #include <array>
 #include <math.h>
 #include <optional>
