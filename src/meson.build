@@ -1,6 +1,6 @@
 moc_headers = [
-    '../include/SciQLopPlots/SyncPanel.hpp',
-    '../include/SciQLopPlots/IPlotWidget.hpp',
+    '../include/SciQLopPlots/Qt/SyncPanel.hpp',
+    '../include/SciQLopPlots/Interfaces/IPlotWidget.hpp',
     '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp'
 ]
 
@@ -20,11 +20,9 @@ headers = moc_headers + [
     '../include/SciQLopPlots/Qt/Events/Keyboard.hpp',
     '../include/SciQLopPlots/Qt/Events/Mouse.hpp',
     '../include/SciQLopPlots/Qt/Events/Wheel.hpp',
-    '../include/SciQLopPlots/Graph.hpp',
-    '../include/SciQLopPlots/SciQLopPlot.hpp',
-    '../include/SciQLopPlots/SyncPanel.hpp',
-    '../include/SciQLopPlots/IPlotWidget.hpp',
-    '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp'
+    '../include/SciQLopPlots/Qt/Graph.hpp',
+    '../include/SciQLopPlots/Interfaces/PlotWidget.hpp',
+    '../include/SciQLopPlots/Qt/SyncPanel.hpp'
 ]
 
 SciQLopPlots = library('SciQLopPlots', moc_sources,

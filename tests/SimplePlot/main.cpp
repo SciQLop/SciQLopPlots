@@ -3,7 +3,6 @@
 
 #include <DataGenerator.hpp>
 #include <SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp>
-#include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/view.hpp>
 
 #include <QtGuiTestUtils/GUITestUtils.h>

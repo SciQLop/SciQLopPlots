@@ -1,5 +1,5 @@
-#include <SciQLopPlots/Graph.hpp>
-#include <SciQLopPlots/SciQLopPlot.hpp>
+#include <SciQLopPlots/Qt/Graph.hpp>
+#include <SciQLopPlots/Interfaces/PlotWidget.hpp>
 #include <QObject>
 #include <array>
 #include <math.h>

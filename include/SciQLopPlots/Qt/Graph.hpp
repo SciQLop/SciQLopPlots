@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlot.hpp"
+#include "../Interfaces/PlotWidget.hpp"
 
 #include <types/detectors.hpp>
 

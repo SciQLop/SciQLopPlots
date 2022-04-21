@@ -29,8 +29,8 @@
 
 #include <qcp.h>
 
-#include "SciQLopPlots/IPlotWidget.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
+#include "SciQLopPlots/Interfaces/PlotWidget.hpp"
 
 #include "SciQLopPlots/axis_range.hpp"
 

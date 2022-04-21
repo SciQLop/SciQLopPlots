@@ -1,6 +1,6 @@
 #include "simpleplot.h"
 #include "ui_simpleplot.h"
-#include <SciQLopPlots/Graph.hpp>
+#include <SciQLopPlots/Qt/Graph.hpp>
 #include <cpp_utils.hpp>
 
 QString humanize(std::size_t number)

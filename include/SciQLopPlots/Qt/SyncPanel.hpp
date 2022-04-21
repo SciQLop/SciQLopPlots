@@ -31,7 +31,7 @@
 #include <cassert>
 #include <list>
 
-#include "IPlotWidget.hpp"
+#include "../Interfaces/IPlotWidget.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 #include "SciQLopPlots/axis_range.hpp"

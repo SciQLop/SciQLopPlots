@@ -22,7 +22,7 @@
 #include "SciQLopPlots/Qt/Events/Keyboard.hpp"
 #include "SciQLopPlots/Qt/Events/Mouse.hpp"
 #include "SciQLopPlots/Qt/Events/Wheel.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Interfaces/PlotWidget.hpp"
 
 #include <QVBoxLayout>
 

@@ -2,10 +2,10 @@
 #define SIMPLEPLOT_H
 
 #include <QMainWindow>
-#include <SciQLopPlots/SciQLopPlot.hpp>
+#include <SciQLopPlots/Interfaces/PlotWidget.hpp>
 #include <SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp>
 #include "DataGenerator.hpp"
-#include <SciQLopPlots/SyncPanel.hpp>
+#include <SciQLopPlots/Qt/SyncPanel.hpp>
 #include <QLabel>
 
 class MultiPlot : public QMainWindow
