@@ -59,14 +59,22 @@ void IPlotWidget::keyReleaseEvent(QKeyEvent* event)
 
 void IPlotWidget::mousePressEvent(QMouseEvent* event)
 {
+    m_has_moved_since_pouse_press = false;
     if (event->button() == Qt::LeftButton)
+    {
         this->m_lastMousePress = event->pos();
-    m_selected_object = graphicObjectAt(event->pos());
+        auto new_selected_object = graphicObjectAt(event->pos());
+        if (m_selected_object and m_selected_object != new_selected_object)
+            m_selected_object->set_selected(false);
+        m_selected_object = new_selected_object;
+    }
+
     event->accept();
 }
 
 void IPlotWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    m_has_moved_since_pouse_press = true;
     if (details::handleMouseMoveEvent(event, this, this->m_lastMousePress, m_selected_object))
         event->accept();
 }
@@ -74,6 +82,8 @@ void IPlotWidget::mouseMoveEvent(QMouseEvent* event)
 void IPlotWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     this->m_lastMousePress = std::nullopt;
+    if (!m_has_moved_since_pouse_press and m_selected_object)
+        m_selected_object->set_selected(true);
     event->accept();
 }
 

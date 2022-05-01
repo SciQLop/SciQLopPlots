@@ -99,6 +99,12 @@ public:
             && x <= (point1->pixelPosition().x() + fmax(pen().widthF(), 10));
     }
 
+    inline virtual void set_selected(bool select) override
+    {
+        this->setSelected(select);
+        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    }
+
     Q_SIGNAL void move_sig(double dx);
 };
 
@@ -207,28 +213,11 @@ public:
         return (x <= max_x) && (x >= min_x) && (y <= max_y) && (y >= min_y);
     }
 
-protected:
-    virtual void mousePressEvent(QMouseEvent* event, const QVariant& details) override
+    void set_selected(bool select)
     {
-        if (event->buttons() == Qt::LeftButton)
-        {
-            mouse_event_initial_left_pos = topLeft->key();
-            mouse_event_initial_right_pos = bottomRight->key();
-            event->accept();
-        }
+        setSelected(select);
+        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
-
-    virtual void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
-    {
-        if (event->buttons() == Qt::LeftButton)
-        {
-            const auto delta_t = pixelToXCoord(event->pos().x()) - pixelToXCoord(startPos.x());
-            set_range({ mouse_event_initial_left_pos + delta_t,
-                mouse_event_initial_right_pos + delta_t });
-            event->accept();
-        }
-    }
-    virtual void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
 };
 using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, SciQLopPlot>;
 }

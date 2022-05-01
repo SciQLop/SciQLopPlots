@@ -132,6 +132,7 @@ namespace interfaces
         LayeredGraphicObjectCollection<3> graphic_objects;
         std::optional<QPoint> m_lastMousePress = std::nullopt;
         interfaces::GraphicObject* m_selected_object = nullptr;
+        bool m_has_moved_since_pouse_press;
     };
 }
 }

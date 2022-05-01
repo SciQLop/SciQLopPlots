@@ -76,5 +76,10 @@ public:
     {
         return time_span_impl->contains(position);
     }
+
+    virtual void set_selected(bool select) override
+    {
+        return time_span_impl->set_selected(select);
+    }
 };
 }
