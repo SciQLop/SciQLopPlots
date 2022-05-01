@@ -36,7 +36,7 @@ class TimeSpan : public ITimeSpan
 public:
     TimeSpan(plot_t* plot, const axis::range time_range)
             : ITimeSpan { plot }
-            , time_span_impl { new TimeSpanImpl { plot->handle(), time_range } }
+            , time_span_impl { new TimeSpanImpl { plot, time_range } }
             , plot { plot }
     {
     }

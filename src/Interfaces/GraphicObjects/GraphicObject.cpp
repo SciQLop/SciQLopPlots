@@ -23,7 +23,12 @@
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
 
-SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget* plot)
+SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget* plot, std::size_t layer)
+{
+    plot->registerGraphicObject(this,layer);
+}
+
+SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget *plot)
 {
     plot->registerGraphicObject(this);
 }

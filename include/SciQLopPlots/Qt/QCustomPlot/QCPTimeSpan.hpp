@@ -21,17 +21,33 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "QCustomPlotWrapper.hpp"
+#include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp"
+#include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
 #include <QBrush>
 #include <qcp.h>
 
 namespace SciQLopPlots::QCPWrappers
 {
 
-class QCPTimeSPanBorder : public QCPItemStraightLine
+class QCPTimeSPanBorder : public QCPItemStraightLine, interfaces::GraphicObject
 {
+    Q_OBJECT
+
+    inline double pixelToXCoord(double px) const
+    {
+        return parentPlot()->axisRect()->axis(QCPAxis::atBottom)->pixelToCoord(px);
+    }
+
+    inline double coordToXPixel(double x) const
+    {
+        return parentPlot()->axisRect()->axis(QCPAxis::atBottom)->coordToPixel(x);
+    }
+
+
 public:
-    QCPTimeSPanBorder(QCustomPlotWrapper* plot) : QCPItemStraightLine(plot)
+    inline QCPTimeSPanBorder(SciQLopPlot* plot)
+            : QCPItemStraightLine { plot->handle() }, interfaces::GraphicObject { plot, 0 }
     {
         point1->setTypeX(QCPItemPosition::ptAbsolute);
         point2->setTypeY(QCPItemPosition::ptAbsolute);
@@ -41,15 +57,54 @@ public:
         setLayer("overlay");
     }
 
-    void set_anchor(QCPItemAnchor* top_anchor, QCPItemAnchor* botom_anchor)
+    inline void set_anchor(QCPItemAnchor* top_anchor, QCPItemAnchor* botom_anchor)
     {
         this->point1->setParentAnchor(top_anchor);
         this->point2->setParentAnchor(botom_anchor);
     }
+
+    inline virtual view::data_coordinates<2> center() const override
+    {
+
+        return { point1->key(), (point1->value() + point2->value()) / 2 };
+    }
+
+    inline virtual view::pixel_coordinates<2> pix_center() const override
+    {
+        return { point1->pixelPosition().x(),
+            (point1->pixelPosition().y() + point2->pixelPosition().y()) / 2 };
+    }
+
+    inline virtual void move(const view::data_coordinates<2>& delta) override
+    {
+        const auto dx = delta.component(enums::Axis::x).value;
+        emit move_sig(dx);
+    }
+
+    inline virtual void move(const view::pixel_coordinates<2>& delta) override
+    {
+        const auto dx = pixelToXCoord(delta.component(enums::Axis::x).value) - pixelToXCoord(0);
+        emit move_sig(dx);
+    }
+
+    inline virtual bool contains(const view::data_coordinates<2>& position) const override
+    {
+        const auto x = position.component(enums::Axis::x).value;
+        return contains(view::pixel_coordinates<2> { coordToXPixel(x), 0 });
+    }
+    inline virtual bool contains(const view::pixel_coordinates<2>& position) const override
+    {
+        const auto x = position.component(enums::Axis::x).value;
+        return x >= (point1->pixelPosition().x() - fmax(pen().widthF(), 10))
+            && x <= (point1->pixelPosition().x() + fmax(pen().widthF(), 10));
+    }
+
+    Q_SIGNAL void move_sig(double dx);
 };
 
 class QCPTimeSpan : public QCPItemRect
 {
+    Q_OBJECT
     inline void set_auto_extend_vertically()
     {
         topLeft->setTypeX(QCPItemPosition::ptPlotCoords);
@@ -70,8 +125,8 @@ class QCPTimeSpan : public QCPItemRect
 public:
     using plot_t = QCustomPlotWrapper;
 
-    QCPTimeSpan(plot_t* plot, axis::range time_range)
-            : QCPItemRect { plot }, left_border { plot }, right_border { plot }
+    QCPTimeSpan(SciQLopPlot* plot, axis::range time_range)
+            : QCPItemRect { plot->handle() }, left_border { plot }, right_border { plot }
     {
         left_border.set_anchor(topLeft, bottomLeft);
         right_border.set_anchor(topRight, bottomRight);
@@ -81,13 +136,26 @@ public:
         setBrush(QBrush { QColor(0, 255, 0, 40), Qt::SolidPattern });
         this->setPen(QPen { Qt::NoPen });
         setSelectable(true);
+
+        connect(&this->left_border, &QCPTimeSPanBorder::move_sig,
+            [this](double dx)
+            {
+                auto range = this->range();
+                set_range({ range.first + dx, range.second });
+            });
+        connect(&this->right_border, &QCPTimeSPanBorder::move_sig,
+            [this](double dx)
+            {
+                auto range = this->range();
+                set_range({ range.first, range.second + dx });
+            });
     }
 
     void set_range(const axis::range& time_range)
     {
         topLeft->setCoords(time_range.first, 0);
         bottomRight->setCoords(time_range.second, 1);
-        parentPlot()->replot();
+        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 
     axis::range range() const { return { topLeft->key(), bottomRight->key() }; };
@@ -113,7 +181,7 @@ public:
 
     inline void move(const view::pixel_coordinates<2>& delta)
     {
-        move(pixelToXCoord(delta.component(enums::Axis::x).value)-pixelToXCoord(0));
+        move(pixelToXCoord(delta.component(enums::Axis::x).value) - pixelToXCoord(0));
     }
 
     inline bool contains(const view::data_coordinates<2>& position) const

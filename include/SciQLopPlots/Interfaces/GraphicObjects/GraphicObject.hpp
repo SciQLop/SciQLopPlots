@@ -28,6 +28,7 @@ class IPlotWidget;
 
 struct GraphicObject
 {
+    GraphicObject(IPlotWidget* plot,std::size_t layer);
     GraphicObject(IPlotWidget* plot);
     virtual ~GraphicObject(){};
     virtual view::data_coordinates<2> center() const = 0;

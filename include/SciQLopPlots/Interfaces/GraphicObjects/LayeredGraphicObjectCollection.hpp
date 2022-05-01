@@ -21,8 +21,11 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "GraphicObject.hpp"
+#include <QPoint>
+#include <algorithm>
 #include <array>
 #include <vector>
+
 
 namespace SciQLopPlots::interfaces
 {
@@ -30,11 +33,48 @@ namespace SciQLopPlots::interfaces
 template <std::size_t layer_count>
 struct LayeredGraphicObjectCollection
 {
+private:
     std::array<std::vector<GraphicObject*>, layer_count> layers;
-    LayeredGraphicObjectCollection();
-    ~LayeredGraphicObjectCollection(){};
 
-    inline void registerGraphicObject(interfaces::GraphicObject* go){}
-    inline void removeGraphicObject(interfaces::GraphicObject* go){}
+public:
+    inline LayeredGraphicObjectCollection(){}
+    inline ~LayeredGraphicObjectCollection(){}
+
+    inline void registerGraphicObject(interfaces::GraphicObject* go, std::size_t layer = layer_count-1)
+    {
+        layers[layer].push_back(go);
+    }
+
+    inline void removeGraphicObject(interfaces::GraphicObject* go)
+    {
+        for(auto& layer:layers)
+        {
+            if (std::size(layer))
+            {
+                if (auto it = std::find(std::begin(layer), std::end(layer), go);
+                    it != std::end(layer))
+                {
+                    std::swap(*it, layer.back());
+                    layer.pop_back();
+                }
+            }
+        }
+    }
+
+    inline GraphicObject* graphicObjectAt(const view::pixel_coordinates<2>& position)
+    {
+        for(auto& layer:layers)
+        {
+            if (std::size(layer))
+            {
+                for(auto go:layer)
+                {
+                    if(go->contains(position))
+                        return go;
+                }
+            }
+        }
+        return nullptr;
+    }
 };
 }

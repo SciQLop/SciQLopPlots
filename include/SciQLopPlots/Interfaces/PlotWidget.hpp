@@ -210,12 +210,7 @@ namespace interfaces
 
         virtual GraphicObject* graphicObjectAt(const QPoint& position) override
         {
-            for(auto go:graphic_objects)
-            {
-                if(go->contains(view::pixel_coordinates<2>{position.x(), position.y()}))
-                    return go;
-            }
-            return nullptr;
+            return graphic_objects.graphicObjectAt({position.x(),position.y()});
         }
     };
 }

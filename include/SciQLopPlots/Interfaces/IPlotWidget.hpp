@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "./GraphicObjects/GraphicObject.hpp"
+#include "./GraphicObjects/LayeredGraphicObjectCollection.hpp"
 #include "SciQLopPlots/axis_range.hpp"
 
 namespace SciQLopPlots
@@ -69,8 +70,21 @@ namespace interfaces
         Q_OBJECT
 
         friend GraphicObject;
-        void registerGraphicObject(interfaces::GraphicObject* go);
-        void removeGraphicObject(interfaces::GraphicObject* go);
+
+        inline void registerGraphicObject(interfaces::GraphicObject* go)
+        {
+            graphic_objects.registerGraphicObject(go);
+        }
+
+        inline void registerGraphicObject(interfaces::GraphicObject* go, std::size_t layer)
+        {
+            graphic_objects.registerGraphicObject(go, layer);
+        }
+
+        void removeGraphicObject(interfaces::GraphicObject* go)
+        {
+            graphic_objects.removeGraphicObject(go);
+        }
 
     public:
         IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
@@ -115,7 +129,7 @@ namespace interfaces
         virtual GraphicObject* graphicObjectAt(const QPoint& position) = 0;
 
     protected:
-        std::vector<interfaces::GraphicObject*> graphic_objects;
+        LayeredGraphicObjectCollection<3> graphic_objects;
         std::optional<QPoint> m_lastMousePress = std::nullopt;
         interfaces::GraphicObject* m_selected_object = nullptr;
     };

@@ -32,24 +32,6 @@
 namespace SciQLopPlots::interfaces
 {
 
-void IPlotWidget::registerGraphicObject(interfaces::GraphicObject* go)
-{
-    graphic_objects.push_back(go);
-}
-
-void IPlotWidget::removeGraphicObject(interfaces::GraphicObject* go)
-{
-    if (std::size(graphic_objects))
-    {
-        if (auto it = std::find(std::begin(graphic_objects), std::end(graphic_objects), go);
-            it != std::end(graphic_objects))
-        {
-            std::swap(*it, graphic_objects.back());
-            graphic_objects.pop_back();
-        }
-    }
-}
-
 
 void IPlotWidget::setWidget(QWidget* widget)
 {
