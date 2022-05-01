@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <SciQLopPlots/Interfaces/PlotWidget.hpp>
-#include <SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp>
+#include <SciQLopPlots/Qt/QCustomPlot/SciQLopPlots.hpp>
 #include "DataGenerator.hpp"
 #include <SciQLopPlots/Qt/SyncPanel.hpp>
 #include <QLabel>

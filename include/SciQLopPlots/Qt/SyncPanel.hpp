@@ -41,7 +41,7 @@ namespace SciQLopPlots
 class SyncPannel : public QScrollArea
 {
     Q_OBJECT
-    std::list<IPlotWidget*> plots;
+    std::list<interfaces::IPlotWidget*> plots;
     axis::range currentRange;
     QTimer* refreshTimer;
 
@@ -52,10 +52,7 @@ public:
         refreshTimer = new QTimer { this };
         refreshTimer->setSingleShot(true);
         connect(this->refreshTimer, &QTimer::timeout,
-            [this]()
-            {
-                broadcast(this->plots, &IPlotWidget::replot, 20);
-            });
+            [this]() { broadcast(this->plots, &interfaces::IPlotWidget::replot, 20); });
         setWidget(new QWidget(this));
         widget()->setLayout(new QVBoxLayout);
         setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
@@ -72,11 +69,11 @@ public:
         if (currentRange != newRange)
         {
             currentRange = newRange;
-            broadcast(plots, &IPlotWidget::setXRange, newRange);
+            broadcast(plots, &interfaces::IPlotWidget::setXRange, newRange);
         }
     }
 
-    inline void addPlot(IPlotWidget* plot)
+    inline void addPlot(interfaces::IPlotWidget* plot)
     {
         assert(plot);
         if (plots.size())
@@ -84,8 +81,8 @@ public:
         plots.push_back(plot);
         widget()->layout()->addWidget(plot);
         plot->setXRange(currentRange);
-        connect(plot, &IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
-        connect(plot, &IPlotWidget::dataChanged, [this]() { this->refreshTimer->start(20); });
+        connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
+        connect(plot, &interfaces::IPlotWidget::dataChanged, [this]() { this->refreshTimer->start(20); });
     }
 };
 }

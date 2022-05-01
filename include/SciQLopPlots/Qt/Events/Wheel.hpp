@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 #include <QWheelEvent>
 #include <cmath>
 
@@ -32,7 +33,7 @@ inline double zoomFactor(double wheelAngle)
     return 1. + (wheelAngle / 720);
 }
 
-QPoint wheelMovement(const QWheelEvent* event)
+inline QPoint wheelMovement(const QWheelEvent* event)
 {
     if (event->pixelDelta().x() != 0. or event->pixelDelta().y() != 0.)
     {

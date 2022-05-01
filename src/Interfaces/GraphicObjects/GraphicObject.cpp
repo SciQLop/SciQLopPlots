@@ -19,23 +19,11 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "GraphicObject.hpp"
-#include "SciQLopPlots/axis_range.hpp"
-#include <QObject>
 
-namespace SciQLopPlots::interfaces
+#include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
+#include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
+
+SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget* plot)
 {
-class ITimeSpan : public QObject, public GraphicObject
-{
-    Q_OBJECT
-
-public:
-    ITimeSpan(IPlotWidget* plot) : GraphicObject { plot } { }
-    virtual ~ITimeSpan() { }
-    virtual void set_range(const axis::range& time_range) = 0;
-    virtual axis::range range() const = 0;
-
-    Q_SIGNAL void range_changed(axis::range new_time_range);
-};
+    plot->registerGraphicObject(this);
 }

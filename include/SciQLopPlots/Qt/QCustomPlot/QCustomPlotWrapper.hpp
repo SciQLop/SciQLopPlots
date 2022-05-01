@@ -29,13 +29,14 @@
 
 #include <qcp.h>
 
+#include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
 #include "SciQLopPlots/Interfaces/PlotWidget.hpp"
 
 #include "SciQLopPlots/axis_range.hpp"
 
 
-namespace SciQLopPlots
+namespace SciQLopPlots::QCPWrappers
 {
 
 class QCustomPlotWrapper : public QCustomPlot
@@ -49,6 +50,7 @@ public:
         p_refresh_timer = new QTimer { this };
         p_refresh_timer->setSingleShot(true);
         setPlottingHint(QCP::phFastPolylines, true);
+        setInteractions(QCP::iSelectPlottables | QCP::iSelectItems);
         connect(this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot),
             this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot_slt),
             Qt::QueuedConnection);
@@ -87,14 +89,14 @@ public:
     inline void autoScaleY()
     {
         yAxis->rescale(true);
-        if(m_colormap)
+        if (m_colormap)
             m_colormap->rescaleDataRange();
         QCustomPlot::replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline axis::range xRange() { return { xAxis->range().lower, xAxis->range().upper }; }
     inline axis::range yRange() { return { yAxis->range().lower, yAxis->range().upper }; }
-    inline axis::range zRange() { return { 0.,0. }; }//TODO
+    inline axis::range zRange() { return { 0., 0. }; } // TODO
 
     inline void setXRange(const axis::range& range)
     {
@@ -110,7 +112,7 @@ public:
 
     inline void setZRange(const axis::range& range)
     {
-        //TODO
+        // TODO
     }
 
     inline int addGraph(QColor color = Qt::blue)
@@ -166,13 +168,13 @@ public:
                 { *containers::min(x), *containers::max(x) },
                 { *containers::min(y), *containers::max(y) });
             auto it = std::cbegin(z);
-            for(const auto i:x)
+            for (const auto i : x)
             {
-                for(const auto j:y)
+                for (const auto j : y)
                 {
-                    if(it!=std::cend(z))
+                    if (it != std::cend(z))
                     {
-                        data->setData(i,j,*it);
+                        data->setData(i, j, *it);
                         it++;
                     }
                 }
@@ -185,15 +187,19 @@ public:
 
     inline void replot(int ms) { this->p_refresh_timer->start(ms); }
 
+    interfaces::GraphicObject* graphicObjectAt(const QPoint& position) { return nullptr; }
+
+
 private:
     Q_SIGNAL void _plot(int graphIndex, const QVector<QCPGraphData>& data);
     Q_SIGNAL void _plot(QCPColorMapData* data);
     Q_SLOT void _plot_slt(int graphIndex, const QVector<QCPGraphData>& data);
     Q_SLOT void _plot_slt(QCPColorMapData* data);
     QCPColorMap* m_colormap = nullptr;
+
 };
 
-using SciQLopPlot = PlotWidget<QCustomPlotWrapper>;
+using SciQLopPlot = interfaces::PlotWidget<QCustomPlotWrapper>;
 
 
 }

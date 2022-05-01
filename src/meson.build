@@ -1,10 +1,12 @@
 moc_headers = [
     '../include/SciQLopPlots/Qt/SyncPanel.hpp',
     '../include/SciQLopPlots/Interfaces/IPlotWidget.hpp',
-    '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp'
+    '../include/SciQLopPlots/Interfaces/GraphicObjects/ITimeSpan.hpp',
+    '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp',
+    '../include/SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp'
 ]
 
-moc_sources = ['IPlotWidget.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
+moc_sources = ['Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
 
 SciQLopPlots_moc_files = qtmod.preprocess(
                             moc_headers : moc_headers,
@@ -22,10 +24,16 @@ headers = moc_headers + [
     '../include/SciQLopPlots/Qt/Events/Wheel.hpp',
     '../include/SciQLopPlots/Qt/Graph.hpp',
     '../include/SciQLopPlots/Interfaces/PlotWidget.hpp',
-    '../include/SciQLopPlots/Qt/SyncPanel.hpp'
+    '../include/SciQLopPlots/Qt/SyncPanel.hpp',
+    '../include/SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp',
+    '../include/SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp',
+    '../include/SciQLopPlots/Interfaces/GraphicObjects/LayeredGraphicObjectCollection.hpp',
+    '../include/SciQLopPlots/Qt/QCustomPlot/SciQLopPlots.hpp'
 ]
 
-SciQLopPlots = library('SciQLopPlots', moc_sources,
+sources = ['Interfaces/GraphicObjects/GraphicObject.cpp']
+
+SciQLopPlots = library('SciQLopPlots', sources, moc_sources,
                        SciQLopPlots_moc_files, include_directories: ['../include'],
                        extra_files: [headers],
                        dependencies: [QCustomPlot_dep, cpp_utils_dep, range_dep, channels_dep, hedley_dep])

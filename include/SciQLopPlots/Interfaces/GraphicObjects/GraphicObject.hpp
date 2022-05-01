@@ -20,22 +20,23 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "GraphicObject.hpp"
-#include "SciQLopPlots/axis_range.hpp"
-#include <QObject>
+#include "../../view.hpp"
 
 namespace SciQLopPlots::interfaces
 {
-class ITimeSpan : public QObject, public GraphicObject
+class IPlotWidget;
+
+struct GraphicObject
 {
-    Q_OBJECT
+    GraphicObject(IPlotWidget* plot);
+    virtual ~GraphicObject(){};
+    virtual view::data_coordinates<2> center() const = 0;
+    virtual view::pixel_coordinates<2> pix_center() const = 0;
 
-public:
-    ITimeSpan(IPlotWidget* plot) : GraphicObject { plot } { }
-    virtual ~ITimeSpan() { }
-    virtual void set_range(const axis::range& time_range) = 0;
-    virtual axis::range range() const = 0;
+    virtual void move(const view::data_coordinates<2>& delta) = 0;
+    virtual void move(const view::pixel_coordinates<2>& delta) = 0;
 
-    Q_SIGNAL void range_changed(axis::range new_time_range);
+    virtual bool contains(const view::data_coordinates<2>& position) const = 0;
+    virtual bool contains(const view::pixel_coordinates<2>& position) const = 0;
 };
 }

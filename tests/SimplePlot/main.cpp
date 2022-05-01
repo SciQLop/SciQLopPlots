@@ -2,7 +2,7 @@
 #include <QtTest>
 
 #include <DataGenerator.hpp>
-#include <SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp>
+#include <SciQLopPlots/Qt/QCustomPlot/SciQLopPlots.hpp>
 #include <SciQLopPlots/view.hpp>
 
 #include <QtGuiTestUtils/GUITestUtils.h>

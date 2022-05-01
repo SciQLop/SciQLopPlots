@@ -21,21 +21,20 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "GraphicObject.hpp"
-#include "SciQLopPlots/axis_range.hpp"
-#include <QObject>
+#include <array>
+#include <vector>
 
 namespace SciQLopPlots::interfaces
 {
-class ITimeSpan : public QObject, public GraphicObject
+
+template <std::size_t layer_count>
+struct LayeredGraphicObjectCollection
 {
-    Q_OBJECT
+    std::array<std::vector<GraphicObject*>, layer_count> layers;
+    LayeredGraphicObjectCollection();
+    ~LayeredGraphicObjectCollection(){};
 
-public:
-    ITimeSpan(IPlotWidget* plot) : GraphicObject { plot } { }
-    virtual ~ITimeSpan() { }
-    virtual void set_range(const axis::range& time_range) = 0;
-    virtual axis::range range() const = 0;
-
-    Q_SIGNAL void range_changed(axis::range new_time_range);
+    inline void registerGraphicObject(interfaces::GraphicObject* go){}
+    inline void removeGraphicObject(interfaces::GraphicObject* go){}
 };
 }

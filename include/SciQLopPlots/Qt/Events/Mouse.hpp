@@ -19,22 +19,31 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 #include <QMouseEvent>
 #include <optional>
 
 #include "SciQLopPlots/view.hpp"
+#include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 
 namespace SciQLopPlots::details
 {
 template <typename plot_t>
 inline bool handleMouseMoveEvent(
-    const QMouseEvent* event, plot_t* plot, std::optional<QPoint>& last_pressed_pos)
+    const QMouseEvent* event, plot_t* plot, std::optional<QPoint>& last_pressed_pos, interfaces::GraphicObject* selected_graphic_object)
 {
     if (last_pressed_pos)
     {
-        auto dx = last_pressed_pos->x() - event->pos().x();
-        auto dy = last_pressed_pos->y() - event->pos().y();
-        view::move(plot, view::pixel_coordinates { dx, dy });
+        auto dx = event->pos().x() - last_pressed_pos->x();
+        auto dy = event->pos().y() - last_pressed_pos->y();
+        if(selected_graphic_object)
+        {
+            view::move(selected_graphic_object, view::pixel_coordinates { dx, dy });
+        }
+        else
+        {
+            view::move(plot, view::pixel_coordinates { dx, dy });
+        }
         last_pressed_pos = event->pos();
         return true;
     }

@@ -28,7 +28,9 @@
 #include <cmath>
 #include <optional>
 #include <utility>
+#include <vector>
 
+#include "./GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/axis_range.hpp"
 
 namespace SciQLopPlots
@@ -60,54 +62,62 @@ inline void removeAllMargins(QWidget* widget)
     }
 }
 
-
-class IPlotWidget : public QWidget
+namespace interfaces
 {
-    Q_OBJECT
-public:
-    IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
+    class IPlotWidget : public QWidget
+    {
+        Q_OBJECT
 
-    virtual double map_pixels_to_data_coordinates(double px, enums::Axis axis)const = 0;
-    virtual void set_range(const axis::range& range, enums::Axis axis) = 0;
-    virtual void set_range(const axis::range& x_range, const axis::range& y_range) = 0;
-    virtual axis::range range(enums::Axis axis)const = 0;
+        friend GraphicObject;
+        void registerGraphicObject(interfaces::GraphicObject* go);
+        void removeGraphicObject(interfaces::GraphicObject* go);
+
+    public:
+        IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
+
+        virtual double map_pixels_to_data_coordinates(double px, enums::Axis axis) const = 0;
+        virtual void set_range(const axis::range& range, enums::Axis axis) = 0;
+        virtual void set_range(const axis::range& x_range, const axis::range& y_range) = 0;
+        virtual axis::range range(enums::Axis axis) const = 0;
 
 
-    virtual void autoScaleY() = 0;
+        virtual void autoScaleY() = 0;
 
-    virtual int addGraph(QColor color = Qt::blue) = 0;
-    virtual int addColorMap() = 0;
+        virtual int addGraph(QColor color = Qt::blue) = 0;
+        virtual int addColorMap() = 0;
 
-    virtual void setXRange(const axis::range& range) = 0;
-    virtual void setYRange(const axis::range& range) = 0;
+        virtual void setXRange(const axis::range& range) = 0;
+        virtual void setYRange(const axis::range& range) = 0;
 
-    virtual void showXAxis(bool show) = 0;
+        virtual void showXAxis(bool show) = 0;
 
-    virtual void replot(int ms) = 0;
+        virtual void replot(int ms) = 0;
 
-    Q_SIGNAL void xRangeChanged(axis::range newRange);
-    Q_SIGNAL void yRangeChanged(axis::range newRange);
-    Q_SIGNAL void dataChanged();
-    Q_SIGNAL void closed();
+        Q_SIGNAL void xRangeChanged(axis::range newRange);
+        Q_SIGNAL void yRangeChanged(axis::range newRange);
+        Q_SIGNAL void dataChanged();
+        Q_SIGNAL void closed();
 
-protected:
-    void setWidget(QWidget* widget);
-    void wheelEvent(QWheelEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
+    protected:
+        void setWidget(QWidget* widget);
+        void wheelEvent(QWheelEvent* event) override;
+        void keyPressEvent(QKeyEvent* event) override;
+        void keyReleaseEvent(QKeyEvent* event) override;
+        void mousePressEvent(QMouseEvent* event) override;
+        void mouseMoveEvent(QMouseEvent* event) override;
+        void mouseReleaseEvent(QMouseEvent* event) override;
 
-    /*void enterEvent(QEvent* event) override;
-    void leaveEvent(QEvent* event) override;
+        /*void enterEvent(QEvent* event) override;
+        void leaveEvent(QEvent* event) override;
 
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;*/
-private:
-    // bool m_mousePressed = false;
-    std::optional<QPoint> m_lastMousePress = std::nullopt;
-};
+        void mouseDoubleClickEvent(QMouseEvent* event) override;*/
 
+        virtual GraphicObject* graphicObjectAt(const QPoint& position) = 0;
+
+    protected:
+        std::vector<interfaces::GraphicObject*> graphic_objects;
+        std::optional<QPoint> m_lastMousePress = std::nullopt;
+        interfaces::GraphicObject* m_selected_object = nullptr;
+    };
+}
 }

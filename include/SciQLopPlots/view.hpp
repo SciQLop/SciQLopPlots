@@ -43,6 +43,22 @@ struct single_coordinate
 using single_pixel_coordinate = single_coordinate<int>;
 using single_data_coordinate = single_coordinate<double>;
 
+namespace details
+{
+    template <typename callable_t, typename T, std::size_t ND, std::size_t... I>
+    auto broadcast_impl(std::array<T, ND>& input, const callable_t& callable, std::index_sequence<I...>)
+    {
+        (callable(input[I]), ...);
+    }
+
+    template <typename callable_t, typename T, std::size_t ND>
+    inline auto broadcast(std::array<T, ND>& input, const callable_t& callable)
+    {
+        broadcast_impl(input, callable, std::make_index_sequence<ND> {});
+    }
+}
+
+
 template <typename T, std::size_t ND>
 struct coordinates
 {
@@ -78,6 +94,39 @@ struct ND_coordinates : coordinates<value_type, ND>
     ND_coordinates(T&&... values) : coordinates<value_type, ND> { std::forward<T>(values)... }
     {
     }
+
+    ND_coordinates& operator+(value_type offset)
+    {
+        details::broadcast(this->_c, [offset](value_type& v)constexpr{return v+=offset;});
+        return *this;
+    }
+
+    ND_coordinates operator+(value_type offset) const
+    {
+        auto copy = *this;
+        details::broadcast(copy._c, [offset](value_type& v)constexpr{return v+=offset;});
+        return copy;
+    }
+
+    ND_coordinates& operator-(value_type offset)
+    {
+        details::broadcast(this->_c, [offset](value_type& v)constexpr{return v-=offset;});
+        return *this;
+    }
+
+    ND_coordinates operator-(value_type offset) const
+    {
+        auto copy = *this;
+        details::broadcast(copy._c, [offset](value_type& v)constexpr{return v-=offset;});
+        return copy;
+    }
+
+    ND_coordinates operator-() const
+    {
+        auto copy = *this;
+        details::broadcast(copy._c, [](value_type& v)constexpr{return v=-v;});
+        return copy;
+    }
 };
 
 struct pixel_tag;
@@ -85,6 +134,12 @@ template <std::size_t ND>
 struct pixel_coordinates : ND_coordinates<pixel_tag, int, ND>
 {
     using ND_coordinates<pixel_tag, int, ND>::ND_coordinates;
+    pixel_coordinates operator-() const
+    {
+        auto copy = *this;
+        details::broadcast(copy._c, [](int& v)constexpr{return v=-v;});
+        return copy;
+    }
 };
 template <typename... T>
 pixel_coordinates(const T&&... values) -> pixel_coordinates<sizeof...(T)>;
@@ -97,6 +152,13 @@ template <std::size_t ND>
 struct data_coordinates : ND_coordinates<data_tag, double, ND>
 {
     using ND_coordinates<data_tag, double, ND>::ND_coordinates;
+
+    data_coordinates operator-() const
+    {
+        auto copy = *this;
+        details::broadcast(copy._c, [](double& v)constexpr{return v=-v;});
+        return copy;
+    }
 };
 
 template <typename... T>
@@ -192,7 +254,7 @@ inline void move(Widget* widget, const double delta, const enums::Axis axis)
 
 template <class Widget>
 HEDLEY_NON_NULL(1)
-inline void move(Widget* widget, const single_data_coordinate delta)
+inline void move(Widget* widget, const single_data_coordinate& delta)
 {
     set_range(widget, range(widget, delta.axis) + delta.value, delta.axis);
 }
@@ -200,7 +262,7 @@ inline void move(Widget* widget, const single_data_coordinate delta)
 
 template <class Widget, std::size_t ND>
 HEDLEY_NON_NULL(1)
-inline void move(Widget* widget, const data_coordinates<ND> delta)
+inline void move(Widget* widget, const data_coordinates<ND>& delta)
 {
     for (const auto axis : { enums::Axis::x, enums::Axis::y })
     {
@@ -210,10 +272,18 @@ inline void move(Widget* widget, const data_coordinates<ND> delta)
 
 template <class Widget, std::size_t ND>
 HEDLEY_NON_NULL(1)
-inline void move(Widget* widget, const pixel_coordinates<ND>& delta)
+inline auto move(Widget* widget, const pixel_coordinates<ND>& delta)
+    -> decltype(widget->map_pixels_to_data_coordinates(0, enums::Axis::x), void())
 {
-    move(widget, distance(widget, delta));
+    move(widget, -distance(widget, delta));
 }
 
+template <class Widget, std::size_t ND>
+HEDLEY_NON_NULL(1)
+inline auto move(Widget* widget, const pixel_coordinates<ND>& delta)
+    -> decltype(widget->move(delta), void())
+{
+    widget->move(delta);
+}
 
 }

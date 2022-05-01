@@ -21,14 +21,14 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp"
 
-void SciQLopPlots::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
 {
     graph(graphIndex)->data()->set(data, true);
     replot(20);
     emit dataChanged();
 }
 
-void SciQLopPlots::QCustomPlotWrapper::_plot_slt(QCPColorMapData* data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(QCPColorMapData* data)
 {
     if (m_colormap)
     {

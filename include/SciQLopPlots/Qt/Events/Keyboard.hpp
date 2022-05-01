@@ -19,6 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
+
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/view.hpp"
 #include <QKeyEvent>

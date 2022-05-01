@@ -146,17 +146,17 @@ public:
 
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, PlotWidget<PlotImpl>> add_graph(
-    PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
+Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_graph(
+    interfaces::PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
 {
-    return Graph<data_type, PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
 }
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, PlotWidget<PlotImpl>> add_colormap(
-    PlotWidget<PlotImpl>* plot)
+Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_colormap(
+    interfaces::PlotWidget<PlotImpl>* plot)
 {
-    return Graph<data_type, PlotWidget<PlotImpl>>(plot->addColorMap(), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addColorMap(), plot);
 }
 
 }

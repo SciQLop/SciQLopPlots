@@ -20,22 +20,12 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "GraphicObject.hpp"
-#include "SciQLopPlots/axis_range.hpp"
-#include <QObject>
+#include "QCustomPlotWrapper.hpp"
+#include "QCPTimeSpan.hpp"
 
-namespace SciQLopPlots::interfaces
+namespace SciQLopPlots
 {
-class ITimeSpan : public QObject, public GraphicObject
-{
-    Q_OBJECT
+    using SciQLopPlot = SciQLopPlots::QCPWrappers::SciQLopPlot;
+    using TimeSpan = SciQLopPlots::QCPWrappers::TimeSpan;
 
-public:
-    ITimeSpan(IPlotWidget* plot) : GraphicObject { plot } { }
-    virtual ~ITimeSpan() { }
-    virtual void set_range(const axis::range& time_range) = 0;
-    virtual axis::range range() const = 0;
-
-    Q_SIGNAL void range_changed(axis::range new_time_range);
-};
 }
