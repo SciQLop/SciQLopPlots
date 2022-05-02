@@ -49,38 +49,43 @@ public:
         time_span_impl->set_range(time_range);
         emit range_changed(time_range);
     };
-    virtual axis::range range() const final { return time_span_impl->range(); };
+    inline virtual axis::range range() const final { return time_span_impl->range(); };
 
-    virtual view::data_coordinates<2> center() const override { return time_span_impl->center(); }
+    inline virtual view::data_coordinates<2> center() const override { return time_span_impl->center(); }
 
-    virtual view::pixel_coordinates<2> pix_center() const override
+    inline virtual view::pixel_coordinates<2> pix_center() const override
     {
         return time_span_impl->pix_center();
     }
 
-    virtual void move(const view::data_coordinates<2>& delta) override
+    inline virtual void move(const view::data_coordinates<2>& delta) override
     {
         time_span_impl->move(delta);
     }
 
-    virtual void move(const view::pixel_coordinates<2>& delta) override
+    inline virtual void move(const view::pixel_coordinates<2>& delta) override
     {
         time_span_impl->move(delta);
     }
 
-    virtual bool contains(const view::data_coordinates<2>& position) const override
+    inline virtual bool contains(const view::data_coordinates<2>& position) const override
     {
         return time_span_impl->contains(position);
     }
 
-    virtual bool contains(const view::pixel_coordinates<2>& position) const override
+    inline virtual bool contains(const view::pixel_coordinates<2>& position) const override
     {
         return time_span_impl->contains(position);
     }
 
-    virtual void set_selected(bool select) override
+    inline virtual void set_selected(bool select) override
     {
         return time_span_impl->set_selected(select);
+    }
+
+    inline virtual Qt::CursorShape cursor_shape() const override
+    {
+        return time_span_impl->cursor_shape();
     }
 };
 

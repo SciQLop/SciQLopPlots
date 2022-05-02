@@ -104,8 +104,8 @@ public:
     inline virtual bool contains(const view::pixel_coordinates<2>& position) const override
     {
         const auto x = position.component(enums::Axis::x).value;
-        return x >= (line->point1->pixelPosition().x() - fmax(line->pen().widthF(), 10))
-            && x <= (line->point1->pixelPosition().x() + fmax(line->pen().widthF(), 10));
+        return x >= (line->point1->pixelPosition().x() - fmax(line->pen().widthF(), 5))
+            && x <= (line->point1->pixelPosition().x() + fmax(line->pen().widthF(), 5));
     }
 
     inline virtual void set_selected(bool select) override
@@ -113,6 +113,8 @@ public:
         line->setSelected(select);
         line->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
+
+    inline virtual Qt::CursorShape cursor_shape() const override { return Qt::SizeHorCursor; }
 
     Q_SIGNAL void move_sig(double dx);
 };
@@ -231,11 +233,13 @@ public:
         return (x <= max_x) && (x >= min_x) && (y <= max_y) && (y >= min_y);
     }
 
-    void set_selected(bool select)
+    inline void set_selected(bool select)
     {
         rect->setSelected(select);
         rect->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
+
+    inline Qt::CursorShape cursor_shape() const { return Qt::SizeAllCursor; }
 };
 using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, SciQLopPlot>;
 }

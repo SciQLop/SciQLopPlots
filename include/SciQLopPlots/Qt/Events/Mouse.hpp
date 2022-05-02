@@ -47,6 +47,17 @@ inline bool handleMouseMoveEvent(
         last_pressed_pos = event->pos();
         return true;
     }
+    else
+    {
+        if(auto go=plot->graphicObjectAt(event->pos()); go)
+        {
+            plot->setCursor(go->cursor_shape());
+        }
+        else
+        {
+            plot->setCursor(Qt::ArrowCursor);
+        }
+    }
     return false;
 }
 }

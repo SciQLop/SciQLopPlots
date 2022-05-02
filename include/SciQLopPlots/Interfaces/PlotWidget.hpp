@@ -27,11 +27,11 @@
 
 #include <channels/channels.hpp>
 
-#include <QObject>
-#include <QWidget>
-#include <QWheelEvent>
-#include <QMouseEvent>
 #include <QKeyEvent>
+#include <QMouseEvent>
+#include <QObject>
+#include <QWheelEvent>
+#include <QWidget>
 
 #include "SciQLopPlots/Qt/Events/Keyboard.hpp"
 #include "SciQLopPlots/Qt/Events/Mouse.hpp"
@@ -210,7 +210,13 @@ namespace interfaces
 
         virtual GraphicObject* graphicObjectAt(const QPoint& position) override
         {
-            return graphic_objects.graphicObjectAt({position.x(),position.y()});
+            return graphic_objects.graphicObjectAt({ position.x(), position.y() });
+        }
+
+        virtual GraphicObject* nextGraphicObjectAt(
+            const QPoint& position, GraphicObject* current) override
+        {
+            return graphic_objects.nextGraphicObjectAt({ position.x(), position.y() }, current);
         }
     };
 }

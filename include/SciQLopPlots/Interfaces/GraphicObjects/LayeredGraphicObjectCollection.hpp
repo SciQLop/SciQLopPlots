@@ -37,17 +37,18 @@ private:
     std::array<std::vector<GraphicObject*>, layer_count> layers;
 
 public:
-    inline LayeredGraphicObjectCollection(){}
-    inline ~LayeredGraphicObjectCollection(){}
+    inline LayeredGraphicObjectCollection() { }
+    inline ~LayeredGraphicObjectCollection() { }
 
-    inline void registerGraphicObject(interfaces::GraphicObject* go, std::size_t layer = layer_count-1)
+    inline void registerGraphicObject(
+        interfaces::GraphicObject* go, std::size_t layer = layer_count - 1)
     {
         layers[layer].push_back(go);
     }
 
     inline void removeGraphicObject(interfaces::GraphicObject* go)
     {
-        for(auto& layer:layers)
+        for (auto& layer : layers)
         {
             if (std::size(layer))
             {
@@ -63,18 +64,40 @@ public:
 
     inline GraphicObject* graphicObjectAt(const view::pixel_coordinates<2>& position)
     {
-        for(auto& layer:layers)
+        for (auto& layer : layers)
         {
             if (std::size(layer))
             {
-                for(auto go:layer)
+                for (auto go : layer)
                 {
-                    if(go->contains(position))
+                    if (go->contains(position))
                         return go;
                 }
             }
         }
         return nullptr;
+    }
+    inline GraphicObject* nextGraphicObjectAt(const view::pixel_coordinates<2>& position, GraphicObject* current)
+    {
+        bool found_current = false;
+        for (auto& layer : layers)
+        {
+            if (std::size(layer))
+            {
+                for (auto go : layer)
+                {
+                    if (go->contains(position) and found_current)
+                    {
+                        return go;
+                    }
+                    else if (go == current)
+                    {
+                        found_current = true;
+                    }
+                }
+            }
+        }
+        return graphicObjectAt(position);
     }
 };
 }

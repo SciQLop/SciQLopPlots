@@ -24,15 +24,9 @@
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
 
 SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget* plot, enums::Layers layer)
-    :plot{plot}
+        :plot{plot}, m_layer{layer}
 {
     plot->registerGraphicObject(this,static_cast<std::size_t>(layer));
-}
-
-SciQLopPlots::interfaces::GraphicObject::GraphicObject(IPlotWidget *plot)
-    :plot{plot}
-{
-    plot->registerGraphicObject(this);
 }
 
 SciQLopPlots::interfaces::GraphicObject::~GraphicObject()
