@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/view.hpp"
+#include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include <QKeyEvent>
 
 namespace SciQLopPlots::details
@@ -72,6 +73,14 @@ inline bool handleKeyboardEvent(const QKeyEvent* event, plot_t* plot)
             default:
                 break;
         }
+    }
+    switch (event->key())
+    {
+        case Qt::Key_Delete:
+            plot->delete_selected_object();
+            return true;
+        default:
+            break;
     }
     return false;
 }

@@ -26,22 +26,23 @@
 
 namespace SciQLopPlots::interfaces
 {
+
 template <typename TimeSpanImpl, typename plot_t>
 class TimeSpan : public ITimeSpan
 {
     TimeSpanImpl* time_span_impl;
 
-    IPlotWidget* plot;
-
 public:
     TimeSpan(plot_t* plot, const axis::range time_range)
             : ITimeSpan { plot }
             , time_span_impl { new TimeSpanImpl { plot, time_range } }
-            , plot { plot }
     {
     }
 
-    ~TimeSpan() { }
+    ~TimeSpan()
+    {
+        delete time_span_impl;
+    }
 
     virtual void set_range(const axis::range& time_range) final
     {
@@ -82,4 +83,5 @@ public:
         return time_span_impl->set_selected(select);
     }
 };
+
 }

@@ -26,7 +26,10 @@
 namespace SciQLopPlots::enums
 {
     enum class Axis{x=0,y=1,z=2};
+
+    enum class Layers{EditMode=0,Cursors=1,Shapes=2,Background=3};
 }
+
 
 namespace SciQLopPlots::tags
 {

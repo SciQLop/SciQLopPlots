@@ -30,49 +30,58 @@
 namespace SciQLopPlots::QCPWrappers
 {
 
-class QCPTimeSPanBorder : public QCPItemStraightLine, interfaces::GraphicObject
+class QCPTimeSPanBorder : public QObject, interfaces::GraphicObject
 {
     Q_OBJECT
 
     inline double pixelToXCoord(double px) const
     {
-        return parentPlot()->axisRect()->axis(QCPAxis::atBottom)->pixelToCoord(px);
+        return line->parentPlot()->axisRect()->axis(QCPAxis::atBottom)->pixelToCoord(px);
     }
 
     inline double coordToXPixel(double x) const
     {
-        return parentPlot()->axisRect()->axis(QCPAxis::atBottom)->coordToPixel(x);
+        return line->parentPlot()->axisRect()->axis(QCPAxis::atBottom)->coordToPixel(x);
     }
 
+    QCPItemStraightLine* line;
 
 public:
     inline QCPTimeSPanBorder(SciQLopPlot* plot)
-            : QCPItemStraightLine { plot->handle() }, interfaces::GraphicObject { plot, 0 }
+            : interfaces::GraphicObject { plot, enums::Layers::Cursors }
+            , line { new QCPItemStraightLine { plot->handle() } }
     {
-        point1->setTypeX(QCPItemPosition::ptAbsolute);
-        point2->setTypeY(QCPItemPosition::ptAbsolute);
-        point1->setTypeX(QCPItemPosition::ptAbsolute);
-        point2->setTypeY(QCPItemPosition::ptAbsolute);
-        this->setPen(QPen { QBrush { QColor(0, 255, 255, 255), Qt::SolidPattern }, 3 });
-        setLayer("overlay");
+        line->point1->setTypeX(QCPItemPosition::ptAbsolute);
+        line->point2->setTypeY(QCPItemPosition::ptAbsolute);
+        line->point1->setTypeX(QCPItemPosition::ptAbsolute);
+        line->point2->setTypeY(QCPItemPosition::ptAbsolute);
+        line->setPen(QPen { QBrush { QColor(0, 255, 255, 255), Qt::SolidPattern }, 3 });
+        line->setLayer("overlay");
+    }
+
+    inline ~QCPTimeSPanBorder()
+    {
+        auto plot = line->parentPlot();
+        plot->removeItem(line);
+        plot->replot(QCustomPlot::rpQueuedReplot);
     }
 
     inline void set_anchor(QCPItemAnchor* top_anchor, QCPItemAnchor* botom_anchor)
     {
-        this->point1->setParentAnchor(top_anchor);
-        this->point2->setParentAnchor(botom_anchor);
+        line->point1->setParentAnchor(top_anchor);
+        line->point2->setParentAnchor(botom_anchor);
     }
 
     inline virtual view::data_coordinates<2> center() const override
     {
 
-        return { point1->key(), (point1->value() + point2->value()) / 2 };
+        return { line->point1->key(), (line->point1->value() + line->point2->value()) / 2 };
     }
 
     inline virtual view::pixel_coordinates<2> pix_center() const override
     {
-        return { point1->pixelPosition().x(),
-            (point1->pixelPosition().y() + point2->pixelPosition().y()) / 2 };
+        return { line->point1->pixelPosition().x(),
+            (line->point1->pixelPosition().y() + line->point2->pixelPosition().y()) / 2 };
     }
 
     inline virtual void move(const view::data_coordinates<2>& delta) override
@@ -95,35 +104,36 @@ public:
     inline virtual bool contains(const view::pixel_coordinates<2>& position) const override
     {
         const auto x = position.component(enums::Axis::x).value;
-        return x >= (point1->pixelPosition().x() - fmax(pen().widthF(), 10))
-            && x <= (point1->pixelPosition().x() + fmax(pen().widthF(), 10));
+        return x >= (line->point1->pixelPosition().x() - fmax(line->pen().widthF(), 10))
+            && x <= (line->point1->pixelPosition().x() + fmax(line->pen().widthF(), 10));
     }
 
     inline virtual void set_selected(bool select) override
     {
-        this->setSelected(select);
-        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        line->setSelected(select);
+        line->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 
     Q_SIGNAL void move_sig(double dx);
 };
 
-class QCPTimeSpan : public QCPItemRect
+class QCPTimeSpan : public QObject
 {
     Q_OBJECT
     inline void set_auto_extend_vertically()
     {
-        topLeft->setTypeX(QCPItemPosition::ptPlotCoords);
-        topLeft->setTypeY(QCPItemPosition::ptAxisRectRatio);
-        bottomRight->setTypeX(QCPItemPosition::ptPlotCoords);
-        bottomRight->setTypeY(QCPItemPosition::ptAxisRectRatio);
+        rect->topLeft->setTypeX(QCPItemPosition::ptPlotCoords);
+        rect->topLeft->setTypeY(QCPItemPosition::ptAxisRectRatio);
+        rect->bottomRight->setTypeX(QCPItemPosition::ptPlotCoords);
+        rect->bottomRight->setTypeY(QCPItemPosition::ptAxisRectRatio);
     }
 
     inline double pixelToXCoord(double px) const
     {
-        return parentPlot()->axisRect()->axis(QCPAxis::atBottom)->pixelToCoord(px);
+        return rect->parentPlot()->axisRect()->axis(QCPAxis::atBottom)->pixelToCoord(px);
     }
 
+    QCPItemRect* rect;
     QCPTimeSPanBorder left_border, right_border;
 
     double mouse_event_initial_left_pos, mouse_event_initial_right_pos;
@@ -132,16 +142,18 @@ public:
     using plot_t = QCustomPlotWrapper;
 
     QCPTimeSpan(SciQLopPlot* plot, axis::range time_range)
-            : QCPItemRect { plot->handle() }, left_border { plot }, right_border { plot }
+            : rect { new QCPItemRect { plot->handle() } }
+            , left_border { plot }
+            , right_border { plot }
     {
-        left_border.set_anchor(topLeft, bottomLeft);
-        right_border.set_anchor(topRight, bottomRight);
+        left_border.set_anchor(rect->topLeft, rect->bottomLeft);
+        right_border.set_anchor(rect->topRight, rect->bottomRight);
         set_auto_extend_vertically();
         set_range(time_range);
-        setLayer("overlay");
-        setBrush(QBrush { QColor(0, 255, 0, 40), Qt::SolidPattern });
-        this->setPen(QPen { Qt::NoPen });
-        setSelectable(true);
+        rect->setLayer("overlay");
+        rect->setBrush(QBrush { QColor(0, 255, 0, 40), Qt::SolidPattern });
+        rect->setPen(QPen { Qt::NoPen });
+        rect->setSelectable(true);
 
         connect(&this->left_border, &QCPTimeSPanBorder::move_sig,
             [this](double dx)
@@ -156,26 +168,32 @@ public:
                 set_range({ range.first, range.second + dx });
             });
     }
+    ~QCPTimeSpan()
+    {
+        auto plot = rect->parentPlot();
+        plot->removeItem(rect);
+        plot->replot(QCustomPlot::rpQueuedReplot);
+    }
 
     void set_range(const axis::range& time_range)
     {
-        topLeft->setCoords(time_range.first, 0);
-        bottomRight->setCoords(time_range.second, 1);
-        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        rect->topLeft->setCoords(time_range.first, 0);
+        rect->bottomRight->setCoords(time_range.second, 1);
+        rect->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 
-    axis::range range() const { return { topLeft->key(), bottomRight->key() }; };
+    axis::range range() const { return { rect->topLeft->key(), rect->bottomRight->key() }; };
 
     view::data_coordinates<2> center() const
     {
-        return { (topLeft->key() + bottomRight->key()) / 2.,
-            (topLeft->value() + bottomRight->value()) / 2. };
+        return { (rect->topLeft->key() + rect->bottomRight->key()) / 2.,
+            (rect->topLeft->value() + rect->bottomRight->value()) / 2. };
     }
 
     view::pixel_coordinates<2> pix_center() const
     {
-        return { (topLeft->pixelPosition().x() + bottomRight->pixelPosition().x()) / 2.,
-            (topLeft->pixelPosition().y() + bottomRight->pixelPosition().y()) / 2. };
+        return { (rect->topLeft->pixelPosition().x() + rect->bottomRight->pixelPosition().x()) / 2.,
+            (rect->topLeft->pixelPosition().y() + rect->bottomRight->pixelPosition().y()) / 2. };
     }
 
     inline void move(double dt) { set_range(range() + dt); }
@@ -195,8 +213,8 @@ public:
         const auto x = position.component(enums::Axis::x).value;
         const auto y = position.component(enums::Axis::y).value;
 
-        return (x <= bottomRight->key()) && (x >= topLeft->key()) && (y <= topLeft->value())
-            && (y >= bottomRight->value());
+        return (x <= rect->bottomRight->key()) && (x >= rect->topLeft->key())
+            && (y <= rect->topLeft->value()) && (y >= rect->bottomRight->value());
     }
 
     inline bool contains(const view::pixel_coordinates<2>& position) const
@@ -204,19 +222,19 @@ public:
         const auto x = position.component(enums::Axis::x).value;
         const auto y = position.component(enums::Axis::y).value;
 
-        const auto min_x = topLeft->pixelPosition().x();
-        const auto max_x = bottomRight->pixelPosition().x();
+        const auto min_x = rect->topLeft->pixelPosition().x();
+        const auto max_x = rect->bottomRight->pixelPosition().x();
 
-        const auto min_y = topLeft->pixelPosition().y();
-        const auto max_y = bottomRight->pixelPosition().y();
+        const auto min_y = rect->topLeft->pixelPosition().y();
+        const auto max_y = rect->bottomRight->pixelPosition().y();
 
         return (x <= max_x) && (x >= min_x) && (y <= max_y) && (y >= min_y);
     }
 
     void set_selected(bool select)
     {
-        setSelected(select);
-        parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        rect->setSelected(select);
+        rect->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 };
 using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, SciQLopPlot>;

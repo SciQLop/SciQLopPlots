@@ -33,6 +33,15 @@ namespace SciQLopPlots::interfaces
 {
 
 
+void IPlotWidget::delete_selected_object()
+{
+    if (m_selected_object)
+    {
+        delete m_selected_object;
+        m_selected_object = nullptr;
+    }
+}
+
 void IPlotWidget::setWidget(QWidget* widget)
 {
     if (!this->layout())

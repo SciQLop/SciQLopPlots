@@ -107,6 +107,8 @@ namespace interfaces
 
         virtual void replot(int ms) = 0;
 
+        void delete_selected_object();
+
         Q_SIGNAL void xRangeChanged(axis::range newRange);
         Q_SIGNAL void yRangeChanged(axis::range newRange);
         Q_SIGNAL void dataChanged();
@@ -129,7 +131,7 @@ namespace interfaces
         virtual GraphicObject* graphicObjectAt(const QPoint& position) = 0;
 
     protected:
-        LayeredGraphicObjectCollection<3> graphic_objects;
+        LayeredGraphicObjectCollection<4> graphic_objects;
         std::optional<QPoint> m_lastMousePress = std::nullopt;
         interfaces::GraphicObject* m_selected_object = nullptr;
         bool m_has_moved_since_pouse_press;

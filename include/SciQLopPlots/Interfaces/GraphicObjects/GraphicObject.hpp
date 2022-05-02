@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "../../enums.hpp"
 #include "../../view.hpp"
 
 namespace SciQLopPlots::interfaces
@@ -28,9 +29,9 @@ class IPlotWidget;
 
 struct GraphicObject
 {
-    GraphicObject(IPlotWidget* plot, std::size_t layer);
+    GraphicObject(IPlotWidget* plot, enums::Layers layer);
     GraphicObject(IPlotWidget* plot);
-    virtual ~GraphicObject() {};
+    virtual ~GraphicObject();;
     virtual view::data_coordinates<2> center() const = 0;
     virtual view::pixel_coordinates<2> pix_center() const = 0;
 
@@ -41,5 +42,8 @@ struct GraphicObject
     virtual bool contains(const view::pixel_coordinates<2>& position) const = 0;
 
     virtual void set_selected(bool select) = 0;
+protected:
+    IPlotWidget* plot;
+
 };
 }
