@@ -6,6 +6,14 @@ add_global_arguments(
 )
 
 qt_sdk=get_option('qt_version')
+if qt_sdk=='auto'
+    qt_version=run_command(find_program('qmake'), '-query', 'QT_VERSION').stdout()
+    if qt_version.startswith('5.')
+        qt_sdk='qt5'
+    elif qt_version.startswith('6.')
+        qt_sdk='qt6'
+    endif
+endif
 
 
 qtmod = import(qt_sdk)
@@ -19,7 +27,7 @@ QCustomPlot_dep = dependency('QCustomPlot', fallback : ['QCustomPlot', 'QCustomP
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'])
 range_dep = dependency('range-v3', fallback : ['range-v3', 'range_dep'])
 channels_dep = dependency('channels', fallback : ['channels', 'channels_dep'])
-QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'])
+QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'], default_options: ['qt_version='+qt_sdk])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
 
