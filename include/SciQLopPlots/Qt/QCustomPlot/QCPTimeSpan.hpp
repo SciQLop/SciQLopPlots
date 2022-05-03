@@ -66,6 +66,8 @@ public:
         plot->replot(QCustomPlot::rpQueuedReplot);
     }
 
+    inline virtual bool deletable() const override { return false; }
+
     inline void set_anchor(QCPItemAnchor* top_anchor, QCPItemAnchor* botom_anchor)
     {
         line->point1->setParentAnchor(top_anchor);
@@ -115,6 +117,10 @@ public:
     }
 
     inline virtual Qt::CursorShape cursor_shape() const override { return Qt::SizeHorCursor; }
+
+    inline virtual void start_edit(const view::pixel_coordinates<2>& position) override { }
+    inline virtual void update_edit(const view::pixel_coordinates<2>& position) override { }
+    inline virtual void stop_edit(const view::pixel_coordinates<2>& position) override { }
 
     Q_SIGNAL void move_sig(double dx);
 };
@@ -184,7 +190,11 @@ public:
         rect->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 
-    axis::range range() const { return { rect->topLeft->key(), rect->bottomRight->key() }; };
+    axis::range range() const
+    {
+        auto t1 = rect->topLeft->key(), t2 = rect->bottomRight->key();
+        return { fmin(t1, t2), fmax(t1, t2) };
+    };
 
     view::data_coordinates<2> center() const
     {
@@ -240,6 +250,22 @@ public:
     }
 
     inline Qt::CursorShape cursor_shape() const { return Qt::SizeAllCursor; }
+
+    inline void start_edit(const view::pixel_coordinates<2>& position)
+    {
+        auto x = pixelToXCoord(position.component(enums::Axis::x).value);
+        set_range({ x, x });
+    }
+    inline void update_edit(const view::pixel_coordinates<2>& position)
+    {
+        auto x = pixelToXCoord(position.component(enums::Axis::x).value);
+        set_range({ range().first, x });
+    }
+    inline void stop_edit(const view::pixel_coordinates<2>& position)
+    {
+        auto x = pixelToXCoord(position.component(enums::Axis::x).value);
+        set_range({ range().first, x });
+    }
 };
 using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, SciQLopPlot>;
 }

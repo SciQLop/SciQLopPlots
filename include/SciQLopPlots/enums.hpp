@@ -29,6 +29,8 @@ namespace SciQLopPlots::enums
 
     enum class Layers{EditMode=0,Cursors=1,Shapes=2,Background=3};
 
+    enum class IteractionsMode{Normal=0, ObjectCreation=1};
+
 }
 
 

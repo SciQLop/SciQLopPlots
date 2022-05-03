@@ -43,10 +43,28 @@ SimplePlot::SimplePlot(QWidget* parent) : QMainWindow(parent), ui(new Ui::Simple
             ui->totalPointsNumber->setText(humanize(nPoints));
         });
 
+    connect(ui->actionAdd_TimeSpan, &QAction::triggered, this,
+        [this, plot](bool checked)
+        {
+            if (checked)
+                plot->setInteractionsMode(SciQLopPlots::enums::IteractionsMode::ObjectCreation);
+            else
+                plot->setInteractionsMode(SciQLopPlots::enums::IteractionsMode::Normal);
+        });
+
     plot->setXRange({ -100., 100. });
     plot->setYRange({ -2., 2. });
-    new SciQLopPlots::TimeSpan{plot,{-10,10}};
-    new SciQLopPlots::TimeSpan{plot,{25,60}};
+
+    plot->setObjectFactory(SciQLopPlots::interfaces::make_shared_GraphicObjectFactory(
+        [](SciQLopPlots::interfaces::IPlotWidget* plot,
+            const SciQLopPlots::view::pixel_coordinates<2>& start_position)
+        {
+            auto x = plot->map_pixels_to_data_coordinates(
+                start_position.component(SciQLopPlots::enums::Axis::x).value,
+                SciQLopPlots::enums::Axis::x);
+            return new SciQLopPlots::TimeSpan { dynamic_cast<SciQLopPlots::SciQLopPlot*>(plot),
+                { x, x } };
+        }));
 }
 
 SimplePlot::~SimplePlot()

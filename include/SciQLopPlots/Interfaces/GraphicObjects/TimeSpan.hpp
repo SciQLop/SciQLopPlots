@@ -34,15 +34,11 @@ class TimeSpan : public ITimeSpan
 
 public:
     TimeSpan(plot_t* plot, const axis::range time_range)
-            : ITimeSpan { plot }
-            , time_span_impl { new TimeSpanImpl { plot, time_range } }
+            : ITimeSpan { plot }, time_span_impl { new TimeSpanImpl { plot, time_range } }
     {
     }
 
-    ~TimeSpan()
-    {
-        delete time_span_impl;
-    }
+    ~TimeSpan() { delete time_span_impl; }
 
     virtual void set_range(const axis::range& time_range) final
     {
@@ -51,7 +47,10 @@ public:
     };
     inline virtual axis::range range() const final { return time_span_impl->range(); };
 
-    inline virtual view::data_coordinates<2> center() const override { return time_span_impl->center(); }
+    inline virtual view::data_coordinates<2> center() const override
+    {
+        return time_span_impl->center();
+    }
 
     inline virtual view::pixel_coordinates<2> pix_center() const override
     {
@@ -86,6 +85,19 @@ public:
     inline virtual Qt::CursorShape cursor_shape() const override
     {
         return time_span_impl->cursor_shape();
+    }
+
+    inline virtual void start_edit(const view::pixel_coordinates<2>& position) override
+    {
+        time_span_impl->start_edit(position);
+    }
+    inline virtual void update_edit(const view::pixel_coordinates<2>& position) override
+    {
+        time_span_impl->update_edit(position);
+    }
+    inline virtual void stop_edit(const view::pixel_coordinates<2>& position) override
+    {
+        time_span_impl->stop_edit(position);
     }
 };
 

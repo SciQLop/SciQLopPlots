@@ -23,6 +23,7 @@
 #include "../../enums.hpp"
 #include "../../view.hpp"
 #include <QCursor>
+#include <memory>
 
 namespace SciQLopPlots::interfaces
 {
@@ -32,7 +33,7 @@ struct GraphicObject
 {
     GraphicObject(IPlotWidget* plot, enums::Layers layer);
     virtual ~GraphicObject();
-    ;
+
     virtual view::data_coordinates<2> center() const = 0;
     virtual view::pixel_coordinates<2> pix_center() const = 0;
 
@@ -44,7 +45,13 @@ struct GraphicObject
 
     virtual void set_selected(bool select) = 0;
 
+    inline virtual bool deletable()const {return true;}
+
     virtual Qt::CursorShape cursor_shape() const = 0;
+
+    virtual void start_edit(const view::pixel_coordinates<2>& position) = 0;
+    virtual void update_edit(const view::pixel_coordinates<2>& position) = 0;
+    virtual void stop_edit(const view::pixel_coordinates<2>& position) = 0;
 
     enums::Layers layer() { return m_layer; }
 
@@ -52,4 +59,39 @@ protected:
     IPlotWidget* plot;
     enums::Layers m_layer;
 };
+
+class IGraphicObjectFactory
+{
+public:
+    inline virtual ~IGraphicObjectFactory() {};
+    virtual GraphicObject* create(
+        IPlotWidget* plot, const view::pixel_coordinates<2>& start_position)
+        = 0;
+};
+
+template <typename callable_t>
+class GraphicObjectFactory : public IGraphicObjectFactory
+{
+    callable_t callable;
+
+public:
+    GraphicObjectFactory(callable_t&& callable) : callable { std::forward<callable_t>(callable) } { }
+
+    inline ~GraphicObjectFactory() {};
+    inline virtual GraphicObject* create(
+        IPlotWidget* plot, const view::pixel_coordinates<2>& start_position) override
+    {
+        return callable(plot, start_position);
+    }
+};
+
+template  <typename callable_t>
+GraphicObjectFactory(callable_t&& callable) -> GraphicObjectFactory<callable_t>;
+
+template  <typename callable_t>
+std::shared_ptr<IGraphicObjectFactory>  make_shared_GraphicObjectFactory(callable_t&& callable)
+{
+    return std::make_shared<GraphicObjectFactory<callable_t>>(std::forward<callable_t>(callable));
+}
+
 }

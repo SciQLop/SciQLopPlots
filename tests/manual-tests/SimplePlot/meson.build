@@ -9,5 +9,6 @@ executable('SimplePlot'
         , 'simpleplot.h'
         , generated_files
         , include_directories : common_inc
+        , extra_files : ['simpleplot.ui']
         , dependencies : [SciQLopPlots_dep, thread_dep]
         , install : true)

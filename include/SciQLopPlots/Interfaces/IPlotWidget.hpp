@@ -115,7 +115,12 @@ namespace interfaces
         Q_SIGNAL void closed();
 
         virtual GraphicObject* graphicObjectAt(const QPoint& position) = 0;
-        virtual GraphicObject* nextGraphicObjectAt(const QPoint& position, GraphicObject* current) = 0;
+        virtual GraphicObject* nextGraphicObjectAt(const QPoint& position, GraphicObject* current)
+            = 0;
+
+        inline void setInteractionsMode(enums::IteractionsMode mode) { m_interactions_mode = mode; }
+        inline void setObjectFactory(std::shared_ptr<IGraphicObjectFactory>&& factory) { m_object_factory = std::move(factory); }
+        inline void setObjectFactory(const std::shared_ptr<IGraphicObjectFactory>& factory) { m_object_factory = factory; }
 
 
     protected:
@@ -138,7 +143,11 @@ namespace interfaces
         std::optional<QPoint> m_lastMousePress = std::nullopt;
         interfaces::GraphicObject* m_selected_object = nullptr;
         interfaces::GraphicObject* m_prev_selected_object = nullptr;
-        bool m_has_moved_since_pouse_press;
+        bool m_has_moved_since_mouse_press;
+        enums::IteractionsMode m_interactions_mode = enums::IteractionsMode::Normal;
+
+        std::shared_ptr<IGraphicObjectFactory> m_object_factory=nullptr;
+
     };
 }
 }
