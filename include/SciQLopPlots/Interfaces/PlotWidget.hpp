@@ -23,7 +23,7 @@
 
 #include "IPlotWidget.hpp"
 
-#include <types/detectors.hpp>
+#include <cpp_utils/types/detectors.hpp>
 
 #include <channels/channels.hpp>
 

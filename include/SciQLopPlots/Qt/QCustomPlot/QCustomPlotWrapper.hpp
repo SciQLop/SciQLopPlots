@@ -25,7 +25,7 @@
 #include <QTimer>
 #include <QWidget>
 
-#include <containers/algorithms.hpp>
+#include <cpp_utils/containers/algorithms.hpp>
 
 #include <qcp.h>
 
