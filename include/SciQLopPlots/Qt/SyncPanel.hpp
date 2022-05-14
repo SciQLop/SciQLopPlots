@@ -61,7 +61,7 @@ public:
         setWidgetResizable(true);
     }
 
-    ~SyncPannel() { }
+    virtual ~SyncPannel() { }
 
     inline void setXRange(axis::range newRange) noexcept
     {

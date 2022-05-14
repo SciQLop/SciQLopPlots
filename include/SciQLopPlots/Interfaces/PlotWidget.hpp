@@ -206,6 +206,13 @@ namespace interfaces
             m_plot->plot(graphIdex, data);
         }
 
+        template <typename data_t>
+        void plot(const std::vector<int>& graphIdexes, const data_t& data)
+        {
+            std::unique_lock<std::mutex> lock(m_plot_mutex);
+            m_plot->plot(graphIdexes, data);
+        }
+
         plot_impl_t* handle() { return this->m_plot; }
 
         virtual GraphicObject* graphicObjectAt(const QPoint& position) override
@@ -227,6 +234,12 @@ template <typename plot_t, typename data_t>
 inline void plot(plot_t& plot, int graphIdex, const data_t& data)
 {
     plot.plot(graphIdex, data);
+}
+
+template <typename plot_t, typename data_t>
+inline void plot(plot_t& plot, const std::vector<int>& graphIdexes, const data_t& data)
+{
+    plot.plot(graphIdexes, data);
 }
 
 }

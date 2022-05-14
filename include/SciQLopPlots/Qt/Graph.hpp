@@ -37,26 +37,32 @@ namespace SciQLopPlots
 
 namespace details
 {
-    template <typename data_type, typename plot_t>
+    template <typename data_type, typename plot_t, typename indexes_t>
     struct Graph
     {
         using channel_tag = struct channel_tag;
-        channels::channel<axis::range, 1, channels::full_policy::overwrite_last> transformations_out;
-        Graph(int index, plot_t* plot) : m_plot { plot }, m_graphIndex { index }
+        channels::channel<axis::range, 1, channels::full_policy::overwrite_last>
+            transformations_out;
+
+        Graph(indexes_t indexes, plot_t* plot) : m_plot { plot }, m_graphIndexes { indexes }
         {
             QObject::connect(
                 plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
-            QObject::connect(plot, &plot_t::closed, [this]() {
-                this->close();
-                this->m_plot = nullptr;
-            });
-            m_updateThread = std::thread([this]() {
-                while (!m_data_in.closed())
+            QObject::connect(plot, &plot_t::closed,
+                [this]()
                 {
-                    if (auto maybeData = m_data_in.take(); m_plot && maybeData)
-                        SciQLopPlots::plot(*m_plot, m_graphIndex, std::move(*maybeData));
-                }
-            });
+                    this->close();
+                    this->m_plot = nullptr;
+                });
+            m_updateThread = std::thread(
+                [this]()
+                {
+                    while (!m_data_in.closed())
+                    {
+                        if (auto maybeData = m_data_in.take(); m_plot && maybeData)
+                            SciQLopPlots::plot(*m_plot, m_graphIndexes, std::move(*maybeData));
+                    }
+                });
         }
 
         void add(const data_type& data) { m_data_in.add(data); }
@@ -82,22 +88,22 @@ namespace details
         channels::channel<data_type, 1, channels::full_policy::overwrite_last> m_data_in;
         plot_t* m_plot = nullptr;
         std::thread m_updateThread;
-        int m_graphIndex;
+        indexes_t m_graphIndexes;
     };
 }
 
-template <typename data_type, typename plot_t>
+template <typename data_type, typename plot_t, typename indexes_t=int>
 struct Graph
 {
 private:
-    std::shared_ptr<details::Graph<data_type, plot_t>> m_impl;
+    std::shared_ptr<details::Graph<data_type, plot_t, indexes_t>> m_impl;
 
 public:
     using channel_tag = struct channel_tag;
     using in_value_type = data_type;
     channels::channel<axis::range, 1, channels::full_policy::overwrite_last> transformations_out;
-    Graph(int index, plot_t* plot)
-            : m_impl { new details::Graph<data_type, plot_t>(index, plot) }
+    Graph(indexes_t indexes, plot_t* plot)
+            : m_impl { new details::Graph<data_type, plot_t, indexes_t>(indexes, plot) }
             , transformations_out { m_impl->transformations_out }
     {
     }
@@ -146,17 +152,31 @@ public:
 
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_graph(
+Graph<data_type, interfaces::PlotWidget<PlotImpl>, int> add_graph(
     interfaces::PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
 {
-    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, int>(plot->addGraph(color), plot);
 }
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_colormap(
+Graph<data_type, interfaces::PlotWidget<PlotImpl>, std::vector<int>> add_graph(
+    interfaces::PlotWidget<PlotImpl>* plot, std::size_t count, std::vector<QColor> colors)
+{
+    std::vector<int> graphs;
+    [&graphs, plot, color = std::cbegin(colors)]() mutable
+    {
+        graphs.push_back(plot->addGraph(*color));
+        color++;
+    } * count;
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, std::vector<int>>(graphs, plot);
+}
+
+
+template <typename data_type, typename PlotImpl>
+Graph<data_type, interfaces::PlotWidget<PlotImpl>, int> add_colormap(
     interfaces::PlotWidget<PlotImpl>* plot)
 {
-    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addColorMap(), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, int>(plot->addColorMap(), plot);
 }
 
 }
