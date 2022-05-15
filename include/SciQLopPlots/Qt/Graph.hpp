@@ -23,7 +23,8 @@
 
 #include "../Interfaces/PlotWidget.hpp"
 
-#include <types/detectors.hpp>
+#include <cpp_utils/types/detectors.hpp>
+#include <cpp_utils/cpp_utils.hpp>
 
 #include <channels/channels.hpp>
 
@@ -37,14 +38,14 @@ namespace SciQLopPlots
 
 namespace details
 {
-    template <typename data_type, typename plot_t, typename indexes_t>
+    template <typename data_type, typename plot_t>
     struct Graph
     {
         using channel_tag = struct channel_tag;
         channels::channel<axis::range, 1, channels::full_policy::overwrite_last>
             transformations_out;
 
-        Graph(indexes_t indexes, plot_t* plot) : m_plot { plot }, m_graphIndexes { indexes }
+        Graph(std::vector<int> indexes, plot_t* plot) : m_plot { plot }, m_graphIndexes { indexes }
         {
             QObject::connect(
                 plot, &plot_t::xRangeChanged, [this](auto range) { transformations_out << range; });
@@ -88,22 +89,30 @@ namespace details
         channels::channel<data_type, 1, channels::full_policy::overwrite_last> m_data_in;
         plot_t* m_plot = nullptr;
         std::thread m_updateThread;
-        indexes_t m_graphIndexes;
+        std::vector<int> m_graphIndexes;
     };
+
+    inline const auto colors = std::vector<QColor>{Qt::blue, Qt::red, Qt::green, Qt::black, Qt::yellow, Qt::gray};
 }
 
-template <typename data_type, typename plot_t, typename indexes_t=int>
+template <typename data_type, typename plot_t>
 struct Graph
 {
 private:
-    std::shared_ptr<details::Graph<data_type, plot_t, indexes_t>> m_impl;
+    std::shared_ptr<details::Graph<data_type, plot_t>> m_impl;
 
 public:
     using channel_tag = struct channel_tag;
     using in_value_type = data_type;
     channels::channel<axis::range, 1, channels::full_policy::overwrite_last> transformations_out;
-    Graph(indexes_t indexes, plot_t* plot)
-            : m_impl { new details::Graph<data_type, plot_t, indexes_t>(indexes, plot) }
+    Graph(std::vector<int> indexes, plot_t* plot)
+            : m_impl { new details::Graph<data_type, plot_t>(indexes, plot) }
+            , transformations_out { m_impl->transformations_out }
+    {
+    }
+
+    Graph(int index, plot_t* plot)
+            : m_impl { new details::Graph<data_type, plot_t>({index}, plot) }
             , transformations_out { m_impl->transformations_out }
     {
     }
@@ -152,31 +161,31 @@ public:
 
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, interfaces::PlotWidget<PlotImpl>, int> add_graph(
+Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_graph(
     interfaces::PlotWidget<PlotImpl>* plot, QColor color = Qt::blue)
 {
-    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, int>(plot->addGraph(color), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addGraph(color), plot);
 }
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, interfaces::PlotWidget<PlotImpl>, std::vector<int>> add_graph(
-    interfaces::PlotWidget<PlotImpl>* plot, std::size_t count, std::vector<QColor> colors)
+Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_graph(
+    interfaces::PlotWidget<PlotImpl>* plot, std::size_t count=1, std::vector<QColor> colors=details::colors)
 {
     std::vector<int> graphs;
-    [&graphs, plot, color = std::cbegin(colors)]() mutable
+    count * [&graphs, plot, color = std::cbegin(colors)]() mutable
     {
         graphs.push_back(plot->addGraph(*color));
         color++;
-    } * count;
-    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, std::vector<int>>(graphs, plot);
+    };
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(graphs, plot);
 }
 
 
 template <typename data_type, typename PlotImpl>
-Graph<data_type, interfaces::PlotWidget<PlotImpl>, int> add_colormap(
+Graph<data_type, interfaces::PlotWidget<PlotImpl>> add_colormap(
     interfaces::PlotWidget<PlotImpl>* plot)
 {
-    return Graph<data_type, interfaces::PlotWidget<PlotImpl>, int>(plot->addColorMap(), plot);
+    return Graph<data_type, interfaces::PlotWidget<PlotImpl>>(plot->addColorMap(), plot);
 }
 
 }

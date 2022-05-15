@@ -148,6 +148,12 @@ public:
         plot(graphIdexes, data.first, data.second);
     }
 
+    inline void plot(const std::vector<int> graphIdexes, const data2d_t& data)
+    {
+        assert(std::size(graphIdexes)==1);
+        plot(graphIdexes[0], data);
+    }
+
     inline void plot(int graphIndex, const data2d_t& data)
     {
         plot(graphIndex, std::get<0>(data), std::get<1>(data), std::get<2>(data));
@@ -155,8 +161,8 @@ public:
 
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y)
     {
-        QVector<QCPGraphData> data;
-        std::transform(std::cbegin(x), std::cend(x), std::cbegin(y), std::back_inserter(data),
+        QVector<QCPGraphData> data(std::size(x));
+        std::transform(std::cbegin(x), std::cend(x), std::cbegin(y), std::begin(data),
             [](double x, double y) {
                 return QCPGraphData { x, y };
             });
@@ -169,12 +175,13 @@ public:
         auto y_it=std::cbegin(y);
         for(auto graphIndex:graphIdexes)
         {
-            QVector<QCPGraphData> data;
-            std::transform(std::cbegin(x), std::cend(x), y_it, std::back_inserter(data),
+            QVector<QCPGraphData> data(std::size(x));
+            std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
                 [](double x, double y) {
                     return QCPGraphData { x, y };
                 });
             emit _plot(graphIndex, data);
+            y_it += std::size(x);
         }
     }
 
