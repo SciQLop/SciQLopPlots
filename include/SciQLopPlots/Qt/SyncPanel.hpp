@@ -27,9 +27,10 @@
 #include <QWidget>
 
 #include <QVBoxLayout>
+#include <QList>
+
 
 #include <cassert>
-#include <list>
 
 #include "../Interfaces/IPlotWidget.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
@@ -41,7 +42,7 @@ namespace SciQLopPlots
 class SyncPannel : public QScrollArea
 {
     Q_OBJECT
-    std::list<interfaces::IPlotWidget*> plots;
+    QList<interfaces::IPlotWidget*> plots;
     axis::range currentRange;
     QTimer* refreshTimer;
 
@@ -76,17 +77,24 @@ public:
     inline void addPlot(interfaces::IPlotWidget* plot, int index=-1)
     {
         assert(plot);
-        if (plots.size())
-            plots.back()->showXAxis(false);
-        plots.push_back(plot);
-        if(index!=-1)
-            dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
+        plot->setParent(this);
+        if(index==-1 or index == plots.size())
+        {
+            index = plots.size();
+            if (plots.size())
+                plots.back()->showXAxis(false);
+        }
         else
-            widget()->layout()->addWidget(plot);
+        {
+            plot->showXAxis(false);
+        }
+        plots.insert(index,plot);
+        dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
         plot->setXRange(currentRange);
         connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
         connect(plot, &interfaces::IPlotWidget::dataChanged,
             [this]() { this->refreshTimer->start(20); });
+
     }
 
     inline int indexOf(QWidget* wdgt)
@@ -94,5 +102,7 @@ public:
         assert(wdgt);
         return dynamic_cast<QVBoxLayout*>(widget()->layout())->indexOf(wdgt);
     }
+
+    inline std::size_t count(){return std::size(plots);}
 };
 }
