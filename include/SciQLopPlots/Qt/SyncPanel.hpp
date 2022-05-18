@@ -73,16 +73,26 @@ public:
         }
     }
 
-    inline void addPlot(interfaces::IPlotWidget* plot)
+    inline void addPlot(interfaces::IPlotWidget* plot, int index=-1)
     {
         assert(plot);
         if (plots.size())
             plots.back()->showXAxis(false);
         plots.push_back(plot);
-        widget()->layout()->addWidget(plot);
+        if(index!=-1)
+            dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
+        else
+            widget()->layout()->addWidget(plot);
         plot->setXRange(currentRange);
         connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
-        connect(plot, &interfaces::IPlotWidget::dataChanged, [this]() { this->refreshTimer->start(20); });
+        connect(plot, &interfaces::IPlotWidget::dataChanged,
+            [this]() { this->refreshTimer->start(20); });
+    }
+
+    inline int indexOf(QWidget* wdgt)
+    {
+        assert(wdgt);
+        return dynamic_cast<QVBoxLayout*>(widget()->layout())->indexOf(wdgt);
     }
 };
 }
