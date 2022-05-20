@@ -54,7 +54,7 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     {
         if (event->angleDelta().x() == 0)
         {
-            auto center = plot->mapFromParent(event->position());
+            auto center = event->position().toPoint();
             view::zoom(plot, view::single_pixel_coordinate { center.y(), enums::Axis::y },
                 zoomFactor(deltadegrees.y()));
         }
@@ -65,7 +65,7 @@ inline bool handleWheelEvent(const QWheelEvent* event, plot_t* plot)
     }
     else if (event->modifiers() == Qt::ShiftModifier)
     {
-        auto center = plot->mapFromParent(event->position());
+        auto center = event->position().toPoint();
         view::zoom(plot, view::single_pixel_coordinate { center.x(), enums::Axis::x },
             zoomFactor(deltadegrees.y()));
     }
