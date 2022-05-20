@@ -44,7 +44,7 @@ struct range : std::pair<double, double>
     double center() const noexcept { return (second + first) / 2.; }
     double width() const noexcept { return std::abs(second - first); }
 
-    range& operator*(double factor)
+    range& operator*=(double factor)
     {
         auto _center = center();
         auto newHalfWidth = width() * factor / 2;
@@ -53,36 +53,39 @@ struct range : std::pair<double, double>
         return *this;
     }
 
-    range& operator*(double factor) const
+    range operator*(double factor) const
     {
         auto copy = *this;
-        return copy*factor;
+        copy *=factor;
+        return copy;
     }
 
-    range& operator+(double offset)
+    range& operator+=(double offset)
     {
         first += offset;
         second += offset;
         return *this;
     }
 
-    range& operator+(double offset) const
+    range operator+(double offset) const
     {
         auto copy = *this;
-        return copy+offset;
+        copy+=offset;
+        return copy;
     }
 
-    range& operator-(double offset)
+    range& operator-=(double offset)
     {
         first -= offset;
         second -= offset;
         return *this;
     }
 
-    range& operator-(double offset)const
+    range operator-(double offset)const
     {
         auto copy = *this;
-        return copy-offset;
+        copy-=offset;
+        return copy;
     }
 };
 
