@@ -42,9 +42,12 @@ namespace SciQLopPlots
 class SyncPanel : public QScrollArea
 {
     Q_OBJECT
-    QList<interfaces::IPlotWidget*> plots;
+    QList<interfaces::IPlotWidget*> _plots;
     axis::range currentRange;
     QTimer* refreshTimer;
+
+protected:
+    inline QList<interfaces::IPlotWidget*> plots()const {return _plots;}
 
 public:
     explicit SyncPanel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
@@ -53,7 +56,7 @@ public:
         refreshTimer = new QTimer { this };
         refreshTimer->setSingleShot(true);
         connect(this->refreshTimer, &QTimer::timeout,
-            [this]() { broadcast(this->plots, &interfaces::IPlotWidget::replot, 20); });
+            [this]() { broadcast(this->_plots, &interfaces::IPlotWidget::replot, 20); });
         setWidget(new QWidget(this));
         widget()->setLayout(new QVBoxLayout);
         setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
@@ -70,7 +73,7 @@ public:
         if (currentRange != newRange)
         {
             currentRange = newRange;
-            broadcast(plots, &interfaces::IPlotWidget::setXRange, newRange);
+            broadcast(_plots, &interfaces::IPlotWidget::setXRange, newRange);
         }
     }
 
@@ -78,17 +81,17 @@ public:
     {
         assert(plot);
         plot->setParent(this);
-        if(index==-1 or index == plots.size())
+        if(index==-1 or index == _plots.size())
         {
-            index = plots.size();
-            if (plots.size())
-                plots.back()->showXAxis(false);
+            index = _plots.size();
+            if (_plots.size())
+                _plots.back()->showXAxis(false);
         }
         else
         {
             plot->showXAxis(false);
         }
-        plots.insert(index,plot);
+        _plots.insert(index,plot);
         dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
         plot->setXRange(currentRange);
         connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPanel::setXRange);
@@ -103,6 +106,6 @@ public:
         return dynamic_cast<QVBoxLayout*>(widget()->layout())->indexOf(wdgt);
     }
 
-    inline std::size_t count(){return std::size(plots);}
+    inline std::size_t count(){return std::size(_plots);}
 };
 }

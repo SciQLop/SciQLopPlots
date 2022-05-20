@@ -32,9 +32,17 @@ class ITimeSpan : public QObject, public GraphicObject
 
 public:
     ITimeSpan(IPlotWidget* plot) : GraphicObject { plot, enums::Layers::Shapes } { }
-    virtual ~ITimeSpan() { }
-    virtual void set_range(const axis::range& time_range) = 0;
-    virtual axis::range range() const = 0;
+    virtual ~ITimeSpan();
+    inline virtual void set_range(const axis::range& time_range)
+    {
+        (void) time_range;
+        throw std::runtime_error { "You must implement ITimeSpan::set_range" };
+    }
+
+    inline virtual axis::range range()
+    {
+        throw std::runtime_error { "You must implement ITimeSpan::set_range" };
+    }
 
     Q_SIGNAL void range_changed(axis::range new_time_range);
 };
