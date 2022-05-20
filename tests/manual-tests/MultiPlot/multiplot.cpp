@@ -33,7 +33,7 @@ MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent)
     statusBar()->addWidget(m_totalPointNumber);
     setDockNestingEnabled(true);
     3 * [this]() {
-        auto syncPannel = new SciQLopPlots::SyncPannel {};
+        auto syncPannel = new SciQLopPlots::SyncPanel {};
         syncPannel->setXRange({ -100., 100. });
         auto dock = dockify(syncPannel, this);
         addDockWidget(Qt::DockWidgetArea::LeftDockWidgetArea, dock);
@@ -46,7 +46,7 @@ MultiPlot::MultiPlot(QWidget* parent) : QMainWindow(parent)
 
 MultiPlot::~MultiPlot() { }
 
-SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPannel* panel)
+SciQLopPlots::SciQLopPlot* MultiPlot::makePlot(SciQLopPlots::SyncPanel* panel)
 {
     auto plot = new SciQLopPlots::SciQLopPlot { panel };
     plot->setMinimumHeight(150);

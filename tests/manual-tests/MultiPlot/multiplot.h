@@ -17,7 +17,7 @@ public:
     ~MultiPlot();
 
 private:
-    SciQLopPlots::SciQLopPlot* makePlot(SciQLopPlots::SyncPannel* panel);
+    SciQLopPlots::SciQLopPlot* makePlot(SciQLopPlots::SyncPanel* panel);
     std::vector<std::unique_ptr<DataProducer>> m_gens;
     QLabel* m_totalPointNumber;
 };

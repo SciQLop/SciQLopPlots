@@ -39,7 +39,7 @@
 
 namespace SciQLopPlots
 {
-class SyncPannel : public QScrollArea
+class SyncPanel : public QScrollArea
 {
     Q_OBJECT
     QList<interfaces::IPlotWidget*> plots;
@@ -47,7 +47,7 @@ class SyncPannel : public QScrollArea
     QTimer* refreshTimer;
 
 public:
-    explicit SyncPannel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
+    explicit SyncPanel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
     {
         using namespace cpp_utils::containers;
         refreshTimer = new QTimer { this };
@@ -62,7 +62,7 @@ public:
         setWidgetResizable(true);
     }
 
-    virtual ~SyncPannel() { }
+    virtual ~SyncPanel() { }
 
     inline void setXRange(axis::range newRange) noexcept
     {
@@ -91,7 +91,7 @@ public:
         plots.insert(index,plot);
         dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
         plot->setXRange(currentRange);
-        connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPannel::setXRange);
+        connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPanel::setXRange);
         connect(plot, &interfaces::IPlotWidget::dataChanged,
             [this]() { this->refreshTimer->start(20); });
 
