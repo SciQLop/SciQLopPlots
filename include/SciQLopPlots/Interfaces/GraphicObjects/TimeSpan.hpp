@@ -36,15 +36,17 @@ public:
     TimeSpan(plot_t* plot, const axis::range time_range)
             : ITimeSpan { plot }, time_span_impl { new TimeSpanImpl { plot, time_range } }
     {
+        connect(time_span_impl, &TimeSpanImpl::range_changed, this, &TimeSpan::range_changed);
     }
 
     ~TimeSpan() { delete time_span_impl; }
 
-    virtual void set_range(const axis::range& time_range) final
+
+    inline virtual void set_range(const axis::range& time_range) final
     {
         time_span_impl->set_range(time_range);
-        emit range_changed(time_range);
     };
+
     inline virtual axis::range range() const final { return time_span_impl->range(); };
 
     inline virtual view::data_coordinates<2> center() const override

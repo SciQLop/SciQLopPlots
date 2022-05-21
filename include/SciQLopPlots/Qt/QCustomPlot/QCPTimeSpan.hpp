@@ -149,6 +149,8 @@ class QCPTimeSpan : public QObject
 public:
     using plot_t = QCustomPlotWrapper;
 
+    Q_SIGNAL void range_changed(axis::range new_time_range);
+
     QCPTimeSpan(SciQLopPlot* plot, axis::range time_range)
             : rect { new QCPItemRect { plot->handle() } }
             , left_border { plot }
@@ -183,26 +185,27 @@ public:
         plot->replot(QCustomPlot::rpQueuedReplot);
     }
 
-    void set_range(const axis::range& time_range)
+    inline void set_range(const axis::range& time_range)
     {
         rect->topLeft->setCoords(time_range.first, 0);
         rect->bottomRight->setCoords(time_range.second, 1);
         rect->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        emit range_changed(time_range);
     }
 
-    axis::range range() const
+    inline axis::range range() const
     {
         auto t1 = rect->topLeft->key(), t2 = rect->bottomRight->key();
         return { fmin(t1, t2), fmax(t1, t2) };
     };
 
-    view::data_coordinates<2> center() const
+    inline view::data_coordinates<2> center() const
     {
         return { (rect->topLeft->key() + rect->bottomRight->key()) / 2.,
             (rect->topLeft->value() + rect->bottomRight->value()) / 2. };
     }
 
-    view::pixel_coordinates<2> pix_center() const
+    inline view::pixel_coordinates<2> pix_center() const
     {
         return { (rect->topLeft->pixelPosition().x() + rect->bottomRight->pixelPosition().x()) / 2.,
             (rect->topLeft->pixelPosition().y() + rect->bottomRight->pixelPosition().y()) / 2. };

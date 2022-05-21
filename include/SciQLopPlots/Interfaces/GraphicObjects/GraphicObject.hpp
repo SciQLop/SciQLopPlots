@@ -45,7 +45,9 @@ struct GraphicObject
 
     virtual void set_selected(bool select) = 0;
 
-    inline virtual bool deletable()const {return true;}
+    inline virtual bool deletable() const { return m_deletable; }
+    inline virtual void set_deletable(bool deletable) { m_deletable = deletable; }
+
 
     virtual Qt::CursorShape cursor_shape() const = 0;
 
@@ -56,6 +58,7 @@ struct GraphicObject
     enums::Layers layer() { return m_layer; }
 
 protected:
+    bool m_deletable = true;
     IPlotWidget* plot;
     enums::Layers m_layer;
 };
@@ -75,7 +78,8 @@ class GraphicObjectFactory : public IGraphicObjectFactory
     callable_t callable;
 
 public:
-    GraphicObjectFactory(callable_t&& callable) : callable { std::forward<callable_t>(callable) } { }
+    GraphicObjectFactory(callable_t&& callable)
+            : callable { std::forward<callable_t>(callable) } { }
 
     inline ~GraphicObjectFactory() {};
     inline virtual GraphicObject* create(
@@ -85,11 +89,11 @@ public:
     }
 };
 
-template  <typename callable_t>
+template <typename callable_t>
 GraphicObjectFactory(callable_t&& callable) -> GraphicObjectFactory<callable_t>;
 
-template  <typename callable_t>
-std::shared_ptr<IGraphicObjectFactory>  make_shared_GraphicObjectFactory(callable_t&& callable)
+template <typename callable_t>
+std::shared_ptr<IGraphicObjectFactory> make_shared_GraphicObjectFactory(callable_t&& callable)
 {
     return std::make_shared<GraphicObjectFactory<callable_t>>(std::forward<callable_t>(callable));
 }
