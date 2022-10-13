@@ -27,6 +27,7 @@
 
 #include <cpp_utils/containers/algorithms.hpp>
 
+#include <iostream>
 #include <qcp.h>
 
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
@@ -150,7 +151,7 @@ public:
 
     inline void plot(const std::vector<int> graphIdexes, const data2d_t& data)
     {
-        assert(std::size(graphIdexes)==1);
+        assert(std::size(graphIdexes) == 1);
         plot(graphIdexes[0], data);
     }
 
@@ -169,19 +170,29 @@ public:
         emit _plot(graphIndex, data);
     }
 
-    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x, const std::vector<double>& y)
+    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
+        const std::vector<double>& y)
     {
-        assert(std::size(y)/std::size(graphIdexes)==std::size(x));
-        auto y_it=std::cbegin(y);
-        for(auto graphIndex:graphIdexes)
+        if (std::size(y) / std::size(graphIdexes) == std::size(x))
         {
-            QVector<QCPGraphData> data(std::size(x));
-            std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
-                [](double x, double y) {
-                    return QCPGraphData { x, y };
-                });
-            emit _plot(graphIndex, data);
-            y_it += std::size(x);
+            auto y_it = std::cbegin(y);
+            for (auto graphIndex : graphIdexes)
+            {
+                QVector<QCPGraphData> data(std::size(x));
+                std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
+                    [](double x, double y) {
+                        return QCPGraphData { x, y };
+                    });
+                emit _plot(graphIndex, data);
+                y_it += std::size(x);
+            }
+        }
+        else
+        {
+            std::cerr << "Wrong data shape: " << std::endl
+                      << "std::size(y)=" << std::size(y) << std::endl
+                      << "std::size(graphIdexes)=" << std::size(graphIdexes) << std::endl
+                      << "std::size(x)=" << std::size(x) << std::endl;
         }
     }
 
@@ -223,7 +234,6 @@ private:
     Q_SLOT void _plot_slt(int graphIndex, const QVector<QCPGraphData>& data);
     Q_SLOT void _plot_slt(QCPColorMapData* data);
     QCPColorMap* m_colormap = nullptr;
-
 };
 
 using SciQLopPlot = interfaces::PlotWidget<QCustomPlotWrapper>;
