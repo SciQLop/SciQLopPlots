@@ -32,7 +32,6 @@
 
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
-#include "SciQLopPlots/Interfaces/PlotWidget.hpp"
 
 #include "SciQLopPlots/axis_range.hpp"
 
@@ -235,8 +234,6 @@ private:
     Q_SLOT void _plot_slt(QCPColorMapData* data);
     QCPColorMap* m_colormap = nullptr;
 };
-
-using SciQLopPlot = interfaces::PlotWidget<QCustomPlotWrapper>;
 
 
 }

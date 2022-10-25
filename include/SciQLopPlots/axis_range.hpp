@@ -28,23 +28,28 @@
 namespace SciQLopPlots::axis
 {
 
-struct range : std::pair<double, double>
+struct range
 {
-    range(double lower, double upper) : std::pair<double, double> { lower, upper } { }
-    range(const range& other) : std::pair<double, double> { other.first, other.second } { }
-    range(range&& other) : std::pair<double, double> { other.first, other.second } { }
+public:
+    double first = 0.;
+    double second = 0.;
+    inline range() = default;
+    inline ~range() = default;
+    inline range(double lower, double upper) : first { lower }, second { upper } { }
+    inline range(const range& other) : first { other.first }, second { other.second } { }
+    inline range(range&& other) : first { other.first }, second { other.second } { }
 
-    range& operator=(const range& other)
+    inline range& operator=(const range& other)
     {
         this->first = other.first;
         this->second = other.second;
         return *this;
     }
 
-    double center() const noexcept { return (second + first) / 2.; }
-    double width() const noexcept { return std::abs(second - first); }
+    inline double center() const noexcept { return (second + first) / 2.; }
+    inline double width() const noexcept { return std::abs(second - first); }
 
-    range& operator*=(double factor)
+    inline range& operator*=(double factor)
     {
         auto _center = center();
         auto newHalfWidth = width() * factor / 2;
@@ -53,38 +58,45 @@ struct range : std::pair<double, double>
         return *this;
     }
 
-    range operator*(double factor) const
+    inline range operator*(double factor) const
     {
         auto copy = *this;
-        copy *=factor;
+        copy *= factor;
         return copy;
     }
 
-    range& operator+=(double offset)
+    inline bool operator==(const range& other) const
+    {
+        return this->first == other.first && this->second == other.second;
+    }
+
+    inline bool operator!=(const range& other) const { return !(*this == other); }
+
+    inline range& operator+=(double offset)
     {
         first += offset;
         second += offset;
         return *this;
     }
 
-    range operator+(double offset) const
+    inline range operator+(double offset) const
     {
         auto copy = *this;
-        copy+=offset;
+        copy += offset;
         return copy;
     }
 
-    range& operator-=(double offset)
+    inline range& operator-=(double offset)
     {
         first -= offset;
         second -= offset;
         return *this;
     }
 
-    range operator-(double offset)const
+    inline range operator-(double offset) const
     {
         auto copy = *this;
-        copy-=offset;
+        copy -= offset;
         return copy;
     }
 };

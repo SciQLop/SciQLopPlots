@@ -32,7 +32,9 @@
 
 #include "./GraphicObjects/GraphicObject.hpp"
 #include "./GraphicObjects/LayeredGraphicObjectCollection.hpp"
+#include "./IGraph.hpp"
 #include "SciQLopPlots/axis_range.hpp"
+#include "SciQLopPlots/enums.hpp"
 
 namespace SciQLopPlots
 {
@@ -58,7 +60,7 @@ inline void removeAllMargins(QWidget* widget)
     if (layout)
     {
         layout->setSpacing(0);
-        //layout->setMargin(0);
+        // layout->setMargin(0);
         layout->setContentsMargins(0, 0, 0, 0);
     }
 }
@@ -89,23 +91,24 @@ namespace interfaces
     public:
         IPlotWidget(QWidget* parent = nullptr) : QWidget(parent) { }
 
-        virtual double map_pixels_to_data_coordinates(double px, enums::Axis axis) const = 0;
-        virtual void set_range(const axis::range& range, enums::Axis axis) = 0;
-        virtual void set_range(const axis::range& x_range, const axis::range& y_range) = 0;
-        virtual axis::range range(enums::Axis axis) const = 0;
+        virtual double map_pixels_to_data_coordinates(double px, enums::Axis axis) const;
+        virtual void set_range(const axis::range& range, enums::Axis axis);
+        virtual void set_range(const axis::range& x_range, const axis::range& y_range);
+        virtual axis::range range(enums::Axis axis) const;
 
 
-        virtual void autoScaleY() = 0;
+        virtual void autoScaleY();
 
-        virtual int addGraph(QColor color = Qt::blue) = 0;
-        virtual int addColorMap() = 0;
+        virtual ILineGraph* addLineGraph(const QColor& color);
+        virtual IMultiLineGraph* addMultiLineGraph(const std::vector<QColor>& colors);
+        virtual IColorMapGraph* addColorMapGraph();
 
-        virtual void setXRange(const axis::range& range) = 0;
-        virtual void setYRange(const axis::range& range) = 0;
+        virtual void setXRange(const axis::range& range);
+        virtual void setYRange(const axis::range& range);
 
-        virtual void showXAxis(bool show) = 0;
+        virtual void showXAxis(bool show);
 
-        virtual void replot(int ms) = 0;
+        virtual void replot(int ms);
 
         void delete_selected_object();
 
@@ -114,13 +117,18 @@ namespace interfaces
         Q_SIGNAL void dataChanged();
         Q_SIGNAL void closed();
 
-        virtual GraphicObject* graphicObjectAt(const QPoint& position) = 0;
-        virtual GraphicObject* nextGraphicObjectAt(const QPoint& position, GraphicObject* current)
-            = 0;
+        virtual GraphicObject* graphicObjectAt(const QPoint& position);
+        virtual GraphicObject* nextGraphicObjectAt(const QPoint& position, GraphicObject* current);
 
         inline void setInteractionsMode(enums::IteractionsMode mode) { m_interactions_mode = mode; }
-        inline void setObjectFactory(std::shared_ptr<IGraphicObjectFactory>&& factory) { m_object_factory = std::move(factory); }
-        inline void setObjectFactory(const std::shared_ptr<IGraphicObjectFactory>& factory) { m_object_factory = factory; }
+        inline void setObjectFactory(std::shared_ptr<IGraphicObjectFactory>&& factory)
+        {
+            m_object_factory = std::move(factory);
+        }
+        inline void setObjectFactory(const std::shared_ptr<IGraphicObjectFactory>& factory)
+        {
+            m_object_factory = factory;
+        }
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         inline QPointF mapFromParent(const QPointF& pos) const
@@ -152,8 +160,7 @@ namespace interfaces
         bool m_has_moved_since_mouse_press;
         enums::IteractionsMode m_interactions_mode = enums::IteractionsMode::Normal;
 
-        std::shared_ptr<IGraphicObjectFactory> m_object_factory=nullptr;
-
+        std::shared_ptr<IGraphicObjectFactory> m_object_factory = nullptr;
     };
 }
 }

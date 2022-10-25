@@ -20,12 +20,59 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "QCustomPlotWrapper.hpp"
-#include "QCPTimeSpan.hpp"
 
-namespace SciQLopPlots
+#include <QLayout>
+#include <QObject>
+#include <QWidget>
+
+#include <cmath>
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include "SciQLopPlots/axis_range.hpp"
+
+namespace SciQLopPlots::interfaces
 {
-  //  using SciQLopPlot = SciQLopPlots::QCPWrappers::SciQLopPlot;
-    using TimeSpan = SciQLopPlots::QCPWrappers::TimeSpan;
+
+class IGraph : public QObject
+{
+    Q_OBJECT
+
+public:
+    Q_SIGNAL void xRangeChanged(axis::range newRange);
+    Q_SIGNAL void dataChanged();
+    Q_SIGNAL void closed();
+
+    IGraph(QObject* parent = nullptr) : QObject(parent) { }
+};
+
+class ILineGraph : public IGraph
+{
+    Q_OBJECT
+
+public:
+    ILineGraph(QObject* parent = nullptr) : IGraph(parent) { }
+    virtual void plot(const std::vector<double>& x, const std::vector<double>& y);
+};
+
+class IMultiLineGraph : public IGraph
+{
+    Q_OBJECT
+
+public:
+    IMultiLineGraph(QObject* parent = nullptr) : IGraph(parent) { }
+    virtual void plot(const std::vector<double>& x, const std::vector<double>& y);
+};
+
+class IColorMapGraph : public IGraph
+{
+    Q_OBJECT
+
+public:
+    IColorMapGraph(QObject* parent = nullptr) : IGraph(parent) { }
+    virtual void plot(
+        const std::vector<double>& x, const std::vector<double>& y, const std::vector<double> z);
+};
 
 }

@@ -20,7 +20,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
-#include "SciQLopPlots/Interfaces/PlotWidget.hpp"
 #include "SciQLopPlots/Qt/Events/Keyboard.hpp"
 #include "SciQLopPlots/Qt/Events/Mouse.hpp"
 #include "SciQLopPlots/Qt/Events/Wheel.hpp"
@@ -125,7 +124,8 @@ void IPlotWidget::mouseMoveEvent(QMouseEvent* event)
     else if (m_interactions_mode == enums::IteractionsMode::ObjectCreation)
     {
         if (m_selected_object)
-            m_selected_object->update_edit(view::pixel_coordinates<2> { event->pos().x(), event->pos().y() });
+            m_selected_object->update_edit(
+                view::pixel_coordinates<2> { event->pos().x(), event->pos().y() });
     }
     event->accept();
 }
@@ -134,14 +134,64 @@ void IPlotWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     this->m_lastMousePress = std::nullopt;
     if (m_interactions_mode == enums::IteractionsMode::ObjectCreation)
+    {
+        if (m_selected_object)
         {
-            if (m_selected_object)
-            {
-                m_selected_object->stop_edit(view::pixel_coordinates<2> { event->pos().x(), event->pos().y() });
-                m_selected_object = nullptr;
-            }
+            m_selected_object->stop_edit(
+                view::pixel_coordinates<2> { event->pos().x(), event->pos().y() });
+            m_selected_object = nullptr;
         }
+    }
     event->accept();
+}
+
+double IPlotWidget::map_pixels_to_data_coordinates(double px, enums::Axis axis) const
+{
+    return 0.;
+}
+
+void IPlotWidget::set_range(const axis::range& range, enums::Axis axis) { }
+
+void IPlotWidget::set_range(const axis::range& x_range, const axis::range& y_range) { }
+
+axis::range IPlotWidget::range(enums::Axis axis) const
+{
+    return { 0., 0. };
+}
+
+void IPlotWidget::autoScaleY() { }
+
+ILineGraph* IPlotWidget::addLineGraph(const QColor& color)
+{
+    return nullptr;
+}
+
+IMultiLineGraph* IPlotWidget::addMultiLineGraph(const std::vector<QColor>& colors)
+{
+    return nullptr;
+}
+
+IColorMapGraph* IPlotWidget::addColorMapGraph()
+{
+    return nullptr;
+}
+
+void IPlotWidget::setXRange(const axis::range& range) { }
+
+void IPlotWidget::setYRange(const axis::range& range) { }
+
+void IPlotWidget::showXAxis(bool show) { }
+
+void IPlotWidget::replot(int ms) { }
+
+GraphicObject* IPlotWidget::graphicObjectAt(const QPoint& position)
+{
+    return nullptr;
+}
+
+GraphicObject* IPlotWidget::nextGraphicObjectAt(const QPoint& position, GraphicObject* current)
+{
+    return nullptr;
 }
 
 

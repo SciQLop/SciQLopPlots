@@ -23,7 +23,7 @@
 #include "QCustomPlotWrapper.hpp"
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp"
-#include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
+#include "SciQLopPlots/plot.hpp"
 #include <QBrush>
 #include <qcp.h>
 
@@ -47,7 +47,7 @@ class QCPTimeSPanBorder : public QObject, interfaces::GraphicObject
     QCPItemStraightLine* line;
 
 public:
-    inline QCPTimeSPanBorder(SciQLopPlot* plot)
+    inline QCPTimeSPanBorder(PlotWidget* plot)
             : interfaces::GraphicObject { plot, enums::Layers::Cursors }
             , line { new QCPItemStraightLine { plot->handle() } }
     {
@@ -151,7 +151,7 @@ public:
 
     Q_SIGNAL void range_changed(axis::range new_time_range);
 
-    QCPTimeSpan(SciQLopPlot* plot, axis::range time_range)
+    QCPTimeSpan(PlotWidget* plot, axis::range time_range)
             : rect { new QCPItemRect { plot->handle() } }
             , left_border { plot }
             , right_border { plot }
@@ -270,5 +270,5 @@ public:
         set_range({ range().first, x });
     }
 };
-using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, SciQLopPlot>;
+using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, PlotWidget>;
 }

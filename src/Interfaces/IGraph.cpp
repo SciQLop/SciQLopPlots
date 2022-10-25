@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2021, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2022, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,52 +19,19 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "cpp_utils/types/detectors.hpp"
+#include "SciQLopPlots/Interfaces/IGraph.hpp"
 
-
-namespace SciQLopPlots::enums
+void SciQLopPlots::interfaces::ILineGraph::plot(const std::vector<double> &x, const std::vector<double> &y)
 {
-enum class Axis
-{
-    x = 0,
-    y = 1,
-    z = 2
-};
-
-enum class Layers
-{
-    EditMode = 0,
-    Cursors = 1,
-    Shapes = 2,
-    Background = 3
-};
-
-enum class IteractionsMode
-{
-    Normal = 0,
-    ObjectCreation = 1
-};
-
-enum class GraphType
-{
-    Line = 0,
-    MultiLine = 1,
-    ColorMap = 2
-};
 
 }
 
+void SciQLopPlots::interfaces::IColorMapGraph::plot(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> z)
+{
 
-namespace SciQLopPlots::tags
-{
-struct absolute
-{
-};
-struct relative
-{
-};
+}
 
-IS_T(is_absolute, absolute);
-IS_T(is_relative, relative);
+void SciQLopPlots::interfaces::IMultiLineGraph::plot(const std::vector<double> &x, const std::vector<double> &y)
+{
+
 }

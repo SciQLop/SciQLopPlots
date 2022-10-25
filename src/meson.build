@@ -1,12 +1,15 @@
 moc_headers = [
+    '../include/SciQLopPlots/plot.hpp',
+    '../include/SciQLopPlots/graph.hpp',
     '../include/SciQLopPlots/Qt/SyncPanel.hpp',
     '../include/SciQLopPlots/Interfaces/IPlotWidget.hpp',
+    '../include/SciQLopPlots/Interfaces/IGraph.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/ITimeSpan.hpp',
     '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp',
     '../include/SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp'
 ]
 
-moc_sources = ['Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
+moc_sources = ['plot.cpp', 'graph.cpp', 'Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp','Interfaces/IGraph.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
 
 SciQLopPlots_moc_files = qtmod.preprocess(
                             moc_headers : moc_headers,
@@ -22,8 +25,6 @@ headers = moc_headers + [
     '../include/SciQLopPlots/Qt/Events/Keyboard.hpp',
     '../include/SciQLopPlots/Qt/Events/Mouse.hpp',
     '../include/SciQLopPlots/Qt/Events/Wheel.hpp',
-    '../include/SciQLopPlots/Qt/Graph.hpp',
-    '../include/SciQLopPlots/Interfaces/PlotWidget.hpp',
     '../include/SciQLopPlots/Qt/SyncPanel.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp',
@@ -36,6 +37,6 @@ sources = ['Interfaces/GraphicObjects/GraphicObject.cpp']
 SciQLopPlots = library('SciQLopPlots', sources, moc_sources,
                        SciQLopPlots_moc_files, include_directories: ['../include'],
                        extra_files: [headers],
-                       dependencies: [QCustomPlot_dep, cpp_utils_dep, range_dep, channels_dep, hedley_dep])
+                       dependencies: [QCustomPlot_dep, cpp_utils_dep, range_dep, hedley_dep])
 
-SciQLopPlots_dep = declare_dependency(include_directories: ['../include'], link_with: SciQLopPlots, dependencies: [QCustomPlot_dep, cpp_utils_dep, range_dep, channels_dep, hedley_dep])
+SciQLopPlots_dep = declare_dependency(include_directories: ['../include'], link_with: SciQLopPlots, dependencies: [QCustomPlot_dep, cpp_utils_dep, range_dep, hedley_dep])
