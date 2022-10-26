@@ -22,7 +22,6 @@
 #pragma once
 #include "QCustomPlotWrapper.hpp"
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
-#include "SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp"
 #include "SciQLopPlots/plot.hpp"
 #include <QBrush>
 #include <qcp.h>
@@ -178,11 +177,14 @@ public:
                 set_range({ range.first, range.second + dx });
             });
     }
+
     ~QCPTimeSpan()
     {
         auto plot = rect->parentPlot();
-        plot->removeItem(rect);
-        plot->replot(QCustomPlot::rpQueuedReplot);
+        if (plot->removeItem(rect))
+        {
+            plot->replot(QCustomPlot::rpQueuedReplot);
+        }
     }
 
     inline void set_range(const axis::range& time_range)
@@ -270,5 +272,4 @@ public:
         set_range({ range().first, x });
     }
 };
-using TimeSpan = SciQLopPlots::interfaces::TimeSpan<QCPTimeSpan, PlotWidget>;
 }

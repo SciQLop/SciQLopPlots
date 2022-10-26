@@ -1,7 +1,8 @@
 moc_headers = [
     '../include/SciQLopPlots/plot.hpp',
     '../include/SciQLopPlots/graph.hpp',
-    '../include/SciQLopPlots/Qt/SyncPanel.hpp',
+    '../include/SciQLopPlots/sync_panel.hpp',
+    '../include/SciQLopPlots/time_span.hpp',
     '../include/SciQLopPlots/Interfaces/IPlotWidget.hpp',
     '../include/SciQLopPlots/Interfaces/IGraph.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/ITimeSpan.hpp',
@@ -9,7 +10,7 @@ moc_headers = [
     '../include/SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp'
 ]
 
-moc_sources = ['plot.cpp', 'graph.cpp', 'Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp','Interfaces/IGraph.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
+moc_sources = ['plot.cpp', 'graph.cpp', 'sync_panel.cpp', 'time_span.cpp', 'Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp','Interfaces/IGraph.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
 
 SciQLopPlots_moc_files = qtmod.preprocess(
                             moc_headers : moc_headers,
@@ -25,8 +26,6 @@ headers = moc_headers + [
     '../include/SciQLopPlots/Qt/Events/Keyboard.hpp',
     '../include/SciQLopPlots/Qt/Events/Mouse.hpp',
     '../include/SciQLopPlots/Qt/Events/Wheel.hpp',
-    '../include/SciQLopPlots/Qt/SyncPanel.hpp',
-    '../include/SciQLopPlots/Interfaces/GraphicObjects/TimeSpan.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/LayeredGraphicObjectCollection.hpp',
     '../include/SciQLopPlots/Qt/QCustomPlot/SciQLopPlots.hpp'

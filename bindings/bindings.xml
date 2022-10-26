@@ -65,10 +65,12 @@
             <object-type name="IMultiLineGraph" />
             <object-type name="IColorMapGraph" />
         </namespace-type>
+        <object-type name="SyncPanel" />
         <object-type name="PlotWidget" />
         <object-type name="ColorMapGraph" />
         <object-type name="MultiLineGraph" />
         <object-type name="LineGraph" />
+        <object-type name="TimeSpan" />
     </namespace-type>
 </typesystem>
 

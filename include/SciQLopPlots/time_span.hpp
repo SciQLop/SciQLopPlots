@@ -21,86 +21,98 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "../IPlotWidget.hpp"
-#include "./ITimeSpan.hpp"
+#include <QObject>
+#include <QScrollArea>
+#include <QTimer>
+#include <QWidget>
 
-namespace SciQLopPlots::interfaces
-{
+#include <QVBoxLayout>
+#include <QList>
 
-template <typename TimeSpanImpl, typename plot_t>
-class TimeSpan : public ITimeSpan
+
+#include <cassert>
+
+#include "plot.hpp"
+#include "SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp"
+#include "SciQLopPlots/Interfaces/GraphicObjects/ITimeSpan.hpp"
+#include <cpp_utils/containers/algorithms.hpp>
+
+#include "SciQLopPlots/axis_range.hpp"
+
+namespace SciQLopPlots
 {
-    TimeSpanImpl* time_span_impl;
+class TimeSpan : public interfaces::ITimeSpan
+{
+    SciQLopPlots::QCPWrappers::QCPTimeSpan* m_time_span;
 
 public:
-    TimeSpan(plot_t* plot, const axis::range time_range)
-            : ITimeSpan { plot }, time_span_impl { new TimeSpanImpl { plot, time_range } }
+    TimeSpan(PlotWidget* plot, const axis::range time_range)
+            : ITimeSpan { plot }, m_time_span { new SciQLopPlots::QCPWrappers::QCPTimeSpan { plot, time_range } }
     {
-        connect(time_span_impl, &TimeSpanImpl::range_changed, this, &TimeSpan::range_changed);
+        connect(m_time_span, &SciQLopPlots::QCPWrappers::QCPTimeSpan::range_changed, this, &TimeSpan::range_changed);
     }
 
-    ~TimeSpan() { delete time_span_impl; }
+    ~TimeSpan() { delete m_time_span; }
 
 
     inline virtual void set_range(const axis::range& time_range) final
     {
-        time_span_impl->set_range(time_range);
+        m_time_span->set_range(time_range);
     };
 
-    inline virtual axis::range range() const final { return time_span_impl->range(); };
+    inline virtual axis::range range() const final { return m_time_span->range(); };
 
     inline virtual view::data_coordinates<2> center() const override
     {
-        return time_span_impl->center();
+        return m_time_span->center();
     }
 
     inline virtual view::pixel_coordinates<2> pix_center() const override
     {
-        return time_span_impl->pix_center();
+        return m_time_span->pix_center();
     }
 
     inline virtual void move(const view::data_coordinates<2>& delta) override
     {
-        time_span_impl->move(delta);
+        m_time_span->move(delta);
     }
 
     inline virtual void move(const view::pixel_coordinates<2>& delta) override
     {
-        time_span_impl->move(delta);
+        m_time_span->move(delta);
     }
 
     inline virtual bool contains(const view::data_coordinates<2>& position) const override
     {
-        return time_span_impl->contains(position);
+        return m_time_span->contains(position);
     }
 
     inline virtual bool contains(const view::pixel_coordinates<2>& position) const override
     {
-        return time_span_impl->contains(position);
+        return m_time_span->contains(position);
     }
 
     inline virtual void set_selected(bool select) override
     {
-        return time_span_impl->set_selected(select);
+        return m_time_span->set_selected(select);
     }
 
     inline virtual Qt::CursorShape cursor_shape() const override
     {
-        return time_span_impl->cursor_shape();
+        return m_time_span->cursor_shape();
     }
 
     inline virtual void start_edit(const view::pixel_coordinates<2>& position) override
     {
-        time_span_impl->start_edit(position);
+        m_time_span->start_edit(position);
     }
     inline virtual void update_edit(const view::pixel_coordinates<2>& position) override
     {
-        time_span_impl->update_edit(position);
+        m_time_span->update_edit(position);
     }
     inline virtual void stop_edit(const view::pixel_coordinates<2>& position) override
     {
-        time_span_impl->stop_edit(position);
+        m_time_span->stop_edit(position);
     }
 };
-
 }

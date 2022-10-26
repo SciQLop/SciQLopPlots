@@ -32,7 +32,7 @@
 
 #include <cassert>
 
-#include "../Interfaces/IPlotWidget.hpp"
+#include "plot.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 #include "SciQLopPlots/axis_range.hpp"
@@ -42,12 +42,12 @@ namespace SciQLopPlots
 class SyncPanel : public QScrollArea
 {
     Q_OBJECT
-    QList<interfaces::IPlotWidget*> _plots;
+    QList<PlotWidget*> _plots;
     axis::range currentRange;
     QTimer* refreshTimer;
 
 protected:
-    inline QList<interfaces::IPlotWidget*> plots()const {return _plots;}
+    inline QList<PlotWidget*> plots()const {return _plots;}
 
 public:
     explicit SyncPanel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
@@ -56,7 +56,7 @@ public:
         refreshTimer = new QTimer { this };
         refreshTimer->setSingleShot(true);
         connect(this->refreshTimer, &QTimer::timeout,
-            [this]() { broadcast(this->_plots, &interfaces::IPlotWidget::replot, 20); });
+            [this]() { broadcast(this->_plots, &PlotWidget::replot, 20); });
         setWidget(new QWidget(this));
         widget()->setLayout(new QVBoxLayout);
         setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAsNeeded);
@@ -73,11 +73,11 @@ public:
         if (currentRange != newRange)
         {
             currentRange = newRange;
-            broadcast(_plots, &interfaces::IPlotWidget::setXRange, newRange);
+            broadcast(_plots, &PlotWidget::setXRange, newRange);
         }
     }
 
-    inline void addPlot(interfaces::IPlotWidget* plot, int index=-1)
+    inline void addPlot(PlotWidget* plot, int index=-1)
     {
         assert(plot);
         plot->setParent(this);
