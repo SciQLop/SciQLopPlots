@@ -8,47 +8,28 @@ else
     error('Only Qt5 or Qt6 are supported')
 endif
 
+current_source_dir = meson.current_source_dir()
 
-shiboken = find_program('shiboken@0@'.format(pyside_version))
+shiboken = find_program(f'shiboken@pyside_version@')
 qmake = find_program(qmake_possible_names)
 
 pymod = import('python')
-python3 = pymod.find_installation('python3', modules:['PySide@0@'.format(pyside_version),
-                                                      'shiboken@0@'.format(pyside_version),
-                                                      'shiboken@0@_generator'.format(pyside_version),
+python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
+                                                      f'shiboken@pyside_version@',
+                                                      f'shiboken@pyside_version@_generator',
                                                       'numpy'])
 python3_dep = python3.dependency(embed:true)
 numpy_inc = run_command(python3, '-c', 'import numpy;print(numpy.get_include())').stdout().strip('\n')
 
 qt_modules = ['QtCore','QtGui','QtWidgets']
 
-qt_headers_path = run_command(qmake, '-query', 'QT_INSTALL_HEADERS').stdout().strip('\n')
-generated_srcs  = run_command(python3, 'src_list.py', 'meson').stdout().split(';')
+generated_srcs  = run_command(python3, 'helper_scripts/src_list.py', '--build-system', 'meson', '--bindings', f'@current_source_dir@/bindings.xml').stdout().split(';')
 
 modules_arg = '--modules=@0@'.format(','.join(qt_modules))
 
-shiboken_build_flags = run_command(python3, 'shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--includes', modules_arg).stdout().strip('\n').split(' ')
-shiboken_link_flags  = run_command(python3, 'shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--libs', modules_arg).stdout().strip('\n').split(' ')
-shiboken_typesystem  = run_command(python3, 'shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--typesystem').stdout().strip('\n')
-
-subprojects_dir = meson.current_source_dir()+'/../subprojects'
-
-sciqlopplots_bindings_incs = shiboken_build_flags + [
-    '-I'+meson.current_source_dir()+'/../include',
-    '-I'+subprojects_dir+'/TimeSeries/include',
-    '-I'+subprojects_dir+'/cpp_utils/include',
-    '-I'+subprojects_dir+'/SciQLopPlots/include',
-    '-I'+subprojects_dir+'/QCustomPlot/src',
-    '-I'+subprojects_dir+'/hedley-11',
-    '-I'+subprojects_dir+'/channels',
-    '-I'+python3.get_path('include'),
-    '-I'+qt_headers_path,
-    '-I'+numpy_inc
-    ]
-
-foreach mod:qt_modules
-    sciqlopplots_bindings_incs += ['-I'+qt_headers_path+'/'+mod]
-endforeach
+shiboken_build_flags = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--includes', modules_arg).stdout().strip('\n').split(' ')
+shiboken_link_flags  = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--libs', modules_arg).stdout().strip('\n').split(' ')
+shiboken_typesystem  = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--typesystem').stdout().strip('\n')
 
 
 sciqlopplots_bindings_src = files('numpy_wrappers.cpp')
@@ -61,10 +42,10 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sciqlopplots_bindings_src, shiboken_generator_out,
-        dependencies : [ python3_dep, shiboken_dep, SciQLopPlots_dep, cpp_utils_dep],
+        dependencies : [ python3_dep, shiboken_dep, SciQLopPlots_src_dep, cpp_utils_dep],
         install: true,
         include_directories : numpy_inc,
-        extra_files: sciqlopplots_bindings_headers
+        extra_files: sciqlopplots_bindings_headers + ['helper_scripts/shiboken-gen.py']
 )
 
 

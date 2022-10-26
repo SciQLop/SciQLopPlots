@@ -1,0 +1,49 @@
+name: Python packages OSX
+
+on:
+  release:
+    types: [published]
+  push:
+
+jobs:
+  build:
+    runs-on: macos-10.15
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    name: Python ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build python wheel
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: add qt dir to path
+        run: |
+            echo "$GITHUB_WORKSPACE/Qt/6.3.0/macos/bin" >> $GITHUB_PATH
+      - run: |
+          pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "aqtinstall"
+          pip install "PySide6==6.3.0"
+          pip install \
+              --index-url=http://download.qt.io/official_releases/QtForPython/ \
+              --trusted-host download.qt.io "shiboken6_generator==6.3.0"
+          aqt install-qt -O $GITHUB_WORKSPACE/Qt mac desktop 6.3.0
+          CC=gcc-11 CXX=g++-11 LD_LIBRARY_PATH=$GITHUB_WORKSPACE/Qt/6.3.0/macos/lib python3 -m build --no-isolation .
+      - name: Save packages as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sciqlopplots-MacOs-${{ matrix.python-version }}
+          path: dist/*
+      - name: Publish on PyPi
+        if: github.event.release
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: twine upload --skip-existing dist/*
+      - name: Publish on PyPi (test)
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TEST_PASSWORD }}
+        run: twine upload --repository testpypi --skip-existing dist/*.whl

@@ -15,21 +15,33 @@ if qt_sdk=='auto'
     endif
 endif
 
+with_tests = get_option('with_tests')
+
 
 qtmod = import(qt_sdk)
 qtcore = dependency(qt_sdk, modules : 'Core')
 qtwidgets = dependency(qt_sdk, modules : 'Widgets')
 qtgui = dependency(qt_sdk, modules : 'Gui')
 qtsvg = dependency(qt_sdk, modules : 'Svg')
-qttest = dependency(qt_sdk, modules : 'Test')
 
-QCustomPlot_dep = dependency('QCustomPlot', fallback : ['QCustomPlot', 'QCustomPlot_dep'], default_options: ['qt_version='+qt_sdk])
-cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'])
-range_dep = dependency('range-v3', fallback : ['range-v3', 'range_dep'])
-QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'], default_options: ['qt_version='+qt_sdk])
+QCustomPlot_dep = dependency('QCustomPlot_src', default_options: [f'qt_version=@qt_sdk@', f'with_tests=@with_tests@'])
+cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=@with_tests@'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
 
 subdir('src')
 subdir('bindings')
-subdir('tests')
+
+library('python_packaging',[],
+        extra_files:['setup.py', 'pyproject.toml',
+        '.github/workflows/pythonpublish-linux.yml',
+        '.github/workflows/pythonpublish-win.yml',
+        '.github/workflows/pythonpublish-osx.yml',
+        'README.md', 'COPYING'])
+
+
+if with_tests
+    qttest = dependency(qt_sdk, modules : 'Test')
+    QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'], default_options: ['qt_version='+qt_sdk])
+    subdir('tests')
+endif

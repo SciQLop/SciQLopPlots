@@ -3,8 +3,10 @@
 import os
 import sys
 import importlib
+import importlib.machinery
 import argparse
-from glob import glob
+from glob import glob, escape
+import re
 
 
 parser = argparse.ArgumentParser(description='PySide/shiboken ')
@@ -27,7 +29,7 @@ PySide_mod_path = PySide.__path__[0]
 shiboken_generator_mod_path = shiboken_generator.__path__[0]
 shiboken_mod_path = shiboken.__path__[0]
 
-ext_sufix = f"[{'|'.join(importlib.machinery.EXTENSION_SUFFIXES)}]"
+ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
 
 def first_existing_path(path_list):
     for path in path_list:
@@ -35,10 +37,12 @@ def first_existing_path(path_list):
             return path
 
 def find_lib(name, search_folders):
+    name_regex = re.compile(name)
     for folder in search_folders:
-        found = glob(f'{folder}/{name}')
+        files=os.listdir(folder)
+        found = list(filter(name_regex.match, files))
         if len(found):
-            return found[0]
+            return f'{folder}/{found[0]}'
 
 def link_flag(lib_path):
     basename = os.path.basename(lib_path)
@@ -65,7 +69,7 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
 
     if args.libs:
         main_lib = [find_lib(f'libshiboken{pyside_ver}{ext_sufix}*', [f'{shiboken_mod_path}', '/usr/lib64/'])]
-        main_lib += [find_lib(f'lib*y*ide*{ext_sufix}*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+        main_lib += [find_lib(f'lib[Pp]y[sS]ide.{ext_sufix}', [f'{PySide_mod_path}', '/usr/lib64/'])]
         modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
         print(" ".join(main_lib + modules_libs))
 

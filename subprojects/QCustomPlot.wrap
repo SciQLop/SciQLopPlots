@@ -1,3 +1,7 @@
 [wrap-git]
 url = https://github.com/jeandet/QCustomPlot.git
 revision = v2.1.0-meson
+
+[provide]
+QCustomPlot = QCustomPlot_dep
+QCustomPlot_src = QCustomPlot_src_dep

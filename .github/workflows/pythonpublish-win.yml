@@ -1,0 +1,47 @@
+name: Python packages Windows
+
+on:
+  release:
+    types: [published]
+  push:
+
+jobs:
+  build:
+    runs-on: windows-2019
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    name: Python ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build python wheel
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: add qt dir to path
+        run: |
+          echo "${{github.workspace}}\Qt\6.3.0\mingw_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: |
+          pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "auditwheel" "aqtinstall"
+          pip install "PySide6==6.3.0"
+          pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==6.3.0"
+          aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.3.0 win64_mingw
+          python3 -m build --no-isolation  .
+      - name: Save packages as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sciqlopplots-windows-${{ matrix.python-version }}
+          path: dist/*
+      - name: Publish on PyPi
+        if: github.event.release
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: twine upload --skip-existing dist/*
+      - name: Publish on PyPi (test)
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TEST_PASSWORD }}
+        run: twine upload --repository testpypi --skip-existing dist/*.whl
