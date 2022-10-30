@@ -1,4 +1,4 @@
-project('SciQLopPlots', 'cpp',default_options : ['cpp_std=c++17'], license: 'GPL3', version: '0.0.1')
+project('SciQLopPlots', 'cpp',default_options : ['cpp_std=c++17'], license: 'GPL3', version: '0.0.2')
 add_project_arguments(
             '-DCATCH_CONFIG_NO_POSIX_SIGNALS', # workaround for this https://github.com/catchorg/Catch2/issues/2192
             language: 'cpp',
@@ -33,7 +33,7 @@ subdir('src')
 subdir('bindings')
 
 library('python_packaging',[],
-        extra_files:['setup.py', 'pyproject.toml',
+        extra_files:['pyproject.toml',
         '.github/workflows/pythonpublish-linux.yml',
         '.github/workflows/pythonpublish-win.yml',
         '.github/workflows/pythonpublish-osx.yml',
