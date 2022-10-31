@@ -28,7 +28,7 @@ generated_srcs  = run_command(python3, 'helper_scripts/src_list.py', '--build-sy
 modules_arg = '--modules=@0@'.format(','.join(qt_modules))
 
 shiboken_build_flags = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--includes', modules_arg).stdout().strip('\n').split(' ')
-shiboken_link_flags  = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--libs', modules_arg).stdout().strip('\n').split(' ')
+shiboken_link_flags  = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--build-dir', meson.current_build_dir(), '--libs', modules_arg).stdout().strip('\n').split(' ')
 shiboken_typesystem  = run_command(python3, 'helper_scripts/shiboken-helper.py', '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--typesystem').stdout().strip('\n')
 
 
@@ -45,7 +45,7 @@ sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         dependencies : [ python3_dep, shiboken_dep, SciQLopPlots_src_dep, cpp_utils_dep],
         install: true,
         include_directories : numpy_inc,
-        extra_files: sciqlopplots_bindings_headers + ['helper_scripts/shiboken-gen.py']
+        extra_files: sciqlopplots_bindings_headers + ['helper_scripts/shiboken-gen.py', 'helper_scripts/rpath-helper.py']
 )
 
 

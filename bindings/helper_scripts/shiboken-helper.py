@@ -1,7 +1,7 @@
 #!/bin/env python3
 
 import os
-import sys
+import platform
 import importlib
 import importlib.machinery
 import argparse
@@ -16,6 +16,7 @@ group.add_argument('--includes',action='store_true')
 group.add_argument('--typesystem', action='store_true')
 parser.add_argument('--modules')
 parser.add_argument('--qmake')
+parser.add_argument('--build-dir', nargs='?')
 parser.add_argument('--pyside_version', default='2')
 args = parser.parse_args()
 
@@ -28,6 +29,8 @@ PySide = importlib.import_module(f'PySide{pyside_ver}')
 PySide_mod_path = PySide.__path__[0]
 shiboken_generator_mod_path = shiboken_generator.__path__[0]
 shiboken_mod_path = shiboken.__path__[0]
+
+build_dir = args.build_dir
 
 ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
 
@@ -44,7 +47,7 @@ def find_lib(name, search_folders):
         if len(found):
             return f'{folder}/{found[0]}'
 
-def link_flag(lib_path):
+def make_link_flag(lib_path):
     basename = os.path.basename(lib_path)
     if basename.startswith('lib'):
         return f"-l{basename[3:].split('.so')[0]}"
@@ -52,8 +55,13 @@ def link_flag(lib_path):
 
 
 def make_link_flags(libs_paths):
-    folders = list(set(map(lambda l: f"-L{os.path.dirname(l)}",libs_paths)))
-    libs = list(map(link_flag, libs_paths))
+    if platform.system().lower() == 'linux':
+        link_flag="-Wl,-rpath="
+    else:
+        link_flag="-L"
+    folders = list(set(list(map(lambda l: f"{link_flag}{os.path.relpath(os.path.dirname(l), build_dir)}",libs_paths))))
+    #libs = list(map(make_link_flag, libs_paths))
+    libs = libs_paths
     return folders + libs
 
 
@@ -71,7 +79,7 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
         main_lib = [find_lib(f'libshiboken{pyside_ver}{ext_sufix}*', [f'{shiboken_mod_path}', '/usr/lib64/'])]
         main_lib += [find_lib(f'lib[Pp]y[sS]ide.{ext_sufix}', [f'{PySide_mod_path}', '/usr/lib64/'])]
         modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
-        print(" ".join(main_lib + modules_libs))
+        print(" ".join(make_link_flags(main_lib + modules_libs)))
 
     if args.includes:
         modules_incs = [f"-I{PySide_inc}/{module}" for module in modules]
