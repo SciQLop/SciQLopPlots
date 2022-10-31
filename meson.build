@@ -32,13 +32,14 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 subdir('src')
 subdir('bindings')
 
-library('python_packaging',[],
-        extra_files:['pyproject.toml',
-        '.github/workflows/pythonpublish-linux.yml',
-        '.github/workflows/pythonpublish-win.yml',
-        '.github/workflows/pythonpublish-osx.yml',
-        'README.md', 'COPYING'])
-
+if build_machine.system() == 'linux'
+    library('python_packaging',[],
+            extra_files:['pyproject.toml',
+            '.github/workflows/pythonpublish-linux.yml',
+            '.github/workflows/pythonpublish-win.yml',
+            '.github/workflows/pythonpublish-osx.yml',
+            'README.md', 'COPYING'])
+endif
 
 if with_tests
     qttest = dependency(qt_sdk, modules : 'Test')

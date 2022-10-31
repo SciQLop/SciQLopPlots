@@ -1,2 +1,2 @@
 option('qt_version', value:'auto',type :'combo', choices : ['auto', 'qt5', 'qt6'], description : 'The Qt major version you want to use.')
-option('with_tests', type : 'boolean', value : true, description : 'Build tests')
+option('with_tests', type : 'boolean', value : false, description : 'Build tests')

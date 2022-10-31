@@ -38,5 +38,4 @@ SciQLopPlots = library('SciQLopPlots', sources, moc_sources,
                        extra_files: [headers],
                        dependencies: [QCustomPlot_dep, cpp_utils_dep, hedley_dep])
 
-SciQLopPlots_dep = declare_dependency(include_directories: ['../include'], link_with: SciQLopPlots, dependencies: [QCustomPlot_dep, cpp_utils_dep, hedley_dep])
 SciQLopPlots_src_dep = declare_dependency(sources:[sources, moc_sources,SciQLopPlots_moc_files] ,include_directories: ['../include'], dependencies: [QCustomPlot_dep, cpp_utils_dep, hedley_dep])
