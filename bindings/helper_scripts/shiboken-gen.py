@@ -26,7 +26,7 @@ def cpp_flags(build_dir, ref_build_target):
         # this is extra fragile!
         ref_target = list(filter(lambda k: k['name'].startswith(ref_build_target), targets))[0]
         params = ref_target['target_sources'][0]['parameters']
-        return list(filter(lambda p: p.upper().startswith('-I'), params))
+        return list(filter(lambda p: p.upper().startswith('-I') or p.startswith('-F'), params))
 
 
 shiboken_constant_args=['--generator-set=shiboken',

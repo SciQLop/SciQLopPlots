@@ -7,7 +7,7 @@ import importlib.machinery
 import argparse
 from glob import glob, escape
 import re
-
+import platform
 
 parser = argparse.ArgumentParser(description='PySide/shiboken ')
 group = parser.add_mutually_exclusive_group()
@@ -32,7 +32,11 @@ shiboken_mod_path = shiboken.__path__[0]
 
 build_dir = args.build_dir
 
-ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
+if platform.system().lower() == 'darwin':
+    ext_sufix = re.escape('.dylib')
+else:
+    ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
+
 
 def first_existing_path(path_list):
     for path in path_list:

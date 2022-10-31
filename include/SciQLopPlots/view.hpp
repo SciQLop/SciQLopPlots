@@ -91,7 +91,7 @@ struct ND_coordinates : coordinates<value_type, ND>
     }
 
     template <typename... T>
-    ND_coordinates(T&&... values) : coordinates<value_type, ND> { std::forward<T>(values)... }
+    ND_coordinates(T&&... values) : coordinates<value_type, ND> { static_cast<value_type>(values)... }
     {
     }
 
