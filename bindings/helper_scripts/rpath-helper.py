@@ -5,7 +5,7 @@ import argparse
 import subprocess
 import site
 import os
-import zipfile
+import platform
 from tempfile import TemporaryDirectory
 from glob import glob
 
@@ -26,12 +26,16 @@ PySide_mod_rpath = '$ORIGIN/'+os.path.relpath(PySide.__path__[0], site_packages_
 bundled_qt_rpath = f"{PySide_mod_rpath}/Qt/lib"
 shiboken_mod_rpath = '$ORIGIN/'+os.path.relpath(shiboken.__path__[0], site_packages_path)
 
-with TemporaryDirectory() as tmpdir:
+def fix_rpath_macos(extracted_wheel_folder):
+    lib_file=glob(f'{extracted_wheel_folder}/SciQLopPlotsBindings.*.so')[0]
     subprocess.run(
-        ['wheel', 'unpack','-d', tmpdir,  args.wheel_file],
+        ['install_name_tool', '-add_rpath', '@loader_path/PySide6/Qt/lib/', lib_file],
         check=True
     )
-    so_file=glob(f'{tmpdir}/sciqlopplots-*/SciQLopPlotsBindings.*.so')[0]
+
+
+def fix_rpath_linux(extracted_wheel_folder):
+    so_file=glob(f'{extracted_wheel_folder}/SciQLopPlotsBindings.*.so')[0]
     subprocess.run(
         ['patchelf', '--remove-rpath', so_file],
         check=True
@@ -41,6 +45,18 @@ with TemporaryDirectory() as tmpdir:
         ['patchelf', '--set-rpath', ":".join([PySide_mod_rpath, bundled_qt_rpath, shiboken_mod_rpath]), so_file],
         check=True
     )
+
+
+with TemporaryDirectory() as tmpdir:
+    subprocess.run(
+        ['wheel', 'unpack','-d', tmpdir,  args.wheel_file],
+        check=True
+    )
+    extracted_wheel_folder = glob(f'{tmpdir}/sciqlopplots-*')[0]
+    if platform.system().lower() == 'darwin':
+        fix_rpath_macos(extracted_wheel_folder)
+    else:
+        fix_rpath_linux(extracted_wheel_folder)
     subprocess.run(
         ['wheel', 'pack','-d', 'dist', glob(f'{tmpdir}/sciqlopplots-*')[0]],
         check=True
