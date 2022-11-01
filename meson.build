@@ -24,7 +24,7 @@ qtwidgets = dependency(qt_sdk, modules : 'Widgets')
 qtgui = dependency(qt_sdk, modules : 'Gui')
 qtsvg = dependency(qt_sdk, modules : 'Svg')
 
-QCustomPlot_dep = dependency('QCustomPlot_src', default_options: [f'qt_version=@qt_sdk@', f'with_tests=@with_tests@'])
+QCustomPlot_dep = dependency('QCustomPlot_src', default_options: [f'qt_version=@qt_sdk@', f'with_tests=@with_tests@', 'build_libs=false'])
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=@with_tests@'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
