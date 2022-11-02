@@ -32,6 +32,14 @@ def fix_rpath_macos(extracted_wheel_folder):
         ['install_name_tool', '-add_rpath', '@loader_path/PySide6/Qt/lib/', lib_file],
         check=True
     )
+    subprocess.run(
+        ['install_name_tool', '-add_rpath', '@loader_path/PySide6/', lib_file],
+        check=True
+    )
+    subprocess.run(
+        ['install_name_tool', '-add_rpath', '@loader_path/shiboken6/', lib_file],
+        check=True
+    )
 
 
 def fix_rpath_linux(extracted_wheel_folder):

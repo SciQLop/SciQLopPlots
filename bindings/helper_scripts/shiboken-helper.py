@@ -46,10 +46,11 @@ def first_existing_path(path_list):
 def find_lib(name, search_folders):
     name_regex = re.compile(name)
     for folder in search_folders:
-        files=os.listdir(folder)
-        found = list(filter(name_regex.match, files))
-        if len(found):
-            return f'{folder}/{found[0]}'
+        if os.path.exists(folder):
+            files=os.listdir(folder)
+            found = list(filter(name_regex.match, files))
+            if len(found):
+                return f'{folder}/{found[0]}'
 
 def make_link_flag(lib_path):
     basename = os.path.basename(lib_path)
@@ -80,9 +81,12 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
     modules = args.modules.split(',')
 
     if args.libs:
-        main_lib = [find_lib(f'libshiboken{pyside_ver}{ext_sufix}*', [f'{shiboken_mod_path}', '/usr/lib64/'])]
-        main_lib += [find_lib(f'lib[Pp]y[sS]ide.{ext_sufix}', [f'{PySide_mod_path}', '/usr/lib64/'])]
-        modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
+        main_lib = [find_lib(f'libshiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
+        main_lib += [find_lib(f'lib[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+        if platform.system().lower() == 'darwin':
+            modules_libs = []
+        else:
+            modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
         print(" ".join(make_link_flags(main_lib + modules_libs)))
 
     if args.includes:
