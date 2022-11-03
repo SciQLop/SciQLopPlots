@@ -11,18 +11,18 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10']
     name: Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v3
-      - name: Build python wheel
+      - name: add qt dir to path
+        run: |
+          echo "${{github.workspace}}\Qt\6.3.0\mingw_64\bin;C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Set python interpreter
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: x64
-      - name: add qt dir to path
-        run: |
-          echo "${{github.workspace}}\Qt\6.3.0\mingw_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          architecture: x64 
       - run: |
           pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "auditwheel" "aqtinstall"
           pip install "PySide6==6.3.0"
