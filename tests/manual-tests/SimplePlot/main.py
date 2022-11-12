@@ -18,7 +18,7 @@ colors = [
 
 class Worker(QtCore.QObject):
     def __init__(self,graph, amp=1., freq=1.):
-        QtCore.QObject.__init__(self, graph)
+        QtCore.QObject.__init__(self)
         graph.xRangeChanged.connect(self.get_data)
         self.amp = amp
         self.freq = freq
@@ -39,7 +39,7 @@ class Worker(QtCore.QObject):
 
 class SpzWorker(QtCore.QObject):
     def __init__(self, graph, product):
-        QtCore.QObject.__init__(self, graph)
+        QtCore.QObject.__init__(self)
         graph.xRangeChanged.connect(self.get_data)
         self.graph = graph
         self.product = product

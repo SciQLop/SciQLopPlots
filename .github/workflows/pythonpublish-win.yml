@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: add qt dir to path
         run: |
-          echo "${{github.workspace}}\Qt\6.3.0\mingw_64\bin;C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "${{github.workspace}}\Qt\6.4.1\mingw_64\bin;C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Set python interpreter
         uses: actions/setup-python@v4
         with:
@@ -25,9 +25,9 @@ jobs:
           architecture: x64 
       - run: |
           pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "auditwheel" "aqtinstall"
-          pip install "PySide6==6.3.0"
-          pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==6.3.0"
-          aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.3.0 win64_mingw
+          pip install "PySide6==6.4.1"
+          pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==6.4.1"
+          aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.4.1 win64_mingw
           python3 -m build --no-isolation  .
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3
