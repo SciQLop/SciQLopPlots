@@ -26,8 +26,8 @@
 #include <QTimer>
 #include <QWidget>
 
-#include <QVBoxLayout>
 #include <QList>
+#include <QVBoxLayout>
 
 
 #include <cassert>
@@ -47,7 +47,7 @@ class SyncPanel : public QScrollArea
     QTimer* refreshTimer;
 
 protected:
-    inline QList<PlotWidget*> plots()const {return _plots;}
+    inline QList<PlotWidget*> plots() const { return _plots; }
 
 public:
     explicit SyncPanel(QWidget* parent = nullptr) : QScrollArea(parent), currentRange(0., 0.)
@@ -77,27 +77,23 @@ public:
         }
     }
 
-    inline void addPlot(PlotWidget* plot, int index=-1)
+    inline void addPlot(PlotWidget* plot, int index = -1)
     {
         assert(plot);
         plot->setParent(this);
-        if(index==-1 or index == _plots.size())
-        {
-            index = _plots.size();
-            if (_plots.size())
-                _plots.back()->showXAxis(false);
-        }
-        else
-        {
-            plot->showXAxis(false);
-        }
-        _plots.insert(index,plot);
-        dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
         plot->setXRange(currentRange);
+        if(index==-1)
+        {
+            index = std::size(_plots);
+        }
+        _plots.insert(index, plot);
+        std::for_each(
+            std::cbegin(_plots), std::cend(_plots) - 1, [](auto plot) { plot->showXAxis(false); });
+        _plots.back()->showXAxis(true);
+        dynamic_cast<QVBoxLayout*>(widget()->layout())->insertWidget(index, plot);
         connect(plot, &interfaces::IPlotWidget::xRangeChanged, this, &SyncPanel::setXRange);
         connect(plot, &interfaces::IPlotWidget::dataChanged,
             [this]() { this->refreshTimer->start(20); });
-
     }
 
     inline int indexOf(QWidget* wdgt)
@@ -106,6 +102,6 @@ public:
         return dynamic_cast<QVBoxLayout*>(widget()->layout())->indexOf(wdgt);
     }
 
-    inline std::size_t count(){return std::size(_plots);}
+    inline std::size_t count() { return std::size(_plots); }
 };
 }

@@ -76,7 +76,7 @@ for i in range(5):
 
 i=0
 p2=SciQLopPlots.PlotWidget()
-s.addPlot(p2)
+s.addPlot(p2,0)
 g=p2.addMultiLineGraph(colors[:3])
 w=Worker2(g, 1+i/5, i+1)
 graphs.append(g)
