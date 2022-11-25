@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['cp38-cp38', 'cp39-cp39', 'cp310-cp310']
+        python-version: ['cp38-cp38', 'cp39-cp39', 'cp310-cp310', 'cp311-cp311']
     steps:
       - name: add Python and qt dir to path
         run: |
