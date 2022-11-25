@@ -55,6 +55,13 @@
         </conversion-rule>
     </primitive-type>
     <namespace-type name="SciQLopPlots" visible="true">
+        <namespace-type name="enums" visible="true">
+            <enum-type name="Axis"/>
+            <enum-type name="DataOrder"/>
+            <enum-type name="Layers"/>
+            <enum-type name="IteractionsMode"/>
+            <enum-type name="GraphType"/>
+        </namespace-type>
         <namespace-type name="axis" visible="true">
             <value-type name="range" copyable="yes" />
         </namespace-type>

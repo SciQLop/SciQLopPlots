@@ -61,14 +61,21 @@ class MultiLineGraph : public interfaces::IMultiLineGraph
     std::vector<int> m_indexes;
 
 public:
-    Q_SIGNAL void setdata(
-        std::vector<int> indexes, const std::vector<double>& x, const std::vector<double>& y);
+    Q_SIGNAL void setdata(std::vector<int> indexes, const std::vector<double>& x,
+        const std::vector<double>& y, enums::DataOrder order);
+
+    Q_SIGNAL void setdata(std::vector<int> indexes, const std::vector<double>& x,
+        const std::list<std::vector<double>>& y);
 
     MultiLineGraph(std::vector<int> indexes, QObject* parent = nullptr)
             : interfaces::IMultiLineGraph(parent), m_indexes { indexes }
     {
     }
-    virtual void plot(const std::vector<double>& x, const std::vector<double>& y);
+    virtual void plot(const std::vector<double>& x, const std::vector<double>& y,
+        enums::DataOrder order = enums::DataOrder::x_first);
+
+    virtual void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
+        const std::list<std::vector<double>>& ys);
 };
 
 class ColorMapGraph : public interfaces::IColorMapGraph

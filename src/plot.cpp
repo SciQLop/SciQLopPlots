@@ -40,9 +40,20 @@ SciQLopPlots::MultiLineGraph* SciQLopPlots::PlotWidget::addMultiLineGraph(
     std::transform(std::cbegin(colors), std::cend(colors), std::back_inserter(indexes),
         [this](const auto& color) { return this->m_plot->addGraph(color); });
     auto mlineGraph = new SciQLopPlots::MultiLineGraph { indexes, this };
-    this->connect(mlineGraph, &SciQLopPlots::MultiLineGraph::setdata, this,
-        QOverload<std::vector<int>, const std::vector<double>&, const std::vector<double>&>::of(
-            &SciQLopPlots::PlotWidget::plot));
+    this->connect(mlineGraph,
+        QOverload<std::vector<int>, const std::vector<double>&, const std::vector<double>&,
+            enums::DataOrder>::of(&SciQLopPlots::MultiLineGraph::setdata),
+        this,
+        QOverload<std::vector<int>, const std::vector<double>&, const std::vector<double>&,
+            enums::DataOrder>::of(&SciQLopPlots::PlotWidget::plot));
+
+    this->connect(mlineGraph,
+        QOverload<std::vector<int>, const std::vector<double>&,
+            const std::list<std::vector<double>>&>::of(&SciQLopPlots::MultiLineGraph::setdata),
+        this,
+        QOverload<std::vector<int>, const std::vector<double>&,
+            const std::list<std::vector<double>>&>::of(&SciQLopPlots::PlotWidget::plot));
+
     this->connect(this, &SciQLopPlots::PlotWidget::xRangeChanged, mlineGraph,
         &SciQLopPlots::MultiLineGraph::xRangeChanged);
     return mlineGraph;

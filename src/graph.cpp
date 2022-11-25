@@ -23,9 +23,14 @@
 
 void SciQLopPlots::ColorMapGraph::plot(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> z){}
 
-void SciQLopPlots::MultiLineGraph::plot(const std::vector<double> &x, const std::vector<double> &y)
+void SciQLopPlots::MultiLineGraph::plot(const std::vector<double> &x, const std::vector<double> &y, enums::DataOrder order)
 {
-    emit this->setdata(m_indexes, x, y);
+    emit this->setdata(m_indexes, x, y, order);
+}
+
+void SciQLopPlots::MultiLineGraph::plot(const std::vector<int> graphIdexes, const std::vector<double> &x, const std::list<std::vector<double> > &ys)
+{
+    emit this->setdata(m_indexes, x, ys);
 }
 
 void SciQLopPlots::LineGraph::plot(const std::vector<double> &x, const std::vector<double> &y)

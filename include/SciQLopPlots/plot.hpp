@@ -179,9 +179,15 @@ public:
     }
 
     inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
-        const std::vector<double>& y)
+        const std::vector<double>& y, enums::DataOrder order = enums::DataOrder::x_first)
     {
-        m_plot->plot(graphIdexes, x, y);
+        m_plot->plot(graphIdexes, x, y, order);
+    }
+
+    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
+        const std::list<std::vector<double>>& ys)
+    {
+        m_plot->plot(graphIdexes, x, ys);
     }
 
     inline void plot(int graphIdex, const std::vector<double>& x, const std::vector<double>& y,

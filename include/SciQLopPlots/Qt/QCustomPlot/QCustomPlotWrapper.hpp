@@ -28,7 +28,9 @@
 #include <cpp_utils/containers/algorithms.hpp>
 
 #include <iostream>
+#include <list>
 #include <qcp.h>
+#include <vector>
 
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
@@ -170,7 +172,7 @@ public:
     }
 
     inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
-        const std::vector<double>& y)
+        const std::vector<double>& y, enums::DataOrder order = enums::DataOrder::x_first)
     {
         if (std::size(y) / std::size(graphIdexes) == std::size(x))
         {
@@ -178,18 +180,61 @@ public:
             for (auto graphIndex : graphIdexes)
             {
                 QVector<QCPGraphData> data(std::size(x));
-                std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
-                    [](double x, double y) {
-                        return QCPGraphData { x, y };
-                    });
+                if (order == enums::DataOrder::x_first)
+                {
+                    std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
+                        [](double x, double y) {
+                            return QCPGraphData { x, y };
+                        });
+                    y_it += std::size(x);
+                }
+                else
+                {
+                    auto x_it = std::cbegin(x);
+                    auto data_it = std::begin(data);
+                    auto local_y_it = y_it;
+                    while (x_it != std::cend(x))
+                    {
+                        *data_it = QCPGraphData { *x_it, *local_y_it };
+                        x_it++;
+                        local_y_it += std::size(graphIdexes);
+                        data_it++;
+                    }
+                    y_it += 1;
+                }
                 emit _plot(graphIndex, data);
-                y_it += std::size(x);
             }
         }
         else
         {
             std::cerr << "Wrong data shape: " << std::endl
                       << "std::size(y)=" << std::size(y) << std::endl
+                      << "std::size(graphIdexes)=" << std::size(graphIdexes) << std::endl
+                      << "std::size(x)=" << std::size(x) << std::endl;
+        }
+    }
+
+    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
+        const std::list<std::vector<double>>& ys)
+    {
+        if (std::size(ys) == std::size(graphIdexes))
+        {
+            auto ys_it = std::cbegin(ys);
+            for (auto graphIndex : graphIdexes)
+            {
+                QVector<QCPGraphData> data(std::size(x));
+                std::transform(std::cbegin(x), std::cend(x), std::cbegin(*ys_it), std::begin(data),
+                    [](double x, double y) {
+                        return QCPGraphData { x, y };
+                    });
+                emit _plot(graphIndex, data);
+                ys_it++;
+            }
+        }
+        else
+        {
+            std::cerr << "Wrong data shape: " << std::endl
+                      << "std::size(ys)=" << std::size(ys) << std::endl
                       << "std::size(graphIdexes)=" << std::size(graphIdexes) << std::endl
                       << "std::size(x)=" << std::size(x) << std::endl;
         }

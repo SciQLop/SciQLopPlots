@@ -32,6 +32,12 @@ enum class Axis
     z = 2
 };
 
+enum class DataOrder
+{
+    x_first = 0,
+    y_first = 1
+};
+
 enum class Layers
 {
     EditMode = 0,

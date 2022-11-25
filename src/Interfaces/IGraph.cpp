@@ -31,7 +31,7 @@ void SciQLopPlots::interfaces::IColorMapGraph::plot(const std::vector<double> &x
 
 }
 
-void SciQLopPlots::interfaces::IMultiLineGraph::plot(const std::vector<double> &x, const std::vector<double> &y)
+void SciQLopPlots::interfaces::IMultiLineGraph::plot(const std::vector<double> &x, const std::vector<double> &y, enums::DataOrder order)
 {
 
 }

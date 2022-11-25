@@ -2,7 +2,6 @@ from PySide6 import QtWidgets, QtCore, QtGui
 import numpy as np
 from SciQLopPlotsBindings import *
 from datetime import datetime
-import speasy as spz
 
 colors = [
     QtGui.QColorConstants.Black,
@@ -37,12 +36,14 @@ class Worker(QtCore.QObject):
         y=np.cos(x/100.*self.freq)*self.amp
         self.graph.plot(x,y)
 
-class SpzWorker(QtCore.QObject):
-    def __init__(self, graph, product):
+class Worker2(QtCore.QObject):
+    def __init__(self,graph, amp=1., freq=1.):
         QtCore.QObject.__init__(self)
         graph.xRangeChanged.connect(self.get_data)
+        self.amp = amp
+        self.freq = freq
+        self.lines= 3
         self.graph = graph
-        self.product = product
         self._th = QtCore.QThread()
         self.moveToThread(self._th)
         self._th.start()
@@ -51,11 +52,11 @@ class SpzWorker(QtCore.QObject):
         self._th.quit()
         self._th.wait()
 
+
     def get_data(self, new_range):
-        beta=spz.get_data(self.product, datetime.utcfromtimestamp(new_range.first), datetime.utcfromtimestamp(new_range.second))
-        if beta is not None:
-            beta.replace_fillval_by_nan(inplace=True)
-            self.graph.plot(beta.time.astype(np.timedelta64) / np.timedelta64(1, 's'),beta.values.astype(np.float))
+        x=np.arange(new_range.first, new_range.second)*1.
+        y=np.cos([(x+l*100)/100.*self.freq for l in range(self.lines)])*self.amp
+        self.graph.plot(x,y.T.flatten(), SciQLopPlots.enums.DataOrder.y_first)
 
 
 app=QtWidgets.QApplication()
@@ -75,22 +76,13 @@ for i in range(5):
 
 i=0
 p2=SciQLopPlots.PlotWidget()
-ts=SciQLopPlots.TimeSpan(p2, SciQLopPlots.axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
 s.addPlot(p2)
-prods=[spz.inventories.tree.cda.OMNI_Combined_1AU_IP_Data__Magnetic_and_Solar_Indices.OMNI_1AU_IP_Data.IMF_and_Plasma_data.OMNI_HRO_1MIN.BX_GSE,
-spz.inventories.tree.cda.OMNI_Combined_1AU_IP_Data__Magnetic_and_Solar_Indices.OMNI_1AU_IP_Data.IMF_and_Plasma_data.OMNI_HRO_1MIN.BY_GSE,
-spz.inventories.tree.cda.OMNI_Combined_1AU_IP_Data__Magnetic_and_Solar_Indices.OMNI_1AU_IP_Data.IMF_and_Plasma_data.OMNI_HRO_1MIN.BZ_GSE,
-spz.inventories.tree.cda.OMNI_Combined_1AU_IP_Data__Magnetic_and_Solar_Indices.OMNI_1AU_IP_Data.IMF_and_Plasma_data.OMNI_HRO_1MIN.Beta
-]
-for prod in prods:
-    g=p2.addLineGraph(colors[i])
-    i+=1
-    w=SpzWorker(g, prod)
-    graphs.append(g)
-    workers.append(w)
+g=p2.addMultiLineGraph(colors[:3])
+w=Worker2(g, 1+i/5, i+1)
+graphs.append(g)
+workers.append(w)
 
-
-
+ts=SciQLopPlots.TimeSpan(p, SciQLopPlots.axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
 s.setXRange(SciQLopPlots.axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
 s.show()
 app.exec()

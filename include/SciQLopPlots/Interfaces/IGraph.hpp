@@ -62,7 +62,7 @@ class IMultiLineGraph : public IGraph
 
 public:
     IMultiLineGraph(QObject* parent = nullptr) : IGraph(parent) { }
-    virtual void plot(const std::vector<double>& x, const std::vector<double>& y);
+    virtual void plot(const std::vector<double>& x, const std::vector<double>& y, enums::DataOrder order);
 };
 
 class IColorMapGraph : public IGraph
