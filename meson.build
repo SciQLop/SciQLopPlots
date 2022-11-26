@@ -35,6 +35,7 @@ subdir('bindings')
 if build_machine.system() == 'linux'
     library('python_packaging',[],
             extra_files:['pyproject.toml',
+            'setup.cfg',
             '.github/workflows/pythonpublish-linux.yml',
             '.github/workflows/pythonpublish-win.yml',
             '.github/workflows/pythonpublish-osx.yml',
