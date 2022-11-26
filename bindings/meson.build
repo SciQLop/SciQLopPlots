@@ -35,6 +35,7 @@ shiboken_typesystem  = run_command(python3, 'helper_scripts/shiboken-helper.py',
 sciqlopplots_bindings_src = files('numpy_wrappers.cpp')
 sciqlopplots_bindings_headers = files('bindings.h', 'numpy_wrappers.hpp')
 
+sciqlopplots_python_sources = ['SciQLopPlots/__init__.py']
 
 subdir('SciQLopPlotsBindings')
 
@@ -43,11 +44,15 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sciqlopplots_bindings_src, shiboken_generator_out,
         dependencies : [ python3_dep, shiboken_dep, SciQLopPlots_src_dep, cpp_utils_dep],
+        subdir : 'SciQLoPlots',
         install: true,
         include_directories : numpy_inc,
-        extra_files: sciqlopplots_bindings_headers + ['helper_scripts/shiboken-gen.py', 'helper_scripts/rpath-helper.py']
+        extra_files: sciqlopplots_python_sources +
+                     sciqlopplots_bindings_headers +
+                     ['helper_scripts/shiboken-gen.py', 'helper_scripts/rpath-helper.py']
 )
 
+python3.install_sources(sciqlopplots_python_sources, pure: false, subdir: 'SciQLoPlots')
 
 summary(
     {

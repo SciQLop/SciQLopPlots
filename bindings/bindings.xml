@@ -54,7 +54,7 @@
           </target-to-native>
         </conversion-rule>
     </primitive-type>
-    <namespace-type name="SciQLopPlots" visible="true">
+    <namespace-type name="SciQLopPlots" visible="false">
         <namespace-type name="enums" visible="true">
             <enum-type name="Axis"/>
             <enum-type name="DataOrder"/>
