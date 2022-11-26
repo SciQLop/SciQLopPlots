@@ -32,7 +32,6 @@ jobs:
               --trusted-host download.qt.io "shiboken6_generator==6.4.1"
           aqt install-qt -O $GITHUB_WORKSPACE/Qt mac desktop 6.4.1
           python3 -m build --no-isolation .
-          python3 bindings/helper_scripts/rpath-helper.py  --pyside_version 6 --wheel-file dist/*.whl
           rename 's/macosx_10_15_[0-9]_x86_64/macosx_10_15_x86_64/g' dist/*.whl
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3
