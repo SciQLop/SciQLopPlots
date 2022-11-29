@@ -80,7 +80,7 @@
               <include file-name="numpy_wrappers.hpp" location="global"/>
               <include file-name="SciQLopPlots/enums.hpp" location="global"/>
             </extra-includes>
-            <add-function signature="plot(PyArrayObject *@x@, PyArrayObject *@y@, SciQLopPlots::enums::DataOrder *@order@)">
+            <add-function signature="plot(PyObject *@x@, PyObject *@y@, SciQLopPlots::enums::DataOrder *@order@)">
                 <inject-code file="snippets.cpp" snippet="plot-multiline"/>
             </add-function>
         </object-type>
@@ -89,7 +89,7 @@
               <include file-name="numpy_wrappers.hpp" location="global"/>
               <include file-name="SciQLopPlots/enums.hpp" location="global"/>
             </extra-includes>
-            <add-function signature="plot(PyArrayObject *@x@, PyArrayObject *@y@)">
+            <add-function signature="plot(PyObject *@x@, PyObject *@y@)">
                 <inject-code file="snippets.cpp" snippet="plot-line"/>
             </add-function>
         </object-type>

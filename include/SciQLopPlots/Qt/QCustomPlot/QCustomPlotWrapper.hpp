@@ -247,32 +247,32 @@ public:
         if (y_size / std::size(graphIndexes) == x_size)
         {
             auto datas = QVector<QVector<QCPGraphData>*>(std::size(graphIndexes));
-            for (auto graphIndex : graphIndexes)
+            for (auto dataIndex=0UL; dataIndex<std::size(graphIndexes);dataIndex++)
             {
                 if (order == enums::DataOrder::x_first)
                 {
                     if (x_size < 10000)
                     {
-                        datas[graphIndex]
-                            = copy_data(x, y + x_size * graphIndex, x_size, y_size, 1);
+                        datas[dataIndex]
+                            = copy_data(x, y + x_size * dataIndex, x_size, y_size, 1);
                     }
                     else
                     {
-                        datas[graphIndex]
-                            = resample<10000>(x, y + x_size * graphIndex, x_size, y_size, 1);
+                        datas[dataIndex]
+                            = resample<10000>(x, y + x_size * dataIndex, x_size, y_size, 1);
                     }
                 }
                 else
                 {
                     if (x_size < 10000)
                     {
-                        datas[graphIndex]
-                            = copy_data(x, y + graphIndex, x_size, y_size, std::size(graphIndexes));
+                        datas[dataIndex]
+                            = copy_data(x, y + dataIndex, x_size, y_size, std::size(graphIndexes));
                     }
                     else
                     {
-                        datas[graphIndex] = resample<10000>(
-                            x, y + graphIndex, x_size, y_size, std::size(graphIndexes));
+                        datas[dataIndex] = resample<10000>(
+                            x, y + dataIndex, x_size, y_size, std::size(graphIndexes));
                     }
                 }
             }
