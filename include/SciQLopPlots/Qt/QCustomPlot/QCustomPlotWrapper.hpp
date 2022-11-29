@@ -22,9 +22,9 @@
 #pragma once
 
 #include <QObject>
+#include <QSharedDataPointer>
 #include <QTimer>
 #include <QWidget>
-#include <QSharedDataPointer>
 
 #include <cpp_utils/containers/algorithms.hpp>
 
@@ -42,6 +42,56 @@
 namespace SciQLopPlots::QCPWrappers
 {
 
+template <std::size_t dest_size>
+inline QVector<QCPGraphData>* resample(
+    const double* x, const double* y, std::size_t x_size, std::size_t y_size, const int y_incr = 1)
+{
+    auto dx = (x[x_size - 1] - x[0]) / dest_size;
+    auto data = new QVector<QCPGraphData>(dest_size);
+    const double* current_x = x;
+    const double* current_y_it = y;
+    for (auto bucket = 0UL; bucket < dest_size; bucket++)
+    {
+        double bucket_max_x = std::min(x[0] + (bucket + 1) * dx, x[x_size - 1]);
+        if ((bucket & 1) == 0)
+        {
+            double max_value = std::nan("");
+            while (*current_x < bucket_max_x)
+            {
+                max_value = std::fmax(max_value, *current_y_it);
+                current_y_it += y_incr;
+                current_x++;
+            }
+            (*data)[bucket] = QCPGraphData { x[0] + bucket * dx, max_value };
+        }
+        else
+        {
+            double min_value = std::nan("");
+            while (*current_x < bucket_max_x)
+            {
+                min_value = std::fmin(min_value, *current_y_it);
+                current_y_it += y_incr;
+                current_x++;
+            }
+            (*data)[bucket] = QCPGraphData { x[0] + bucket * dx, min_value };
+        }
+    }
+    return data;
+}
+
+inline QVector<QCPGraphData>* copy_data(
+    const double* x, const double* y, std::size_t x_size, std::size_t y_size, const int y_incr = 1)
+{
+    auto data = new QVector<QCPGraphData>(x_size);
+    const double* current_y_it = y;
+    for (auto i = 0UL; i < x_size; i++)
+    {
+        (*data)[i] = QCPGraphData { x[i], *current_y_it };
+        current_y_it += y_incr;
+    }
+    return data;
+}
+
 class QCustomPlotWrapper : public QCustomPlot
 {
     Q_OBJECT
@@ -54,14 +104,14 @@ public:
         p_refresh_timer->setSingleShot(true);
         setPlottingHint(QCP::phFastPolylines, true);
         setInteractions(QCP::iSelectPlottables | QCP::iSelectItems);
-        connect(this, QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot),
-            this, QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot_slt),
+        connect(this, QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot), this,
+            QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot_slt),
             Qt::QueuedConnection);
         connect(this,
-            QOverload<std::vector<int>, std::vector<QVector<QCPGraphData>>*>::of(
+            QOverload<std::vector<int>, QVector<QVector<QCPGraphData>*>>::of(
                 &QCustomPlotWrapper::_plot),
             this,
-            QOverload<std::vector<int>, std::vector<QVector<QCPGraphData>>*>::of(
+            QOverload<std::vector<int>, QVector<QVector<QCPGraphData>*>>::of(
                 &QCustomPlotWrapper::_plot_slt),
             Qt::QueuedConnection);
         connect(this, QOverload<QCPColorMapData*>::of(&QCustomPlotWrapper::_plot), this,
@@ -128,7 +178,7 @@ public:
     inline int addGraph(QColor color = Qt::blue)
     {
         auto graph = QCustomPlot::addGraph();
-        graph->setAdaptiveSampling(true);
+        // graph->setAdaptiveSampling(true);
         auto pen = graph->pen();
         pen.setColor(color);
         graph->setPen(pen);
@@ -149,8 +199,6 @@ public:
     {
         this->plot(graphIndex, x.data(), y.data(), std::size(x), std::size(y));
     }
-
-
 
 
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y,
@@ -178,48 +226,55 @@ public:
         }
     }
 
-    inline void plot(int graphIndex, const double* x, const double* y, std::size_t x_size, std::size_t y_size)
+    inline void plot(
+        int graphIndex, const double* x, const double* y, std::size_t x_size, std::size_t y_size)
     {
-        auto data = new QVector<QCPGraphData> (x_size);
-        std::transform(x, x+x_size, y, std::begin(*data),
-            [](double x, double y) {
-                return QCPGraphData { x, y };
-            });
-        emit _plot(graphIndex, data);
+        if (x_size < 10000)
+        {
+            auto data = copy_data(x, y, x_size, y_size, 1);
+            emit _plot(graphIndex, data);
+        }
+        else
+        {
+            auto data = resample<10000>(x, y, x_size, y_size, 1);
+            emit _plot(graphIndex, data);
+        }
     }
 
-    inline  void plot(std::vector<int> graphIndexes, const double* x, const double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order)
+    inline void plot(std::vector<int> graphIndexes, const double* x, const double* y,
+        std::size_t x_size, std::size_t y_size, enums::DataOrder order)
     {
         if (y_size / std::size(graphIndexes) == x_size)
         {
-            auto datas = new std::vector<QVector<QCPGraphData>>(std::size(graphIndexes));
-            auto y_it = y;
+            auto datas = QVector<QVector<QCPGraphData>*>(std::size(graphIndexes));
             for (auto graphIndex : graphIndexes)
             {
-                QVector<QCPGraphData> data(x_size);
                 if (order == enums::DataOrder::x_first)
                 {
-                    std::transform(x, x+x_size, y_it, std::begin(data),
-                        [](double x, double y) {
-                            return QCPGraphData { x, y };
-                        });
-                    y_it += x_size;
+                    if (x_size < 10000)
+                    {
+                        datas[graphIndex]
+                            = copy_data(x, y + x_size * graphIndex, x_size, y_size, 1);
+                    }
+                    else
+                    {
+                        datas[graphIndex]
+                            = resample<10000>(x, y + x_size * graphIndex, x_size, y_size, 1);
+                    }
                 }
                 else
                 {
-                    auto x_it = x;
-                    auto data_it = std::begin(data);
-                    auto local_y_it = y_it;
-                    while (x_it != x+x_size)
+                    if (x_size < 10000)
                     {
-                        *data_it = QCPGraphData { *x_it, *local_y_it };
-                        x_it++;
-                        local_y_it += std::size(graphIndexes);
-                        data_it++;
+                        datas[graphIndex]
+                            = copy_data(x, y + graphIndex, x_size, y_size, std::size(graphIndexes));
                     }
-                    y_it += 1;
+                    else
+                    {
+                        datas[graphIndex] = resample<10000>(
+                            x, y + graphIndex, x_size, y_size, std::size(graphIndexes));
+                    }
                 }
-                (*datas)[graphIndex] = std::move(data);
             }
             emit _plot(graphIndexes, datas);
         }
@@ -241,12 +296,10 @@ public:
 
 private:
     Q_SIGNAL void _plot(int graphIndex, QVector<QCPGraphData>* data);
-    Q_SIGNAL void _plot(
-        std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data);
+    Q_SIGNAL void _plot(std::vector<int> graphIndexes, QVector<QVector<QCPGraphData>*> data);
     Q_SIGNAL void _plot(QCPColorMapData* data);
     Q_SLOT void _plot_slt(int graphIndex, QVector<QCPGraphData>* data);
-    Q_SLOT void _plot_slt(
-        std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data);
+    Q_SLOT void _plot_slt(std::vector<int> graphIndexes, QVector<QVector<QCPGraphData>*> data);
     Q_SLOT void _plot_slt(QCPColorMapData* data);
     QCPColorMap* m_colormap = nullptr;
 };

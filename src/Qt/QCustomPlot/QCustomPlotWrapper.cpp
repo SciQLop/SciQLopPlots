@@ -25,18 +25,18 @@ void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, QV
 {
     graph(graphIndex)->data()->set(*data, true);
     delete data;
-    replot(200);
+    replot(20);
     emit dataChanged();
 }
 
-void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(std::vector<int> graphIndexes, QVector<QVector<QCPGraphData>*> data)
 {
-    for(int i=0;i<std::size(graphIndexes);i++)
+    for(auto i=0UL;i<std::size(graphIndexes);i++)
     {
-        graph(graphIndexes[i])->data()->set((*data)[i], true);
+        graph(graphIndexes[i])->data()->set(*data[i], true);
+        delete data[i];
     }
-    delete data;
-    replot(200);
+    replot(20);
     emit dataChanged();
 }
 
@@ -45,7 +45,7 @@ void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(QCPColorMapData* d
     if (m_colormap)
     {
         m_colormap->setData(data, false);
-        replot(200);
+        replot(20);
         emit dataChanged();
     }
 }
