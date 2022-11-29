@@ -32,6 +32,7 @@
 #include "SciQLopPlots/Qt/Events/Wheel.hpp"
 
 #include "SciQLopPlots/Interfaces/IGraph.hpp"
+#include "SciQLopPlots/Interfaces/IPlotWidget.hpp"
 
 #include "SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp"
 #include "SciQLopPlots/axis_range.hpp"
@@ -45,43 +46,37 @@ class LineGraph : public interfaces::ILineGraph
     Q_OBJECT
     int m_index;
 
+    interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
 public:
-    Q_SIGNAL void setdata(int index, const std::vector<double>& x, const std::vector<double>& y);
 
     LineGraph(int index, QObject* parent = nullptr)
             : interfaces::ILineGraph(parent), m_index { index }
     {
     }
-    virtual void plot(const std::vector<double>& x, const std::vector<double>& y);
+protected:
+    void plot_ptr(double* x, double* y, std::size_t x_size, std::size_t y_size);
 };
 
 class MultiLineGraph : public interfaces::IMultiLineGraph
 {
     Q_OBJECT
     std::vector<int> m_indexes;
-
+interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
 public:
-    Q_SIGNAL void setdata(std::vector<int> indexes, const std::vector<double>& x,
-        const std::vector<double>& y, enums::DataOrder order);
 
-    Q_SIGNAL void setdata(std::vector<int> indexes, const std::vector<double>& x,
-        const std::list<std::vector<double>>& y);
-
-    MultiLineGraph(std::vector<int> indexes, QObject* parent = nullptr)
+    MultiLineGraph(std::vector<int> indexes, interfaces::IPlotWidget* parent = nullptr)
             : interfaces::IMultiLineGraph(parent), m_indexes { indexes }
     {
     }
-    virtual void plot(const std::vector<double>& x, const std::vector<double>& y,
-        enums::DataOrder order = enums::DataOrder::x_first);
 
-    virtual void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
-        const std::list<std::vector<double>>& ys);
+protected:
+    void plot_ptr(double* x, double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order = enums::DataOrder::x_first);
 };
 
 class ColorMapGraph : public interfaces::IColorMapGraph
 {
     Q_OBJECT
-
+interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
 public:
     ColorMapGraph(QObject* parent = nullptr) : interfaces::IColorMapGraph(parent) { }
     virtual void plot(

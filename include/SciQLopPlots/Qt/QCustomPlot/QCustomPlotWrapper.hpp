@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QWidget>
+#include <QSharedDataPointer>
 
 #include <cpp_utils/containers/algorithms.hpp>
 
@@ -53,14 +54,14 @@ public:
         p_refresh_timer->setSingleShot(true);
         setPlottingHint(QCP::phFastPolylines, true);
         setInteractions(QCP::iSelectPlottables | QCP::iSelectItems);
-        connect(this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot),
-            this, QOverload<int, const QVector<QCPGraphData>&>::of(&QCustomPlotWrapper::_plot_slt),
+        connect(this, QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot),
+            this, QOverload<int, QVector<QCPGraphData>*>::of(&QCustomPlotWrapper::_plot_slt),
             Qt::QueuedConnection);
         connect(this,
-            QOverload<std::vector<int>, const std::vector<QVector<QCPGraphData>>&>::of(
+            QOverload<std::vector<int>, std::vector<QVector<QCPGraphData>>*>::of(
                 &QCustomPlotWrapper::_plot),
             this,
-            QOverload<std::vector<int>, const std::vector<QVector<QCPGraphData>>&>::of(
+            QOverload<std::vector<int>, std::vector<QVector<QCPGraphData>>*>::of(
                 &QCustomPlotWrapper::_plot_slt),
             Qt::QueuedConnection);
         connect(this, QOverload<QCPColorMapData*>::of(&QCustomPlotWrapper::_plot), this,
@@ -144,110 +145,13 @@ public:
         return -1;
     }
 
-    using data_t = std::pair<std::vector<double>, std::vector<double>>;
-    using data2d_t = std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>;
-
-    inline void plot(int graphIdex, const data_t& data)
-    {
-        plot(graphIdex, data.first, data.second);
-    }
-
-    inline void plot(const std::vector<int> graphIdexes, const data_t& data)
-    {
-        plot(graphIdexes, data.first, data.second);
-    }
-
-    inline void plot(const std::vector<int> graphIdexes, const data2d_t& data)
-    {
-        assert(std::size(graphIdexes) == 1);
-        plot(graphIdexes[0], data);
-    }
-
-    inline void plot(int graphIndex, const data2d_t& data)
-    {
-        plot(graphIndex, std::get<0>(data), std::get<1>(data), std::get<2>(data));
-    }
-
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y)
     {
-        QVector<QCPGraphData> data(std::size(x));
-        std::transform(std::cbegin(x), std::cend(x), std::cbegin(y), std::begin(data),
-            [](double x, double y) {
-                return QCPGraphData { x, y };
-            });
-        emit _plot(graphIndex, data);
+        this->plot(graphIndex, x.data(), y.data(), std::size(x), std::size(y));
     }
 
-    inline void plot(const std::vector<int> graphIndexes, const std::vector<double>& x,
-        const std::vector<double>& y, enums::DataOrder order = enums::DataOrder::x_first)
-    {
-        if (std::size(y) / std::size(graphIndexes) == std::size(x))
-        {
-            std::vector<QVector<QCPGraphData>> datas(std::size(graphIndexes));
-            auto y_it = std::cbegin(y);
-            for (auto graphIndex : graphIndexes)
-            {
-                QVector<QCPGraphData> data(std::size(x));
-                if (order == enums::DataOrder::x_first)
-                {
-                    std::transform(std::cbegin(x), std::cend(x), y_it, std::begin(data),
-                        [](double x, double y) {
-                            return QCPGraphData { x, y };
-                        });
-                    y_it += std::size(x);
-                }
-                else
-                {
-                    auto x_it = std::cbegin(x);
-                    auto data_it = std::begin(data);
-                    auto local_y_it = y_it;
-                    while (x_it != std::cend(x))
-                    {
-                        *data_it = QCPGraphData { *x_it, *local_y_it };
-                        x_it++;
-                        local_y_it += std::size(graphIndexes);
-                        data_it++;
-                    }
-                    y_it += 1;
-                }
-                datas[graphIndex] = std::move(data);
-            }
-            emit _plot(graphIndexes, datas);
-        }
-        else
-        {
-            std::cerr << "Wrong data shape: " << std::endl
-                      << "std::size(y)=" << std::size(y) << std::endl
-                      << "std::size(graphIndexes)=" << std::size(graphIndexes) << std::endl
-                      << "std::size(x)=" << std::size(x) << std::endl;
-        }
-    }
 
-    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
-        const std::list<std::vector<double>>& ys)
-    {
-        if (std::size(ys) == std::size(graphIdexes))
-        {
-            auto ys_it = std::cbegin(ys);
-            for (auto graphIndex : graphIdexes)
-            {
-                QVector<QCPGraphData> data(std::size(x));
-                std::transform(std::cbegin(x), std::cend(x), std::cbegin(*ys_it), std::begin(data),
-                    [](double x, double y) {
-                        return QCPGraphData { x, y };
-                    });
-                emit _plot(graphIndex, data);
-                ys_it++;
-            }
-        }
-        else
-        {
-            std::cerr << "Wrong data shape: " << std::endl
-                      << "std::size(ys)=" << std::size(ys) << std::endl
-                      << "std::size(graphIdexes)=" << std::size(graphIdexes) << std::endl
-                      << "std::size(x)=" << std::size(x) << std::endl;
-        }
-    }
+
 
     inline void plot(int graphIndex, const std::vector<double>& x, const std::vector<double>& y,
         const std::vector<double>& z)
@@ -274,6 +178,60 @@ public:
         }
     }
 
+    inline void plot(int graphIndex, const double* x, const double* y, std::size_t x_size, std::size_t y_size)
+    {
+        auto data = new QVector<QCPGraphData> (x_size);
+        std::transform(x, x+x_size, y, std::begin(*data),
+            [](double x, double y) {
+                return QCPGraphData { x, y };
+            });
+        emit _plot(graphIndex, data);
+    }
+
+    inline  void plot(std::vector<int> graphIndexes, const double* x, const double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order)
+    {
+        if (y_size / std::size(graphIndexes) == x_size)
+        {
+            auto datas = new std::vector<QVector<QCPGraphData>>(std::size(graphIndexes));
+            auto y_it = y;
+            for (auto graphIndex : graphIndexes)
+            {
+                QVector<QCPGraphData> data(x_size);
+                if (order == enums::DataOrder::x_first)
+                {
+                    std::transform(x, x+x_size, y_it, std::begin(data),
+                        [](double x, double y) {
+                            return QCPGraphData { x, y };
+                        });
+                    y_it += x_size;
+                }
+                else
+                {
+                    auto x_it = x;
+                    auto data_it = std::begin(data);
+                    auto local_y_it = y_it;
+                    while (x_it != x+x_size)
+                    {
+                        *data_it = QCPGraphData { *x_it, *local_y_it };
+                        x_it++;
+                        local_y_it += std::size(graphIndexes);
+                        data_it++;
+                    }
+                    y_it += 1;
+                }
+                (*datas)[graphIndex] = std::move(data);
+            }
+            emit _plot(graphIndexes, datas);
+        }
+        else
+        {
+            std::cerr << "Wrong data shape: " << std::endl
+                      << "std::size(y)=" << y_size << std::endl
+                      << "std::size(graphIndexes)=" << std::size(graphIndexes) << std::endl
+                      << "std::size(x)=" << x_size << std::endl;
+        }
+    }
+
     Q_SIGNAL void dataChanged();
 
     inline void replot(int ms) { this->p_refresh_timer->start(ms); }
@@ -282,13 +240,13 @@ public:
 
 
 private:
-    Q_SIGNAL void _plot(int graphIndex, const QVector<QCPGraphData>& data);
+    Q_SIGNAL void _plot(int graphIndex, QVector<QCPGraphData>* data);
     Q_SIGNAL void _plot(
-        std::vector<int> graphIndexes, const std::vector<QVector<QCPGraphData>>& data);
+        std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data);
     Q_SIGNAL void _plot(QCPColorMapData* data);
-    Q_SLOT void _plot_slt(int graphIndex, const QVector<QCPGraphData>& data);
+    Q_SLOT void _plot_slt(int graphIndex, QVector<QCPGraphData>* data);
     Q_SLOT void _plot_slt(
-        std::vector<int> graphIndexes, const std::vector<QVector<QCPGraphData>>& data);
+        std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data);
     Q_SLOT void _plot_slt(QCPColorMapData* data);
     QCPColorMap* m_colormap = nullptr;
 };

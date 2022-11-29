@@ -186,13 +186,13 @@ public:
                            [](const auto& a, const auto& b) { return a * b; });
   }
 
-  double data(std::size_t pos)
+  double* data()
   {
     if(!_py_obj.is_null())
     {
-      return reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()))[pos];
+      return reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()));
     }
-    return nan("NAN");
+    return nullptr;
   }
 
   std::vector<double> to_std_vect()

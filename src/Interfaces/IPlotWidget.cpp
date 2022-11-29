@@ -184,6 +184,16 @@ void IPlotWidget::showXAxis(bool show) { }
 
 void IPlotWidget::replot(int ms) { }
 
+void IPlotWidget::plot(int index, const double *x, const double *y, std::size_t x_size, std::size_t y_size)
+{
+
+}
+
+void IPlotWidget::plot(std::vector<int> indexes, const double *x, const double *y, std::size_t x_size, std::size_t y_size, enums::DataOrder order)
+{
+
+}
+
 GraphicObject* IPlotWidget::graphicObjectAt(const QPoint& position)
 {
     return nullptr;

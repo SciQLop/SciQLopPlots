@@ -75,8 +75,24 @@
         <object-type name="SyncPanel" />
         <object-type name="PlotWidget" />
         <object-type name="ColorMapGraph" />
-        <object-type name="MultiLineGraph" />
-        <object-type name="LineGraph" />
+        <object-type name="MultiLineGraph">
+            <extra-includes>
+              <include file-name="numpy_wrappers.hpp" location="global"/>
+              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
+            </extra-includes>
+            <add-function signature="plot(PyArrayObject *@x@, PyArrayObject *@y@, SciQLopPlots::enums::DataOrder *@order@)">
+                <inject-code file="snippets.cpp" snippet="plot-multiline"/>
+            </add-function>
+        </object-type>
+        <object-type name="LineGraph">
+            <extra-includes>
+              <include file-name="numpy_wrappers.hpp" location="global"/>
+              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
+            </extra-includes>
+            <add-function signature="plot(PyArrayObject *@x@, PyArrayObject *@y@)">
+                <inject-code file="snippets.cpp" snippet="plot-line"/>
+            </add-function>
+        </object-type>
         <object-type name="TimeSpan" />
     </namespace-type>
 </typesystem>

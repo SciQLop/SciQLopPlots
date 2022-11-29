@@ -181,20 +181,26 @@ public:
     inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
         const std::vector<double>& y, enums::DataOrder order = enums::DataOrder::x_first)
     {
-        m_plot->plot(graphIdexes, x, y, order);
+        m_plot->plot(graphIdexes, x.data(), y.data(), std::size(x), std::size(y), order);
     }
 
-    inline void plot(const std::vector<int> graphIdexes, const std::vector<double>& x,
-        const std::list<std::vector<double>>& ys)
-    {
-        m_plot->plot(graphIdexes, x, ys);
-    }
 
     inline void plot(int graphIdex, const std::vector<double>& x, const std::vector<double>& y,
         const std::vector<double>& z)
     {
         m_plot->plot(graphIdex, x, y, z);
     }
+
+    inline virtual void plot(int graphIdex, const double* x, const double* y, std::size_t x_size, std::size_t y_size) final
+    {
+        m_plot->plot(graphIdex, x, y,x_size , y_size);
+    }
+
+    inline virtual void plot(std::vector<int> graphIdexes, const double* x, const double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order) final
+    {
+        m_plot->plot(graphIdexes, x, y,x_size , y_size, order);
+    }
+
 
     inline void showXAxis(bool show) override { m_plot->xAxis->setVisible(show); }
 

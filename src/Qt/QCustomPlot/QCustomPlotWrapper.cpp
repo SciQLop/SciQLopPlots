@@ -21,19 +21,21 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp"
 
-void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, const QVector<QCPGraphData>& data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, QVector<QCPGraphData>* data)
 {
-    graph(graphIndex)->data()->set(data, true);
+    graph(graphIndex)->data()->set(*data, true);
+    delete data;
     replot(200);
     emit dataChanged();
 }
 
-void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(std::vector<int> graphIndexes, const std::vector<QVector<QCPGraphData> > &data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(std::vector<int> graphIndexes, std::vector<QVector<QCPGraphData>>* data)
 {
     for(int i=0;i<std::size(graphIndexes);i++)
     {
-        graph(graphIndexes[i])->data()->set(data[i], true);
+        graph(graphIndexes[i])->data()->set((*data)[i], true);
     }
+    delete data;
     replot(200);
     emit dataChanged();
 }

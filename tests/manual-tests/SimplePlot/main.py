@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import numpy as np
-from SciQLopPlotsBindings import *
+from SciQLopPlots import *
 from datetime import datetime
 
 colors = [
@@ -18,13 +18,13 @@ colors = [
 class Worker(QtCore.QObject):
     def __init__(self,graph, amp=1., freq=1.):
         QtCore.QObject.__init__(self)
-        graph.xRangeChanged.connect(self.get_data)
         self.amp = amp
         self.freq = freq
         self.graph = graph
         self._th = QtCore.QThread()
         self.moveToThread(self._th)
         self._th.start()
+        graph.xRangeChanged.connect(self.get_data)
 
     def __del__(self):
         self._th.quit()
@@ -54,16 +54,16 @@ class Worker2(QtCore.QObject):
 
 
     def get_data(self, new_range):
-        x=np.arange(new_range.first, new_range.second)*1.
+        x=np.arange(new_range.first, new_range.second, 0.1)*1.
         y=np.cos([(x+l*100)/100.*self.freq for l in range(self.lines)])*self.amp
-        self.graph.plot(x,y.T.flatten(), SciQLopPlots.enums.DataOrder.y_first)
+        self.graph.plot(x,y.T, enums.DataOrder.y_first)
 
 
 app=QtWidgets.QApplication()
 
-s=SciQLopPlots.SyncPanel()
+s=SyncPanel()
 
-p=SciQLopPlots.PlotWidget()
+p=PlotWidget()
 s.addPlot(p)
 
 graphs = []
@@ -75,14 +75,14 @@ for i in range(5):
     workers.append(w)
 
 i=0
-p2=SciQLopPlots.PlotWidget()
+p2=PlotWidget()
 s.addPlot(p2,0)
 g=p2.addMultiLineGraph(colors[:3])
 w=Worker2(g, 1+i/5, i+1)
 graphs.append(g)
 workers.append(w)
 
-ts=SciQLopPlots.TimeSpan(p, SciQLopPlots.axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
-s.setXRange(SciQLopPlots.axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
+ts=TimeSpan(p, axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
+s.setXRange(axis.range(datetime(2020,10,10).timestamp(), datetime(2020,10,10,1).timestamp()))
 s.show()
 app.exec()
