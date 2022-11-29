@@ -210,6 +210,10 @@ public:
     virtual MultiLineGraph* addMultiLineGraph(const std::vector<QColor>& colors) override;
     virtual ColorMapGraph* addColorMapGraph() override;
 
+    virtual void setGraphColor(int graphIndex, QColor color) override;
+    virtual QColor graphColor(int graphIndex) override;
+
+
     QCPWrappers::QCustomPlotWrapper* handle() { return this->m_plot; }
 
     virtual interfaces::GraphicObject* graphicObjectAt(const QPoint& position) override

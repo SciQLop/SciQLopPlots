@@ -47,3 +47,13 @@ SciQLopPlots::ColorMapGraph* SciQLopPlots::PlotWidget::addColorMapGraph()
 {
     return nullptr;
 }
+
+void SciQLopPlots::PlotWidget::setGraphColor(int graphIndex, QColor color)
+{
+    m_plot->setGraphColor(graphIndex, color);
+}
+
+QColor SciQLopPlots::PlotWidget::graphColor(int graphIndex)
+{
+    return m_plot->graphColor(graphIndex);
+}

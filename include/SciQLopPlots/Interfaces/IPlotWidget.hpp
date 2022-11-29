@@ -105,6 +105,9 @@ namespace interfaces
         virtual IMultiLineGraph* addMultiLineGraph(const std::vector<QColor>& colors);
         virtual IColorMapGraph* addColorMapGraph();
 
+        virtual void setGraphColor(int graphIndex, QColor color);
+        virtual QColor graphColor(int graphIndex);
+
         virtual void setXRange(const axis::range& range);
         virtual void setYRange(const axis::range& range);
 

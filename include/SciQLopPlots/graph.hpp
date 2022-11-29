@@ -46,13 +46,19 @@ class LineGraph : public interfaces::ILineGraph
     Q_OBJECT
     int m_index;
 
-    interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
-public:
+    inline interfaces::IPlotWidget* m_plot_widget()
+    {
+        return qobject_cast<interfaces::IPlotWidget*>(this->parent());
+    }
 
+public:
     LineGraph(int index, QObject* parent = nullptr)
             : interfaces::ILineGraph(parent), m_index { index }
     {
     }
+
+    inline void setColor(QColor color) { m_plot_widget()->setGraphColor(m_index, color); }
+
 protected:
     void plot_ptr(double* x, double* y, std::size_t x_size, std::size_t y_size);
 };
@@ -61,22 +67,35 @@ class MultiLineGraph : public interfaces::IMultiLineGraph
 {
     Q_OBJECT
     std::vector<int> m_indexes;
-interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
-public:
+    inline interfaces::IPlotWidget* m_plot_widget()
+    {
+        return qobject_cast<interfaces::IPlotWidget*>(this->parent());
+    }
 
+public:
     MultiLineGraph(std::vector<int> indexes, interfaces::IPlotWidget* parent = nullptr)
             : interfaces::IMultiLineGraph(parent), m_indexes { indexes }
     {
     }
 
+    inline void setColor(int index, QColor color)
+    {
+        m_plot_widget()->setGraphColor(m_indexes[index], color);
+    }
+
 protected:
-    void plot_ptr(double* x, double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order = enums::DataOrder::x_first);
+    void plot_ptr(double* x, double* y, std::size_t x_size, std::size_t y_size,
+        enums::DataOrder order = enums::DataOrder::x_first);
 };
 
 class ColorMapGraph : public interfaces::IColorMapGraph
 {
     Q_OBJECT
-interfaces::IPlotWidget* m_plot_widget(){return qobject_cast<interfaces::IPlotWidget*>(this->parent());}
+    inline interfaces::IPlotWidget* m_plot_widget()
+    {
+        return qobject_cast<interfaces::IPlotWidget*>(this->parent());
+    }
+
 public:
     ColorMapGraph(QObject* parent = nullptr) : interfaces::IColorMapGraph(parent) { }
     virtual void plot(

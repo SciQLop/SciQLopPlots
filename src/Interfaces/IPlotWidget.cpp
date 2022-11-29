@@ -176,6 +176,16 @@ IColorMapGraph* IPlotWidget::addColorMapGraph()
     return nullptr;
 }
 
+void IPlotWidget::setGraphColor(int graphIndex, QColor color)
+{
+
+}
+
+QColor IPlotWidget::graphColor(int graphIndex)
+{
+    return {};
+}
+
 void IPlotWidget::setXRange(const axis::range& range) { }
 
 void IPlotWidget::setYRange(const axis::range& range) { }

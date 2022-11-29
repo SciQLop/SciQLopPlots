@@ -185,6 +185,19 @@ public:
         return graphCount() - 1;
     }
 
+    inline void setGraphColor(int graphIndex, QColor color)
+    {
+        auto graph = this->graph(graphIndex);
+        auto pen = graph->pen();
+        pen.setColor(color);
+        graph->setPen(pen);
+    }
+
+    inline QColor graphColor(int graphIndex)
+    {
+        return this->graph(graphIndex)->pen().color();
+    }
+
     inline int addColorMap()
     {
         if (!m_colormap)
