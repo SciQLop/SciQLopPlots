@@ -21,8 +21,6 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/graph.hpp"
 
-void SciQLopPlots::ColorMapGraph::plot(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> z){}
-
 void SciQLopPlots::MultiLineGraph::plot_ptr(double *x, double *y, std::size_t x_size, std::size_t y_size, enums::DataOrder order)
 {
     m_plot_widget()->plot(m_indexes, x, y, x_size, y_size, order);
@@ -31,4 +29,9 @@ void SciQLopPlots::MultiLineGraph::plot_ptr(double *x, double *y, std::size_t x_
 void SciQLopPlots::LineGraph::plot_ptr(double *x, double *y, std::size_t x_size, std::size_t y_size)
 {
     m_plot_widget()->plot(m_index, x, y, x_size, y_size);
+}
+
+void SciQLopPlots::ColorMapGraph::plot_ptr(double *x, double *y, double *z, std::size_t x_size, std::size_t y_size, std::size_t z_size)
+{
+    m_plot_widget()->plot(x,y,z,x_size,y_size ,z_size);
 }

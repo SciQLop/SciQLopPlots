@@ -193,16 +193,17 @@ public:
         graph->setPen(pen);
     }
 
-    inline QColor graphColor(int graphIndex)
-    {
-        return this->graph(graphIndex)->pen().color();
-    }
+    inline QColor graphColor(int graphIndex) { return this->graph(graphIndex)->pen().color(); }
 
     inline int addColorMap()
     {
         if (!m_colormap)
         {
             m_colormap = new QCPColorMap(this->xAxis, this->yAxis);
+            m_colormap->setDataScaleType(QCPAxis::stLogarithmic);
+            auto scale = QCPColorGradient(QCPColorGradient::gpJet);
+            scale.setNanColor(QColor(0, 0, 0, 0));
+            m_colormap->setGradient(scale);
             return 0;
         }
         return -1;
@@ -260,14 +261,13 @@ public:
         if (y_size / std::size(graphIndexes) == x_size)
         {
             auto datas = QVector<QVector<QCPGraphData>*>(std::size(graphIndexes));
-            for (auto dataIndex=0UL; dataIndex<std::size(graphIndexes);dataIndex++)
+            for (auto dataIndex = 0UL; dataIndex < std::size(graphIndexes); dataIndex++)
             {
                 if (order == enums::DataOrder::x_first)
                 {
                     if (x_size < 10000)
                     {
-                        datas[dataIndex]
-                            = copy_data(x, y + x_size * dataIndex, x_size, y_size, 1);
+                        datas[dataIndex] = copy_data(x, y + x_size * dataIndex, x_size, y_size, 1);
                     }
                     else
                     {
@@ -300,12 +300,40 @@ public:
         }
     }
 
+    inline void plot(const double* x, const double* y, const double* z, std::size_t x_size,
+        std::size_t y_size, std::size_t z_size)
+    {
+        if (x_size * y_size == z_size)
+        {
+            using namespace cpp_utils;
+            auto data = new QCPColorMapData(x_size, y_size,
+                { *std::min_element(x, x + x_size), *std::max_element(x, x + x_size) },
+                { *std::min_element(y, y + y_size), *std::max_element(y, y + y_size) });
+            auto z_it = z;
+            for (auto i = 0UL; i < x_size; i++)
+            {
+                for (auto j = 0UL; j < y_size; j++)
+                {
+                    data->setData(x[i], y[j], *z_it);
+                    z_it++;
+                }
+            }
+            emit _plot(data);
+        }
+        else
+        {
+            std::cerr << "Wrong data shape: " << std::endl
+                      << "std::size(z)=" << z_size << std::endl
+                      << "std::size(y)=" << y_size << std::endl
+                      << "std::size(x)=" << x_size << std::endl;
+        }
+    }
+
     Q_SIGNAL void dataChanged();
 
     inline void replot(int ms) { this->p_refresh_timer->start(ms); }
 
     interfaces::GraphicObject* graphicObjectAt(const QPoint& position) { return nullptr; }
-
 
 private:
     Q_SIGNAL void _plot(int graphIndex, QVector<QCPGraphData>* data);

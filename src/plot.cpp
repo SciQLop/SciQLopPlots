@@ -45,6 +45,13 @@ SciQLopPlots::MultiLineGraph* SciQLopPlots::PlotWidget::addMultiLineGraph(
 
 SciQLopPlots::ColorMapGraph* SciQLopPlots::PlotWidget::addColorMapGraph()
 {
+    if (-1 != m_plot->addColorMap())
+    {
+        auto colorMap = new SciQLopPlots::ColorMapGraph { this };
+        this->connect(this, &SciQLopPlots::PlotWidget::xRangeChanged, colorMap,
+            &SciQLopPlots::ColorMapGraph::xRangeChanged);
+        return colorMap;
+    }
     return nullptr;
 }
 

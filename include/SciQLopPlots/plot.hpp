@@ -191,14 +191,22 @@ public:
         m_plot->plot(graphIdex, x, y, z);
     }
 
-    inline virtual void plot(int graphIdex, const double* x, const double* y, std::size_t x_size, std::size_t y_size) final
+    inline virtual void plot(int graphIdex, const double* x, const double* y, std::size_t x_size,
+        std::size_t y_size) final
     {
-        m_plot->plot(graphIdex, x, y,x_size , y_size);
+        m_plot->plot(graphIdex, x, y, x_size, y_size);
     }
 
-    inline virtual void plot(std::vector<int> graphIdexes, const double* x, const double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order) final
+    inline virtual void plot(std::vector<int> graphIdexes, const double* x, const double* y,
+        std::size_t x_size, std::size_t y_size, enums::DataOrder order) final
     {
-        m_plot->plot(graphIdexes, x, y,x_size , y_size, order);
+        m_plot->plot(graphIdexes, x, y, x_size, y_size, order);
+    }
+
+    inline virtual void plot(const double* x, const double* y, const double* z, std::size_t x_size,
+        std::size_t y_size, std::size_t z_size) final
+    {
+        m_plot->plot(x, y, z, x_size, y_size, z_size);
     }
 
 

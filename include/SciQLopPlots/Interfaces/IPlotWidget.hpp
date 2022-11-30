@@ -66,7 +66,6 @@ inline void removeAllMargins(QWidget* widget)
 }
 
 
-
 namespace interfaces
 {
     class IPlotWidget : public QWidget
@@ -115,8 +114,12 @@ namespace interfaces
 
         virtual void replot(int ms);
 
-        virtual void plot(int index, const double* x, const double* y, std::size_t x_size, std::size_t y_size);
-        virtual void plot(std::vector<int> indexes, const double* x, const double* y, std::size_t x_size, std::size_t y_size, enums::DataOrder order);
+        virtual void plot(
+            int index, const double* x, const double* y, std::size_t x_size, std::size_t y_size);
+        virtual void plot(std::vector<int> indexes, const double* x, const double* y,
+            std::size_t x_size, std::size_t y_size, enums::DataOrder order);
+        virtual void plot(const double* x, const double* y, const double* z, std::size_t x_size,
+            std::size_t y_size, std::size_t z_size);
 
         void delete_selected_object();
 

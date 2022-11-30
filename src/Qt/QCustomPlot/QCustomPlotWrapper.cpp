@@ -21,7 +21,8 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp"
 
-void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, QVector<QCPGraphData>* data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(
+    int graphIndex, QVector<QCPGraphData>* data)
 {
     graph(graphIndex)->data()->set(*data, true);
     delete data;
@@ -29,9 +30,10 @@ void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(int graphIndex, QV
     emit dataChanged();
 }
 
-void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(std::vector<int> graphIndexes, QVector<QVector<QCPGraphData>*> data)
+void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(
+    std::vector<int> graphIndexes, QVector<QVector<QCPGraphData>*> data)
 {
-    for(auto i=0UL;i<std::size(graphIndexes);i++)
+    for (auto i = 0UL; i < std::size(graphIndexes); i++)
     {
         graph(graphIndexes[i])->data()->set(*data[i], true);
         delete data[i];
@@ -45,6 +47,7 @@ void SciQLopPlots::QCPWrappers::QCustomPlotWrapper::_plot_slt(QCPColorMapData* d
     if (m_colormap)
     {
         m_colormap->setData(data, false);
+        m_colormap->rescaleDataRange(false);
         replot(20);
         emit dataChanged();
     }

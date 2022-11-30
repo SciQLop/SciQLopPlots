@@ -74,7 +74,15 @@
         </namespace-type>
         <object-type name="SyncPanel" />
         <object-type name="PlotWidget" />
-        <object-type name="ColorMapGraph" />
+        <object-type name="ColorMapGraph">
+            <extra-includes>
+              <include file-name="numpy_wrappers.hpp" location="global"/>
+              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
+            </extra-includes>
+            <add-function signature="plot(PyObject *@x@, PyObject *@y@, PyObject *@z@)">
+                <inject-code file="snippets.cpp" snippet="plot-colormap"/>
+            </add-function>
+        </object-type>
         <object-type name="MultiLineGraph">
             <extra-includes>
               <include file-name="numpy_wrappers.hpp" location="global"/>

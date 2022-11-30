@@ -199,6 +199,11 @@ void IPlotWidget::plot(int index, const double *x, const double *y, std::size_t 
 
 }
 
+void IPlotWidget::plot(const double *x, const double *y, const double *z, std::size_t x_size, std::size_t y_size, std::size_t z_size)
+{
+
+}
+
 void IPlotWidget::plot(std::vector<int> indexes, const double *x, const double *y, std::size_t x_size, std::size_t y_size, enums::DataOrder order)
 {
 

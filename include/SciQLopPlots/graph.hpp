@@ -98,8 +98,10 @@ class ColorMapGraph : public interfaces::IColorMapGraph
 
 public:
     ColorMapGraph(QObject* parent = nullptr) : interfaces::IColorMapGraph(parent) { }
-    virtual void plot(
-        const std::vector<double>& x, const std::vector<double>& y, const std::vector<double> z);
+
+protected:
+    void plot_ptr(double* x, double* y, double* z, std::size_t x_size, std::size_t y_size,
+        std::size_t z_size);
 };
 
 }
