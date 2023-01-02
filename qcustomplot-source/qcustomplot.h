@@ -69,6 +69,7 @@
 #include <qmath.h>
 #include <limits>
 #include <algorithm>
+#include <utility>
 #ifdef QCP_OPENGL_FBO
 #  include <QtGui/QOpenGLContext>
 #  if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -2607,6 +2608,7 @@ public:
   // non-virtual methods:
   void set(const QCPDataContainer<DataType> &data);
   void set(const QVector<DataType> &data, bool alreadySorted=false);
+  void set(QVector<DataType> &&data, bool alreadySorted=false);
   void add(const QCPDataContainer<DataType> &data);
   void add(const QVector<DataType> &data, bool alreadySorted=false);
   void add(const DataType &data);
@@ -2837,6 +2839,16 @@ void QCPDataContainer<DataType>::set(const QVector<DataType> &data, bool already
   mPreallocIteration = 0;
   if (!alreadySorted)
     sort();
+}
+
+template <class DataType>
+void QCPDataContainer<DataType>::set(QVector<DataType> &&data, bool alreadySorted)
+{
+    mData = std::move(data);
+    mPreallocSize = 0;
+    mPreallocIteration = 0;
+    if (!alreadySorted)
+        sort();
 }
 
 /*! \overload

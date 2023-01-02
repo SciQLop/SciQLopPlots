@@ -29,5 +29,5 @@ for(auto i=0UL;i<x.flat_size();i++)
 {
     data[i]={x_data[i],y_data[i]};
 }
-%CPPSELF.data()->set(data,true);
+%CPPSELF.data()->set(std::move(data),true);
 // @snippet QCPGraph-setData

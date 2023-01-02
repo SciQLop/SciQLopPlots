@@ -20,7 +20,7 @@ def fix_name(name):
 
 def find_all_objects(node, found=None):
     found = found or []
-    found += list(map(lambda t:fix_name(t.attrib['name']), node.findall('object-type')+node.findall('value-type')+node.findall('interface-type')))
+    found += list(map(lambda t:fix_name(t.attrib['name']), filter(lambda n: n.get('generate','yes') == 'yes' , node.findall('object-type')+node.findall('value-type')+node.findall('interface-type'))))
     smart_ptrs = node.findall('smart-pointer-type')
     for sp in smart_ptrs:
         classes = sp.attrib.get('instantiations', '').split(',')

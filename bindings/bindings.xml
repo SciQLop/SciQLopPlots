@@ -10,37 +10,12 @@
     <primitive-type name="std::string"/>
     <primitive-type name="std::size_t"/>
     <primitive-type name="long"/>
-    <container-type name="std::vector" type="vector">
-        <include file-name="vector" location="global"/>
-        <include file-name="numpy_wrappers.hpp" location="local"/>
-        <conversion-rule>
-            <native-to-target>
-                %INTYPE::size_type vectorSize = %in.size();
-                PyObject* %out = PyList_New((int) vectorSize);
-                for (%INTYPE::size_type idx = 0; idx &lt; vectorSize; ++idx) {
-                    %INTYPE_0 cppItem(%in[idx]);
-                    PyList_SET_ITEM(%out, idx, %CONVERTTOPYTHON[%INTYPE_0](cppItem));
-                }
-                return %out;
-            </native-to-target>
-            <target-to-native>
-                <add-conversion type="PySequence">
-                    Shiboken::AutoDecRef seq(PySequence_Fast(%in, 0));
-                    int vectorSize = PySequence_Fast_GET_SIZE(seq.object());
-                    %out.reserve(vectorSize);
-                    for (int idx = 0; idx &lt; vectorSize; ++idx ) {
-                        PyObject* pyItem = PySequence_Fast_GET_ITEM(seq.object(), idx);
-                        %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
-                        %out.push_back(cppItem);
-                    }
-                </add-conversion>
-                <add-conversion type="PyObject" check="NpArray_view::isNpArray(%in)">
-                    %out = NpArray_view(%in).to_std_vect();
-                </add-conversion>
-            </target-to-native>
-        </conversion-rule>
-    </container-type>
-    <primitive-type name="NpArray" target-lang-api-name="PyObject">
+
+    <rejection class="^QCP[a-zA-Z]+$" field-name="^m[a-zA-Z]+$" />
+    <rejection class="*" function-name="interface1D" />
+
+
+    <!--<primitive-type name="NpArray" target-lang-api-name="PyObject">
       <include file-name="numpy_wrappers.hpp" location="local"/>
       <conversion-rule>
           <native-to-target>
@@ -53,7 +28,7 @@
             </add-conversion>
           </target-to-native>
         </conversion-rule>
-    </primitive-type>
+    </primitive-type>-->
 
     <namespace-type name="QCP" visible="true">
         <enum-type name="ResolutionUnit"/>
@@ -66,26 +41,96 @@
         <enum-type name="SelectionRectMode"/>
         <enum-type name="SelectionType"/>
     </namespace-type>
-    <!--<object-type name="QCPAbstractPlottable" parent-management="yes"/>-->
-    <object-type name="QCustomPlot" parent-management="yes"/>
+
+    <object-type name="QCPLayer" parent-management="yes">
+        <enum-type name="LayerMode"/>
+    </object-type>
+
+    <object-type name="QCPLineEnding">
+        <enum-type name="EndingStyle"/>
+    </object-type>
+
+    <object-type name="QCPLayout" parent-management="yes" force-abstract="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
+    <object-type name="QCPLayerable" parent-management="yes" force-abstract="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
+    <object-type name="QCPAbstractPlottable" parent-management="yes" force-abstract="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
+    <object-type name="QCustomPlot" parent-management="yes">
+        <enum-type name="LayerInsertMode"/>
+        <enum-type name="RefreshPriority"/>
+    </object-type>
+
+    <object-type name="QCPPainter" generate="yes"/>
+
+    <value-type name="QCPDataSelection" default-constructor="QCPDataSelection()" generate="yes"/>
+    <object-type name="QCPSelectionRect" parent-management="yes"/>
+
+
+    <object-type name="QCPColorMapData"/>
+    <value-type name="QCPGraphData"/>
+    <value-type name="QCPCurveData"/>
+    <value-type name="QCPBarsData"/>
+    <value-type name="QCPStatisticalBoxData"/>
+    <value-type name="QCPFinancialData"/>
+    <object-type name="QCPPlottableInterface1D" generate="no"/>
+    <object-type name="QCPAbstractPlottable1D" generate="no"/>
+    <object-type name="QCPAbstractPlottable1D&lt;QCPGraphData&gt;" generate="no"/>
+    <object-type name="QCPAbstractPlottable1D&lt;QCPCurveData&gt;" generate="no"/>
+    <object-type name="QCPAbstractPlottable1D&lt;QCPStatisticalBoxData&gt;" generate="no"/>
+    <object-type name="QCPAbstractPlottable1D&lt;QCPFinancialData&gt;" generate="no"/>
+
+    <object-type name="QCPSelectionDecorator"/>
+    <object-type name="QCPBarsGroup">
+        <enum-type name="SpacingType"/>
+    </object-type>
+    <object-type name="QCPColorGradient">
+        <enum-type name="ColorInterpolation"/>
+        <enum-type name="NanHandling"/>
+        <enum-type name="GradientPreset"/>
+    </object-type>
+    <object-type name="QCPColorScale"/>
 
     <object-type name="QCPGraph" parent-management="yes">
         <extra-includes>
           <include file-name="numpy_wrappers.hpp" location="global"/>
+          <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
             <inject-code file="snippets.cpp" snippet="QCPGraph-setData"/>
         </add-function>
+        <enum-type name="LineStyle"/>
     </object-type>
-    <object-type name="QCPCurve" parent-management="yes"/>
-    <object-type name="QCPBars" parent-management="yes"/>
+    <value-type name="QCPScatterStyle" parent-management="yes">
+        <enum-type name="ScatterProperty"/>
+        <enum-type name="ScatterShape"/>
+    </value-type>
+
+    <object-type name="QCPCurve" parent-management="yes">
+        <enum-type name="LineStyle"/>
+    </object-type>
+    <object-type name="QCPBars" parent-management="yes">
+        <enum-type name="WidthType"/>
+    </object-type>
     <object-type name="QCPStatisticalBox" parent-management="yes"/>
     <object-type name="QCPColorMap" parent-management="yes">
         <extra-includes>
             <include file-name="pysidesignal.h" location="global"/>
         </extra-includes>
     </object-type>
-    <object-type name="QCPFinancial" parent-management="yes"/>
+    <object-type name="QCPFinancial" parent-management="yes">
+        <enum-type name="WidthType"/>
+        <enum-type name="ChartStyle"/>
+    </object-type>
 
     <object-type name="QCPItemStraightLine" parent-management="yes">
         <extra-includes>
@@ -105,6 +150,7 @@
         <modify-field name="endDir" write="false"/>
     </object-type>
     <object-type name="QCPItemRect" parent-management="yes">
+        <enum-type name="AnchorIndex"/>
         <modify-field name="position" write="false"/>
         <modify-field name="left" write="false"/>
         <modify-field name="right" write="false"/>
@@ -116,6 +162,7 @@
         <modify-field name="topRight" write="false"/>
     </object-type>
     <object-type name="QCPItemEllipse" parent-management="yes">
+        <enum-type name="AnchorIndex"/>
         <modify-field name="center" write="false"/>
         <modify-field name="left" write="false"/>
         <modify-field name="right" write="false"/>
@@ -131,6 +178,7 @@
         <modify-field name="topRightRim" write="false"/>
     </object-type>
     <object-type name="QCPItemText" parent-management="yes">
+        <enum-type name="AnchorIndex"/>
         <modify-field name="position" write="false"/>
         <modify-field name="left" write="false"/>
         <modify-field name="right" write="false"/>
@@ -145,11 +193,15 @@
         <modify-field name="center" write="false"/>
         <modify-field name="left" write="false"/>
         <modify-field name="right" write="false"/>
+        <enum-type name="BracketStyle"/>
+        <enum-type name="AnchorIndex"/>
     </object-type>
     <object-type name="QCPItemTracer" parent-management="yes">
         <modify-field name="position" write="false"/>
+        <enum-type name="TracerStyle"/>
     </object-type>
     <object-type name="QCPItemPixmap" parent-management="yes">
+        <enum-type name="AnchorIndex"/>
         <modify-field name="center" write="false"/>
         <modify-field name="left" write="false"/>
         <modify-field name="right" write="false"/>
@@ -161,13 +213,20 @@
         <modify-field name="topRight" write="false"/>
     </object-type>
 
-    <!--<object-type name="QCPAbstractItem" parent-management="yes"/>-->
+    <object-type name="QCPAbstractItem" parent-management="yes" force-abstract="yes"/>
     <object-type name="QCPItemAnchor" parent-management="yes"/>
-    <object-type name="QCPItemPosition" parent-management="yes"/>
+    <object-type name="QCPItemPosition" parent-management="yes">
+        <enum-type name="PositionType"/>
+    </object-type>
 
-    <object-type name="QCPLayoutGrid" parent-management="yes"/>
+    <object-type name="QCPLayoutGrid" parent-management="yes">
+        <enum-type name="FillOrder"/>
+    </object-type>
 
-    <object-type name="QCPLayoutElement" parent-management="yes"/>
+    <object-type name="QCPLayoutElement" parent-management="yes">
+        <enum-type name="UpdatePhase"/>
+        <enum-type name="SizeConstraintRect"/>
+    </object-type>
 
     <object-type name="QCPTextElement" parent-management="yes">
         <extra-includes>
@@ -175,20 +234,28 @@
         </extra-includes>
     </object-type>
 
-    <object-type name="QCPLayoutInset" parent-management="yes"/>
+    <object-type name="QCPLayoutInset" parent-management="yes">
+        <enum-type name="InsetPlacement"/>
+    </object-type>
 
     <object-type name="QCPAxisRect" parent-management="yes"/>
     <object-type name="QCPAxis" parent-management="yes">
         <extra-includes>
             <include file-name="pysidesignal.h" location="global"/>
         </extra-includes>
+        <enum-type name="AxisType"/>
+        <enum-type name="LabelSide"/>
+        <enum-type name="ScaleType"/>
+        <enum-type name="SelectablePart" flags="SelectableParts"/>
     </object-type>
     <value-type name="QCPRange"/>
-    <!--<object-type name="QCPGrid" parent-management="yes"/>-->
+    <object-type name="QCPGrid" parent-management="yes"/>
 
-    <object-type name="QCPLegend" parent-management="yes"/>
+    <object-type name="QCPLegend" parent-management="yes">
+        <enum-type name="SelectablePart"/>
+    </object-type>
 
-    <namespace-type name="SciQLopPlots" visible="false">
+ <!--   <namespace-type name="SciQLopPlots" visible="false">
         <namespace-type name="enums" visible="true">
             <enum-type name="Axis"/>
             <enum-type name="DataOrder"/>
@@ -236,7 +303,7 @@
             </add-function>
         </object-type>
         <object-type name="TimeSpan" />
-    </namespace-type>
+    </namespace-type>-->
 </typesystem>
 
 
