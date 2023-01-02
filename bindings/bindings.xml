@@ -54,6 +54,13 @@
           </target-to-native>
         </conversion-rule>
     </primitive-type>
+    <object-type name="QCustomPlot" parent-management="yes">
+    </object-type>
+    <object-type name="QCPItemStraightLine" parent-management="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
     <namespace-type name="SciQLopPlots" visible="false">
         <namespace-type name="enums" visible="true">
             <enum-type name="Axis"/>

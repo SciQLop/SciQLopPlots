@@ -14,4 +14,6 @@
 #include <SciQLopPlots/Interfaces/IPlotWidget.hpp>
 #include <SciQLopPlots/Interfaces/IGraph.hpp>
 
+#include <qcustomplot.h>
+
 #endif // SCIQLOPPLOTS_BINDINGS_H

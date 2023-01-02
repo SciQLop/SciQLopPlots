@@ -24,7 +24,7 @@
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"
 #include "SciQLopPlots/plot.hpp"
 #include <QBrush>
-#include <qcp.h>
+#include <qcustomplot.h>
 
 namespace SciQLopPlots::QCPWrappers
 {

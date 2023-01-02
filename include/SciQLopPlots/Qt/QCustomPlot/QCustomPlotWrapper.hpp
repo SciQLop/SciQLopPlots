@@ -30,7 +30,7 @@
 
 #include <iostream>
 #include <list>
-#include <qcp.h>
+#include <qcustomplot.h>
 #include <vector>
 
 #include "SciQLopPlots/Interfaces/GraphicObjects/GraphicObject.hpp"

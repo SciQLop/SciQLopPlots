@@ -7,7 +7,8 @@ moc_headers = [
     '../include/SciQLopPlots/Interfaces/IGraph.hpp',
     '../include/SciQLopPlots/Interfaces/GraphicObjects/ITimeSpan.hpp',
     '../include/SciQLopPlots/Qt/QCustomPlot/QCustomPlotWrapper.hpp',
-    '../include/SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp'
+    '../include/SciQLopPlots/Qt/QCustomPlot/QCPTimeSpan.hpp',
+    '../qcustomplot-source/qcustomplot.h'
 ]
 
 moc_sources = ['plot.cpp', 'graph.cpp', 'sync_panel.cpp', 'time_span.cpp', 'Interfaces/GraphicObjects/ITimeSpan.cpp', 'Interfaces/IPlotWidget.cpp','Interfaces/IGraph.cpp', 'Qt/QCustomPlot/QCustomPlotWrapper.cpp']
@@ -15,8 +16,7 @@ moc_sources = ['plot.cpp', 'graph.cpp', 'sync_panel.cpp', 'time_span.cpp', 'Inte
 SciQLopPlots_moc_files = qtmod.preprocess(
                             moc_headers : moc_headers,
                             moc_sources : moc_sources,
-                            include_directories : ['../include'],
-                            dependencies: [QCustomPlot_dep])
+                            include_directories : ['../include', '../qcustomplot-source'])
 
 
 headers = moc_headers + [
@@ -31,11 +31,11 @@ headers = moc_headers + [
     '../include/SciQLopPlots/Qt/QCustomPlot/SciQLopPlots.hpp'
 ]
 
-sources = ['Interfaces/GraphicObjects/GraphicObject.cpp']
+sources = ['Interfaces/GraphicObjects/GraphicObject.cpp','../qcustomplot-source/qcustomplot.cpp']
 
 SciQLopPlots = library('SciQLopPlots', sources, moc_sources,
-                       SciQLopPlots_moc_files, include_directories: ['../include'],
+                       SciQLopPlots_moc_files, include_directories: ['../include', '../qcustomplot-source'],
                        extra_files: [headers],
-                       dependencies: [QCustomPlot_dep, cpp_utils_dep, hedley_dep])
+                       dependencies: [qtgui, qtcore, qtwidgets, qtprintsupport, qtsvg, cpp_utils_dep, hedley_dep])
 
-SciQLopPlots_src_dep = declare_dependency(sources:[sources, moc_sources,SciQLopPlots_moc_files] ,include_directories: ['../include'], dependencies: [QCustomPlot_dep, cpp_utils_dep, hedley_dep])
+SciQLopPlots_src_dep = declare_dependency(sources:[sources, moc_sources,SciQLopPlots_moc_files] ,include_directories: ['../include', '../qcustomplot-source'], dependencies: [qtprintsupport, qtgui, qtcore, qtwidgets, qtsvg, cpp_utils_dep, hedley_dep])
