@@ -129,6 +129,9 @@ public:
     assert(PyArray_ISFLOAT(_py_obj.get()));
   }
 
+  ~NpArray_view()
+  {}
+
   NpArray_view& operator=(const NpArray_view& other)
   {
     this->_py_obj = other._py_obj;

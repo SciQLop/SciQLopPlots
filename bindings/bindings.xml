@@ -54,13 +54,133 @@
           </target-to-native>
         </conversion-rule>
     </primitive-type>
-    <object-type name="QCustomPlot" parent-management="yes">
-    </object-type>
-    <object-type name="QCPItemStraightLine" parent-management="yes">
+
+    <namespace-type name="QCP" visible="true">
+        <enum-type name="ResolutionUnit"/>
+        <enum-type name="ExportPen"/>
+        <enum-type name="SignDomain"/>
+        <enum-type name="MarginSide"/>
+        <enum-type name="AntialiasedElement"/>
+        <enum-type name="PlottingHint"/>
+        <enum-type name="Interaction"/>
+        <enum-type name="SelectionRectMode"/>
+        <enum-type name="SelectionType"/>
+    </namespace-type>
+    <!--<object-type name="QCPAbstractPlottable" parent-management="yes"/>-->
+    <object-type name="QCustomPlot" parent-management="yes"/>
+
+    <object-type name="QCPGraph" parent-management="yes"/>
+    <object-type name="QCPCurve" parent-management="yes"/>
+    <object-type name="QCPBars" parent-management="yes"/>
+    <object-type name="QCPStatisticalBox" parent-management="yes"/>
+    <object-type name="QCPColorMap" parent-management="yes">
         <extra-includes>
             <include file-name="pysidesignal.h" location="global"/>
         </extra-includes>
     </object-type>
+    <object-type name="QCPFinancial" parent-management="yes"/>
+
+    <object-type name="QCPItemStraightLine" parent-management="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+        <modify-field name="point1" write="false"/>
+        <modify-field name="point2" write="false"/>
+    </object-type>
+    <object-type name="QCPItemLine" parent-management="yes">
+        <modify-field name="start" write="false"/>
+        <modify-field name="end" write="false"/>
+    </object-type>
+    <object-type name="QCPItemCurve" parent-management="yes">
+        <modify-field name="start" write="false"/>
+        <modify-field name="startDir" write="false"/>
+        <modify-field name="end" write="false"/>
+        <modify-field name="endDir" write="false"/>
+    </object-type>
+    <object-type name="QCPItemRect" parent-management="yes">
+        <modify-field name="position" write="false"/>
+        <modify-field name="left" write="false"/>
+        <modify-field name="right" write="false"/>
+        <modify-field name="bottom" write="false"/>
+        <modify-field name="bottomLeft" write="false"/>
+        <modify-field name="bottomRight" write="false"/>
+        <modify-field name="top" write="false"/>
+        <modify-field name="topLeft" write="false"/>
+        <modify-field name="topRight" write="false"/>
+    </object-type>
+    <object-type name="QCPItemEllipse" parent-management="yes">
+        <modify-field name="center" write="false"/>
+        <modify-field name="left" write="false"/>
+        <modify-field name="right" write="false"/>
+        <modify-field name="bottom" write="false"/>
+        <modify-field name="bottomLeft" write="false"/>
+        <modify-field name="bottomRight" write="false"/>
+        <modify-field name="bottomLeftRim" write="false"/>
+        <modify-field name="bottomRightRim" write="false"/>
+        <modify-field name="top" write="false"/>
+        <modify-field name="topLeft" write="false"/>
+        <modify-field name="topLeftRim" write="false"/>
+        <modify-field name="topRight" write="false"/>
+        <modify-field name="topRightRim" write="false"/>
+    </object-type>
+    <object-type name="QCPItemText" parent-management="yes">
+        <modify-field name="position" write="false"/>
+        <modify-field name="left" write="false"/>
+        <modify-field name="right" write="false"/>
+        <modify-field name="bottom" write="false"/>
+        <modify-field name="bottomLeft" write="false"/>
+        <modify-field name="bottomRight" write="false"/>
+        <modify-field name="top" write="false"/>
+        <modify-field name="topLeft" write="false"/>
+        <modify-field name="topRight" write="false"/>
+    </object-type>
+    <object-type name="QCPItemBracket" parent-management="yes">
+        <modify-field name="center" write="false"/>
+        <modify-field name="left" write="false"/>
+        <modify-field name="right" write="false"/>
+    </object-type>
+    <object-type name="QCPItemTracer" parent-management="yes">
+        <modify-field name="position" write="false"/>
+    </object-type>
+    <object-type name="QCPItemPixmap" parent-management="yes">
+        <modify-field name="center" write="false"/>
+        <modify-field name="left" write="false"/>
+        <modify-field name="right" write="false"/>
+        <modify-field name="bottom" write="false"/>
+        <modify-field name="bottomLeft" write="false"/>
+        <modify-field name="bottomRight" write="false"/>
+        <modify-field name="top" write="false"/>
+        <modify-field name="topLeft" write="false"/>
+        <modify-field name="topRight" write="false"/>
+    </object-type>
+
+    <!--<object-type name="QCPAbstractItem" parent-management="yes"/>-->
+    <object-type name="QCPItemAnchor" parent-management="yes"/>
+    <object-type name="QCPItemPosition" parent-management="yes"/>
+
+    <object-type name="QCPLayoutGrid" parent-management="yes"/>
+
+    <object-type name="QCPLayoutElement" parent-management="yes"/>
+
+    <object-type name="QCPTextElement" parent-management="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
+
+    <object-type name="QCPLayoutInset" parent-management="yes"/>
+
+    <object-type name="QCPAxisRect" parent-management="yes"/>
+    <object-type name="QCPAxis" parent-management="yes">
+        <extra-includes>
+            <include file-name="pysidesignal.h" location="global"/>
+        </extra-includes>
+    </object-type>
+    <value-type name="QCPRange"/>
+    <!--<object-type name="QCPGrid" parent-management="yes"/>-->
+
+    <object-type name="QCPLegend" parent-management="yes"/>
+
     <namespace-type name="SciQLopPlots" visible="false">
         <namespace-type name="enums" visible="true">
             <enum-type name="Axis"/>
