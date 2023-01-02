@@ -3816,7 +3816,7 @@ public:
   QCP::AntialiasedElements antialiasedElements() const { return mAntialiasedElements; }
   QCP::AntialiasedElements notAntialiasedElements() const { return mNotAntialiasedElements; }
   bool autoAddPlottableToLegend() const { return mAutoAddPlottableToLegend; }
-  const QCP::Interactions interactions() const { return mInteractions; }
+  QCP::Interactions interactions() const { return mInteractions; }
   int selectionTolerance() const { return mSelectionTolerance; }
   bool noAntialiasingOnDrag() const { return mNoAntialiasingOnDrag; }
   QCP::PlottingHints plottingHints() const { return mPlottingHints; }

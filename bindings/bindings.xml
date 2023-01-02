@@ -59,17 +59,24 @@
         <enum-type name="ResolutionUnit"/>
         <enum-type name="ExportPen"/>
         <enum-type name="SignDomain"/>
-        <enum-type name="MarginSide"/>
-        <enum-type name="AntialiasedElement"/>
-        <enum-type name="PlottingHint"/>
-        <enum-type name="Interaction"/>
+        <enum-type name="MarginSide" flags="MarginSides"/>
+        <enum-type name="AntialiasedElement" flags="AntialiasedElements"/>
+        <enum-type name="PlottingHint" flags="PlottingHints"/>
+        <enum-type name="Interaction" flags="Interactions"/>
         <enum-type name="SelectionRectMode"/>
         <enum-type name="SelectionType"/>
     </namespace-type>
     <!--<object-type name="QCPAbstractPlottable" parent-management="yes"/>-->
     <object-type name="QCustomPlot" parent-management="yes"/>
 
-    <object-type name="QCPGraph" parent-management="yes"/>
+    <object-type name="QCPGraph" parent-management="yes">
+        <extra-includes>
+          <include file-name="numpy_wrappers.hpp" location="global"/>
+        </extra-includes>
+        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
+            <inject-code file="snippets.cpp" snippet="QCPGraph-setData"/>
+        </add-function>
+    </object-type>
     <object-type name="QCPCurve" parent-management="yes"/>
     <object-type name="QCPBars" parent-management="yes"/>
     <object-type name="QCPStatisticalBox" parent-management="yes"/>
