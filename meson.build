@@ -18,6 +18,5 @@ extra_files=files(
 
 subdir('SciQLopPlots')
 
-if with_tests
-    subdir('tests')
-endif
+subdir('tests')
+
