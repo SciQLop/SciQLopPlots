@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2021, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,57 +20,12 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "cpp_utils/types/detectors.hpp"
 
+#include <qcustomplot.h>
 
-namespace SciQLopPlots::enums
+class SciQLopGraph : public QCPGraph
 {
-enum class Axis
-{
-    x = 0,
-    y = 1,
-    z = 2
+public:
+    explicit SciQLopGraph(QCPAxis *keyAxis, QCPAxis *valueAxis);
+    virtual ~SciQLopGraph() override;
 };
-
-enum class DataOrder
-{
-    x_first = 0,
-    y_first = 1
-};
-
-enum class Layers
-{
-    EditMode = 0,
-    Cursors = 1,
-    Shapes = 2,
-    Background = 3
-};
-
-enum class IteractionsMode
-{
-    Normal = 0,
-    ObjectCreation = 1
-};
-
-enum class GraphType
-{
-    Line = 0,
-    MultiLine = 1,
-    ColorMap = 2
-};
-
-}
-
-
-namespace SciQLopPlots::tags
-{
-struct absolute
-{
-};
-struct relative
-{
-};
-
-IS_T(is_absolute, absolute);
-IS_T(is_relative, relative);
-}

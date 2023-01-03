@@ -1,9 +1,12 @@
 build/
+dist/
 subprojects/range-v3-*
 subprojects/Catch2-*
 subprojects/cpp_utils
 subprojects/QCustomPlot
 subprojects/packagecache/*
+subprojects/hedley-*
+*.egg-info
 *.srctrl*
 *.kdev4
 .vscode

@@ -4,46 +4,20 @@ add_project_arguments(
             language: 'cpp',
             native: true
 )
-
-qt_sdk=get_option('qt_version')
-if qt_sdk=='auto'
-    qt_version=run_command(find_program('qmake'), '-query', 'QT_VERSION').stdout()
-    if qt_version.startswith('5.')
-        qt_sdk='qt5'
-    elif qt_version.startswith('6.')
-        qt_sdk='qt6'
-    endif
-endif
-
+qt_sdk='qt6'
 with_tests = get_option('with_tests')
 
+extra_files=files(
+    'pyproject.toml',
+    'setup.cfg',
+    '.github/workflows/pythonpublish-linux.yml',
+    '.github/workflows/pythonpublish-win.yml',
+    '.github/workflows/pythonpublish-osx.yml',
+    'README.md', 'COPYING'
+)
 
-qtmod = import(qt_sdk)
-qtcore = dependency(qt_sdk, modules : 'Core')
-qtwidgets = dependency(qt_sdk, modules : 'Widgets')
-qtgui = dependency(qt_sdk, modules : 'Gui')
-qtsvg = dependency(qt_sdk, modules : 'Svg')
-qtprintsupport = dependency(qt_sdk, modules : 'PrintSupport')
-
-cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=@with_tests@'])
-hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
-
-
-subdir('src')
-subdir('bindings')
-
-if build_machine.system() == 'linux'
-    library('python_packaging',[],
-            extra_files:['pyproject.toml',
-            'setup.cfg',
-            '.github/workflows/pythonpublish-linux.yml',
-            '.github/workflows/pythonpublish-win.yml',
-            '.github/workflows/pythonpublish-osx.yml',
-            'README.md', 'COPYING'])
-endif
+subdir('SciQLopPlots')
 
 if with_tests
-    qttest = dependency(qt_sdk, modules : 'Test')
-    QtGuiTestUtils_dep = dependency('QtGuiTestUtils', fallback : ['QtGuiTestUtils', 'QtGuiTestUtils_dep'], default_options: ['qt_version='+qt_sdk])
     subdir('tests')
 endif

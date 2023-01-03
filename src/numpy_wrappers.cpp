@@ -19,6 +19,4 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/sync_panel.hpp"
-
-
+#include "SciQLopPlots/numpy_wrappers.hpp"

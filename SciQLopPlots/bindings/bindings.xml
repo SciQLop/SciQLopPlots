@@ -14,22 +14,6 @@
     <rejection class="^QCP[a-zA-Z]+$" field-name="^m[a-zA-Z]+$" />
     <rejection class="*" function-name="interface1D" />
 
-
-    <!--<primitive-type name="NpArray" target-lang-api-name="PyObject">
-      <include file-name="numpy_wrappers.hpp" location="local"/>
-      <conversion-rule>
-          <native-to-target>
-          auto result = %in.py_object();
-          return result;
-          </native-to-target>
-          <target-to-native>
-            <add-conversion type="PyObject" check="NpArray::isNpArray(%in)">
-            %out = %OUTTYPE(%in);
-            </add-conversion>
-          </target-to-native>
-        </conversion-rule>
-    </primitive-type>-->
-
     <namespace-type name="QCP" visible="true">
         <enum-type name="ResolutionUnit"/>
         <enum-type name="ExportPen"/>
@@ -42,7 +26,7 @@
         <enum-type name="SelectionType"/>
     </namespace-type>
 
-    <object-type name="QCPLayer" parent-management="yes">
+    <object-type name="QCPLayer" parent-management="yes"  copyable="no">
         <enum-type name="LayerMode"/>
     </object-type>
 
@@ -102,7 +86,7 @@
 
     <object-type name="QCPGraph" parent-management="yes">
         <extra-includes>
-          <include file-name="numpy_wrappers.hpp" location="global"/>
+          <include file-name="SciQLopPlots/numpy_wrappers.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
@@ -255,55 +239,9 @@
         <enum-type name="SelectablePart"/>
     </object-type>
 
- <!--   <namespace-type name="SciQLopPlots" visible="false">
-        <namespace-type name="enums" visible="true">
-            <enum-type name="Axis"/>
-            <enum-type name="DataOrder"/>
-            <enum-type name="Layers"/>
-            <enum-type name="IteractionsMode"/>
-            <enum-type name="GraphType"/>
-        </namespace-type>
-        <namespace-type name="axis" visible="true">
-            <value-type name="range" copyable="yes" />
-        </namespace-type>
-        <namespace-type name="interfaces" visible="true">
-            <object-type name="IPlotWidget" />
-            <object-type name="IGraph" />
-            <object-type name="ILineGraph" />
-            <object-type name="IMultiLineGraph" />
-            <object-type name="IColorMapGraph" />
-        </namespace-type>
-        <object-type name="SyncPanel" />
-        <object-type name="PlotWidget" />
-        <object-type name="ColorMapGraph">
-            <extra-includes>
-              <include file-name="numpy_wrappers.hpp" location="global"/>
-              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
-            </extra-includes>
-            <add-function signature="plot(PyObject *@x@, PyObject *@y@, PyObject *@z@)">
-                <inject-code file="snippets.cpp" snippet="plot-colormap"/>
-            </add-function>
-        </object-type>
-        <object-type name="MultiLineGraph">
-            <extra-includes>
-              <include file-name="numpy_wrappers.hpp" location="global"/>
-              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
-            </extra-includes>
-            <add-function signature="plot(PyObject *@x@, PyObject *@y@, SciQLopPlots::enums::DataOrder *@order@)">
-                <inject-code file="snippets.cpp" snippet="plot-multiline"/>
-            </add-function>
-        </object-type>
-        <object-type name="LineGraph">
-            <extra-includes>
-              <include file-name="numpy_wrappers.hpp" location="global"/>
-              <include file-name="SciQLopPlots/enums.hpp" location="global"/>
-            </extra-includes>
-            <add-function signature="plot(PyObject *@x@, PyObject *@y@)">
-                <inject-code file="snippets.cpp" snippet="plot-line"/>
-            </add-function>
-        </object-type>
-        <object-type name="TimeSpan" />
-    </namespace-type>-->
+    <object-type name="SciQLopGraph" parent-management="yes">
+    </object-type>
+
 </typesystem>
 
 

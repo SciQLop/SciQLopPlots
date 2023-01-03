@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2022, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,13 +19,12 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "QCustomPlotWrapper.hpp"
-#include "QCPTimeSpan.hpp"
 
-namespace SciQLopPlots
+#include "SciQLopPlots/SciQLopGraph.hpp"
+
+
+SciQLopGraph::SciQLopGraph(QCPAxis* keyAxis, QCPAxis* valueAxis) : QCPGraph { keyAxis, valueAxis }
 {
-  //  using SciQLopPlot = SciQLopPlots::QCPWrappers::SciQLopPlot;
-    using TimeSpan = SciQLopPlots::QCPWrappers::TimeSpan;
-
 }
+
+SciQLopGraph::~SciQLopGraph() { }
