@@ -4,10 +4,8 @@
 #include <memory>
 #include "SciQLopPlots/numpy_wrappers.hpp"
 
-
-
-
 #include <qcustomplot.h>
 #include <SciQLopPlots/SciQLopGraph.hpp>
+#include "_QCustomPlot.hpp"
 
 #endif // SCIQLOPPLOTS_BINDINGS_H

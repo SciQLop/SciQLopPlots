@@ -50,6 +50,7 @@ subdir('bindings/SciQLopPlotsBindings')
 shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args: shiboken_link_flags)
 
 moc_headers = [
+    'bindings/_QCustomPlot.hpp',
     project_source_root+'/include/SciQLopPlots/SciQLopGraph.hpp',
     project_source_root+'/qcustomplot-source/qcustomplot.h'
 ]
@@ -74,7 +75,7 @@ sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         install: true,
         include_directories : includes,
         extra_files: extra_files + sciqlopplots_python_sources +
-                     sciqlopplots_bindings_headers +
+                     sciqlopplots_bindings_headers + headers +
                      ['bindings/snippets.cpp']
 )
 
