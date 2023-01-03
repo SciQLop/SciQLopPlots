@@ -30,7 +30,6 @@ PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[int](a));
 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](b));
 // @snippet QCPColorMapData-coordToCell
 
-// @snippet QCustomPlot-QCPColorMap
-auto r = new QCPColorMap{%1,%2};
-pyResult = %CONVERTTOPYTHON[QCPColorMap](*r);
-// @snippet QCustomPlot-QCPColorMap
+// @snippet SciQLopGraph-setData
+%CPPSELF.setData(NpArray_view{pyArgs[0]}, NpArray_view{pyArgs[1]});
+// @snippet SciQLopGraph-setData

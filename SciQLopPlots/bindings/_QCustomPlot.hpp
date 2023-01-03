@@ -22,6 +22,7 @@
 #pragma once
 
 #include <qcustomplot.h>
+#include <SciQLopPlots/SciQLopGraph.hpp>
 
 class _QCustomPlot: public QCustomPlot
 {
@@ -34,6 +35,12 @@ public:
     {
         auto cm = new QCPColorMap(x,y);
         return cm;
+    }
+
+    inline SciQLopGraph * addSciQLopGraph(QCPAxis*x, QCPAxis*y,QStringList labels)
+    {
+        auto sg = new SciQLopGraph(this,x,y, labels);
+        return sg;
     }
 
 };

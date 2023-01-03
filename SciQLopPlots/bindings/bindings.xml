@@ -286,6 +286,13 @@
     </object-type>
 
     <object-type name="SciQLopGraph" parent-management="yes">
+        <extra-includes>
+          <include file-name="SciQLopPlots/numpy_wrappers.hpp" location="global"/>
+          <include file-name="utility" location="global"/>
+        </extra-includes>
+        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
+            <inject-code file="snippets.cpp" snippet="SciQLopGraph-setData"/>
+        </add-function>
     </object-type>
 
 </typesystem>

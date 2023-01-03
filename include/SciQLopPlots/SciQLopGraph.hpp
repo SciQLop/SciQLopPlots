@@ -21,11 +21,33 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "numpy_wrappers.hpp"
 #include <qcustomplot.h>
 
-class SciQLopGraph : public QCPGraph
+class SciQLopGraph : public QObject
 {
+    NpArray_view _x;
+    NpArray_view _y;
+    QCPAxis* _keyAxis;
+    QCPAxis* _valueAxis;
+    QList<QCPGraph*> _graphs;
+    Q_OBJECT
+    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
+
+    inline void _create_graphs(QStringList labels)
+    {
+        for (const auto& label : labels)
+        {
+            _graphs.append(_plot()->addGraph(_keyAxis, _valueAxis));
+            _graphs.back()->setName(label);
+        }
+    }
+
 public:
-    explicit SciQLopGraph(QCPAxis *keyAxis, QCPAxis *valueAxis);
+    explicit SciQLopGraph(
+        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, QStringList labels);
     virtual ~SciQLopGraph() override;
+
+    void setData(NpArray_view&& x, NpArray_view&& y);
+    inline QCPGraph* graphAt(std::size_t index)const {return _graphs[index];}
 };

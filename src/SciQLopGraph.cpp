@@ -23,8 +23,33 @@
 #include "SciQLopPlots/SciQLopGraph.hpp"
 
 
-SciQLopGraph::SciQLopGraph(QCPAxis* keyAxis, QCPAxis* valueAxis) : QCPGraph { keyAxis, valueAxis }
+SciQLopGraph::SciQLopGraph(
+    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, QStringList labels)
+        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }
 {
+    this->_create_graphs(labels);
 }
 
 SciQLopGraph::~SciQLopGraph() { }
+
+void SciQLopGraph::setData(NpArray_view &&x, NpArray_view &&y)
+{
+    _x = std::move(x);
+    _y = std::move(y);
+    if (_x.flat_size() != 0)
+    {
+        const auto line_cnt = _y.flat_size() / x.flat_size();
+        assert(line_cnt == std::size(_graphs));
+        for (auto index = 0UL; index < line_cnt; index++)
+        {
+            QVector<QCPGraphData> graph_data(_x.flat_size());
+            const auto x_data = _x.data();
+            const auto y_data = _y.data() + (index * _x.flat_size());
+            for (auto i = 0UL; i < x.flat_size(); i++)
+            {
+                graph_data[i] = { x_data[i], y_data[i] };
+            }
+            _graphs[index]->data()->set(std::move(graph_data), true);
+        }
+    }
+}

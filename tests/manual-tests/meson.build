@@ -1,8 +1,8 @@
 subdir('SimplePlot')
-subdir('MultiPlot')
 
 examples = [
     {'name':'plots', 'source': meson.current_source_dir()+'/QCP_Examples/plots/main.py'},
+    {'name':'SciQLopGraph', 'source': meson.current_source_dir()+'/SciQLopGraph/main.py'},
 ]
 
 foreach example:examples
