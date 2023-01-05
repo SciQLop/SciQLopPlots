@@ -5,7 +5,6 @@ add_project_arguments(
             native: true
 )
 qt_sdk='qt6'
-with_tests = get_option('with_tests')
 
 extra_files=files(
     'pyproject.toml',
