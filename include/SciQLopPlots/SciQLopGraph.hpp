@@ -40,6 +40,7 @@ class SciQLopGraph : public QObject
         {
             _graphs.append(_plot()->addGraph(_keyAxis, _valueAxis));
             _graphs.back()->setName(label);
+            _graphs.back()->setAdaptiveSampling(true);
         }
     }
 
