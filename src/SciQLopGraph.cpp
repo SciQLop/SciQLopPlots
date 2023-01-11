@@ -23,9 +23,36 @@
 #include "SciQLopPlots/SciQLopGraph.hpp"
 
 
-SciQLopGraph::SciQLopGraph(
-    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, QStringList labels)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }
+static inline QVector<QCPGraphData> _setData_xFirst(
+    const NpArray_view& x, const NpArray_view& y, std::size_t lineIndex)
+{
+    QVector<QCPGraphData> graph_data(x.flat_size());
+    const auto x_data = x.data();
+    const auto y_data = y.data() + (lineIndex * x.flat_size());
+    for (auto i = 0UL; i < x.flat_size(); i++)
+    {
+        graph_data[i] = { x_data[i], y_data[i] };
+    }
+    return graph_data;
+}
+
+static inline QVector<QCPGraphData> _setData_yFirst(
+    const NpArray_view& x, const NpArray_view& y, std::size_t lineIndex)
+{
+    QVector<QCPGraphData> graph_data(x.flat_size());
+    const auto line_cnt =y.flat_size() / x.flat_size();
+    const auto x_data = x.data();
+    const auto y_data = y.data() + lineIndex;
+    for (auto i = 0UL,j=0UL; i < x.flat_size(); i++)
+    {
+        graph_data[i] = { x_data[i], y_data[j] };
+        j+=line_cnt;
+    }
+    return graph_data;
+}
+
+SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, QStringList labels, DataOrder dataOrder)
+        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis },_dataOrder{dataOrder}
 {
     this->_create_graphs(labels);
 }
@@ -42,14 +69,13 @@ void SciQLopGraph::setData(NpArray_view &&x, NpArray_view &&y)
         assert(line_cnt == std::size(_graphs));
         for (auto index = 0UL; index < line_cnt; index++)
         {
-            QVector<QCPGraphData> graph_data(_x.flat_size());
-            const auto x_data = _x.data();
-            const auto y_data = _y.data() + (index * _x.flat_size());
-            for (auto i = 0UL; i < x.flat_size(); i++)
+            if(_dataOrder==DataOrder::xFirst)
             {
-                graph_data[i] = { x_data[i], y_data[i] };
+                _graphs[index]->data()->set(_setData_xFirst(_x,_y,index), true);
             }
-            _graphs[index]->data()->set(std::move(graph_data), true);
+            else {
+                _graphs[index]->data()->set(_setData_yFirst(_x,_y,index), true);
+            }
         }
     }
 }

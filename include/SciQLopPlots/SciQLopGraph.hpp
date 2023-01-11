@@ -44,11 +44,22 @@ class SciQLopGraph : public QObject
         }
     }
 
+
+
 public:
-    explicit SciQLopGraph(
-        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, QStringList labels);
+    enum class DataOrder
+    {
+        xFirst,
+        yFirst
+    };
+    Q_ENUMS(FractionStyle)
+    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+        QStringList labels, DataOrder dataOrder = DataOrder::xFirst);
     virtual ~SciQLopGraph() override;
 
     void setData(NpArray_view&& x, NpArray_view&& y);
-    inline QCPGraph* graphAt(std::size_t index)const {return _graphs[index];}
+    inline QCPGraph* graphAt(std::size_t index) const { return _graphs[index]; }
+
+private:
+    DataOrder _dataOrder = DataOrder::xFirst;
 };

@@ -25,7 +25,7 @@ python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
                                                       f'shiboken@pyside_version@',
                                                       f'shiboken@pyside_version@_generator',
                                                       'numpy'])
-python3_dep = python3.dependency(embed:true)
+python3_dep = python3.dependency(embed:false)
 numpy_inc = run_command(python3, '-c', 'import numpy;print(numpy.get_include())').stdout().strip('\n')
 
 qt_modules = ['QtCore','QtGui','QtWidgets']

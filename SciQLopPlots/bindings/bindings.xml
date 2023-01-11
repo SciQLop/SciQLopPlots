@@ -315,6 +315,7 @@
     </object-type>
 
     <object-type name="SciQLopGraph" parent-management="yes">
+        <enum-type name="DataOrder"/>
         <extra-includes>
           <include file-name="SciQLopPlots/numpy_wrappers.hpp" location="global"/>
           <include file-name="utility" location="global"/>

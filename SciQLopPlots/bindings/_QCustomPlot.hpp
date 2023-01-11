@@ -21,26 +21,25 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <qcustomplot.h>
 #include <SciQLopPlots/SciQLopGraph.hpp>
+#include <qcustomplot.h>
 
-class _QCustomPlot: public QCustomPlot
+class _QCustomPlot : public QCustomPlot
 {
     Q_OBJECT
 public:
-
-    explicit _QCustomPlot(QWidget *parent = nullptr):QCustomPlot{parent}{};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE{};
-    inline QCPColorMap * addColorMap(QCPAxis*x, QCPAxis*y)
+    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
+    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
+    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
     {
-        auto cm = new QCPColorMap(x,y);
+        auto cm = new QCPColorMap(x, y);
         return cm;
     }
 
-    inline SciQLopGraph * addSciQLopGraph(QCPAxis*x, QCPAxis*y,QStringList labels)
+    inline SciQLopGraph* addSciQLopGraph(QCPAxis* x, QCPAxis* y, QStringList labels,
+        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
     {
-        auto sg = new SciQLopGraph(this,x,y, labels);
+        auto sg = new SciQLopGraph(this, x, y, labels, dataOrder);
         return sg;
     }
-
 };

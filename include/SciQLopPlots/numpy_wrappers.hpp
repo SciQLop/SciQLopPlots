@@ -104,7 +104,8 @@ public:
 
   PyObject* py_object() { return _py_obj; }
   inline dest_type* get() { return reinterpret_cast<dest_type*>(_py_obj); }
-  inline bool is_null() { return _py_obj == nullptr; }
+  inline dest_type* get() const  { return reinterpret_cast<dest_type*>(_py_obj); }
+  inline bool is_null() const{ return _py_obj == nullptr; }
 };
 
 struct NpArray_view
@@ -144,7 +145,7 @@ public:
     return *this;
   }
 
-  std::vector<std::size_t> shape()
+  std::vector<std::size_t> shape() const
   {
     std::vector<std::size_t> shape;
     if(!_py_obj.is_null())
@@ -182,14 +183,14 @@ public:
     return 0;
   }
 
-  std::size_t flat_size()
+  std::size_t flat_size() const
   {
     auto s = this->shape();
     return std::accumulate(std::cbegin(s), std::cend(s), 1,
                            [](const auto& a, const auto& b) { return a * b; });
   }
 
-  double* data()
+  double* data() const
   {
     if(!_py_obj.is_null())
     {
