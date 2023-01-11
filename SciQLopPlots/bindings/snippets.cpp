@@ -33,3 +33,17 @@ PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](b));
 // @snippet SciQLopGraph-setData
 %CPPSELF.setData(NpArray_view{pyArgs[0]}, NpArray_view{pyArgs[1]});
 // @snippet SciQLopGraph-setData
+
+
+// @snippet QCPAxis-setTicker
+%CPPSELF.setTicker( QSharedPointer<QCPAxisTicker>(%1) );
+// @snippet QCPAxis-setTicker
+
+// @snippet QCPAxis-removeTicker
+%CPPSELF.ticker().clear();
+// @snippet QCPAxis-removeTicker
+
+// @snippet QCPAxis-ticker
+%RETURN_TYPE r = cppSelf->ticker().data();
+%PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](r);
+// @snippet QCPAxis-ticker
