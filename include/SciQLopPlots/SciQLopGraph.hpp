@@ -45,6 +45,7 @@ class SciQLopGraph : public QObject
     }
 
 
+    void _resample(const QCPRange& newRange);
 
 public:
     enum class DataOrder
