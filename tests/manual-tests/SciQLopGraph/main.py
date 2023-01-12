@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
         self.setCentralWidget(plot)
         self.graph = plot.addSciQLopGraph(plot.xAxis, plot.yAxis, ["X","Y","Z"])
-        x=np.arange(3000000)*1.
+        x=np.arange(3e7)*1.
         y=np.ones((3,len(x)))
         y[0]=np.cos(x/60)
         y[1]=np.cos(x/600)*1.3

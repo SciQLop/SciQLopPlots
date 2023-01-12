@@ -19,48 +19,37 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-
 #include "SciQLopPlots/SciQLopGraph.hpp"
-#include <iostream>
+
 
 template <std::size_t dest_size>
 static inline QVector<QCPGraphData> resample(
     const double* x, const double* y, std::size_t x_size, const int y_incr = 1)
 {
+    static_assert(dest_size % 2 == 0);
     const auto x_0 = x[0];
     const auto x_1 = x[x_size - 1];
-    auto dx = (x_1 - x_0) / dest_size;
+    auto dx = 2. * (x_1 - x_0) / dest_size;
     QVector<QCPGraphData> data(dest_size);
     const double* current_x = x;
     const double* current_y_it = y;
-    std::cout << "resample " << dest_size << " " << x_size << " " << y_incr << " " << dx
-              << std::endl;
-    for (auto bucket = 0UL; bucket < dest_size;)
+    for (auto bucket = 0UL; bucket < dest_size / 2; bucket++)
     {
         {
-            double bucket_max_x = std::min(x_0 + (bucket + 1) * dx, x_1);
+            const auto bucket_start_x = *current_x;
+            double bucket_max_x = std::min(bucket_start_x + dx, x_1);
             double max_value = std::nan("");
-            while (*current_x < bucket_max_x)
-            {
-                max_value = std::fmax(max_value, *current_y_it);
-                current_y_it += y_incr;
-                current_x++;
-            }
-            data[bucket] = QCPGraphData { x_0 + bucket * dx, max_value };
-        }
-        bucket++;
-        {
-            double bucket_max_x = std::min(x_0 + (bucket + 1) * dx, x_1);
             double min_value = std::nan("");
             while (*current_x < bucket_max_x)
             {
+                max_value = std::fmax(max_value, *current_y_it);
                 min_value = std::fmin(min_value, *current_y_it);
                 current_y_it += y_incr;
                 current_x++;
             }
-            data[bucket] = QCPGraphData { x_0 + bucket * 1.5 * dx, min_value };
+            data[2 * bucket] = QCPGraphData { bucket_start_x, min_value };
+            data[(2 * bucket) + 1] = QCPGraphData { bucket_start_x + dx / 2., max_value };
         }
-        bucket++;
     }
     return data;
 }
@@ -78,33 +67,28 @@ static inline QVector<QCPGraphData> copy_data(
     return data;
 }
 
+void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
+{
+
+    if (!(newRange.contains(_data_x_range.lower) && newRange.contains(_data_x_range.upper)
+            && oldRange.contains(_data_x_range.lower) && oldRange.contains(_data_x_range.upper)))
+        this->_resample(newRange);
+
+    if (!(_data_x_range.contains(newRange.lower) && _data_x_range.contains(newRange.upper)))
+        emit this->range_changed(newRange, true);
+    else
+        emit this->range_changed(newRange, false);
+}
+
 void SciQLopGraph::_resample(const QCPRange& newRange)
 {
-    std::cout << newRange.lower << " " << newRange.upper << std::endl;
-    if (_x.flat_size() > 0 && _x.data() != nullptr)
+    QMutexLocker locker(&_data_swap_mutex);
+    if (_x.data() != nullptr && _x.flat_size() > 0)
     {
         const auto start_x
-            = [start = _x.data(), end = _x.data() + _x.flat_size(), bound = newRange.lower]()
-        {
-            auto pos = start;
-            while (*pos < bound && pos != end)
-            {
-                pos++;
-            }
-            return pos == start ? pos : pos - 1;
-        }();
-        const auto end_x
-            = [start = _x.data(), end = _x.data() + _x.flat_size(), bound = newRange.upper]()
-        {
-            auto pos = end - 1;
-            while (*pos > bound && pos != start)
-            {
-                pos--;
-            }
-            return pos;
-        }();
+            = std::upper_bound(_x.data(), _x.data() + _x.flat_size(), newRange.lower);
+        const auto end_x = std::lower_bound(_x.data(), _x.data() + _x.flat_size(), newRange.upper);
         const auto x_window_size = end_x - start_x;
-        std::cout << x_window_size << std::endl;
         const auto line_cnt = static_cast<std::size_t>(std::size(_graphs));
         const auto y_incr = (_dataOrder == DataOrder::xFirst) ? 1UL : line_cnt;
         for (auto line_index = 0UL; line_index < line_cnt; line_index++)
@@ -130,15 +114,31 @@ SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
         : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
 {
     this->_create_graphs(labels);
-    connect(keyAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        &SciQLopGraph::_resample);
+    connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
 }
 
 SciQLopGraph::~SciQLopGraph() { }
 
-void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y)
+void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange)
 {
+    {
+     QMutexLocker locker(&_data_swap_mutex);
+
     _x = std::move(x);
     _y = std::move(y);
-    this->_resample(_plot()->xAxis->range());
+    }
+    const auto len = _x.flat_size();
+    if (len > 0)
+    {
+        _data_x_range.lower = _x.data()[0];
+        _data_x_range.upper = _x.data()[len - 1];
+    }
+    else
+    {
+        _data_x_range.lower = std::nan("");
+        _data_x_range.upper = std::nan("");
+    }
+    this->_resample(_data_x_range);
+    this->_plot()->replot(QCustomPlot::rpQueuedReplot);
 }
