@@ -5,9 +5,9 @@ requires = [
     "numpy",
     "meson-python",
     "meson>=0.63",
-    "shiboken6==6.4.1",
-    "pyside6==6.4.1",
-    "shiboken6_generator==6.4.1"
+    "shiboken6==6.4.2",
+    "pyside6==6.4.2",
+    "shiboken6_generator==6.4.2"
 ]
 build-backend = 'mesonpy'
 
@@ -25,12 +25,12 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
-dependencies = ['numpy', 'pyside6==6.4.1', 'shiboken6==6.4.1']
+dependencies = ['numpy', 'pyside6==6.4.2', 'shiboken6==6.4.2']
 dynamic = [
   'version',
 ]
