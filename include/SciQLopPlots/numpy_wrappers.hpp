@@ -20,50 +20,21 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#if defined(slots) &&                                                          \
-    (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
-#pragma push_macro("slots")
-#undef slots
 extern "C"
 {
-/*
- * Python 2 uses the "register" keyword, which is deprecated in C++ 11
- * and forbidden in C++17.
- */
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-register"
-#endif
-
 #include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 }
-#else
-#include <Python.h>
-#include <numpy/arrayobject.h>
-#endif
 #include <algorithm>
 #include <assert.h>
 #include <cpp_utils/warnings.h>
 #include <map>
 #include <numeric>
 #include <vector>
+#include <iostream>
 
-inline int init_numpy()
-{
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_CONVERSION_NULL
-  import_array(); // PyError if not successful
-  DISABLE_WARNING_POP
-  return 0;
-}
-const static int numpy_initialized = init_numpy();
+
 template<typename dest_type = PyObject> struct PyObjectWrapper
 {
 private:
@@ -115,108 +86,52 @@ private:
   NpArray_view(const NpArray_view&& other) = delete;
 
 public:
-  static bool isNpArray(PyObject* obj)
-  {
-    auto arr       = reinterpret_cast<PyArrayObject*>(obj);
-    auto is_c_aray = obj && PyArray_Check(arr) && PyArray_ISCARRAY(arr);
-    return is_c_aray;
-  }
+  static bool isNpArray(PyObject* obj);
   NpArray_view() : _py_obj{nullptr} {}
   NpArray_view(const NpArray_view& other) : _py_obj{other._py_obj} {}
   NpArray_view(NpArray_view&& other) : _py_obj{other._py_obj} {}
-  explicit NpArray_view(PyObject* obj) : _py_obj{obj}
-  {
-    assert(isNpArray(obj));
-    assert(PyArray_ISFLOAT(_py_obj.get()));
-  }
+  explicit NpArray_view(PyObject* obj);
 
   ~NpArray_view()
   {}
 
-  NpArray_view& operator=(const NpArray_view& other)
+  inline NpArray_view& operator=(const NpArray_view& other)
   {
     this->_py_obj = other._py_obj;
     return *this;
   }
 
-  NpArray_view& operator=(NpArray_view&& other)
+  inline NpArray_view& operator=(NpArray_view&& other)
   {
     this->_py_obj = other._py_obj;
     return *this;
   }
 
-  std::vector<std::size_t> shape() const
-  {
-    std::vector<std::size_t> shape;
-    if(!_py_obj.is_null())
-    {
-      if(int ndim = PyArray_NDIM(_py_obj.get()); ndim > 0)
-      {
-        if(ndim < 10)
-        {
-          shape.resize(ndim);
-          std::copy_n(PyArray_SHAPE(_py_obj.get()), ndim, std::begin(shape));
-        }
-      }
-    }
-    return shape;
-  }
+  std::vector<std::size_t> shape() const;
 
-  std::size_t ndim()
-  {
-    if(!_py_obj.is_null())
-    {
-      return static_cast<std::size_t>(PyArray_NDIM(_py_obj.get()));
-    }
-    return 0;
-  }
+  std::size_t ndim();
 
-  std::size_t size(std::size_t index = 0)
-  {
-    if(!_py_obj.is_null())
-    {
-      if(index < static_cast<std::size_t>(PyArray_NDIM(_py_obj.get())))
-      {
-        return PyArray_SHAPE(_py_obj.get())[index];
-      }
-    }
-    return 0;
-  }
+  std::size_t size(std::size_t index = 0);
 
-  std::size_t flat_size() const
+  inline std::size_t flat_size() const
   {
     auto s = this->shape();
     return std::accumulate(std::cbegin(s), std::cend(s), 1,
                            [](const auto& a, const auto& b) { return a * b; });
   }
 
-  double* data() const
-  {
-    if(!_py_obj.is_null())
-    {
-      return reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()));
-    }
-    return nullptr;
-  }
+  double* data() const;
 
-  std::vector<double> to_std_vect()
-  {
-    assert(!this->_py_obj.is_null());
-    auto sz = flat_size();
-    std::vector<double> v(sz);
-    auto d_ptr = reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()));
-    std::copy(d_ptr, d_ptr + sz, std::begin(v));
-    return v;
-  }
+  std::vector<double> to_std_vect();
 
-  PyObject* py_object() { return _py_obj.py_object(); }
+  inline PyObject* py_object() { return _py_obj.py_object(); }
 };
 
 struct NpArray
 {
   std::vector<std::size_t> shape;
   std::vector<double> data;
-  static bool isNpArray(PyObject* obj) { return NpArray_view::isNpArray(obj); }
+  inline static bool isNpArray(PyObject* obj) { return NpArray_view::isNpArray(obj); }
   NpArray() = default;
   explicit NpArray(PyObject* obj)
   {
@@ -230,13 +145,13 @@ struct NpArray
 
   inline std::size_t ndim() { return shape.size(); }
 
-  std::size_t size(std::size_t index = 0)
+  inline std::size_t size(std::size_t index = 0)
   {
     if(index < shape.size()) return shape[index];
     return 0;
   }
 
-  std::size_t flat_size()
+  inline std::size_t flat_size()
   {
     return std::accumulate(std::cbegin(shape), std::cend(shape), 1,
                            [](const auto& a, const auto& b) { return a * b; });
