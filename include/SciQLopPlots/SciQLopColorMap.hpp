@@ -21,32 +21,43 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <SciQLopPlots/SciQLopGraph.hpp>
-#include <SciQLopPlots/SciQLopColorMap.hpp>
+#include "numpy_wrappers.hpp"
+#include <QMutex>
 #include <qcustomplot.h>
 
-class _QCustomPlot : public QCustomPlot
+class SciQLopColorMap : public QObject
 {
+    NpArray_view _x;
+    NpArray_view _y;
+    NpArray_view _z;
+    QCPRange _data_x_range;
+    QCPAxis* _keyAxis;
+    QCPAxis* _valueAxis;
+    QCPColorMap* _cmap;
+    QMutex _data_swap_mutex;
     Q_OBJECT
-public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
+    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-    inline SciQLopGraph* addSciQLopGraph(QCPAxis* x, QCPAxis* y, QStringList labels,
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+
+    void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
+    void _resample(const QCPRange& newRange);
+
+public:
+    enum class DataOrder
     {
-        auto sg = new SciQLopGraph(this, x, y, labels, dataOrder);
-        return sg;
-    }
-    inline SciQLopColorMap* addSciQLopColorMap(QCPAxis* x, QCPAxis* y, const QString& name,
-        SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst)
-    {
-        auto sg = new SciQLopColorMap(this, x, y, name, dataOrder);
-        return sg;
-    }
+        xFirst,
+        yFirst
+    };
+    Q_ENUMS(FractionStyle)
+    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,const QString& name,
+        DataOrder dataOrder = DataOrder::xFirst);
+    virtual ~SciQLopColorMap() override;
+
+    void setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z);
+    inline QCPColorMap* colorMap() const { return _cmap; }
+
+    Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
+
+private:
+    DataOrder _dataOrder = DataOrder::xFirst;
 };

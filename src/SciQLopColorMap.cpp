@@ -19,34 +19,33 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/SciQLopColorMap.hpp"
 
-#include <SciQLopPlots/SciQLopGraph.hpp>
-#include <SciQLopPlots/SciQLopColorMap.hpp>
-#include <qcustomplot.h>
 
-class _QCustomPlot : public QCustomPlot
+void SciQLopColorMap::_range_changed(const QCPRange &newRange, const QCPRange &oldRange)
 {
-    Q_OBJECT
-public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
 
-    inline SciQLopGraph* addSciQLopGraph(QCPAxis* x, QCPAxis* y, QStringList labels,
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+}
+
+SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+    const QString& name, DataOrder dataOrder)
+        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+{
+    this->_cmap = new QCPColorMap(keyAxis, valueAxis);
+    this->_cmap->setName(name);
+    connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopColorMap::_range_changed));
+}
+
+SciQLopColorMap::~SciQLopColorMap() { }
+
+void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z)
+{
     {
-        auto sg = new SciQLopGraph(this, x, y, labels, dataOrder);
-        return sg;
+        QMutexLocker locker(&_data_swap_mutex);
+        _x = std::move(x);
+        _y = std::move(y);
+        _z = std::move(z);
     }
-    inline SciQLopColorMap* addSciQLopColorMap(QCPAxis* x, QCPAxis* y, const QString& name,
-        SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst)
-    {
-        auto sg = new SciQLopColorMap(this, x, y, name, dataOrder);
-        return sg;
-    }
-};
+    this->_plot()->replot(QCustomPlot::rpQueuedReplot);
+}

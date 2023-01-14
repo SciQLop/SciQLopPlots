@@ -324,6 +324,16 @@
             <inject-code file="snippets.cpp" snippet="SciQLopGraph-setData"/>
         </add-function>
     </object-type>
+    <object-type name="SciQLopColorMap" parent-management="yes">
+        <enum-type name="DataOrder"/>
+        <extra-includes>
+          <include file-name="SciQLopPlots/numpy_wrappers.hpp" location="global"/>
+          <include file-name="utility" location="global"/>
+        </extra-includes>
+        <add-function signature="setData(PyObject *@x@, PyObject *@y@, PyObject *@z@)">
+            <inject-code file="snippets.cpp" snippet="SciQLopColorMap-setData"/>
+        </add-function>
+    </object-type>
 
 </typesystem>
 

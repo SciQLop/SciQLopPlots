@@ -52,6 +52,7 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
     project_source_root+'/include/SciQLopPlots/SciQLopGraph.hpp',
+    project_source_root+'/include/SciQLopPlots/SciQLopColorMap.hpp',
     project_source_root+'/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -66,7 +67,7 @@ moc_files = qtmod.preprocess(
                             include_directories : includes)
 
 
-sources = moc_files + sciqlopplots_bindings_src + shiboken_generator_out +[ '../src/SciQLopGraph.cpp', '../src/numpy_wrappers.cpp' , '../qcustomplot-source/qcustomplot.cpp']
+sources = moc_files + sciqlopplots_bindings_src + shiboken_generator_out +['../src/SciQLopGraph.cpp', '../src/SciQLopColorMap.cpp', '../src/numpy_wrappers.cpp' , '../qcustomplot-source/qcustomplot.cpp']
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
