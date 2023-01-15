@@ -20,12 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopColorMap.hpp"
+#include <cpp_utils/containers/algorithms.hpp>
 
-
-void SciQLopColorMap::_range_changed(const QCPRange &newRange, const QCPRange &oldRange)
-{
-
-}
+void SciQLopColorMap::_range_changed(const QCPRange& newRange, const QCPRange& oldRange) { }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QString& name, DataOrder dataOrder)
@@ -46,6 +43,27 @@ void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&&
         _x = std::move(x);
         _y = std::move(y);
         _z = std::move(z);
+
+        if (std::size(_x) && std::size(_y) && std::size(_z))
+        {
+            using namespace cpp_utils;
+            auto data = new QCPColorMapData(std::size(_x), std::size(_y),
+                { *containers::min(_x), *containers::max(_x) },
+                { *containers::min(_y), *containers::max(_y) });
+            auto it = std::cbegin(_z);
+            for (const auto i : _x)
+            {
+                for (const auto j : _y)
+                {
+                    if (it != std::cend(_z))
+                    {
+                        data->setData(i, j, *it);
+                        it++;
+                    }
+                }
+            }
+            this->_cmap->setData(data, false);
+        }
     }
     this->_plot()->replot(QCustomPlot::rpQueuedReplot);
 }
