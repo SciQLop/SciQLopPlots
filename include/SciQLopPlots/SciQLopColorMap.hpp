@@ -41,6 +41,8 @@ class SciQLopColorMap : public QObject
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
     void _resample(const QCPRange& newRange);
+    void _setDataLinear();
+    void _setDataLog();
 
 public:
     enum class DataOrder

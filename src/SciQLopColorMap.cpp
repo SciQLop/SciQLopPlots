@@ -24,6 +24,51 @@
 
 void SciQLopColorMap::_range_changed(const QCPRange& newRange, const QCPRange& oldRange) { }
 
+void SciQLopColorMap::_setDataLinear()
+{
+    if (std::size(_x) && std::size(_y) && std::size(_z))
+    {
+        using namespace cpp_utils;
+        auto data = new QCPColorMapData(std::size(_x), std::size(_y),
+            { *containers::min(_x), *containers::max(_x) },
+            { *containers::min(_y), *containers::max(_y) });
+        auto it = std::cbegin(_z);
+        for (const auto i : _x)
+        {
+            for (const auto j : _y)
+            {
+                if (it != std::cend(_z))
+                {
+                    data->setData(i, j, *it);
+                    it++;
+                }
+            }
+        }
+        this->_cmap->setData(data, false);
+    }
+}
+
+void SciQLopColorMap::_setDataLog()
+{
+    using namespace cpp_utils;
+    auto data = new QCPColorMapData(std::size(_x), std::size(_y),
+        { *containers::min(_x), *containers::max(_x) },
+        { *containers::min(_y), *containers::max(_y) });
+    auto it = std::cbegin(_z);
+    for (auto i = 0UL; i < std::size(_x); i++)
+    {
+        for (auto j = 0UL; j < std::size(_y); j++)
+        {
+            if (it != std::cend(_z))
+            {
+                data->setCell(i, j, *it);
+                it++;
+            }
+        }
+    }
+    this->_cmap->setData(data, false);
+}
+
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QString& name, DataOrder dataOrder)
         : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
@@ -46,23 +91,18 @@ void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&&
 
         if (std::size(_x) && std::size(_y) && std::size(_z))
         {
-            using namespace cpp_utils;
-            auto data = new QCPColorMapData(std::size(_x), std::size(_y),
-                { *containers::min(_x), *containers::max(_x) },
-                { *containers::min(_y), *containers::max(_y) });
-            auto it = std::cbegin(_z);
-            for (const auto i : _x)
+            if (this->_cmap->valueAxis()->scaleType() == QCPAxis::stLinear)
             {
-                for (const auto j : _y)
-                {
-                    if (it != std::cend(_z))
-                    {
-                        data->setData(i, j, *it);
-                        it++;
-                    }
-                }
+                this->_setDataLinear();
             }
-            this->_cmap->setData(data, false);
+            else
+            {
+                this->_setDataLog();
+            }
+        }
+        else
+        {
+            this->_cmap->setData(new QCPColorMapData(0, 0, { 0., 0. }, { 0., 0. }), false);
         }
     }
     this->_plot()->replot(QCustomPlot::rpQueuedReplot);
