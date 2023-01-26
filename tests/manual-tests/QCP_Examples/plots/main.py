@@ -103,14 +103,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self._setup_ui()
-        self.setGeometry(400, 250, 542, 390);
+        self.setGeometry(400, 250, 542, 390)
         self.setupDemo()
 
     def _setup_ui(self):
         self.setCentralWidget(QCustomPlot(self))
 
     def setupDemo(self,demoIndex=0):
-        self.centralWidget().replot();
+        self.centralWidget().replot()
         setupColorMapDemo(self.centralWidget())
 
 

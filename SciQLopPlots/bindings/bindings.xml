@@ -314,6 +314,13 @@
         <enum-type name="SelectablePart"/>
     </object-type>
 
+    <object-type name="QCPAbstractLegendItem" parent-management="yes">
+    </object-type>
+
+    <object-type name="QCPPlottableLegendItem" parent-management="yes">
+    </object-type>
+
+
     <object-type name="SciQLopGraph" parent-management="yes">
         <enum-type name="DataOrder"/>
         <extra-includes>
