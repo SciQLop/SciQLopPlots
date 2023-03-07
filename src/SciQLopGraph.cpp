@@ -118,7 +118,13 @@ SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
 }
 
-SciQLopGraph::~SciQLopGraph() { }
+SciQLopGraph::~SciQLopGraph()
+{
+    for(auto graph:_graphs)
+    {
+        this->_plot()->removeGraph(graph);
+    }
+}
 
 void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange)
 {

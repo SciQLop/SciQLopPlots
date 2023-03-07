@@ -79,7 +79,10 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopColorMap::_range_changed));
 }
 
-SciQLopColorMap::~SciQLopColorMap() { }
+SciQLopColorMap::~SciQLopColorMap()
+{
+    this->_plot()->removePlottable(this->colorMap());
+}
 
 void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z)
 {
