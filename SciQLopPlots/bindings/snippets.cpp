@@ -11,6 +11,12 @@ for(auto i=0UL;i<x.flat_size();i++)
 %CPPSELF.data()->set(std::move(data),true);
 // @snippet QCPGraph-setData
 
+// @snippet QCPGraph-setSelected
+if(%1)
+{
+    %CPPSELF->setSelection(QCPDataSelection(%CPPSELF->data()->dataRange()));
+}
+// @snippet QCPGraph-setSelected
 
 // @snippet QCPColorMapData-cellToCoord
 double a=0;

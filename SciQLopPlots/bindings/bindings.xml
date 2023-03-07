@@ -136,6 +136,9 @@
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
             <inject-code file="snippets.cpp" snippet="QCPGraph-setData"/>
         </add-function>
+        <add-function signature="setSelected(bool )">
+            <inject-code class="target" position="end" file="snippets.cpp" snippet="QCPGraph-setSelected"/>
+        </add-function>
         <enum-type name="LineStyle"/>
     </object-type>
     <value-type name="QCPScatterStyle" parent-management="yes">
@@ -311,7 +314,7 @@
     <object-type name="QCPGrid" parent-management="yes"/>
 
     <object-type name="QCPLegend" parent-management="yes">
-        <enum-type name="SelectablePart"/>
+        <enum-type name="SelectablePart" flags="SelectableParts"/>
     </object-type>
 
     <object-type name="QCPAbstractLegendItem" parent-management="yes">
