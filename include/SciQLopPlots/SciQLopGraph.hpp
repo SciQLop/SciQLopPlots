@@ -22,8 +22,8 @@
 #pragma once
 
 #include "numpy_wrappers.hpp"
-#include <qcustomplot.h>
 #include <QMutex>
+#include <qcustomplot.h>
 
 class SciQLopGraph : public QObject
 {
@@ -51,6 +51,10 @@ class SciQLopGraph : public QObject
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
     void _resample(const QCPRange& newRange);
 
+    void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
+
+    Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
+
 public:
     enum class DataOrder
     {
@@ -62,7 +66,7 @@ public:
         QStringList labels, DataOrder dataOrder = DataOrder::xFirst);
     virtual ~SciQLopGraph() override;
 
-    void setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange=false);
+    void setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange = false);
     inline QCPGraph* graphAt(std::size_t index) const { return _graphs[index]; }
 
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);

@@ -89,24 +89,32 @@ void SciQLopGraph::_resample(const QCPRange& newRange)
             = std::upper_bound(_x.data(), _x.data() + _x.flat_size(), newRange.lower);
         const auto end_x = std::lower_bound(_x.data(), _x.data() + _x.flat_size(), newRange.upper);
         const auto x_window_size = end_x - start_x;
-        const auto line_cnt = static_cast<std::size_t>(std::size(_graphs));
-        const auto y_incr = (_dataOrder == DataOrder::xFirst) ? 1UL : line_cnt;
-        for (auto line_index = 0UL; line_index < line_cnt; line_index++)
+        if (x_window_size > 0)
         {
-            const auto start_y = _y.data() + y_incr * (start_x - _x.data())
-                + (line_index * ((_dataOrder == DataOrder::xFirst) ? _x.flat_size() : 1));
-            if (x_window_size > 10000)
+            const auto line_cnt = static_cast<std::size_t>(std::size(_graphs));
+            const auto y_incr = (_dataOrder == DataOrder::xFirst) ? 1UL : line_cnt;
+            for (auto line_index = 0UL; line_index < line_cnt; line_index++)
             {
-                _graphs[line_index]->data()->set(
-                    resample<10000>(start_x, start_y, x_window_size, y_incr), true);
-            }
-            else
-            {
-                _graphs[line_index]->data()->set(
-                    copy_data(start_x, start_y, x_window_size, y_incr), true);
+                const auto start_y = _y.data() + y_incr * (start_x - _x.data())
+                    + (line_index * ((_dataOrder == DataOrder::xFirst) ? _x.flat_size() : 1));
+                if (x_window_size > 10000)
+                {
+                    emit this->_setGraphDataSig(
+                        line_index, resample<10000>(start_x, start_y, x_window_size, y_incr));
+                }
+                else
+                {
+                    emit this->_setGraphDataSig(
+                        line_index, copy_data(start_x, start_y, x_window_size, y_incr));
+                }
             }
         }
     }
+}
+
+void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
+{
+    _graphs[index]->data()->set(data, true);
 }
 
 SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
@@ -116,11 +124,13 @@ SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
     this->_create_graphs(labels);
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
+    connect(this, &SciQLopGraph::_setGraphDataSig, this, &SciQLopGraph::_setGraphData,
+        Qt::QueuedConnection);
 }
 
 SciQLopGraph::~SciQLopGraph()
 {
-    for(auto graph:_graphs)
+    for (auto graph : _graphs)
     {
         this->_plot()->removeGraph(graph);
     }
@@ -129,10 +139,10 @@ SciQLopGraph::~SciQLopGraph()
 void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange)
 {
     {
-     QMutexLocker locker(&_data_swap_mutex);
+        QMutexLocker locker(&_data_swap_mutex);
 
-    _x = std::move(x);
-    _y = std::move(y);
+        _x = std::move(x);
+        _y = std::move(y);
     }
     const auto len = _x.flat_size();
     if (len > 0)
