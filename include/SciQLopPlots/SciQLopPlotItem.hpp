@@ -20,20 +20,23 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-
-#include <SciQLopPlots/SciQLopColorMap.hpp>
-#include <SciQLopPlots/SciQLopGraph.hpp>
 #include <qcustomplot.h>
 
-class _QCustomPlot : public QCustomPlot
+class SciQLopPlotItem
 {
-    Q_OBJECT
+protected:
+    QCPAbstractItem* _item;
+
+
+    bool _movable;
+
+
 public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
+    SciQLopPlotItem(QCPAbstractItem* item) : _item { item } { }
+    virtual ~SciQLopPlotItem() { }
+    inline bool movable() const noexcept { return this->_movable; }
+    inline void setMovable(bool movable) noexcept { this->_movable = movable; }
+
+    virtual void move(double dx, double dy) = 0;
+    QCPAbstractItem* item() { return _item; };
 };

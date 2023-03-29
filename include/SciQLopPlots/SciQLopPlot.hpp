@@ -24,16 +24,43 @@
 #include <SciQLopPlots/SciQLopColorMap.hpp>
 #include <SciQLopPlots/SciQLopGraph.hpp>
 #include <qcustomplot.h>
+#include <SciQLopPlots/SciQLopPlotItem.hpp>
+#include <optional>
+#include <QPointF>
 
-class _QCustomPlot : public QCustomPlot
+class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
+    SciQLopPlotItem* _selected_item=nullptr;
+    std::optional<QPointF> _last_position;
 public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
+    explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
+    {
+        this->addLayer("Spans");
+        this->addLayer("SpansBorders");
+    }
+    virtual ~SciQLopPlot() Q_DECL_OVERRIDE {}
     inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
     {
         auto cm = new QCPColorMap(x, y);
         return cm;
     }
+
+    inline SciQLopGraph* addSciQLopGraph(QCPAxis* x, QCPAxis* y, QStringList labels,
+        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+    {
+        auto sg = new SciQLopGraph(this, x, y, labels, dataOrder);
+        return sg;
+    }
+    inline SciQLopColorMap* addSciQLopColorMap(QCPAxis* x, QCPAxis* y, const QString& name,
+        SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst)
+    {
+        auto sg = new SciQLopColorMap(this, x, y, name, dataOrder);
+        return sg;
+    }
+
+protected:
+    virtual void mousePressEvent(QMouseEvent* event) override;
+    virtual void mouseMoveEvent(QMouseEvent* event) override;
+    virtual void mouseReleaseEvent(QMouseEvent* event) override;
 };

@@ -19,21 +19,5 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/SciQLopPlotItem.hpp"
 
-#include <SciQLopPlots/SciQLopColorMap.hpp>
-#include <SciQLopPlots/SciQLopGraph.hpp>
-#include <qcustomplot.h>
-
-class _QCustomPlot : public QCustomPlot
-{
-    Q_OBJECT
-public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
-};

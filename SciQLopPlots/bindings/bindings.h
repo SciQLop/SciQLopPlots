@@ -7,6 +7,8 @@
 #include <qcustomplot.h>
 #include <SciQLopPlots/SciQLopGraph.hpp>
 #include <SciQLopPlots/SciQLopColorMap.hpp>
+#include <SciQLopPlots/SciQLopVerticalSpan.hpp>
+#include <SciQLopPlots/SciQLopPlot.hpp>
 #include "_QCustomPlot.hpp"
 
 #endif // SCIQLOPPLOTS_BINDINGS_H
