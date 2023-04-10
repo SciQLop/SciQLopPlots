@@ -27,8 +27,7 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
     if (this->_selected_item)
     {
-        this->_selected_item->item()->setSelected(false);
-        this->_selected_item->item()->layer()->replot();
+        //this->_selected_item->setSelected(false);
         this->_selected_item = nullptr;
     }
     auto maybe_item = this->itemAt(event->position(), true);
@@ -38,10 +37,9 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
         this->_selected_item = dynamic_cast<SciQLopPlotItem*>(maybe_item);
         if (this->_selected_item)
         {
-            this->_selected_item->item()->setSelected(true);
-            this->_selected_item->item()->layer()->replot();
-            event->accept();
-            return;
+            //this->_selected_item->setSelected(true);
+            //event->accept();
+            //return;
         }
     }
     QCustomPlot::mousePressEvent(event);
@@ -49,7 +47,7 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
-    if (_selected_item and _selected_item->movable() and this->_last_position)
+    if (_selected_item and _selected_item->movable() and event->buttons() == Qt::LeftButton)
     {
         _selected_item->move(event->position().x() - this->_last_position->x(),
             event->position().y() - this->_last_position->y());
@@ -65,7 +63,7 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 {
-    // this->_selected_item = nullptr;
+    //this->_selected_item = nullptr;
     this->_last_position = std::nullopt;
     QCustomPlot::mouseReleaseEvent(event);
 }

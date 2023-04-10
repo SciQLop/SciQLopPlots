@@ -20,26 +20,36 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-
 #include <SciQLopPlots/SciQLopColorMap.hpp>
+
+
+#include "constants.hpp"
+#include <QPointF>
 #include <SciQLopPlots/SciQLopGraph.hpp>
-#include <qcustomplot.h>
 #include <SciQLopPlots/SciQLopPlotItem.hpp>
 #include <optional>
-#include <QPointF>
+#include <qcustomplot.h>
 
 class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
-    SciQLopPlotItem* _selected_item=nullptr;
+    SciQLopPlotItem* _selected_item = nullptr;
     std::optional<QPointF> _last_position;
+
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {
-        this->addLayer("Spans");
-        this->addLayer("SpansBorders");
+        using namespace Constants;
+        this->addLayer(
+            LayersNames::Spans, this->layer(LayersNames::Overlay), QCustomPlot::limAbove);
+        this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
+        this->layer(LayersNames::Spans)->setVisible(true);
+        this->addLayer(
+            LayersNames::SpansBorders, this->layer(LayersNames::Spans), QCustomPlot::limAbove);
+        this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
+        this->layer(LayersNames::SpansBorders)->setVisible(true);
     }
-    virtual ~SciQLopPlot() Q_DECL_OVERRIDE {}
+    virtual ~SciQLopPlot() Q_DECL_OVERRIDE { }
     inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
     {
         auto cm = new QCPColorMap(x, y);

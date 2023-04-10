@@ -20,8 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-
 #include "numpy_wrappers.hpp"
+
 #include <QMutex>
 #include <qcustomplot.h>
 

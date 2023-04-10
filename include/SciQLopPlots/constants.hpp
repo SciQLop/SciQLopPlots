@@ -20,24 +20,20 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <qcustomplot.h>
 
-
-class SciQLopPlotItem
+namespace Constants
 {
-protected:
-    bool _movable = false;
 
+namespace LayersNames
+{
+    const auto Background = "background";
+    const auto Grid = "grid";
+    const auto Main = "main";
+    const auto Axes = "axes";
+    const auto Legend = "legend";
+    const auto Overlay = "overlay";
+    const auto Spans = "Spans";
+    const auto SpansBorders = "SpansBorders";
+}
 
-public:
-    SciQLopPlotItem() { }
-    virtual ~SciQLopPlotItem() { }
-    inline bool movable() const noexcept { return this->_movable; }
-    inline void setMovable(bool movable) noexcept { this->_movable = movable; }
-
-    inline void setSelected(bool selected) { this->item()->setSelected(selected); }
-
-    virtual void move(double dx, double dy) = 0;
-    virtual QCPAbstractItem* item() = 0;
-    inline void replot() { this->item()->layer()->replot(); }
-};
+}

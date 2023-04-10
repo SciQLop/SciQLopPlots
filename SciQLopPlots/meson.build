@@ -1,11 +1,11 @@
 qtmod = import(qt_sdk)
-qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSupport', 'OpenGL'])
+qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSupport', 'OpenGL'], method:'qmake')
 
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=false'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
 
-qmake_possible_names = ['qmake','qmake6']
+qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
 
 
@@ -60,7 +60,9 @@ moc_headers = [
 ]
 
 moc_sources = []
-headers = moc_headers + [project_source_root+'/include/SciQLopPlots/numpy_wrappers.hpp']
+headers = moc_headers + \
+         [project_source_root+'/include/SciQLopPlots/numpy_wrappers.hpp',
+         project_source_root+'/include/SciQLopPlots/constants.hpp']
 
 includes = include_directories(['../include', '../qcustomplot-source', numpy_inc])
 
@@ -82,7 +84,7 @@ sources = moc_files \
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep],
-        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
+        #cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,
