@@ -33,8 +33,7 @@
 class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
-    QPointF _last_position;
-    SciQLopPlotItem* _moved_item=nullptr;
+
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {

@@ -27,7 +27,7 @@ class SciQLopPlotItem
 {
 protected:
     bool _movable = false;
-
+    QPointF _last_position;
 
 public:
     SciQLopPlotItem() { }
@@ -40,4 +40,21 @@ public:
     virtual void move(double dx, double dy) = 0;
     virtual QCPAbstractItem* item() = 0;
     inline void replot() { this->item()->layer()->replot(); }
+
+    inline void handleMousePressEvent(QMouseEvent* event, const QVariant& details)
+    {
+        this->_last_position = event->pos();
+        event->accept();
+    }
+    inline void handleMouseMoveEvent(QMouseEvent* event, const QPointF& startPos)
+    {
+        if(item()->selected() and _movable and event->buttons() == Qt::LeftButton)
+        {
+            move(event->position().x() - this->_last_position.x(),
+                event->position().y() - this->_last_position.y());
+        }
+        this->_last_position = event->position();
+        event->accept();
+    }
+    inline void handleMouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) { }
 };

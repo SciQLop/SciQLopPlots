@@ -26,41 +26,15 @@
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
-    this->_moved_item = nullptr;
-    if (event->buttons() == Qt::LeftButton)
-    {
-        for (auto item : this->selectedItems())
-        {
-            if (auto selected_item = dynamic_cast<SciQLopPlotItem*>(item); selected_item
-                and selected_item->movable()
-                and this->itemAt(event->pos()) == selected_item->item())
-            {
-                this->_moved_item = selected_item;
-                break;
-            }
-        }
-    }
-    this->_last_position = event->position();
     QCustomPlot::mousePressEvent(event);
 }
 
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
-    if (event->buttons() == Qt::LeftButton and this->_moved_item)
-    {
-        this->_moved_item->move(event->position().x() - this->_last_position.x(),
-            event->position().y() - this->_last_position.y());
-        this->_last_position = event->position();
-        event->accept();
-    }
-    else
-    {
-        QCustomPlot::mouseMoveEvent(event);
-    }
+    QCustomPlot::mouseMoveEvent(event);
 }
 
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 {
-    this->_moved_item = nullptr;
     QCustomPlot::mouseReleaseEvent(event);
 }

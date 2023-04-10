@@ -79,6 +79,19 @@ public:
         emit moved(this->point1->coords().x());
     }
     inline QCPAbstractItem* item() override { return this; }
+
+    inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
+    {
+        this->handleMousePressEvent(event, details);
+    }
+    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
+    {
+        this->handleMouseMoveEvent(event, startPos);
+    }
+    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override
+    {
+        this->handleMouseReleaseEvent(event, startPos);
+    }
 };
 
 
@@ -233,6 +246,19 @@ public:
 
             return std::min(abs(pos.x() - left), abs(pos.x() - right));
         }
+    }
+
+    inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
+    {
+        this->handleMousePressEvent(event, details);
+    }
+    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
+    {
+        this->handleMouseMoveEvent(event, startPos);
+    }
+    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override
+    {
+        this->handleMouseReleaseEvent(event, startPos);
     }
 };
 
