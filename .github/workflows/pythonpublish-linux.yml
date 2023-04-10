@@ -18,7 +18,7 @@ jobs:
       - name: add Python and qt dir to path
         run: |
             echo "/opt/python/${{ matrix.python-version }}/bin" >> $GITHUB_PATH
-            echo "/Qt/6.4.2/gcc_64/bin" >> $GITHUB_PATH
+            echo "/Qt/6.5.0/gcc_64/bin" >> $GITHUB_PATH
       - uses: actions/checkout@v3
         with:
           submodules: true
@@ -27,13 +27,13 @@ jobs:
             dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 /usr/bin/llvm-config clang
             git config --global --add safe.directory '*'
             python -m pip install --upgrade "pip" "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "auditwheel" "aqtinstall"
-            python -m pip install "PySide6==6.4.2"
+            python -m pip install "PySide6==6.5.0"
             python -m pip install \
                 --index-url=http://download.qt.io/official_releases/QtForPython/ \
                 --trusted-host download.qt.io \
-                "shiboken6_generator==6.4.2"
-            aqt install-qt -O /Qt linux desktop 6.4.2
-            LD_LIBRARY_PATH=/Qt/6.4.2/gcc_64/lib python3 -m build --no-isolation  .
+                "shiboken6_generator==6.5.0"
+            aqt install-qt -O /Qt linux desktop 6.5.0
+            LD_LIBRARY_PATH=/Qt/6.5.0/gcc_64/lib python3 -m build --no-isolation  .
             rename 'linux_x86_64' 'manylinux_2_28_x86_64' dist/*.whl
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3
