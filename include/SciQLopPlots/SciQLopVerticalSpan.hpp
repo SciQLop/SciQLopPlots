@@ -75,6 +75,7 @@ public:
         this->point2->setPixelPosition(
             { this->point2->pixelPosition().x() + dx, this->point2->pixelPosition().y() });
 
+        this->replot();
         emit moved(this->point1->coords().x());
     }
     inline QCPAbstractItem* item() override { return this; }
@@ -93,8 +94,37 @@ class VerticalSpan : public QCPItemRect, public SciQLopPlotItem
         this->bottomRight->setTypeY(QCPItemPosition::ptAxisRectRatio);
     }
 
-    VerticalSpanBorder* _left_border;
-    VerticalSpanBorder* _right_border;
+    VerticalSpanBorder* _border1;
+    VerticalSpanBorder* _border2;
+
+    inline VerticalSpanBorder* _lower_border() const
+    {
+        if (this->_border1->position() <= this->_border2->position())
+        {
+            return this->_border1;
+        }
+        return this->_border2;
+    }
+    inline VerticalSpanBorder* _upper_border() const
+    {
+        if (this->_border2->position() >= this->_border1->position())
+        {
+            return this->_border2;
+        }
+        return this->_border1;
+    }
+
+    inline void set_left_pos(double pos)
+    {
+        this->topLeft->setCoords({ pos, 0. });
+        this->_lower_border()->set_position(pos);
+    }
+
+    inline void set_right_pos(double pos)
+    {
+        this->bottomRight->setCoords({ pos, 1. });
+        this->_upper_border()->set_position(pos);
+    }
 
 public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
@@ -102,8 +132,8 @@ public:
     VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range)
             : QCPItemRect { plot }
             , SciQLopPlotItem {}
-            , _left_border { new VerticalSpanBorder { plot, horizontal_range.lower } }
-            , _right_border { new VerticalSpanBorder { plot, horizontal_range.upper } }
+            , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower } }
+            , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper } }
     {
         this->setLayer(Constants::LayersNames::Spans);
         this->setBrush(QBrush { QColor(0, 255, 0, 40), Qt::SolidPattern });
@@ -113,18 +143,20 @@ public:
         this->setSelectable(true);
         this->setMovable(true);
         this->setVisible(true);
-        connect(this->_left_border, &VerticalSpanBorder::moved, this,
+        connect(this->_border1, &VerticalSpanBorder::moved, this,
             [this](double x)
             {
-                this->topLeft->setCoords({ x, 0. });
+                this->set_left_pos(this->_lower_border()->position());
+                this->set_right_pos(this->_upper_border()->position());
                 this->replot();
                 emit this->range_changed(this->range());
             });
 
-        connect(this->_right_border, &VerticalSpanBorder::moved, this,
+        connect(this->_border2, &VerticalSpanBorder::moved, this,
             [this](double x)
             {
-                this->bottomRight->setCoords({ x, 1. });
+                this->set_left_pos(this->_lower_border()->position());
+                this->set_right_pos(this->_upper_border()->position());
                 this->replot();
                 emit this->range_changed(this->range());
             });
@@ -132,13 +164,14 @@ public:
         connect(this, &VerticalSpan::selectionChanged, this,
             [](bool s) { std::cout << "selectionChanged " << s << std::endl; });
 
-        this->set_range(horizontal_range);
+        this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
+        this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
     }
 
     ~VerticalSpan()
     {
-        this->_left_border->parentPlot()->removeItem(this->_left_border);
-        this->_right_border->parentPlot()->removeItem(this->_right_border);
+        this->parentPlot()->removeItem(this->_border1);
+        this->parentPlot()->removeItem(this->_border2);
     }
 
     inline QCPAbstractItem* item() override { return this; }
@@ -147,9 +180,8 @@ public:
     {
         if (this->range() != horizontal_range)
         {
-            this->topLeft->setCoords(std::min(horizontal_range.lower, horizontal_range.upper), 10.);
-            this->bottomRight->setCoords(
-                std::max(horizontal_range.lower, horizontal_range.upper), -10.);
+            this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
+            this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
             this->replot();
             emit range_changed(horizontal_range);
         }
@@ -157,20 +189,19 @@ public:
 
     inline QCPRange range() const noexcept
     {
-        return QCPRange { this->topLeft->key(), this->bottomRight->key() };
+        return QCPRange { this->_lower_border()->position(), this->_upper_border()->position() };
     }
 
     inline void move(double dx, double dy) override
     {
-        this->topLeft->setPixelPosition(
-            { this->topLeft->pixelPosition().x() + dx, this->topLeft->pixelPosition().y() });
-
-        this->bottomRight->setPixelPosition({ this->bottomRight->pixelPosition().x() + dx,
-            this->bottomRight->pixelPosition().y() });
-
-        this->_left_border->set_position(this->range().lower);
-        this->_right_border->set_position(this->range().upper);
-        emit this->range_changed(this->range());
+        if (dx != 0.)
+        {
+            auto x_axis = this->parentPlot()->axisRect()->rangeDragAxis(Qt::Horizontal);
+            this->set_left_pos(x_axis->pixelToCoord(this->topLeft->pixelPosition().x() + dx));
+            this->set_right_pos(x_axis->pixelToCoord(this->bottomRight->pixelPosition().x() + dx));
+            this->replot();
+            emit this->range_changed(this->range());
+        }
     }
 
     inline double selectTest(
@@ -181,13 +212,13 @@ public:
         auto width = right - left;
         {
             auto left_border_distance
-                = this->_left_border->selectTest(pos, onlySelectable, details);
+                = this->_lower_border()->selectTest(pos, onlySelectable, details);
             if (left_border_distance != -1. and left_border_distance <= std::max(10., width * 0.1))
                 return -1.;
         }
         {
             auto right_border_distance
-                = this->_right_border->selectTest(pos, onlySelectable, details);
+                = this->_upper_border()->selectTest(pos, onlySelectable, details);
             if (right_border_distance != -1.
                 and right_border_distance <= std::max(10., width * 0.1))
                 return -1.;

@@ -33,9 +33,8 @@
 class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
-    SciQLopPlotItem* _selected_item = nullptr;
-    std::optional<QPointF> _last_position;
-
+    QPointF _last_position;
+    SciQLopPlotItem* _moved_item=nullptr;
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {

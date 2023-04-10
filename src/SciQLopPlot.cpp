@@ -21,37 +21,35 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotItem.hpp"
+#include <cpp_utils/containers/algorithms.hpp>
 #include <type_traits>
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
-    if (this->_selected_item)
+    this->_moved_item = nullptr;
+    if (event->buttons() == Qt::LeftButton)
     {
-        //this->_selected_item->setSelected(false);
-        this->_selected_item = nullptr;
-    }
-    auto maybe_item = this->itemAt(event->position(), true);
-    this->_last_position = event->position();
-    if (maybe_item != nullptr)
-    {
-        this->_selected_item = dynamic_cast<SciQLopPlotItem*>(maybe_item);
-        if (this->_selected_item)
+        for (auto item : this->selectedItems())
         {
-            //this->_selected_item->setSelected(true);
-            //event->accept();
-            //return;
+            if (auto selected_item = dynamic_cast<SciQLopPlotItem*>(item); selected_item
+                and selected_item->movable()
+                and this->itemAt(event->pos()) == selected_item->item())
+            {
+                this->_moved_item = selected_item;
+                break;
+            }
         }
     }
+    this->_last_position = event->position();
     QCustomPlot::mousePressEvent(event);
 }
 
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
-    if (_selected_item and _selected_item->movable() and event->buttons() == Qt::LeftButton)
+    if (event->buttons() == Qt::LeftButton and this->_moved_item)
     {
-        _selected_item->move(event->position().x() - this->_last_position->x(),
-            event->position().y() - this->_last_position->y());
-        _selected_item->item()->layer()->replot();
+        this->_moved_item->move(event->position().x() - this->_last_position.x(),
+            event->position().y() - this->_last_position.y());
         this->_last_position = event->position();
         event->accept();
     }
@@ -63,7 +61,6 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 {
-    //this->_selected_item = nullptr;
-    this->_last_position = std::nullopt;
+    this->_moved_item = nullptr;
     QCustomPlot::mouseReleaseEvent(event);
 }

@@ -84,7 +84,7 @@ sources = moc_files \
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep],
-        #cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
+        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,

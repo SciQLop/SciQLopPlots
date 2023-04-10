@@ -14,6 +14,8 @@ from SciQLopPlots import SciQLopGraph , QCustomPlot, SciQLopVerticalSpan
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     p=SciQLopPlot()
+    p.setOpenGl(True)
+
     p.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables|QCP.iSelectItems)
     graph = p.addSciQLopGraph(p.xAxis, p.yAxis, ["X","Y","Z"])
     x=np.arange(3e7)*1.
@@ -30,7 +32,7 @@ if __name__ == '__main__':
     p.legend.setVisible(True)
 
     p.rescaleAxes()
-    p.setOpenGl(True)
+
 
     spans = [SciQLopVerticalSpan(p, QCPRange(i*20., i*20.+10.)) for i in range(5)]
 
