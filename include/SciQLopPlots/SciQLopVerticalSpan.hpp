@@ -27,14 +27,13 @@
 #include <iostream>
 #include <qcustomplot.h>
 
-class VerticalSpanBorder : public QCPItemStraightLine, public SciQLopPlotItem
+class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>
 {
     Q_OBJECT
 
 public:
     Q_SIGNAL void moved(double new_position);
-    inline VerticalSpanBorder(QCustomPlot* plot, double x)
-            : QCPItemStraightLine { plot }, SciQLopPlotItem {}
+    inline VerticalSpanBorder(QCustomPlot* plot, double x) : SciQLopPlotItem { plot }
     {
 
         this->point1->setTypeX(QCPItemPosition::ptPlotCoords);
@@ -78,24 +77,10 @@ public:
         this->replot();
         emit moved(this->point1->coords().x());
     }
-    inline QCPAbstractItem* item() override { return this; }
-
-    inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
-    {
-        this->handleMousePressEvent(event, details);
-    }
-    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
-    {
-        this->handleMouseMoveEvent(event, startPos);
-    }
-    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override
-    {
-        this->handleMouseReleaseEvent(event, startPos);
-    }
 };
 
 
-class VerticalSpan : public QCPItemRect, public SciQLopPlotItem
+class VerticalSpan : public SciQLopPlotItem<QCPItemRect>
 {
     Q_OBJECT
     inline void set_auto_extend_vertically()
@@ -143,8 +128,7 @@ public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
 
     VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range)
-            : QCPItemRect { plot }
-            , SciQLopPlotItem {}
+            : SciQLopPlotItem { plot }
             , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower } }
             , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper } }
     {
@@ -186,8 +170,6 @@ public:
         this->parentPlot()->removeItem(this->_border1);
         this->parentPlot()->removeItem(this->_border2);
     }
-
-    inline QCPAbstractItem* item() override { return this; }
 
     inline void set_range(const QCPRange horizontal_range)
     {
@@ -246,19 +228,6 @@ public:
 
             return std::min(abs(pos.x() - left), abs(pos.x() - right));
         }
-    }
-
-    inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
-    {
-        this->handleMousePressEvent(event, details);
-    }
-    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
-    {
-        this->handleMouseMoveEvent(event, startPos);
-    }
-    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override
-    {
-        this->handleMouseReleaseEvent(event, startPos);
     }
 };
 

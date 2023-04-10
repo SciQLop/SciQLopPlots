@@ -22,33 +22,30 @@
 #pragma once
 #include <qcustomplot.h>
 
-
-class SciQLopPlotItem
+template <typename QCPAbstractItem_T>
+class SciQLopPlotItem : public QCPAbstractItem_T
 {
 protected:
     bool _movable = false;
     QPointF _last_position;
 
 public:
-    SciQLopPlotItem() { }
+    SciQLopPlotItem(QCustomPlot* plot): QCPAbstractItem_T{plot}{ }
     virtual ~SciQLopPlotItem() { }
     inline bool movable() const noexcept { return this->_movable; }
     inline void setMovable(bool movable) noexcept { this->_movable = movable; }
 
-    inline void setSelected(bool selected) { this->item()->setSelected(selected); }
-
     virtual void move(double dx, double dy) = 0;
-    virtual QCPAbstractItem* item() = 0;
-    inline void replot() { this->item()->layer()->replot(); }
+    inline void replot() { this->layer()->replot(); }
 
-    inline void handleMousePressEvent(QMouseEvent* event, const QVariant& details)
+    inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
     {
         this->_last_position = event->pos();
         event->accept();
     }
-    inline void handleMouseMoveEvent(QMouseEvent* event, const QPointF& startPos)
+    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos)override
     {
-        if(item()->selected() and _movable and event->buttons() == Qt::LeftButton)
+        if (this->selected() and _movable and event->buttons() == Qt::LeftButton)
         {
             move(event->position().x() - this->_last_position.x(),
                 event->position().y() - this->_last_position.y());
@@ -56,5 +53,5 @@ public:
         this->_last_position = event->position();
         event->accept();
     }
-    inline void handleMouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) { }
+    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos)override { }
 };
