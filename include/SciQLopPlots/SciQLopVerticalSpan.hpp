@@ -24,6 +24,8 @@
 #include "SciQLopPlotItem.hpp"
 #include "constants.hpp"
 #include <QBrush>
+#include <QColor>
+#include <QRgb>
 #include <iostream>
 #include <qcustomplot.h>
 
@@ -133,9 +135,7 @@ public:
             , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper } }
     {
         this->setLayer(Constants::LayersNames::Spans);
-        this->setBrush(QBrush { QColor(0, 255, 0, 40), Qt::SolidPattern });
-        this->setSelectedBrush(QBrush { QColor(255, 0, 255, 40), Qt::SolidPattern });
-        this->setPen(QPen { Qt::NoPen });
+        this->set_color(QColor(0, 255, 0, 40));
         this->set_auto_extend_vertically();
         this->setSelectable(true);
         this->setMovable(true);
@@ -157,9 +157,6 @@ public:
                 this->replot();
                 emit this->range_changed(this->range());
             });
-
-        connect(this, &VerticalSpan::selectionChanged, this,
-            [](bool s) { std::cout << "selectionChanged " << s << std::endl; });
 
         this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
         this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
@@ -229,6 +226,15 @@ public:
             return std::min(abs(pos.x() - left), abs(pos.x() - right));
         }
     }
+    inline void set_color(const QColor& color)
+    {
+        this->setBrush(QBrush { color, Qt::SolidPattern });
+        this->setSelectedBrush(QBrush {
+            QColor(255 - color.red(), 0 - color.green(), 255 - color.blue(), color.alpha()),
+            Qt::SolidPattern });
+        this->setPen(QPen { Qt::NoPen });
+        this->setSelectedPen(QPen { Qt::NoPen });
+    }
 };
 
 
@@ -239,11 +245,16 @@ class SciQLopVerticalSpan : public QObject
 
 public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void selectionChanged(bool);
+
     SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range)
             : _impl { new VerticalSpan { plot, horizontal_range } }
     {
         connect(
             this->_impl, &VerticalSpan::range_changed, this, &SciQLopVerticalSpan::range_changed);
+
+        connect(this->_impl, &VerticalSpan::selectionChanged, this,
+            &SciQLopVerticalSpan::selectionChanged);
     }
     ~SciQLopVerticalSpan()
     {
@@ -258,4 +269,8 @@ public:
     {
         this->_impl->set_range(horizontal_range);
     }
+
+    inline void set_color(const QColor& color) { this->_impl->set_color(color); }
+
+    inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
 };
