@@ -162,6 +162,13 @@ public:
         this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
     }
 
+    inline virtual void setMovable(bool movable) noexcept override
+    {
+        SciQLopPlotItem::setMovable(movable);
+        this->_border1->setMovable(movable);
+        this->_border2->setMovable(movable);
+    }
+
     ~VerticalSpan()
     {
         this->parentPlot()->removeItem(this->_border1);
@@ -273,4 +280,6 @@ public:
     inline void set_color(const QColor& color) { this->_impl->set_color(color); }
 
     inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
+
+    inline void set_read_only(bool read_only) { this->_impl->setMovable(!read_only); }
 };

@@ -33,7 +33,7 @@ public:
     SciQLopPlotItem(QCustomPlot* plot): QCPAbstractItem_T{plot}{ }
     virtual ~SciQLopPlotItem() { }
     inline bool movable() const noexcept { return this->_movable; }
-    inline void setMovable(bool movable) noexcept { this->_movable = movable; }
+    inline virtual void setMovable(bool movable) noexcept { this->_movable = movable; }
 
     virtual void move(double dx, double dy) = 0;
     inline void replot() { this->layer()->replot(); }
