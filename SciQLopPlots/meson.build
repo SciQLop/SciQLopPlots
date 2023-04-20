@@ -56,6 +56,7 @@ moc_headers = [
     project_source_root+'/include/SciQLopPlots/SciQLopVerticalSpan.hpp',
     project_source_root+'/include/SciQLopPlots/SciQLopPlotItem.hpp',
     project_source_root+'/include/SciQLopPlots/SciQLopPlot.hpp',
+    project_source_root+'/include/SciQLopPlots/SciQLopGraphResampler.hpp',
     project_source_root+'/qcustomplot-source/qcustomplot.h'
 ]
 

@@ -24,16 +24,14 @@
 #include "numpy_wrappers.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
-
+struct GraphResampler;
 class SciQLopGraph : public QObject
 {
-    NpArray_view _x;
-    NpArray_view _y;
-    QCPRange _data_x_range;
+    GraphResampler* _resampler;
+
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
     QList<QCPGraph*> _graphs;
-    QMutex _data_swap_mutex;
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -49,7 +47,6 @@ class SciQLopGraph : public QObject
 
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
-    void _resample(const QCPRange& newRange);
 
     void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
 
