@@ -87,7 +87,6 @@ struct GraphResampler : public QThread
     Q_SIGNAL void _resample_sig(const QCPRange& newRange);
     inline void _resample_slot(const QCPRange& newRange)
     {
-        std::cout << "resampling" << std::endl;
         QMutexLocker locker(&_data_swap_mutex);
         if (_x.data() != nullptr && _x.flat_size() > 0)
         {

@@ -22,6 +22,24 @@
 #include "SciQLopPlots/SciQLopGraph.hpp"
 #include "SciQLopPlots/SciQLopGraphResampler.hpp"
 
+void SciQLopGraph::create_graphs(const QStringList& labels)
+{
+    if (_resampler)
+        clear_graphs();
+    for (const auto& label : labels)
+    {
+        _graphs.append(_plot()->addGraph(_keyAxis, _valueAxis));
+        _graphs.back()->setName(label);
+        _graphs.back()->setAdaptiveSampling(true);
+    }
+    _resampler = new GraphResampler(_dataOrder, std::size(labels));
+    connect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData,
+        Qt::QueuedConnection);
+    connect(
+        this->_resampler, &GraphResampler::refreshPlot, this,
+        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
+}
+
 void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {
     const auto data_x_range = this->_resampler->x_range();
@@ -42,30 +60,37 @@ void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 }
 
 SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-    QStringList labels, DataOrder dataOrder)
-        : QObject(parent)
-        , _resampler { new GraphResampler(dataOrder, std::size(labels)) }
-        , _keyAxis { keyAxis }
-        , _valueAxis { valueAxis }
-        , _dataOrder { dataOrder }
+    const QStringList& labels, DataOrder dataOrder)
+        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
 {
-    this->_create_graphs(labels);
+    this->create_graphs(labels);
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
-    connect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData,
-        Qt::QueuedConnection);
-    connect(
-        this->_resampler, &GraphResampler::refreshPlot, this,
-        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
 }
 
-SciQLopGraph::~SciQLopGraph()
+void SciQLopGraph::clear_graphs()
 {
     for (auto graph : _graphs)
     {
         this->_plot()->removeGraph(graph);
     }
     delete this->_resampler;
+    this->_graphs.clear();
+    this->_resampler = nullptr;
+}
+
+
+SciQLopGraph::SciQLopGraph(
+    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, DataOrder dataOrder)
+        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+{
+    connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
+}
+
+SciQLopGraph::~SciQLopGraph()
+{
+    this->clear_graphs();
 }
 
 void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange)

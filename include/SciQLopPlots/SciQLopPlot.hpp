@@ -60,6 +60,14 @@ public:
         auto sg = new SciQLopGraph(this, x, y, labels, dataOrder);
         return sg;
     }
+
+    inline SciQLopGraph* addSciQLopGraph(
+        QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+    {
+        auto sg = new SciQLopGraph(this, x, y, dataOrder);
+        return sg;
+    }
+
     inline SciQLopColorMap* addSciQLopColorMap(QCPAxis* x, QCPAxis* y, const QString& name,
         SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst)
     {

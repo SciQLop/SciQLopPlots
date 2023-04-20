@@ -83,6 +83,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="addSciQLopGraph(QCPAxis*, QCPAxis*, SciQLopGraph::DataOrder)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="addSciQLopColorMap(QCPAxis*, QCPAxis*, const QString&amp;, SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>

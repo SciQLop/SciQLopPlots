@@ -27,23 +27,15 @@
 struct GraphResampler;
 class SciQLopGraph : public QObject
 {
-    GraphResampler* _resampler;
+    GraphResampler* _resampler = nullptr;
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
     QList<QCPGraph*> _graphs;
-    Q_OBJECT
-    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-    inline void _create_graphs(QStringList labels)
-    {
-        for (const auto& label : labels)
-        {
-            _graphs.append(_plot()->addGraph(_keyAxis, _valueAxis));
-            _graphs.back()->setName(label);
-            _graphs.back()->setAdaptiveSampling(true);
-        }
-    }
+    Q_OBJECT
+
+    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
@@ -51,6 +43,8 @@ class SciQLopGraph : public QObject
     void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
 
     Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
+
+    void clear_graphs();
 
 public:
     enum class DataOrder
@@ -60,11 +54,18 @@ public:
     };
     Q_ENUMS(FractionStyle)
     explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        QStringList labels, DataOrder dataOrder = DataOrder::xFirst);
+        const QStringList& labels, DataOrder dataOrder = DataOrder::xFirst);
+
+    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+        DataOrder dataOrder = DataOrder::xFirst);
+
     virtual ~SciQLopGraph() override;
 
     void setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange = false);
     inline QCPGraph* graphAt(std::size_t index) const { return _graphs[index]; }
+    void create_graphs(const QStringList& labels);
+
+    inline std::size_t line_count() { return std::size(this->_graphs); }
 
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
 
