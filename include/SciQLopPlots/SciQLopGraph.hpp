@@ -22,12 +22,14 @@
 #pragma once
 
 #include "numpy_wrappers.hpp"
-#include <QMutex>
 #include <qcustomplot.h>
 struct GraphResampler;
+class QThread;
+
 class SciQLopGraph : public QObject
 {
     GraphResampler* _resampler = nullptr;
+    QThread* _resampler_thread = nullptr;
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
@@ -44,7 +46,10 @@ class SciQLopGraph : public QObject
 
     Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
 
-    void clear_graphs();
+    void clear_graphs(bool graph_already_removed = false);
+    void clear_resampler();
+    void create_resampler(const QStringList &labels);
+    void graph_got_removed_from_plot(QCPGraph* graph);
 
 public:
     enum class DataOrder

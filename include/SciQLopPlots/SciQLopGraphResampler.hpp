@@ -24,7 +24,6 @@
 #include "SciQLopGraph.hpp"
 #include "numpy_wrappers.hpp"
 #include <QMutex>
-#include <QThread>
 #include <qcustomplot.h>
 
 
@@ -74,10 +73,10 @@ static inline QVector<QCPGraphData> copy_data(
 }
 
 
-struct GraphResampler : public QThread
+struct GraphResampler : public QObject
 {
     Q_OBJECT
-    QMutex _data_swap_mutex;
+    QMutex _mutex;
     NpArray_view _x;
     NpArray_view _y;
     SciQLopGraph::DataOrder _dataOrder;
@@ -87,7 +86,7 @@ struct GraphResampler : public QThread
     Q_SIGNAL void _resample_sig(const QCPRange& newRange);
     inline void _resample_slot(const QCPRange& newRange)
     {
-        QMutexLocker locker(&_data_swap_mutex);
+        QMutexLocker locker(&_mutex);
         if (_x.data() != nullptr && _x.flat_size() > 0)
         {
             const auto start_x
@@ -116,8 +115,8 @@ struct GraphResampler : public QThread
                             line_index, copy_data(start_x, start_y, x_window_size, y_incr));
                     }
                 }
-                emit this->refreshPlot();
             }
+            emit this->refreshPlot();
         }
     }
 
@@ -126,36 +125,46 @@ public:
     Q_SIGNAL void refreshPlot();
 
     GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
-            : QThread(), _dataOrder { dataOrder }, _line_cnt { line_cnt }
+            : _dataOrder { dataOrder }, _line_cnt { line_cnt }
     {
-        this->moveToThread(this);
-        this->start();
+
         connect(this, &GraphResampler::_resample_sig, this, &GraphResampler::_resample_slot,
             Qt::QueuedConnection);
     }
 
     inline void resample(const QCPRange& newRange) { emit this->_resample_sig(newRange); }
 
-    inline QCPRange x_range() const { return this->_data_x_range; }
+    inline QCPRange x_range()
+    {
+        QMutexLocker locker(&_mutex);
+        return this->_data_x_range;
+    }
+
+    inline void set_line_count(std::size_t line_cnt)
+    {
+        QMutexLocker locker(&_mutex);
+        this->_line_cnt = line_cnt;
+    }
 
     inline void setData(NpArray_view&& x, NpArray_view&& y)
     {
-
         {
-            QMutexLocker locker(&_data_swap_mutex);
+            QMutexLocker locker(&_mutex);
+
             _x = std::move(x);
             _y = std::move(y);
-        }
-        const auto len = _x.flat_size();
-        if (len > 0)
-        {
-            _data_x_range.lower = _x.data()[0];
-            _data_x_range.upper = _x.data()[len - 1];
-        }
-        else
-        {
-            _data_x_range.lower = std::nan("");
-            _data_x_range.upper = std::nan("");
+
+            const auto len = _x.flat_size();
+            if (len > 0)
+            {
+                _data_x_range.lower = _x.data()[0];
+                _data_x_range.upper = _x.data()[len - 1];
+            }
+            else
+            {
+                _data_x_range.lower = std::nan("");
+                _data_x_range.upper = std::nan("");
+            }
         }
         this->resample(_data_x_range);
     }

@@ -24,20 +24,18 @@
 
 void SciQLopGraph::create_graphs(const QStringList& labels)
 {
-    if (_resampler)
+    if (std::size(_graphs))
         clear_graphs();
     for (const auto& label : labels)
     {
-        _graphs.append(_plot()->addGraph(_keyAxis, _valueAxis));
-        _graphs.back()->setName(label);
-        _graphs.back()->setAdaptiveSampling(true);
+        const auto graph = _plot()->addGraph(_keyAxis, _valueAxis);
+        _graphs.append(graph);
+        graph->setName(label);
+        graph->setAdaptiveSampling(true);
+        connect(graph, &QCPGraph::destroyed, this,
+            [this, graph]() { this->graph_got_removed_from_plot(graph); });
     }
-    _resampler = new GraphResampler(_dataOrder, std::size(labels));
-    connect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData,
-        Qt::QueuedConnection);
-    connect(
-        this->_resampler, &GraphResampler::refreshPlot, this,
-        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
+    _resampler->set_line_count(std::size(_graphs));
 }
 
 void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
@@ -56,27 +54,61 @@ void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldR
 
 void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 {
-    _graphs[index]->data()->set(data, true);
+    if (index < std::size(_graphs))
+        _graphs[index]->data()->set(data, true);
 }
 
 SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QStringList& labels, DataOrder dataOrder)
         : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
 {
+
+    create_resampler(labels);
     this->create_graphs(labels);
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
 }
 
-void SciQLopGraph::clear_graphs()
+void SciQLopGraph::clear_graphs(bool graph_already_removed)
 {
-    for (auto graph : _graphs)
+    if (!graph_already_removed)
     {
-        this->_plot()->removeGraph(graph);
+        for (auto graph : _graphs)
+        {
+            this->_plot()->removeGraph(graph);
+        }
     }
-    delete this->_resampler;
     this->_graphs.clear();
+}
+
+void SciQLopGraph::clear_resampler()
+{
+    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
+    disconnect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData);
+    disconnect(this->_resampler, &GraphResampler::refreshPlot, nullptr, nullptr);
+    this->_resampler_thread->quit();
+    this->_resampler_thread->wait();
+    delete this->_resampler_thread;
     this->_resampler = nullptr;
+    this->_resampler_thread = nullptr;
+}
+
+void SciQLopGraph::create_resampler(const QStringList& labels)
+{
+    this->_resampler = new GraphResampler(_dataOrder, std::size(labels));
+    this->_resampler_thread = new QThread();
+    this->_resampler->moveToThread(this->_resampler_thread);
+    this->_resampler_thread->start(QThread::LowPriority);
+    connect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData,
+        Qt::QueuedConnection);
+    connect(
+        this->_resampler, &GraphResampler::refreshPlot, this,
+        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
+}
+
+void SciQLopGraph::graph_got_removed_from_plot(QCPGraph* graph)
+{
+    this->_graphs.removeOne(graph);
 }
 
 
@@ -84,13 +116,15 @@ SciQLopGraph::SciQLopGraph(
     QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, DataOrder dataOrder)
         : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
 {
+    create_resampler({});
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
 }
 
 SciQLopGraph::~SciQLopGraph()
 {
-    this->clear_graphs();
+    clear_graphs();
+    clear_resampler();
 }
 
 void SciQLopGraph::setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange)
