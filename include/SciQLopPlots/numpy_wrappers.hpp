@@ -41,10 +41,17 @@ struct PyObjectWrapper
 {
 private:
     PyObject* _py_obj = nullptr;
-    void inc_refcount() { Py_XINCREF(_py_obj); }
+    void inc_refcount()
+    {
+        PyGILState_STATE state = PyGILState_Ensure();
+        Py_XINCREF(_py_obj);
+        PyGILState_Release(state);
+    }
     void dec_refcount()
     {
+        PyGILState_STATE state = PyGILState_Ensure();
         Py_XDECREF(_py_obj);
+        PyGILState_Release(state);
         _py_obj = nullptr;
     }
 
@@ -135,6 +142,10 @@ public:
     inline auto begin() noexcept { return data(); }
 
     inline auto end() noexcept { return data() + flat_size(); }
+
+    inline const auto begin() const noexcept { return data(); }
+
+    inline const auto end() const noexcept { return data() + flat_size(); }
 
     inline const auto cbegin() const noexcept { return data(); }
 

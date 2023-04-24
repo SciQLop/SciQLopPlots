@@ -20,53 +20,16 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopColorMap.hpp"
+
+#include "SciQLopPlots/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 void SciQLopColorMap::_range_changed(const QCPRange& newRange, const QCPRange& oldRange) { }
 
-void SciQLopColorMap::_setDataLinear()
-{
-    if (std::size(_x) && std::size(_y) && std::size(_z))
-    {
-        using namespace cpp_utils;
-        auto data = new QCPColorMapData(std::size(_x), std::size(_y),
-            { *containers::min(_x), *containers::max(_x) },
-            { *containers::min(_y), *containers::max(_y) });
-        auto it = std::cbegin(_z);
-        for (const auto i : _x)
-        {
-            for (const auto j : _y)
-            {
-                if (it != std::cend(_z))
-                {
-                    data->setData(i, j, *it);
-                    it++;
-                }
-            }
-        }
-        this->_cmap->setData(data, false);
-    }
-}
 
-void SciQLopColorMap::_setDataLog()
+void SciQLopColorMap::_cmap_got_destroyed()
 {
-    using namespace cpp_utils;
-    auto data = new QCPColorMapData(std::size(_x), std::size(_y),
-        { *containers::min(_x), *containers::max(_x) },
-        { *containers::min(_y), *containers::max(_y) });
-    auto it = std::cbegin(_z);
-    for (auto i = 0UL; i < std::size(_x); i++)
-    {
-        for (auto j = 0UL; j < std::size(_y); j++)
-        {
-            if (it != std::cend(_z))
-            {
-                data->setCell(i, j, *it);
-                it++;
-            }
-        }
-    }
-    this->_cmap->setData(data, false);
+    this->_cmap = nullptr;
 }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
@@ -77,36 +40,42 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
     this->_cmap->setName(name);
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopColorMap::_range_changed));
+    connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
+
+    this->_resampler = new ColormapResampler(_valueAxis->scaleType());
+    this->_resampler_thread = new QThread();
+    this->_resampler->moveToThread(this->_resampler_thread);
+    this->_resampler_thread->start(QThread::LowPriority);
+    connect(
+        this->_resampler, &ColormapResampler::refreshPlot, this,
+        [this](QCPColorMapData* data)
+        {
+            this->colorMap()->setData(data, false);
+            this->_plot()->replot(QCustomPlot::rpQueuedReplot);
+        },
+        Qt::QueuedConnection);
 }
 
 SciQLopColorMap::~SciQLopColorMap()
 {
-    this->_plot()->removePlottable(this->colorMap());
+    if (this->_cmap)
+        this->_plot()->removePlottable(this->colorMap());
+
+    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
+    disconnect(this->_resampler, &ColormapResampler::refreshPlot, nullptr, nullptr);
+    this->_resampler_thread->quit();
+    this->_resampler_thread->wait();
+    delete this->_resampler_thread;
+    this->_resampler = nullptr;
+    this->_resampler_thread = nullptr;
 }
 
 void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z)
 {
+    if (this->_cmap)
     {
-        QMutexLocker locker(&_data_swap_mutex);
-        _x = std::move(x);
-        _y = std::move(y);
-        _z = std::move(z);
-
-        if (std::size(_x) && std::size(_y) && std::size(_z))
-        {
-            if (this->_cmap->valueAxis()->scaleType() == QCPAxis::stLinear)
-            {
-                this->_setDataLinear();
-            }
-            else
-            {
-                this->_setDataLog();
-            }
-        }
-        else
-        {
-            this->_cmap->setData(new QCPColorMapData(0, 0, { 0., 0. }, { 0., 0. }), false);
-        }
+        this->_resampler->setData(
+            std::move(x), std::move(y), std::move(z), _valueAxis->scaleType());
     }
     this->_plot()->replot(QCustomPlot::rpQueuedReplot);
 }

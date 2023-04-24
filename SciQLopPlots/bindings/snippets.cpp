@@ -43,7 +43,9 @@ PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](b));
 // @snippet SciQLopGraph-setData
 
 // @snippet SciQLopColorMap-setData
+Py_BEGIN_ALLOW_THREADS
 %CPPSELF.setData(NpArray_view{pyArgs[0]}, NpArray_view{pyArgs[1]}, NpArray_view{pyArgs[2]});
+Py_END_ALLOW_THREADS
 // @snippet SciQLopColorMap-setData
 
 // @snippet QCPAxis-setTicker

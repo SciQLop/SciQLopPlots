@@ -25,11 +25,14 @@
 #include <QMutex>
 #include <qcustomplot.h>
 
+struct ColormapResampler;
+class QThread;
+
 class SciQLopColorMap : public QObject
 {
-    NpArray_view _x;
-    NpArray_view _y;
-    NpArray_view _z;
+    ColormapResampler* _resampler = nullptr;
+    QThread* _resampler_thread = nullptr;
+
     QCPRange _data_x_range;
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
@@ -41,8 +44,7 @@ class SciQLopColorMap : public QObject
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
     void _resample(const QCPRange& newRange);
-    void _setDataLinear();
-    void _setDataLog();
+    void _cmap_got_destroyed();
 
 public:
     enum class DataOrder
@@ -51,8 +53,8 @@ public:
         yFirst
     };
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,const QString& name,
-        DataOrder dataOrder = DataOrder::xFirst);
+    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+        const QString& name, DataOrder dataOrder = DataOrder::xFirst);
     virtual ~SciQLopColorMap() override;
 
     void setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z);
