@@ -25,7 +25,7 @@ jobs:
             echo "$GITHUB_WORKSPACE/Qt/6.4.3/macos/bin" >> $GITHUB_PATH
       - run: |
           brew install rename
-          pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "aqtinstall"
+          pip install --upgrade "meson" "ninja" "numpy" "meson-python==0.12.1" "build" "wheel" "twine" "aqtinstall"
           pip install "PySide6==6.4.3"
           pip install \
               --index-url=http://download.qt.io/official_releases/QtForPython/ \

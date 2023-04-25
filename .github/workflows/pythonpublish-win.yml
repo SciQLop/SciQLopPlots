@@ -32,7 +32,7 @@ jobs:
         env:
           CLANG_INSTALL_DIR: C:\Program Files\LLVM\
         run: |
-          pip install --upgrade "meson" "ninja" "numpy" "meson-python" "build" "wheel" "twine" "auditwheel" "aqtinstall"
+          pip install --upgrade "meson" "ninja" "numpy" "meson-python==0.12.1" "build" "wheel" "twine" "auditwheel" "aqtinstall"
           pip install "PySide6==6.4.3"
           pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==6.4.3"
           aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.4.3 win64_mingw
