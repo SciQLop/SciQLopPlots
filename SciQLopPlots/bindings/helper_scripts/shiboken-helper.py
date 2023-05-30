@@ -1,6 +1,6 @@
 #!/bin/env python3
 
-import os
+import os, sys
 import platform
 import importlib
 import importlib.machinery
@@ -34,6 +34,8 @@ build_dir = args.build_dir
 
 if platform.system().lower() == 'darwin':
     ext_sufix = re.escape('.dylib')
+elif platform.system().lower() == 'windows':
+    ext_sufix = re.escape('.lib')
 else:
     ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
 
@@ -50,7 +52,7 @@ def find_lib(name, search_folders):
             files=os.listdir(folder)
             found = list(filter(name_regex.match, files))
             if len(found):
-                return f'{folder}/{found[0]}'
+                return f'{folder}{os.path.sep}{found[0]}'
 
 def make_link_flag(lib_path):
     basename = os.path.basename(lib_path)
@@ -64,16 +66,19 @@ def make_link_flags(libs_paths):
         link_flag="-Wl,-rpath="
     else:
         link_flag="-L"
-    folders = list(set(list(map(lambda l: f"{link_flag}{os.path.relpath(os.path.dirname(l), build_dir)}",libs_paths))))
+    if platform.system().lower() == 'windows':
+        folders = list(set(list(map(lambda l: f"{link_flag}{os.path.dirname(l)}",libs_paths))))
+    else:
+        folders = list(set(list(map(lambda l: f"{link_flag}{os.path.relpath(os.path.dirname(l), build_dir)}",libs_paths))))
     #libs = list(map(make_link_flag, libs_paths))
     libs = libs_paths
     return folders + libs
 
 
 if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
-    PySide_inc = first_existing_path([f'{PySide_mod_path}/include',f'/usr/include/PySide{pyside_ver}'])
-    PySide_typesys = first_existing_path([f'{PySide_mod_path}/typesystems','/usr/share/PySide{pyside_ver}/typesystems'])
-    shiboken_includes = first_existing_path([f'{shiboken_mod_path}/include',f'{shiboken_generator_mod_path}/include',f'/usr/include/shiboken{pyside_ver}'])
+    PySide_inc = first_existing_path([f'{PySide_mod_path}{os.path.sep}include',f'/usr/include/PySide{pyside_ver}'])
+    PySide_typesys = first_existing_path([f'{PySide_mod_path}{os.path.sep}typesystems','/usr/share/PySide{pyside_ver}/typesystems'])
+    shiboken_includes = first_existing_path([f'{shiboken_mod_path}{os.path.sep}include',f'{shiboken_generator_mod_path}{os.path.sep}include',f'/usr/include/shiboken{pyside_ver}'])
     
     if args.typesystem:
         print(PySide_typesys)
@@ -81,16 +86,18 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
     modules = args.modules.split(',')
 
     if args.libs:
-        main_lib = [find_lib(f'libshiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
-        main_lib += [find_lib(f'lib[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
-        if platform.system().lower() == 'darwin':
+        main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
+        main_lib += [find_lib(f'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+        if platform.system().lower() == 'windows':
+            main_lib += [find_lib('python3.lib', [f'{os.path.dirname(sys.executable)}{os.path.sep}libs'])]
+        if platform.system().lower() == 'darwin' or platform.system().lower() == 'windows':
             modules_libs = []
         else:
             modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
         print(" ".join(make_link_flags(main_lib + modules_libs)))
 
     if args.includes:
-        modules_incs = [f"-I{PySide_inc}/{module}" for module in modules]
+        modules_incs = [f"-I{PySide_inc}{os.path.sep}{module}" for module in modules]
         print(" ".join([f"-I{PySide_inc} -I{shiboken_includes}"]+ modules_incs))
     
     

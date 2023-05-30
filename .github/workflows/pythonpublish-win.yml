@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       max-parallel: 4
       matrix:
@@ -15,29 +15,86 @@ jobs:
     name: Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
-          platform: x64
       - name: add qt dir to path
         run: |
-          echo "C:\Program Files\LLVM\bin;${{github.workspace}}\Qt\6.4.3\mingw_64\bin;C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "${{github.workspace}}\Qt\6.4.3\msvc2019_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Set python interpreter
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64 
-      - name: Install deps and build package
-        env:
-          CLANG_INSTALL_DIR: C:\Program Files\LLVM\
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+      - name: Install deps
         run: |
           pip install --upgrade "meson" "ninja" "numpy" "meson-python==0.12.1" "build" "wheel" "twine" "auditwheel" "aqtinstall"
           pip install "PySide6==6.4.3"
           pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==6.4.3"
-          aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.4.3 win64_mingw
-          python3 -m build --no-isolation  .
+          aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop 6.4.3 win64_msvc2019_64
+      - name: test
+        run: |
+          import os
+          import platform
+          import importlib
+          import importlib.machinery
+          import argparse
+          from glob import glob, escape
+          import re
+          import platform
 
+          pyside_ver = 6
+
+          shiboken_generator = importlib.import_module(f'shiboken{pyside_ver}_generator')
+          shiboken = importlib.import_module(f'shiboken{pyside_ver}')
+          PySide = importlib.import_module(f'PySide{pyside_ver}')
+
+          PySide_mod_path = PySide.__path__[0]
+          shiboken_generator_mod_path = shiboken_generator.__path__[0]
+          shiboken_mod_path = shiboken.__path__[0]
+
+          build_dir = os.path.realpath(os.curdir)
+
+          if platform.system().lower() == 'darwin':
+              ext_sufix = re.escape('.dylib')
+          elif platform.system().lower() == 'windows':
+              ext_sufix = re.escape('.lib')
+          else:
+              ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
+
+          def find_lib(name, search_folders):
+              name_regex = re.compile(name)
+              for folder in search_folders:
+                  if os.path.exists(folder):
+                      files=os.listdir(folder)
+                      found = list(filter(name_regex.match, files))
+                      if len(found):
+                          return f'{folder}{os.path.sep}{found[0]}'
+
+          def make_link_flags(libs_paths):
+              if platform.system().lower() == 'linux':
+                  link_flag="-Wl,-rpath="
+              else:
+                  link_flag="-L"
+              if platform.system().lower() == 'windows':
+                  folders = list(set(list(map(lambda l: f"{link_flag}{os.path.dirname(l)}",libs_paths))))
+              else:
+                  folders = list(set(list(map(lambda l: f"{link_flag}{os.path.relpath(os.path.dirname(l), build_dir)}",libs_paths))))
+              #libs = list(map(make_link_flag, libs_paths))
+              libs = libs_paths
+              return folders + libs
+
+          print(PySide_mod_path)
+
+          main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
+          main_lib += [find_lib(f'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+          print(" ".join(make_link_flags(main_lib)))
+
+
+        shell: python
+      - name: Build package
+        run: |
+          python3 -m build --wheel --no-isolation  .
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3
         with:

@@ -33,7 +33,7 @@ jobs:
                 --trusted-host download.qt.io \
                 "shiboken6_generator==6.4.3"
             aqt install-qt -O /Qt linux desktop 6.4.3
-            LD_LIBRARY_PATH=/Qt/6.4.3/gcc_64/lib python3 -m build --no-isolation  .
+            LD_LIBRARY_PATH=/Qt/6.4.3/gcc_64/lib python3 -m build --wheel --no-isolation  .
             rename 'linux_x86_64' 'manylinux_2_28_x86_64' dist/*.whl
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3

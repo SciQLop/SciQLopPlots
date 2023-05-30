@@ -31,7 +31,7 @@ jobs:
               --index-url=http://download.qt.io/official_releases/QtForPython/ \
               --trusted-host download.qt.io "shiboken6_generator==6.4.3"
           aqt install-qt -O $GITHUB_WORKSPACE/Qt mac desktop 6.4.3
-          python3 -m build --no-isolation .
+          python3 -m build --wheel --no-isolation .
           #rename 's/macosx_10_15_[0-9]_x86_64/macosx_10_15_x86_64/g' dist/*.whl
       - name: Save packages as artifacts
         uses: actions/upload-artifact@v3

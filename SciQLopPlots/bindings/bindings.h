@@ -1,14 +1,15 @@
 #ifndef SCIQLOPPLOTS_BINDINGS_H
 #define SCIQLOPPLOTS_BINDINGS_H
-#define QT_ANNOTATE_ACCESS_SPECIFIER(a) __attribute__((annotate(#a)))
-#include <memory>
+#define _CRT_USE_BUILTIN_OFFSETOF
+// #define QT_ANNOTATE_ACCESS_SPECIFIER(a) __attribute__((annotate(#a)))
+// #include <memory>
 #include "SciQLopPlots/numpy_wrappers.hpp"
 
-#include <qcustomplot.h>
-#include <SciQLopPlots/SciQLopGraph.hpp>
-#include <SciQLopPlots/SciQLopColorMap.hpp>
-#include <SciQLopPlots/SciQLopVerticalSpan.hpp>
-#include <SciQLopPlots/SciQLopPlot.hpp>
 #include "_QCustomPlot.hpp"
+#include <SciQLopPlots/SciQLopColorMap.hpp>
+#include <SciQLopPlots/SciQLopGraph.hpp>
+#include <SciQLopPlots/SciQLopPlot.hpp>
+#include <SciQLopPlots/SciQLopVerticalSpan.hpp>
+#include <qcustomplot.h>
 
 #endif // SCIQLOPPLOTS_BINDINGS_H

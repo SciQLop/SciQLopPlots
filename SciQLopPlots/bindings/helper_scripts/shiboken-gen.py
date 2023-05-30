@@ -35,7 +35,9 @@ shiboken_constant_args=['--generator-set=shiboken',
     '--use-isnull-as-nb_nonzero',
     '--avoid-protected-hack',
     '--enable-pyside-extensions',
-    '-std=c++17']
+    '--debug-level=full',
+    '-std=c++17',
+    '--generator-set=shiboken']
 
 if os.path.exists('/opt/rh/gcc-toolset-11/root/usr/include/c++/11'):
     shiboken_constant_args += [
@@ -43,14 +45,10 @@ if os.path.exists('/opt/rh/gcc-toolset-11/root/usr/include/c++/11'):
         '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11/x86_64-redhat-linux'
     ]
 
+cmd = [args.shiboken, args.input_header, args.input_xml ] + shiboken_constant_args + cpp_flags(args.build_directory, args.ref_build_target) + [ f'--typesystem-paths={args.typesystem_paths}', f'--output-directory={args.output_directory}']
+
 subprocess.run(
-    [args.shiboken, args.input_header, args.input_xml ] +
-    shiboken_constant_args +
-    cpp_flags(args.build_directory, args.ref_build_target) +
-    [
-    f'--typesystem-paths={args.typesystem_paths}',
-    f'--output-directory={args.output_directory}'
-    ],
+    cmd,
     check=True
 )
 

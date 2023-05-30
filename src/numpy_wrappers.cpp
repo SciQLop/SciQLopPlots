@@ -56,6 +56,9 @@ inline int init_numpy()
 {
     DISABLE_WARNING_PUSH
     DISABLE_WARNING_CONVERSION_NULL
+#ifndef _WIN32
+    Py_Initialize();
+#endif
     import_array(); // PyError if not successful
     if (PyErr_Occurred())
     {

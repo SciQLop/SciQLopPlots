@@ -3,7 +3,7 @@ qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSuppor
 
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=false'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
-
+gl_dep = dependency('gl')
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
@@ -85,8 +85,8 @@ sources = moc_files \
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep],
-        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep],
+        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL', '-DPy_LIMITED_API=0x03070000'],
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,

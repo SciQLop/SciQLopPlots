@@ -18,5 +18,7 @@ foreach example:examples
     sources += example['source']
 endforeach
 
-library('SimplePlot_fake',[],
-        extra_files:sources)
+if target_machine.system() != 'windows'
+    library('SimplePlot_fake',[],
+            extra_files:sources)
+endif
