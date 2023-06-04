@@ -3,6 +3,9 @@
     <system-include file-name="memory"/>
     <rejection class="std" function-name="^[a-z_]+$"/>
     <system-include file-name="memory"/>
+    <extra-includes>
+        <include file-name="numpy/arrayobject.h" location="global"/>
+    </extra-includes>
     <system-include file-name="shared_ptr.h"/>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
@@ -10,6 +13,7 @@
     <primitive-type name="std::string"/>
     <primitive-type name="std::size_t"/>
     <primitive-type name="long"/>
+    <inject-code file="snippets.cpp" snippet="init-numpy" position="beginning"/>
 
     <rejection class="^QCP[a-zA-Z]+$" field-name="^m[a-zA-Z]+$" />
     <rejection class="*" function-name="interface1D" />

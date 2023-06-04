@@ -1,3 +1,8 @@
+// @snippet init-numpy
+auto import = []() { return _import_array(); };
+auto r = import();
+// @snippet init-numpy
+
 // @snippet QCPGraph-setData
 NpArray_view x{pyArgs[0]};
 NpArray_view y{pyArgs[1]};

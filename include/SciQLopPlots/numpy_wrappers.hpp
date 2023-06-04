@@ -20,10 +20,16 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+/*#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#ifdef NO_NO_IMPORT_ARRAY
+#else
+#define NO_IMPORT_ARRAY
+#endif
+#define PY_ARRAY_UNIQUE_SYMBOL SCIQLOPPLOTSBINDINGS_ARRAY_API*/
+
 extern "C"
 {
 #include <Python.h>
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 }
 #include <algorithm>

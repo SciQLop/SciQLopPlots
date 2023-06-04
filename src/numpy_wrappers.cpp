@@ -19,10 +19,12 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+//#define NO_NO_IMPORT_ARRAY
 #include "SciQLopPlots/numpy_wrappers.hpp"
 
 
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+//#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
 #undef slots
@@ -52,10 +54,8 @@ extern "C"
 }
 #endif
 
-inline int init_numpy()
+/*inline int init_numpy()
 {
-    DISABLE_WARNING_PUSH
-    DISABLE_WARNING_CONVERSION_NULL
 #ifndef _WIN32
     Py_Initialize();
 #endif
@@ -65,11 +65,10 @@ inline int init_numpy()
         std::cerr << "Failed to import numpy Python module(s)." << std::endl;
         return -1; // Or some suitable return value to indicate failure.
     }
-    DISABLE_WARNING_POP
     return 0;
 }
 const static int numpy_initialized = init_numpy();
-
+*/
 bool NpArray_view::isNpArray(PyObject* obj)
 {
     auto arr = reinterpret_cast<PyArrayObject*>(obj);
