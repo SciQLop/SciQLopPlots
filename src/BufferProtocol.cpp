@@ -55,7 +55,7 @@ void Array_view::_init_buffer()
 {
     PyGILState_STATE state = PyGILState_Ensure();
     this->_is_valid
-        = PyObject_GetBuffer(this->py_object(), &this->_buffer, PyBUF_SIMPLE | PyBUF_READ) == 0;
+        = PyObject_GetBuffer(this->py_object(), &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS) == 0;
     PyGILState_Release(state);
     assert(this->_is_valid);
     if (this->_buffer.ndim > 0)
