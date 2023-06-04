@@ -70,7 +70,7 @@ SciQLopColorMap::~SciQLopColorMap()
     this->_resampler_thread = nullptr;
 }
 
-void SciQLopColorMap::setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z)
+void SciQLopColorMap::setData(Array_view&& x, Array_view&& y, Array_view&& z)
 {
     if (this->_cmap)
     {

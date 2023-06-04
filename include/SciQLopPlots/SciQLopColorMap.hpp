@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "numpy_wrappers.hpp"
+#include "BufferProtocol.hpp"
 
 #include <QMutex>
 #include <qcustomplot.h>
@@ -57,7 +57,7 @@ public:
         const QString& name, DataOrder dataOrder = DataOrder::xFirst);
     virtual ~SciQLopColorMap() override;
 
-    void setData(NpArray_view&& x, NpArray_view&& y, NpArray_view&& z);
+    void setData(Array_view&& x, Array_view&& y, Array_view&& z);
     inline QCPColorMap* colorMap() const { return _cmap; }
 
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);

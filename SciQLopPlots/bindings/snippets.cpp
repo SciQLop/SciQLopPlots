@@ -1,11 +1,7 @@
-// @snippet init-numpy
-auto import = []() { return _import_array(); };
-auto r = import();
-// @snippet init-numpy
 
 // @snippet QCPGraph-setData
-NpArray_view x{pyArgs[0]};
-NpArray_view y{pyArgs[1]};
+Array_view x{pyArgs[0]};
+Array_view y{pyArgs[1]};
 Py_BEGIN_ALLOW_THREADS
 QVector<QCPGraphData> data(x.flat_size());
 const auto x_data = x.data();
@@ -45,13 +41,13 @@ PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](b));
 
 // @snippet SciQLopGraph-setData
 Py_BEGIN_ALLOW_THREADS
-%CPPSELF.setData(NpArray_view{pyArgs[0]}, NpArray_view{pyArgs[1]});
+%CPPSELF.setData(Array_view{pyArgs[0]}, Array_view{pyArgs[1]});
 Py_END_ALLOW_THREADS
 // @snippet SciQLopGraph-setData
 
 // @snippet SciQLopColorMap-setData
 Py_BEGIN_ALLOW_THREADS
-%CPPSELF.setData(NpArray_view{pyArgs[0]}, NpArray_view{pyArgs[1]}, NpArray_view{pyArgs[2]});
+%CPPSELF.setData(Array_view{pyArgs[0]}, Array_view{pyArgs[1]}, Array_view{pyArgs[2]});
 Py_END_ALLOW_THREADS
 // @snippet SciQLopColorMap-setData
 

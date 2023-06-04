@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "numpy_wrappers.hpp"
+#include "BufferProtocol.hpp"
 #include <QMutex>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <qcustomplot.h>
@@ -32,16 +32,16 @@ struct ColormapResampler : public QObject
     Q_OBJECT
     QMutex _mutex;
     QMutex _range_mutex;
-    NpArray_view _x;
-    NpArray_view _y;
-    NpArray_view _z;
+    Array_view _x;
+    Array_view _y;
+    Array_view _z;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
     QCPAxis::ScaleType _scale_type;
     QCPColorMapData* _last_data_ptr = nullptr;
 
 
-    inline QCPColorMapData* _setDataLinear(const NpArray_view& x, const NpArray_view& y,const  NpArray_view& z)
+    inline QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y,const  Array_view& z)
     {
 
             using namespace cpp_utils;
@@ -63,7 +63,7 @@ struct ColormapResampler : public QObject
             return data;
     }
 
-    inline QCPColorMapData* _setDataLog(const NpArray_view& x, const NpArray_view& y, const NpArray_view& z)
+    inline QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z)
     {
         using namespace cpp_utils;
         auto data = new QCPColorMapData(std::size(x), std::size(y),
@@ -133,7 +133,7 @@ public:
     }
 
     inline void setData(
-        NpArray_view&& x, NpArray_view&& y, NpArray_view&& z, QCPAxis::ScaleType scale_type)
+        Array_view&& x, Array_view&& y, Array_view&& z, QCPAxis::ScaleType scale_type)
     {
         const auto len = x.flat_size();
         {

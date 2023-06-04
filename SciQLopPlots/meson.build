@@ -26,7 +26,6 @@ python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
                                                       f'shiboken@pyside_version@_generator',
                                                       'numpy'])
 python3_dep = python3.dependency(embed:false)
-numpy_inc = run_command(python3, '-c', 'import numpy;print(numpy.get_include())').stdout().strip('\n')
 
 qt_modules = ['QtCore','QtGui','QtWidgets']
 
@@ -63,10 +62,10 @@ moc_headers = [
 
 moc_sources = []
 headers = moc_headers + \
-         [project_source_root+'/include/SciQLopPlots/numpy_wrappers.hpp',
+         [project_source_root+'/include/SciQLopPlots/BufferProtocol.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp']
 
-includes = include_directories(['../include', '../qcustomplot-source', numpy_inc])
+includes = include_directories(['../include', '../qcustomplot-source'])
 
 moc_files = qtmod.preprocess(
                             moc_headers : moc_headers,
@@ -79,14 +78,15 @@ sources = moc_files \
         + shiboken_generator_out \
         + [ '../src/SciQLopPlot.cpp', '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp', '../src/SciQLopGraph.cpp',
-            '../src/SciQLopColorMap.cpp', '../src/numpy_wrappers.cpp' ,
+            '../src/SciQLopColorMap.cpp',
+            '../src/BufferProtocol.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep],
-        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL', '-DPy_LIMITED_API=0x03070000', '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION'],
+        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,

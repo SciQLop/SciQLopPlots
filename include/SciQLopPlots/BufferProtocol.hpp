@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2022, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -23,14 +23,13 @@
 /*#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #ifdef NO_NO_IMPORT_ARRAY
 #else
-#define NO_IMPORT_ARRAY
 #endif
 #define PY_ARRAY_UNIQUE_SYMBOL SCIQLOPPLOTSBINDINGS_ARRAY_API*/
+
 
 extern "C"
 {
 #include <Python.h>
-#include <numpy/arrayobject.h>
 }
 #include <algorithm>
 #include <assert.h>
@@ -88,11 +87,15 @@ public:
     inline bool is_null() const { return _py_obj == nullptr; }
 };
 
-struct NpArray_view
+struct Array_view
 {
 private:
-    PyObjectWrapper<PyArrayObject> _py_obj;
-    NpArray_view(const NpArray_view&& other) = delete;
+    PyObjectWrapper<PyObject> _py_obj;
+    Py_buffer _buffer = { 0 };
+    std::vector<Py_ssize_t> _shape;
+    bool _is_valid = false;
+    Array_view(const Array_view&& other) = delete;
+    void _init_buffer();
 
 public:
     using value_type = double;
@@ -103,23 +106,24 @@ public:
     using pointer = value_type*;
     using const_pointer = const value_type*;
 
-    static bool isNpArray(PyObject* obj);
-    NpArray_view() : _py_obj { nullptr } { }
-    NpArray_view(const NpArray_view& other) : _py_obj { other._py_obj } { }
-    NpArray_view(NpArray_view&& other) : _py_obj { other._py_obj } { }
-    explicit NpArray_view(PyObject* obj);
+    Array_view() : _py_obj { nullptr } { }
+    Array_view(const Array_view& other) : _py_obj { other._py_obj } { this->_init_buffer(); }
+    Array_view(Array_view&& other) : _py_obj { other._py_obj } { this->_init_buffer(); }
+    explicit Array_view(PyObject* obj);
 
-    ~NpArray_view() { }
+    ~Array_view();
 
-    inline NpArray_view& operator=(const NpArray_view& other)
+    inline Array_view& operator=(const Array_view& other)
     {
         this->_py_obj = other._py_obj;
+        this->_init_buffer();
         return *this;
     }
 
-    inline NpArray_view& operator=(NpArray_view&& other)
+    inline Array_view& operator=(Array_view&& other)
     {
         this->_py_obj = other._py_obj;
+        this->_init_buffer();
         return *this;
     }
 
@@ -131,9 +135,9 @@ public:
 
     inline std::size_t flat_size() const
     {
-        auto s = this->shape();
-        return std::accumulate(
-            std::cbegin(s), std::cend(s), 1, [](const auto& a, const auto& b) { return a * b; });
+        if (this->_is_valid)
+            return static_cast<std::size_t>(this->_buffer.len / this->_buffer.itemsize);
+        return 0UL;
     }
 
     double* data() const;
@@ -164,54 +168,19 @@ public:
 namespace std
 {
 
-inline auto size(const NpArray_view& v)
+inline auto size(const Array_view& v)
 {
     return v.flat_size();
 }
 
-inline auto cbegin(const NpArray_view& v)
+inline auto cbegin(const Array_view& v)
 {
     return v.cbegin();
 }
 
-inline auto cend(const NpArray_view& v)
+inline auto cend(const Array_view& v)
 {
     return v.cend();
 }
 
 }
-
-struct NpArray
-{
-    std::vector<std::size_t> shape;
-    std::vector<double> data;
-    inline static bool isNpArray(PyObject* obj) { return NpArray_view::isNpArray(obj); }
-    NpArray() = default;
-    explicit NpArray(PyObject* obj)
-    {
-        if (obj)
-        {
-            NpArray_view view { obj };
-            shape = view.shape();
-            data = view.to_std_vect();
-        }
-    }
-
-    inline std::size_t ndim() { return shape.size(); }
-
-    inline std::size_t size(std::size_t index = 0)
-    {
-        if (index < shape.size())
-            return shape[index];
-        return 0;
-    }
-
-    inline std::size_t flat_size()
-    {
-        return std::accumulate(std::cbegin(shape), std::cend(shape), 1,
-            [](const auto& a, const auto& b) { return a * b; });
-    }
-
-    // TODO maybe ;)
-    PyObject* py_object() { return nullptr; }
-};

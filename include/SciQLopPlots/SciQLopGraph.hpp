@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "numpy_wrappers.hpp"
+#include "BufferProtocol.hpp"
 #include <qcustomplot.h>
 struct GraphResampler;
 class QThread;
@@ -66,7 +66,7 @@ public:
 
     virtual ~SciQLopGraph() override;
 
-    void setData(NpArray_view&& x, NpArray_view&& y, bool ignoreCurrentRange = false);
+    void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
     inline QCPGraph* graphAt(std::size_t index) const { return _graphs[index]; }
     void create_graphs(const QStringList& labels);
 

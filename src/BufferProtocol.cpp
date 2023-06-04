@@ -19,11 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-//#define NO_NO_IMPORT_ARRAY
-#include "SciQLopPlots/numpy_wrappers.hpp"
 
-
-//#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "SciQLopPlots/BufferProtocol.hpp"
 
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
@@ -40,7 +37,7 @@ extern "C"
 #endif
 
 #include <Python.h>
-#include <numpy/arrayobject.h>
+#include <pybuffer.h>
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -50,91 +47,91 @@ extern "C"
 extern "C"
 {
 #include <Python.h>
-#include <numpy/arrayobject.h>
 }
 #endif
 
-/*inline int init_numpy()
+
+void Array_view::_init_buffer()
 {
-#ifndef _WIN32
-    Py_Initialize();
-#endif
-    import_array(); // PyError if not successful
-    if (PyErr_Occurred())
+    PyGILState_STATE state = PyGILState_Ensure();
+    this->_is_valid
+        = PyObject_GetBuffer(this->py_object(), &this->_buffer, PyBUF_SIMPLE | PyBUF_READ) == 0;
+    PyGILState_Release(state);
+    assert(this->_is_valid);
+    if (this->_buffer.ndim > 0)
     {
-        std::cerr << "Failed to import numpy Python module(s)." << std::endl;
-        return -1; // Or some suitable return value to indicate failure.
+        this->_shape.resize(this->_buffer.ndim);
+        std::copy_n(this->_buffer.shape, std::size(this->_shape), std::begin(this->_shape));
     }
-    return 0;
-}
-const static int numpy_initialized = init_numpy();
-*/
-bool NpArray_view::isNpArray(PyObject* obj)
-{
-    auto arr = reinterpret_cast<PyArrayObject*>(obj);
-    auto is_c_aray = obj && PyArray_Check(arr) && PyArray_ISCARRAY(arr);
-    return is_c_aray;
+    else
+    {
+        this->_shape.resize(1);
+        this->_shape[0] = this->_buffer.len/this->_buffer.itemsize;
+    }
 }
 
-NpArray_view::NpArray_view(PyObject* obj) : _py_obj { obj }
+Array_view::Array_view(PyObject* obj) : _py_obj { obj }
 {
-    assert(isNpArray(obj));
-    assert(PyArray_ISFLOAT(_py_obj.get()));
+    this->_init_buffer();
 }
 
-std::vector<std::size_t> NpArray_view::shape() const
+Array_view::~Array_view()
+{
+    if (this->_is_valid)
+    {
+        PyGILState_STATE state = PyGILState_Ensure();
+        PyBuffer_Release(&this->_buffer);
+        PyGILState_Release(state);
+    }
+}
+
+std::vector<std::size_t> Array_view::shape() const
 {
     std::vector<std::size_t> shape;
-    if (!_py_obj.is_null())
+    if (this->_is_valid)
     {
-        if (int ndim = PyArray_NDIM(_py_obj.get()); ndim > 0)
-        {
-            if (ndim < 10)
-            {
-                shape.resize(ndim);
-                std::copy_n(PyArray_SHAPE(_py_obj.get()), ndim, std::begin(shape));
-            }
-        }
+        shape.resize(std::size(this->_shape));
+        std::copy_n(std::cbegin(this->_shape), std::size(this->_shape), std::begin(shape));
     }
     return shape;
 }
 
-std::size_t NpArray_view::ndim()
+std::size_t Array_view::ndim()
 {
-    if (!_py_obj.is_null())
+    if (this->_is_valid)
     {
-        return static_cast<std::size_t>(PyArray_NDIM(_py_obj.get()));
+        return std::size(this->_shape);
     }
     return 0;
 }
 
-std::size_t NpArray_view::size(std::size_t index)
+std::size_t Array_view::size(std::size_t index)
 {
-    if (!_py_obj.is_null())
+    if (this->_is_valid)
     {
-        if (index < static_cast<std::size_t>(PyArray_NDIM(_py_obj.get())))
+        if (static_cast<int>(index) < this->_buffer.ndim)
         {
-            return PyArray_SHAPE(_py_obj.get())[index];
+            return this->_shape[index];
         }
     }
     return 0;
 }
 
-double* NpArray_view::data() const
+double* Array_view::data() const
 {
-    if (!_py_obj.is_null())
+    if (this->_is_valid)
     {
-        return reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()));
+        return reinterpret_cast<double*>(this->_buffer.buf);
     }
     return nullptr;
 }
 
-std::vector<double> NpArray_view::to_std_vect()
+std::vector<double> Array_view::to_std_vect()
 {
-    assert(!this->_py_obj.is_null());
+    assert(this->_is_valid);
     auto sz = flat_size();
     std::vector<double> v(sz);
-    auto d_ptr = reinterpret_cast<double*>(PyArray_DATA(_py_obj.get()));
+    auto d_ptr = this->data();
     std::copy(d_ptr, d_ptr + sz, std::begin(v));
     return v;
 }

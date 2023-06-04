@@ -1,10 +1,11 @@
-from SciQLopPlots import SciQLopPlot,QCustomPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, QCPColorGradient, QCPMarginGroup
+from PySide6 import *
 from PySide6.QtWidgets import QMainWindow, QApplication
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 import sys
 import math
 import numpy as np
 from types import SimpleNamespace
+from SciQLopPlots import SciQLopPlot,QCustomPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, QCPColorGradient, QCPMarginGroup
 
 
 class MainWindow(QMainWindow):

@@ -22,7 +22,7 @@
 #pragma once
 
 #include "SciQLopGraph.hpp"
-#include "numpy_wrappers.hpp"
+#include "BufferProtocol.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
 
@@ -77,8 +77,8 @@ struct GraphResampler : public QObject
 {
     Q_OBJECT
     QMutex _mutex;
-    NpArray_view _x;
-    NpArray_view _y;
+    Array_view _x;
+    Array_view _y;
     SciQLopGraph::DataOrder _dataOrder;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
@@ -146,7 +146,7 @@ public:
         this->_line_cnt = line_cnt;
     }
 
-    inline void setData(NpArray_view&& x, NpArray_view&& y)
+    inline void setData(Array_view&& x, Array_view&& y)
     {
         {
             QMutexLocker locker(&_mutex);
