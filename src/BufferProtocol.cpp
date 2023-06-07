@@ -57,6 +57,7 @@ void Array_view::_init_buffer()
     this->_is_valid
         = PyObject_GetBuffer(this->py_object(), &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS) == 0;
     PyGILState_Release(state);
+    //std::cout << "Array_view PyObject_GetBuffer" << std::endl;
     assert(this->_is_valid);
     if (this->_buffer.ndim > 0)
     {
@@ -79,6 +80,7 @@ Array_view::~Array_view()
 {
     if (this->_is_valid)
     {
+        //std::cout << "Array_view PyBuffer_Release" << std::endl;
         PyGILState_STATE state = PyGILState_Ensure();
         PyBuffer_Release(&this->_buffer);
         PyGILState_Release(state);
@@ -135,3 +137,7 @@ std::vector<double> Array_view::to_std_vect()
     std::copy(d_ptr, d_ptr + sz, std::begin(v));
     return v;
 }
+
+
+
+PyObjectWrapper::~PyObjectWrapper() { dec_refcount(); }

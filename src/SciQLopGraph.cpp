@@ -55,7 +55,7 @@ void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldR
 void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 {
     if (index < std::size(_graphs))
-        _graphs[index]->data()->set(data, true);
+        _graphs[index]->data()->set(std::move(data), true);
 }
 
 SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,

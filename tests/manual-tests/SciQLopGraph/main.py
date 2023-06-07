@@ -14,6 +14,17 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self.setGeometry(400, 250, 542, 390);
 
+
+    def update_data(self, *args):
+        x=np.arange(3e4)*10.
+        y=np.ones((3,len(x)))
+        y[0]=np.cos(x/60)
+        y[1]=np.cos(x/600)*1.3
+        y[2]=np.cos(x/6000)*1.7
+        self.graph.setData(x,y)
+
+
+
     def _setup_ui(self):
         plot: SciQLopPlot = SciQLopPlot(self)
         plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
@@ -25,6 +36,7 @@ class MainWindow(QMainWindow):
         y[1]=np.cos(x/600)*1.3
         y[2]=np.cos(x/6000)*1.7
         self.graph.setData(x,y)
+        self.graph.range_changed.connect(self.update_data)
 
         self.graph.graphAt(0).setPen(QPen(QColorConstants.Red))
         self.graph.graphAt(1).setPen(QPen(QColorConstants.Blue))

@@ -40,20 +40,20 @@ extern "C"
 #include <numeric>
 #include <vector>
 
-
-template <typename dest_type = PyObject>
 struct PyObjectWrapper
 {
 private:
     PyObject* _py_obj = nullptr;
-    void inc_refcount()
+    inline void inc_refcount()
     {
+        //std::cout << "PyObjectWrapper incref " << std::hex << _py_obj << std::endl;
         PyGILState_STATE state = PyGILState_Ensure();
         Py_XINCREF(_py_obj);
         PyGILState_Release(state);
     }
-    void dec_refcount()
+    inline void dec_refcount()
     {
+        //std::cout << "PyObjectWrapper decref " << std::hex << _py_obj << std::endl;
         PyGILState_STATE state = PyGILState_Ensure();
         Py_XDECREF(_py_obj);
         PyGILState_Release(state);
@@ -65,7 +65,7 @@ public:
     PyObjectWrapper(const PyObjectWrapper& other) : _py_obj { other._py_obj } { inc_refcount(); }
     PyObjectWrapper(PyObjectWrapper&& other) : _py_obj { other._py_obj } { inc_refcount(); }
     explicit PyObjectWrapper(PyObject* obj) : _py_obj { obj } { inc_refcount(); }
-    ~PyObjectWrapper() { dec_refcount(); }
+    ~PyObjectWrapper();
     PyObjectWrapper& operator=(PyObjectWrapper&& other)
     {
         dec_refcount();
@@ -81,16 +81,14 @@ public:
         return *this;
     }
 
-    PyObject* py_object() { return _py_obj; }
-    inline dest_type* get() { return reinterpret_cast<dest_type*>(_py_obj); }
-    inline dest_type* get() const { return reinterpret_cast<dest_type*>(_py_obj); }
+    inline PyObject* py_object() { return _py_obj; }
     inline bool is_null() const { return _py_obj == nullptr; }
 };
 
 struct Array_view
 {
 private:
-    PyObjectWrapper<PyObject> _py_obj;
+    PyObjectWrapper _py_obj;
     Py_buffer _buffer = { 0 };
     std::vector<Py_ssize_t> _shape;
     bool _is_valid = false;
@@ -108,7 +106,7 @@ public:
 
     Array_view() : _py_obj { nullptr } { }
     Array_view(const Array_view& other) : _py_obj { other._py_obj } { this->_init_buffer(); }
-    Array_view(Array_view&& other) : _py_obj { other._py_obj } { this->_init_buffer(); }
+    Array_view(Array_view&& other) : _py_obj { std::move(other._py_obj) } { this->_init_buffer(); }
     explicit Array_view(PyObject* obj);
 
     ~Array_view();

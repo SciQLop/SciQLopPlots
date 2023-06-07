@@ -43,12 +43,17 @@ PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](b));
 Py_BEGIN_ALLOW_THREADS
 %CPPSELF.setData(Array_view{pyArgs[0]}, Array_view{pyArgs[1]});
 Py_END_ALLOW_THREADS
+Py_XDECREF(pyArgs[0]);
+Py_XDECREF(pyArgs[1]);
 // @snippet SciQLopGraph-setData
 
 // @snippet SciQLopColorMap-setData
 Py_BEGIN_ALLOW_THREADS
 %CPPSELF.setData(Array_view{pyArgs[0]}, Array_view{pyArgs[1]}, Array_view{pyArgs[2]});
 Py_END_ALLOW_THREADS
+Py_XDECREF(pyArgs[0]);
+Py_XDECREF(pyArgs[1]);
+Py_XDECREF(pyArgs[2]);
 // @snippet SciQLopColorMap-setData
 
 // @snippet QCPAxis-setTicker
