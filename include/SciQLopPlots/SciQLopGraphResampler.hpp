@@ -21,8 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopGraph.hpp"
 #include "BufferProtocol.hpp"
+#include "SciQLopGraph.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
 
@@ -76,17 +76,18 @@ static inline QVector<QCPGraphData> copy_data(
 struct GraphResampler : public QObject
 {
     Q_OBJECT
-    QMutex _mutex;
+    QMutex _data_mutex;
+    QMutex _range_mutex;
     Array_view _x;
     Array_view _y;
     SciQLopGraph::DataOrder _dataOrder;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
 
-    Q_SIGNAL void _resample_sig(const QCPRange& newRange);
-    inline void _resample_slot(const QCPRange& newRange)
+    Q_SIGNAL void _resample_sig(const QCPRange newRange);
+    inline void _resample_slot(const QCPRange newRange)
     {
-        QMutexLocker locker(&_mutex);
+        QMutexLocker locker(&_data_mutex);
         if (_x.data() != nullptr && _x.flat_size() > 0)
         {
             const auto start_x
@@ -116,8 +117,10 @@ struct GraphResampler : public QObject
                     }
                 }
             }
-            emit this->refreshPlot();
+            _x.release();
+            _y.release();
         }
+        emit this->refreshPlot();
     }
 
 public:
@@ -132,24 +135,25 @@ public:
             Qt::QueuedConnection);
     }
 
-    inline void resample(const QCPRange& newRange) { emit this->_resample_sig(newRange); }
+    inline void resample(const QCPRange newRange) { emit this->_resample_sig(newRange); }
 
     inline QCPRange x_range()
     {
-        QMutexLocker locker(&_mutex);
-        return this->_data_x_range;
+        QMutexLocker locker(&_range_mutex);
+        auto rng = this->_data_x_range;
+        return rng;
     }
 
     inline void set_line_count(std::size_t line_cnt)
     {
-        QMutexLocker locker(&_mutex);
+        QMutexLocker locker(&_data_mutex);
         this->_line_cnt = line_cnt;
     }
 
     inline void setData(Array_view&& x, Array_view&& y)
     {
         {
-            QMutexLocker locker(&_mutex);
+            QMutexLocker locker(&_data_mutex);
 
             _x = std::move(x);
             _y = std::move(y);
@@ -165,7 +169,7 @@ public:
                 _data_x_range.lower = std::nan("");
                 _data_x_range.upper = std::nan("");
             }
+            this->resample(_data_x_range);
         }
-        this->resample(_data_x_range);
     }
 };

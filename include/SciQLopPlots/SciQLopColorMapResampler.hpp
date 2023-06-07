@@ -105,7 +105,7 @@ struct ColormapResampler : public QObject
             }
             else
             {
-                emit this->refreshPlot(this->_setDataLog(std::move(x), std::move(y), std::move(z)));
+                emit this->refreshPlot(this->_setDataLog(x, y, z));
             }
         }
         else

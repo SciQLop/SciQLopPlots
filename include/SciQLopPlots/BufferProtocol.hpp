@@ -44,56 +44,76 @@ struct PyObjectWrapper
 {
 private:
     PyObject* _py_obj = nullptr;
-    inline void inc_refcount()
+
+    inline void set_obj(PyObject* py_obj)
     {
-        //std::cout << "PyObjectWrapper incref " << std::hex << _py_obj << std::endl;
-        PyGILState_STATE state = PyGILState_Ensure();
-        Py_XINCREF(_py_obj);
-        PyGILState_Release(state);
+        this->release_obj();
+
+        if (py_obj != nullptr)
+        {
+            PyGILState_STATE state = PyGILState_Ensure();
+            Py_INCREF(_py_obj);
+            PyGILState_Release(state);
+        }
     }
-    inline void dec_refcount()
+
+    inline void release_obj()
     {
-        //std::cout << "PyObjectWrapper decref " << std::hex << _py_obj << std::endl;
-        PyGILState_STATE state = PyGILState_Ensure();
-        Py_XDECREF(_py_obj);
-        PyGILState_Release(state);
-        _py_obj = nullptr;
+        if (_py_obj != nullptr)
+        {
+            PyGILState_STATE state = PyGILState_Ensure();
+            Py_DECREF(_py_obj);
+            PyGILState_Release(state);
+        }
     }
+
+    inline void take(PyObjectWrapper& other)
+    {
+        this->set_obj(other.py_object());
+        other.release_obj();
+    }
+
+    inline void borrow(const PyObjectWrapper& other) { this->set_obj(other.py_object()); }
 
 public:
     PyObjectWrapper() : _py_obj { nullptr } { }
-    PyObjectWrapper(const PyObjectWrapper& other) : _py_obj { other._py_obj } { inc_refcount(); }
-    PyObjectWrapper(PyObjectWrapper&& other) : _py_obj { other._py_obj } { inc_refcount(); }
-    explicit PyObjectWrapper(PyObject* obj) : _py_obj { obj } { inc_refcount(); }
+    PyObjectWrapper(const PyObjectWrapper& other) { this->borrow(other); }
+    PyObjectWrapper(PyObjectWrapper&& other) { this->take(other); }
+    explicit PyObjectWrapper(PyObject* obj) { this->set_obj(obj); }
     ~PyObjectWrapper();
     PyObjectWrapper& operator=(PyObjectWrapper&& other)
     {
-        dec_refcount();
-        this->_py_obj = other._py_obj;
-        inc_refcount();
+        this->take(other);
         return *this;
     }
     PyObjectWrapper& operator=(const PyObjectWrapper& other)
     {
-        dec_refcount();
-        this->_py_obj = other._py_obj;
-        inc_refcount();
+        this->borrow(other);
         return *this;
     }
 
-    inline PyObject* py_object() { return _py_obj; }
+
+    inline PyObject* py_object() const { return _py_obj; }
     inline bool is_null() const { return _py_obj == nullptr; }
 };
 
 struct Array_view
 {
 private:
-    PyObjectWrapper _py_obj;
+    // PyObjectWrapper _py_obj;
     Py_buffer _buffer = { 0 };
     std::vector<Py_ssize_t> _shape;
     bool _is_valid = false;
     Array_view(const Array_view&& other) = delete;
-    void _init_buffer();
+    void _init_buffer(PyObject* obj);
+
+    inline void steal(Array_view&& other)
+    {
+        this->_buffer = other._buffer;
+        this->_is_valid = other._is_valid;
+        other._is_valid = false;
+        this->_shape = other._shape;
+    }
 
 public:
     using value_type = double;
@@ -104,25 +124,31 @@ public:
     using pointer = value_type*;
     using const_pointer = const value_type*;
 
-    Array_view() : _py_obj { nullptr } { }
-    Array_view(const Array_view& other) : _py_obj { other._py_obj } { this->_init_buffer(); }
-    Array_view(Array_view&& other) : _py_obj { std::move(other._py_obj) } { this->_init_buffer(); }
+    Array_view() { }
+    Array_view(const Array_view& other) = delete;
+    Array_view(Array_view&& other) { this->steal(std::move(other)); }
     explicit Array_view(PyObject* obj);
 
     ~Array_view();
 
-    inline Array_view& operator=(const Array_view& other)
-    {
-        this->_py_obj = other._py_obj;
-        this->_init_buffer();
-        return *this;
-    }
+    Array_view& operator=(const Array_view& other) = delete;
 
     inline Array_view& operator=(Array_view&& other)
     {
-        this->_py_obj = other._py_obj;
-        this->_init_buffer();
+        this->steal(std::move(other));
         return *this;
+    }
+
+    inline void release()
+    {
+        if (this->_is_valid)
+        {
+            //std::cout << "Array_view PyBuffer_Release" << std::endl;
+            PyGILState_STATE state = PyGILState_Ensure();
+            PyBuffer_Release(&this->_buffer);
+            PyGILState_Release(state);
+            this->_is_valid = false;
+        }
     }
 
     std::vector<std::size_t> shape() const;
@@ -145,7 +171,6 @@ public:
 
     std::vector<double> to_std_vect();
 
-    inline PyObject* py_object() { return _py_obj.py_object(); }
 
     inline auto begin() noexcept { return data(); }
 

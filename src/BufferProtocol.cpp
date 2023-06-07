@@ -51,11 +51,11 @@ extern "C"
 #endif
 
 
-void Array_view::_init_buffer()
+void Array_view::_init_buffer(PyObject *obj)
 {
     PyGILState_STATE state = PyGILState_Ensure();
     this->_is_valid
-        = PyObject_GetBuffer(this->py_object(), &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS) == 0;
+        = PyObject_GetBuffer(obj, &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS) == 0;
     PyGILState_Release(state);
     //std::cout << "Array_view PyObject_GetBuffer" << std::endl;
     assert(this->_is_valid);
@@ -71,20 +71,14 @@ void Array_view::_init_buffer()
     }
 }
 
-Array_view::Array_view(PyObject* obj) : _py_obj { obj }
+Array_view::Array_view(PyObject* obj)
 {
-    this->_init_buffer();
+    this->_init_buffer(obj);
 }
 
 Array_view::~Array_view()
 {
-    if (this->_is_valid)
-    {
-        //std::cout << "Array_view PyBuffer_Release" << std::endl;
-        PyGILState_STATE state = PyGILState_Ensure();
-        PyBuffer_Release(&this->_buffer);
-        PyGILState_Release(state);
-    }
+    this->release();
 }
 
 std::vector<std::size_t> Array_view::shape() const
@@ -140,4 +134,4 @@ std::vector<double> Array_view::to_std_vect()
 
 
 
-PyObjectWrapper::~PyObjectWrapper() { dec_refcount(); }
+PyObjectWrapper::~PyObjectWrapper() { this->release_obj(); }
