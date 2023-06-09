@@ -208,6 +208,9 @@ public:
     {
         auto left = std::min(this->left->pixelPosition().x(), this->right->pixelPosition().x());
         auto right = std::max(this->left->pixelPosition().x(), this->right->pixelPosition().x());
+        if (pos.y() <= this->top->pixelPosition().y()
+            or pos.y() >= this->bottom->pixelPosition().y())
+            return -1;
         auto width = right - left;
         {
             auto left_border_distance
