@@ -253,7 +253,7 @@ public:
     {
         this->setBrush(QBrush { color, Qt::SolidPattern });
         this->setSelectedBrush(QBrush {
-            QColor(255 - color.red(), 0 - color.green(), 255 - color.blue(), color.alpha()),
+            QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha()),
             Qt::SolidPattern });
         this->setPen(QPen { Qt::NoPen });
         this->setSelectedPen(QPen { Qt::NoPen });
