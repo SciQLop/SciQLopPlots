@@ -38,8 +38,7 @@ public:
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {
         using namespace Constants;
-        this->addLayer(
-            LayersNames::Spans, this->layer(LayersNames::Overlay), QCustomPlot::limAbove);
+        this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
         this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
         this->layer(LayersNames::Spans)->setVisible(true);
         this->addLayer(
