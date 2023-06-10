@@ -50,6 +50,11 @@ public:
         this->replot();
     }
 
+    inline void set_color(const QColor& color)
+    {
+        this->setPen(QPen { QBrush { color, Qt::SolidPattern }, 3 });
+    }
+
     double position()
     {
         if (this->point1->coords().x() == this->point2->coords().x())
@@ -236,6 +241,14 @@ public:
             return std::min(abs(pos.x() - left), abs(pos.x() - right));
         }
     }
+
+
+    inline void set_borders_color(const QColor& color)
+    {
+        this->_border1->set_color(color);
+        this->_border2->set_color(color);
+    }
+
     inline void set_color(const QColor& color)
     {
         this->setBrush(QBrush { color, Qt::SolidPattern });
@@ -281,6 +294,8 @@ public:
     }
 
     inline void set_color(const QColor& color) { this->_impl->set_color(color); }
+
+    inline void set_borders_color(const QColor& color) { this->_impl->set_borders_color(color); }
 
     inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
 
