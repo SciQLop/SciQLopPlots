@@ -3,11 +3,11 @@ requires = [
     "wheel",
     "ninja",
     "numpy",
-    "meson-python",
-    "meson>=0.63",
-    "shiboken6==6.4.3",
-    "pyside6==6.4.3",
-    "shiboken6_generator==6.4.3"
+    "meson-python>=0.14.0",
+    "meson",
+    "shiboken6==6.5.1",
+    "pyside6==6.5.1",
+    "shiboken6_generator==6.5.1"
 ]
 build-backend = 'mesonpy'
 
@@ -16,11 +16,11 @@ name = "SciQLopPlots"
 description="SciQLop plot API based on QCustomPlot"
 authors = [{name="Alexis Jeandet", email="alexis.jeandet@member.fsf.org"}]
 summary = "SciQLop plot API based on QCustomPlot"
-requires-python=">=3.7"
+requires-python=">=3.8"
 license = {file="COPYING"}
 readme = "README.md"
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
@@ -30,9 +30,13 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-dependencies = ['numpy', 'pyside6==6.4.3', 'shiboken6==6.4.3']
+dependencies = ['numpy', 'pyside6==6.5.1', 'shiboken6==6.5.1']
 dynamic = [
   'version',
 ]
 [project.urls]
 homepage = "https://github.com/SciQLop/SciQLopPlots"
+
+[tool.meson-python.args]
+install = ['--tags=runtime,python-runtime']
+setup = ['-Doptimization=3']
