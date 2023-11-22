@@ -11,8 +11,8 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        pyside_ver: ['6.5.2']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        pyside_ver: ['6.6.0']
     name: Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v3
@@ -33,66 +33,6 @@ jobs:
           pip install "PySide6==${{ matrix.pyside_ver }}"
           pip install --index-url=http://download.qt.io/official_releases/QtForPython/ --trusted-host download.qt.io "shiboken6_generator==${{ matrix.pyside_ver }}"
           aqt install-qt -O $env:GITHUB_WORKSPACE\Qt windows desktop ${{ matrix.pyside_ver }} win64_msvc2019_64
-      - name: test
-        run: |
-          import os
-          import platform
-          import importlib
-          import importlib.machinery
-          import argparse
-          from glob import glob, escape
-          import re
-          import platform
-
-          pyside_ver = 6
-
-          shiboken_generator = importlib.import_module(f'shiboken{pyside_ver}_generator')
-          shiboken = importlib.import_module(f'shiboken{pyside_ver}')
-          PySide = importlib.import_module(f'PySide{pyside_ver}')
-
-          PySide_mod_path = PySide.__path__[0]
-          shiboken_generator_mod_path = shiboken_generator.__path__[0]
-          shiboken_mod_path = shiboken.__path__[0]
-
-          build_dir = os.path.realpath(os.curdir)
-
-          if platform.system().lower() == 'darwin':
-              ext_sufix = re.escape('.dylib')
-          elif platform.system().lower() == 'windows':
-              ext_sufix = re.escape('.lib')
-          else:
-              ext_sufix = f"[{'|'.join(map(re.escape, importlib.machinery.EXTENSION_SUFFIXES))}]"
-
-          def find_lib(name, search_folders):
-              name_regex = re.compile(name)
-              for folder in search_folders:
-                  if os.path.exists(folder):
-                      files=os.listdir(folder)
-                      found = list(filter(name_regex.match, files))
-                      if len(found):
-                          return f'{folder}{os.path.sep}{found[0]}'
-
-          def make_link_flags(libs_paths):
-              if platform.system().lower() == 'linux':
-                  link_flag="-Wl,-rpath="
-              else:
-                  link_flag="-L"
-              if platform.system().lower() == 'windows':
-                  folders = list(set(list(map(lambda l: f"{link_flag}{os.path.dirname(l)}",libs_paths))))
-              else:
-                  folders = list(set(list(map(lambda l: f"{link_flag}{os.path.relpath(os.path.dirname(l), build_dir)}",libs_paths))))
-              #libs = list(map(make_link_flag, libs_paths))
-              libs = libs_paths
-              return folders + libs
-
-          print(PySide_mod_path)
-
-          main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
-          main_lib += [find_lib(f'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
-          print(" ".join(make_link_flags(main_lib)))
-
-
-        shell: python
       - name: Build package
         run: |
           python3 -m build --wheel --no-isolation  .
