@@ -38,3 +38,23 @@ void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 {
     QCustomPlot::mouseReleaseEvent(event);
 }
+
+bool SciQLopPlot::event(QEvent* event)
+{
+
+    if (event->type() == QEvent::ToolTip)
+    {
+        QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
+        auto itm = dynamic_cast<SciQlopItemWithToolTip*>(itemAt(helpEvent->pos(), true));
+        if (itm)
+        {
+            QToolTip::showText(helpEvent->globalPos(), itm->tooltip());
+        }
+        else
+            QToolTip::hideText();
+
+        return true;
+    }
+
+    return QWidget::event(event);
+}

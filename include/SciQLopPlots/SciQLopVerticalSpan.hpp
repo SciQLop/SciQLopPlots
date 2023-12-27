@@ -87,7 +87,7 @@ public:
 };
 
 
-class VerticalSpan : public SciQLopPlotItem<QCPItemRect>
+class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWithToolTip
 {
     Q_OBJECT
     inline void set_auto_extend_vertically()
@@ -191,7 +191,7 @@ public:
         }
     }
 
-    inline QCPRange range() const noexcept
+    [[nodiscard]] inline QCPRange range() const noexcept
     {
         return QCPRange { this->_lower_border()->position(), this->_upper_border()->position() };
     }
@@ -248,6 +248,10 @@ public:
         this->_border1->set_color(color);
         this->_border2->set_color(color);
     }
+    [[nodiscard]] inline QColor borders_color() const noexcept
+    {
+        return this->_border1->pen().color();
+    }
 
     inline void set_color(const QColor& color)
     {
@@ -258,6 +262,7 @@ public:
         this->setPen(QPen { Qt::NoPen });
         this->setSelectedPen(QPen { Qt::NoPen });
     }
+    [[nodiscard]] inline QColor color() const noexcept { return this->brush().color(); }
 };
 
 
@@ -292,12 +297,20 @@ public:
     {
         this->_impl->set_range(horizontal_range);
     }
+    [[nodiscard]] inline QCPRange range() const noexcept { return this->_impl->range(); }
 
     inline void set_color(const QColor& color) { this->_impl->set_color(color); }
+    [[nodiscard]] inline QColor color() const { return this->_impl->color(); }
 
     inline void set_borders_color(const QColor& color) { this->_impl->set_borders_color(color); }
+    [[nodiscard]] inline void borders_color() const noexcept { this->_impl->borders_color(); }
 
     inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
+    [[nodiscard]] inline bool selected() const noexcept { return this->_impl->selected(); }
 
     inline void set_read_only(bool read_only) { this->_impl->setMovable(!read_only); }
+    [[nodiscard]] inline bool read_only() const noexcept { return !this->_impl->movable(); }
+
+    inline void set_tool_tip(const QString& tool_tip) { this->_impl->setToolTip(tool_tip); }
+    [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
 };

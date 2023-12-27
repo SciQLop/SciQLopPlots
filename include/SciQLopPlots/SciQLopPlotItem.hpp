@@ -30,7 +30,7 @@ protected:
     QPointF _last_position;
 
 public:
-    SciQLopPlotItem(QCustomPlot* plot): QCPAbstractItem_T{plot}{ }
+    SciQLopPlotItem(QCustomPlot* plot) : QCPAbstractItem_T { plot } { }
     virtual ~SciQLopPlotItem() { }
     inline bool movable() const noexcept { return this->_movable; }
     inline virtual void setMovable(bool movable) noexcept { this->_movable = movable; }
@@ -43,7 +43,7 @@ public:
         this->_last_position = event->pos();
         event->accept();
     }
-    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos)override
+    inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
     {
         if (this->selected() and _movable and event->buttons() == Qt::LeftButton)
         {
@@ -53,5 +53,16 @@ public:
         this->_last_position = event->position();
         event->accept();
     }
-    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos)override { }
+    inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
+};
+
+class SciQlopItemWithToolTip
+{
+    QString _tooltip;
+
+public:
+    inline SciQlopItemWithToolTip() = default;
+    inline SciQlopItemWithToolTip(const QString& tooltip) : _tooltip { tooltip } { }
+    inline QString tooltip() const noexcept { return _tooltip; }
+    inline void setToolTip(const QString& tooltip) noexcept { _tooltip = tooltip; }
 };

@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
 
     spans = [SciQLopVerticalSpan(p, QCPRange(i*20., i*20.+10.)) for i in range(5)]
+    for i in range(5):
+        spans[i].setToolTip(f"Vertical span {i}")
 
 
     p.show()
