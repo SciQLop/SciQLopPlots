@@ -29,7 +29,8 @@
 #include <iostream>
 #include <qcustomplot.h>
 
-class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>
+class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>,
+                           public SciQlopItemWithToolTip
 {
     Q_OBJECT
 
@@ -242,6 +243,11 @@ public:
         }
     }
 
+    inline void set_borders_tool_tip(const QString& tool_tip)
+    {
+        this->_border1->setToolTip(tool_tip);
+        this->_border2->setToolTip(tool_tip);
+    }
 
     inline void set_borders_color(const QColor& color)
     {
@@ -311,6 +317,10 @@ public:
     inline void set_read_only(bool read_only) { this->_impl->setMovable(!read_only); }
     [[nodiscard]] inline bool read_only() const noexcept { return !this->_impl->movable(); }
 
-    inline void set_tool_tip(const QString& tool_tip) { this->_impl->setToolTip(tool_tip); }
+    inline void set_tool_tip(const QString& tool_tip)
+    {
+        this->_impl->setToolTip(tool_tip);
+        this->_impl->set_borders_tool_tip(tool_tip);
+    }
     [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
 };
