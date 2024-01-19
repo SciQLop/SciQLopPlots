@@ -39,50 +39,14 @@ struct ColormapResampler : public QObject
     std::size_t _line_cnt;
     QCPAxis::ScaleType _scale_type;
     QCPColorMapData* _last_data_ptr = nullptr;
+    std::size_t _max_y_size = 1000;
 
 
-    inline QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y,const  Array_view& z)
-    {
+    std::vector<double> _optimal_y_scale(const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type);
 
-            using namespace cpp_utils;
-            auto data = new QCPColorMapData(std::size(x), std::size(y),
-                { *containers::min(x), *containers::max(x) },
-                { *containers::min(y), *containers::max(y) });
-            auto it = std::cbegin(z);
-            for (const auto i : x)
-            {
-                for (const auto j : y)
-                {
-                    if (it != std::cend(z))
-                    {
-                        data->setData(i, j, *it);
-                        it++;
-                    }
-                }
-            }
-            return data;
-    }
+    QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y,const  Array_view& z);
 
-    inline QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z)
-    {
-        using namespace cpp_utils;
-        auto data = new QCPColorMapData(std::size(x), std::size(y),
-            { *containers::min(x), *containers::max(x) },
-            { *containers::min(y), *containers::max(y) });
-        auto it = std::cbegin(z);
-        for (auto i = 0UL; i < std::size(x); i++)
-        {
-            for (auto j = 0UL; j < std::size(y); j++)
-            {
-                if (it != std::cend(z))
-                {
-                    data->setCell(i, j, *it);
-                    it++;
-                }
-            }
-        }
-        return data;
-    }
+    QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z);
 
     Q_SIGNAL void _resample_sig(const QCPRange& newRange);
     inline void _resample_slot(const QCPRange& newRange)
