@@ -181,6 +181,12 @@ public:
         this->parentPlot()->removeItem(this->_border2);
     }
 
+    inline void set_visible(bool visible) {
+        this->setVisible(visible);
+        this->_border1->setVisible(visible);
+        this->_border2->setVisible(visible);
+    }
+
     inline void set_range(const QCPRange horizontal_range)
     {
         if (this->range() != horizontal_range)
@@ -298,6 +304,12 @@ public:
             plot->replot(QCustomPlot::rpQueuedReplot);
         }
     }
+
+
+    inline void set_visible(bool visible) {
+        _impl->set_visible(visible);
+    }
+    inline bool visible() const noexcept { return _impl->visible(); }
 
     inline void set_range(const QCPRange horizontal_range)
     {
