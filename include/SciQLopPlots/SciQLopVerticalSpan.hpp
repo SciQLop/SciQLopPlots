@@ -36,7 +36,8 @@ class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>,
 
 public:
     Q_SIGNAL void moved(double new_position);
-    inline VerticalSpanBorder(QCustomPlot* plot, double x) : SciQLopPlotItem { plot }
+    inline VerticalSpanBorder(QCustomPlot* plot, double x, bool do_not_replot = false)
+            : SciQLopPlotItem { plot }
     {
 
         this->point1->setTypeX(QCPItemPosition::ptPlotCoords);
@@ -48,7 +49,8 @@ public:
         this->setMovable(true);
         this->setLayer(Constants::LayersNames::SpansBorders);
         this->set_position(x);
-        this->replot();
+        if (!do_not_replot)
+            this->replot();
     }
 
     inline void set_color(const QColor& color)
@@ -135,10 +137,11 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWith
 public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
 
-    VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range)
+    VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false,
+        bool immediate_replot = false)
             : SciQLopPlotItem { plot }
-            , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower } }
-            , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper } }
+            , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower, true } }
+            , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper, do_not_replot } }
     {
         this->setLayer(Constants::LayersNames::Spans);
         this->set_color(QColor(0, 255, 0, 40));
@@ -166,6 +169,8 @@ public:
 
         this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
         this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
+        if (!do_not_replot)
+            this->replot(immediate_replot);
     }
 
     inline virtual void setMovable(bool movable) noexcept override
@@ -181,7 +186,8 @@ public:
         this->parentPlot()->removeItem(this->_border2);
     }
 
-    inline void set_visible(bool visible) {
+    inline void set_visible(bool visible)
+    {
         this->setVisible(visible);
         this->_border1->setVisible(visible);
         this->_border2->setVisible(visible);
@@ -275,6 +281,15 @@ public:
         this->setSelectedPen(QPen { Qt::NoPen });
     }
     [[nodiscard]] inline QColor color() const noexcept { return this->brush().color(); }
+
+    inline void replot(bool immediate = false) override
+    {
+        // Only replot immediately the second border, the first border will be reploted with the
+        // second.
+        this->_border1->replot(false);
+        this->_border2->replot(immediate);
+        SciQLopPlotItem::replot(immediate);
+    }
 };
 
 
@@ -287,8 +302,8 @@ public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
     Q_SIGNAL void selectionChanged(bool);
 
-    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range)
-            : _impl { new VerticalSpan { plot, horizontal_range } }
+    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false)
+            : _impl { new VerticalSpan { plot, horizontal_range, do_not_replot } }
     {
         connect(
             this->_impl, &VerticalSpan::range_changed, this, &SciQLopVerticalSpan::range_changed);
@@ -306,9 +321,7 @@ public:
     }
 
 
-    inline void set_visible(bool visible) {
-        _impl->set_visible(visible);
-    }
+    inline void set_visible(bool visible) { _impl->set_visible(visible); }
     inline bool visible() const noexcept { return _impl->visible(); }
 
     inline void set_range(const QCPRange horizontal_range)
@@ -321,7 +334,10 @@ public:
     [[nodiscard]] inline QColor color() const { return this->_impl->color(); }
 
     inline void set_borders_color(const QColor& color) { this->_impl->set_borders_color(color); }
-    [[nodiscard]] inline void borders_color() const noexcept { this->_impl->borders_color(); }
+    [[nodiscard]] inline QColor borders_color() const noexcept
+    {
+        return this->_impl->borders_color();
+    }
 
     inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
     [[nodiscard]] inline bool selected() const noexcept { return this->_impl->selected(); }
@@ -335,4 +351,6 @@ public:
         this->_impl->set_borders_tool_tip(tool_tip);
     }
     [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
+
+    inline void replot() { this->_impl->replot(); }
 };

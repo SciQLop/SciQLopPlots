@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <QTimer>
 #include <qcustomplot.h>
 
 template <typename QCPAbstractItem_T>
@@ -27,6 +28,7 @@ class SciQLopPlotItem : public QCPAbstractItem_T
 {
 protected:
     bool _movable = false;
+    bool _queued_replot = false;
     QPointF _last_position;
 
 public:
@@ -36,7 +38,24 @@ public:
     inline virtual void setMovable(bool movable) noexcept { this->_movable = movable; }
 
     virtual void move(double dx, double dy) = 0;
-    inline void replot() { this->layer()->replot(); }
+    inline virtual void replot(bool immediate = false)
+    {
+        if (immediate)
+            this->layer()->replot();
+        else
+        {
+            if (not _queued_replot)
+            {
+                _queued_replot = true;
+                QTimer::singleShot(0,
+                    [this]()
+                    {
+                        this->layer()->replot();
+                        _queued_replot = false;
+                    });
+            }
+        }
+    }
 
     inline void mousePressEvent(QMouseEvent* event, const QVariant& details) override
     {
