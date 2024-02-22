@@ -15,7 +15,7 @@ jobs:
         pyside_ver: ['6.6.2']
     name: Python ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: add qt dir to path
         run: |
           echo "${{github.workspace}}\Qt\${{ matrix.pyside_ver }}\msvc2019_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append

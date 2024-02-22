@@ -15,7 +15,7 @@ jobs:
         pyside_ver: ['6.6.2']
     name: Python ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build python wheel
         uses: actions/setup-python@v4
         with:
@@ -59,7 +59,7 @@ jobs:
         pyside_ver: ['6.6.2']
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: add pyenv to path
         run: |
           echo "$HOME/.pyenv/shims" >> $GITHUB_PATH
