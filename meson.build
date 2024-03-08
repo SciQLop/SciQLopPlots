@@ -9,9 +9,7 @@ qt_sdk='qt6'
 extra_files=files(
     'pyproject.toml',
     'setup.cfg',
-    '.github/workflows/pythonpublish-linux.yml',
-    '.github/workflows/pythonpublish-win.yml',
-    '.github/workflows/pythonpublish-osx.yml',
+    '.github/workflows/build_wheels.yml',
     'README.md', 'COPYING'
 )
 
