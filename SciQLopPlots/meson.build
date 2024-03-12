@@ -33,9 +33,11 @@ generated_srcs  = run_command(python3, src_list, '--build-system', 'meson', '--b
 
 modules_arg = '--modules=@0@'.format(','.join(qt_modules))
 
-shiboken_build_flags = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--includes', modules_arg).stdout().strip('\n').split(' ')
-shiboken_link_flags  = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--build-dir', meson.current_build_dir(), '--libs', modules_arg).stdout().strip('\n').split(' ')
-shiboken_typesystem  = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--pyside_version', pyside_version, '--typesystem').stdout().strip('\n')
+shiboken_build_flags = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--includes', modules_arg).stdout().strip('\n').split(' ')
+shiboken_link_flags_out = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--build-dir', meson.current_build_dir(), '--libs', modules_arg)
+shiboken_link_flags  = shiboken_link_flags_out.stdout().strip('\n').split(' ')
+message('shiboken_build_flags: @0@'.format(shiboken_link_flags_out.stderr()))
+shiboken_typesystem  = run_command(python3, shiboken_helper, '--qmake', qmake.full_path(), '--typesystem').stdout().strip('\n')
 
 
 sciqlopplots_bindings_src = []

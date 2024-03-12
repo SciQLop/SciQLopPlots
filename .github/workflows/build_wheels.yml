@@ -36,8 +36,8 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-          #- os: windows-latest
-          #  arch: x86_64
+          - os: windows-latest
+            arch: x86_64
           - os: macos-13  # Intel
             arch: x86_64
           - os: macos-14 # Apple Silicon

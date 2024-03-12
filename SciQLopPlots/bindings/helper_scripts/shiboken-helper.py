@@ -17,10 +17,9 @@ group.add_argument('--typesystem', action='store_true')
 parser.add_argument('--modules')
 parser.add_argument('--qmake')
 parser.add_argument('--build-dir', nargs='?')
-parser.add_argument('--pyside_version', default='2')
 args = parser.parse_args()
 
-pyside_ver = args.pyside_version
+pyside_ver = 6
 
 shiboken_generator = importlib.import_module(f'shiboken{pyside_ver}_generator')
 shiboken = importlib.import_module(f'shiboken{pyside_ver}')
@@ -62,6 +61,9 @@ def make_link_flag(lib_path):
 
 
 def make_link_flags(libs_paths):
+    libs_paths = list(filter(lambda l: l is not None, libs_paths))
+    print(f"platform: {platform.system().lower()}", file=sys.stderr)
+    print(f"libs_paths: {libs_paths}", file=sys.stderr)
     if platform.system().lower() == 'linux':
         link_flag="-Wl,-rpath="
     else:
@@ -86,14 +88,17 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
     modules = args.modules.split(',')
 
     if args.libs:
-        main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]
+        main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]   
+        print(f"main_lib: {main_lib}", file=sys.stderr)
         main_lib += [find_lib(f'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+        print(f"main_lib: {main_lib}", file=sys.stderr)
         if platform.system().lower() == 'windows':
             main_lib += [find_lib('python3.lib', [f'{os.path.dirname(sys.executable)}{os.path.sep}libs'])]
         if platform.system().lower() == 'darwin' or platform.system().lower() == 'windows':
             modules_libs = []
         else:
             modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
+        print(f"modules_libs: {modules_libs}", file=sys.stderr)
         print(" ".join(make_link_flags(main_lib + modules_libs)))
 
     if args.includes:
