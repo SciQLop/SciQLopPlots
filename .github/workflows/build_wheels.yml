@@ -73,7 +73,7 @@ jobs:
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.6 --exclude libshiboken6.abi3.so.6.6 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.6 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat manylinux_2_28_x86_64 {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_SKIP: "*-win32 *i686 pp* *musllinux*"
+          CIBW_SKIP: "*-win32 *i686 *38-macosx* pp* *musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
 
