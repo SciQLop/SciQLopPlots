@@ -97,7 +97,7 @@ sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         include_directories : includes,
         extra_files: extra_files + sciqlopplots_python_sources +
                      sciqlopplots_bindings_headers + headers +
-                     ['bindings/snippets.cpp']
+                     ['bindings/snippets.cpp', 'bindings/helper_scripts/shiboken-gen.py']
 )
 
 python3.install_sources(sciqlopplots_python_sources, pure: false, subdir: 'SciQLopPlots')

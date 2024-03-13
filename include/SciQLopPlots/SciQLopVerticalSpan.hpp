@@ -35,7 +35,9 @@ class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>,
     Q_OBJECT
 
 public:
+#ifndef BINDINGS_H
     Q_SIGNAL void moved(double new_position);
+#endif
     inline VerticalSpanBorder(QCustomPlot* plot, double x, bool do_not_replot = false)
             : SciQLopPlotItem { plot }
     {
@@ -76,17 +78,7 @@ public:
         }
     }
 
-    inline void move(double dx, double dy) override
-    {
-        this->point1->setPixelPosition(
-            { this->point1->pixelPosition().x() + dx, this->point1->pixelPosition().y() });
-
-        this->point2->setPixelPosition(
-            { this->point2->pixelPosition().x() + dx, this->point2->pixelPosition().y() });
-
-        this->replot();
-        emit moved(this->point1->coords().x());
-    }
+    void move(double dx, double dy) override;
 };
 
 
@@ -135,43 +127,12 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWith
     }
 
 public:
+#ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
+#endif
 
     VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false,
-        bool immediate_replot = false)
-            : SciQLopPlotItem { plot }
-            , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower, true } }
-            , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper, do_not_replot } }
-    {
-        this->setLayer(Constants::LayersNames::Spans);
-        this->set_color(QColor(0, 255, 0, 40));
-        this->set_auto_extend_vertically();
-        this->setSelectable(true);
-        this->setMovable(true);
-        this->setVisible(true);
-        connect(this->_border1, &VerticalSpanBorder::moved, this,
-            [this](double x)
-            {
-                this->set_left_pos(this->_lower_border()->position());
-                this->set_right_pos(this->_upper_border()->position());
-                this->replot();
-                emit this->range_changed(this->range());
-            });
-
-        connect(this->_border2, &VerticalSpanBorder::moved, this,
-            [this](double x)
-            {
-                this->set_left_pos(this->_lower_border()->position());
-                this->set_right_pos(this->_upper_border()->position());
-                this->replot();
-                emit this->range_changed(this->range());
-            });
-
-        this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
-        this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
-        if (!do_not_replot)
-            this->replot(immediate_replot);
-    }
+        bool immediate_replot = false);
 
     inline virtual void setMovable(bool movable) noexcept override
     {
@@ -193,67 +154,17 @@ public:
         this->_border2->setVisible(visible);
     }
 
-    inline void set_range(const QCPRange horizontal_range)
-    {
-        if (this->range() != horizontal_range)
-        {
-            this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
-            this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
-            this->replot();
-            emit range_changed(horizontal_range);
-        }
-    }
+    void set_range(const QCPRange horizontal_range);
 
     [[nodiscard]] inline QCPRange range() const noexcept
     {
         return QCPRange { this->_lower_border()->position(), this->_upper_border()->position() };
     }
 
-    inline void move(double dx, double dy) override
-    {
-        if (dx != 0.)
-        {
-            auto x_axis = this->parentPlot()->axisRect()->rangeDragAxis(Qt::Horizontal);
-            this->set_left_pos(x_axis->pixelToCoord(this->topLeft->pixelPosition().x() + dx));
-            this->set_right_pos(x_axis->pixelToCoord(this->bottomRight->pixelPosition().x() + dx));
-            this->replot();
-            emit this->range_changed(this->range());
-        }
-    }
+    void move(double dx, double dy) override;
 
-    inline double selectTest(
-        const QPointF& pos, bool onlySelectable, QVariant* details = nullptr) const override
-    {
-        auto left = std::min(this->left->pixelPosition().x(), this->right->pixelPosition().x());
-        auto right = std::max(this->left->pixelPosition().x(), this->right->pixelPosition().x());
-        if (pos.y() <= this->top->pixelPosition().y()
-            or pos.y() >= this->bottom->pixelPosition().y())
-            return -1;
-        auto width = right - left;
-        {
-            auto left_border_distance
-                = this->_lower_border()->selectTest(pos, onlySelectable, details);
-            if (left_border_distance != -1. and left_border_distance <= std::max(10., width * 0.1))
-                return -1.;
-        }
-        {
-            auto right_border_distance
-                = this->_upper_border()->selectTest(pos, onlySelectable, details);
-            if (right_border_distance != -1.
-                and right_border_distance <= std::max(10., width * 0.1))
-                return -1.;
-        }
-
-        if (pos.x() <= right and pos.x() >= left)
-        {
-            return 0;
-        }
-        else
-        {
-
-            return std::min(abs(pos.x() - left), abs(pos.x() - right));
-        }
-    }
+    double selectTest(
+        const QPointF& pos, bool onlySelectable, QVariant* details = nullptr) const override;
 
     inline void set_borders_tool_tip(const QString& tool_tip)
     {
@@ -299,18 +210,12 @@ class SciQLopVerticalSpan : public QObject
     VerticalSpan* _impl;
 
 public:
+#ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
     Q_SIGNAL void selectionChanged(bool);
+#endif
 
-    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false)
-            : _impl { new VerticalSpan { plot, horizontal_range, do_not_replot } }
-    {
-        connect(
-            this->_impl, &VerticalSpan::range_changed, this, &SciQLopVerticalSpan::range_changed);
-
-        connect(this->_impl, &VerticalSpan::selectionChanged, this,
-            &SciQLopVerticalSpan::selectionChanged);
-    }
+    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false);
     ~SciQLopVerticalSpan()
     {
         auto plot = this->_impl->parentPlot();

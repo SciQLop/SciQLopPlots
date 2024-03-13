@@ -124,8 +124,10 @@ struct GraphResampler : public QObject
     }
 
 public:
+#ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
     Q_SIGNAL void refreshPlot();
+#endif
 
     GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
             : _dataOrder { dataOrder }, _line_cnt { line_cnt }

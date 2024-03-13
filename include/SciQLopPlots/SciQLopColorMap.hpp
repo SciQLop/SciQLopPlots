@@ -60,8 +60,9 @@ public:
     void setData(Array_view&& x, Array_view&& y, Array_view&& z);
     inline QCPColorMap* colorMap() const { return _cmap; }
 
+#ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
-
+#endif
 private:
     DataOrder _dataOrder = DataOrder::xFirst;
 };

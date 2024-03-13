@@ -42,9 +42,10 @@ struct ColormapResampler : public QObject
     std::size_t _max_y_size = 1000;
 
 
-    std::vector<double> _optimal_y_scale(const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type);
+    std::vector<double> _optimal_y_scale(
+        const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type);
 
-    QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y,const  Array_view& z);
+    QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y, const Array_view& z);
 
     QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z);
 
@@ -65,7 +66,7 @@ struct ColormapResampler : public QObject
         {
             if (this->_scale_type == QCPAxis::stLinear)
             {
-                emit this->refreshPlot(this->_setDataLinear(x,y,z));
+                emit this->refreshPlot(this->_setDataLinear(x, y, z));
             }
             else
             {
@@ -79,8 +80,10 @@ struct ColormapResampler : public QObject
     }
 
 public:
+#ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
     Q_SIGNAL void refreshPlot(QCPColorMapData* data);
+#endif
 
     ColormapResampler(QCPAxis::ScaleType scale_type) : _scale_type { scale_type }
     {

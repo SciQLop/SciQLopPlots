@@ -48,7 +48,7 @@ class SciQLopGraph : public QObject
 
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
-    void create_resampler(const QStringList &labels);
+    void create_resampler(const QStringList& labels);
     void graph_got_removed_from_plot(QCPGraph* graph);
 
 public:
@@ -72,7 +72,9 @@ public:
 
     inline std::size_t line_count() { return std::size(this->_graphs); }
 
+#ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
+#endif
 
 private:
     DataOrder _dataOrder = DataOrder::xFirst;
