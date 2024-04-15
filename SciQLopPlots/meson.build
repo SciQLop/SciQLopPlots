@@ -53,11 +53,13 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopGraph.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopColorMap.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopVerticalSpan.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotItem.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopGraphResampler.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopCurveResampler.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopColorMapResampler.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
@@ -82,6 +84,7 @@ sources = moc_files \
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
             '../src/SciQLopGraph.cpp',
+            '../src/SciQLopCurve.cpp',
             '../src/SciQLopColorMap.cpp',
             '../src/SciQLopColorMapResampler.cpp',
             '../src/BufferProtocol.cpp',

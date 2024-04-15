@@ -10,6 +10,8 @@ extra_files=files(
     'pyproject.toml',
     'setup.cfg',
     '.github/workflows/build_wheels.yml',
+    'Docker/Dockerfile',
+    'Docker/build.sh',
     'README.md', 'COPYING'
 )
 

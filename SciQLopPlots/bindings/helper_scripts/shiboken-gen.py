@@ -39,11 +39,19 @@ shiboken_constant_args=['--generator-set=shiboken',
     '-std=c++17',
     '--generator-set=shiboken']
 
-if os.path.exists('/opt/rh/gcc-toolset-11/root/usr/include/c++/11'):
-    shiboken_constant_args += [
-        '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11',
-        '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11/x86_64-redhat-linux'
-    ]
+if 'linux' in platform.system().lower():
+    if os.path.exists('/opt/rh/gcc-toolset-11/root/usr/include/c++/11'):
+        shiboken_constant_args += [
+            '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11',
+            '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11/x86_64-redhat-linux'
+        ]
+    elif os.path.exists('/usr/include/c++/14'):
+        shiboken_constant_args += [
+            '-I/usr/include/c++/14',
+            '-I/usr/include/c++/14/x86_64-redhat-linux'
+        ]
+
+
 
 cmd = [args.shiboken, args.input_header, args.input_xml ] + shiboken_constant_args + cpp_flags(args.build_directory, args.ref_build_target) + [ f'--typesystem-paths={args.typesystem_paths}', f'--output-directory={args.output_directory}']
 

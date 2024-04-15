@@ -25,6 +25,7 @@
 
 #include "constants.hpp"
 #include <QPointF>
+#include <SciQLopPlots/SciQLopCurve.hpp>
 #include <SciQLopPlots/SciQLopGraph.hpp>
 #include <SciQLopPlots/SciQLopPlotItem.hpp>
 #include <optional>
@@ -64,6 +65,20 @@ public:
         QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
     {
         auto sg = new SciQLopGraph(this, x, y, dataOrder);
+        return sg;
+    }
+
+    inline SciQLopCurve* addSciQLopCurve(QCPAxis* x, QCPAxis* y, QStringList labels,
+        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+    {
+        auto sg = new SciQLopCurve(this, x, y, labels, dataOrder);
+        return sg;
+    }
+
+    inline SciQLopCurve* addSciQLopCurve(
+        QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
+    {
+        auto sg = new SciQLopCurve(this, x, y, dataOrder);
         return sg;
     }
 

@@ -87,6 +87,16 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="addSciQLopCurve(QCPAxis*, QCPAxis*, QStringList, SciQLopGraph::DataOrder)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="addSciQLopCurve(QCPAxis*, QCPAxis*, SciQLopGraph::DataOrder)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="addSciQLopColorMap(QCPAxis*, QCPAxis*, const QString&amp;, SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -354,6 +364,15 @@
 
     <object-type name="SciQLopGraph" parent-management="yes">
         <enum-type name="DataOrder"/>
+        <extra-includes>
+          <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
+          <include file-name="utility" location="global"/>
+        </extra-includes>
+        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
+            <inject-code file="snippets.cpp" snippet="SciQLopGraph-setData"/>
+        </add-function>
+    </object-type>
+    <object-type name="SciQLopCurve" parent-management="yes">
         <extra-includes>
           <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
