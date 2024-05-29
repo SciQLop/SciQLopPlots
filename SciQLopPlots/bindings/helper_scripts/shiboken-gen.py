@@ -39,18 +39,23 @@ shiboken_constant_args=['--generator-set=shiboken',
     '-std=c++17',
     '--generator-set=shiboken']
 
-if 'linux' in platform.system().lower():
-    if os.path.exists('/opt/rh/gcc-toolset-11/root/usr/include/c++/11'):
-        shiboken_constant_args += [
-            '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11',
-            '-I/opt/rh/gcc-toolset-11/root/usr/include/c++/11/x86_64-redhat-linux'
-        ]
-    elif os.path.exists('/usr/include/c++/14'):
-        shiboken_constant_args += [
-            '-I/usr/include/c++/14',
-            '-I/usr/include/c++/14/x86_64-redhat-linux'
-        ]
-
+if 'linux' in platform.system().lower() and os.environ.get('AUDITWHEEL_PLAT', '') == 'manylinux_2_28_x86_64':
+    gcc_found = False
+    for v in reversed(range(11,14)):
+        prefix = f'/opt/rh/gcc-toolset-{v}/root/usr'
+        if os.path.exists(prefix):
+            shiboken_constant_args += [
+                f"-I/opt/rh/gcc-toolset-{v}/root/usr/lib/gcc/x86_64-redhat-linux/{v}/../../../../include/c++/{v}",
+                f"-I/opt/rh/gcc-toolset-{v}/root/usr/lib/gcc/x86_64-redhat-linux/{v}/../../../../include/c++/{v}/x86_64-redhat-linux",
+                f"-I/opt/rh/gcc-toolset-{v}/root/usr/lib/gcc/x86_64-redhat-linux/{v}/../../../../include/c++/{v}/backward",
+                f"-I/opt/rh/gcc-toolset-{v}/root/usr/lib/gcc/x86_64-redhat-linux/{v}/include",
+                f"-I/opt/rh/gcc-toolset-13/root/usr/include",
+                f"-I/usr/local/include",
+                f"-I/usr/include",
+            ]
+            gcc_found = True
+            shiboken_constant_args += ['--compiler=g++']
+            break
 
 
 cmd = [args.shiboken, args.input_header, args.input_xml ] + shiboken_constant_args + cpp_flags(args.build_directory, args.ref_build_target) + [ f'--typesystem-paths={args.typesystem_paths}', f'--output-directory={args.output_directory}']
