@@ -28,6 +28,7 @@ class SciQLopPlotItem : public QCPAbstractItem_T
 {
 protected:
     bool _movable = false;
+    bool _deletable = false;
     bool _queued_replot = false;
     QPointF _last_position;
 
@@ -73,6 +74,12 @@ public:
         event->accept();
     }
     inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
+};
+
+class SciQLopItemWithKeyInteraction
+{
+public:
+    virtual void keyPressEvent(QKeyEvent* event) = 0;
 };
 
 class SciQlopItemWithToolTip

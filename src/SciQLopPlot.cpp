@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotItem.hpp"
+#include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <type_traits>
 
@@ -37,6 +38,22 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 {
     QCustomPlot::mouseReleaseEvent(event);
+}
+
+void SciQLopPlot::keyPressEvent(QKeyEvent* event)
+{
+    auto items = selectedItems();
+    std::for_each(items.begin(), items.end(),
+        [event](auto item)
+        {
+            if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
+                sciItem != nullptr)
+            {
+                sciItem->keyPressEvent(event);
+            }
+        });
+    if (event->isAccepted() == false)
+        QCustomPlot::keyPressEvent(event);
 }
 
 bool SciQLopPlot::event(QEvent* event)

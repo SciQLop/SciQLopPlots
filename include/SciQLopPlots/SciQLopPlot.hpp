@@ -94,5 +94,7 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
 
+    virtual void keyPressEvent(QKeyEvent* event) override;
+
     virtual bool event(QEvent* event) override;
 };

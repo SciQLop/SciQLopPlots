@@ -394,7 +394,14 @@
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
-
+    <object-type name="MultiPlotsVerticalSpan" parent-management="yes">
+        <property name="range" type="QCPRange" get="get_range" set="set_range" generate-getsetdef="yes"/>
+        <property name="color" type="QColor" get="get_color" set="set_color" generate-getsetdef="yes"/>
+        <property name="visible" type="bool" get="is_visible" set="set_visible" generate-getsetdef="yes"/>
+        <property name="selected" type="bool" get="is_selected" set="set_selected" generate-getsetdef="yes"/>
+        <property name="tooltip" type="QString" get="get_tool_tip" set="set_tool_tip" generate-getsetdef="yes"/>
+        <property name="read_only" type="bool" get="is_read_only" set="set_read_only" generate-getsetdef="yes"/>
+    </object-type>
 
 </typesystem>
 

@@ -26,7 +26,6 @@
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
-#include <iostream>
 #include <qcustomplot.h>
 
 class VerticalSpanBorder : public SciQLopPlotItem<QCPItemStraightLine>,
@@ -82,7 +81,9 @@ public:
 };
 
 
-class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWithToolTip
+class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
+                     public SciQlopItemWithToolTip,
+                     public SciQLopItemWithKeyInteraction
 {
     Q_OBJECT
     inline void set_auto_extend_vertically()
@@ -93,6 +94,9 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWith
         this->topLeft->setTypeY(QCPItemPosition::ptAxisRectRatio);
         this->bottomRight->setTypeY(QCPItemPosition::ptAxisRectRatio);
     }
+
+    bool _lower_border_selected = false;
+    bool _upper_border_selected = false;
 
     VerticalSpanBorder* _border1;
     VerticalSpanBorder* _border2;
@@ -118,23 +122,59 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>, public SciQlopItemWith
     {
         this->topLeft->setCoords({ pos, 0. });
         this->_lower_border()->set_position(pos);
+        if (_lower_border_selected == true and _lower_border()->selected() == false)
+        {
+            _upper_border()->setSelected(false);
+            _lower_border()->setSelected(true);
+        }
     }
 
     inline void set_right_pos(double pos)
     {
         this->bottomRight->setCoords({ pos, 1. });
         this->_upper_border()->set_position(pos);
+        if (_upper_border_selected == true and _upper_border()->selected() == false)
+        {
+            _lower_border()->setSelected(false);
+            _upper_border()->setSelected(true);
+        }
+    }
+
+    void border1_selection_changed(bool select)
+    {
+        if (_border1 == _lower_border())
+        {
+            Q_EMIT lower_border_selection_changed(select);
+        }
+        else
+        {
+            Q_EMIT upper_border_selection_changed(select);
+        }
+    }
+
+    void border2_selection_changed(bool select)
+    {
+        if (_border2 == _lower_border())
+        {
+            Q_EMIT lower_border_selection_changed(select);
+        }
+        else
+        {
+            Q_EMIT upper_border_selection_changed(select);
+        }
     }
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void lower_border_selection_changed(bool);
+    Q_SIGNAL void upper_border_selection_changed(bool);
 #endif
 
     VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false,
         bool immediate_replot = false);
 
-    inline virtual void setMovable(bool movable) noexcept override
+    inline void setMovable(bool movable) noexcept final
     {
         SciQLopPlotItem::setMovable(movable);
         this->_border1->setMovable(movable);
@@ -145,6 +185,20 @@ public:
     {
         this->parentPlot()->removeItem(this->_border1);
         this->parentPlot()->removeItem(this->_border2);
+    }
+
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        if (this->selected())
+        {
+            if (event->key() == Qt::Key_Delete)
+            {
+                this->parentPlot()->removeItem(this);
+                this->parentPlot()->removeItem(this->_border1);
+                this->parentPlot()->removeItem(this->_border2);
+                this->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+            }
+        }
     }
 
     inline void set_visible(bool visible)
@@ -177,9 +231,30 @@ public:
         this->_border1->set_color(color);
         this->_border2->set_color(color);
     }
+
     [[nodiscard]] inline QColor borders_color() const noexcept
     {
         return this->_border1->pen().color();
+    }
+
+    inline void select_lower_border(bool selected)
+    {
+        if (this->_lower_border()->selected() != selected or _lower_border_selected != selected)
+        {
+            _lower_border_selected = selected;
+            this->_lower_border()->setSelected(selected);
+            Q_EMIT lower_border_selection_changed(selected);
+        }
+    }
+
+    inline void select_upper_border(bool selected)
+    {
+        if (this->_upper_border()->selected() != selected or _upper_border_selected != selected)
+        {
+            _upper_border_selected = selected;
+            this->_upper_border()->setSelected(selected);
+            Q_EMIT upper_border_selection_changed(selected);
+        }
     }
 
     inline void set_color(const QColor& color)
@@ -193,7 +268,7 @@ public:
     }
     [[nodiscard]] inline QColor color() const noexcept { return this->brush().color(); }
 
-    inline void replot(bool immediate = false) override
+    inline void replot(bool immediate = false) final
     {
         // Only replot immediately the second border, the first border will be reploted with the
         // second.
@@ -209,6 +284,14 @@ class SciQLopVerticalSpan : public QObject
     Q_OBJECT
     VerticalSpan* _impl;
 
+    friend class MultiPlotsVerticalSpan;
+
+protected:
+    inline void select_lower_border(bool selected) { _impl->select_lower_border(selected); }
+    inline void select_upper_border(bool selected) { _impl->select_upper_border(selected); }
+    Q_SIGNAL void lower_border_selection_changed(bool);
+    Q_SIGNAL void upper_border_selection_changed(bool);
+
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
@@ -218,10 +301,13 @@ public:
     SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false);
     ~SciQLopVerticalSpan()
     {
-        auto plot = this->_impl->parentPlot();
-        if (plot->removeItem(this->_impl))
+        if (this->_impl)
         {
-            plot->replot(QCustomPlot::rpQueuedReplot);
+            auto plot = this->_impl->parentPlot();
+            if (plot->removeItem(this->_impl))
+            {
+                plot->replot(QCustomPlot::rpQueuedReplot);
+            }
         }
     }
 
@@ -258,4 +344,133 @@ public:
     [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
 
     inline void replot() { this->_impl->replot(); }
+};
+
+class MultiPlotsVerticalSpan : public QObject
+{
+    Q_OBJECT
+    QList<SciQLopVerticalSpan*> _spans;
+    QList<QCustomPlot*> _plots;
+    QCPRange _horizontal_range;
+    bool _selected = false;
+    bool _lower_border_selected = false;
+    bool _upper_border_selected = false;
+    bool _visible = true;
+    bool _read_only = false;
+    QColor _color;
+    QString _tool_tip;
+
+    void select_lower_border(bool selected);
+    void select_upper_border(bool selected);
+
+public:
+#ifndef BINDINGS_H
+    Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void selection_changed(bool);
+#endif
+
+    MultiPlotsVerticalSpan(QList<QCustomPlot*> plots, QCPRange horizontal_range, QColor color,
+        bool read_only = false, bool visible = true, const QString& tool_tip = "",
+        QObject* parent = nullptr)
+    {
+        _horizontal_range = horizontal_range;
+        _color = color;
+        _visible = visible;
+        _read_only = read_only;
+        _tool_tip = tool_tip;
+        update_plot_list(plots);
+    }
+
+    ~MultiPlotsVerticalSpan()
+    {
+        for (auto span : _spans)
+        {
+            delete span;
+        }
+    }
+
+    void update_plot_list(QList<QCustomPlot*> new_plots);
+
+    void set_selected(bool selected);
+
+    [[nodiscard]] inline bool is_selected() const noexcept { return _selected; }
+
+    inline void set_color(const QColor& color)
+    {
+        if (_color != color)
+        {
+            for (auto span : _spans)
+            {
+                span->set_color(color);
+            }
+            _color = color;
+        }
+    }
+
+    inline QColor get_color() const { return _color; }
+
+    void set_range(const QCPRange horizontal_range);
+
+    [[nodiscard]] inline QCPRange get_range() const noexcept { return _horizontal_range; }
+
+    inline void set_visible(bool visible)
+    {
+        if (_visible != visible)
+        {
+            for (auto span : _spans)
+            {
+                span->set_visible(visible);
+            }
+            _visible = visible;
+        }
+    }
+
+    [[nodiscard]] inline bool is_visible() const noexcept { return _visible; }
+
+    inline void set_tool_tip(const QString& tool_tip)
+    {
+        if (_tool_tip != tool_tip)
+        {
+            for (auto span : _spans)
+            {
+                span->set_tool_tip(tool_tip);
+            }
+            _tool_tip = tool_tip;
+        }
+    }
+
+    [[nodiscard]] inline QString get_tool_tip() const noexcept { return _tool_tip; }
+
+
+    inline void set_read_only(bool read_only)
+    {
+        if (_read_only != read_only)
+        {
+            for (auto span : _spans)
+            {
+                span->set_read_only(read_only);
+            }
+            _read_only = read_only;
+        }
+    }
+
+    [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
+
+
+    inline void show()
+    {
+        for (auto span : _spans)
+        {
+            span->set_visible(true);
+        }
+    }
+
+
+    inline void hide()
+    {
+        for (auto span : _spans)
+        {
+            span->set_visible(false);
+        }
+    }
 };
