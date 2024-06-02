@@ -33,6 +33,30 @@ void VerticalSpanBorder::move(double dx, double dy)
     emit moved(this->point1->coords().x());
 }
 
+void VerticalSpan::border1_selection_changed(bool select)
+{
+    if (_border1 == _lower_border())
+    {
+        Q_EMIT lower_border_selection_changed(select);
+    }
+    else
+    {
+        Q_EMIT upper_border_selection_changed(select);
+    }
+}
+
+void VerticalSpan::border2_selection_changed(bool select)
+{
+    if (_border2 == _lower_border())
+    {
+        Q_EMIT lower_border_selection_changed(select);
+    }
+    else
+    {
+        Q_EMIT upper_border_selection_changed(select);
+    }
+}
+
 VerticalSpan::VerticalSpan(
     QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot, bool immediate_replot)
         : SciQLopPlotItem { plot }
@@ -106,13 +130,13 @@ double VerticalSpan::selectTest(const QPointF& pos, bool onlySelectable, QVarian
     auto width = right - left;
     {
         auto left_border_distance = this->_lower_border()->selectTest(pos, onlySelectable, details);
-        if (left_border_distance != -1. and left_border_distance <= std::max(10., width * 0.1))
+        if (left_border_distance != -1. and left_border_distance <= (width * 0.1))
             return -1.;
     }
     {
         auto right_border_distance
             = this->_upper_border()->selectTest(pos, onlySelectable, details);
-        if (right_border_distance != -1. and right_border_distance <= std::max(10., width * 0.1))
+        if (right_border_distance != -1. and right_border_distance <= (width * 0.1))
             return -1.;
     }
 
@@ -124,6 +148,26 @@ double VerticalSpan::selectTest(const QPointF& pos, bool onlySelectable, QVarian
     {
 
         return std::min(abs(pos.x() - left), abs(pos.x() - right));
+    }
+}
+
+void VerticalSpan::select_lower_border(bool selected)
+{
+    if (this->_lower_border()->selected() != selected or _lower_border_selected != selected)
+    {
+        _lower_border_selected = selected;
+        this->_lower_border()->setSelected(selected);
+        Q_EMIT lower_border_selection_changed(selected);
+    }
+}
+
+void VerticalSpan::select_upper_border(bool selected)
+{
+    if (this->_upper_border()->selected() != selected or _upper_border_selected != selected)
+    {
+        _upper_border_selected = selected;
+        this->_upper_border()->setSelected(selected);
+        Q_EMIT upper_border_selection_changed(selected);
     }
 }
 

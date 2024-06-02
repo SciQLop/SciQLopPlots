@@ -140,29 +140,9 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
         }
     }
 
-    void border1_selection_changed(bool select)
-    {
-        if (_border1 == _lower_border())
-        {
-            Q_EMIT lower_border_selection_changed(select);
-        }
-        else
-        {
-            Q_EMIT upper_border_selection_changed(select);
-        }
-    }
+    void border1_selection_changed(bool select);
 
-    void border2_selection_changed(bool select)
-    {
-        if (_border2 == _lower_border())
-        {
-            Q_EMIT lower_border_selection_changed(select);
-        }
-        else
-        {
-            Q_EMIT upper_border_selection_changed(select);
-        }
-    }
+    void border2_selection_changed(bool select);
 
 public:
 #ifndef BINDINGS_H
@@ -237,25 +217,9 @@ public:
         return this->_border1->pen().color();
     }
 
-    inline void select_lower_border(bool selected)
-    {
-        if (this->_lower_border()->selected() != selected or _lower_border_selected != selected)
-        {
-            _lower_border_selected = selected;
-            this->_lower_border()->setSelected(selected);
-            Q_EMIT lower_border_selection_changed(selected);
-        }
-    }
+    void select_lower_border(bool selected);
 
-    inline void select_upper_border(bool selected)
-    {
-        if (this->_upper_border()->selected() != selected or _upper_border_selected != selected)
-        {
-            _upper_border_selected = selected;
-            this->_upper_border()->setSelected(selected);
-            Q_EMIT upper_border_selection_changed(selected);
-        }
-    }
+    void select_upper_border(bool selected);
 
     inline void set_color(const QColor& color)
     {
