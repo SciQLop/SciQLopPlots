@@ -149,6 +149,7 @@ public:
     Q_SIGNAL void range_changed(QCPRange new_time_range);
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
+    Q_SIGNAL void delete_requested();
 #endif
 
     VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false,
@@ -167,19 +168,7 @@ public:
         this->parentPlot()->removeItem(this->_border2);
     }
 
-    void keyPressEvent(QKeyEvent* event) override
-    {
-        if (this->selected())
-        {
-            if (event->key() == Qt::Key_Delete)
-            {
-                this->parentPlot()->removeItem(this);
-                this->parentPlot()->removeItem(this->_border1);
-                this->parentPlot()->removeItem(this->_border2);
-                this->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
-            }
-        }
-    }
+    void keyPressEvent(QKeyEvent* event) override;
 
     inline void set_visible(bool visible)
     {
@@ -253,13 +242,16 @@ class SciQLopVerticalSpan : public QObject
 protected:
     inline void select_lower_border(bool selected) { _impl->select_lower_border(selected); }
     inline void select_upper_border(bool selected) { _impl->select_upper_border(selected); }
+#ifndef BINDINGS_H
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
+#endif
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
     Q_SIGNAL void selectionChanged(bool);
+    Q_SIGNAL void delete_requested();
 #endif
 
     SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false);
@@ -331,6 +323,7 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
     Q_SIGNAL void selection_changed(bool);
+    Q_SIGNAL void delete_requested();
 #endif
 
     MultiPlotsVerticalSpan(QList<QCustomPlot*> plots, QCPRange horizontal_range, QColor color,

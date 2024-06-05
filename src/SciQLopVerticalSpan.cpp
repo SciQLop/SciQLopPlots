@@ -98,6 +98,17 @@ VerticalSpan::VerticalSpan(
         this->replot(immediate_replot);
 }
 
+void VerticalSpan::keyPressEvent(QKeyEvent *event)
+{
+    if (this->selected())
+    {
+        if (event->key() == Qt::Key_Delete)
+        {
+            Q_EMIT delete_requested();
+        }
+    }
+}
+
 void VerticalSpan::set_range(const QCPRange horizontal_range)
 {
     if (this->range() != horizontal_range)
@@ -185,6 +196,9 @@ SciQLopVerticalSpan::SciQLopVerticalSpan(
     connect(this->_impl, &VerticalSpan::upper_border_selection_changed, this,
         &SciQLopVerticalSpan::upper_border_selection_changed);
 
+    connect(
+        this->_impl, &VerticalSpan::delete_requested, this, &SciQLopVerticalSpan::delete_requested);
+
     connect(this->_impl, &VerticalSpan::destroyed, this,
         [this]()
         {
@@ -246,6 +260,8 @@ void MultiPlotsVerticalSpan::update_plot_list(QList<QCustomPlot*> new_plots)
                 &MultiPlotsVerticalSpan::select_lower_border);
             QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
                 &MultiPlotsVerticalSpan::select_upper_border);
+            QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
+                &MultiPlotsVerticalSpan::delete_requested);
             _spans.append(new_span);
             _plots.append(new_plots[i]);
         }
