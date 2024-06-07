@@ -40,6 +40,35 @@ void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
     QCustomPlot::mouseReleaseEvent(event);
 }
 
+void SciQLopPlot::wheelEvent(QWheelEvent* event)
+{
+    const auto pos = event->position();
+    const auto wheelSteps = event->angleDelta().y() / 120.0;
+    foreach (QCPLayerable* candidate, layerableListAt(pos, false))
+    {
+        if (auto axis = qobject_cast<QCPAxis*>(candidate); axis != nullptr)
+        {
+            const auto factor
+                = qPow(axis->axisRect()->rangeZoomFactor(axis->orientation()), wheelSteps);
+            axis->scaleRange(factor,
+                axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
+            event->accept();
+            this->replot(rpQueuedReplot);
+            return;
+        }
+        else if (auto axisRect = qobject_cast<QCPAxisRect*>(candidate); axisRect != nullptr)
+        {
+            // horizontal pan
+            axisRect->axis(QCPAxis::atBottom)
+                ->moveRange(wheelSteps / 50. * axisRect->axis(QCPAxis::atBottom)->range().size());
+            this->replot(rpQueuedReplot);
+            event->accept();
+            return;
+        }
+    }
+    QCustomPlot::wheelEvent(event);
+}
+
 void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
     auto items = selectedItems();

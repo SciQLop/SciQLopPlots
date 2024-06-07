@@ -34,6 +34,7 @@ class SciQLopGraph : public QObject
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
     QList<QCPGraph*> _graphs;
+    bool _auto_scale_y = false;
 
     Q_OBJECT
 
@@ -71,6 +72,9 @@ public:
     void create_graphs(const QStringList& labels);
 
     inline std::size_t line_count() { return std::size(this->_graphs); }
+
+    inline void set_auto_scale_y(bool auto_scale_y) { _auto_scale_y = auto_scale_y; }
+    inline bool auto_scale_y() const noexcept { return _auto_scale_y; }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
