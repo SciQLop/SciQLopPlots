@@ -414,20 +414,8 @@ public:
     [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
 
 
-    inline void show()
-    {
-        for (auto span : _spans)
-        {
-            span->set_visible(true);
-        }
-    }
+    inline void show() { set_visible(true); }
 
 
-    inline void hide()
-    {
-        for (auto span : _spans)
-        {
-            span->set_visible(false);
-        }
-    }
+    inline void hide() { set_visible(false); }
 };
