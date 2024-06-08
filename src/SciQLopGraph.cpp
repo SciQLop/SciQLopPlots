@@ -38,6 +38,12 @@ void SciQLopGraph::create_graphs(const QStringList& labels)
     _resampler->set_line_count(std::size(_graphs));
 }
 
+void SciQLopGraph::set_auto_scale_y(bool auto_scale_y)
+{
+    _auto_scale_y = auto_scale_y;
+    Q_EMIT auto_scale_y_changed(auto_scale_y);
+}
+
 void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {
     const auto data_x_range = this->_resampler->x_range();

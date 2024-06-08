@@ -38,6 +38,9 @@ class SciQLopPlot : public QCustomPlot
     double m_scroll_factor = 1.;
 
 public:
+#ifndef BINDINGS_H
+    Q_SIGNAL void scroll_factor_changed(double factor);
+#endif
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {
         using namespace Constants;
@@ -48,7 +51,9 @@ public:
             LayersNames::SpansBorders, this->layer(LayersNames::Spans), QCustomPlot::limAbove);
         this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
         this->layer(LayersNames::SpansBorders)->setVisible(true);
+        this->setFocusPolicy(Qt::StrongFocus);
     }
+
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE { }
     inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
     {
@@ -91,8 +96,7 @@ public:
         return sg;
     }
 
-    inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
-
+    void set_scroll_factor(double factor) noexcept;
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
 
 protected:
@@ -104,7 +108,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* event) override;
 
     virtual bool event(QEvent* event) override;
+
 private:
-    void _wheel_pan(QCPAxis *axis, const double wheelSteps, const QPointF &pos);
-    void _wheel_zoom(QCPAxis *axis, const double wheelSteps, const QPointF &pos);
+    void _wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos);
+    void _wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPointF& pos);
 };

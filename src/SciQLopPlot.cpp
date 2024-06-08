@@ -25,6 +25,12 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <type_traits>
 
+void SciQLopPlot::set_scroll_factor(double factor) noexcept
+{
+    m_scroll_factor = factor;
+    Q_EMIT scroll_factor_changed(factor);
+}
+
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
     QCustomPlot::mousePressEvent(event);
@@ -68,8 +74,12 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
         }
         else if (auto axisRect = qobject_cast<QCPAxisRect*>(candidate); axisRect != nullptr)
         {
-            if (event->modifiers() & Qt::ControlModifier)
+            if (event->modifiers().testFlags(Qt::ShiftModifier | Qt::ControlModifier))
+                this->_wheel_pan(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
+            else if (event->modifiers().testFlag(Qt::ControlModifier))
                 this->_wheel_zoom(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
+            else if (event->modifiers().testFlag(Qt::ShiftModifier))
+                this->_wheel_zoom(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
             else
                 this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
             this->replot(rpQueuedReplot);
@@ -83,22 +93,69 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
 void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
     auto items = selectedItems();
+    event->setAccepted(false);
     std::for_each(items.begin(), items.end(),
-        [event](auto item)
+        [event, this](auto item)
         {
             if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
                 sciItem != nullptr)
             {
                 sciItem->keyPressEvent(event);
             }
+            else if (auto axis = dynamic_cast<QCPAxis*>(item); axis != nullptr)
+            {
+                if (axis->orientation() == Qt::Vertical)
+                {
+                    switch (event->key())
+                    {
+                        case Qt::Key_L:
+                        {
+                            if (axis->scaleType() == QCPAxis::stLinear)
+                                axis->setScaleType(QCPAxis::stLogarithmic);
+                            else
+                                axis->setScaleType(QCPAxis::stLinear);
+                            event->accept();
+                            this->replot(rpQueuedReplot);
+                        }
+                        case Qt::Key_M:
+                        {
+                            axis->rescale(true);
+                            event->accept();
+                            this->replot(rpQueuedReplot);
+                        }
+                    }
+                }
+            }
         });
+    if (event->isAccepted() == false)
+    {
+        switch (event->key())
+        {
+            case Qt::Key_L:
+            {
+                if (axisRect()->axis(QCPAxis::atLeft)->scaleType() == QCPAxis::stLinear)
+                    axisRect()->axis(QCPAxis::atLeft)->setScaleType(QCPAxis::stLogarithmic);
+                else
+                    axisRect()->axis(QCPAxis::atLeft)->setScaleType(QCPAxis::stLinear);
+                event->accept();
+                this->replot(rpQueuedReplot);
+            }
+            case Qt::Key_M:
+            {
+                axisRect()->axis(QCPAxis::atLeft)->rescale(true);
+                if (auto a = axisRect()->axis(QCPAxis::atRight); a != nullptr)
+                    a->rescale(true);
+                event->accept();
+                this->replot(rpQueuedReplot);
+            }
+        }
+    }
     if (event->isAccepted() == false)
         QCustomPlot::keyPressEvent(event);
 }
 
 bool SciQLopPlot::event(QEvent* event)
 {
-
     if (event->type() == QEvent::ToolTip)
     {
         QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
