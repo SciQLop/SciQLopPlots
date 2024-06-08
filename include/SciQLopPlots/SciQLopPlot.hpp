@@ -35,6 +35,8 @@ class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
 
+    double m_scroll_factor = 1.;
+
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
     {
@@ -89,6 +91,10 @@ public:
         return sg;
     }
 
+    inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
+
+    inline double scroll_factor() const noexcept { return m_scroll_factor; }
+
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -98,4 +104,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent* event) override;
 
     virtual bool event(QEvent* event) override;
+private:
+    void _wheel_pan(QCPAxis *axis, const double wheelSteps, const QPointF &pos);
+    void _wheel_zoom(QCPAxis *axis, const double wheelSteps, const QPointF &pos);
 };

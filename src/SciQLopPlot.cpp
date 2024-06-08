@@ -40,6 +40,19 @@ void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
     QCustomPlot::mouseReleaseEvent(event);
 }
 
+void SciQLopPlot::_wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
+{
+    const auto factor = qPow(axis->axisRect()->rangeZoomFactor(axis->orientation()), wheelSteps);
+    axis->scaleRange(
+        factor, axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
+}
+
+void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
+{
+    axis->moveRange(wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.
+        * axis->range().size());
+}
+
 void SciQLopPlot::wheelEvent(QWheelEvent* event)
 {
     const auto pos = event->position();
@@ -48,19 +61,17 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
     {
         if (auto axis = qobject_cast<QCPAxis*>(candidate); axis != nullptr)
         {
-            const auto factor
-                = qPow(axis->axisRect()->rangeZoomFactor(axis->orientation()), wheelSteps);
-            axis->scaleRange(factor,
-                axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
+            this->_wheel_zoom(axis, wheelSteps, pos);
             event->accept();
             this->replot(rpQueuedReplot);
             return;
         }
         else if (auto axisRect = qobject_cast<QCPAxisRect*>(candidate); axisRect != nullptr)
         {
-            // horizontal pan
-            axisRect->axis(QCPAxis::atBottom)
-                ->moveRange(wheelSteps / 50. * axisRect->axis(QCPAxis::atBottom)->range().size());
+            if (event->modifiers() & Qt::ControlModifier)
+                this->_wheel_zoom(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
+            else
+                this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
             this->replot(rpQueuedReplot);
             event->accept();
             return;
