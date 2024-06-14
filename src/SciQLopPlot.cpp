@@ -111,9 +111,15 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
                         case Qt::Key_L:
                         {
                             if (axis->scaleType() == QCPAxis::stLinear)
+                            {
                                 axis->setScaleType(QCPAxis::stLogarithmic);
+                                axis->setTicker(QSharedPointer<QCPAxisTickerLog>());
+                            }
                             else
+                            {
                                 axis->setScaleType(QCPAxis::stLinear);
+                                axis->setTicker(QSharedPointer<QCPAxisTicker>());
+                            }
                             event->accept();
                             this->replot(rpQueuedReplot);
                         }
