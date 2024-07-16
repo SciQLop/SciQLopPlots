@@ -66,6 +66,7 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
     QCustomPlot::mouseMoveEvent(event);
+    _update_mouse_cursor(event);
     _update_tracer(event->pos());
 }
 
@@ -220,17 +221,31 @@ bool SciQLopPlot::event(QEvent* event)
     return QWidget::event(event);
 }
 
-void SciQLopPlot::_update_tracer(const QPointF& pos)
+bool SciQLopPlot::_update_tracer(const QPointF& pos)
 {
     if (auto graph = _nearest_graph(pos); graph != nullptr)
     {
         m_tracer->set_graph(graph);
         m_tracer->update_position(pos);
+        return true;
     }
     else
     {
         m_tracer->set_graph(nullptr);
+        return false;
     }
+}
+
+bool SciQLopPlot::_update_mouse_cursor(QMouseEvent* event)
+{
+    const auto item = itemAt(event->pos(), false);
+    if (auto sciItem = dynamic_cast<SciQLopPlotItemBase*>(item); sciItem != nullptr)
+    {
+        this->setCursor(sciItem->cursor(event));
+        return true;
+    }
+    this->setCursor(Qt::ArrowCursor);
+    return false;
 }
 
 bool SciQLopPlot::_handle_tool_tip(QEvent* event)

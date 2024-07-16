@@ -23,8 +23,17 @@
 #include <QTimer>
 #include <qcustomplot.h>
 
+class SciQLopPlotItemBase
+{
+public:
+    virtual void mousePressEvent(QMouseEvent* event, const QVariant& details) = 0;
+    virtual void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) = 0;
+    virtual void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) = 0;
+    virtual QCursor cursor(QMouseEvent* event) const noexcept = 0;
+};
+
 template <typename QCPAbstractItem_T>
-class SciQLopPlotItem : public QCPAbstractItem_T
+class SciQLopPlotItem : public QCPAbstractItem_T, public SciQLopPlotItemBase
 {
 protected:
     bool _movable = false;
@@ -74,7 +83,10 @@ public:
         event->accept();
     }
     inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
+
+    virtual QCursor cursor(QMouseEvent* event) const noexcept { return Qt::ArrowCursor; }
 };
+
 
 class SciQLopItemWithKeyInteraction
 {

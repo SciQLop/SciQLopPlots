@@ -78,6 +78,7 @@ public:
     }
 
     void move(double dx, double dy) override;
+    inline QCursor cursor(QMouseEvent*) const noexcept override { return Qt::SizeHorCursor; }
 };
 
 
@@ -162,11 +163,14 @@ public:
         this->_border2->setMovable(movable);
     }
 
+
     ~VerticalSpan()
     {
         this->parentPlot()->removeItem(this->_border1);
         this->parentPlot()->removeItem(this->_border2);
     }
+
+    inline QCursor cursor(QMouseEvent*) const noexcept override { return Qt::SizeAllCursor; }
 
     void keyPressEvent(QKeyEvent* event) override;
 

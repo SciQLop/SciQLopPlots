@@ -102,8 +102,8 @@ protected:
 
     virtual bool event(QEvent* event) override;
 
-    void _update_tracer(const QPointF& pos);
-
+    bool _update_tracer(const QPointF& pos);
+    bool _update_mouse_cursor(QMouseEvent* event);
     bool _handle_tool_tip(QEvent* event);
     QCPGraph* _nearest_graph(const QPointF& pos);
     std::optional<std::tuple<double, double>> _nearest_data_point(
