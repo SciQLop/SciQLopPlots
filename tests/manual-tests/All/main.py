@@ -1,5 +1,5 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
-                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime
+                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, MultiPlotsVerticalSpan
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -41,7 +41,7 @@ class TimeSerieGraph(QWidget):
         QWidget.__init__(self,parent)
         self.plot = SciQLopPlot(self)
         self.plot.setOpenGl(True)
-        self.plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
+        self.plot.setInteractions(QCP.iRangeDrag | QCP.iRangeZoom | QCP.iSelectPlottables | QCP.iSelectAxes | QCP.iSelectLegend | QCP.iSelectItems)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
         date_ticker = QCPAxisTickerDateTime()
@@ -62,6 +62,14 @@ class TimeSerieGraph(QWidget):
         self.graph.graphAt(2).setPen(QPen(QColorConstants.Green))
         self.plot.xAxis.setRange(x[0],x[-1])
         self.plot.yAxis.setRange(-2,2)
+
+        middle = (x[0]+x[-1])/2
+        width = (x[-1]-x[0])/2
+
+        self._verticalSpan = MultiPlotsVerticalSpan([self.plot], QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span", parent=self)
+
+
+
 
 
 

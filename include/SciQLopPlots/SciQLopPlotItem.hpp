@@ -65,7 +65,7 @@ public:
     }
     inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
     {
-        if (this->selected() and _movable and event->buttons() == Qt::LeftButton)
+        if (_movable and event->buttons() == Qt::LeftButton)
         {
             move(event->position().x() - this->_last_position.x(),
                 event->position().y() - this->_last_position.y());
