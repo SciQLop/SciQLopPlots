@@ -1,4 +1,4 @@
-from SciQLopPlots import QCustomPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
+from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(400, 250, 542, 390);
 
     def _setup_ui(self):
-        plot: QCustomPlot = QCustomPlot(self)
+        plot: SciQLopPlot = SciQLopPlot(self)
         plot.setOpenGl(True)
         plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
         plot.plotLayout().clear()

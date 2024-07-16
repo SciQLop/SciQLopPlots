@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
 
     def _setup_ui(self):
         plot: SciQLopPlot = SciQLopPlot(self)
-        plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
+        plot.setInteractions(QCP.iRangeDrag | QCP.iRangeZoom | QCP.iSelectPlottables | QCP.iSelectAxes | QCP.iSelectLegend | QCP.iSelectItems)
         self.setCentralWidget(plot)
         self.graph = plot.addSciQLopGraph(plot.xAxis, plot.yAxis, ["X","Y","Z"])
         x=np.arange(3e7)*1.
@@ -45,7 +45,8 @@ class MainWindow(QMainWindow):
         plot.legend.setVisible(True)
 
         plot.rescaleAxes()
-        plot.setOpenGl(True)
+        #plot.setOpenGl(True)
+        plot.enable_cursor(True)
 
 
 if __name__ == '__main__':

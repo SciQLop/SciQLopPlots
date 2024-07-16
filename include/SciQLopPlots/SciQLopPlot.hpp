@@ -28,6 +28,7 @@
 #include <SciQLopPlots/SciQLopCurve.hpp>
 #include <SciQLopPlots/SciQLopGraph.hpp>
 #include <SciQLopPlots/SciQLopPlotItem.hpp>
+#include <SciQLopPlots/SciQLopTracer.hpp>
 #include <optional>
 #include <qcustomplot.h>
 
@@ -36,25 +37,15 @@ class SciQLopPlot : public QCustomPlot
     Q_OBJECT
 
     double m_scroll_factor = 1.;
+    TracerWithToolTip* m_tracer = nullptr;
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void scroll_factor_changed(double factor);
 #endif
-    explicit SciQLopPlot(QWidget* parent = nullptr) : QCustomPlot { parent }
-    {
-        using namespace Constants;
-        this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
-        this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
-        this->layer(LayersNames::Spans)->setVisible(true);
-        this->addLayer(
-            LayersNames::SpansBorders, this->layer(LayersNames::Spans), QCustomPlot::limAbove);
-        this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
-        this->layer(LayersNames::SpansBorders)->setVisible(true);
-        this->setFocusPolicy(Qt::StrongFocus);
-    }
+    explicit SciQLopPlot(QWidget* parent = nullptr);
 
-    virtual ~SciQLopPlot() Q_DECL_OVERRIDE { }
+    virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
     inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
     {
         auto cm = new QCPColorMap(x, y);
@@ -99,6 +90,8 @@ public:
     void set_scroll_factor(double factor) noexcept;
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
 
+    void enable_cursor(bool enable = true) noexcept;
+
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -108,6 +101,13 @@ protected:
     virtual void keyPressEvent(QKeyEvent* event) override;
 
     virtual bool event(QEvent* event) override;
+
+    void _update_tracer(const QPointF& pos);
+
+    bool _handle_tool_tip(QEvent* event);
+    QCPGraph* _nearest_graph(const QPointF& pos);
+    std::optional<std::tuple<double, double>> _nearest_data_point(
+        const QPointF& pos, QCPGraph* graph);
 
 private:
     void _wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos);

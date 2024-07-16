@@ -61,6 +61,8 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/SciQLopGraphResampler.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopCurveResampler.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopColorMapResampler.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopTracer.hpp',
+    project_source_root + '/include/SciQLopPlots/QCPItemRichText.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -88,6 +90,8 @@ sources = moc_files \
             '../src/SciQLopColorMap.cpp',
             '../src/SciQLopColorMapResampler.cpp',
             '../src/BufferProtocol.cpp',
+            '../src/SciQLopTracer.cpp',
+            '../src/QCPItemRichText.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 

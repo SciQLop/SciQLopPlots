@@ -21,15 +21,42 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotItem.hpp"
+#include <QGestureRecognizer>
+#include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <type_traits>
+
+
+SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
+{
+    using namespace Constants;
+    this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
+    this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
+    this->layer(LayersNames::Spans)->setVisible(true);
+    this->addLayer(
+        LayersNames::SpansBorders, this->layer(LayersNames::Spans), QCustomPlot::limAbove);
+    this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
+    this->layer(LayersNames::SpansBorders)->setVisible(true);
+    this->setFocusPolicy(Qt::StrongFocus);
+    this->grabGesture(Qt::PinchGesture);
+    this->grabGesture(Qt::PanGesture);
+
+    this->m_tracer = new TracerWithToolTip(this);
+}
+
+SciQLopPlot::~SciQLopPlot()
+{
+    delete m_tracer;
+}
 
 void SciQLopPlot::set_scroll_factor(double factor) noexcept
 {
     m_scroll_factor = factor;
     Q_EMIT scroll_factor_changed(factor);
 }
+
+void SciQLopPlot::enable_cursor(bool enable) noexcept { }
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
@@ -39,6 +66,7 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
     QCustomPlot::mouseMoveEvent(event);
+    _update_tracer(event->pos());
 }
 
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
@@ -160,21 +188,88 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
         QCustomPlot::keyPressEvent(event);
 }
 
+
 bool SciQLopPlot::event(QEvent* event)
 {
     if (event->type() == QEvent::ToolTip)
     {
-        QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
-        auto itm = dynamic_cast<SciQlopItemWithToolTip*>(itemAt(helpEvent->pos(), true));
-        if (itm)
+        return this->_handle_tool_tip(event);
+    }
+    if (event->type() == QEvent::Gesture)
+    {
+        QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
+        if (QGesture* pan = gestureEvent->gesture(Qt::PanGesture); pan != nullptr)
         {
-            QToolTip::showText(helpEvent->globalPos(), itm->tooltip());
+            if (auto p = dynamic_cast<QPanGesture*>(pan); p != nullptr)
+            {
+                std::cout << "PAN" << std::endl;
+                event->accept();
+            }
         }
-        else
-            QToolTip::hideText();
-
+        if (QGesture* pinch = gestureEvent->gesture(Qt::PinchGesture); pinch != nullptr)
+        {
+            if (auto p = dynamic_cast<QPinchGesture*>(pinch); p != nullptr)
+            {
+                std::cout << "PINCH" << std::endl;
+                event->accept();
+            }
+        }
         return true;
     }
 
     return QWidget::event(event);
+}
+
+void SciQLopPlot::_update_tracer(const QPointF& pos)
+{
+    if (auto graph = _nearest_graph(pos); graph != nullptr)
+    {
+        m_tracer->set_graph(graph);
+        m_tracer->update_position(pos);
+    }
+    else
+    {
+        m_tracer->set_graph(nullptr);
+    }
+}
+
+bool SciQLopPlot::_handle_tool_tip(QEvent* event)
+{
+    QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
+    {
+        auto itm = itemAt(helpEvent->pos(), false);
+        if (itm)
+        {
+            if (auto itm_with_tt = dynamic_cast<SciQlopItemWithToolTip*>(itm); itm_with_tt)
+            {
+                QToolTip::showText(helpEvent->globalPos(), itm_with_tt->tooltip());
+                return true;
+            }
+        }
+    }
+    if (!m_tracer->visible())
+        QToolTip::hideText();
+    return true;
+}
+
+QCPGraph* SciQLopPlot::_nearest_graph(const QPointF& pos)
+{
+    return plottableAt<QCPGraph>(pos, false);
+}
+
+std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
+    const QPointF& pos, QCPGraph* graph)
+{
+    QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
+    QVariant details;
+    if (graph->selectTest(pos, false, &details))
+    {
+        QCPDataSelection dataPoints = details.value<QCPDataSelection>();
+        if (dataPoints.dataPointCount() > 0)
+        {
+            it = graph->data()->at(dataPoints.dataRange().begin());
+            return std::make_tuple(it->key, it->value);
+        }
+    }
+    return std::nullopt;
 }

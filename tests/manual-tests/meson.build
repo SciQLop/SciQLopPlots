@@ -4,6 +4,7 @@ examples = [
     {'name':'SciQLopColorMap', 'source': meson.current_source_dir()+'/SciQLopColorMap/main.py'},
     {'name':'StackedGraphs', 'source': meson.current_source_dir()+'/StackedGraphs/main.py'},
     {'name':'SciQLopVerticalSpan', 'source': meson.current_source_dir()+'/SciQLopVerticalSpan/main.py'},
+    {'name':'All', 'source': meson.current_source_dir()+'/All/main.py'},
 ]
 
 foreach example:examples
