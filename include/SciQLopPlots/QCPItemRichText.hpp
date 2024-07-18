@@ -34,6 +34,7 @@ public:
     QCPItemRichText(QCustomPlot* parentPlot);
     virtual ~QCPItemRichText() { }
     void setHtml(const QString& html);
+    void setHtml(const std::string& html);
 
 protected:
     virtual void draw(QCPPainter* painter) Q_DECL_OVERRIDE;

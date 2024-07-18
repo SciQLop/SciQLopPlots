@@ -36,6 +36,11 @@ void QCPItemRichText::setHtml(const QString& html)
     _boundingRect = QRect(0, 0, m_textDocument.idealWidth(), m_textDocument.size().height());
 }
 
+void QCPItemRichText::setHtml(const std::string& html)
+{
+    setHtml(QString::fromStdString(html));
+}
+
 void QCPItemRichText::draw(QCPPainter* painter)
 {
     QPointF pos(position->pixelPosition());
@@ -66,7 +71,8 @@ void QCPItemRichText::draw(QCPPainter* painter)
         }
         painter->setBrush(Qt::NoBrush);
         painter->setPen(QPen(mainColor()));
-        painter->translate(getTextDrawPoint(QPointF(0, 0), textRect, mPositionAlignment));
+        painter->translate(textPos);
+        painter->translate(mPadding.left(), mPadding.top());
         m_textDocument.drawContents(painter);
     }
 }

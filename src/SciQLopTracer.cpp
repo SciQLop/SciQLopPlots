@@ -20,22 +20,41 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopTracer.hpp"
-
+#include <fmt/chrono.h>
+#include <fmt/core.h>
 
 namespace _impl
 {
-QString _render_value(const double value, const QCPAxis* const axis)
+int _microseconds(const double epoch)
+{
+    return static_cast<int>((epoch * 1e3 - static_cast<int>(epoch * 1e3)) * 1e3);
+}
+
+int _nanoseconds(const double epoch)
+{
+    return static_cast<int>((epoch - static_cast<int>(epoch)) * 1e9);
+}
+
+std::string _render_value(const double value, const QCPAxis* const axis)
 {
     if (auto datetime_ticker = axis->ticker().dynamicCast<const QCPAxisTickerDateTime>();
         !datetime_ticker.isNull())
     {
-        return QCPAxisTickerDateTime::keyToDateTime(value).toString(
-            datetime_ticker->dateTimeFormat());
+        const auto duration = axis->range().size();
+        const auto datetime = std::chrono::system_clock::from_time_t(value)
+            + std::chrono::nanoseconds(_nanoseconds(value));
+        if (duration > 60 * 60 * 24)
+            return fmt::format("{:%Y-%m-%d %H:%M}", datetime);
+        if (duration > 60 * 60)
+            return fmt::format(
+                "{:%H:%M:%S}", std::chrono::floor<std::chrono::milliseconds>(datetime));
+        return fmt::format("{:%M:%S}", std::chrono::floor<std::chrono::microseconds>(datetime));
     }
-    return QString::number(value);
+    return fmt::format("{:.3f}", value);
 }
 
-std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos, QCPGraph* graph)
+std::optional<std::tuple<double, double>> _nearest_data_point(
+    const QPointF& pos, const QCPGraph* graph)
 {
     QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
     QVariant details;
@@ -50,6 +69,49 @@ std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos
     }
     return std::nullopt;
 }
+
+enum class PlotQuadrant
+{
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight
+};
+
+PlotQuadrant _quadrant(const QPointF& pos, const QCPAxisRect* axisRect)
+{
+    const auto rect = axisRect->rect();
+    if (pos.x() < rect.center().x())
+    {
+        if (pos.y() < rect.center().y())
+            return PlotQuadrant::TopLeft;
+        return PlotQuadrant::BottomLeft;
+    }
+    if (pos.y() < rect.center().y())
+        return PlotQuadrant::TopRight;
+    return PlotQuadrant::BottomRight;
+}
+
+void _update_tooltip_alignment(QCPItemRichText* tooltip, const QPointF& pos, const QCPGraph* graph)
+{
+    const auto quadrant = _quadrant(pos, graph->valueAxis()->axisRect());
+    switch (quadrant)
+    {
+        case PlotQuadrant::TopLeft:
+            tooltip->setPositionAlignment(Qt::AlignLeft | Qt::AlignTop);
+            break;
+        case PlotQuadrant::TopRight:
+            tooltip->setPositionAlignment(Qt::AlignRight | Qt::AlignTop);
+            break;
+        case PlotQuadrant::BottomLeft:
+            tooltip->setPositionAlignment(Qt::AlignLeft | Qt::AlignBottom);
+            break;
+        case PlotQuadrant::BottomRight:
+            tooltip->setPositionAlignment(Qt::AlignRight | Qt::AlignBottom);
+            break;
+    }
+}
+
 } // namespace _impl
 
 
@@ -58,11 +120,12 @@ TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
 {
     m_tooltip->setClipToAxisRect(false);
     m_tooltip->setPadding(QMargins(5, 5, 5, 5));
-    m_tooltip->setBrush(QBrush(QColor(0xeef2f7)));
-    m_tooltip->setPen(QPen(QColor(0, 0, 0, 200)));
+    m_tooltip->setBrush(QBrush(QColor(0xee, 0xf2, 0xf7, 200)));
+    m_tooltip->setPen(QPen(QBrush(QColor(0, 0, 0, 200)), 1., Qt::DashLine));
+
     m_tooltip->setPositionAlignment(Qt::AlignTop | Qt::AlignHCenter);
     m_tooltip->setTextAlignment(Qt::AlignLeft);
-    m_tooltip->setLayer(this->m_tracer->layer());
+    m_tooltip->setLayer("overlay");
     m_tooltip->setVisible(false);
     m_tracer->setStyle(QCPItemTracer::TracerStyle::tsCircle);
 }
@@ -79,16 +142,14 @@ void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
         return;
     if (!visible())
         set_visible(true);
-    const auto [x, y]
-        = _impl::_nearest_data_point(pos, m_tracer->graph()).value_or(std::make_tuple(0, 0));
-    m_x = x;
-    m_y = y;
-    m_tracer->setGraphKey(x);
-    m_tooltip->position->setCoords(x, y);
     const auto graph = m_tracer->graph();
-    m_tooltip->setHtml(QString("x: <b>%1</b><hr>y: <b>%2</b>")
-                           .arg(_impl::_render_value(x, graph->keyAxis()),
-                               _impl::_render_value(y, graph->valueAxis())));
+    std::tie(m_x, m_y) = _impl::_nearest_data_point(pos, graph).value_or(std::make_tuple(0, 0));
+    m_tracer->setGraphKey(m_x);
+    _impl::_update_tooltip_alignment(m_tooltip, pos, graph);
+    m_tooltip->position->setCoords(m_x, m_y);
+    m_tooltip->setHtml(
+        fmt::format("x: <b>{}</b><br>y: <b>{}</b>", _impl::_render_value(m_x, graph->keyAxis()),
+            _impl::_render_value(m_y, graph->valueAxis())));
     if (replot)
         this->replot();
 }

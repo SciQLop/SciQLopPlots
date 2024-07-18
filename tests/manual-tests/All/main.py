@@ -1,5 +1,6 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
-                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, MultiPlotsVerticalSpan
+                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
+                         MultiPlotsVerticalSpan, QCPAxisTickerLog
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -10,65 +11,112 @@ from datetime import datetime
 from types import SimpleNamespace
 
 
+def make_plot(parent, time_axis=False):
+    plot = SciQLopPlot(parent)
+    plot.setInteractions(QCP.iRangeDrag | QCP.iRangeZoom | QCP.iSelectPlottables | QCP.iSelectAxes | QCP.iSelectLegend | QCP.iSelectItems)
+    if time_axis:
+        date_ticker = QCPAxisTickerDateTime()
+        date_ticker.setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz")
+        date_ticker.setDateTimeSpec(Qt.UTC)
+        plot.xAxis.setTicker(date_ticker)
+    return plot
+
+def add_graph(plot, time_axis=False):
+    graph = plot.addSciQLopGraph(plot.axisRect().axis(QCPAxis.atBottom), plot.axisRect().axis(QCPAxis.atLeft), ["X","Y","Z"])
+    x=np.arange(3000, dtype=np.float64)
+    x=np.arange(3000, dtype=np.float64)
+    y=np.cos(np.array([x/60.,x/600.,x/6000.])) * [[1.],[1.3],[1.7]]
+    if time_axis:
+        x+=datetime.now().timestamp()
+    graph.setData(x,y)
+
+    graph.graphAt(0).setPen(QPen(QColorConstants.Red))
+    graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
+    graph.graphAt(2).setPen(QPen(QColorConstants.Green))
+
+    plot.xAxis.setRange(x[0],x[-1])
+    plot.yAxis.setRange(1.2*np.min(y),1.2*np.max(y))
+    return graph
+
+def add_colormap(plot):
+    x_axis = plot.axisRect().axis(QCPAxis.atBottom)
+    y_axis = plot.axisRect().axis(QCPAxis.atRight)
+    colormap = plot.addSciQLopColorMap(x_axis, y_axis, "Cmap")
+    colormap.colorMap().setLayer(plot.layer("background"))
+    color_scale = QCPColorScale(plot)
+    plot.plotLayout().addElement(0, 1, color_scale)
+
+    color_scale.setDataScaleType(QCPAxis.stLogarithmic)
+    color_scale.axis().setTicker(QCPAxisTickerLog())
+    color_scale.setType(QCPAxis.atRight)
+
+    colormap.colorMap().setColorScale(color_scale)
+    colormap.colorMap().setInterpolate(False)
+    colormap.colorMap().setDataScaleType(QCPAxis.stLogarithmic)
+
+    y_axis.setScaleType(QCPAxis.stLogarithmic)
+    y_axis.setTicker(QCPAxisTickerLog())
+    y_axis.setVisible(True)
+
+
+    scale = QCPColorGradient(QCPColorGradient.gpJet)
+    scale.setNanHandling(QCPColorGradient.nhTransparent)
+    colormap.colorMap().setGradient(scale)
+    colormap.colorMap().addToLegend()
+
+    return color_scale, colormap
+
 
 class SimpleGraph(QWidget):
     def __init__(self,parent):
         QWidget.__init__(self,parent)
-        self.plot = SciQLopPlot(self)
-        self.plot.setOpenGl(True)
-        self.plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
+        self.plot = make_plot(self)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
-        self.graph = self.plot.addSciQLopGraph(self.plot.axisRect().axis(QCPAxis.atBottom), self.plot.axisRect().axis(QCPAxis.atLeft), ["X","Y","Z"])
-        x=np.arange(3000, dtype=np.float64)
-        y=np.ones((3,len(x)), dtype=np.float64)
-        y[0]=np.cos(x/60.)
-        y[1]=np.cos(x/600.)*1.3
-        y[2]=np.cos(x/6000.)*1.7
-        self.graph.setData(x,y)
-
-        self.graph.graphAt(0).setPen(QPen(QColorConstants.Red))
-        self.graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
-        self.graph.graphAt(2).setPen(QPen(QColorConstants.Green))
-
-        self.plot.xAxis.setRange(x[0],x[-1])
-        self.plot.yAxis.setRange(-2,2)
+        self.graph = add_graph(self.plot)
 
 
 
 class TimeSerieGraph(QWidget):
     def __init__(self,parent):
         QWidget.__init__(self,parent)
-        self.plot = SciQLopPlot(self)
-        self.plot.setOpenGl(True)
-        self.plot.setInteractions(QCP.iRangeDrag | QCP.iRangeZoom | QCP.iSelectPlottables | QCP.iSelectAxes | QCP.iSelectLegend | QCP.iSelectItems)
+        self.plot = make_plot(self, time_axis=True)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
-        date_ticker = QCPAxisTickerDateTime()
-        date_ticker.setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz")
-        date_ticker.setDateTimeSpec(Qt.UTC)
-        self.plot.xAxis.setTicker(date_ticker)
-        self.graph = self.plot.addSciQLopGraph(self.plot.axisRect().axis(QCPAxis.atBottom), self.plot.axisRect().axis(QCPAxis.atLeft), ["X","Y","Z"])
-        x=np.arange(3000, dtype=np.float64)
-        y=np.ones((3,len(x)), dtype=np.float64)
-        y[0]=np.cos(x/60.)
-        y[1]=np.cos(x/600.)*1.3
-        y[2]=np.cos(x/6000.)*1.7
-        x+=datetime.now().timestamp()
-        self.graph.setData(x,y)
 
-        self.graph.graphAt(0).setPen(QPen(QColorConstants.Red))
-        self.graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
-        self.graph.graphAt(2).setPen(QPen(QColorConstants.Green))
-        self.plot.xAxis.setRange(x[0],x[-1])
-        self.plot.yAxis.setRange(-2,2)
+        self.graph = add_graph(self.plot, time_axis=True)
 
-        middle = (x[0]+x[-1])/2
-        width = (x[-1]-x[0])/2
+        x_range = self.plot.xAxis.range()
+
+        middle = x_range.center()
+        width = x_range.size()
 
         self._verticalSpan = MultiPlotsVerticalSpan([self.plot], QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span", parent=self)
 
+        self._ro_verticalSpan = MultiPlotsVerticalSpan([self.plot], QCPRange(middle+width/20, middle+width/10), QColor(200, 100, 100, 100), read_only=True, visible=True, tool_tip="Vertical Span", parent=self)
 
+
+
+class StackedPlots(QWidget):
+    def __init__(self,parent):
+        QWidget.__init__(self,parent)
+        self.setLayout(QVBoxLayout())
+        self.plots = []
+        self.graphs = []
+        for _ in range(3):
+            plot = make_plot(None, time_axis=True)
+            self.plots.append(plot)
+            self.layout().addWidget(plot)
+            self.graphs.append(add_graph(plot, time_axis=True))
+
+        self.color_scale, self.colormap = add_colormap(self.plots[-1])
+
+        x_range = self.plots[0].xAxis.range()
+
+        middle = x_range.center()
+        width = x_range.size()
+
+        self._verticalSpan = MultiPlotsVerticalSpan(self.plots, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span", parent=self)
 
 
 
@@ -82,6 +130,7 @@ class Tabs(QTabWidget):
         self.setMovable(True)
         self.addTab(SimpleGraph(self), "Simple Graph")
         self.addTab(TimeSerieGraph(self), "Time Serie Graph")
+        self.addTab(StackedPlots(self), "Stacked Plots")
 
 
 

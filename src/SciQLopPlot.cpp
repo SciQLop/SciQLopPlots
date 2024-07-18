@@ -223,7 +223,7 @@ bool SciQLopPlot::event(QEvent* event)
 
 bool SciQLopPlot::_update_tracer(const QPointF& pos)
 {
-    if (auto graph = _nearest_graph(pos); graph != nullptr)
+    if (auto graph = _nearest_graph(pos); graph != nullptr && graph->visible())
     {
         m_tracer->set_graph(graph);
         m_tracer->update_position(pos);

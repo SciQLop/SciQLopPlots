@@ -78,7 +78,12 @@ public:
     }
 
     void move(double dx, double dy) override;
-    inline QCursor cursor(QMouseEvent*) const noexcept override { return Qt::SizeHorCursor; }
+    inline QCursor cursor(QMouseEvent*) const noexcept override
+    {
+        if (movable())
+            return Qt::SizeHorCursor;
+        return Qt::ArrowCursor;
+    }
 };
 
 
@@ -170,7 +175,12 @@ public:
         this->parentPlot()->removeItem(this->_border2);
     }
 
-    inline QCursor cursor(QMouseEvent*) const noexcept override { return Qt::SizeAllCursor; }
+    inline QCursor cursor(QMouseEvent*) const noexcept override
+    {
+        if (movable())
+            return Qt::SizeAllCursor;
+        return Qt::ArrowCursor;
+    }
 
     void keyPressEvent(QKeyEvent* event) override;
 
