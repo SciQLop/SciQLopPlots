@@ -34,7 +34,11 @@ void SciQLopColorMap::_cmap_got_destroyed()
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QString& name, DataOrder dataOrder)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+        : QObject(parent)
+        , _icon_update_timer { new QTimer(this) }
+        , _keyAxis { keyAxis }
+        , _valueAxis { valueAxis }
+        , _dataOrder { dataOrder }
 {
     this->_cmap = new QCPColorMap(keyAxis, valueAxis);
     this->_cmap->setName(name);
@@ -46,14 +50,25 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
+    this->_icon_update_timer->setInterval(1000);
+    this->_icon_update_timer->setSingleShot(true);
+    connect(
+        this->_icon_update_timer, &QTimer::timeout, this->_cmap,
+        [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
     connect(
         this->_resampler, &ColormapResampler::refreshPlot, this,
         [this](QCPColorMapData* data)
         {
             this->colorMap()->setData(data, false);
+            if (this->_auto_scale_y)
+            {
+                this->_valueAxis->rescale(true);
+            }
             this->_plot()->replot(QCustomPlot::rpQueuedReplot);
+            this->_icon_update_timer->start();
         },
         Qt::QueuedConnection);
+    this->colorMap()->updateLegendIcon();
 }
 
 SciQLopColorMap::~SciQLopColorMap()
@@ -77,5 +92,10 @@ void SciQLopColorMap::setData(Array_view&& x, Array_view&& y, Array_view&& z)
         this->_resampler->setData(
             std::move(x), std::move(y), std::move(z), _valueAxis->scaleType());
     }
-    this->_plot()->replot(QCustomPlot::rpQueuedReplot);
+}
+
+void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
+{
+    _auto_scale_y = auto_scale_y;
+    Q_EMIT auto_scale_y_changed(auto_scale_y);
 }

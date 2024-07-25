@@ -33,11 +33,14 @@ class SciQLopColorMap : public QObject
     ColormapResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
+    QTimer* _icon_update_timer;
+
     QCPRange _data_x_range;
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
     QCPColorMap* _cmap;
     QMutex _data_swap_mutex;
+    bool _auto_scale_y = false;
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -59,9 +62,12 @@ public:
 
     void setData(Array_view&& x, Array_view&& y, Array_view&& z);
     inline QCPColorMap* colorMap() const { return _cmap; }
+    void set_auto_scale_y(bool auto_scale_y);
+    inline bool auto_scale_y() const { return _auto_scale_y; }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
+    Q_SIGNAL void auto_scale_y_changed(bool);
 #endif
 private:
     DataOrder _dataOrder = DataOrder::xFirst;

@@ -43,6 +43,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->grabGesture(Qt::PanGesture);
 
     this->m_tracer = new TracerWithToolTip(this);
+    this->setMouseTracking(true);
 }
 
 SciQLopPlot::~SciQLopPlot()
@@ -68,6 +69,20 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
     QCustomPlot::mouseMoveEvent(event);
     _update_mouse_cursor(event);
     _update_tracer(event->pos());
+    QWidget::mouseMoveEvent(event);
+}
+
+void SciQLopPlot::enterEvent(QEnterEvent* event)
+{
+    event->accept();
+    QCustomPlot::enterEvent(event);
+}
+
+void SciQLopPlot::leaveEvent(QEvent* event)
+{
+    m_tracer->set_plotable(nullptr);
+    event->accept();
+    QCustomPlot::leaveEvent(event);
 }
 
 void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
@@ -192,6 +207,7 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 
 bool SciQLopPlot::event(QEvent* event)
 {
+    auto r = QCustomPlot::event(event);
     if (event->type() == QEvent::ToolTip)
     {
         return this->_handle_tool_tip(event);
@@ -203,7 +219,6 @@ bool SciQLopPlot::event(QEvent* event)
         {
             if (auto p = dynamic_cast<QPanGesture*>(pan); p != nullptr)
             {
-                std::cout << "PAN" << std::endl;
                 event->accept();
             }
         }
@@ -211,27 +226,26 @@ bool SciQLopPlot::event(QEvent* event)
         {
             if (auto p = dynamic_cast<QPinchGesture*>(pinch); p != nullptr)
             {
-                std::cout << "PINCH" << std::endl;
                 event->accept();
             }
         }
         return true;
     }
-
-    return QWidget::event(event);
+    return r;
 }
 
 bool SciQLopPlot::_update_tracer(const QPointF& pos)
 {
-    if (auto graph = _nearest_graph(pos); graph != nullptr && graph->visible())
+    auto plotable = plottableAt(pos, false);
+    if (plotable != nullptr and plotable->visible())
     {
-        m_tracer->set_graph(graph);
+        m_tracer->set_plotable(plotable);
         m_tracer->update_position(pos);
         return true;
     }
     else
     {
-        m_tracer->set_graph(nullptr);
+        m_tracer->set_plotable(nullptr);
         return false;
     }
 }

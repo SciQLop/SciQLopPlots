@@ -23,12 +23,136 @@
 #include <SciQLopPlots/QCPItemRichText.hpp>
 #include <qcustomplot.h>
 
-class TracerWithToolTip
+enum class PlotableType
 {
+    Graph,
+    Curve,
+    ColorMap,
+    None
+};
+
+enum class PlotQuadrant
+{
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    None
+};
+
+class QCPAbstractPlottableDataLocator
+{
+    QCPAbstractPlottable* m_plottable = nullptr;
+    PlotableType m_plotableType = PlotableType::None;
+    double m_key = std::nan("");
+    double m_value = std::nan("");
+    double m_data = std::nan("");
+    PlotQuadrant m_quadrant = PlotQuadrant::None;
+
+public:
+    virtual ~QCPAbstractPlottableDataLocator() = default;
+
+    inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
+    void set_plottable(QCPAbstractPlottable* plottable) noexcept;
+
+
+    void setPosition(const QPointF& pos);
+
+
+    inline double key() const noexcept { return m_key; }
+    inline double value() const noexcept { return m_value; }
+    inline double data() const noexcept
+    {
+        return m_data;
+    } // color map value at (key; value) position
+
+    inline PlotableType plotable_type() const noexcept { return m_plotableType; }
+    inline PlotQuadrant quadrant() const noexcept { return m_quadrant; }
+
+    static std::tuple<double, double, double> locate_data_graph(
+        const QPointF& pos, QCPGraph* graph);
+    static std::tuple<double, double, double> locate_data_curve(
+        const QPointF& pos, QCPCurve* curve);
+    static std::tuple<double, double, double> locate_data_colormap(
+        const QPointF& pos, QCPColorMap* colormap);
+};
+
+class SciQLopTracer : public QCPAbstractItem
+{
+    Q_OBJECT
+
+    QCPAbstractPlottableDataLocator m_locator;
+    QPen m_Pen, m_SelectedPen;
+    QBrush m_Brush, m_SelectedBrush;
+    double m_Size;
+    QCPItemTracer::TracerStyle m_Style;
+
+    Q_PROPERTY(QPen pen READ pen WRITE setPen)
+    Q_PROPERTY(QPen selectedPen READ selectedPen WRITE setSelectedPen)
+    Q_PROPERTY(QBrush brush READ brush WRITE setBrush)
+    Q_PROPERTY(QBrush selectedBrush READ selectedBrush WRITE setSelectedBrush)
+    Q_PROPERTY(double size READ size WRITE setSize)
+    Q_PROPERTY(QCPItemTracer::TracerStyle style READ style WRITE setStyle)
+    Q_PROPERTY(QCPAbstractPlottable* plotable READ plotable WRITE setPlotable)
+    Q_PROPERTY(double key READ key)
+    Q_PROPERTY(double value READ value)
+    Q_PROPERTY(double data READ data)
+
+    QPen mainPen() const;
+    QBrush mainBrush() const;
+
+public:
+    using TracerStyle = QCPItemTracer::TracerStyle;
+
+    SciQLopTracer(QCustomPlot* parentPlot);
+    virtual ~SciQLopTracer() override { }
+
+
+    QPen pen() const { return m_Pen; }
+    QPen selectedPen() const { return m_SelectedPen; }
+    QBrush brush() const { return m_Brush; }
+    QBrush selectedBrush() const { return m_SelectedBrush; }
+    double size() const { return m_Size; }
+    TracerStyle style() const { return m_Style; }
+    inline double key() const { return m_locator.key(); }
+    inline double value() const { return m_locator.value(); }
+    inline double data() const // color map value at (key; value) position
+    {
+        return m_locator.data();
+    }
+    inline PlotQuadrant quadrant() const { return m_locator.quadrant(); }
+    QCPAbstractPlottable* plotable() const { return m_locator.plottable(); }
+
+    inline void setPen(const QPen& pen) { m_Pen = pen; }
+    inline void setSelectedPen(const QPen& pen) { m_SelectedPen = pen; }
+    inline void setBrush(const QBrush& brush) { m_Brush = brush; }
+    inline void setSelectedBrush(const QBrush& brush) { m_SelectedBrush = brush; }
+    inline void setSize(double size) { m_Size = size; }
+    inline void setStyle(TracerStyle style) { m_Style = style; }
+    void setPlotable(QCPAbstractPlottable* plottable);
+
+    void updatePosition(const QPointF& pos);
+
+    virtual double selectTest(
+        const QPointF& pos, bool onlySelectable, QVariant* details = nullptr) const Q_DECL_OVERRIDE;
+
+    QCPAxis* keyAxis() const;
+    QCPAxis* valueAxis() const;
+
+    QCPItemPosition* const position;
+
+protected:
+    virtual void draw(QCPPainter* painter) override;
+};
+
+class TracerWithToolTip : QObject
+{
+    Q_OBJECT
     QCPItemRichText* m_tooltip = nullptr;
-    QCPItemTracer* m_tracer = nullptr;
-    double m_x = 0;
-    double m_y = 0;
+    SciQLopTracer* m_tracer = nullptr;
+    double m_x = std::nan("");
+    double m_y = std::nan("");
+    double m_data = std::nan("");
 
 public:
     TracerWithToolTip(QCustomPlot* parent = nullptr);
@@ -46,21 +170,13 @@ public:
     inline bool visible() const noexcept { return m_tracer->visible(); }
     inline void replot() { m_tracer->layer()->replot(); }
 
-    inline void set_graph(QCPGraph* graph)
+    inline void set_plotable(QCPAbstractPlottable* plotable)
     {
-        if (graph == nullptr && m_tracer->graph() != nullptr)
+        m_tracer->setPlotable(plotable);
+        if (plotable == nullptr)
         {
-            m_tracer->setGraph(nullptr);
             set_visible(false);
             replot();
-        }
-        else
-        {
-            if (m_tracer->graph() != graph)
-            {
-                m_tracer->setGraph(graph);
-                m_tracer->setPen(graph->pen());
-            }
         }
     }
 };

@@ -84,7 +84,7 @@ public:
     }
     inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
 
-    virtual QCursor cursor(QMouseEvent* event) const noexcept { return Qt::ArrowCursor; }
+    virtual QCursor cursor(QMouseEvent* event) const noexcept override { return Qt::ArrowCursor; }
 };
 
 

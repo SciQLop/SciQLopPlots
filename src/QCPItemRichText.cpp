@@ -28,6 +28,7 @@ QCPItemRichText::QCPItemRichText(QCustomPlot* parentPlot) : QCPItemText(parentPl
     m_textDocument.setTextWidth(QWIDGETSIZE_MAX);
     m_textDocument.setUndoRedoEnabled(false);
     m_textDocument.setUseDesignMetrics(true);
+    setSelectable(false);
 }
 
 void QCPItemRichText::setHtml(const QString& html)
