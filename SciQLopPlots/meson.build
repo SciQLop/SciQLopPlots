@@ -3,7 +3,7 @@ qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSuppor
 
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=false'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
-fmt_dep = dependency('fmt')
+fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
