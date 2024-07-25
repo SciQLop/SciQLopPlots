@@ -23,12 +23,13 @@
 
 
 #include "BufferProtocol.hpp"
+#include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopGraph.hpp"
 #include <qcustomplot.h>
 class QThread;
 struct CurveResampler;
 
-class SciQLopCurve : public QObject
+class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 {
     CurveResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
@@ -66,13 +67,13 @@ public:
 
     void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
     inline QCPCurve* graphAt(std::size_t index) const { return _curves[index]; }
+    inline QCPCurve* curveAt(std::size_t index) const { return _curves[index]; }
+    inline const QList<QCPCurve*>& curves() const { return _curves; }
     void create_graphs(const QStringList& labels);
+    inline void create_curves(const QStringList& labels) { create_graphs(labels); }
 
-    inline std::size_t line_count() { return std::size(this->_curves); }
+    inline std::size_t line_count() const noexcept { return std::size(this->_curves); }
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
-#endif
 
 private:
     SciQLopGraph::DataOrder _dataOrder = SciQLopGraph::DataOrder::xFirst;

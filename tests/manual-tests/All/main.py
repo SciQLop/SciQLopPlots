@@ -24,8 +24,8 @@ def make_plot(parent, time_axis=False):
         date_ticker.setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz")
         date_ticker.setDateTimeSpec(Qt.UTC)
         plot.xAxis.setTicker(date_ticker)
-    plot.legend.setVisible(True)
-    plot.legend.setSelectableParts(QCPLegend.SelectablePart.spItems)
+    plot.enable_legend(True)
+    plot.minimize_margins()
     return plot
 
 def add_graph(plot, time_axis=False, offset=0.):

@@ -28,9 +28,8 @@ void SciQLopGraph::create_graphs(const QStringList& labels)
         clear_graphs();
     for (const auto& label : labels)
     {
-        const auto graph = _plot()->addGraph(_keyAxis, _valueAxis);
+        const auto graph = this->newPlottable<QCPGraph>(_keyAxis, _valueAxis, label);
         _graphs.append(graph);
-        graph->setName(label);
         graph->setAdaptiveSampling(true);
         connect(graph, &QCPGraph::destroyed, this,
             [this, graph]() { this->graph_got_removed_from_plot(graph); });
@@ -72,7 +71,10 @@ void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 
 SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QStringList& labels, DataOrder dataOrder)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+        : SQPQCPAbstractPlottableWrapper(parent)
+        , _keyAxis { keyAxis }
+        , _valueAxis { valueAxis }
+        , _dataOrder { dataOrder }
 {
 
     create_resampler(labels);
@@ -126,7 +128,10 @@ void SciQLopGraph::graph_got_removed_from_plot(QCPGraph* graph)
 
 SciQLopGraph::SciQLopGraph(
     QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, DataOrder dataOrder)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+        : SQPQCPAbstractPlottableWrapper(parent)
+        , _keyAxis { keyAxis }
+        , _valueAxis { valueAxis }
+        , _dataOrder { dataOrder }
 {
     create_resampler({});
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,

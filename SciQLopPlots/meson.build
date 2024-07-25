@@ -53,6 +53,7 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/QCPAbstractPlottableWrapper.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopGraph.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopColorMap.hpp',

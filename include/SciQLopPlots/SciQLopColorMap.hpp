@@ -21,14 +21,14 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "BufferProtocol.hpp"
-
+#include "QCPAbstractPlottableWrapper.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
 
 struct ColormapResampler;
 class QThread;
 
-class SciQLopColorMap : public QObject
+class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
 {
     ColormapResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
@@ -66,7 +66,6 @@ public:
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
     Q_SIGNAL void auto_scale_y_changed(bool);
 #endif
 private:

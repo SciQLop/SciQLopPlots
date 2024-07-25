@@ -21,12 +21,36 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotItem.hpp"
+#include "SciQLopPlots/constants.hpp"
 #include <QGestureRecognizer>
 #include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <type_traits>
 
+template <typename T>
+inline void _set_selected(T* plottable, bool selected)
+{
+    if (plottable->selected() != selected)
+    {
+        if (selected)
+            plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
+        else
+            plottable->setSelection(QCPDataSelection());
+    }
+}
+
+inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
+{
+    if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
+    {
+        _set_selected(graph, selected);
+    }
+    else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
+    {
+        _set_selected(curve, selected);
+    }
+}
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
@@ -44,11 +68,49 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     this->m_tracer = new TracerWithToolTip(this);
     this->setMouseTracking(true);
+
+    connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
 }
 
 SciQLopPlot::~SciQLopPlot()
 {
     delete m_tracer;
+}
+
+QCPColorMap* SciQLopPlot::addColorMap(QCPAxis* x, QCPAxis* y)
+{
+    auto cm = new QCPColorMap(x, y);
+    return cm;
+}
+
+SciQLopGraph* SciQLopPlot::addSciQLopGraph(
+    QCPAxis* x, QCPAxis* y, QStringList labels, SciQLopGraph::DataOrder dataOrder)
+{
+    return this->_new_plottable_wrapper<SciQLopGraph>(x, y, labels, dataOrder);
+}
+
+SciQLopGraph* SciQLopPlot::addSciQLopGraph(
+    QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder)
+{
+    return this->_new_plottable_wrapper<SciQLopGraph>(x, y, dataOrder);
+}
+
+SciQLopCurve* SciQLopPlot::addSciQLopCurve(
+    QCPAxis* x, QCPAxis* y, QStringList labels, SciQLopGraph::DataOrder dataOrder)
+{
+    return this->_new_plottable_wrapper<SciQLopCurve>(x, y, labels, dataOrder);
+}
+
+SciQLopCurve* SciQLopPlot::addSciQLopCurve(
+    QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder)
+{
+    return this->_new_plottable_wrapper<SciQLopCurve>(x, y, dataOrder);
+}
+
+SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
+    QCPAxis* x, QCPAxis* y, const QString& name, SciQLopColorMap::DataOrder dataOrder)
+{
+    return this->_new_plottable_wrapper<SciQLopColorMap>(x, y, name, dataOrder);
 }
 
 void SciQLopPlot::set_scroll_factor(double factor) noexcept
@@ -58,6 +120,28 @@ void SciQLopPlot::set_scroll_factor(double factor) noexcept
 }
 
 void SciQLopPlot::enable_cursor(bool enable) noexcept { }
+
+void SciQLopPlot::enable_legend(bool show) noexcept
+{
+    this->legend->setVisible(show);
+    this->legend->setSelectableParts(QCPLegend::spItems);
+    this->replot(rpQueuedReplot);
+}
+
+void SciQLopPlot::minimize_margins()
+{
+    plotLayout()->setMargins(QMargins(0, 0, 0, 0));
+    plotLayout()->setRowSpacing(0);
+    for (auto rect : axisRects())
+        rect->setMargins(QMargins(0, 0, 0, 0));
+
+    setContentsMargins(0, 0, 0, 0);
+    if (auto l = layout(); l != nullptr)
+    {
+        l->setSpacing(0);
+        l->setContentsMargins(0, 0, 0, 0);
+    }
+}
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
@@ -237,7 +321,9 @@ bool SciQLopPlot::event(QEvent* event)
 bool SciQLopPlot::_update_tracer(const QPointF& pos)
 {
     auto plotable = plottableAt(pos, false);
-    if (plotable != nullptr and plotable->visible())
+
+    if (plotable != nullptr and plotable->visible()
+        && (!legend->visible() || -1. == legend->selectTest(pos, false)))
     {
         m_tracer->set_plotable(plotable);
         m_tracer->update_position(pos);
@@ -301,4 +387,57 @@ std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
         }
     }
     return std::nullopt;
+}
+
+void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
+{
+    std::cout << "Registering plottable" << std::endl;
+    connect(plotable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
+        [this, plotable](bool selected)
+        {
+            auto item = this->legend->itemWithPlottable(plotable);
+            if (item && item->selected() != selected)
+                item->setSelected(selected);
+        });
+
+    if (auto legend_item = this->legend->itemWithPlottable(plotable); legend_item)
+    {
+        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
+            [this, plotable](bool selected)
+            {
+                _set_selected(plotable, selected);
+                this->replot(rpQueuedReplot);
+            });
+    }
+}
+
+QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const
+{
+    for (auto plottable : mPlottables)
+    {
+        if (plottable->name() == name)
+            return plottable;
+    }
+    return nullptr;
+}
+
+void SciQLopPlot::_legend_double_clicked(
+    QCPLegend* legend, QCPAbstractLegendItem* item, QMouseEvent* event)
+{
+    if (auto legend_item = dynamic_cast<QCPPlottableLegendItem*>(item); legend_item != nullptr)
+    {
+        auto plottable = legend_item->plottable();
+        plottable->setVisible(!plottable->visible());
+        if (plottable->visible())
+        {
+            item->setTextColor(Qt::black);
+            item->setSelectedTextColor(Qt::black);
+        }
+        else
+        {
+            item->setTextColor(Qt::gray);
+            item->setSelectedTextColor(Qt::gray);
+        }
+        this->replot(rpQueuedReplot);
+    }
 }

@@ -34,14 +34,13 @@ void SciQLopColorMap::_cmap_got_destroyed()
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QString& name, DataOrder dataOrder)
-        : QObject(parent)
+        : SQPQCPAbstractPlottableWrapper(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
         , _dataOrder { dataOrder }
 {
-    this->_cmap = new QCPColorMap(keyAxis, valueAxis);
-    this->_cmap->setName(name);
+    this->_cmap = this->newPlottable<QCPColorMap>(keyAxis, valueAxis, name);
     connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopColorMap::_range_changed));
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);

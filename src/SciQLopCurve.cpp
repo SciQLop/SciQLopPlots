@@ -78,7 +78,10 @@ void SciQLopCurve::curve_got_removed_from_plot(QCPCurve* curve)
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QStringList& labels, SciQLopGraph::DataOrder dataOrder)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+        : SQPQCPAbstractPlottableWrapper(parent)
+        , _keyAxis { keyAxis }
+        , _valueAxis { valueAxis }
+        , _dataOrder { dataOrder }
 {
     create_resampler(labels);
     this->create_graphs(labels);
@@ -86,7 +89,10 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
 
 SciQLopCurve::SciQLopCurve(
     QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, SciQLopGraph::DataOrder dataOrder)
-        : QObject(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }, _dataOrder { dataOrder }
+        : SQPQCPAbstractPlottableWrapper(parent)
+        , _keyAxis { keyAxis }
+        , _valueAxis { valueAxis }
+        , _dataOrder { dataOrder }
 {
     create_resampler({});
 }
@@ -108,9 +114,8 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
         clear_curves();
     for (const auto& label : labels)
     {
-        const auto curve = new QCPCurve(_keyAxis, _valueAxis);
+        const auto curve = this->newPlottable<QCPCurve>(_keyAxis, _valueAxis, label);
         _curves.append(curve);
-        curve->setName(label);
         connect(curve, &QCPCurve::destroyed, this,
             [this, curve]() { this->curve_got_removed_from_plot(curve); });
     }
