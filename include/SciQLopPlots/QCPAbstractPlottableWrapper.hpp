@@ -31,7 +31,24 @@ protected:
 
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : QObject(parent) { }
-    virtual ~SQPQCPAbstractPlottableWrapper() { }
+    virtual ~SQPQCPAbstractPlottableWrapper()
+    {
+        for (auto plottable : m_plottables)
+        {
+            if (_plot()->hasPlottable(plottable))
+                _plot()->removePlottable(plottable);
+        }
+    }
+
+    inline void clear_plottables()
+    {
+        for (auto plottable : m_plottables)
+        {
+            if (_plot()->hasPlottable(plottable))
+                _plot()->removePlottable(plottable);
+        }
+        m_plottables.clear();
+    }
 
     QList<QCPAbstractPlottable*> plottables() const noexcept { return m_plottables; }
 
@@ -54,6 +71,8 @@ public:
         else
             return nullptr;
 
+        connect(plottable, &QCPAbstractPlottable::destroyed, this,
+            [this, plottable]() { m_plottables.removeOne(plottable); });
         m_plottables.append(plottable);
 #ifndef BINDINGS_H
         emit plottable_created(plottable);
@@ -61,6 +80,8 @@ public:
         plottable->setName(name);
         return reinterpret_cast<T*>(plottable);
     }
+
+    std::size_t plottable_count() const noexcept { return std::size(m_plottables); }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);

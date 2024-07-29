@@ -27,12 +27,12 @@
 class QCPItemRichText : public QCPItemText
 {
     Q_OBJECT
-    QTextDocument m_textDocument;
+    QTextDocument* m_textDocument;
     QRect _boundingRect;
 
 public:
     QCPItemRichText(QCustomPlot* parentPlot);
-    virtual ~QCPItemRichText() { }
+    virtual ~QCPItemRichText();
     void setHtml(const QString& html);
     void setHtml(const std::string& html);
 

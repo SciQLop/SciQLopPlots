@@ -36,7 +36,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    QList<QCPCurve*> _curves;
 
     Q_OBJECT
 
@@ -52,7 +51,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     void clear_curves(bool curve_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
-    void curve_got_removed_from_plot(QCPCurve* curve);
 
 public:
     Q_ENUMS(FractionStyle)
@@ -66,13 +64,24 @@ public:
     virtual ~SciQLopCurve() override;
 
     void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
-    inline QCPCurve* graphAt(std::size_t index) const { return _curves[index]; }
-    inline QCPCurve* curveAt(std::size_t index) const { return _curves[index]; }
-    inline const QList<QCPCurve*>& curves() const { return _curves; }
+    inline QCPCurve* graphAt(std::size_t index) const
+    {
+        if (index < plottable_count())
+            return dynamic_cast<QCPCurve*>(m_plottables[index]);
+        return nullptr;
+    }
+    inline QCPCurve* curveAt(std::size_t index) const { return graphAt(index); }
+    inline const QList<QCPCurve*> curves() const
+    {
+        QList<QCPCurve*> curves;
+        for (auto plottable : m_plottables)
+            curves.append(qobject_cast<QCPCurve*>(plottable));
+        return curves;
+    }
     void create_graphs(const QStringList& labels);
     inline void create_curves(const QStringList& labels) { create_graphs(labels); }
 
-    inline std::size_t line_count() const noexcept { return std::size(this->_curves); }
+    inline std::size_t line_count() const noexcept { return plottable_count(); }
 
 
 private:

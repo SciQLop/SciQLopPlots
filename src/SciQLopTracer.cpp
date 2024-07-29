@@ -169,8 +169,6 @@ void _update_tooltip_alignment(QCPItemRichText* tooltip, const PlotQuadrant quad
 TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
         : m_tooltip(new QCPItemRichText(parent)), m_tracer(new SciQLopTracer(parent))
 {
-    QObject::connect(
-        m_tooltip, &QCPItemRichText::destroyed, this, [this]() { this->m_tooltip = nullptr; });
     m_tooltip->setClipToAxisRect(false);
     m_tooltip->setPadding(QMargins(5, 5, 5, 5));
     m_tooltip->setBrush(QBrush(QColor(0xee, 0xf2, 0xf7, 200)));
@@ -181,21 +179,9 @@ TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
     m_tooltip->setLayer("overlay");
     m_tooltip->setVisible(false);
     m_tracer->setStyle(QCPItemTracer::TracerStyle::tsCircle);
-    QObject::connect(
-        m_tracer, &QCPItemTracer::destroyed, this, [this]() { this->m_tracer = nullptr; });
 }
 
-TracerWithToolTip::~TracerWithToolTip()
-{
-    if (m_tooltip != nullptr)
-    {
-        m_tooltip->parentPlot()->removeItem(m_tooltip);
-    }
-    if (m_tracer != nullptr)
-    {
-        m_tracer->parentPlot()->removeItem(m_tracer);
-    }
-}
+TracerWithToolTip::~TracerWithToolTip() { }
 
 void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
 {

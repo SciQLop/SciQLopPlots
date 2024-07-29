@@ -23,18 +23,21 @@
 
 QCPItemRichText::QCPItemRichText(QCustomPlot* parentPlot) : QCPItemText(parentPlot)
 {
-    m_textDocument.setDefaultFont(mainFont());
-    m_textDocument.setDocumentMargin(0);
-    m_textDocument.setTextWidth(QWIDGETSIZE_MAX);
-    m_textDocument.setUndoRedoEnabled(false);
-    m_textDocument.setUseDesignMetrics(true);
+    m_textDocument = new QTextDocument(this);
+    m_textDocument->setDefaultFont(mainFont());
+    m_textDocument->setDocumentMargin(0);
+    m_textDocument->setTextWidth(QWIDGETSIZE_MAX);
+    m_textDocument->setUndoRedoEnabled(false);
+    m_textDocument->setUseDesignMetrics(true);
     setSelectable(false);
 }
 
+QCPItemRichText::~QCPItemRichText() { }
+
 void QCPItemRichText::setHtml(const QString& html)
 {
-    m_textDocument.setHtml(html);
-    _boundingRect = QRect(0, 0, m_textDocument.idealWidth(), m_textDocument.size().height());
+    m_textDocument->setHtml(html);
+    _boundingRect = QRect(0, 0, m_textDocument->idealWidth(), m_textDocument->size().height());
 }
 
 void QCPItemRichText::setHtml(const std::string& html)
@@ -74,7 +77,7 @@ void QCPItemRichText::draw(QCPPainter* painter)
         painter->setPen(QPen(mainColor()));
         painter->translate(textPos);
         painter->translate(mPadding.left(), mPadding.top());
-        m_textDocument.drawContents(painter);
+        m_textDocument->drawContents(painter);
     }
 }
 

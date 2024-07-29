@@ -24,17 +24,14 @@
 
 void SciQLopGraph::create_graphs(const QStringList& labels)
 {
-    if (std::size(_graphs))
+    if (plottable_count())
         clear_graphs();
     for (const auto& label : labels)
     {
         const auto graph = this->newPlottable<QCPGraph>(_keyAxis, _valueAxis, label);
-        _graphs.append(graph);
         graph->setAdaptiveSampling(true);
-        connect(graph, &QCPGraph::destroyed, this,
-            [this, graph]() { this->graph_got_removed_from_plot(graph); });
     }
-    _resampler->set_line_count(std::size(_graphs));
+    _resampler->set_line_count(plottable_count());
 }
 
 void SciQLopGraph::set_auto_scale_y(bool auto_scale_y)
@@ -59,9 +56,10 @@ void SciQLopGraph::_range_changed(const QCPRange& newRange, const QCPRange& oldR
 
 void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 {
-    if (index < std::size(_graphs))
+    auto graph = graphAt(index);
+    if (graph)
     {
-        _graphs[index]->data()->set(std::move(data), true);
+        graph->data()->set(std::move(data), true);
         if (_auto_scale_y)
         {
             _valueAxis->rescale();
@@ -85,14 +83,7 @@ SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
 
 void SciQLopGraph::clear_graphs(bool graph_already_removed)
 {
-    if (!graph_already_removed)
-    {
-        for (auto graph : _graphs)
-        {
-            this->_plot()->removeGraph(graph);
-        }
-    }
-    this->_graphs.clear();
+    clear_plottables();
 }
 
 void SciQLopGraph::clear_resampler()
@@ -118,11 +109,6 @@ void SciQLopGraph::create_resampler(const QStringList& labels)
     connect(
         this->_resampler, &GraphResampler::refreshPlot, this,
         [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
-}
-
-void SciQLopGraph::graph_got_removed_from_plot(QCPGraph* graph)
-{
-    this->_graphs.removeOne(graph);
 }
 
 

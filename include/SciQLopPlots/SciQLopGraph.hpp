@@ -34,7 +34,6 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    QList<QCPGraph*> _graphs;
     bool _auto_scale_y = false;
 
     Q_OBJECT
@@ -51,7 +50,6 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
-    void graph_got_removed_from_plot(QCPGraph* graph);
 
 public:
     enum class DataOrder
@@ -69,11 +67,22 @@ public:
     virtual ~SciQLopGraph() override;
 
     void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
-    inline const QList<QCPGraph*>& graphs() const noexcept { return _graphs; }
-    inline QCPGraph* graphAt(std::size_t index) const { return _graphs[index]; }
+    inline const QList<QCPGraph*> graphs() const noexcept
+    {
+        QList<QCPGraph*> graphs;
+        for (auto plottable : m_plottables)
+            graphs.append(qobject_cast<QCPGraph*>(plottable));
+        return graphs;
+    }
+    inline QCPGraph* graphAt(std::size_t index) const
+    {
+        if (index < plottable_count())
+            return qobject_cast<QCPGraph*>(m_plottables[index]);
+        return nullptr;
+    }
     void create_graphs(const QStringList& labels);
 
-    inline std::size_t line_count() { return std::size(this->_graphs); }
+    inline std::size_t line_count() const noexcept { return plottable_count(); }
 
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const noexcept { return _auto_scale_y; }

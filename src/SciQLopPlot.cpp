@@ -391,7 +391,6 @@ std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
 
 void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
 {
-    std::cout << "Registering plottable" << std::endl;
     connect(plotable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
         [this, plotable](bool selected)
         {

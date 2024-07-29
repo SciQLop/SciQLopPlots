@@ -30,20 +30,14 @@ void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldR
 
 void SciQLopCurve::_setCurveData(std::size_t index, QVector<QCPCurveData> data)
 {
-    if (index < std::size(_curves))
-        _curves[index]->data()->set(std::move(data), true);
+    auto curve = curveAt(index);
+    if (curve)
+        curve->data()->set(std::move(data), true);
 }
 
 void SciQLopCurve::clear_curves(bool curve_already_removed)
 {
-    if (!curve_already_removed)
-    {
-        for (auto curve : _curves)
-        {
-            this->_plot()->removePlottable(curve);
-        }
-    }
-    this->_curves.clear();
+    clear_plottables();
 }
 
 void SciQLopCurve::clear_resampler()
@@ -71,10 +65,6 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
         [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
 }
 
-void SciQLopCurve::curve_got_removed_from_plot(QCPCurve* curve)
-{
-    this->_curves.removeOne(curve);
-}
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
     const QStringList& labels, SciQLopGraph::DataOrder dataOrder)
@@ -110,14 +100,11 @@ void SciQLopCurve::setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRan
 
 void SciQLopCurve::create_graphs(const QStringList& labels)
 {
-    if (std::size(_curves))
+    if (plottable_count())
         clear_curves();
     for (const auto& label : labels)
     {
-        const auto curve = this->newPlottable<QCPCurve>(_keyAxis, _valueAxis, label);
-        _curves.append(curve);
-        connect(curve, &QCPCurve::destroyed, this,
-            [this, curve]() { this->curve_got_removed_from_plot(curve); });
+        this->newPlottable<QCPCurve>(_keyAxis, _valueAxis, label);
     }
-    _resampler->set_line_count(std::size(_curves));
+    _resampler->set_line_count(plottable_count());
 }
