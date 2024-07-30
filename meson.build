@@ -10,9 +10,11 @@ extra_files=files(
     'pyproject.toml',
     'setup.cfg',
     '.github/workflows/build_wheels.yml',
+    '.github/workflows/test.yml',
     'Docker/Dockerfile',
     'Docker/build.sh',
-    'README.md', 'COPYING'
+    'README.md', 'COPYING',
+    'tests/sanity/signal_and_slots.sh'
 )
 
 subdir('SciQLopPlots')

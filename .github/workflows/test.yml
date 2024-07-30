@@ -1,0 +1,12 @@
+name: Tests
+
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run sanity checks
+        run: |
+          sh tests/sanity/signal_and_slots.sh
