@@ -29,6 +29,8 @@ protected:
     QList<QCPAbstractPlottable*> m_plottables;
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
+    void _register_plottable(QCPAbstractPlottable* plottable);
+
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : QObject(parent) { }
     virtual ~SQPQCPAbstractPlottableWrapper()
@@ -70,13 +72,7 @@ public:
         }
         else
             return nullptr;
-
-        connect(plottable, &QCPAbstractPlottable::destroyed, this,
-            [this, plottable]() { m_plottables.removeOne(plottable); });
-        m_plottables.append(plottable);
-#ifndef BINDINGS_H
-        emit plottable_created(plottable);
-#endif
+        _register_plottable(plottable);
         plottable->setName(name);
         return reinterpret_cast<T*>(plottable);
     }
@@ -86,5 +82,5 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);
-#endif
+#endif // BINDINGS_H
 };

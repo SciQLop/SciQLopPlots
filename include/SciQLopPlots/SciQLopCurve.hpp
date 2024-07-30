@@ -46,7 +46,9 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     void _setCurveData(std::size_t index, QVector<QCPCurveData> data);
 
+#ifndef BINDINGS_H
     Q_SIGNAL void _setCurveDataSig(std::size_t index, QVector<QCPCurveData> data);
+#endif // !BINDINGS_H
 
     void clear_curves(bool curve_already_removed = false);
     void clear_resampler();
@@ -82,7 +84,6 @@ public:
     inline void create_curves(const QStringList& labels) { create_graphs(labels); }
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
-
 
 private:
     SciQLopGraph::DataOrder _dataOrder = SciQLopGraph::DataOrder::xFirst;

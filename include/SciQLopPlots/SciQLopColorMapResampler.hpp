@@ -49,49 +49,20 @@ struct ColormapResampler : public QObject
 
     QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z);
 
+#ifndef BINDINGS_H
     Q_SIGNAL void _resample_sig(const QCPRange& newRange);
-    inline void _resample_slot(const QCPRange& newRange)
-    {
-        {
-            QMutexLocker lock { &_range_mutex };
-            if (this->_data_x_range != newRange)
-                return;
-        }
-        _mutex.lock();
-        auto x = std::move(_x);
-        auto y = std::move(_y);
-        auto z = std::move(_z);
-        _mutex.unlock();
-        if (std::size(x) && std::size(y) && std::size(z))
-        {
-            if (this->_scale_type == QCPAxis::stLinear)
-            {
-                emit this->refreshPlot(this->_setDataLinear(x, y, z));
-            }
-            else
-            {
-                emit this->refreshPlot(this->_setDataLog(x, y, z));
-            }
-        }
-        else
-        {
-            emit this->refreshPlot(new QCPColorMapData(0, 0, { 0., 0. }, { 0., 0. }));
-        }
-    }
+#endif // !BINDINGS_H
+    void _resample_slot(const QCPRange& newRange);
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
     Q_SIGNAL void refreshPlot(QCPColorMapData* data);
-#endif
+#endif // !BINDINGS_H
 
-    ColormapResampler(QCPAxis::ScaleType scale_type) : _scale_type { scale_type }
-    {
-        connect(this, &ColormapResampler::_resample_sig, this, &ColormapResampler::_resample_slot,
-            Qt::QueuedConnection);
-    }
+    ColormapResampler(QCPAxis::ScaleType scale_type);
 
-    inline void resample(const QCPRange& newRange) { emit this->_resample_sig(newRange); }
+    void resample(const QCPRange& newRange);
 
     inline QCPRange x_range()
     {

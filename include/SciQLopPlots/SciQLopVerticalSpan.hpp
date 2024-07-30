@@ -54,6 +54,8 @@ public:
             this->replot();
     }
 
+    ~VerticalSpanBorder() = default;
+
     inline void set_color(const QColor& color)
     {
         this->setPen(QPen { QBrush { color, Qt::SolidPattern }, 3 });
@@ -171,8 +173,16 @@ public:
 
     ~VerticalSpan()
     {
-        this->parentPlot()->removeItem(this->_border1);
-        this->parentPlot()->removeItem(this->_border2);
+        if (parentPlot()->hasItem(this->_border1))
+        {
+            parentPlot()->removeItem(this->_border1);
+            parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        }
+        if (parentPlot()->hasItem(this->_border2))
+        {
+            parentPlot()->removeItem(this->_border2);
+            parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        }
     }
 
     inline QCursor cursor(QMouseEvent*) const noexcept override
@@ -256,6 +266,7 @@ class SciQLopVerticalSpan : public QObject
 protected:
     inline void select_lower_border(bool selected) { _impl->select_lower_border(selected); }
     inline void select_upper_border(bool selected) { _impl->select_upper_border(selected); }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
@@ -274,8 +285,9 @@ public:
         if (this->_impl)
         {
             auto plot = this->_impl->parentPlot();
-            if (plot->removeItem(this->_impl))
+            if (plot->hasItem(this->_impl))
             {
+                plot->removeItem(this->_impl);
                 plot->replot(QCustomPlot::rpQueuedReplot);
             }
         }

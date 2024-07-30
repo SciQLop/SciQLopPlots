@@ -45,7 +45,9 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
 
     void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
 
+#ifndef BINDINGS_H
     Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
+#endif // !BINDINGS
 
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();

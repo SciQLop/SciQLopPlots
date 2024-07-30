@@ -389,6 +389,16 @@ std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
     return std::nullopt;
 }
 
+void SciQLopPlot::_register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable)
+{
+    for (auto abstractPlottable : plottable->plottables())
+    {
+        _register_plottable(abstractPlottable);
+    }
+    connect(plottable, &SQPQCPAbstractPlottableWrapper::plottable_created, this,
+        &SciQLopPlot::_register_plottable);
+}
+
 void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
 {
     connect(plotable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,

@@ -85,10 +85,13 @@ sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [ '../src/SciQLopPlot.cpp',
+            '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
             '../src/SciQLopGraph.cpp',
+            '../src/SciQLopGraphResampler.cpp',
             '../src/SciQLopCurve.cpp',
+            '../src/SciQLopCurveResampler.cpp',
             '../src/SciQLopColorMap.cpp',
             '../src/SciQLopColorMapResampler.cpp',
             '../src/BufferProtocol.cpp',

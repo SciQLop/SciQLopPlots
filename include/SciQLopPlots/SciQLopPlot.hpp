@@ -93,17 +93,11 @@ protected:
     T* _new_plottable_wrapper(Args&&... args)
     {
         SQPQCPAbstractPlottableWrapper* plottable = new T(this, std::forward<Args>(args)...);
-        for (auto abstractPlottable : plottable->plottables())
-        {
-            _register_plottable(abstractPlottable);
-        }
-#ifndef BINDINGS_H
-        connect(plottable, &SQPQCPAbstractPlottableWrapper::plottable_created, this,
-            &SciQLopPlot::_register_plottable);
-#endif
+        _register_plottable_wrapper(plottable);
         return reinterpret_cast<T*>(plottable);
     }
 
+    void _register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable);
     void _register_plottable(QCPAbstractPlottable* plotable);
 
     QCPAbstractPlottable* plottable(const QString& name) const;

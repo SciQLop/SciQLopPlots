@@ -52,45 +52,20 @@ struct CurveResampler : public QObject
     SciQLopGraph::DataOrder _dataOrder;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
-
+#ifndef BINDINGS_H
     Q_SIGNAL void _resample_sig(const QCPRange newRange);
-    inline void _resample_slot(const QCPRange newRange)
-    {
-        QMutexLocker locker(&_data_mutex);
-        if (_x.data() != nullptr && _x.flat_size() > 0)
-        {
-
-
-            const auto y_incr = (_dataOrder == SciQLopGraph::DataOrder::xFirst) ? 1UL : _line_cnt;
-            for (auto line_index = 0UL; line_index < _line_cnt; line_index++)
-            {
-                const auto count = std::size(_x);
-                const auto start_y = _y.data()
-                    + (line_index
-                        * ((_dataOrder == SciQLopGraph::DataOrder::xFirst) ? _x.flat_size() : 1));
-                emit this->setGraphData(line_index, copy_data(_x.data(), start_y, count, y_incr));
-            }
-            _x.release();
-            _y.release();
-        }
-        emit this->refreshPlot();
-    }
+#endif // !BINDINGS_H
+    void _resample_slot(const QCPRange newRange);
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
     Q_SIGNAL void refreshPlot();
-#endif
+#endif // !BINDINGS_H
 
-    CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
-            : _dataOrder { dataOrder }, _line_cnt { line_cnt }
-    {
+    CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
 
-        connect(this, &CurveResampler::_resample_sig, this, &CurveResampler::_resample_slot,
-            Qt::QueuedConnection);
-    }
-
-    inline void resample(const QCPRange newRange) { emit this->_resample_sig(newRange); }
+    void resample(const QCPRange newRange);
 
     inline QCPRange x_range()
     {

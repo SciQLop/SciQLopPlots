@@ -95,3 +95,40 @@ QCPColorMapData* ColormapResampler::_setDataLog(
     }
     return data;
 }
+
+void ColormapResampler::_resample_slot(const QCPRange &newRange)
+{
+    {
+        QMutexLocker lock { &_range_mutex };
+        if (this->_data_x_range != newRange)
+            return;
+    }
+    _mutex.lock();
+    auto x = std::move(_x);
+    auto y = std::move(_y);
+    auto z = std::move(_z);
+    _mutex.unlock();
+    if (std::size(x) && std::size(y) && std::size(z))
+    {
+        if (this->_scale_type == QCPAxis::stLinear)
+        {
+            emit this->refreshPlot(this->_setDataLinear(x, y, z));
+        }
+        else
+        {
+            emit this->refreshPlot(this->_setDataLog(x, y, z));
+        }
+    }
+    else
+    {
+        emit this->refreshPlot(new QCPColorMapData(0, 0, { 0., 0. }, { 0., 0. }));
+    }
+}
+
+ColormapResampler::ColormapResampler(QCPAxis::ScaleType scale_type) : _scale_type { scale_type }
+{
+    connect(this, &ColormapResampler::_resample_sig, this, &ColormapResampler::_resample_slot,
+        Qt::QueuedConnection);
+}
+
+void ColormapResampler::resample(const QCPRange &newRange) { emit this->_resample_sig(newRange); }
