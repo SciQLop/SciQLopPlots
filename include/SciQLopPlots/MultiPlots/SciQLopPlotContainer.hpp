@@ -20,16 +20,16 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-
 #include <QSplitter>
+
+#include "SciQLopPlotCollection.hpp"
 
 class SciQLopPlot;
 
-class SciQLopPlotContainer : public QSplitter
+class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
-
-    QList<SciQLopPlot*> _plots;
+    SciQLopPlotCollection* _plots;
 
 public:
     SciQLopPlotContainer(QWidget* parent = nullptr);
@@ -37,20 +37,34 @@ public:
 
     void insertWidget(int index, QWidget* widget);
     void addWidget(QWidget* widget);
-    void insertPlot(int index, SciQLopPlot* plot);
-    void addPlot(SciQLopPlot* plot);
-    void removePlot(SciQLopPlot* plot, bool destroy = true);
+    void insertPlot(int index, SciQLopPlot* plot) Q_DECL_OVERRIDE;
+    void addPlot(SciQLopPlot* plot) Q_DECL_OVERRIDE;
+    void movePlot(int from, int to) Q_DECL_OVERRIDE;
+    void movePlot(SciQLopPlot* plot, int to) Q_DECL_OVERRIDE;
+    void removePlot(SciQLopPlot* plot) Q_DECL_OVERRIDE;
+    void removePlot(SciQLopPlot* plot, bool destroy);
+    void removeWidget(QWidget* widget, bool destroy);
 
-    inline const QList<SciQLopPlot*>& plots() const { return _plots; }
+    virtual void clear() Q_DECL_OVERRIDE;
 
-    inline bool empty() const { return _plots.isEmpty(); }
-    inline std::size_t count() const { return _plots.size(); }
+    inline virtual SciQLopPlot* plotAt(int index) Q_DECL_OVERRIDE { return _plots->plotAt(index); }
+    inline virtual const QList<SciQLopPlot*>& plots() const Q_DECL_OVERRIDE
+    {
+        return _plots->plots();
+    }
+
+    inline virtual bool contains(SciQLopPlot* plot) const Q_DECL_OVERRIDE
+    {
+        return _plots->contains(plot);
+    }
+
+    inline virtual bool empty() const Q_DECL_OVERRIDE { return _plots->empty(); }
+    virtual std::size_t size() const Q_DECL_OVERRIDE { return _plots->size(); }
+
 
     void setXAxisRange(double lower, double upper);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotAdded(SciQLopPlot* plot);
-    Q_SIGNAL void plotRemoved(SciQLopPlot* plot);
-    Q_SIGNAL void plotListChanged();
+    Q_SIGNAL void plotListChanged(const QList<SciQLopPlot*>& plots);
 #endif // BINDINGS_H
 };

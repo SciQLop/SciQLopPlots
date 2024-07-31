@@ -36,7 +36,15 @@ void SciQLopMultiPlotObject::replotAll()
     }
 }
 
-SciQLopMultiPlotObject::SciQLopMultiPlotObject(QObject* parent) : QObject(parent) { }
+SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent)
+        : QObject { dynamic_cast<QObject*>(parent) }
+{
+    if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
+        connect(dynamic_cast<QObject*>(parent), SIGNAL(plotListChanged(const QList<SciQLopPlot*>&)),
+            this, SLOT(updatePlotList(const QList<SciQLopPlot*>&)));
+    else
+        throw std::runtime_error("Invalid parent type");
+}
 
 SciQLopMultiPlotObject::~SciQLopMultiPlotObject() { }
 

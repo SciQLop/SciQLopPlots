@@ -21,43 +21,52 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <QGridLayout>
-#include <QScrollArea>
-#include <QWidget>
+#include <QList>
+#include <QObject>
 
-#include "SciQLopPlotCollection.hpp"
-
-class SciQLopPlotContainer;
 class SciQLopPlot;
 
-class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionInterface
+class SciQLopPlotCollectionInterface
+{
+public:
+    virtual void addPlot(SciQLopPlot* plot) = 0;
+    virtual void insertPlot(int index, SciQLopPlot* plot) = 0;
+    virtual void removePlot(SciQLopPlot* plot) = 0;
+    virtual void movePlot(int from, int to) = 0;
+    virtual void movePlot(SciQLopPlot* plot, int to) = 0;
+    virtual void clear() = 0;
+
+    virtual SciQLopPlot* plotAt(int index) = 0;
+    virtual const QList<SciQLopPlot*>& plots() const = 0;
+
+    virtual bool contains(SciQLopPlot* plot) const = 0;
+
+    virtual bool empty() const = 0;
+    virtual std::size_t size() const = 0;
+};
+
+class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
-    SciQLopPlotContainer* _container = nullptr;
+    QList<SciQLopPlot*> _plots;
 
 public:
-    SciQLopMultiPlotPanel(QWidget* parent = nullptr);
-
+    SciQLopPlotCollection(QObject* parent = nullptr);
+    virtual ~SciQLopPlotCollection() = default;
     void addPlot(SciQLopPlot* plot) final;
+    void insertPlot(int index, SciQLopPlot* plot) final;
     void removePlot(SciQLopPlot* plot) final;
-    SciQLopPlot* plotAt(int index) final;
-    const QList<SciQLopPlot*>& plots() const final;
-
-    virtual void insertPlot(int index, SciQLopPlot* plot) final;
-    virtual void movePlot(int from, int to) final;
-    virtual void movePlot(SciQLopPlot* plot, int to) final;
+    void movePlot(int from, int to) final;
+    void movePlot(SciQLopPlot* plot, int to) final;
     void clear() final;
 
+    SciQLopPlot* plotAt(int index) final;
+    inline const QList<SciQLopPlot*>& plots() const final { return _plots; }
 
-    bool contains(SciQLopPlot* plot) const final;
+    inline bool contains(SciQLopPlot* plot) const final { return _plots.contains(plot); }
 
-    bool empty() const final;
-    std::size_t size() const final;
-
-    void addWidget(QWidget* widget);
-    void removeWidget(QWidget* widget);
-
-    SciQLopPlot* createPlot(int index = -1);
+    inline bool empty() const final { return _plots.isEmpty(); }
+    inline std::size_t size() const final { return _plots.size(); }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plotListChanged(const QList<SciQLopPlot*>& plots);

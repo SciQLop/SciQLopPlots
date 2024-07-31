@@ -394,6 +394,18 @@
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
+    <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="addPlot(SciQLopPlot*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="addWidget(SciQLopPlot*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="MultiPlotsVerticalSpan" parent-management="yes">
         <property name="range" type="QCPRange" get="get_range" set="set_range" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="get_color" set="set_color" generate-getsetdef="yes"/>
@@ -402,7 +414,8 @@
         <property name="tooltip" type="QString" get="get_tool_tip" set="set_tool_tip" generate-getsetdef="yes"/>
         <property name="read_only" type="bool" get="is_read_only" set="set_read_only" generate-getsetdef="yes"/>
     </object-type>
-
+    <object-type name="SciQLopMultiPlotObject" parent-management="yes">
+    </object-type>
 </typesystem>
 
 

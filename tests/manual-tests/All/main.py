@@ -1,6 +1,6 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
-                         MultiPlotsVerticalSpan, QCPAxisTickerLog
+                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -10,7 +10,6 @@ import numpy as np
 from datetime import datetime
 from types import SimpleNamespace
 
-from qtpy import QtWidgets
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
@@ -125,33 +124,30 @@ class TimeSerieGraph(QWidget):
         middle = x_range.center()
         width = x_range.size()
 
-        self._verticalSpan = MultiPlotsVerticalSpan([self.plot], QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span", parent=self)
+        self._verticalSpan = SciQLopVerticalSpan(self.plot, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
-        self._ro_verticalSpan = MultiPlotsVerticalSpan([self.plot], QCPRange(middle+width/20, middle+width/10), QColor(200, 100, 100, 100), read_only=True, visible=True, tool_tip="Vertical Span", parent=self)
+        self._ro_verticalSpan = SciQLopVerticalSpan(self.plot, QCPRange(middle+width/20, middle+width/10), QColor(200, 100, 100, 100), read_only=True, visible=True, tool_tip="Vertical Span")
 
 
 
-class StackedPlots(QWidget):
+class StackedPlots(SciQLopMultiPlotPanel):
     def __init__(self,parent):
-        QWidget.__init__(self,parent)
+        SciQLopMultiPlotPanel.__init__(self,parent)
         self.setMouseTracking(True)
-        self.setLayout(QVBoxLayout())
-        self.plots = []
         self.graphs = []
         for _ in range(3):
             plot = make_plot(None, time_axis=True)
-            self.plots.append(plot)
-            self.layout().addWidget(plot)
+            self.addPlot(plot)
             self.graphs.append(add_graph(plot, time_axis=True))
 
-        self.color_scale, self.colormap = add_colormap(self.plots[-1], time_axis=True)
+        self.color_scale, self.colormap = add_colormap(self.plots()[-1], time_axis=True)
 
-        x_range = self.plots[0].xAxis.range()
+        x_range = self.plotAt(0).xAxis.range()
 
         middle = x_range.center()
         width = x_range.size()
 
-        self._verticalSpan = MultiPlotsVerticalSpan(self.plots, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span", parent=self)
+        self._verticalSpan = MultiPlotsVerticalSpan(self, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
 
 
@@ -197,6 +193,11 @@ class MainWindow(QMainWindow):
         self.add_to_kernel_namespace(self, 'main_window')
         for name, widget in self.tabs.export_objects().items():
             self.add_to_kernel_namespace(widget, name)
+        self.add_to_kernel_namespace(make_plot, 'make_plot')
+        self.add_to_kernel_namespace(add_graph, 'add_graph')
+        self.add_to_kernel_namespace(add_curve, 'add_curve')
+        self.add_to_kernel_namespace(add_colormap, 'add_colormap')
+        self.add_to_kernel_namespace(butterfly, 'butterfly')
 
 
     def _setup_kernel(self):

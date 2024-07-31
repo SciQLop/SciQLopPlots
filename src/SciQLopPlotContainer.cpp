@@ -24,14 +24,17 @@
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 
-SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent) : QSplitter(Qt::Vertical, parent)
+SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent)
+        : QSplitter(Qt::Vertical, parent), _plots(new SciQLopPlotCollection(this))
 {
     this->setLayout(new QVBoxLayout(this));
     this->setContentsMargins(0, 0, 0, 0);
     this->layout()->setContentsMargins(0, 0, 0, 0);
     this->layout()->setSpacing(0);
     this->setChildrenCollapsible(false);
-    this->setProperty("empty", true);
+    setProperty("empty", true);
+    connect(_plots, &SciQLopPlotCollection::plotListChanged, this,
+        &SciQLopPlotContainer::plotListChanged);
 }
 
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
@@ -39,16 +42,13 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
     QSplitter::insertWidget(index, widget);
     if (auto* plot = qobject_cast<SciQLopPlot*>(widget); plot)
     {
-        _plots.insert(index, plot);
-        setProperty("empty", false);
-        emit plotAdded(plot);
-        emit plotListChanged();
+        _plots->insertPlot(index, plot);
     }
 }
 
 void SciQLopPlotContainer::addWidget(QWidget* widget)
 {
-    insertWidget(count(), widget);
+    insertWidget(QSplitter::count(), widget);
 }
 
 void SciQLopPlotContainer::insertPlot(int index, SciQLopPlot* plot)
@@ -61,17 +61,55 @@ void SciQLopPlotContainer::addPlot(SciQLopPlot* plot)
     addWidget(plot);
 }
 
+void SciQLopPlotContainer::movePlot(int from, int to)
+{
+    auto* plot = _plots->plotAt(from);
+    _plots->movePlot(from, to);
+    QSplitter::insertWidget(to, plot);
+}
+
+void SciQLopPlotContainer::movePlot(SciQLopPlot* plot, int to)
+{
+    movePlot(_plots->plots().indexOf(plot), to);
+}
+
+void SciQLopPlotContainer::removePlot(SciQLopPlot* plot)
+{
+    removePlot(plot, true);
+}
+
 void SciQLopPlotContainer::removePlot(SciQLopPlot* plot, bool destroy)
 {
-    if (plot and plot->parent() == this)
+    if (_plots->contains(plot))
     {
-        plot->setParent(nullptr);
-        _plots.removeAll(plot);
+        removeWidget(plot, destroy);
         if (destroy)
             plot->deleteLater();
-        setProperty("empty", plots().isEmpty());
-        emit plotRemoved(plot);
-        emit plotListChanged();
+        if (_plots->empty())
+            setProperty("empty", true);
+    }
+}
+
+void SciQLopPlotContainer::removeWidget(QWidget* widget, bool destroy)
+{
+    if (auto* plot = qobject_cast<SciQLopPlot*>(widget); plot)
+        removePlot(plot, destroy);
+    else
+    {
+        widget->setParent(nullptr);
+        if (destroy)
+            widget->deleteLater();
+    }
+}
+
+void SciQLopPlotContainer::clear()
+{
+    _plots->clear();
+    while (QSplitter::count())
+    {
+        auto* widget = this->widget(0);
+        widget->setParent(nullptr);
+        widget->deleteLater();
     }
 }
 
