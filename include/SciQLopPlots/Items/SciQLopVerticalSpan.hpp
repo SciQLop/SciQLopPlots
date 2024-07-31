@@ -280,7 +280,9 @@ public:
     Q_SIGNAL void delete_requested();
 #endif
 
-    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false);
+    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, QColor color,
+        bool read_only = false, bool visible = true, const QString& tool_tip = "");
+
     ~SciQLopVerticalSpan()
     {
         if (this->_impl)
@@ -328,124 +330,4 @@ public:
     [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
 
     inline void replot() { this->_impl->replot(); }
-};
-
-class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
-{
-    Q_OBJECT
-    QList<SciQLopVerticalSpan*> _spans;
-    QCPRange _horizontal_range;
-    bool _selected = false;
-    bool _lower_border_selected = false;
-    bool _upper_border_selected = false;
-    bool _visible = true;
-    bool _read_only = false;
-    QColor _color;
-    QString _tool_tip;
-
-    void select_lower_border(bool selected);
-    void select_upper_border(bool selected);
-
-protected:
-    virtual void addObject(SciQLopPlot* plot) override;
-    virtual void removeObject(SciQLopPlot* plot) override;
-
-public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(QCPRange new_time_range);
-    Q_SIGNAL void selection_changed(bool);
-    Q_SIGNAL void delete_requested();
-#endif
-
-    MultiPlotsVerticalSpan(QList<SciQLopPlot*> plots, QCPRange horizontal_range, QColor color,
-        bool read_only = false, bool visible = true, const QString& tool_tip = "",
-        QObject* parent = nullptr)
-    {
-        _horizontal_range = horizontal_range;
-        _color = color;
-        _visible = visible;
-        _read_only = read_only;
-        _tool_tip = tool_tip;
-        updatePlotList(plots);
-    }
-
-    ~MultiPlotsVerticalSpan()
-    {
-        for (auto span : _spans)
-        {
-            delete span;
-        }
-    }
-
-
-    void set_selected(bool selected);
-
-    [[nodiscard]] inline bool is_selected() const noexcept { return _selected; }
-
-    inline void set_color(const QColor& color)
-    {
-        if (_color != color)
-        {
-            for (auto span : _spans)
-            {
-                span->set_color(color);
-            }
-            _color = color;
-        }
-    }
-
-    inline QColor get_color() const { return _color; }
-
-    void set_range(const QCPRange horizontal_range);
-
-    [[nodiscard]] inline QCPRange get_range() const noexcept { return _horizontal_range; }
-
-    inline void set_visible(bool visible)
-    {
-        if (_visible != visible)
-        {
-            for (auto span : _spans)
-            {
-                span->set_visible(visible);
-            }
-            _visible = visible;
-        }
-    }
-
-    [[nodiscard]] inline bool is_visible() const noexcept { return _visible; }
-
-    inline void set_tool_tip(const QString& tool_tip)
-    {
-        if (_tool_tip != tool_tip)
-        {
-            for (auto span : _spans)
-            {
-                span->set_tool_tip(tool_tip);
-            }
-            _tool_tip = tool_tip;
-        }
-    }
-
-    [[nodiscard]] inline QString get_tool_tip() const noexcept { return _tool_tip; }
-
-
-    inline void set_read_only(bool read_only)
-    {
-        if (_read_only != read_only)
-        {
-            for (auto span : _spans)
-            {
-                span->set_read_only(read_only);
-            }
-            _read_only = read_only;
-        }
-    }
-
-    [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
-
-
-    inline void show() { set_visible(true); }
-
-
-    inline void hide() { set_visible(false); }
 };

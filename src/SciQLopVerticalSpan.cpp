@@ -184,11 +184,14 @@ void VerticalSpan::select_upper_border(bool selected)
         Q_EMIT upper_border_selection_changed(selected);
     }
 }
-
-SciQLopVerticalSpan::SciQLopVerticalSpan(
-    QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot)
-        : _impl { new VerticalSpan { plot, horizontal_range, do_not_replot } }
+SciQLopVerticalSpan::SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, QColor color,
+    bool read_only, bool visible, const QString& tool_tip)
+        : _impl { new VerticalSpan { plot, horizontal_range, true } }
 {
+    set_color(color);
+    set_read_only(read_only);
+    set_visible(visible);
+    set_tool_tip(tool_tip);
     connect(this->_impl, &VerticalSpan::range_changed, this, &SciQLopVerticalSpan::range_changed);
 
     connect(
@@ -208,91 +211,4 @@ SciQLopVerticalSpan::SciQLopVerticalSpan(
             this->_impl = nullptr;
             this->deleteLater();
         });
-}
-
-void MultiPlotsVerticalSpan::select_lower_border(bool selected)
-{
-    if (_lower_border_selected != selected)
-    {
-        for (auto span : _spans)
-        {
-            span->select_lower_border(selected);
-        }
-        replotAll();
-        _lower_border_selected = selected;
-    }
-}
-
-void MultiPlotsVerticalSpan::select_upper_border(bool selected)
-{
-    if (_upper_border_selected != selected)
-    {
-        for (auto span : _spans)
-        {
-            span->select_upper_border(selected);
-        }
-        replotAll();
-        _upper_border_selected = selected;
-    }
-}
-
-void MultiPlotsVerticalSpan::addObject(SciQLopPlot* plot)
-{
-    auto new_span = new SciQLopVerticalSpan(plot, _horizontal_range, true);
-    new_span->set_selected(_selected);
-    new_span->set_range(_horizontal_range);
-    new_span->set_visible(_visible);
-    new_span->set_color(_color);
-    new_span->set_read_only(_read_only);
-    new_span->set_tool_tip(_tool_tip);
-    QObject::connect(
-        new_span, &SciQLopVerticalSpan::range_changed, this, &MultiPlotsVerticalSpan::set_range);
-    QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
-        &MultiPlotsVerticalSpan::set_selected);
-    QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
-        &MultiPlotsVerticalSpan::select_lower_border);
-    QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
-        &MultiPlotsVerticalSpan::select_upper_border);
-    QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
-        &MultiPlotsVerticalSpan::delete_requested);
-    _spans.append(new_span);
-}
-
-void MultiPlotsVerticalSpan::removeObject(SciQLopPlot* plot)
-{
-    for (auto i = 0UL; i < std::size(_spans); ++i)
-    {
-        if (_spans[i]->parentPlot() == plot)
-        {
-            delete _spans[i];
-            _spans.removeAt(i);
-        }
-    }
-}
-
-void MultiPlotsVerticalSpan::set_selected(bool selected)
-{
-    if (_selected != selected)
-    {
-        for (auto span : _spans)
-        {
-            span->set_selected(selected);
-        }
-        replotAll();
-        _selected = selected;
-        Q_EMIT selection_changed(selected);
-    }
-}
-
-void MultiPlotsVerticalSpan::set_range(const QCPRange horizontal_range)
-{
-    if (horizontal_range != _horizontal_range)
-    {
-        for (auto span : _spans)
-        {
-            span->set_range(horizontal_range);
-        }
-        _horizontal_range = horizontal_range;
-        Q_EMIT range_changed(horizontal_range);
-    }
 }

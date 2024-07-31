@@ -19,27 +19,49 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
 
-#include "SciQLopPlotCollection.hpp"
-#include <QObject>
-class SciQLopPlot;
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
+#include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 
-class SciQLopMultiPlotObject : public QObject
+SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
+
+void SciQLopPlotCollection::addPlot(SciQLopPlot* plot)
 {
-    Q_OBJECT
-protected:
-    QList<SciQLopPlot*> m_plots;
+    _plots.append(plot);
+    emit plotListChanged(_plots);
+}
 
-    virtual void addObject(SciQLopPlot* plot);
-    virtual void removeObject(SciQLopPlot* plot);
-    void replotAll();
+void SciQLopPlotCollection::insertPlot(int index, SciQLopPlot* plot)
+{
+    _plots.insert(index, plot);
+    emit plotListChanged(_plots);
+}
 
-public:
-    explicit SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent = nullptr);
+void SciQLopPlotCollection::removePlot(SciQLopPlot* plot)
+{
+    _plots.removeOne(plot);
+    emit plotListChanged(_plots);
+}
 
-    virtual ~SciQLopMultiPlotObject() Q_DECL_OVERRIDE;
+SciQLopPlot* SciQLopPlotCollection::plotAt(int index)
+{
+    return _plots.at(index);
+}
 
-    Q_SLOT virtual void updatePlotList(const QList<SciQLopPlot*>& plots);
-};
+void SciQLopPlotCollection::clear()
+{
+    _plots.clear();
+    emit plotListChanged(_plots);
+}
+
+void SciQLopPlotCollection::movePlot(int from, int to)
+{
+    _plots.move(from, to);
+    emit plotListChanged(_plots);
+}
+
+void SciQLopPlotCollection::movePlot(SciQLopPlot* plot, int to)
+{
+    movePlot(_plots.indexOf(plot), to);
+}

@@ -53,9 +53,11 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraph.hpp',
@@ -88,9 +90,11 @@ sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [ '../src/SciQLopPlot.cpp',
+            '../src/SciQLopPlotCollection.cpp',
             '../src/SciQLopMultiPlotObject.cpp',
             '../src/SciQLopMultiPlotPanel.cpp',
             '../src/SciQLopPlotContainer.cpp',
+            '../src/MultiPlotsVSpan.cpp',
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
