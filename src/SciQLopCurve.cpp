@@ -19,8 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopCurve.hpp"
-#include "SciQLopPlots/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
+#include "SciQLopPlots/Plotables/SciQLopCurveResampler.hpp"
 
 void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {

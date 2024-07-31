@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopCurveResampler.hpp"
 
 void CurveResampler::_resample_slot(const QCPRange newRange)
 {
@@ -51,4 +51,7 @@ CurveResampler::CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t li
         Qt::QueuedConnection);
 }
 
-void CurveResampler::resample(const QCPRange newRange) { emit this->_resample_sig(newRange); }
+void CurveResampler::resample(const QCPRange newRange)
+{
+    emit this->_resample_sig(newRange);
+}

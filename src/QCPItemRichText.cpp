@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/QCPItemRichText.hpp"
+#include "SciQLopPlots/Items/QCPItemRichText.hpp"
 
 QCPItemRichText::QCPItemRichText(QCustomPlot* parentPlot) : QCPItemText(parentPlot)
 {

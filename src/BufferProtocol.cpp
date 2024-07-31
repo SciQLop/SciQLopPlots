@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/BufferProtocol.hpp"
 
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
@@ -51,13 +51,14 @@ extern "C"
 #endif
 
 
-void Array_view::_init_buffer(PyObject *obj)
+void Array_view::_init_buffer(PyObject* obj)
 {
     PyGILState_STATE state = PyGILState_Ensure();
     this->_is_valid
-        = PyObject_GetBuffer(obj, &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS) == 0;
+        = PyObject_GetBuffer(obj, &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS)
+        == 0;
     PyGILState_Release(state);
-    //std::cout << "Array_view PyObject_GetBuffer" << std::endl;
+    // std::cout << "Array_view PyObject_GetBuffer" << std::endl;
     assert(this->_is_valid);
     if (this->_buffer.ndim > 0)
     {
@@ -67,7 +68,7 @@ void Array_view::_init_buffer(PyObject *obj)
     else
     {
         this->_shape.resize(1);
-        this->_shape[0] = this->_buffer.len/this->_buffer.itemsize;
+        this->_shape[0] = this->_buffer.len / this->_buffer.itemsize;
     }
 }
 
@@ -133,5 +134,7 @@ std::vector<double> Array_view::to_std_vect()
 }
 
 
-
-PyObjectWrapper::~PyObjectWrapper() { this->release_obj(); }
+PyObjectWrapper::~PyObjectWrapper()
+{
+    this->release_obj();
+}

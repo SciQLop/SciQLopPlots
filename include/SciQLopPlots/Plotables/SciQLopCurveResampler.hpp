@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,81 +21,85 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "BufferProtocol.hpp"
+#include "../Python/BufferProtocol.hpp"
+#include "SciQLopCurve.hpp"
+#include "SciQLopGraph.hpp"
 #include <QMutex>
-#include <cpp_utils/containers/algorithms.hpp>
 #include <qcustomplot.h>
 
 
-struct ColormapResampler : public QObject
+static inline QVector<QCPCurveData> copy_data(
+    const double* x, const double* y, std::size_t x_size, const int y_incr = 1)
+{
+    QVector<QCPCurveData> data(x_size);
+    const double* current_y_it = y;
+    for (auto i = 0UL; i < x_size; i++)
+    {
+        data[i] = QCPCurveData { static_cast<double>(i), x[i], *current_y_it };
+        current_y_it += y_incr;
+    }
+    return data;
+}
+
+
+struct CurveResampler : public QObject
 {
     Q_OBJECT
-    QMutex _mutex;
+    QMutex _data_mutex;
     QMutex _range_mutex;
     Array_view _x;
     Array_view _y;
-    Array_view _z;
+    SciQLopGraph::DataOrder _dataOrder;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
-    QCPAxis::ScaleType _scale_type;
-    QCPColorMapData* _last_data_ptr = nullptr;
-    std::size_t _max_y_size = 1000;
-
-
-    std::vector<double> _optimal_y_scale(
-        const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type);
-
-    QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y, const Array_view& z);
-
-    QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z);
-
 #ifndef BINDINGS_H
-    Q_SIGNAL void _resample_sig(const QCPRange& newRange);
+    Q_SIGNAL void _resample_sig(const QCPRange newRange);
 #endif // !BINDINGS_H
-    void _resample_slot(const QCPRange& newRange);
+    void _resample_slot(const QCPRange newRange);
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
-    Q_SIGNAL void refreshPlot(QCPColorMapData* data);
+    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
+    Q_SIGNAL void refreshPlot();
 #endif // !BINDINGS_H
 
-    ColormapResampler(QCPAxis::ScaleType scale_type);
+    CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
 
-    void resample(const QCPRange& newRange);
+    void resample(const QCPRange newRange);
 
     inline QCPRange x_range()
     {
-        QMutexLocker locker(&_mutex);
-        return this->_data_x_range;
+        QMutexLocker locker(&_range_mutex);
+        auto rng = this->_data_x_range;
+        return rng;
     }
 
-    inline void setData(
-        Array_view&& x, Array_view&& y, Array_view&& z, QCPAxis::ScaleType scale_type)
+    inline void set_line_count(std::size_t line_cnt)
     {
-        const auto len = x.flat_size();
+        QMutexLocker locker(&_data_mutex);
+        this->_line_cnt = line_cnt;
+    }
+
+    inline void setData(Array_view&& x, Array_view&& y)
+    {
         {
-            QMutexLocker range_lock { &_range_mutex };
+            QMutexLocker locker(&_data_mutex);
+
+            _x = std::move(x);
+            _y = std::move(y);
+
+            const auto len = _x.flat_size();
             if (len > 0)
             {
-                _data_x_range.lower = x.data()[0];
-                _data_x_range.upper = x.data()[len - 1];
+                _data_x_range.lower = _x.data()[0];
+                _data_x_range.upper = _x.data()[len - 1];
             }
             else
             {
                 _data_x_range.lower = std::nan("");
                 _data_x_range.upper = std::nan("");
             }
+            this->resample(_data_x_range);
         }
-        {
-            QMutexLocker data_locker(&_mutex);
-
-            _x = std::move(x);
-            _y = std::move(y);
-            _z = std::move(z);
-
-            _scale_type = scale_type;
-        }
-        this->resample(_data_x_range);
     }
 };

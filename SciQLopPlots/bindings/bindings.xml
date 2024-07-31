@@ -166,7 +166,7 @@
 
     <object-type name="QCPGraph" parent-management="yes">
         <extra-includes>
-          <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
+          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
@@ -365,7 +365,7 @@
     <object-type name="SciQLopGraph" parent-management="yes">
         <enum-type name="DataOrder"/>
         <extra-includes>
-          <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
+          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
@@ -374,7 +374,7 @@
     </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
         <extra-includes>
-          <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
+          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
@@ -384,7 +384,7 @@
     <object-type name="SciQLopColorMap" parent-management="yes">
         <enum-type name="DataOrder"/>
         <extra-includes>
-          <include file-name="SciQLopPlots/BufferProtocol.hpp" location="global"/>
+          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
         <add-function signature="setData(PyObject *@x@, PyObject *@y@, PyObject *@z@)">

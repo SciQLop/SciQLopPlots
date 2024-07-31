@@ -19,8 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopGraph.hpp"
-#include "SciQLopPlots/SciQLopGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphResampler.hpp"
 
 void SciQLopGraph::create_graphs(const QStringList& labels)
 {

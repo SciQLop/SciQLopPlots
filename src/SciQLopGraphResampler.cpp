@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/SciQLopGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphResampler.hpp"
 
 void GraphResampler::_resample_slot(const QCPRange newRange)
 {
@@ -29,19 +29,16 @@ void GraphResampler::_resample_slot(const QCPRange newRange)
     {
         const auto start_x
             = std::upper_bound(_x.data(), _x.data() + _x.flat_size(), newRange.lower);
-        const auto end_x
-            = std::lower_bound(_x.data(), _x.data() + _x.flat_size(), newRange.upper);
+        const auto end_x = std::lower_bound(_x.data(), _x.data() + _x.flat_size(), newRange.upper);
         const auto x_window_size = end_x - start_x;
         if (x_window_size > 0)
         {
-            const auto y_incr
-                = (_dataOrder == SciQLopGraph::DataOrder::xFirst) ? 1UL : _line_cnt;
+            const auto y_incr = (_dataOrder == SciQLopGraph::DataOrder::xFirst) ? 1UL : _line_cnt;
             for (auto line_index = 0UL; line_index < _line_cnt; line_index++)
             {
                 const auto start_y = _y.data() + y_incr * (start_x - _x.data())
-                + (line_index
-                    * ((_dataOrder == SciQLopGraph::DataOrder::xFirst) ? _x.flat_size()
-                                                                       : 1));
+                    + (line_index
+                        * ((_dataOrder == SciQLopGraph::DataOrder::xFirst) ? _x.flat_size() : 1));
                 if (x_window_size > 10000)
                 {
                     emit this->setGraphData(
@@ -68,4 +65,7 @@ GraphResampler::GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t li
         Qt::QueuedConnection);
 }
 
-void GraphResampler::resample(const QCPRange newRange) { emit this->_resample_sig(newRange); }
+void GraphResampler::resample(const QCPRange newRange)
+{
+    emit this->_resample_sig(newRange);
+}

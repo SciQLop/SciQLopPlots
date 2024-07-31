@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,17 +21,22 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <qcustomplot.h>
+#include <QObject>
+class SciQLopPlot;
 
-class _QCustomPlot : public QCustomPlot
+class SciQLopMultiPlotObject : public QObject
 {
     Q_OBJECT
+protected:
+    QList<SciQLopPlot*> m_plots;
+
+    virtual void addObject(SciQLopPlot* plot);;
+    virtual void removeObject(SciQLopPlot* plot);;
+    void replotAll();
+
 public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
+    explicit SciQLopMultiPlotObject(QObject* parent = nullptr);
+    virtual ~SciQLopMultiPlotObject() Q_DECL_OVERRIDE;
+
+    Q_SLOT virtual void updatePlotList(const QList<SciQLopPlot*>& plots);
 };

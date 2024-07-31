@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/SciQLopColorMapResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 
@@ -96,7 +96,7 @@ QCPColorMapData* ColormapResampler::_setDataLog(
     return data;
 }
 
-void ColormapResampler::_resample_slot(const QCPRange &newRange)
+void ColormapResampler::_resample_slot(const QCPRange& newRange)
 {
     {
         QMutexLocker lock { &_range_mutex };
@@ -131,4 +131,7 @@ ColormapResampler::ColormapResampler(QCPAxis::ScaleType scale_type) : _scale_typ
         Qt::QueuedConnection);
 }
 
-void ColormapResampler::resample(const QCPRange &newRange) { emit this->_resample_sig(newRange); }
+void ColormapResampler::resample(const QCPRange& newRange)
+{
+    emit this->_resample_sig(newRange);
+}

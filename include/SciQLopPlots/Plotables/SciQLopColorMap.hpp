@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "BufferProtocol.hpp"
+#include "../Python/BufferProtocol.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include <QMutex>
 #include <qcustomplot.h>

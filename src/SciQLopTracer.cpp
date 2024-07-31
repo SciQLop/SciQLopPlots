@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopTracer.hpp"
+#include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 
