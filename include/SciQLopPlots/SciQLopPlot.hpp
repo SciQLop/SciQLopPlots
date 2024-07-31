@@ -20,13 +20,13 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <SciQLopPlots/SciQLopColorMap.hpp>
+#include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
 
 #include <QPointF>
-#include <SciQLopPlots/SciQLopCurve.hpp>
-#include <SciQLopPlots/SciQLopGraph.hpp>
-#include <SciQLopPlots/SciQLopPlotItem.hpp>
-#include <SciQLopPlots/SciQLopTracer.hpp>
+#include <SciQLopPlots/Items/SciQLopPlotItem.hpp>
+#include <SciQLopPlots/Items/SciQLopTracer.hpp>
+#include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
+#include <SciQLopPlots/Plotables/SciQLopGraph.hpp>
 #include <optional>
 #include <qcustomplot.h>
 

@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "BufferProtocol.hpp"
+#include "../Python/BufferProtocol.hpp"
 #include "SciQLopGraph.hpp"
 #include <QMutex>
 #include <qcustomplot.h>

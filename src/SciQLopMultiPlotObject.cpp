@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,19 +19,43 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
 
-#include <qcustomplot.h>
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
-class _QCustomPlot : public QCustomPlot
+#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp"
+
+void SciQLopMultiPlotObject::addObject(SciQLopPlot* plot) { }
+
+void SciQLopMultiPlotObject::removeObject(SciQLopPlot* plot) { }
+
+void SciQLopMultiPlotObject::replotAll()
 {
-    Q_OBJECT
-public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
+    for (auto* plot : m_plots)
     {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
+        plot->replot(QCustomPlot::rpQueuedReplot);
     }
-};
+}
+
+SciQLopMultiPlotObject::SciQLopMultiPlotObject(QObject* parent) : QObject(parent) { }
+
+SciQLopMultiPlotObject::~SciQLopMultiPlotObject() { }
+
+void SciQLopMultiPlotObject::updatePlotList(const QList<SciQLopPlot*>& plots)
+{
+    for (auto* plot : plots)
+    {
+        if (!m_plots.contains(plot))
+        {
+            m_plots.append(plot);
+            addObject(plot);
+        }
+    }
+    for (auto* plot : m_plots)
+    {
+        if (!plots.contains(plot))
+        {
+            m_plots.removeOne(plot);
+            removeObject(plot);
+        }
+    }
+}

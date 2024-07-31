@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,19 +19,11 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
 
-#include <qcustomplot.h>
+#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 
-class _QCustomPlot : public QCustomPlot
+SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent) : QScrollArea { nullptr }
 {
-    Q_OBJECT
-public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
-};
+    _container = new SciQLopPlotContainer(this);
+}

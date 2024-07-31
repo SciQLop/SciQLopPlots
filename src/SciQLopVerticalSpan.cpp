@@ -19,7 +19,10 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopVerticalSpan.hpp"
+#include <SciQLopPlots/SciQLopPlot.hpp>
+
+#include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
+
 
 void VerticalSpanBorder::move(double dx, double dy)
 {
@@ -98,7 +101,7 @@ VerticalSpan::VerticalSpan(
         this->replot(immediate_replot);
 }
 
-void VerticalSpan::keyPressEvent(QKeyEvent *event)
+void VerticalSpan::keyPressEvent(QKeyEvent* event)
 {
     if (this->selected())
     {
@@ -215,10 +218,7 @@ void MultiPlotsVerticalSpan::select_lower_border(bool selected)
         {
             span->select_lower_border(selected);
         }
-        for (auto plot : _plots)
-        {
-            plot->replot(QCustomPlot::rpQueuedReplot);
-        }
+        replotAll();
         _lower_border_selected = selected;
     }
 }
@@ -231,48 +231,41 @@ void MultiPlotsVerticalSpan::select_upper_border(bool selected)
         {
             span->select_upper_border(selected);
         }
-        for (auto plot : _plots)
-        {
-            plot->replot(QCustomPlot::rpQueuedReplot);
-        }
+        replotAll();
         _upper_border_selected = selected;
     }
 }
 
-void MultiPlotsVerticalSpan::update_plot_list(QList<QCustomPlot*> new_plots)
+void MultiPlotsVerticalSpan::addObject(SciQLopPlot* plot)
 {
-    for (auto i = 0UL; i < std::size(new_plots); ++i)
+    auto new_span = new SciQLopVerticalSpan(plot, _horizontal_range, true);
+    new_span->set_selected(_selected);
+    new_span->set_range(_horizontal_range);
+    new_span->set_visible(_visible);
+    new_span->set_color(_color);
+    new_span->set_read_only(_read_only);
+    new_span->set_tool_tip(_tool_tip);
+    QObject::connect(
+        new_span, &SciQLopVerticalSpan::range_changed, this, &MultiPlotsVerticalSpan::set_range);
+    QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
+        &MultiPlotsVerticalSpan::set_selected);
+    QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
+        &MultiPlotsVerticalSpan::select_lower_border);
+    QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
+        &MultiPlotsVerticalSpan::select_upper_border);
+    QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
+        &MultiPlotsVerticalSpan::delete_requested);
+    _spans.append(new_span);
+}
+
+void MultiPlotsVerticalSpan::removeObject(SciQLopPlot* plot)
+{
+    for (auto i = 0UL; i < std::size(_spans); ++i)
     {
-        if (!_plots.contains(new_plots[i]))
-        {
-            auto new_span = new SciQLopVerticalSpan(new_plots[i], _horizontal_range, true);
-            new_span->set_selected(_selected);
-            new_span->set_range(_horizontal_range);
-            new_span->set_visible(_visible);
-            new_span->set_color(_color);
-            new_span->set_read_only(_read_only);
-            new_span->set_tool_tip(_tool_tip);
-            QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
-                &MultiPlotsVerticalSpan::set_range);
-            QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
-                &MultiPlotsVerticalSpan::set_selected);
-            QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
-                &MultiPlotsVerticalSpan::select_lower_border);
-            QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
-                &MultiPlotsVerticalSpan::select_upper_border);
-            QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
-                &MultiPlotsVerticalSpan::delete_requested);
-            _spans.append(new_span);
-            _plots.append(new_plots[i]);
-        }
-    }
-    for (auto i = 0UL; i < std::size(_plots); ++i)
-    {
-        if (!new_plots.contains(_plots[i]))
+        if (_spans[i]->parentPlot() == plot)
         {
             delete _spans[i];
             _spans.removeAt(i);
-            _plots.removeAt(i);
         }
     }
 }
@@ -285,10 +278,7 @@ void MultiPlotsVerticalSpan::set_selected(bool selected)
         {
             span->set_selected(selected);
         }
-        for (auto plot : _plots)
-        {
-            plot->replot(QCustomPlot::rpQueuedReplot);
-        }
+        replotAll();
         _selected = selected;
         Q_EMIT selection_changed(selected);
     }

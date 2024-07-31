@@ -19,9 +19,9 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 
-#include "SciQLopPlots/SciQLopColorMapResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 void SciQLopColorMap::_range_changed(const QCPRange& newRange, const QCPRange& oldRange) { }

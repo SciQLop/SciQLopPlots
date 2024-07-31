@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,20 +21,21 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "BufferProtocol.hpp"
-#include "QCPAbstractPlottableWrapper.hpp"
-#include <qcustomplot.h>
-struct GraphResampler;
-class QThread;
 
-class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
+#include "../Python/BufferProtocol.hpp"
+#include "QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopGraph.hpp"
+#include <qcustomplot.h>
+class QThread;
+struct CurveResampler;
+
+class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 {
-    GraphResampler* _resampler = nullptr;
+    CurveResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    bool _auto_scale_y = false;
 
     Q_OBJECT
 
@@ -43,56 +44,47 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
 
-    void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
+    void _setCurveData(std::size_t index, QVector<QCPCurveData> data);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
-#endif // !BINDINGS
+    Q_SIGNAL void _setCurveDataSig(std::size_t index, QVector<QCPCurveData> data);
+#endif // !BINDINGS_H
 
-    void clear_graphs(bool graph_already_removed = false);
+    void clear_curves(bool curve_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
 
 public:
-    enum class DataOrder
-    {
-        xFirst,
-        yFirst
-    };
     Q_ENUMS(FractionStyle)
-    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QStringList& labels, DataOrder dataOrder = DataOrder::xFirst);
+    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+        const QStringList& labels,
+        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
 
-    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        DataOrder dataOrder = DataOrder::xFirst);
+    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
 
-    virtual ~SciQLopGraph() override;
+    virtual ~SciQLopCurve() override;
 
     void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
-    inline const QList<QCPGraph*> graphs() const noexcept
-    {
-        QList<QCPGraph*> graphs;
-        for (auto plottable : m_plottables)
-            graphs.append(qobject_cast<QCPGraph*>(plottable));
-        return graphs;
-    }
-    inline QCPGraph* graphAt(std::size_t index) const
+    inline QCPCurve* graphAt(std::size_t index) const
     {
         if (index < plottable_count())
-            return qobject_cast<QCPGraph*>(m_plottables[index]);
+            return dynamic_cast<QCPCurve*>(m_plottables[index]);
         return nullptr;
     }
+    inline QCPCurve* curveAt(std::size_t index) const { return graphAt(index); }
+    inline const QList<QCPCurve*> curves() const
+    {
+        QList<QCPCurve*> curves;
+        for (auto plottable : m_plottables)
+            curves.append(qobject_cast<QCPCurve*>(plottable));
+        return curves;
+    }
     void create_graphs(const QStringList& labels);
+    inline void create_curves(const QStringList& labels) { create_graphs(labels); }
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
-    void set_auto_scale_y(bool auto_scale_y);
-    inline bool auto_scale_y() const noexcept { return _auto_scale_y; }
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void auto_scale_y_changed(bool);
-#endif
-
 private:
-    DataOrder _dataOrder = DataOrder::xFirst;
+    SciQLopGraph::DataOrder _dataOrder = SciQLopGraph::DataOrder::xFirst;
 };

@@ -19,5 +19,4 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopPlotItem.hpp"
-
+#include "SciQLopPlots/Items/SciQLopPlotItem.hpp"

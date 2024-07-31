@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
-#include "SciQLopPlots/SciQLopPlotItem.hpp"
+#include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <QGestureRecognizer>
 #include <QSharedPointer>

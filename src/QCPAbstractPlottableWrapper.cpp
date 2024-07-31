@@ -20,9 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 
-void SQPQCPAbstractPlottableWrapper::_register_plottable(QCPAbstractPlottable *plottable)
+void SQPQCPAbstractPlottableWrapper::_register_plottable(QCPAbstractPlottable* plottable)
 {
     connect(plottable, &QCPAbstractPlottable::destroyed, this,
         [this, plottable]() { m_plottables.removeOne(plottable); });

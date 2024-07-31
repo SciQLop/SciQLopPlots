@@ -53,24 +53,27 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/QCPAbstractPlottableWrapper.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopGraph.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopCurve.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopColorMap.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopVerticalSpan.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotItem.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraph.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopPlotItem.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopGraphResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopCurveResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopColorMapResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopTracer.hpp',
-    project_source_root + '/include/SciQLopPlots/QCPItemRichText.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphResampler.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurveResampler.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopTracer.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/QCPItemRichText.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
 moc_sources = []
 headers = moc_headers + \
-         [project_source_root+'/include/SciQLopPlots/BufferProtocol.hpp',
+         [project_source_root+'/include/SciQLopPlots/Python/BufferProtocol.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp']
 
 includes = include_directories(['../include', '../qcustomplot-source'])
@@ -85,6 +88,9 @@ sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [ '../src/SciQLopPlot.cpp',
+            '../src/SciQLopMultiPlotObject.cpp',
+            '../src/SciQLopMultiPlotPanel.cpp',
+            '../src/SciQLopPlotContainer.cpp',
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',

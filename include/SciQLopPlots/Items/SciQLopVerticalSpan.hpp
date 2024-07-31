@@ -21,8 +21,9 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "../MultiPlots/SciQLopMultiPlotObject.hpp"
+#include "../constants.hpp"
 #include "SciQLopPlotItem.hpp"
-#include "constants.hpp"
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
@@ -284,7 +285,7 @@ public:
     {
         if (this->_impl)
         {
-            auto plot = this->_impl->parentPlot();
+            auto plot = this->parentPlot();
             if (plot->hasItem(this->_impl))
             {
                 plot->removeItem(this->_impl);
@@ -293,6 +294,7 @@ public:
         }
     }
 
+    inline QCustomPlot* parentPlot() const noexcept { return _impl->parentPlot(); }
 
     inline void set_visible(bool visible) { _impl->set_visible(visible); }
     inline bool visible() const noexcept { return _impl->visible(); }
@@ -328,11 +330,10 @@ public:
     inline void replot() { this->_impl->replot(); }
 };
 
-class MultiPlotsVerticalSpan : public QObject
+class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 {
     Q_OBJECT
     QList<SciQLopVerticalSpan*> _spans;
-    QList<QCustomPlot*> _plots;
     QCPRange _horizontal_range;
     bool _selected = false;
     bool _lower_border_selected = false;
@@ -345,6 +346,10 @@ class MultiPlotsVerticalSpan : public QObject
     void select_lower_border(bool selected);
     void select_upper_border(bool selected);
 
+protected:
+    virtual void addObject(SciQLopPlot* plot) override;
+    virtual void removeObject(SciQLopPlot* plot) override;
+
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(QCPRange new_time_range);
@@ -352,7 +357,7 @@ public:
     Q_SIGNAL void delete_requested();
 #endif
 
-    MultiPlotsVerticalSpan(QList<QCustomPlot*> plots, QCPRange horizontal_range, QColor color,
+    MultiPlotsVerticalSpan(QList<SciQLopPlot*> plots, QCPRange horizontal_range, QColor color,
         bool read_only = false, bool visible = true, const QString& tool_tip = "",
         QObject* parent = nullptr)
     {
@@ -361,7 +366,7 @@ public:
         _visible = visible;
         _read_only = read_only;
         _tool_tip = tool_tip;
-        update_plot_list(plots);
+        updatePlotList(plots);
     }
 
     ~MultiPlotsVerticalSpan()
@@ -372,7 +377,6 @@ public:
         }
     }
 
-    void update_plot_list(QList<QCustomPlot*> new_plots);
 
     void set_selected(bool selected);
 

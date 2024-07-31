@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,17 +21,36 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <qcustomplot.h>
+#include <QSplitter>
 
-class _QCustomPlot : public QCustomPlot
+class SciQLopPlot;
+
+class SciQLopPlotContainer : public QSplitter
 {
     Q_OBJECT
+
+    QList<SciQLopPlot*> _plots;
+
 public:
-    explicit _QCustomPlot(QWidget* parent = nullptr) : QCustomPlot { parent } {};
-    virtual ~_QCustomPlot() Q_DECL_OVERRIDE {};
-    inline QCPColorMap* addColorMap(QCPAxis* x, QCPAxis* y)
-    {
-        auto cm = new QCPColorMap(x, y);
-        return cm;
-    }
+    SciQLopPlotContainer(QWidget* parent = nullptr);
+    virtual ~SciQLopPlotContainer() Q_DECL_OVERRIDE = default;
+
+    void insertWidget(int index, QWidget* widget);
+    void addWidget(QWidget* widget);
+    void insertPlot(int index, SciQLopPlot* plot);
+    void addPlot(SciQLopPlot* plot);
+    void removePlot(SciQLopPlot* plot, bool destroy = true);
+
+    inline const QList<SciQLopPlot*>& plots() const { return _plots; }
+
+    inline bool empty() const { return _plots.isEmpty(); }
+    inline std::size_t count() const { return _plots.size(); }
+
+    void setXAxisRange(double lower, double upper);
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void plotAdded(SciQLopPlot* plot);
+    Q_SIGNAL void plotRemoved(SciQLopPlot* plot);
+    Q_SIGNAL void plotListChanged();
+#endif // BINDINGS_H
 };

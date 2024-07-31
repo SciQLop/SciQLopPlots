@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <SciQLopPlots/QCPItemRichText.hpp>
+#include <SciQLopPlots/Items/QCPItemRichText.hpp>
 #include <qcustomplot.h>
 
 enum class PlotableType
