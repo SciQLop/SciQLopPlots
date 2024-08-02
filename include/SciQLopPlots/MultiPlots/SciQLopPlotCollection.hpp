@@ -24,51 +24,86 @@
 #include <QList>
 #include <QObject>
 
-class SciQLopPlot;
+#include "qcustomplot.h"
+
+class SciQLopPlotInterface;
+
+class SciQLopPlotCollectionBehavior : public QObject
+{
+    Q_OBJECT
+public:
+    SciQLopPlotCollectionBehavior(QObject* parent = nullptr) : QObject(parent) { }
+    inline virtual Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) { }
+};
 
 class SciQLopPlotCollectionInterface
 {
+
 public:
-    virtual void addPlot(SciQLopPlot* plot) = 0;
-    virtual void insertPlot(int index, SciQLopPlot* plot) = 0;
-    virtual void removePlot(SciQLopPlot* plot) = 0;
+    virtual void addPlot(SciQLopPlotInterface* plot) = 0;
+    virtual void insertPlot(int index, SciQLopPlotInterface* plot) = 0;
+    virtual void removePlot(SciQLopPlotInterface* plot) = 0;
     virtual void movePlot(int from, int to) = 0;
-    virtual void movePlot(SciQLopPlot* plot, int to) = 0;
+    virtual void movePlot(SciQLopPlotInterface* plot, int to) = 0;
     virtual void clear() = 0;
 
-    virtual SciQLopPlot* plotAt(int index) = 0;
-    virtual const QList<SciQLopPlot*>& plots() const = 0;
+    virtual SciQLopPlotInterface* plotAt(int index) = 0;
+    virtual const QList<SciQLopPlotInterface*>& plots() const = 0;
 
-    virtual bool contains(SciQLopPlot* plot) const = 0;
+    virtual bool contains(SciQLopPlotInterface* plot) const = 0;
 
     virtual bool empty() const = 0;
     virtual std::size_t size() const = 0;
+
+    virtual void set_x_axis_range(double min, double max) = 0;
+
+    virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) = 0;
+    virtual void removeBehavior(const QString& type_name) = 0;
 };
+
+template <typename U, typename Interface_T, typename... Args>
+void registerBehavior(Interface_T* interface, Args&&... args)
+{
+    interface->registerBehavior(new U(interface, std::forward<Args>(args)...));
+}
+
+template <typename U, typename Interface_T>
+void removeBehavior(Interface_T* interface)
+{
+    interface->removeBehavior(U::staticMetaObject.className());
+}
 
 class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
-    QList<SciQLopPlot*> _plots;
+    QList<SciQLopPlotInterface*> _plots;
+
+    QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
 
 public:
     SciQLopPlotCollection(QObject* parent = nullptr);
     virtual ~SciQLopPlotCollection() = default;
-    void addPlot(SciQLopPlot* plot) final;
-    void insertPlot(int index, SciQLopPlot* plot) final;
-    void removePlot(SciQLopPlot* plot) final;
+    void addPlot(SciQLopPlotInterface* plot) final;
+    void insertPlot(int index, SciQLopPlotInterface* plot) final;
+    void removePlot(SciQLopPlotInterface* plot) final;
     void movePlot(int from, int to) final;
-    void movePlot(SciQLopPlot* plot, int to) final;
+    void movePlot(SciQLopPlotInterface* plot, int to) final;
     void clear() final;
 
-    SciQLopPlot* plotAt(int index) final;
-    inline const QList<SciQLopPlot*>& plots() const final { return _plots; }
+    SciQLopPlotInterface* plotAt(int index) final;
+    inline const QList<SciQLopPlotInterface*>& plots() const final { return _plots; }
 
-    inline bool contains(SciQLopPlot* plot) const final { return _plots.contains(plot); }
+    inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
 
     inline bool empty() const final { return _plots.isEmpty(); }
     inline std::size_t size() const final { return _plots.size(); }
 
+    virtual void set_x_axis_range(double lower, double upper) final;
+
+    void registerBehavior(SciQLopPlotCollectionBehavior* behavior) final;
+    void removeBehavior(const QString& type_name) final;
+
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlot*>& plots);
+    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
 };

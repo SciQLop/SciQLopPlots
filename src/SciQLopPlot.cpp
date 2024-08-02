@@ -51,6 +51,9 @@ inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
         _set_selected(curve, selected);
     }
 }
+namespace _impl
+{
+
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
@@ -68,8 +71,25 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     this->m_tracer = new TracerWithToolTip(this);
     this->setMouseTracking(true);
+    this->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables
+        | QCP::iSelectAxes | QCP::iSelectLegend | QCP::iSelectItems | QCP::iMultiSelect);
+
 
     connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
+    connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        [this](const QCPRange& range) { Q_EMIT x_axis_range_changed(range.lower, range.upper); });
+    connect(this->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        [this](const QCPRange& range) { Q_EMIT y_axis_range_changed(range.lower, range.upper); });
+    connect(this->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        [this](const QCPRange& range) { Q_EMIT y2_axis_range_changed(range.lower, range.upper); });
+
+    this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
+    this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));
+    this->m_axes.append(new SciQLopPlotAxis(this->xAxis2, this));
+    this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this));
+    m_color_scale = new QCPColorScale(this);
+    m_color_scale->setVisible(false);
+    setOpenGl(true, 4);
 }
 
 SciQLopPlot::~SciQLopPlot()
@@ -77,55 +97,63 @@ SciQLopPlot::~SciQLopPlot()
     delete m_tracer;
 }
 
-QCPColorMap* SciQLopPlot::addColorMap(QCPAxis* x, QCPAxis* y)
+QCPColorMap* SciQLopPlot::addColorMap()
 {
-    auto cm = new QCPColorMap(x, y);
+    auto cm = new QCPColorMap(this->xAxis, this->yAxis2);
     return cm;
 }
 
-SciQLopGraph* SciQLopPlot::addSciQLopGraph(
-    QCPAxis* x, QCPAxis* y, QStringList labels, SciQLopGraph::DataOrder dataOrder)
+SciQLopGraph* SciQLopPlot::addSciQLopGraph(QStringList labels, SciQLopGraph::DataOrder dataOrder)
 {
-    return this->_new_plottable_wrapper<SciQLopGraph>(x, y, labels, dataOrder);
+    return this->_new_plottable_wrapper<SciQLopGraph>(this->xAxis, this->yAxis, labels, dataOrder);
 }
 
-SciQLopGraph* SciQLopPlot::addSciQLopGraph(
-    QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder)
+SciQLopGraph* SciQLopPlot::addSciQLopGraph(SciQLopGraph::DataOrder dataOrder)
 {
-    return this->_new_plottable_wrapper<SciQLopGraph>(x, y, dataOrder);
+    return this->_new_plottable_wrapper<SciQLopGraph>(this->xAxis, this->yAxis, dataOrder);
 }
 
-SciQLopCurve* SciQLopPlot::addSciQLopCurve(
-    QCPAxis* x, QCPAxis* y, QStringList labels, SciQLopGraph::DataOrder dataOrder)
+SciQLopCurve* SciQLopPlot::addSciQLopCurve(QStringList labels, SciQLopGraph::DataOrder dataOrder)
 {
-    return this->_new_plottable_wrapper<SciQLopCurve>(x, y, labels, dataOrder);
+    return this->_new_plottable_wrapper<SciQLopCurve>(this->xAxis, this->yAxis, labels, dataOrder);
 }
 
-SciQLopCurve* SciQLopPlot::addSciQLopCurve(
-    QCPAxis* x, QCPAxis* y, SciQLopGraph::DataOrder dataOrder)
+SciQLopCurve* SciQLopPlot::addSciQLopCurve(SciQLopGraph::DataOrder dataOrder)
 {
-    return this->_new_plottable_wrapper<SciQLopCurve>(x, y, dataOrder);
+    return this->_new_plottable_wrapper<SciQLopCurve>(this->xAxis, this->yAxis, dataOrder);
 }
 
 SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
-    QCPAxis* x, QCPAxis* y, const QString& name, SciQLopColorMap::DataOrder dataOrder)
+    const QString& name, SciQLopColorMap::DataOrder dataOrder, bool y_log_scale, bool z_log_scale)
 {
-    return this->_new_plottable_wrapper<SciQLopColorMap>(x, y, name, dataOrder);
-}
+    if (!m_color_scale->visible())
+    {
+        if (y_log_scale)
+        {
+            set_axis_log(QCPAxis::atRight, true);
+        }
+        set_axis_visible(QCPAxis::atRight, true);
+        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(
+            this->xAxis, this->yAxis2, name, dataOrder);
+        m_color_scale->setVisible(true);
+        plotLayout()->addElement(0, 1, m_color_scale);
+        cmap->colorMap()->setColorScale(m_color_scale);
+        cmap->colorMap()->setInterpolate(false);
+        if (z_log_scale)
+        {
+            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->axis()->setTicker(
+                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
+        }
 
-void SciQLopPlot::set_scroll_factor(double factor) noexcept
-{
-    m_scroll_factor = factor;
-    Q_EMIT scroll_factor_changed(factor);
-}
-
-void SciQLopPlot::enable_cursor(bool enable) noexcept { }
-
-void SciQLopPlot::enable_legend(bool show) noexcept
-{
-    this->legend->setVisible(show);
-    this->legend->setSelectableParts(QCPLegend::spItems);
-    this->replot(rpQueuedReplot);
+        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
+        gradient.setNanHandling(QCPColorGradient::nhTransparent);
+        cmap->colorMap()->setGradient(gradient);
+        cmap->set_auto_scale_y(true);
+        return cmap;
+    }
+    return nullptr;
 }
 
 void SciQLopPlot::minimize_margins()
@@ -142,6 +170,13 @@ void SciQLopPlot::minimize_margins()
         l->setContentsMargins(0, 0, 0, 0);
     }
 }
+
+QMargins SciQLopPlot::minimal_axis_margins()
+{
+    return QMargins(_minimal_margin(QCP::msLeft), _minimal_margin(QCP::msTop),
+        _minimal_margin(QCP::msRight), _minimal_margin(QCP::msBottom));
+}
+
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
@@ -180,6 +215,18 @@ void SciQLopPlot::_wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPoi
     axis->scaleRange(
         factor, axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
 }
+
+int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
+{
+    int margin = 0;
+    auto rect = axisRect();
+    for (auto ax : rect->axes(QCPAxis::marginSideToAxisType(side)))
+    {
+        // margin += ax->calculateMargin(side);
+    }
+    return margin;
+}
+
 
 void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
 {
@@ -221,71 +268,16 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
 void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
     auto items = selectedItems();
-    event->setAccepted(false);
     std::for_each(items.begin(), items.end(),
-        [event, this](auto item)
+        [event](auto item)
         {
             if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
                 sciItem != nullptr)
             {
                 sciItem->keyPressEvent(event);
             }
-            else if (auto axis = dynamic_cast<QCPAxis*>(item); axis != nullptr)
-            {
-                if (axis->orientation() == Qt::Vertical)
-                {
-                    switch (event->key())
-                    {
-                        case Qt::Key_L:
-                        {
-                            if (axis->scaleType() == QCPAxis::stLinear)
-                            {
-                                axis->setScaleType(QCPAxis::stLogarithmic);
-                                axis->setTicker(QSharedPointer<QCPAxisTickerLog>());
-                            }
-                            else
-                            {
-                                axis->setScaleType(QCPAxis::stLinear);
-                                axis->setTicker(QSharedPointer<QCPAxisTicker>());
-                            }
-                            event->accept();
-                            this->replot(rpQueuedReplot);
-                        }
-                        case Qt::Key_M:
-                        {
-                            axis->rescale(true);
-                            event->accept();
-                            this->replot(rpQueuedReplot);
-                        }
-                    }
-                }
-            }
         });
-    if (event->isAccepted() == false)
-    {
-        switch (event->key())
-        {
-            case Qt::Key_L:
-            {
-                if (axisRect()->axis(QCPAxis::atLeft)->scaleType() == QCPAxis::stLinear)
-                    axisRect()->axis(QCPAxis::atLeft)->setScaleType(QCPAxis::stLogarithmic);
-                else
-                    axisRect()->axis(QCPAxis::atLeft)->setScaleType(QCPAxis::stLinear);
-                event->accept();
-                this->replot(rpQueuedReplot);
-            }
-            case Qt::Key_M:
-            {
-                axisRect()->axis(QCPAxis::atLeft)->rescale(true);
-                if (auto a = axisRect()->axis(QCPAxis::atRight); a != nullptr)
-                    a->rescale(true);
-                event->accept();
-                this->replot(rpQueuedReplot);
-            }
-        }
-    }
-    if (event->isAccepted() == false)
-        QCustomPlot::keyPressEvent(event);
+    QCustomPlot::keyPressEvent(event);
 }
 
 
@@ -449,4 +441,75 @@ void SciQLopPlot::_legend_double_clicked(
         }
         this->replot(rpQueuedReplot);
     }
+}
+}
+
+
+SciQLopPlot::SciQLopPlot(QWidget* parent)
+{
+    m_impl = new _impl::SciQLopPlot(this);
+    this->setLayout(new QVBoxLayout);
+    this->layout()->addWidget(m_impl);
+    connect(m_impl, &_impl::SciQLopPlot::x_axis_range_changed, this,
+        &SciQLopPlot::x_axis_range_changed);
+    connect(m_impl, &_impl::SciQLopPlot::y_axis_range_changed, this,
+        &SciQLopPlot::y_axis_range_changed);
+    connect(m_impl, &_impl::SciQLopPlot::y2_axis_range_changed, this,
+        &SciQLopPlot::y2_axis_range_changed);
+    connect(m_impl, &_impl::SciQLopPlot::scroll_factor_changed, this,
+        &SciQLopPlot::scroll_factor_changed);
+
+    set_axes_to_rescale(
+        QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis() });
+}
+
+SciQLopPlot::~SciQLopPlot() { }
+
+void SciQLopPlot::set_scroll_factor(double factor) noexcept
+{
+    m_impl->set_scroll_factor(factor);
+    Q_EMIT scroll_factor_changed(factor);
+}
+
+double SciQLopPlot::scroll_factor() const noexcept
+{
+    return m_impl->scroll_factor();
+}
+
+void SciQLopPlot::enable_cursor(bool enable) noexcept { }
+
+void SciQLopPlot::enable_legend(bool show) noexcept
+{
+    m_impl->legend->setVisible(show);
+    m_impl->legend->setSelectableParts(QCPLegend::spItems);
+    m_impl->replot(QCustomPlot::rpQueuedReplot);
+}
+
+void SciQLopPlot::minimize_margins()
+{
+    m_impl->minimize_margins();
+    setContentsMargins(0, 0, 0, 0);
+    if (auto l = layout(); l != nullptr)
+    {
+        l->setSpacing(0);
+        l->setContentsMargins(0, 0, 0, 0);
+    }
+}
+
+void SciQLopPlot::replot(bool immediate)
+{
+    if (immediate)
+        m_impl->replot();
+    else
+        m_impl->replot(QCustomPlot::rpQueuedReplot);
+}
+
+SciQLopTimeSeriesPlot::SciQLopTimeSeriesPlot(QWidget* parent) : SciQLopPlot { parent }
+{
+    auto date_ticker = QSharedPointer<QCPAxisTickerDateTime>::create();
+    date_ticker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz");
+    date_ticker->setDateTimeSpec(Qt::UTC);
+    qcp_plot()->xAxis->setTicker(date_ticker);
+    set_axes_to_rescale(QList<SciQLopPlotAxisInterface*> { y_axis(), y2_axis() });
+    freeze_axis(x_axis());
 }

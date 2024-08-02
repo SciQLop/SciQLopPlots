@@ -107,45 +107,59 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
     bool _lower_border_selected = false;
     bool _upper_border_selected = false;
 
-    VerticalSpanBorder* _border1;
-    VerticalSpanBorder* _border2;
+    QPointer<VerticalSpanBorder> _border1;
+    QPointer<VerticalSpanBorder> _border2;
 
     inline VerticalSpanBorder* _lower_border() const
     {
-        if (this->_border1->position() <= this->_border2->position())
+        if (!_border1.isNull() && !_border2.isNull())
         {
-            return this->_border1;
+            if (this->_border1->position() <= this->_border2->position())
+            {
+                return this->_border1.data();
+            }
+            return this->_border2.data();
         }
-        return this->_border2;
+        return nullptr;
     }
     inline VerticalSpanBorder* _upper_border() const
     {
-        if (this->_border2->position() >= this->_border1->position())
+        if (!_border1.isNull() && !_border2.isNull())
         {
-            return this->_border2;
+            if (this->_border2->position() >= this->_border1->position())
+            {
+                return this->_border2.data();
+            }
+            return this->_border1.data();
         }
-        return this->_border1;
+        return nullptr;
     }
 
     inline void set_left_pos(double pos)
     {
-        this->topLeft->setCoords({ pos, 0. });
-        this->_lower_border()->set_position(pos);
-        if (_lower_border_selected == true and _lower_border()->selected() == false)
+        if (!_border1.isNull() && !_border2.isNull())
         {
-            _upper_border()->setSelected(false);
-            _lower_border()->setSelected(true);
+            this->topLeft->setCoords({ pos, 0. });
+            this->_lower_border()->set_position(pos);
+            if (_lower_border_selected == true and _lower_border()->selected() == false)
+            {
+                _upper_border()->setSelected(false);
+                _lower_border()->setSelected(true);
+            }
         }
     }
 
     inline void set_right_pos(double pos)
     {
-        this->bottomRight->setCoords({ pos, 1. });
-        this->_upper_border()->set_position(pos);
-        if (_upper_border_selected == true and _upper_border()->selected() == false)
+        if (!_border1.isNull() && !_border2.isNull())
         {
-            _lower_border()->setSelected(false);
-            _upper_border()->setSelected(true);
+            this->bottomRight->setCoords({ pos, 1. });
+            _upper_border()->set_position(pos);
+            if (_upper_border_selected == true and _upper_border()->selected() == false)
+            {
+                _lower_border()->setSelected(false);
+                _upper_border()->setSelected(true);
+            }
         }
     }
 
@@ -166,9 +180,12 @@ public:
 
     inline void setMovable(bool movable) noexcept final
     {
-        SciQLopPlotItem::setMovable(movable);
-        this->_border1->setMovable(movable);
-        this->_border2->setMovable(movable);
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            SciQLopPlotItem::setMovable(movable);
+            this->_border1->setMovable(movable);
+            this->_border2->setMovable(movable);
+        }
     }
 
 
@@ -198,8 +215,11 @@ public:
     inline void set_visible(bool visible)
     {
         this->setVisible(visible);
-        this->_border1->setVisible(visible);
-        this->_border2->setVisible(visible);
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            this->_border1->setVisible(visible);
+            this->_border2->setVisible(visible);
+        }
     }
 
     void set_range(const QCPRange horizontal_range);
@@ -216,19 +236,29 @@ public:
 
     inline void set_borders_tool_tip(const QString& tool_tip)
     {
-        this->_border1->setToolTip(tool_tip);
-        this->_border2->setToolTip(tool_tip);
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            this->_border1->setToolTip(tool_tip);
+            this->_border2->setToolTip(tool_tip);
+        }
     }
 
     inline void set_borders_color(const QColor& color)
     {
-        this->_border1->set_color(color);
-        this->_border2->set_color(color);
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            this->_border1->set_color(color);
+            this->_border2->set_color(color);
+        }
     }
 
     [[nodiscard]] inline QColor borders_color() const noexcept
     {
-        return this->_border1->pen().color();
+        if (!_border1.isNull())
+        {
+            return this->_border1->pen().color();
+        }
+        return {};
     }
 
     void select_lower_border(bool selected);
@@ -250,8 +280,11 @@ public:
     {
         // Only replot immediately the second border, the first border will be reploted with the
         // second.
-        this->_border1->replot(false);
-        this->_border2->replot(immediate);
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            this->_border1->replot(false);
+            this->_border2->replot(immediate);
+        }
         SciQLopPlotItem::replot(immediate);
     }
 };
@@ -260,7 +293,7 @@ public:
 class SciQLopVerticalSpan : public QObject
 {
     Q_OBJECT
-    VerticalSpan* _impl;
+    QPointer<VerticalSpan> _impl;
 
     friend class MultiPlotsVerticalSpan;
 
@@ -280,54 +313,119 @@ public:
     Q_SIGNAL void delete_requested();
 #endif
 
-    SciQLopVerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, QColor color,
+    SciQLopVerticalSpan(SciQLopPlot* plot, QCPRange horizontal_range, QColor color,
         bool read_only = false, bool visible = true, const QString& tool_tip = "");
 
     ~SciQLopVerticalSpan()
     {
-        if (this->_impl)
+        if (!this->_impl.isNull())
         {
             auto plot = this->parentPlot();
-            if (plot->hasItem(this->_impl))
+            if (plot->hasItem(this->_impl.data()))
             {
-                plot->removeItem(this->_impl);
+                plot->removeItem(this->_impl.data());
                 plot->replot(QCustomPlot::rpQueuedReplot);
             }
         }
     }
 
-    inline QCustomPlot* parentPlot() const noexcept { return _impl->parentPlot(); }
+    inline QCustomPlot* parentPlot() const noexcept
+    {
+        if (!_impl.isNull())
+            return _impl->parentPlot();
+        return nullptr;
+    }
 
-    inline void set_visible(bool visible) { _impl->set_visible(visible); }
-    inline bool visible() const noexcept { return _impl->visible(); }
+    inline void set_visible(bool visible)
+    {
+        if (!_impl.isNull())
+            _impl->set_visible(visible);
+    }
+    inline bool visible() const noexcept
+    {
+        if (!_impl.isNull())
+            return _impl->visible();
+        return false;
+    }
 
     inline void set_range(const QCPRange horizontal_range)
     {
-        this->_impl->set_range(horizontal_range);
+        if (!_impl.isNull())
+            this->_impl->set_range(horizontal_range);
     }
-    [[nodiscard]] inline QCPRange range() const noexcept { return this->_impl->range(); }
+    [[nodiscard]] inline QCPRange range() const noexcept
+    {
+        if (!_impl.isNull())
+            return this->_impl->range();
+        return {};
+    }
 
-    inline void set_color(const QColor& color) { this->_impl->set_color(color); }
-    [[nodiscard]] inline QColor color() const { return this->_impl->color(); }
+    inline void set_color(const QColor& color)
+    {
+        if (!_impl.isNull())
+            this->_impl->set_color(color);
+    }
+    [[nodiscard]] inline QColor color() const
+    {
+        if (!_impl.isNull())
+            return this->_impl->color();
+        return {};
+    }
 
-    inline void set_borders_color(const QColor& color) { this->_impl->set_borders_color(color); }
+    inline void set_borders_color(const QColor& color)
+    {
+        if (!_impl.isNull())
+            this->_impl->set_borders_color(color);
+    }
     [[nodiscard]] inline QColor borders_color() const noexcept
     {
-        return this->_impl->borders_color();
+        if (!_impl.isNull())
+            return this->_impl->borders_color();
+        return {};
     }
 
-    inline void set_selected(bool selected) { this->_impl->setSelected(selected); }
-    [[nodiscard]] inline bool selected() const noexcept { return this->_impl->selected(); }
+    inline void set_selected(bool selected)
+    {
+        if (!_impl.isNull())
+            this->_impl->setSelected(selected);
+    }
+    [[nodiscard]] inline bool selected() const noexcept
+    {
+        if (!_impl.isNull())
+            return this->_impl->selected();
+        return false;
+    }
 
-    inline void set_read_only(bool read_only) { this->_impl->setMovable(!read_only); }
-    [[nodiscard]] inline bool read_only() const noexcept { return !this->_impl->movable(); }
+    inline void set_read_only(bool read_only)
+    {
+        if (!_impl.isNull())
+            this->_impl->setMovable(!read_only);
+    }
+    [[nodiscard]] inline bool read_only() const noexcept
+    {
+        if (!_impl.isNull())
+            return !this->_impl->movable();
+        return false;
+    }
 
     inline void set_tool_tip(const QString& tool_tip)
     {
-        this->_impl->setToolTip(tool_tip);
-        this->_impl->set_borders_tool_tip(tool_tip);
+        if (!_impl.isNull())
+        {
+            this->_impl->setToolTip(tool_tip);
+            this->_impl->set_borders_tool_tip(tool_tip);
+        }
     }
-    [[nodiscard]] inline QString tool_tip() const noexcept { return this->_impl->tooltip(); }
+    [[nodiscard]] inline QString tool_tip() const noexcept
+    {
+        if (!_impl.isNull())
+            return this->_impl->tooltip();
+        return {};
+    }
 
-    inline void replot() { this->_impl->replot(); }
+    inline void replot()
+    {
+        if (!_impl.isNull())
+            this->_impl->replot();
+    }
 };

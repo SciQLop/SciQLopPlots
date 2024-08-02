@@ -40,7 +40,7 @@ SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent)
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
     QSplitter::insertWidget(index, widget);
-    if (auto* plot = qobject_cast<SciQLopPlot*>(widget); plot)
+    if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
     {
         _plots->insertPlot(index, plot);
     }
@@ -51,12 +51,12 @@ void SciQLopPlotContainer::addWidget(QWidget* widget)
     insertWidget(QSplitter::count(), widget);
 }
 
-void SciQLopPlotContainer::insertPlot(int index, SciQLopPlot* plot)
+void SciQLopPlotContainer::insertPlot(int index, SciQLopPlotInterface* plot)
 {
     insertWidget(index, plot);
 }
 
-void SciQLopPlotContainer::addPlot(SciQLopPlot* plot)
+void SciQLopPlotContainer::addPlot(SciQLopPlotInterface* plot)
 {
     addWidget(plot);
 }
@@ -68,17 +68,17 @@ void SciQLopPlotContainer::movePlot(int from, int to)
     QSplitter::insertWidget(to, plot);
 }
 
-void SciQLopPlotContainer::movePlot(SciQLopPlot* plot, int to)
+void SciQLopPlotContainer::movePlot(SciQLopPlotInterface* plot, int to)
 {
     movePlot(_plots->plots().indexOf(plot), to);
 }
 
-void SciQLopPlotContainer::removePlot(SciQLopPlot* plot)
+void SciQLopPlotContainer::removePlot(SciQLopPlotInterface* plot)
 {
     removePlot(plot, true);
 }
 
-void SciQLopPlotContainer::removePlot(SciQLopPlot* plot, bool destroy)
+void SciQLopPlotContainer::removePlot(SciQLopPlotInterface* plot, bool destroy)
 {
     if (_plots->contains(plot))
     {
@@ -92,7 +92,7 @@ void SciQLopPlotContainer::removePlot(SciQLopPlot* plot, bool destroy)
 
 void SciQLopPlotContainer::removeWidget(QWidget* widget, bool destroy)
 {
-    if (auto* plot = qobject_cast<SciQLopPlot*>(widget); plot)
+    if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
         removePlot(plot, destroy);
     else
     {
@@ -113,11 +113,12 @@ void SciQLopPlotContainer::clear()
     }
 }
 
-void SciQLopPlotContainer::setXAxisRange(double lower, double upper)
+void SciQLopPlotContainer::organize_plots()
 {
-    for (auto* plot : plots())
-    {
-        if (plot->xAxis->range().lower != lower or plot->xAxis->range().upper != upper)
-            plot->xAxis->setRange(lower, upper);
-    }
+    auto _sizes = sizes();
+    const auto total_height = std::accumulate(std::cbegin(_sizes), std::cend(_sizes), 0);
+    const auto per_widget_height = total_height / std::size(_sizes);
+    std::transform(std::cbegin(_sizes), std::cend(_sizes), std::begin(_sizes),
+        [per_widget_height](int height) { return per_widget_height; });
+    setSizes(_sizes);
 }

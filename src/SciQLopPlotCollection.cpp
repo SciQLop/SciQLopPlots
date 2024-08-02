@@ -26,28 +26,56 @@
 
 SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
 
-void SciQLopPlotCollection::addPlot(SciQLopPlot* plot)
+void SciQLopPlotCollection::addPlot(SciQLopPlotInterface* plot)
 {
-    _plots.append(plot);
-    emit plotListChanged(_plots);
+    insertPlot(_plots.size(), plot);
 }
 
-void SciQLopPlotCollection::insertPlot(int index, SciQLopPlot* plot)
+void SciQLopPlotCollection::insertPlot(int index, SciQLopPlotInterface* plot)
 {
     _plots.insert(index, plot);
     emit plotListChanged(_plots);
 }
 
-void SciQLopPlotCollection::removePlot(SciQLopPlot* plot)
+void SciQLopPlotCollection::removePlot(SciQLopPlotInterface* plot)
 {
     _plots.removeOne(plot);
     emit plotListChanged(_plots);
 }
 
-SciQLopPlot* SciQLopPlotCollection::plotAt(int index)
+SciQLopPlotInterface* SciQLopPlotCollection::plotAt(int index)
 {
     return _plots.at(index);
 }
+
+void SciQLopPlotCollection::set_x_axis_range(double lower, double upper)
+{
+    for (auto* plot : _plots)
+    {
+        plot->x_axis()->set_range(lower, upper);
+    }
+}
+
+void SciQLopPlotCollection::registerBehavior(SciQLopPlotCollectionBehavior* behavior)
+{
+    behavior->setParent(this);
+    _behaviors[behavior->metaObject()->className()] = behavior;
+    behavior->updatePlotList(_plots);
+    connect(this, &SciQLopPlotCollection::plotListChanged, behavior,
+        &SciQLopPlotCollectionBehavior::updatePlotList);
+}
+
+void SciQLopPlotCollection::removeBehavior(const QString& type_name)
+{
+    if (_behaviors.contains(type_name))
+    {
+        disconnect(this, &SciQLopPlotCollection::plotListChanged, _behaviors[type_name],
+            &SciQLopPlotCollectionBehavior::updatePlotList);
+        delete _behaviors[type_name];
+        _behaviors.remove(type_name);
+    }
+}
+
 
 void SciQLopPlotCollection::clear()
 {
@@ -61,7 +89,7 @@ void SciQLopPlotCollection::movePlot(int from, int to)
     emit plotListChanged(_plots);
 }
 
-void SciQLopPlotCollection::movePlot(SciQLopPlot* plot, int to)
+void SciQLopPlotCollection::movePlot(SciQLopPlotInterface* plot, int to)
 {
     movePlot(_plots.indexOf(plot), to);
 }

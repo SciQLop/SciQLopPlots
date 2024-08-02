@@ -48,36 +48,42 @@ void MultiPlotsVerticalSpan::select_upper_border(bool selected)
     }
 }
 
-void MultiPlotsVerticalSpan::addObject(SciQLopPlot* plot)
+void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
 {
-    auto new_span = new SciQLopVerticalSpan(plot, _horizontal_range, true);
-    new_span->set_selected(_selected);
-    new_span->set_range(_horizontal_range);
-    new_span->set_visible(_visible);
-    new_span->set_color(_color);
-    new_span->set_read_only(_read_only);
-    new_span->set_tool_tip(_tool_tip);
-    QObject::connect(
-        new_span, &SciQLopVerticalSpan::range_changed, this, &MultiPlotsVerticalSpan::set_range);
-    QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
-        &MultiPlotsVerticalSpan::set_selected);
-    QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
-        &MultiPlotsVerticalSpan::select_lower_border);
-    QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
-        &MultiPlotsVerticalSpan::select_upper_border);
-    QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
-        &MultiPlotsVerticalSpan::delete_requested);
-    _spans.append(new_span);
+    if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
+    {
+        auto new_span = new SciQLopVerticalSpan(scp, _horizontal_range, true);
+        new_span->set_selected(_selected);
+        new_span->set_range(_horizontal_range);
+        new_span->set_visible(_visible);
+        new_span->set_color(_color);
+        new_span->set_read_only(_read_only);
+        new_span->set_tool_tip(_tool_tip);
+        QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
+            &MultiPlotsVerticalSpan::set_range);
+        QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
+            &MultiPlotsVerticalSpan::set_selected);
+        QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
+            &MultiPlotsVerticalSpan::select_lower_border);
+        QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
+            &MultiPlotsVerticalSpan::select_upper_border);
+        QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
+            &MultiPlotsVerticalSpan::delete_requested);
+        _spans.append(new_span);
+    }
 }
 
-void MultiPlotsVerticalSpan::removeObject(SciQLopPlot* plot)
+void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
 {
-    for (auto i = 0UL; i < std::size(_spans); ++i)
+    if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
-        if (_spans[i]->parentPlot() == plot)
+        for (auto i = 0UL; i < std::size(_spans); ++i)
         {
-            delete _spans[i];
-            _spans.removeAt(i);
+            if (_spans[i]->parentPlot() == scp->qcp_plot())
+            {
+                delete _spans[i];
+                _spans.removeAt(i);
+            }
         }
     }
 }
