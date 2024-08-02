@@ -22,24 +22,19 @@
 #pragma once
 
 #include "SciQLopPlotCollection.hpp"
-#include <QObject>
-class SciQLopPlot;
 
-
-class SciQLopMultiPlotObject : public QObject
+class XAxisSynchronizer : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
-protected:
-    QList<SciQLopPlotInterface*> m_plots;
+    QList<SciQLopPlotInterface*> _plots;
+    std::pair<double, double> _last_x_range;
 
-    virtual void addObject(SciQLopPlotInterface* plot);
-    virtual void removeObject(SciQLopPlotInterface* plot);
-    void replotAll();
+    void _display_x_axis_only_last_plot();
 
 public:
-    explicit SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent = nullptr);
+    XAxisSynchronizer(QObject* parent = nullptr) : SciQLopPlotCollectionBehavior(parent) { }
 
-    virtual ~SciQLopMultiPlotObject() Q_DECL_OVERRIDE;
+    Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
 
-    Q_SLOT virtual void updatePlotList(const QList<SciQLopPlotInterface*>& plots);
+    Q_SLOT void set_x_axis_range(double min, double max);
 };

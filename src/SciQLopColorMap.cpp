@@ -68,6 +68,7 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
         },
         Qt::QueuedConnection);
     this->colorMap()->updateLegendIcon();
+    this->colorMap()->setLayer(parent->layer("background"));
 }
 
 SciQLopColorMap::~SciQLopColorMap()

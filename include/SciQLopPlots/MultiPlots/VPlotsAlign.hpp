@@ -21,25 +21,18 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/SciQLopPlot.hpp"
+
 #include "SciQLopPlotCollection.hpp"
-#include <QObject>
-class SciQLopPlot;
 
 
-class SciQLopMultiPlotObject : public QObject
+class VPlotsAlign : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
-protected:
-    QList<SciQLopPlotInterface*> m_plots;
-
-    virtual void addObject(SciQLopPlotInterface* plot);
-    virtual void removeObject(SciQLopPlotInterface* plot);
-    void replotAll();
+    QList<SciQLopPlot*> _plots;
+    void _recompute_margins();
 
 public:
-    explicit SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent = nullptr);
-
-    virtual ~SciQLopMultiPlotObject() Q_DECL_OVERRIDE;
-
-    Q_SLOT virtual void updatePlotList(const QList<SciQLopPlotInterface*>& plots);
+    VPlotsAlign(QObject* parent = nullptr);
+    Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
 };

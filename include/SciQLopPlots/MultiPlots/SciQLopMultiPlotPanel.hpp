@@ -25,6 +25,8 @@
 #include <QScrollArea>
 #include <QWidget>
 
+#include "qcustomplot.h"
+
 #include "SciQLopPlotCollection.hpp"
 
 class SciQLopPlotContainer;
@@ -36,20 +38,20 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
     SciQLopPlotContainer* _container = nullptr;
 
 public:
-    SciQLopMultiPlotPanel(QWidget* parent = nullptr);
+    SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true);
 
-    void addPlot(SciQLopPlot* plot) final;
-    void removePlot(SciQLopPlot* plot) final;
-    SciQLopPlot* plotAt(int index) final;
-    const QList<SciQLopPlot*>& plots() const final;
+    void addPlot(SciQLopPlotInterface* plot) final;
+    void removePlot(SciQLopPlotInterface* plot) final;
+    SciQLopPlotInterface* plotAt(int index) final;
+    const QList<SciQLopPlotInterface*>& plots() const final;
 
-    virtual void insertPlot(int index, SciQLopPlot* plot) final;
+    virtual void insertPlot(int index, SciQLopPlotInterface* plot) final;
     virtual void movePlot(int from, int to) final;
-    virtual void movePlot(SciQLopPlot* plot, int to) final;
+    virtual void movePlot(SciQLopPlotInterface* plot, int to) final;
     void clear() final;
 
 
-    bool contains(SciQLopPlot* plot) const final;
+    bool contains(SciQLopPlotInterface* plot) const final;
 
     bool empty() const final;
     std::size_t size() const final;
@@ -59,7 +61,14 @@ public:
 
     SciQLopPlot* createPlot(int index = -1);
 
+    void set_x_axis_range(double lower, double upper) final;
+
+    void registerBehavior(SciQLopPlotCollectionBehavior* behavior) final;
+    void removeBehavior(const QString& type_name) final;
+
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlot*>& plots);
+    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
 };

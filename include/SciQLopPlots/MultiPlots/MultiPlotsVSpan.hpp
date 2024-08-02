@@ -43,8 +43,8 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
     void select_upper_border(bool selected);
 
 protected:
-    virtual void addObject(SciQLopPlot* plot) override;
-    virtual void removeObject(SciQLopPlot* plot) override;
+    virtual void addObject(SciQLopPlotInterface* plot) override;
+    virtual void removeObject(SciQLopPlotInterface* plot) override;
 
 public:
 #ifndef BINDINGS_H

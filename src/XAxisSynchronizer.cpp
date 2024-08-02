@@ -19,52 +19,52 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
-#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp"
+#include "SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp"
 
-void SciQLopMultiPlotObject::addObject(SciQLopPlotInterface* plot) { }
-
-void SciQLopMultiPlotObject::removeObject(SciQLopPlotInterface* plot) { }
-
-void SciQLopMultiPlotObject::replotAll()
+void XAxisSynchronizer::_display_x_axis_only_last_plot()
 {
-    for (auto* plot : m_plots)
+    for (auto* plot : _plots)
     {
-        plot->replot(QCustomPlot::rpQueuedReplot);
+        plot->x_axis()->set_visible(false);
+    }
+    if (!_plots.isEmpty())
+    {
+        _plots.last()->x_axis()->set_visible(true);
     }
 }
 
-SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent)
-        : QObject { dynamic_cast<QObject*>(parent) }
+void XAxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
 {
-    if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
-        connect(dynamic_cast<QObject*>(parent),
-            SIGNAL(plotListChanged(const QList<SciQLopPlotInterface*>&)), this,
-            SLOT(updatePlotList(const QList<SciQLopPlotInterface*>&)));
-    else
-        throw std::runtime_error("Invalid parent type");
-}
-
-SciQLopMultiPlotObject::~SciQLopMultiPlotObject() { }
-
-void SciQLopMultiPlotObject::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
-{
-    for (auto* plot : plots)
+    for (auto plot : plots)
     {
-        if (!m_plots.contains(plot))
+        if (!_plots.contains(plot))
         {
-            m_plots.append(plot);
-            addObject(plot);
+            connect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
+                &XAxisSynchronizer::set_x_axis_range);
         }
     }
-    for (auto* plot : m_plots)
+    for (auto plot : _plots)
     {
         if (!plots.contains(plot))
         {
-            m_plots.removeOne(plot);
-            removeObject(plot);
+            disconnect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
+                &XAxisSynchronizer::set_x_axis_range);
+        }
+    }
+    _plots = plots;
+    _display_x_axis_only_last_plot();
+}
+
+void XAxisSynchronizer::set_x_axis_range(double min, double max)
+{
+    if (_last_x_range != std::pair { min, max })
+    {
+        _last_x_range = { min, max };
+        for (auto plot : _plots)
+        {
+            plot->x_axis()->set_range(min, max);
         }
     }
 }

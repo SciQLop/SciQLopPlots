@@ -13,11 +13,14 @@
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp>
+#include <SciQLopPlots/MultiPlots/VPlotsAlign.hpp>
+#include <SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp>
 #include <SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp>
 #include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraph.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
+#include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <qcustomplot.h>
 
 #endif // SCIQLOPPLOTS_BINDINGS_H

@@ -1,6 +1,6 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
-                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan
+                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, SciQLopTimeSeriesPlot
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -15,21 +15,20 @@ from qtconsole.inprocess import QtInProcessKernelManager
 
 os.environ['QT_API'] = 'PySide6'
 
+NPOINTS = 30000
+
 def make_plot(parent, time_axis=False):
-    plot = SciQLopPlot(parent)
-    plot.setInteractions(QCP.iRangeDrag | QCP.iRangeZoom | QCP.iSelectPlottables | QCP.iSelectAxes | QCP.iSelectLegend | QCP.iSelectItems)
     if time_axis:
-        date_ticker = QCPAxisTickerDateTime()
-        date_ticker.setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz")
-        date_ticker.setDateTimeSpec(Qt.UTC)
-        plot.xAxis.setTicker(date_ticker)
+        plot = SciQLopTimeSeriesPlot(parent)
+    else:
+        plot = SciQLopPlot(parent)
     plot.enable_legend(True)
     plot.minimize_margins()
     return plot
 
 def add_graph(plot, time_axis=False, offset=0.):
-    graph = plot.addSciQLopGraph(plot.axisRect().axis(QCPAxis.atBottom), plot.axisRect().axis(QCPAxis.atLeft), ["X","Y","Z"])
-    x=np.arange(3000, dtype=np.float64)
+    graph = plot.addSciQLopGraph(["X","Y","Z"])
+    x=np.arange(NPOINTS, dtype=np.float64)
     y=np.cos(np.array([x/6.,x/60.,x/600.])) * np.cos(np.array([x,x/6.,x/60.])) * [[100.],[1300],[17000]]
     y+=offset
     if time_axis:
@@ -40,8 +39,8 @@ def add_graph(plot, time_axis=False, offset=0.):
     graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
     graph.graphAt(2).setPen(QPen(QColorConstants.Green))
 
-    plot.xAxis.setRange(x[0],x[-1])
-    plot.yAxis.setRange(1.2*np.min(y),1.2*np.max(y))
+    plot.x_axis().set_range(x[0],x[-1])
+    plot.y_axis().set_range(1.2*np.min(y),1.2*np.max(y))
     return graph
 
 def butterfly():
@@ -51,44 +50,20 @@ def butterfly():
     return x, y
 
 def add_curve(plot):
-    curve = plot.addSciQLopCurve(plot.axisRect().axis(QCPAxis.atBottom), plot.axisRect().axis(QCPAxis.atLeft), ["butterfly"])
+    curve = plot.addSciQLopCurve(["butterfly"])
     curve.setData(*butterfly())
     return curve
 
 def add_colormap(plot, time_axis=False):
-    x_axis = plot.axisRect().axis(QCPAxis.atBottom)
-    y_axis = plot.axisRect().axis(QCPAxis.atRight)
-    colormap = plot.addSciQLopColorMap(x_axis, y_axis, "Cmap")
-    colormap.set_auto_scale_y(True)
-    colormap.colorMap().setLayer(plot.layer("background"))
-    color_scale = QCPColorScale(plot)
-    plot.plotLayout().addElement(0, 1, color_scale)
+    colormap = plot.addSciQLopColorMap("Cmap", y_log_scale=True, z_log_scale=True)
 
-    color_scale.setDataScaleType(QCPAxis.stLogarithmic)
-    color_scale.axis().setTicker(QCPAxisTickerLog())
-    color_scale.setType(QCPAxis.atRight)
-
-    colormap.colorMap().setColorScale(color_scale)
-    colormap.colorMap().setInterpolate(False)
-    colormap.colorMap().setDataScaleType(QCPAxis.stLogarithmic)
-
-    y_axis.setScaleType(QCPAxis.stLogarithmic)
-    y_axis.setTicker(QCPAxisTickerLog())
-    y_axis.setVisible(True)
-
-    scale = QCPColorGradient(QCPColorGradient.gpJet)
-    scale.setNanHandling(QCPColorGradient.nhTransparent)
-    colormap.colorMap().setGradient(scale)
-    colormap.colorMap().addToLegend()
-
-    x=np.arange(3000, dtype=np.float64)
+    x=np.arange(NPOINTS, dtype=np.float64)
     y=np.logspace(1, 4, 64)
     if time_axis:
         x+=datetime.now().timestamp()
-    z = np.random.rand(3000,64)+np.cos(np.arange(3000*64, dtype=np.float64)/6000.).reshape(3000,64)
+    z = np.random.rand(NPOINTS,64)+np.cos(np.arange(NPOINTS*64, dtype=np.float64)/6000.).reshape(NPOINTS,64)
     colormap.setData(x,y,z)
-
-    return color_scale, colormap
+    return colormap
 
 
 class SimpleGraph(QWidget):
@@ -119,10 +94,10 @@ class TimeSerieGraph(QWidget):
 
         self.graph = add_graph(self.plot, time_axis=True)
 
-        x_range = self.plot.xAxis.range()
+        x_range = self.plot.x_axis().range()
 
-        middle = x_range.center()
-        width = x_range.size()
+        middle =( x_range[0] + x_range[1]) / 2
+        width = x_range[1] - x_range[0]
 
         self._verticalSpan = SciQLopVerticalSpan(self.plot, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
@@ -140,12 +115,12 @@ class StackedPlots(SciQLopMultiPlotPanel):
             self.addPlot(plot)
             self.graphs.append(add_graph(plot, time_axis=True))
 
-        self.color_scale, self.colormap = add_colormap(self.plots()[-1], time_axis=True)
+        self.cmap = add_colormap(self.plots()[-1], time_axis=True)
 
-        x_range = self.plotAt(0).xAxis.range()
+        x_range = self.plotAt(0).x_axis().range()
 
-        middle = x_range.center()
-        width = x_range.size()
+        middle = (x_range[0] + x_range[1]) / 2
+        width = x_range[1] - x_range[0]
 
         self._verticalSpan = MultiPlotsVerticalSpan(self, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
@@ -225,6 +200,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
+    QApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
+    QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
     w.show()

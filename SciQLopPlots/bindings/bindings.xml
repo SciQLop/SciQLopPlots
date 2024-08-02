@@ -67,41 +67,55 @@
         </modify-function>
     </object-type>
 
+    <object-type name="SciQLopPlotInterface" parent-management="yes">
+    </object-type>
+
+    <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
+    </object-type>
+
+    <object-type name="SciQLopPlotAxis" parent-management="yes">
+    </object-type>
 
     <object-type name="SciQLopPlot" parent-management="yes">
         <enum-type name="LayerInsertMode"/>
         <enum-type name="RefreshPriority"/>
-        <modify-function signature="addColorMap(QCPAxis*, QCPAxis*)" return-type="QCPColorMap*" static="no">
+        <modify-function signature="addColorMap()" return-type="QCPColorMap*" static="no">
             <modify-argument index="return">
                 <define-ownership class="native" owner="c++" />
                 <define-ownership class="target" owner="c++" />
             </modify-argument>
         </modify-function>
-        <modify-function signature="addSciQLopGraph(QCPAxis*, QCPAxis*, QStringList, SciQLopGraph::DataOrder)">
+        <modify-function signature="addSciQLopGraph(QStringList, SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="addSciQLopGraph(QCPAxis*, QCPAxis*, SciQLopGraph::DataOrder)">
+        <modify-function signature="addSciQLopGraph(SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="addSciQLopCurve(QCPAxis*, QCPAxis*, QStringList, SciQLopGraph::DataOrder)">
+        <modify-function signature="addSciQLopCurve(QStringList, SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="addSciQLopCurve(QCPAxis*, QCPAxis*, SciQLopGraph::DataOrder)">
+        <modify-function signature="addSciQLopCurve(SciQLopGraph::DataOrder)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="addSciQLopColorMap(QCPAxis*, QCPAxis*, const QString&amp;, SciQLopGraph::DataOrder)">
+        <modify-function signature="addSciQLopColorMap(const QString&amp;, SciQLopGraph::DataOrder, bool, bool)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+            <modify-argument index="2" rename="dataOrder"/>
+            <modify-argument index="3" rename="y_log_scale"/>
+            <modify-argument index="4" rename="z_log_scale"/>
         </modify-function>
+    </object-type>
+
+    <object-type name="SciQLopTimeSeriesPlot" parent-management="yes">
     </object-type>
 
 
@@ -394,13 +408,25 @@
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
-    <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
-        <modify-function signature="addPlot(SciQLopPlot*)">
+    <object-type name="SciQLopPlotCollection" parent-management="yes">
+        <modify-function signature="registerBehavior(SciQLopPlotCollectionBehavior*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
         </modify-function>
-        <modify-function signature="addWidget(SciQLopPlot*)">
+    </object-type>
+    <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="addPlot(SciQLopPlotInterface*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="addWidget(QWidget*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="registerBehavior(SciQLopPlotCollectionBehavior*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
@@ -415,6 +441,12 @@
         <property name="read_only" type="bool" get="is_read_only" set="set_read_only" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopMultiPlotObject" parent-management="yes">
+    </object-type>
+    <object-type name="SciQLopPlotCollectionBehavior" parent-management="yes">
+    </object-type>
+    <object-type name="XAxisSynchronizer" parent-management="yes">
+    </object-type>
+    <object-type name="VPlotsAlign" parent-management="yes">
     </object-type>
 </typesystem>
 

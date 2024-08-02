@@ -53,23 +53,27 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopPlotAxis.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/VPlotsAlign.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraph.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopPlotItem.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurveResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopTracer.hpp',
     project_source_root + '/include/SciQLopPlots/Items/QCPItemRichText.hpp',
+    project_source_root + '/include/SciQLopPlots/DataProducer/DataProducer.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -90,7 +94,10 @@ sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [ '../src/SciQLopPlot.cpp',
+            '../src/SciQLopPlotAxis.cpp',
             '../src/SciQLopPlotCollection.cpp',
+            '../src/XAxisSynchronizer.cpp',
+            '../src/VPlotsAlign.cpp',
             '../src/SciQLopMultiPlotObject.cpp',
             '../src/SciQLopMultiPlotPanel.cpp',
             '../src/SciQLopPlotContainer.cpp',
