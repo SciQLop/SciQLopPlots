@@ -101,6 +101,7 @@ struct Array_view
 {
 private:
     // PyObjectWrapper _py_obj;
+    PyObject* _py_obj = nullptr;
     Py_buffer _buffer = { 0 };
     std::vector<Py_ssize_t> _shape;
     bool _is_valid = false;
@@ -109,11 +110,14 @@ private:
 
     inline void steal(Array_view&& other)
     {
+        this->_py_obj = other._py_obj;
         this->_buffer = other._buffer;
         this->_is_valid = other._is_valid;
         other._is_valid = false;
         this->_shape = other._shape;
     }
+
+    inline void share(const Array_view& other) { this->_init_buffer(other._py_obj); }
 
 public:
     using value_type = double;
@@ -125,13 +129,22 @@ public:
     using const_pointer = const value_type*;
 
     Array_view() { }
-    Array_view(const Array_view& other) = delete;
+    Array_view(const Array_view& other)
+    {
+        if (other._is_valid)
+            this->share(other);
+    }
     Array_view(Array_view&& other) { this->steal(std::move(other)); }
     explicit Array_view(PyObject* obj);
 
     ~Array_view();
 
-    Array_view& operator=(const Array_view& other) = delete;
+    inline Array_view& operator=(const Array_view& other)
+    {
+        if (other._is_valid)
+            this->share(other);
+        return *this;
+    }
 
     inline Array_view& operator=(Array_view&& other)
     {
@@ -143,11 +156,13 @@ public:
     {
         if (this->_is_valid)
         {
-            //std::cout << "Array_view PyBuffer_Release" << std::endl;
+            // std::cout << "Array_view PyBuffer_Release" << std::endl;
             PyGILState_STATE state = PyGILState_Ensure();
             PyBuffer_Release(&this->_buffer);
             PyGILState_Release(state);
             this->_is_valid = false;
+            this->_buffer = { 0 };
+            this->_py_obj = nullptr;
         }
     }
 
@@ -186,6 +201,8 @@ public:
 
     inline auto front() { return *begin(); }
     inline auto back() { return *(end() - 1); }
+
+    inline PyObject* py_object() const { return _py_obj; }
 };
 
 namespace std

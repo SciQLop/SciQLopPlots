@@ -72,36 +72,40 @@ static inline QVector<QCPGraphData> copy_data(
     return data;
 }
 
-
-struct GraphResampler : public QObject
+struct ResamplerData
 {
+    Array_view x;
+    Array_view y;
+    QCPRange _x_range;
+};
+
+struct AbstractResampler1d : public QObject
+{
+protected:
     Q_OBJECT
     QMutex _data_mutex;
+    QMutex _next_data_mutex;
     QMutex _range_mutex;
-    Array_view _x;
-    Array_view _y;
+    ResamplerData _data;
+    ResamplerData _next_data;
     SciQLopGraph::DataOrder _dataOrder;
-    QCPRange _data_x_range;
     std::size_t _line_cnt;
 #ifndef BINDINGS_H
     Q_SIGNAL void _resample_sig(const QCPRange newRange);
 #endif
     void _resample_slot(const QCPRange newRange);
 
-public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
-    Q_SIGNAL void refreshPlot();
-#endif
+    virtual void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) = 0;
 
-    GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
+public:
+    AbstractResampler1d(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
 
     void resample(const QCPRange newRange);
 
     inline QCPRange x_range()
     {
         QMutexLocker locker(&_range_mutex);
-        auto rng = this->_data_x_range;
+        auto rng = this->_data._x_range;
         return rng;
     }
 
@@ -114,23 +118,42 @@ public:
     inline void setData(Array_view&& x, Array_view&& y)
     {
         {
-            QMutexLocker locker(&_data_mutex);
-
-            _x = std::move(x);
-            _y = std::move(y);
-
-            const auto len = _x.flat_size();
+            QCPRange _data_x_range;
+            const auto len = x.flat_size();
             if (len > 0)
             {
-                _data_x_range.lower = _x.data()[0];
-                _data_x_range.upper = _x.data()[len - 1];
+                _data_x_range.lower = x.data()[0];
+                _data_x_range.upper = x.data()[len - 1];
             }
             else
             {
                 _data_x_range.lower = std::nan("");
                 _data_x_range.upper = std::nan("");
             }
+            QMutexLocker locker(&_next_data_mutex);
+            _next_data = ResamplerData { std::move(x), std::move(y), _data_x_range };
             this->resample(_data_x_range);
         }
     }
+
+    inline std::size_t line_count() const { return _line_cnt; }
+    inline SciQLopGraph::DataOrder dataOrder() const { return _dataOrder; }
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void refreshPlot();
+#endif
+};
+
+struct GraphResampler : public AbstractResampler1d
+{
+    Q_OBJECT
+
+    void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) override;
+
+public:
+#ifndef BINDINGS_H
+    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
+#endif
+
+    GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
 };

@@ -21,37 +21,42 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopCurveResampler.hpp"
 
-void CurveResampler::_resample_slot(const QCPRange newRange)
+QVector<QCPCurveData> curve_copy_data(
+    const double* x, const double* y, std::size_t x_size, const int y_incr)
 {
-    QMutexLocker locker(&_data_mutex);
-    if (_x.data() != nullptr && _x.flat_size() > 0)
+    QVector<QCPCurveData> data(x_size);
+    const double* current_y_it = y;
+    for (auto i = 0UL; i < x_size; i++)
+    {
+        data[i] = QCPCurveData { static_cast<double>(i), x[i], *current_y_it };
+        current_y_it += y_incr;
+    }
+    return data;
+}
+
+
+void CurveResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange newRange)
+{
+    if (x.data() != nullptr && x.flat_size() > 0)
     {
 
 
-        const auto y_incr = (_dataOrder == SciQLopGraph::DataOrder::xFirst) ? 1UL : _line_cnt;
-        for (auto line_index = 0UL; line_index < _line_cnt; line_index++)
+        const auto y_incr = (dataOrder() == SciQLopGraph::DataOrder::xFirst) ? 1UL : line_count();
+        for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
-            const auto count = std::size(_x);
-            const auto start_y = _y.data()
+            const auto count = std::size(x);
+            const auto start_y = y.data()
                 + (line_index
-                    * ((_dataOrder == SciQLopGraph::DataOrder::xFirst) ? _x.flat_size() : 1));
-            emit this->setGraphData(line_index, copy_data(_x.data(), start_y, count, y_incr));
+                    * ((dataOrder() == SciQLopGraph::DataOrder::xFirst) ? x.flat_size() : 1));
+            emit this->setGraphData(line_index, curve_copy_data(x.data(), start_y, count, y_incr));
         }
-        _x.release();
-        _y.release();
+        x.release();
+        y.release();
     }
     emit this->refreshPlot();
 }
 
 CurveResampler::CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
-        : _dataOrder { dataOrder }, _line_cnt { line_cnt }
+        : AbstractResampler1d { dataOrder, line_cnt }
 {
-
-    connect(this, &CurveResampler::_resample_sig, this, &CurveResampler::_resample_slot,
-        Qt::QueuedConnection);
-}
-
-void CurveResampler::resample(const QCPRange newRange)
-{
-    emit this->_resample_sig(newRange);
 }

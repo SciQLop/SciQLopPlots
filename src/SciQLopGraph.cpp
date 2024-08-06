@@ -130,7 +130,7 @@ SciQLopGraph::~SciQLopGraph()
     clear_resampler();
 }
 
-void SciQLopGraph::setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange)
+void SciQLopGraph::set_data(Array_view x, Array_view y)
 {
     this->_resampler->setData(std::move(x), std::move(y));
 }

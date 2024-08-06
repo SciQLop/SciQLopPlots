@@ -1,4 +1,4 @@
-
+/* clang-format off */
 // @snippet QCPGraph-setData
 Array_view x{pyArgs[0]};
 Array_view y{pyArgs[1]};
@@ -63,3 +63,18 @@ Py_END_ALLOW_THREADS
 %RETURN_TYPE r = cppSelf->ticker().data();
 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](r);
 // @snippet QCPAxis-ticker
+
+// @snippet DataProviderInterface-set_data
+Py_BEGIN_ALLOW_THREADS
+%CPPSELF.set_data(Array_view{pyArgs[0]}, Array_view{pyArgs[1]}, Array_view{pyArgs[2]});
+Py_END_ALLOW_THREADS
+// @snippet DataProviderInterface-set_data
+
+// @snippet CheckIsBuffer
+static bool CheckIsBuffer(PyObject* pyIn) {
+    Py_buffer _buffer = { 0 };
+    return PyObject_GetBuffer(pyIn, &_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS)==0;
+}
+// @snippet CheckIsBuffer
+
+

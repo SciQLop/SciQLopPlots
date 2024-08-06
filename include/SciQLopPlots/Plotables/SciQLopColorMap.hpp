@@ -60,7 +60,8 @@ public:
         const QString& name, DataOrder dataOrder = DataOrder::xFirst);
     virtual ~SciQLopColorMap() override;
 
-    void setData(Array_view&& x, Array_view&& y, Array_view&& z);
+    virtual void set_data(Array_view x, Array_view y, Array_view z) override;
+
     inline QCPColorMap* colorMap() const { return _cmap; }
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }

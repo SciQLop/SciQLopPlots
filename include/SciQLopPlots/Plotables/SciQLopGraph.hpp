@@ -68,7 +68,8 @@ public:
 
     virtual ~SciQLopGraph() override;
 
-    void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
+    virtual void set_data(Array_view x, Array_view y) override;
+
     inline const QList<QCPGraph*> graphs() const noexcept
     {
         QList<QCPGraph*> graphs;

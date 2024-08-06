@@ -65,7 +65,8 @@ public:
 
     virtual ~SciQLopCurve() override;
 
-    void setData(Array_view&& x, Array_view&& y, bool ignoreCurrentRange = false);
+    virtual void set_data(Array_view x, Array_view y) override;
+
     inline QCPCurve* graphAt(std::size_t index) const
     {
         if (index < plottable_count())
