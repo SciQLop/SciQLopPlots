@@ -22,23 +22,53 @@
 
 #include "SciQLopPlots/Plotables/SciQLopGraphResampler.hpp"
 
-void GraphResampler::_resample_slot(const QCPRange newRange)
+
+GraphResampler::GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
+        : AbstractResampler1d { dataOrder, line_cnt }
+{
+}
+
+
+void AbstractResampler1d::_resample_slot(const QCPRange newRange)
 {
     QMutexLocker locker(&_data_mutex);
-    if (_x.data() != nullptr && _x.flat_size() > 0)
     {
-        const auto start_x
-            = std::upper_bound(_x.data(), _x.data() + _x.flat_size(), newRange.lower);
-        const auto end_x = std::lower_bound(_x.data(), _x.data() + _x.flat_size(), newRange.upper);
+        QMutexLocker locker(&_next_data_mutex);
+        _data = std::move(_next_data);
+    }
+    this->_resample(std::move(_data.x), std::move(_data.y), newRange);
+    emit this->refreshPlot();
+}
+
+AbstractResampler1d::AbstractResampler1d(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
+        : _dataOrder { dataOrder }, _line_cnt { line_cnt }
+{
+
+    connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_resample_slot,
+        Qt::QueuedConnection);
+}
+
+void AbstractResampler1d::resample(const QCPRange newRange)
+{
+    emit this->_resample_sig(newRange);
+}
+
+void GraphResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange newRange)
+{
+    if (x.data() != nullptr && x.flat_size() > 0)
+    {
+        const auto start_x = std::upper_bound(x.data(), x.data() + x.flat_size(), newRange.lower);
+        const auto end_x = std::lower_bound(x.data(), x.data() + x.flat_size(), newRange.upper);
         const auto x_window_size = end_x - start_x;
         if (x_window_size > 0)
         {
-            const auto y_incr = (_dataOrder == SciQLopGraph::DataOrder::xFirst) ? 1UL : _line_cnt;
-            for (auto line_index = 0UL; line_index < _line_cnt; line_index++)
+            const auto y_incr
+                = (dataOrder() == SciQLopGraph::DataOrder::xFirst) ? 1UL : line_count();
+            for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
-                const auto start_y = _y.data() + y_incr * (start_x - _x.data())
+                const auto start_y = y.data() + y_incr * (start_x - x.data())
                     + (line_index
-                        * ((_dataOrder == SciQLopGraph::DataOrder::xFirst) ? _x.flat_size() : 1));
+                        * ((dataOrder() == SciQLopGraph::DataOrder::xFirst) ? x.flat_size() : 1));
                 if (x_window_size > 10000)
                 {
                     emit this->setGraphData(
@@ -51,21 +81,7 @@ void GraphResampler::_resample_slot(const QCPRange newRange)
                 }
             }
         }
-        _x.release();
-        _y.release();
+        x.release();
+        y.release();
     }
-    emit this->refreshPlot();
-}
-
-GraphResampler::GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
-        : _dataOrder { dataOrder }, _line_cnt { line_cnt }
-{
-
-    connect(this, &GraphResampler::_resample_sig, this, &GraphResampler::_resample_slot,
-        Qt::QueuedConnection);
-}
-
-void GraphResampler::resample(const QCPRange newRange)
-{
-    emit this->_resample_sig(newRange);
 }

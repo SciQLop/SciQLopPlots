@@ -53,6 +53,7 @@ extern "C"
 
 void Array_view::_init_buffer(PyObject* obj)
 {
+    this->_py_obj = obj;
     PyGILState_STATE state = PyGILState_Ensure();
     this->_is_valid
         = PyObject_GetBuffer(obj, &this->_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS)

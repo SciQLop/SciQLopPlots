@@ -4,7 +4,10 @@
 import os
 import sys
 import xml.etree.ElementTree as Et
+import re
 import argparse
+
+only_xml = re.compile("( *<.*\n?.*>)")
 
 parser = argparse.ArgumentParser(description='PySide/shiboken generated file list predictor')
 parser.add_argument('--build-system', default='meson')
@@ -35,7 +38,8 @@ def find_all_objects(node, found=None):
 
 def get_cpp_files_gen(include_package=True):
     with open(bindings,'r') as f:
-        xml=Et.fromstring(f.read())
+        clean = '\n'.join(only_xml.findall(f.read()))
+        xml=Et.fromstring(clean)
         types = find_all_objects(xml)
         package = xml.attrib['package']
 

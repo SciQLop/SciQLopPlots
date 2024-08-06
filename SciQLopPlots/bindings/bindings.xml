@@ -14,6 +14,26 @@
     <rejection class="*" function-name="interface1D" />
     <rejection class="QCPColorMap" function-name="QCPColorMap" />
 
+    <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
+    <value-type name="Array_view">
+        <conversion-rule>
+            <target-to-native>
+                <add-conversion type="Py_None">
+                    SBK_UNUSED(%in)
+                    %out = %OUTTYPE();
+                </add-conversion>
+                <add-conversion type="PyObject" check="PyObject_CheckBuffer(%in)">
+                    %out = %OUTTYPE(%in);
+                </add-conversion>
+            </target-to-native>
+            <native-to-target>
+                return %in.py_object();
+            </native-to-target>
+        </conversion-rule>
+        <modify-function signature="Array_view(PyObject*)" remove="all" />
+        <modify-function signature="py_object()" remove="all" />
+    </value-type>
+
 
     <namespace-type name="QCP" visible="true">
         <enum-type name="ResolutionUnit"/>
@@ -382,28 +402,11 @@
           <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
           <include file-name="utility" location="global"/>
         </extra-includes>
-        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
-            <inject-code file="snippets.cpp" snippet="SciQLopGraph-setData"/>
-        </add-function>
     </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
-        <extra-includes>
-          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
-          <include file-name="utility" location="global"/>
-        </extra-includes>
-        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
-            <inject-code file="snippets.cpp" snippet="SciQLopGraph-setData"/>
-        </add-function>
     </object-type>
     <object-type name="SciQLopColorMap" parent-management="yes">
         <enum-type name="DataOrder"/>
-        <extra-includes>
-          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
-          <include file-name="utility" location="global"/>
-        </extra-includes>
-        <add-function signature="setData(PyObject *@x@, PyObject *@y@, PyObject *@z@)">
-            <inject-code file="snippets.cpp" snippet="SciQLopColorMap-setData"/>
-        </add-function>
     </object-type>
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
@@ -447,6 +450,15 @@
     <object-type name="XAxisSynchronizer" parent-management="yes">
     </object-type>
     <object-type name="VPlotsAlign" parent-management="yes">
+    </object-type>
+    <object-type name="DataProviderInterface" parent-management="yes">
+    </object-type>
+    <object-type name="DataProviderWorker" parent-management="yes">
+        <modify-function signature="set_data_provider(DataProviderInterface*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
     </object-type>
 </typesystem>
 

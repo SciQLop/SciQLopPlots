@@ -5,6 +5,7 @@ examples = [
     {'name':'StackedGraphs', 'source': meson.current_source_dir()+'/StackedGraphs/main.py'},
     {'name':'SciQLopVerticalSpan', 'source': meson.current_source_dir()+'/SciQLopVerticalSpan/main.py'},
     {'name':'All', 'source': meson.current_source_dir()+'/All/main.py'},
+    {'name':'MicroSciQLop', 'source': meson.current_source_dir()+'/MicroSciQLop/main.py'},
 ]
 
 foreach example:examples

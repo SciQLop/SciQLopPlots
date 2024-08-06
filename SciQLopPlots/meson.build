@@ -114,6 +114,7 @@ sources = moc_files \
             '../src/BufferProtocol.cpp',
             '../src/SciQLopTracer.cpp',
             '../src/QCPItemRichText.cpp',
+            '../src/DataProducer.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 

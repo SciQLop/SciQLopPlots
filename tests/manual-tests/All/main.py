@@ -1,6 +1,7 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
-                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, SciQLopTimeSeriesPlot
+                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
+                         SciQLopTimeSeriesPlot, DataProviderInterface, DataProviderWorker
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -12,6 +13,12 @@ from types import SimpleNamespace
 
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
+
+try:
+    from numba import njit, prange
+    NUMBA_AVAILABLE = True
+except ImportError:
+    NUMBA_AVAILABLE = False
 
 os.environ['QT_API'] = 'PySide6'
 
@@ -33,7 +40,7 @@ def add_graph(plot, time_axis=False, offset=0.):
     y+=offset
     if time_axis:
         x+=datetime.now().timestamp()
-    graph.setData(x,y)
+    graph.set_data(x,y)
 
     graph.graphAt(0).setPen(QPen(QColorConstants.Red))
     graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
@@ -51,7 +58,7 @@ def butterfly():
 
 def add_curve(plot):
     curve = plot.addSciQLopCurve(["butterfly"])
-    curve.setData(*butterfly())
+    curve.set_data(*butterfly())
     return curve
 
 def add_colormap(plot, time_axis=False):
@@ -62,7 +69,7 @@ def add_colormap(plot, time_axis=False):
     if time_axis:
         x+=datetime.now().timestamp()
     z = np.random.rand(NPOINTS,64)+np.cos(np.arange(NPOINTS*64, dtype=np.float64)/6000.).reshape(NPOINTS,64)
-    colormap.setData(x,y,z)
+    colormap.set_data(x,y,z)
     return colormap
 
 
@@ -124,6 +131,58 @@ class StackedPlots(SciQLopMultiPlotPanel):
 
         self._verticalSpan = MultiPlotsVerticalSpan(self, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
+if NUMBA_AVAILABLE:
+    @njit(parallel=True)
+    def _make_data(x,y):
+        for i in prange(len(x)):
+            y[0,i] = math.cos(x[i]*(1./6.)) * math.cos(x[i]) * 100.
+            y[1,i] = math.cos(x[i]*(1./60.)) * math.cos(x[i]*(1./6.)) * 1300.
+            y[2,i] = math.cos(x[i]*(1./600.)) * math.cos(x[i]*(1./60.)) * 17000.
+        return x, y
+
+    class GraphDataProvider(DataProviderInterface):
+        def __init__(self):
+            super().__init__()
+
+
+        def get_data(self, start, end):
+            x = np.arange(start, end, dtype=np.float64)
+            y = np.empty((3, len(x)), dtype=np.float64)
+            return _make_data(x, y)
+
+
+else:
+
+    class GraphDataProvider(DataProviderInterface):
+        def __init__(self):
+            super().__init__()
+
+        def get_data(self, start, end):
+            x = np.arange(start, end, dtype=np.float64)
+            y = np.empty((3, len(x)), dtype=np.float64)
+            y[0,:] = np.cos(x*(1./6.)) * np.cos(x) * 100.
+            y[1,:] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
+            y[2,:] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
+            return x, y
+
+
+
+class DataProducers(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent)
+        self.setMouseTracking(True)
+        self.graphs = []
+        self._workers = []
+        self._providers = []
+        for _ in range(3):
+            plot = make_plot(None, time_axis=True)
+            self.addPlot(plot)
+            self.graphs.append(add_graph(plot, time_axis=True))
+            self._providers.append(GraphDataProvider())
+            self._workers.append(DataProviderWorker())
+            self._workers[-1].set_data_provider(self._providers[-1])
+            self.plots()[-1].x_axis_range_changed.connect(self._workers[-1].set_range)
+            self._providers[-1].new_data_2d.connect(self.graphs[-1].set_data)
 
 
 
@@ -142,6 +201,7 @@ class Tabs(QTabWidget):
         self.add_tab(SimpleCurve(self), "Simple Curve")
         self.add_tab(TimeSerieGraph(self), "Time Serie Graph")
         self.add_tab(StackedPlots(self), "Stacked Plots")
+        self.add_tab(DataProducers(self), "DataProducers")
 
     def add_tab(self, widget, title):
         self.addTab(widget, title)

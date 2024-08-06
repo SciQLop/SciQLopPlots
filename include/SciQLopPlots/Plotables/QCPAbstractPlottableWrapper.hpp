@@ -20,6 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+
+#include "SciQLopPlots/Python/BufferProtocol.hpp"
+
 #include <qcustomplot.h>
 
 class SQPQCPAbstractPlottableWrapper : public QObject
@@ -78,6 +81,9 @@ public:
     }
 
     std::size_t plottable_count() const noexcept { return std::size(m_plottables); }
+
+    inline virtual void set_data(Array_view x, Array_view y, Array_view z) { }
+    inline virtual void set_data(Array_view x, Array_view y) { }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
