@@ -53,6 +53,7 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/enums.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotAxis.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp',
@@ -79,7 +80,7 @@ moc_headers = [
 
 moc_sources = []
 headers = moc_headers + \
-         [project_source_root+'/include/SciQLopPlots/Python/BufferProtocol.hpp',
+         [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp']
 
 includes = include_directories(['../include', '../qcustomplot-source'])
@@ -93,7 +94,9 @@ moc_files = qtmod.preprocess(
 sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
-        + [ '../src/SciQLopPlot.cpp',
+        + [
+            '../src/PythonInterface.cpp',
+            '../src/SciQLopPlot.cpp',
             '../src/SciQLopPlotAxis.cpp',
             '../src/SciQLopPlotCollection.cpp',
             '../src/XAxisSynchronizer.cpp',
@@ -111,17 +114,21 @@ sources = moc_files \
             '../src/SciQLopCurveResampler.cpp',
             '../src/SciQLopColorMap.cpp',
             '../src/SciQLopColorMapResampler.cpp',
-            '../src/BufferProtocol.cpp',
             '../src/SciQLopTracer.cpp',
             '../src/QCPItemRichText.cpp',
             '../src/DataProducer.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
+cpp_args = ['-DQCUSTOMPLOT_USE_OPENGL']
+if get_option('trace_refcount') == true
+    cpp_args += ['-D_TRACE_REF_COUNT']
+endif
+
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep, fmt_dep],
-        cpp_args:['-DQCUSTOMPLOT_USE_OPENGL'],
+        cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,

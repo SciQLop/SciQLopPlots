@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlotCollection.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
@@ -27,7 +28,6 @@
 
 #include "qcustomplot.h"
 
-#include "SciQLopPlotCollection.hpp"
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
@@ -36,6 +36,19 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
 {
     Q_OBJECT
     SciQLopPlotContainer* _container = nullptr;
+
+protected:
+    template <typename T, typename... Args>
+    T* _plot(int index, Args&&... args)
+    {
+        auto* plot = new T();
+        if (index == -1)
+            addPlot(plot);
+        else
+            insertPlot(index, plot);
+        plot->plot(std::forward<Args>(args)...);
+        return plot;
+    }
 
 public:
     SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true);
@@ -65,6 +78,23 @@ public:
 
     void registerBehavior(SciQLopPlotCollectionBehavior* behavior) final;
     void removeBehavior(const QString& type_name) final;
+
+
+    virtual SciQLopPlotInterface* plot(Array_view x, Array_view y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::GraphType graph_type = ::GraphType::Line, int index = -1) override;
+
+    virtual SciQLopPlotInterface* plot(Array_view x, Array_view y, Array_view z,
+        const QString& name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+        int index = -1) override;
+
+    virtual SciQLopPlotInterface* plot(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::GraphType graph_type = ::GraphType::Line, int index = -1) override;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);

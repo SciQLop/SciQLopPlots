@@ -67,7 +67,7 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
 
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-    const QStringList& labels, SciQLopGraph::DataOrder dataOrder)
+    const QStringList& labels, ::DataOrder dataOrder)
         : SQPQCPAbstractPlottableWrapper(parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
@@ -78,7 +78,7 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
 }
 
 SciQLopCurve::SciQLopCurve(
-    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, SciQLopGraph::DataOrder dataOrder)
+    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, ::DataOrder dataOrder)
         : SQPQCPAbstractPlottableWrapper(parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }

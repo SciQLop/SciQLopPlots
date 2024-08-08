@@ -20,11 +20,11 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
-
-#include "../Python/BufferProtocol.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopGraph.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
 class QThread;
 struct CurveResampler;
@@ -57,11 +57,10 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QStringList& labels,
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
+        const QStringList& labels, ::DataOrder dataOrder = ::DataOrder::RowMajor);
 
     explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
+        ::DataOrder dataOrder = ::DataOrder::RowMajor);
 
     virtual ~SciQLopCurve() override;
 
@@ -87,5 +86,5 @@ public:
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
 private:
-    SciQLopGraph::DataOrder _dataOrder = SciQLopGraph::DataOrder::xFirst;
+    ::DataOrder _dataOrder = ::DataOrder::RowMajor;
 };

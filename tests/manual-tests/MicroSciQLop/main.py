@@ -1,15 +1,15 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
                          MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, DataProviderInterface, DataProviderWorker
+                         SciQLopTimeSeriesPlot, DataProviderInterface, DataProviderWorker, SciQLopGraph, DataOrder, PlotType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
-from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
+from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt
 import sys, os
-import math
 import numpy as np
-from datetime import datetime
-from types import SimpleNamespace
+from datetime import datetime, timezone
+import threading
+from typing import Dict, Any
 
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
@@ -18,19 +18,44 @@ os.environ['QT_API'] = 'PySide6'
 
 try:
     import speasy as spz
+    def _current_thread_id():
+        return threading.get_native_id()
+
+
+    class ThreadStorage:
+        _storage: Dict[int, Dict[str, Any]] = {}
+
+        def __init__(self):
+            self._storage = {}
+
+        def __getattr__(self, item):
+            return self._storage.get(_current_thread_id(), {}).get(item, None)
+
+        def __setattr__(self, key, value):
+            tid = _current_thread_id()
+            storage = self._storage
+            if tid not in storage:
+                storage[tid] = {}
+            storage[tid][key] = value
+
+    from speasy.core.cache import _cache
+    _cache._data._local = ThreadStorage()
+
 except ImportError:
     print("Speasy not found")
     exit()
 
-class GraphDataProvider(DataProviderInterface):
-    def __init__(self):
-        super().__init__()
 
-    def get_data(self, start, end):
-        x = np.arange(start, end, dtype=np.float64)
-        print(len(x))
-        y = np.cos(np.array([x/6.,x/60.,x/600.])) * np.cos(np.array([x,x/6.,x/60.])) * [[100.],[1300],[17000]]
-        return x, y
+def spz_get_data(start, stop):
+    try:
+        v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.FGM.MMS1_FGM_SRVY_L2.mms1_fgm_b_gse_srvy_l2, start, stop)
+        if v is None:
+            return None
+        x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        return x, v.values.astype(np.float64)
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 
 class MMS(SciQLopMultiPlotPanel):
@@ -38,16 +63,14 @@ class MMS(SciQLopMultiPlotPanel):
         SciQLopMultiPlotPanel.__init__(self,parent)
         self.graphs = []
         for _ in range(3):
-            plot = SciQLopTimeSeriesPlot(None)
-            self.addPlot(plot)
-        self._worker = DataProviderWorker()
-        p = GraphDataProvider()
-        self._worker.set_data_provider(p)
-        self.plotAt(0).x_axis_range_changed.connect(self._worker.set_range)
-        p.new_data_2d.connect(self.graphs[0].setData)
-
-
-
+            self.plot(spz_get_data,
+                        labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
+                        colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
+                        data_order=DataOrder.ColumnMajor,
+                        plot_type=PlotType.TimeSeries)
+        self.set_x_axis_range(
+                datetime(2019,2,17,12,33,0,0,timezone.utc).timestamp(),
+                datetime(2019,2,17,12,34,0,0,timezone.utc).timestamp())
 
 
 def fix_name(name):
@@ -61,6 +84,7 @@ class Tabs(QTabWidget):
         self.setTabShape(QTabWidget.TabShape.Rounded)
         self.setMovable(True)
         self._objects_to_export ={}
+        self.add_tab(MMS(self), "MMS")
 
 
     def add_tab(self, widget, title):
@@ -69,10 +93,6 @@ class Tabs(QTabWidget):
 
     def export_objects(self):
         return self._objects_to_export
-
-
-
-
 
 
 class MainWindow(QMainWindow):
@@ -115,6 +135,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
+    from speasy.core.cache import _cache
+    _cache._data._local = ThreadStorage()
     QApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)

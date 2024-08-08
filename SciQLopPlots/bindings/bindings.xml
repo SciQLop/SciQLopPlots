@@ -13,6 +13,9 @@
     <rejection class="^QCP[a-zA-Z]+$" field-name="^m[a-zA-Z]+$" />
     <rejection class="*" function-name="interface1D" />
     <rejection class="QCPColorMap" function-name="QCPColorMap" />
+    <enum-type name="GraphType"/>
+    <enum-type name="PlotType"/>
+    <enum-type name="DataOrder"/>
 
     <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
     <value-type name="Array_view">
@@ -33,7 +36,24 @@
         <modify-function signature="Array_view(PyObject*)" remove="all" />
         <modify-function signature="py_object()" remove="all" />
     </value-type>
-
+    <value-type name="GetDataPyCallable">
+        <conversion-rule>
+            <target-to-native>
+                <add-conversion type="Py_None">
+                    SBK_UNUSED(%in)
+                    %out = %OUTTYPE();
+                </add-conversion>
+                <add-conversion type="PyObject" check="PyCallable_Check(%in)">
+                    %out = %OUTTYPE(%in);
+                </add-conversion>
+            </target-to-native>
+            <native-to-target>
+                return %in.py_object();
+            </native-to-target>
+        </conversion-rule>
+        <modify-function signature="GetDataPyCallable(PyObject*)" remove="all" />
+        <modify-function signature="py_object()" remove="all" />
+    </value-type>
 
     <namespace-type name="QCP" visible="true">
         <enum-type name="ResolutionUnit"/>
@@ -87,51 +107,37 @@
         </modify-function>
     </object-type>
 
-    <object-type name="SciQLopPlotInterface" parent-management="yes">
-    </object-type>
-
-    <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
-    </object-type>
-
-    <object-type name="SciQLopPlotAxis" parent-management="yes">
-    </object-type>
+    <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
+    <object-type name="SciQLopPlotInterface" parent-management="yes"/>
+    <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
+    <object-type name="SciQLopPlotAxis" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
         <enum-type name="LayerInsertMode"/>
         <enum-type name="RefreshPriority"/>
-        <modify-function signature="addColorMap()" return-type="QCPColorMap*" static="no">
-            <modify-argument index="return">
-                <define-ownership class="native" owner="c++" />
-                <define-ownership class="target" owner="c++" />
-            </modify-argument>
+        <modify-function signature="plot(Array_view,Array_view,QStringList,QList&lt;QColor&gt;,DataOrder,GraphType)">
+            <modify-argument index="1" rename="x"/>
+            <modify-argument index="2" rename="y"/>
+            <modify-argument index="3" rename="labels"/>
+            <modify-argument index="4" rename="colors"/>
+            <modify-argument index="5" rename="data_order"/>
+            <modify-argument index="6" rename="graph_type"/>
         </modify-function>
-        <modify-function signature="addSciQLopGraph(QStringList, SciQLopGraph::DataOrder)">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
+        <modify-function signature="plot(Array_view,Array_view,Array_view,const QString&amp;,DataOrder,bool,bool)">
+            <modify-argument index="1" rename="x"/>
+            <modify-argument index="2" rename="y"/>
+            <modify-argument index="3" rename="z"/>
+            <modify-argument index="4" rename="name"/>
+            <modify-argument index="5" rename="data_order"/>
+            <modify-argument index="6" rename="y_log_scale"/>
+            <modify-argument index="7" rename="z_log_scale"/>
         </modify-function>
-        <modify-function signature="addSciQLopGraph(SciQLopGraph::DataOrder)">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="addSciQLopCurve(QStringList, SciQLopGraph::DataOrder)">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="addSciQLopCurve(SciQLopGraph::DataOrder)">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
-        <modify-function signature="addSciQLopColorMap(const QString&amp;, SciQLopGraph::DataOrder, bool, bool)">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-            <modify-argument index="2" rename="dataOrder"/>
-            <modify-argument index="3" rename="y_log_scale"/>
-            <modify-argument index="4" rename="z_log_scale"/>
+        <modify-function signature="plot(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,GraphType)">
+            <modify-argument index="1" rename="callable"/>
+            <modify-argument index="2" rename="labels"/>
+            <modify-argument index="3" rename="colors"/>
+            <modify-argument index="4" rename="data_order"/>
+            <modify-argument index="5" rename="graph_type"/>
         </modify-function>
     </object-type>
 
@@ -199,13 +205,6 @@
     <object-type name="QCPColorScale" parent-management="yes"/>
 
     <object-type name="QCPGraph" parent-management="yes">
-        <extra-includes>
-          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
-          <include file-name="utility" location="global"/>
-        </extra-includes>
-        <add-function signature="setData(PyObject *@x@, PyObject *@y@)">
-            <inject-code file="snippets.cpp" snippet="QCPGraph-setData"/>
-        </add-function>
         <add-function signature="setSelected(bool )">
             <inject-code class="target" position="end" file="snippets.cpp" snippet="QCPGraph-setSelected"/>
         </add-function>
@@ -396,18 +395,9 @@
     <object-type name="SciQlopItemWithToolTip">
     </object-type>
 
-    <object-type name="SciQLopGraph" parent-management="yes">
-        <enum-type name="DataOrder"/>
-        <extra-includes>
-          <include file-name="SciQLopPlots/Python/BufferProtocol.hpp" location="global"/>
-          <include file-name="utility" location="global"/>
-        </extra-includes>
-    </object-type>
-    <object-type name="SciQLopCurve" parent-management="yes">
-    </object-type>
-    <object-type name="SciQLopColorMap" parent-management="yes">
-        <enum-type name="DataOrder"/>
-    </object-type>
+    <object-type name="SciQLopGraph" parent-management="yes"/>
+    <object-type name="SciQLopCurve" parent-management="yes"/>
+    <object-type name="SciQLopColorMap" parent-management="yes"/>
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>

@@ -21,26 +21,21 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Python/PythonInterface.hpp"
-
-
-#include "SciQLopCurve.hpp"
-#include "SciQLopGraph.hpp"
-#include "SciQLopGraphResampler.hpp"
-#include <QMutex>
-#include <qcustomplot.h>
-
-
-struct CurveResampler : public AbstractResampler1d
+enum class DataOrder
 {
-    Q_OBJECT
+    RowMajor,
+    ColumnMajor
+};
 
-    void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) override;
+enum class GraphType
+{
+    Line,
+    ParametricCurve,
+    ColorMap
+};
 
-public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
-#endif // !BINDINGS_H
-
-    CurveResampler(::DataOrder dataOrder, std::size_t line_cnt);
+enum class PlotType
+{
+    BasicXY,
+    TimeSeries
 };

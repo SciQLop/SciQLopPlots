@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Python/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include <qcustomplot.h>
 
@@ -55,7 +55,7 @@ public:
         m_plottables.clear();
     }
 
-    QList<QCPAbstractPlottable*> plottables() const noexcept { return m_plottables; }
+    const QList<QCPAbstractPlottable*>& qcp_plottables() const noexcept { return m_plottables; }
 
     template <typename T>
     inline T* newPlottable(QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name)
@@ -87,6 +87,7 @@ public:
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
+    Q_SIGNAL void range_changed(double lower, double upper);
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);
 #endif // BINDINGS_H
 };

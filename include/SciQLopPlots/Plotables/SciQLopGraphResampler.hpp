@@ -21,8 +21,11 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "../Python/BufferProtocol.hpp"
-#include "SciQLopGraph.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
+
+
+#include "SciQLopPlots/enums.hpp"
+
 #include <QMutex>
 #include <qcustomplot.h>
 
@@ -88,19 +91,19 @@ protected:
     QMutex _range_mutex;
     ResamplerData _data;
     ResamplerData _next_data;
-    SciQLopGraph::DataOrder _dataOrder;
+    ::DataOrder _data_order;
     std::size_t _line_cnt;
 #ifndef BINDINGS_H
-    Q_SIGNAL void _resample_sig(const QCPRange newRange);
+    Q_SIGNAL void _resample_sig(const QCPRange new_range);
 #endif
-    void _resample_slot(const QCPRange newRange);
+    void _resample_slot(const QCPRange new_range);
 
-    virtual void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) = 0;
+    virtual void _resample(Array_view&& x, Array_view&& y, const QCPRange new_range) = 0;
 
 public:
-    AbstractResampler1d(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
+    AbstractResampler1d(::DataOrder data_order, std::size_t line_cnt);
 
-    void resample(const QCPRange newRange);
+    void resample(const QCPRange new_range);
 
     inline QCPRange x_range()
     {
@@ -137,7 +140,7 @@ public:
     }
 
     inline std::size_t line_count() const { return _line_cnt; }
-    inline SciQLopGraph::DataOrder dataOrder() const { return _dataOrder; }
+    inline ::DataOrder data_order() const { return _data_order; }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void refreshPlot();
@@ -148,12 +151,12 @@ struct GraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) override;
+    void _resample(Array_view&& x, Array_view&& y, const QCPRange new_range) override;
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
 #endif
 
-    GraphResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt);
+    GraphResampler(::DataOrder data_order, std::size_t line_cnt);
 };

@@ -33,7 +33,7 @@ void SciQLopColorMap::_cmap_got_destroyed()
 }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-    const QString& name, DataOrder dataOrder)
+    const QString& name, ::DataOrder dataOrder)
         : SQPQCPAbstractPlottableWrapper(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { keyAxis }

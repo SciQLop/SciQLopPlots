@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Python/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
 
 #include <QMutex>
@@ -100,4 +100,48 @@ public:
     {
         m_data_provider->set_range({ lower, upper });
     }
+};
+
+
+class SimplePyCallablePWrapper : public DataProviderInterface
+{
+    Q_OBJECT
+    GetDataPyCallable m_callable;
+
+public:
+    SimplePyCallablePWrapper(GetDataPyCallable&& callable, QObject* parent = nullptr)
+            : DataProviderInterface(parent), m_callable(std::move(callable))
+    {
+    }
+
+    virtual ~SimplePyCallablePWrapper() = default;
+
+    inline virtual QList<Array_view> get_data(double lower, double upper) override
+    {
+        auto r = m_callable.get_data(lower, upper);
+        QList<Array_view> result;
+        for (auto& a : r)
+            result.emplace_back(std::move(a));
+        return result;
+    }
+};
+
+
+class SimplePyCallablePipeline : public QObject
+{
+    Q_OBJECT
+    SimplePyCallablePWrapper* m_callable_wrapper;
+    DataProviderWorker* m_worker;
+
+public:
+    SimplePyCallablePipeline(GetDataPyCallable&& callable, QObject* parent = nullptr);
+
+    virtual ~SimplePyCallablePipeline() = default;
+
+    inline Q_SLOT void set_range(double lower, double upper) { m_worker->set_range(lower, upper); }
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void new_data_3d(Array_view x, Array_view y, Array_view z);
+    Q_SIGNAL void new_data_2d(Array_view x, Array_view y);
+#endif
 };
