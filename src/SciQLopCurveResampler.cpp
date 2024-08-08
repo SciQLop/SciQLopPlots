@@ -41,22 +41,19 @@ void CurveResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange ne
     {
 
 
-        const auto y_incr = (dataOrder() == SciQLopGraph::DataOrder::xFirst) ? 1UL : line_count();
+        const auto y_incr = (data_order() == ::DataOrder::RowMajor) ? 1UL : line_count();
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
             const auto count = std::size(x);
             const auto start_y = y.data()
-                + (line_index
-                    * ((dataOrder() == SciQLopGraph::DataOrder::xFirst) ? x.flat_size() : 1));
+                + (line_index * ((data_order() == ::DataOrder::RowMajor) ? x.flat_size() : 1));
             emit this->setGraphData(line_index, curve_copy_data(x.data(), start_y, count, y_incr));
         }
-        x.release();
-        y.release();
     }
     emit this->refreshPlot();
 }
 
-CurveResampler::CurveResampler(SciQLopGraph::DataOrder dataOrder, std::size_t line_cnt)
+CurveResampler::CurveResampler(::DataOrder dataOrder, std::size_t line_cnt)
         : AbstractResampler1d { dataOrder, line_cnt }
 {
 }

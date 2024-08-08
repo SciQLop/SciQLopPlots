@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
+#include <iostream>
 
 
 void DataProviderInterface::_threaded_update()
@@ -40,7 +41,7 @@ void DataProviderInterface::_threaded_update()
     {
         Q_EMIT new_data_3d(r[0], r[1], r[2]);
     }
-    else
+    else if (r.size() != 0)
     {
         std::cerr << "Data provider returned invalid data" << std::endl;
     }
@@ -87,11 +88,22 @@ DataProviderWorker::~DataProviderWorker()
     m_worker_thread->wait();
 }
 
-void DataProviderWorker::set_data_provider(DataProviderInterface *data_provider)
+void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
 {
     data_provider->setParent(nullptr);
     m_data_provider = data_provider;
     m_data_provider->moveToThread(m_worker_thread);
     connect(m_worker_thread, &QThread::finished, m_data_provider, &QObject::deleteLater);
     connect(m_worker_thread, &QThread::finished, m_worker_thread, &QObject::deleteLater);
+}
+
+SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable, QObject* parent)
+{
+    m_callable_wrapper = new SimplePyCallablePWrapper(std::move(callable), this);
+    m_worker = new DataProviderWorker(this);
+    m_worker->set_data_provider(m_callable_wrapper);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_2d, this,
+        &SimplePyCallablePipeline::new_data_2d);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_3d, this,
+        &SimplePyCallablePipeline::new_data_3d);
 }

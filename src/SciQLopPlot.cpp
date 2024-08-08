@@ -94,6 +94,11 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
 SciQLopPlot::~SciQLopPlot()
 {
+    for (auto plottable : m_plottables)
+    {
+        disconnect(plottable, nullptr, this, nullptr);
+    }
+    m_plottables.clear();
     delete m_tracer;
 }
 
@@ -103,28 +108,9 @@ QCPColorMap* SciQLopPlot::addColorMap()
     return cm;
 }
 
-SciQLopGraph* SciQLopPlot::addSciQLopGraph(QStringList labels, SciQLopGraph::DataOrder dataOrder)
-{
-    return this->_new_plottable_wrapper<SciQLopGraph>(this->xAxis, this->yAxis, labels, dataOrder);
-}
-
-SciQLopGraph* SciQLopPlot::addSciQLopGraph(SciQLopGraph::DataOrder dataOrder)
-{
-    return this->_new_plottable_wrapper<SciQLopGraph>(this->xAxis, this->yAxis, dataOrder);
-}
-
-SciQLopCurve* SciQLopPlot::addSciQLopCurve(QStringList labels, SciQLopGraph::DataOrder dataOrder)
-{
-    return this->_new_plottable_wrapper<SciQLopCurve>(this->xAxis, this->yAxis, labels, dataOrder);
-}
-
-SciQLopCurve* SciQLopPlot::addSciQLopCurve(SciQLopGraph::DataOrder dataOrder)
-{
-    return this->_new_plottable_wrapper<SciQLopCurve>(this->xAxis, this->yAxis, dataOrder);
-}
 
 SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
-    const QString& name, SciQLopColorMap::DataOrder dataOrder, bool y_log_scale, bool z_log_scale)
+    const QString& name, ::DataOrder dataOrder, bool y_log_scale, bool z_log_scale)
 {
     if (!m_color_scale->visible())
     {
@@ -218,13 +204,7 @@ void SciQLopPlot::_wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPoi
 
 int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
 {
-    int margin = 0;
-    auto rect = axisRect();
-    for (auto ax : rect->axes(QCPAxis::marginSideToAxisType(side)))
-    {
-        // margin += ax->calculateMargin(side);
-    }
-    return margin;
+    return 0;
 }
 
 
@@ -383,12 +363,15 @@ std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
 
 void SciQLopPlot::_register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable)
 {
-    for (auto abstractPlottable : plottable->plottables())
+    for (auto qcp_plottable : plottable->qcp_plottables())
     {
-        _register_plottable(abstractPlottable);
+        _register_plottable(qcp_plottable);
     }
+    m_plottables.append(plottable);
     connect(plottable, &SQPQCPAbstractPlottableWrapper::plottable_created, this,
         &SciQLopPlot::_register_plottable);
+    connect(plottable, &SQPQCPAbstractPlottableWrapper::destroyed, this,
+        [this, plottable]() { m_plottables.removeOne(plottable); });
 }
 
 void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
@@ -445,6 +428,21 @@ void SciQLopPlot::_legend_double_clicked(
 }
 
 
+void SciQLopPlot::_configure_plotable(SQPQCPAbstractPlottableWrapper* plottable,
+    const QStringList& labels, const QList<QColor>& colors)
+{
+    if (plottable)
+    {
+        if (std::size(colors) <= plottable->plottable_count())
+        {
+            for (std::size_t i = 0; i < std::size(colors); i++)
+            {
+                plottable->qcp_plottables()[i]->setPen(QPen(colors[i]));
+            }
+        }
+    }
+}
+
 SciQLopPlot::SciQLopPlot(QWidget* parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
@@ -461,6 +459,8 @@ SciQLopPlot::SciQLopPlot(QWidget* parent)
 
     set_axes_to_rescale(
         QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis() });
+    this->enable_legend(true);
+    this->minimize_margins();
 }
 
 SciQLopPlot::~SciQLopPlot() { }
@@ -502,6 +502,55 @@ void SciQLopPlot::replot(bool immediate)
         m_impl->replot();
     else
         m_impl->replot(QCustomPlot::rpQueuedReplot);
+}
+
+SQPQCPAbstractPlottableWrapper* SciQLopPlot::plot(Array_view x, Array_view y, QStringList labels,
+    QList<QColor> colors, ::DataOrder data_order, GraphType graph_type)
+{
+    SQPQCPAbstractPlottableWrapper* plottable = nullptr;
+    switch (graph_type)
+    {
+        case GraphType::Line:
+            plottable = m_impl->add_plottable<SciQLopGraph>(labels, data_order);
+            break;
+        case GraphType::ParametricCurve:
+            plottable = m_impl->add_plottable<SciQLopCurve>(labels, data_order);
+            break;
+        default:
+            throw std::runtime_error("Unsupported graph type");
+            break;
+    }
+    if (plottable)
+    {
+        plottable->set_data(std::move(x), std::move(y));
+        _configure_plotable(plottable, labels, colors);
+    }
+    return plottable;
+}
+
+SciQLopColorMap* SciQLopPlot::plot(Array_view x, Array_view y, Array_view z, const QString& name,
+    ::DataOrder data_order, bool y_log_scale, bool z_log_scale)
+{
+    auto cm = m_impl->addSciQLopColorMap(name, data_order, y_log_scale, z_log_scale);
+    cm->set_data(std::move(x), std::move(y), std::move(z));
+    return cm;
+}
+
+SQPQCPAbstractPlottableWrapper* SciQLopPlot::plot(GetDataPyCallable callable, QStringList labels,
+    QList<QColor> colors, ::DataOrder data_order, GraphType graph_type)
+{
+    SQPQCPAbstractPlottableWrapper* plotable = nullptr;
+    switch (graph_type)
+    {
+        case GraphType::Line:
+            plotable = m_impl->add_plottable<SciQLopGraphFunction>(
+                std::move(callable), labels, data_order);
+            break;
+        default:
+            break;
+    }
+    _configure_plotable(plotable, labels, colors);
+    return plotable;
 }
 
 SciQLopTimeSeriesPlot::SciQLopTimeSeriesPlot(QWidget* parent) : SciQLopPlot { parent }

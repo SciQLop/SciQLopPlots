@@ -21,7 +21,9 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "../Python/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
+
+
 #include <QMutex>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <qcustomplot.h>

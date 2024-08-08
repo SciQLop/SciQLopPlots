@@ -20,14 +20,16 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
+#include "SciQLopPlots/Items/SciQLopTracer.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraph.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <QPointF>
-#include <SciQLopPlots/Items/SciQLopPlotItem.hpp>
-#include <SciQLopPlots/Items/SciQLopTracer.hpp>
-#include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
-#include <SciQLopPlots/Plotables/SciQLopGraph.hpp>
-#include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <optional>
 #include <qcustomplot.h>
 
@@ -175,6 +177,7 @@ class SciQLopPlot : public QCustomPlot
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
 
+    QList<SQPQCPAbstractPlottableWrapper*> m_plottables;
 
 public:
 #ifndef BINDINGS_H
@@ -188,21 +191,15 @@ public:
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
     QCPColorMap* addColorMap();
 
-    SciQLopGraph* addSciQLopGraph(
-        QStringList labels, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
-
-    SciQLopGraph* addSciQLopGraph(
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
-
-    SciQLopCurve* addSciQLopCurve(
-        QStringList labels, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
-
-    SciQLopCurve* addSciQLopCurve(
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst);
+    template <typename T, typename... Args>
+    T* add_plottable(Args&&... args)
+    {
+        return _new_plottable_wrapper<T>(this->xAxis, this->yAxis, std::forward<Args>(args)...);
+    }
 
     SciQLopColorMap* addSciQLopColorMap(const QString& name,
-        SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst,
-        bool y_log_scale = false, bool z_log_scale = false);
+        ::DataOrder dataOrder = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
@@ -350,7 +347,9 @@ protected:
 class SciQLopPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
+protected:
     _impl::SciQLopPlot* m_impl;
+
 
 protected:
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
@@ -362,6 +361,9 @@ protected:
     {
         return m_impl->axis_at(m_impl->mapFrom(this, pos));
     }
+
+    void _configure_plotable(SQPQCPAbstractPlottableWrapper* plottable, const QStringList& labels,
+        const QList<QColor>& colors);
 
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
@@ -411,36 +413,18 @@ public:
 
     void replot(bool immediate = false) override;
 
-    inline SciQLopGraph* addSciQLopGraph(
-        QStringList labels, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
-    {
-        return m_impl->addSciQLopGraph(labels, dataOrder);
-    }
+    virtual SQPQCPAbstractPlottableWrapper* plot(Array_view x, Array_view y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line);
 
-    inline SciQLopGraph* addSciQLopGraph(
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
-    {
-        return m_impl->addSciQLopGraph(dataOrder);
-    }
+    virtual SciQLopColorMap* plot(Array_view x, Array_view y, Array_view z,
+        const QString& name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false);
 
-    inline SciQLopCurve* addSciQLopCurve(
-        QStringList labels, SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
-    {
-        return m_impl->addSciQLopCurve(labels, dataOrder);
-    }
-
-    inline SciQLopCurve* addSciQLopCurve(
-        SciQLopGraph::DataOrder dataOrder = SciQLopGraph::DataOrder::xFirst)
-    {
-        return m_impl->addSciQLopCurve(dataOrder);
-    }
-
-    inline SciQLopColorMap* addSciQLopColorMap(const QString& name,
-        SciQLopColorMap::DataOrder dataOrder = SciQLopColorMap::DataOrder::xFirst,
-        bool y_log_scale = false, bool z_log_scale = false)
-    {
-        return m_impl->addSciQLopColorMap(name, dataOrder, y_log_scale, z_log_scale);
-    }
+    virtual SQPQCPAbstractPlottableWrapper* plot(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line);
 };
 
 class SciQLopTimeSeriesPlot : public SciQLopPlot

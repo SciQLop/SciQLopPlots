@@ -21,10 +21,15 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <QList>
-#include <QObject>
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
-#include "qcustomplot.h"
+#include "SciQLopPlots/enums.hpp"
+#include <QColor>
+#include <QList>
+#include <QMap>
+#include <QObject>
+#include <QStringList>
+
 
 class SciQLopPlotInterface;
 
@@ -59,6 +64,30 @@ public:
 
     virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) = 0;
     virtual void removeBehavior(const QString& type_name) = 0;
+
+    inline virtual SciQLopPlotInterface* plot(Array_view x, Array_view y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::GraphType graph_type = ::GraphType::Line, int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopPlotInterface* plot(Array_view x, Array_view y, Array_view z,
+        const QString& name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopPlotInterface* plot(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::GraphType graph_type = ::GraphType::Line, int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
 };
 
 template <typename U, typename Interface_T, typename... Args>

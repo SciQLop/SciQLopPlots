@@ -20,8 +20,10 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "../Python/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
+
 #include "QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
 
@@ -50,14 +52,9 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
     void _cmap_got_destroyed();
 
 public:
-    enum class DataOrder
-    {
-        xFirst,
-        yFirst
-    };
     Q_ENUMS(FractionStyle)
     explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QString& name, DataOrder dataOrder = DataOrder::xFirst);
+        const QString& name, DataOrder dataOrder = ::DataOrder::RowMajor);
     virtual ~SciQLopColorMap() override;
 
     virtual void set_data(Array_view x, Array_view y, Array_view z) override;
@@ -70,5 +67,5 @@ public:
     Q_SIGNAL void auto_scale_y_changed(bool);
 #endif
 private:
-    DataOrder _dataOrder = DataOrder::xFirst;
+    ::DataOrder _dataOrder = DataOrder::RowMajor;
 };

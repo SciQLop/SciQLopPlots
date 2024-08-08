@@ -135,6 +135,61 @@ void SciQLopMultiPlotPanel::removeBehavior(const QString& type_name)
     _container->removeBehavior(type_name);
 }
 
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot(Array_view x, Array_view y, QStringList labels,
+    QList<QColor> colors, DataOrder data_order, PlotType plot_type, GraphType graph_type, int index)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot<SciQLopPlot>(index, x, y, labels, colors, data_order, graph_type);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot<SciQLopTimeSeriesPlot>(
+                index, x, y, labels, colors, data_order, graph_type);
+            break;
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot(Array_view x, Array_view y, Array_view z,
+    const QString& name, DataOrder data_order, bool y_log_scale, bool z_log_scale,
+    PlotType plot_type, int index)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot<SciQLopPlot>(index, x, y, z, name, data_order, y_log_scale, z_log_scale);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot<SciQLopTimeSeriesPlot>(
+                index, x, y, z, name, data_order, y_log_scale, z_log_scale);
+            break;
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot(GetDataPyCallable callable, QStringList labels,
+    QList<QColor> colors, DataOrder data_order, PlotType plot_type, GraphType graph_type, int index)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot<SciQLopPlot>(index, callable, labels, colors, data_order, graph_type);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot<SciQLopTimeSeriesPlot>(
+                index, callable, labels, colors, data_order, graph_type);
+            break;
+        default:
+            break;
+    }
+    return nullptr;
+}
+
 
 void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
 {

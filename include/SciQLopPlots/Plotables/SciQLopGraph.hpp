@@ -21,8 +21,11 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "../Python/BufferProtocol.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
+
+#include "../DataProducer/DataProducer.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
 struct GraphResampler;
 class QThread;
@@ -41,7 +44,7 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
 
-    void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
+    void _range_changed(const QCPRange& new_range, const QCPRange& old_range);
 
     void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
 
@@ -54,17 +57,9 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
     void create_resampler(const QStringList& labels);
 
 public:
-    enum class DataOrder
-    {
-        xFirst,
-        yFirst
-    };
     Q_ENUMS(FractionStyle)
-    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QStringList& labels, DataOrder dataOrder = DataOrder::xFirst);
-
-    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        DataOrder dataOrder = DataOrder::xFirst);
+    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+        const QStringList& labels = QStringList(), DataOrder data_order = ::DataOrder::RowMajor);
 
     virtual ~SciQLopGraph() override;
 
@@ -95,5 +90,20 @@ public:
 #endif
 
 private:
-    DataOrder _dataOrder = DataOrder::xFirst;
+    ::DataOrder _data_order = DataOrder::RowMajor;
+};
+
+
+class SciQLopGraphFunction : public SciQLopGraph
+{
+    Q_OBJECT
+    SimplePyCallablePipeline* m_pipeline;
+
+public:
+    explicit SciQLopGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+        GetDataPyCallable&& callable, const QStringList& labels,
+        ::DataOrder data_order = ::DataOrder::RowMajor);
+
+    virtual ~SciQLopGraphFunction() override = default;
+    Q_SLOT void set_data_range(double lower, double upper) { m_pipeline->set_range(lower, upper); }
 };

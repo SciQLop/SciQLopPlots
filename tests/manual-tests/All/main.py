@@ -1,7 +1,7 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
                          MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, DataProviderInterface, DataProviderWorker
+                         SciQLopTimeSeriesPlot, GraphType, PlotType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -27,28 +27,20 @@ NPOINTS = 30000
 def make_plot(parent, time_axis=False):
     if time_axis:
         plot = SciQLopTimeSeriesPlot(parent)
+        plot.x_axis().set_range(datetime.now().timestamp(), datetime.now().timestamp()+NPOINTS)
     else:
         plot = SciQLopPlot(parent)
+        plot.x_axis().set_range(0, NPOINTS)
     plot.enable_legend(True)
     plot.minimize_margins()
     return plot
 
 def add_graph(plot, time_axis=False, offset=0.):
-    graph = plot.addSciQLopGraph(["X","Y","Z"])
-    x=np.arange(NPOINTS, dtype=np.float64)
+    start, stop = plot.x_axis().range()
+    x=np.arange(start=start, stop=stop, dtype=np.float64)
     y=np.cos(np.array([x/6.,x/60.,x/600.])) * np.cos(np.array([x,x/6.,x/60.])) * [[100.],[1300],[17000]]
     y+=offset
-    if time_axis:
-        x+=datetime.now().timestamp()
-    graph.set_data(x,y)
-
-    graph.graphAt(0).setPen(QPen(QColorConstants.Red))
-    graph.graphAt(1).setPen(QPen(QColorConstants.Blue))
-    graph.graphAt(2).setPen(QPen(QColorConstants.Green))
-
-    plot.x_axis().set_range(x[0],x[-1])
-    plot.y_axis().set_range(1.2*np.min(y),1.2*np.max(y))
-    return graph
+    return plot.plot(x,y, labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green])
 
 def butterfly():
     t = np.linspace(0, 12*np.pi, 5000)
@@ -57,20 +49,18 @@ def butterfly():
     return x, y
 
 def add_curve(plot):
-    curve = plot.addSciQLopCurve(["butterfly"])
-    curve.set_data(*butterfly())
-    return curve
+    x, y = butterfly()
+    plot.x_axis().set_range(min(x), max(x))
+    plot.y_axis().set_range(min(y), max(y))
+    return plot.plot(x,y, labels=["butterfly"], colors=[QColorConstants.Red], graph_type=GraphType.ParametricCurve)
 
 def add_colormap(plot, time_axis=False):
-    colormap = plot.addSciQLopColorMap("Cmap", y_log_scale=True, z_log_scale=True)
-
     x=np.arange(NPOINTS, dtype=np.float64)
     y=np.logspace(1, 4, 64)
     if time_axis:
         x+=datetime.now().timestamp()
     z = np.random.rand(NPOINTS,64)+np.cos(np.arange(NPOINTS*64, dtype=np.float64)/6000.).reshape(NPOINTS,64)
-    colormap.set_data(x,y,z)
-    return colormap
+    return plot.plot(x,y,z, name = "Cmap", y_log_scale=True, z_log_scale=True)
 
 
 class SimpleGraph(QWidget):
@@ -117,7 +107,7 @@ class StackedPlots(SciQLopMultiPlotPanel):
         SciQLopMultiPlotPanel.__init__(self,parent)
         self.setMouseTracking(True)
         self.graphs = []
-        for _ in range(3):
+        for _ in range(5):
             plot = make_plot(None, time_axis=True)
             self.addPlot(plot)
             self.graphs.append(add_graph(plot, time_axis=True))
@@ -140,49 +130,29 @@ if NUMBA_AVAILABLE:
             y[2,i] = math.cos(x[i]*(1./600.)) * math.cos(x[i]*(1./60.)) * 17000.
         return x, y
 
-    class GraphDataProvider(DataProviderInterface):
-        def __init__(self):
-            super().__init__()
-
-
-        def get_data(self, start, end):
-            x = np.arange(start, end, dtype=np.float64)
-            y = np.empty((3, len(x)), dtype=np.float64)
-            return _make_data(x, y)
+    def make_data( start, end):
+        x = np.arange(start, end, dtype=np.float64)
+        y = np.empty((3, len(x)), dtype=np.float64)
+        return _make_data(x, y)
 
 
 else:
 
-    class GraphDataProvider(DataProviderInterface):
-        def __init__(self):
-            super().__init__()
-
-        def get_data(self, start, end):
-            x = np.arange(start, end, dtype=np.float64)
-            y = np.empty((3, len(x)), dtype=np.float64)
-            y[0,:] = np.cos(x*(1./6.)) * np.cos(x) * 100.
-            y[1,:] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
-            y[2,:] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
-            return x, y
+    def make_data( start, end):
+        x = np.arange(start, end, dtype=np.float64)
+        y = np.empty((3, len(x)), dtype=np.float64)
+        y[0,:] = np.cos(x*(1./6.)) * np.cos(x) * 100.
+        y[1,:] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
+        y[2,:] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
+        return x, y
 
 
 
 class DataProducers(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent)
-        self.setMouseTracking(True)
-        self.graphs = []
-        self._workers = []
-        self._providers = []
         for _ in range(3):
-            plot = make_plot(None, time_axis=True)
-            self.addPlot(plot)
-            self.graphs.append(add_graph(plot, time_axis=True))
-            self._providers.append(GraphDataProvider())
-            self._workers.append(DataProviderWorker())
-            self._workers[-1].set_data_provider(self._providers[-1])
-            self.plots()[-1].x_axis_range_changed.connect(self._workers[-1].set_range)
-            self._providers[-1].new_data_2d.connect(self.graphs[-1].set_data)
+            self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
 
 
 
@@ -192,7 +162,6 @@ def fix_name(name):
 class Tabs(QTabWidget):
     def __init__(self,parent):
         QTabWidget.__init__(self,parent)
-        self.setMouseTracking(True)
         self.setTabPosition(QTabWidget.TabPosition.North)
         self.setTabShape(QTabWidget.TabShape.Rounded)
         self.setMovable(True)
