@@ -43,7 +43,7 @@ void SciQLopPlotCollection::removePlot(SciQLopPlotInterface* plot)
     emit plotListChanged(_plots);
 }
 
-SciQLopPlotInterface* SciQLopPlotCollection::plotAt(int index)
+SciQLopPlotInterface* SciQLopPlotCollection::plotAt(int index) const
 {
     return _plots.at(index);
 }

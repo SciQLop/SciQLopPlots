@@ -59,8 +59,14 @@ def add_colormap(plot, time_axis=False):
     y=np.logspace(1, 4, 64)
     if time_axis:
         x+=datetime.now().timestamp()
-    z = np.random.rand(NPOINTS,64)+np.cos(np.arange(NPOINTS*64, dtype=np.float64)/6000.).reshape(NPOINTS,64)
-    return plot.plot(x,y,z, name = "Cmap", y_log_scale=True, z_log_scale=True)
+
+    v_mod = np.tile(np.cos(np.arange(64)*6.28/(64*4)),NPOINTS).reshape(NPOINTS,64)
+    noise = np.random.rand(NPOINTS*64).reshape(NPOINTS,64)
+    h_mod = np.cos(np.arange(NPOINTS*64, dtype=np.float64)*6.28/(NPOINTS/3.1)).reshape(NPOINTS,64)
+    sig = np.cos(np.arange(NPOINTS*64, dtype=np.float64)*6.28/(NPOINTS*10)).reshape(NPOINTS,64)
+    z = (v_mod * sig * h_mod + noise)
+    z = (z*sig)/(z + 1)
+    return plot.plot(x,y,z, labels = "Cmap", y_log_scale=True, z_log_scale=True)
 
 
 class SimpleGraph(QWidget):

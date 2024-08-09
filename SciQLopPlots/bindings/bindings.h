@@ -5,6 +5,7 @@
 #define _CRT_USE_BUILTIN_OFFSETOF
 // #define QT_ANNOTATE_ACCESS_SPECIFIER(a) __attribute__((annotate(#a)))
 // #include <memory>
+
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include "_QCustomPlot.hpp"
@@ -19,7 +20,7 @@
 #include <SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp>
 #include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
-#include <SciQLopPlots/Plotables/SciQLopGraph.hpp>
+#include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <SciQLopPlots/enums.hpp>

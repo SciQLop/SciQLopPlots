@@ -19,10 +19,10 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraph.hpp"
-#include "SciQLopPlots/Plotables/SciQLopGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
 
-void SciQLopGraph::create_graphs(const QStringList& labels)
+void SciQLopLineGraph::create_graphs(const QStringList& labels)
 {
     if (plottable_count())
         clear_graphs();
@@ -34,30 +34,15 @@ void SciQLopGraph::create_graphs(const QStringList& labels)
     _resampler->set_line_count(plottable_count());
 }
 
-void SciQLopGraph::set_auto_scale_y(bool auto_scale_y)
+void SciQLopLineGraph::set_auto_scale_y(bool auto_scale_y)
 {
     _auto_scale_y = auto_scale_y;
     Q_EMIT auto_scale_y_changed(auto_scale_y);
 }
 
-void SciQLopGraph::_range_changed(const QCPRange& new_range, const QCPRange& old_range)
+void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 {
-    const auto data_x_range = this->_resampler->x_range();
-
-    if (!(new_range.contains(data_x_range.lower) && new_range.contains(data_x_range.upper)
-            && old_range.contains(data_x_range.lower) && old_range.contains(data_x_range.upper)))
-        this->_resampler->resample(new_range);
-
-    if (!(data_x_range.contains(new_range.lower) && data_x_range.contains(new_range.upper)))
-        emit this->range_changed(new_range, true);
-    else
-        emit this->range_changed(new_range, false);
-    emit this->range_changed(new_range.lower, new_range.upper);
-}
-
-void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
-{
-    auto graph = graphAt(index);
+    auto graph = line(index);
     if (graph)
     {
         graph->data()->set(std::move(data), true);
@@ -68,33 +53,31 @@ void SciQLopGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
     }
 }
 
-SciQLopGraph::SciQLopGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
     const QStringList& labels, ::DataOrder data_order)
         : SQPQCPAbstractPlottableWrapper(parent)
         , _keyAxis { key_axis }
         , _valueAxis { value_axis }
         , _data_order { data_order }
 {
-
     create_resampler(labels);
     if (!labels.isEmpty())
     {
         this->create_graphs(labels);
     }
-    connect(key_axis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopGraph::_range_changed));
 }
 
-void SciQLopGraph::clear_graphs(bool graph_already_removed)
+void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
 {
     clear_plottables();
 }
 
-void SciQLopGraph::clear_resampler()
+void SciQLopLineGraph::clear_resampler()
 {
     connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
-    disconnect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData);
-    disconnect(this->_resampler, &GraphResampler::refreshPlot, nullptr, nullptr);
+    disconnect(this->_resampler, &LineGraphResampler::setGraphData, this,
+        &SciQLopLineGraph::_setGraphData);
+    disconnect(this->_resampler, &LineGraphResampler::refreshPlot, nullptr, nullptr);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
     delete this->_resampler_thread;
@@ -102,27 +85,27 @@ void SciQLopGraph::clear_resampler()
     this->_resampler_thread = nullptr;
 }
 
-void SciQLopGraph::create_resampler(const QStringList& labels)
+void SciQLopLineGraph::create_resampler(const QStringList& labels)
 {
-    this->_resampler = new GraphResampler(_data_order, std::size(labels));
+    this->_resampler = new LineGraphResampler(_data_order, std::size(labels));
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
-    connect(this->_resampler, &GraphResampler::setGraphData, this, &SciQLopGraph::_setGraphData,
-        Qt::QueuedConnection);
+    connect(this->_resampler, &LineGraphResampler::setGraphData, this,
+        &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
     connect(
-        this->_resampler, &GraphResampler::refreshPlot, this,
+        this->_resampler, &LineGraphResampler::refreshPlot, this,
         [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
 }
 
 
-SciQLopGraph::~SciQLopGraph()
+SciQLopLineGraph::~SciQLopLineGraph()
 {
     clear_graphs();
     clear_resampler();
 }
 
-void SciQLopGraph::set_data(Array_view x, Array_view y)
+void SciQLopLineGraph::set_data(Array_view x, Array_view y)
 {
     this->_resampler->setData(std::move(x), std::move(y));
 }
@@ -130,11 +113,11 @@ void SciQLopGraph::set_data(Array_view x, Array_view y)
 SciQLopGraphFunction::SciQLopGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
     QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels,
     DataOrder data_order)
-        : SciQLopGraph(parent, key_axis, value_axis, labels, data_order)
+        : SciQLopLineGraph(parent, key_axis, value_axis, labels, data_order)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(
         m_pipeline, &SimplePyCallablePipeline::new_data_2d, this, &SciQLopGraphFunction::set_data);
-    connect(this, QOverload<double, double>::of(&SciQLopGraph::range_changed), m_pipeline,
-        &SimplePyCallablePipeline::set_range);
+    connect(
+        this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
 }

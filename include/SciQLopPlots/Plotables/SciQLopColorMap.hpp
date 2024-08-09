@@ -46,8 +46,6 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-
-    void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
     void _resample(const QCPRange& newRange);
     void _cmap_got_destroyed();
 

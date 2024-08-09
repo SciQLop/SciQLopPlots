@@ -30,8 +30,7 @@
 #include <QObject>
 #include <QStringList>
 
-
-class SciQLopPlotInterface;
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
 class SciQLopPlotCollectionBehavior : public QObject
 {
@@ -44,28 +43,8 @@ public:
 class SciQLopPlotCollectionInterface
 {
 
-public:
-    virtual void addPlot(SciQLopPlotInterface* plot) = 0;
-    virtual void insertPlot(int index, SciQLopPlotInterface* plot) = 0;
-    virtual void removePlot(SciQLopPlotInterface* plot) = 0;
-    virtual void movePlot(int from, int to) = 0;
-    virtual void movePlot(SciQLopPlotInterface* plot, int to) = 0;
-    virtual void clear() = 0;
-
-    virtual SciQLopPlotInterface* plotAt(int index) = 0;
-    virtual const QList<SciQLopPlotInterface*>& plots() const = 0;
-
-    virtual bool contains(SciQLopPlotInterface* plot) const = 0;
-
-    virtual bool empty() const = 0;
-    virtual std::size_t size() const = 0;
-
-    virtual void set_x_axis_range(double min, double max) = 0;
-
-    virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) = 0;
-    virtual void removeBehavior(const QString& type_name) = 0;
-
-    inline virtual SciQLopPlotInterface* plot(Array_view x, Array_view y,
+protected:
+    inline virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
         ::GraphType graph_type = ::GraphType::Line, int index = -1)
@@ -73,20 +52,102 @@ public:
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopPlotInterface* plot(Array_view x, Array_view y, Array_view z,
-        const QString& name = QStringLiteral("ColorMap"),
+    inline virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
+        const Array_view& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopPlotInterface* plot(GetDataPyCallable callable,
+    inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        ::GraphType graph_type = ::GraphType::Line, int index = -1)
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
+        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
         throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
+        bool y_log_scale = false, bool z_log_scale = false,
+        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+public:
+    virtual ~SciQLopPlotCollectionInterface() = default;
+
+    inline virtual void addPlot(SciQLopPlotInterface* plot) { }
+    inline virtual void insertPlot(int index, SciQLopPlotInterface* plot) { }
+    inline virtual void removePlot(SciQLopPlotInterface* plot) { }
+    inline virtual void movePlot(int from, int to) { }
+    inline virtual void movePlot(SciQLopPlotInterface* plot, int to) { }
+    inline virtual void clear() { }
+
+    inline virtual SciQLopPlotInterface* plotAt(int index) const { return nullptr; }
+
+    inline virtual bool contains(SciQLopPlotInterface* plot) const { return false; }
+
+    inline virtual bool empty() const { return true; }
+    inline virtual std::size_t size() const { return 0; }
+
+    inline virtual void set_x_axis_range(double min, double max) { }
+
+    inline virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) { }
+    inline virtual void removeBehavior(const QString& type_name) { }
+
+
+    inline virtual SciQLopPlotInterface* line(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        int index = -1)
+    {
+        return plot_impl(x, y, labels, colors, data_order, plot_type, ::GraphType::Line, index);
+    }
+
+    inline virtual SciQLopPlotInterface* parametric_curve(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        int index = -1)
+    {
+        return plot_impl(
+            x, y, labels, colors, data_order, plot_type, ::GraphType::ParametricCurve, index);
+    }
+
+    inline virtual SciQLopPlotInterface* colormap(const Array_view& x, const Array_view& y,
+        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+    {
+        return plot_impl(x, y, z, name, data_order, y_log_scale, z_log_scale, plot_type, index);
+    }
+
+
+    inline virtual SciQLopPlotInterface* line(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        int index = -1)
+    {
+        return plot_impl(callable, labels, colors, data_order, ::GraphType::Line, plot_type, index);
+    }
+
+    inline virtual SciQLopPlotInterface* parametric_curve(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
+        int index = -1)
+    {
+        return plot_impl(
+            callable, labels, colors, data_order, ::GraphType::ParametricCurve, plot_type, index);
+    }
+
+    inline virtual SciQLopPlotInterface* colormap(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
+        bool y_log_scale = false, bool z_log_scale = false,
+        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+    {
+        return plot_impl(callable, name, data_order, y_log_scale, z_log_scale, plot_type, index);
     }
 };
 
@@ -119,8 +180,8 @@ public:
     void movePlot(SciQLopPlotInterface* plot, int to) final;
     void clear() final;
 
-    SciQLopPlotInterface* plotAt(int index) final;
-    inline const QList<SciQLopPlotInterface*>& plots() const final { return _plots; }
+    SciQLopPlotInterface* plotAt(int index) const final;
+    inline const QList<SciQLopPlotInterface*>& plots() const { return _plots; }
 
     inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
 

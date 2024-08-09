@@ -27,12 +27,12 @@
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
-struct GraphResampler;
+struct LineGraphResampler;
 class QThread;
 
-class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
+class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 {
-    GraphResampler* _resampler = nullptr;
+    LineGraphResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
     QCPAxis* _keyAxis;
@@ -43,9 +43,6 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
 
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-
-    void _range_changed(const QCPRange& new_range, const QCPRange& old_range);
-
     void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
 
 #ifndef BINDINGS_H
@@ -55,30 +52,29 @@ class SciQLopGraph : public SQPQCPAbstractPlottableWrapper
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
-
-public:
-    Q_ENUMS(FractionStyle)
-    explicit SciQLopGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        const QStringList& labels = QStringList(), DataOrder data_order = ::DataOrder::RowMajor);
-
-    virtual ~SciQLopGraph() override;
-
-    virtual void set_data(Array_view x, Array_view y) override;
-
-    inline const QList<QCPGraph*> graphs() const noexcept
+    inline const QList<QCPGraph*> lines() const noexcept
     {
         QList<QCPGraph*> graphs;
         for (auto plottable : m_plottables)
             graphs.append(qobject_cast<QCPGraph*>(plottable));
         return graphs;
     }
-    inline QCPGraph* graphAt(std::size_t index) const
+
+    inline QCPGraph* line(std::size_t index) const
     {
         if (index < plottable_count())
             return qobject_cast<QCPGraph*>(m_plottables[index]);
         return nullptr;
     }
-    void create_graphs(const QStringList& labels);
+
+public:
+    Q_ENUMS(FractionStyle)
+    explicit SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+        const QStringList& labels = QStringList(), DataOrder data_order = ::DataOrder::RowMajor);
+
+    virtual ~SciQLopLineGraph() override;
+
+    virtual void set_data(Array_view x, Array_view y) override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
@@ -90,11 +86,13 @@ public:
 #endif
 
 private:
+    void create_graphs(const QStringList& labels);
+
     ::DataOrder _data_order = DataOrder::RowMajor;
 };
 
 
-class SciQLopGraphFunction : public SciQLopGraph
+class SciQLopGraphFunction : public SciQLopLineGraph
 {
     Q_OBJECT
     SimplePyCallablePipeline* m_pipeline;

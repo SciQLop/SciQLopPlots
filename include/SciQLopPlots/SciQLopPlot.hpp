@@ -26,7 +26,7 @@
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
-#include "SciQLopPlots/Plotables/SciQLopGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QPointF>
@@ -39,6 +39,35 @@ class SciQLopPlotInterface : public QWidget
 protected:
     QList<SciQLopPlotAxisInterface*> m_axes_to_rescale;
     QList<SciQLopPlotAxisInterface*> m_frozen_axes;
+
+    inline virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
+        bool y_log_scale = false, bool z_log_scale = false)
+    {
+        throw std::runtime_error("Not implemented");
+    }
 
 public:
     SciQLopPlotInterface(QWidget* parent = nullptr) : QWidget(parent) { }
@@ -106,6 +135,60 @@ public:
         {
             ax->rescale();
         }
+    }
+
+
+    inline virtual SciQLopGraphInterface* line(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor)
+    {
+        return plot_impl(x, y, labels, colors, data_order, ::GraphType::Line);
+    }
+
+    inline virtual SciQLopGraphInterface* parametric_curve(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor)
+    {
+        return plot_impl(x, y, labels, colors, data_order, ::GraphType::ParametricCurve);
+    }
+
+    inline virtual SciQLopGraphInterface* colormap(const Array_view& x, const Array_view& y,
+        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false)
+    {
+        return plot_impl(x, y, z, name, data_order, y_log_scale, z_log_scale);
+    }
+
+
+    inline virtual SciQLopGraphInterface* line(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor)
+    {
+        return plot_impl(callable, labels, colors, data_order, ::GraphType::Line);
+    }
+    inline virtual SciQLopGraphInterface* parametric_curve(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor)
+    {
+        return plot_impl(callable, labels, colors, data_order, ::GraphType::ParametricCurve);
+    }
+    inline virtual SciQLopGraphInterface* colormap(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
+        bool y_log_scale = false, bool z_log_scale = false)
+    {
+        return plot_impl(callable, name, data_order, y_log_scale, z_log_scale);
+    }
+
+
+    inline virtual SciQLopGraphInterface* graph(int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopGraphInterface* graph(const QString& name)
+    {
+        throw std::runtime_error("Not implemented");
     }
 
 #ifndef BINDINGS_H
@@ -196,6 +279,9 @@ public:
     {
         return _new_plottable_wrapper<T>(this->xAxis, this->yAxis, std::forward<Args>(args)...);
     }
+
+    SQPQCPAbstractPlottableWrapper* sqp_plottable(int index = -1);
+    SQPQCPAbstractPlottableWrapper* sqp_plottable(const QString& name);
 
     SciQLopColorMap* addSciQLopColorMap(const QString& name,
         ::DataOrder dataOrder = ::DataOrder::RowMajor, bool y_log_scale = false,
@@ -365,6 +451,25 @@ protected:
     void _configure_plotable(SQPQCPAbstractPlottableWrapper* plottable, const QStringList& labels,
         const QList<QColor>& colors);
 
+    virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor,
+        ::GraphType graph_type = ::GraphType::Line) override;
+
+    virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        bool z_log_scale = false) override;
+
+    virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+        ::DataOrder data_order = ::DataOrder::RowMajor,
+        ::GraphType graph_type = ::GraphType::Line) override;
+
+    virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
+        bool y_log_scale = false, bool z_log_scale = false) override;
+
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
@@ -413,18 +518,9 @@ public:
 
     void replot(bool immediate = false) override;
 
-    virtual SQPQCPAbstractPlottableWrapper* plot(Array_view x, Array_view y,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line);
 
-    virtual SciQLopColorMap* plot(Array_view x, Array_view y, Array_view z,
-        const QString& name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
-        bool z_log_scale = false);
-
-    virtual SQPQCPAbstractPlottableWrapper* plot(GetDataPyCallable callable,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line);
+    virtual SciQLopGraphInterface* graph(int index = -1) override;
+    virtual SciQLopGraphInterface* graph(const QString& name) override;
 };
 
 class SciQLopTimeSeriesPlot : public SciQLopPlot
@@ -434,6 +530,9 @@ class SciQLopTimeSeriesPlot : public SciQLopPlot
 public:
     explicit SciQLopTimeSeriesPlot(QWidget* parent = nullptr);
     virtual ~SciQLopTimeSeriesPlot() Q_DECL_OVERRIDE = default;
+
+    inline QList<Array_view> unity(const QList<Array_view>& views) { return views; }
+    inline Array_view unity(const Array_view& view) { return view; }
 };
 
 

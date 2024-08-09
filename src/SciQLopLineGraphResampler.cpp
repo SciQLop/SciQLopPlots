@@ -20,10 +20,10 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/Plotables/SciQLopGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
 
 
-GraphResampler::GraphResampler(DataOrder data_order, std::size_t line_cnt)
+LineGraphResampler::LineGraphResampler(DataOrder data_order, std::size_t line_cnt)
         : AbstractResampler1d { data_order, line_cnt }
 {
 }
@@ -53,7 +53,7 @@ void AbstractResampler1d::resample(const QCPRange new_range)
     emit this->_resample_sig(new_range);
 }
 
-void GraphResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange new_range)
+void LineGraphResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange new_range)
 {
     if (x.data() != nullptr && x.flat_size() > 0)
     {

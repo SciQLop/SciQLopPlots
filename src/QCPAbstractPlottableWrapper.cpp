@@ -28,3 +28,63 @@ void SQPQCPAbstractPlottableWrapper::_register_plottable(QCPAbstractPlottable* p
         [this, plottable]() { m_plottables.removeOne(plottable); });
     m_plottables.append(plottable);
 }
+
+void SQPQCPAbstractPlottableWrapper::set_visible(bool visible) noexcept
+{
+    for (auto plottable : m_plottables)
+    {
+        plottable->setVisible(visible);
+    }
+    Q_EMIT visible_changed(visible);
+}
+
+void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
+{
+    if (std::size(labels) == std::size(m_plottables))
+    {
+        for (std::size_t i = 0; i < std::size(m_plottables); ++i)
+        {
+            m_plottables[i]->setName(labels[i]);
+        }
+        Q_EMIT labels_changed(labels);
+    }
+    else
+    {
+        throw std::runtime_error("Invalid number of labels");
+    }
+}
+
+void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
+{
+    if (std::size(colors) == std::size(m_plottables))
+    {
+        for (std::size_t i = 0; i < std::size(m_plottables); ++i)
+        {
+            auto pen = m_plottables[i]->pen();
+            pen.setColor(colors[i]);
+            m_plottables[i]->setPen(pen);
+        }
+        Q_EMIT colors_changed(colors);
+    }
+    else
+    {
+        throw std::runtime_error("Invalid number of colors");
+    }
+}
+
+bool SQPQCPAbstractPlottableWrapper::visible() const noexcept
+{
+    if (std::empty(m_plottables))
+        return false;
+    return m_plottables[0]->visible();
+}
+
+QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
+{
+    QStringList labels;
+    for (const auto plottable : m_plottables)
+    {
+        labels.append(plottable->name());
+    }
+    return labels;
+}
