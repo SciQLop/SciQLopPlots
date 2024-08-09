@@ -47,14 +47,12 @@ public:
 
     virtual void clear() Q_DECL_OVERRIDE;
 
-    inline virtual SciQLopPlotInterface* plotAt(int index) Q_DECL_OVERRIDE
+    inline virtual SciQLopPlotInterface* plotAt(int index) const Q_DECL_OVERRIDE
     {
         return _plots->plotAt(index);
     }
-    inline virtual const QList<SciQLopPlotInterface*>& plots() const Q_DECL_OVERRIDE
-    {
-        return _plots->plots();
-    }
+
+    inline const QList<SciQLopPlotInterface*>& plots() const { return _plots->plots(); }
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {

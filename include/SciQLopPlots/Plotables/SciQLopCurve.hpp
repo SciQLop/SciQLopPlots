@@ -23,7 +23,7 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include "QCPAbstractPlottableWrapper.hpp"
-#include "SciQLopGraph.hpp"
+#include "SciQLopLineGraph.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
 class QThread;
@@ -53,6 +53,23 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     void clear_curves(bool curve_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
+    void create_graphs(const QStringList& labels);
+    inline void create_curves(const QStringList& labels) { create_graphs(labels); }
+
+    inline QCPCurve* line(std::size_t index) const
+    {
+        if (index < plottable_count())
+            return dynamic_cast<QCPCurve*>(m_plottables[index]);
+        return nullptr;
+    }
+
+    inline const QList<QCPCurve*> lines() const
+    {
+        QList<QCPCurve*> curves;
+        for (auto plottable : m_plottables)
+            curves.append(qobject_cast<QCPCurve*>(plottable));
+        return curves;
+    }
 
 public:
     Q_ENUMS(FractionStyle)
@@ -65,25 +82,8 @@ public:
     virtual ~SciQLopCurve() override;
 
     virtual void set_data(Array_view x, Array_view y) override;
-
-    inline QCPCurve* graphAt(std::size_t index) const
-    {
-        if (index < plottable_count())
-            return dynamic_cast<QCPCurve*>(m_plottables[index]);
-        return nullptr;
-    }
-    inline QCPCurve* curveAt(std::size_t index) const { return graphAt(index); }
-    inline const QList<QCPCurve*> curves() const
-    {
-        QList<QCPCurve*> curves;
-        for (auto plottable : m_plottables)
-            curves.append(qobject_cast<QCPCurve*>(plottable));
-        return curves;
-    }
-    void create_graphs(const QStringList& labels);
-    inline void create_curves(const QStringList& labels) { create_graphs(labels); }
-
     inline std::size_t line_count() const noexcept { return plottable_count(); }
+
 
 private:
     ::DataOrder _dataOrder = ::DataOrder::RowMajor;

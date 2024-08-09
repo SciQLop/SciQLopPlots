@@ -214,13 +214,7 @@ struct _Array_view_impl
 
 void Array_view::steal(Array_view&& other)
 {
-    if (is_valid())
-        this->release();
-    if (other.is_valid())
-    {
-        this->_impl = new _Array_view_impl(other.py_object());
-        other.release();
-    }
+    std::swap(this->_impl, other._impl);
 }
 
 void Array_view::share(const Array_view& other)

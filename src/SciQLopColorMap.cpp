@@ -24,9 +24,6 @@
 #include "SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
-void SciQLopColorMap::_range_changed(const QCPRange& newRange, const QCPRange& oldRange) { }
-
-
 void SciQLopColorMap::_cmap_got_destroyed()
 {
     this->_cmap = nullptr;
@@ -41,8 +38,6 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
         , _dataOrder { dataOrder }
 {
     this->_cmap = this->newPlottable<QCPColorMap>(keyAxis, valueAxis, name);
-    connect(keyAxis, QOverload<const QCPRange&, const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        QOverload<const QCPRange&, const QCPRange&>::of(&SciQLopColorMap::_range_changed));
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
 
     this->_resampler = new ColormapResampler(_valueAxis->scaleType());

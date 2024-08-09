@@ -21,11 +21,10 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Python/PythonInterface.hpp"
-
+#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include <qcustomplot.h>
 
-class SQPQCPAbstractPlottableWrapper : public QObject
+class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 {
     Q_OBJECT
 protected:
@@ -35,7 +34,7 @@ protected:
     void _register_plottable(QCPAbstractPlottable* plottable);
 
 public:
-    SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : QObject(parent) { }
+    SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
     virtual ~SQPQCPAbstractPlottableWrapper()
     {
         for (auto plottable : m_plottables)
@@ -82,12 +81,15 @@ public:
 
     std::size_t plottable_count() const noexcept { return std::size(m_plottables); }
 
-    inline virtual void set_data(Array_view x, Array_view y, Array_view z) { }
-    inline virtual void set_data(Array_view x, Array_view y) { }
+    virtual void set_visible(bool visible) noexcept override;
+    virtual void set_labels(const QStringList& labels) override;
+    virtual void set_colors(const QList<QColor>& colors) override;
+
+    virtual bool visible() const noexcept override;
+    virtual QStringList labels() const noexcept override;
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
-    Q_SIGNAL void range_changed(double lower, double upper);
+    // Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);
 #endif // BINDINGS_H
 };

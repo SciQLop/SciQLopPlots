@@ -147,7 +147,7 @@ public:
 #endif
 };
 
-struct GraphResampler : public AbstractResampler1d
+struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
@@ -158,5 +158,5 @@ public:
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
 #endif
 
-    GraphResampler(::DataOrder data_order, std::size_t line_cnt);
+    LineGraphResampler(::DataOrder data_order, std::size_t line_cnt);
 };

@@ -19,25 +19,15 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 
-#include "SciQLopPlots/Python/PythonInterface.hpp"
-
-#include "SciQLopLineGraphResampler.hpp"
-#include <QMutex>
-#include <qcustomplot.h>
-
-
-struct CurveResampler : public AbstractResampler1d
+SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
 {
-    Q_OBJECT
+    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
+}
 
-    void _resample(Array_view&& x, Array_view&& y, const QCPRange newRange) override;
-
-public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
-#endif // !BINDINGS_H
-
-    CurveResampler(::DataOrder dataOrder, std::size_t line_cnt);
-};
+void SciQLopGraphInterface::set_range(double lower, double upper)
+{
+    m_range = { lower, upper };
+    Q_EMIT range_changed(lower, upper);
+}

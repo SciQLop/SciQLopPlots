@@ -1,7 +1,6 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
-                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
-                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, DataProviderInterface, DataProviderWorker, SciQLopGraph, DataOrder, PlotType
+                         MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
+                         SciQLopTimeSeriesPlot, DataOrder, PlotType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt

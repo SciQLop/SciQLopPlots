@@ -25,12 +25,11 @@
 void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {
     this->_resampler->resample(newRange);
-    emit this->range_changed(newRange, false);
 }
 
 void SciQLopCurve::_setCurveData(std::size_t index, QVector<QCPCurveData> data)
 {
-    auto curve = curveAt(index);
+    auto curve = line(index);
     if (curve)
         curve->data()->set(std::move(data), true);
 }
