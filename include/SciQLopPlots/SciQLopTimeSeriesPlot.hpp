@@ -19,18 +19,41 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#pragma once
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
-{
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-}
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
-void SciQLopGraphInterface::set_range(double lower, double upper)
+
+class SciQLopTimeSeriesPlot : public SciQLopPlot
 {
-    if (m_range.first != lower || m_range.second != upper)
+    Q_OBJECT
+
+public:
+    explicit SciQLopTimeSeriesPlot(QWidget* parent = nullptr);
+    virtual ~SciQLopTimeSeriesPlot() Q_DECL_OVERRIDE = default;
+
+    inline QList<Array_view> unity(const QList<Array_view>& views) { return views; }
+    inline Array_view unity(const Array_view& view) { return view; }
+
+    inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
-        m_range = { lower, upper };
-        Q_EMIT range_changed(lower, upper);
+        return x_axis();
     }
+
+    Q_SLOT inline virtual void set_time_range(double min, double max)
+    {
+        this->x_axis()->set_range(min, max);
+    }
+};
+
+inline QList<SciQLopTimeSeriesPlot*> only_sciqlop_timeserieplots(
+    const QList<SciQLopPlotInterface*>& plots)
+{
+    QList<SciQLopTimeSeriesPlot*> filtered;
+    for (auto plot : plots)
+    {
+        if (auto p = dynamic_cast<SciQLopTimeSeriesPlot*>(plot))
+            filtered.append(p);
+    }
+    return filtered;
 }

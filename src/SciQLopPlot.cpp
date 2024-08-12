@@ -57,6 +57,10 @@ namespace _impl
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
+    this->m_replot_timer = new QTimer(this);
+    this->m_replot_timer->setSingleShot(true);
+    this->m_replot_timer->setInterval(10);
+    connect(this->m_replot_timer, &QTimer::timeout, this, [this]() { QCustomPlot::replot(); });
     using namespace Constants;
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
@@ -78,6 +82,8 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
     connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         [this](const QCPRange& range) { Q_EMIT x_axis_range_changed(range.lower, range.upper); });
+    connect(this->xAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+        [this](const QCPRange& range) { Q_EMIT x2_axis_range_changed(range.lower, range.upper); });
     connect(this->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
         [this](const QCPRange& range) { Q_EMIT y_axis_range_changed(range.lower, range.upper); });
     connect(this->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
@@ -90,6 +96,10 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
     setOpenGl(true, 4);
+    for (auto gesture : { Qt::PanGesture, Qt::PinchGesture })
+    {
+        grabGesture(gesture);
+    }
 }
 
 SciQLopPlot::~SciQLopPlot()
@@ -178,6 +188,19 @@ QMargins SciQLopPlot::minimal_axis_margins()
 {
     return QMargins(_minimal_margin(QCP::msLeft), _minimal_margin(QCP::msTop),
         _minimal_margin(QCP::msRight), _minimal_margin(QCP::msBottom));
+}
+
+void SciQLopPlot::replot(RefreshPriority priority)
+{
+    if (priority == rpImmediateRefresh)
+    {
+        QCustomPlot::replot(rpImmediateRefresh);
+    }
+    else
+    {
+        if (!m_replot_timer->isActive())
+            m_replot_timer->start();
+    }
 }
 
 
@@ -274,6 +297,30 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
                 sciItem->keyPressEvent(event);
             }
         });
+    if (event->key() == Qt::Key_Escape)
+    {
+        for (auto item : items)
+        {
+            item->setSelected(false);
+        }
+        for (auto g : selectedGraphs())
+        {
+            g->setSelection(QCPDataSelection());
+        }
+        for (auto l : selectedLegends())
+        {
+            l->setSelectedParts(QCPLegend::SelectablePart::spNone);
+        }
+        for (auto a : selectedPlottables())
+        {
+            a->setSelection(QCPDataSelection());
+        }
+        for (auto ax : selectedAxes())
+        {
+            ax->setSelectedParts(QCPAxis::spNone);
+        }
+        this->replot(rpQueuedReplot);
+    }
     QCustomPlot::keyPressEvent(event);
 }
 
@@ -389,6 +436,7 @@ void SciQLopPlot::_register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* pl
         &SciQLopPlot::_register_plottable);
     connect(plottable, &SQPQCPAbstractPlottableWrapper::destroyed, this,
         [this, plottable]() { m_plottables.removeOne(plottable); });
+    connect(plottable, &SQPQCPAbstractPlottableWrapper::replot, this, [this]() { this->replot(); });
 }
 
 void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
@@ -463,10 +511,19 @@ void SciQLopPlot::_configure_plotable(SQPQCPAbstractPlottableWrapper* plottable,
 SciQLopPlot::SciQLopPlot(QWidget* parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
+    this->m_time_axis = new SciQLopPlotDummyAxis(this);
+    connect(this->m_time_axis, &SciQLopPlotDummyAxis::range_changed, this,
+        &SciQLopPlot::time_axis_range_changed);
+
+    // connect(m_impl, &_impl::SciQLopPlot::x2_axis_range_changed, this,
+    //    &SciQLopPlot::time_axis_range_changed);
+
     this->setLayout(new QVBoxLayout);
     this->layout()->addWidget(m_impl);
     connect(m_impl, &_impl::SciQLopPlot::x_axis_range_changed, this,
         &SciQLopPlot::x_axis_range_changed);
+    connect(m_impl, &_impl::SciQLopPlot::x2_axis_range_changed, this,
+        &SciQLopPlot::x2_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::y_axis_range_changed, this,
         &SciQLopPlot::y_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::y2_axis_range_changed, this,
@@ -499,7 +556,7 @@ void SciQLopPlot::enable_legend(bool show) noexcept
 {
     m_impl->legend->setVisible(show);
     m_impl->legend->setSelectableParts(QCPLegend::spItems);
-    m_impl->replot(QCustomPlot::rpQueuedReplot);
+    replot();
 }
 
 void SciQLopPlot::minimize_margins()
@@ -553,32 +610,60 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const Array_view& x, const Array_v
     return cm;
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-    QList<QColor> colors, DataOrder data_order, GraphType graph_type)
+inline void SciQLopPlot::_connect_callable_sync(
+    SQPQCPAbstractPlottableWrapper* plottable, AxisType sync_with)
 {
-    SQPQCPAbstractPlottableWrapper* plotable = nullptr;
+    switch (sync_with)
+    {
+        case ::AxisType::TimeAxis:
+            connect(this, &SciQLopPlot::time_axis_range_changed, plottable,
+                &SQPQCPAbstractPlottableWrapper::set_range);
+            break;
+        case ::AxisType::XAxis:
+            connect(this, &SciQLopPlot::x_axis_range_changed, plottable,
+                &SQPQCPAbstractPlottableWrapper::set_range);
+            break;
+        case ::AxisType::YAxis:
+            connect(this, &SciQLopPlot::y_axis_range_changed, plottable,
+                &SQPQCPAbstractPlottableWrapper::set_range);
+            break;
+        case ::AxisType::ZAxis:
+            connect(this, &SciQLopPlot::z_axis_range_changed, plottable,
+                &SQPQCPAbstractPlottableWrapper::set_range);
+            break;
+        default:
+            break;
+    }
+}
+
+SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
+    QList<QColor> colors, DataOrder data_order, GraphType graph_type, AxisType sync_with)
+{
+    SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
-            plotable = m_impl->add_plottable<SciQLopGraphFunction>(
+            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
                 std::move(callable), labels, data_order);
+
             break;
         case GraphType::ParametricCurve:
-            plotable = m_impl->add_plottable<SciQLopGraphFunction>(
+            plottable = m_impl->add_plottable<SciQLopCurveFunction>(
                 std::move(callable), labels, data_order);
             break;
         default:
             break;
     }
-    if (plotable)
+    if (plottable)
     {
-        _configure_plotable(plotable, labels, colors);
+        _connect_callable_sync(plottable, sync_with);
+        _configure_plotable(plottable, labels, colors);
     }
-    return plotable;
+    return plottable;
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
-    DataOrder data_order, bool y_log_scale, bool z_log_scale)
+    DataOrder data_order, bool y_log_scale, bool z_log_scale, AxisType sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plotable = nullptr;
     plotable = m_impl->addSciQLopColorMap(name, data_order, y_log_scale, z_log_scale);
@@ -594,14 +679,4 @@ SciQLopGraphInterface* SciQLopPlot::graph(int index)
 SciQLopGraphInterface* SciQLopPlot::graph(const QString& name)
 {
     return m_impl->sqp_plottable(name);
-}
-
-SciQLopTimeSeriesPlot::SciQLopTimeSeriesPlot(QWidget* parent) : SciQLopPlot { parent }
-{
-    auto date_ticker = QSharedPointer<QCPAxisTickerDateTime>::create();
-    date_ticker->setDateTimeFormat("yyyy/MM/dd \nhh:mm:ss.zzz");
-    date_ticker->setDateTimeSpec(Qt::UTC);
-    qcp_plot()->xAxis->setTicker(date_ticker);
-    set_axes_to_rescale(QList<SciQLopPlotAxisInterface*> { y_axis(), y2_axis() });
-    freeze_axis(x_axis());
 }

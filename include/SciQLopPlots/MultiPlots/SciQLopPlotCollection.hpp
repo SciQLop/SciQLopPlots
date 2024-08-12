@@ -63,7 +63,8 @@ protected:
     inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -71,7 +72,8 @@ protected:
     inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
         bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -128,26 +130,29 @@ public:
     inline virtual SciQLopPlotInterface* line(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        int index = -1)
+        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
     {
-        return plot_impl(callable, labels, colors, data_order, ::GraphType::Line, plot_type, index);
+        return plot_impl(
+            callable, labels, colors, data_order, ::GraphType::Line, plot_type, sync_with, index);
     }
 
     inline virtual SciQLopPlotInterface* parametric_curve(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        int index = -1)
+        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
     {
-        return plot_impl(
-            callable, labels, colors, data_order, ::GraphType::ParametricCurve, plot_type, index);
+        return plot_impl(callable, labels, colors, data_order, ::GraphType::ParametricCurve,
+            plot_type, sync_with, index);
     }
 
     inline virtual SciQLopPlotInterface* colormap(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
         bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1)
     {
-        return plot_impl(callable, name, data_order, y_log_scale, z_log_scale, plot_type, index);
+        return plot_impl(
+            callable, name, data_order, y_log_scale, z_log_scale, plot_type, sync_with, index);
     }
 };
 

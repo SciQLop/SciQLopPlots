@@ -36,7 +36,8 @@ public:
     virtual void set_visible(bool visible) noexcept { }
     virtual void set_log(bool log) noexcept { }
     virtual void set_label(const QString& label) noexcept { }
-    virtual std::pair<double, double> range() const noexcept
+
+    inline virtual std::pair<double, double> range() const noexcept
     {
         return std::make_pair(std::nan(""), std::nan(""));
     }
@@ -57,6 +58,19 @@ public:
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
 #endif
+};
+
+class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
+{
+    Q_OBJECT
+    std::pair<double, double> m_range;
+
+public:
+    explicit SciQLopPlotDummyAxis(QObject* parent = nullptr) : SciQLopPlotAxisInterface(parent) { }
+    virtual ~SciQLopPlotDummyAxis() = default;
+
+    void set_range(double lower, double upper) noexcept override;
+    inline std::pair<double, double> range() const noexcept override { return m_range; }
 };
 
 class SciQLopPlotAxis : public SciQLopPlotAxisInterface

@@ -1,6 +1,6 @@
-from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
+from SciQLopPlots import SciQLopPlot, \
                          MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, DataOrder, PlotType
+                         SciQLopTimeSeriesPlot, DataOrder, PlotType, AxisType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt
@@ -17,6 +17,7 @@ os.environ['QT_API'] = 'PySide6'
 
 try:
     import speasy as spz
+    from speasy.signal.resampling import resample
     def _current_thread_id():
         return threading.get_native_id()
 
@@ -50,6 +51,7 @@ def spz_get_data(start, stop):
         v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.FGM.MMS1_FGM_SRVY_L2.mms1_fgm_b_gse_srvy_l2, start, stop)
         if v is None:
             return None
+        v=resample(v, 1./16.)
         x=(v.time.astype(np.int64)/1e9).astype(np.float64)
         return x, v.values.astype(np.float64)
     except Exception as e:
@@ -57,16 +59,46 @@ def spz_get_data(start, stop):
         return None
 
 
+class Spectrum:
+    def __init__(self, graph):
+        self._graph = graph
+
+    def __call__(self, start, stop):
+        try:
+            v=spz_get_data(start, stop)
+            if v is None:
+                return None
+            x, y = v
+            y=y[:,-1]
+            spec= np.zeros(4096, dtype='complex128')
+            han = np.hanning(4096)
+            nw = len(y)//4096
+            if nw != 0:
+                for i in range(nw):
+                    w=y[i*4096:(i+1)*4096]
+                    w=w-np.mean(w)
+                    w=w*han
+                    spec += (np.fft.fft(w)/len(w))**2
+                spec=np.abs(np.sqrt(spec/nw))
+                freq = np.fft.fftfreq(len(spec), x[1]-x[0])[1:len(spec)//2]
+                spec = spec[1:len(spec)//2]
+                return freq, spec
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
 class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
-        SciQLopMultiPlotPanel.__init__(self,parent)
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         self.graphs = []
-        for _ in range(3):
-            self.plot(spz_get_data,
-                        labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
-                        colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
-                        data_order=DataOrder.ColumnMajor,
-                        plot_type=PlotType.TimeSeries)
+        p=self.plot(spz_get_data,
+                    labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
+                    colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
+                    data_order=DataOrder.ColumnMajor,
+                    plot_type=PlotType.TimeSeries)
+        self._spec = Spectrum(p.graph(0))
+        self.plot(self._spec, index=0,labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=AxisType.TimeAxis)
+
         self.set_x_axis_range(
                 datetime(2019,2,17,12,33,0,0,timezone.utc).timestamp(),
                 datetime(2019,2,17,12,34,0,0,timezone.utc).timestamp())

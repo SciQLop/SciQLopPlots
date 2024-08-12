@@ -20,21 +20,22 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
+#include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 #include "SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp"
 
 #include <QKeyEvent>
 
-SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x)
+SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
+    QWidget* parent, bool synchronize_x, bool synchronize_time)
         : QScrollArea { nullptr }
 {
     _container = new SciQLopPlotContainer(this);
-    if (synchronize_x)
-        ::registerBehavior<XAxisSynchronizer>(_container);
     connect(_container, &SciQLopPlotContainer::plotListChanged, this,
         &SciQLopMultiPlotPanel::plotListChanged);
     setWidget(_container);
@@ -43,6 +44,8 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
     ::registerBehavior<VPlotsAlign>(_container);
     if (synchronize_x)
         ::registerBehavior<XAxisSynchronizer>(_container);
+    if (synchronize_time)
+        ::registerBehavior<TimeAxisSynchronizer>(_container);
 }
 
 void SciQLopMultiPlotPanel::addPlot(SciQLopPlotInterface* plot)
@@ -174,17 +177,19 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const Array_view& x, cons
     return nullptr;
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QStringList labels,
-    QList<QColor> colors, DataOrder data_order, GraphType graph_type, PlotType plot_type, int index)
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable,
+    QStringList labels, QList<QColor> colors, DataOrder data_order, GraphType graph_type,
+    PlotType plot_type, AxisType sync_with, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(index, graph_type, callable, labels, colors, data_order);
+            return _plot<SciQLopPlot>(
+                index, graph_type, callable, labels, colors, data_order, sync_with);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot>(
-                index, graph_type, callable, labels, colors, data_order);
+                index, graph_type, callable, labels, colors, data_order, sync_with);
             break;
         default:
             break;
@@ -193,17 +198,18 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callabl
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name,
-    DataOrder data_order, bool y_log_scale, bool z_log_scale, PlotType plot_type, int index)
+    DataOrder data_order, bool y_log_scale, bool z_log_scale, PlotType plot_type,
+    AxisType sync_with, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(
-                index, GraphType::ColorMap, callable, name, data_order, y_log_scale, z_log_scale);
+            return _plot<SciQLopPlot>(index, GraphType::ColorMap, callable, name, data_order,
+                y_log_scale, z_log_scale, sync_with);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(
-                index, GraphType::ColorMap, callable, name, data_order, y_log_scale, z_log_scale);
+            return _plot<SciQLopTimeSeriesPlot>(index, GraphType::ColorMap, callable, name,
+                data_order, y_log_scale, z_log_scale, sync_with);
             break;
         default:
             break;

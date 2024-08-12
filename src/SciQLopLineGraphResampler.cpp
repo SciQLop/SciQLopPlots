@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
+#include <iostream>
 
 
 LineGraphResampler::LineGraphResampler(DataOrder data_order, std::size_t line_cnt)
@@ -31,29 +32,35 @@ LineGraphResampler::LineGraphResampler(DataOrder data_order, std::size_t line_cn
 
 void AbstractResampler1d::_resample_slot(const QCPRange new_range)
 {
-    QMutexLocker locker(&_data_mutex);
     {
-        QMutexLocker locker(&_next_data_mutex);
-        _data = std::move(_next_data);
+        QMutexLocker locker(&_data_mutex);
+        {
+            QMutexLocker locker(&_next_data_mutex);
+            _data = _next_data;
+            _next_data.new_data = false;
+        }
+        this->_resample(_data.x, _data.y, new_range, _data.new_data);
     }
-    this->_resample(std::move(_data.x), std::move(_data.y), new_range);
-    emit this->refreshPlot();
 }
 
 AbstractResampler1d::AbstractResampler1d(DataOrder data_order, std::size_t line_cnt)
         : _data_order { data_order }, _line_cnt { line_cnt }
 {
-
     connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_resample_slot,
         Qt::QueuedConnection);
 }
 
 void AbstractResampler1d::resample(const QCPRange new_range)
 {
-    emit this->_resample_sig(new_range);
+    {
+        QMutexLocker locker(&_next_data_mutex);
+        _next_resample_range = new_range;
+    }
+    emit _resample_sig(new_range);
 }
 
-void LineGraphResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange new_range)
+void LineGraphResampler::_resample(
+    const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data)
 {
     if (x.data() != nullptr && x.flat_size() > 0)
     {

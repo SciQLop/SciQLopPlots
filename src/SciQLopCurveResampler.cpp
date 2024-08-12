@@ -35,9 +35,10 @@ QVector<QCPCurveData> curve_copy_data(
 }
 
 
-void CurveResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange newRange)
+void CurveResampler::_resample(
+    const Array_view& x, const Array_view& y, const QCPRange newRange, bool new_data)
 {
-    if (x.data() != nullptr && x.flat_size() > 0)
+    if (x.data() != nullptr && x.flat_size() > 0 && new_data)
     {
 
 
@@ -50,7 +51,6 @@ void CurveResampler::_resample(Array_view&& x, Array_view&& y, const QCPRange ne
             emit this->setGraphData(line_index, curve_copy_data(x.data(), start_y, count, y_incr));
         }
     }
-    emit this->refreshPlot();
 }
 
 CurveResampler::CurveResampler(::DataOrder dataOrder, std::size_t line_cnt)

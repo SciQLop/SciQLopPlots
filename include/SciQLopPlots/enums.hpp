@@ -21,6 +21,15 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+enum class AxisType
+{
+    None,
+    TimeAxis,
+    XAxis,
+    YAxis,
+    ZAxis
+};
+
 enum class DataOrder
 {
     RowMajor,

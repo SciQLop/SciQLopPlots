@@ -89,7 +89,6 @@ public:
     virtual QStringList labels() const noexcept override;
 
 #ifndef BINDINGS_H
-    // Q_SIGNAL void range_changed(const QCPRange& newRange, bool missData);
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);
 #endif // BINDINGS_H
 };

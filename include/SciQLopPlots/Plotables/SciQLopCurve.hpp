@@ -82,9 +82,24 @@ public:
     virtual ~SciQLopCurve() override;
 
     virtual void set_data(Array_view x, Array_view y) override;
+    virtual QList<Array_view> data() const noexcept override;
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
 
 private:
     ::DataOrder _dataOrder = ::DataOrder::RowMajor;
+};
+
+
+class SciQLopCurveFunction : public SciQLopCurve
+{
+    Q_OBJECT
+    SimplePyCallablePipeline* m_pipeline;
+
+public:
+    explicit SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+        GetDataPyCallable&& callable, const QStringList& labels,
+        ::DataOrder data_order = ::DataOrder::RowMajor);
+
+    virtual ~SciQLopCurveFunction() override = default;
 };

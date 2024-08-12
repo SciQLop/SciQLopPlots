@@ -32,6 +32,7 @@ void SciQLopCurve::_setCurveData(std::size_t index, QVector<QCPCurveData> data)
     auto curve = line(index);
     if (curve)
         curve->data()->set(std::move(data), true);
+    this->replot();
 }
 
 void SciQLopCurve::clear_curves(bool curve_already_removed)
@@ -59,9 +60,6 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
     this->_resampler_thread->start(QThread::LowPriority);
     connect(this->_resampler, &CurveResampler::setGraphData, this, &SciQLopCurve::_setCurveData,
         Qt::QueuedConnection);
-    connect(
-        this->_resampler, &CurveResampler::refreshPlot, this,
-        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
 }
 
 
@@ -97,6 +95,11 @@ void SciQLopCurve::set_data(Array_view x, Array_view y)
     this->_resampler->setData(std::move(x), std::move(y));
 }
 
+QList<Array_view> SciQLopCurve::data() const noexcept
+{
+    return _resampler->get_data();
+}
+
 void SciQLopCurve::create_graphs(const QStringList& labels)
 {
     if (plottable_count())
@@ -106,4 +109,16 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
         this->newPlottable<QCPCurve>(_keyAxis, _valueAxis, label);
     }
     _resampler->set_line_count(plottable_count());
+}
+
+SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis,
+    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels,
+    DataOrder data_order)
+        : SciQLopCurve(parent, key_axis, value_axis, labels, data_order)
+{
+    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    connect(
+        m_pipeline, &SimplePyCallablePipeline::new_data_2d, this, &SciQLopCurveFunction::set_data);
+    connect(
+        this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
 }

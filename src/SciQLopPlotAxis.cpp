@@ -166,3 +166,12 @@ QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
 {
     return m_axis.data();
 }
+
+void SciQLopPlotDummyAxis::set_range(double lower, double upper) noexcept
+{
+    if (m_range.first != lower || m_range.second != upper)
+    {
+        m_range = { lower, upper };
+        Q_EMIT this->range_changed(lower, upper);
+    }
+}

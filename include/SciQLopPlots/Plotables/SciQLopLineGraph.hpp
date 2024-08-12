@@ -37,7 +37,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    bool _auto_scale_y = false;
+    bool _auto_scale_y = true;
 
     Q_OBJECT
 
@@ -75,6 +75,7 @@ public:
     virtual ~SciQLopLineGraph() override;
 
     virtual void set_data(Array_view x, Array_view y) override;
+    virtual QList<Array_view> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
@@ -92,16 +93,15 @@ private:
 };
 
 
-class SciQLopGraphFunction : public SciQLopLineGraph
+class SciQLopLineGraphFunction : public SciQLopLineGraph
 {
     Q_OBJECT
     SimplePyCallablePipeline* m_pipeline;
 
 public:
-    explicit SciQLopGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+    explicit SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
         GetDataPyCallable&& callable, const QStringList& labels,
         ::DataOrder data_order = ::DataOrder::RowMajor);
 
-    virtual ~SciQLopGraphFunction() override = default;
-    Q_SLOT void set_data_range(double lower, double upper) { m_pipeline->set_range(lower, upper); }
+    virtual ~SciQLopLineGraphFunction() override = default;
 };

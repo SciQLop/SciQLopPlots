@@ -41,6 +41,7 @@ static inline QVector<QCPGraphData> resample(
     QVector<QCPGraphData> data(dest_size);
     const double* current_x = x;
     const double* current_y_it = y;
+    std::size_t data_index = 0;
     for (auto bucket = 0UL; bucket < dest_size / 2; bucket++)
     {
         {
@@ -55,8 +56,8 @@ static inline QVector<QCPGraphData> resample(
                 current_y_it += y_incr;
                 current_x++;
             }
-            data[2 * bucket] = QCPGraphData { bucket_start_x, min_value };
-            data[(2 * bucket) + 1] = QCPGraphData { bucket_start_x + dx / 2., max_value };
+            data[data_index++] = QCPGraphData { bucket_start_x, min_value };
+            data[data_index++] = QCPGraphData { bucket_start_x + dx / 2., max_value };
         }
     }
     return data;
@@ -80,6 +81,7 @@ struct ResamplerData
     Array_view x;
     Array_view y;
     QCPRange _x_range;
+    bool new_data = true;
 };
 
 struct AbstractResampler1d : public QObject
@@ -87,10 +89,10 @@ struct AbstractResampler1d : public QObject
 protected:
     Q_OBJECT
     QMutex _data_mutex;
-    QMutex _next_data_mutex;
-    QMutex _range_mutex;
+    QRecursiveMutex _next_data_mutex;
     ResamplerData _data;
     ResamplerData _next_data;
+    QCPRange _next_resample_range;
     ::DataOrder _data_order;
     std::size_t _line_cnt;
 #ifndef BINDINGS_H
@@ -98,7 +100,9 @@ protected:
 #endif
     void _resample_slot(const QCPRange new_range);
 
-    virtual void _resample(Array_view&& x, Array_view&& y, const QCPRange new_range) = 0;
+    virtual void _resample(
+        const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data)
+        = 0;
 
 public:
     AbstractResampler1d(::DataOrder data_order, std::size_t line_cnt);
@@ -107,7 +111,7 @@ public:
 
     inline QCPRange x_range()
     {
-        QMutexLocker locker(&_range_mutex);
+        QMutexLocker locker(&_data_mutex);
         auto rng = this->_data._x_range;
         return rng;
     }
@@ -134,13 +138,19 @@ public:
                 _data_x_range.upper = std::nan("");
             }
             QMutexLocker locker(&_next_data_mutex);
-            _next_data = ResamplerData { std::move(x), std::move(y), _data_x_range };
+            _next_data = ResamplerData { std::move(x), std::move(y), _data_x_range, true };
             this->resample(_data_x_range);
         }
     }
 
     inline std::size_t line_count() const { return _line_cnt; }
     inline ::DataOrder data_order() const { return _data_order; }
+
+    QList<Array_view> get_data()
+    {
+        QMutexLocker locker(&_data_mutex);
+        return { _data.x, _data.y };
+    }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void refreshPlot();
@@ -151,7 +161,8 @@ struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample(Array_view&& x, Array_view&& y, const QCPRange new_range) override;
+    void _resample(
+        const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data) override;
 
 public:
 #ifndef BINDINGS_H
