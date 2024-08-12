@@ -78,7 +78,7 @@ VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent
 
 void VPlotsAlign::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
 {
-    _plots = only_sciqloplpots(plots);
+    _plots = only_sciqlopplots(plots);
     if (!_plots.isEmpty())
     {
         _recompute_margins();

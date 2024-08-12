@@ -88,15 +88,18 @@ protected:
     virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1) Q_DECL_OVERRIDE;
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1) Q_DECL_OVERRIDE;
 
     virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
         bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1) Q_DECL_OVERRIDE;
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1) Q_DECL_OVERRIDE;
 
 public:
-    SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true);
+    SciQLopMultiPlotPanel(
+        QWidget* parent = nullptr, bool synchronize_x = true, bool synchronize_time = false);
 
     void addPlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void removePlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;

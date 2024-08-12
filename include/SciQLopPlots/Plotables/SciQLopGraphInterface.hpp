@@ -30,7 +30,7 @@
 
 class SciQLopGraphInterface : public QObject
 {
-    std::pair<double, double> m_range;
+    std::pair<double, double> m_range = { std::nan(""), std::nan("") };
     Q_OBJECT
 public:
     SciQLopGraphInterface(QObject* parent = nullptr);
@@ -42,10 +42,7 @@ public:
     inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
     virtual void set_colors(const QList<QColor>& colors) { }
 
-    virtual std::pair<double, double> range() const noexcept
-    {
-        return std::make_pair(std::nan(""), std::nan(""));
-    }
+    virtual std::pair<double, double> range() const noexcept { return m_range; }
 
     virtual bool visible() const noexcept { return false; }
     virtual QStringList labels() const noexcept { return QStringList(); }
@@ -55,11 +52,14 @@ public:
     virtual void set_data(Array_view x, Array_view y) {};
     virtual void set_data(Array_view x, Array_view y, Array_view z) {};
 
+    virtual QList<Array_view> data() const noexcept { return QList<Array_view>(); }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(double lower, double upper);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void labels_changed(const QStringList& labels);
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
+    Q_SIGNAL void replot();
 #endif
 };

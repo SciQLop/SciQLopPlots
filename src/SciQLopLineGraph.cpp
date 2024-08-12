@@ -51,6 +51,7 @@ void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> da
             _valueAxis->rescale();
         }
     }
+    this->replot();
 }
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
@@ -65,6 +66,8 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAx
     {
         this->create_graphs(labels);
     }
+    connect(key_axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
+        &LineGraphResampler::resample);
 }
 
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
@@ -93,9 +96,8 @@ void SciQLopLineGraph::create_resampler(const QStringList& labels)
     this->_resampler_thread->start(QThread::LowPriority);
     connect(this->_resampler, &LineGraphResampler::setGraphData, this,
         &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
-    connect(
-        this->_resampler, &LineGraphResampler::refreshPlot, this,
-        [this]() { this->_plot()->replot(QCustomPlot::rpQueuedReplot); }, Qt::QueuedConnection);
+    connect(this->_resampler, &LineGraphResampler::refreshPlot, this, &SciQLopLineGraph::replot,
+        Qt::QueuedConnection);
 }
 
 
@@ -110,14 +112,19 @@ void SciQLopLineGraph::set_data(Array_view x, Array_view y)
     this->_resampler->setData(std::move(x), std::move(y));
 }
 
-SciQLopGraphFunction::SciQLopGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
+QList<Array_view> SciQLopLineGraph::data() const noexcept
+{
+    return _resampler->get_data();
+}
+
+SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
     QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels,
     DataOrder data_order)
         : SciQLopLineGraph(parent, key_axis, value_axis, labels, data_order)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
-    connect(
-        m_pipeline, &SimplePyCallablePipeline::new_data_2d, this, &SciQLopGraphFunction::set_data);
+    connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
+        &SciQLopLineGraphFunction::set_data);
     connect(
         this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
 }

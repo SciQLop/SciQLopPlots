@@ -37,34 +37,6 @@ void XAxisSynchronizer::_display_x_axis_only_last_plot()
 
 void XAxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
 {
-    for (auto plot : plots)
-    {
-        if (!_plots.contains(plot))
-        {
-            connect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
-                &XAxisSynchronizer::set_x_axis_range);
-        }
-    }
-    for (auto plot : _plots)
-    {
-        if (!plots.contains(plot))
-        {
-            disconnect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
-                &XAxisSynchronizer::set_x_axis_range);
-        }
-    }
-    _plots = plots;
+    AxisSynchronizer::updatePlotList(plots);
     _display_x_axis_only_last_plot();
-}
-
-void XAxisSynchronizer::set_x_axis_range(double min, double max)
-{
-    if (_last_x_range != std::pair { min, max })
-    {
-        _last_x_range = { min, max };
-        for (auto plot : _plots)
-        {
-            plot->x_axis()->set_range(min, max);
-        }
-    }
 }

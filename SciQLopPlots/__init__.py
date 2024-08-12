@@ -21,7 +21,7 @@ def _patch_sciqlop_plot(cls):
             if graph_type == GraphType.ParametricCurve:
                 return cls.parametric_curve(self, *args,labels=labels,colors=colors, **kwargs)
             elif graph_type == GraphType.Line:
-                return cls.parametric_curve(self, *args,labels=labels,colors=colors, **kwargs)
+                return cls.line(self, *args,labels=labels,colors=colors, **kwargs)
         elif len(args) == 3:
             return cls.colormap(self, *args,name=name,**kwargs)
         else:

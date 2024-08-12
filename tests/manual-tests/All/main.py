@@ -1,7 +1,7 @@
 from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
                          QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
                          MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, GraphType, PlotType
+                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt
@@ -22,7 +22,7 @@ except ImportError:
 
 os.environ['QT_API'] = 'PySide6'
 
-NPOINTS = 30000
+NPOINTS = 300000
 
 def make_plot(parent, time_axis=False):
     if time_axis:
@@ -156,9 +156,11 @@ else:
 
 class DataProducers(SciQLopMultiPlotPanel):
     def __init__(self,parent):
-        SciQLopMultiPlotPanel.__init__(self,parent)
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         for _ in range(3):
             self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
+        self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries, sync_with=AxisType.YAxis)
+
 
 
 

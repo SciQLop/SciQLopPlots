@@ -21,9 +21,10 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "AxisSynchronizer.hpp"
 #include "SciQLopPlotCollection.hpp"
 
-class XAxisSynchronizer : public SciQLopPlotCollectionBehavior
+class XAxisSynchronizer : public AxisSynchronizer
 {
     Q_OBJECT
     QList<SciQLopPlotInterface*> _plots;
@@ -32,9 +33,7 @@ class XAxisSynchronizer : public SciQLopPlotCollectionBehavior
     void _display_x_axis_only_last_plot();
 
 public:
-    XAxisSynchronizer(QObject* parent = nullptr) : SciQLopPlotCollectionBehavior(parent) { }
+    XAxisSynchronizer(QObject* parent = nullptr) : AxisSynchronizer(AxisType::XAxis, parent) { }
 
     Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
-
-    Q_SLOT void set_x_axis_range(double min, double max);
 };

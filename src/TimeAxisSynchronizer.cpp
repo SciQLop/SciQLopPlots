@@ -19,18 +19,25 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+#include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
+
+void TimeAxisSynchronizer::_display_x_axis_only_last_plot()
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
+    auto ts_plots = only_sciqlop_timeserieplots(_plots);
+    for (auto* plot : ts_plots)
+    {
+        plot->x_axis()->set_visible(false);
+    }
+    if (!ts_plots.isEmpty())
+    {
+        ts_plots.last()->x_axis()->set_visible(true);
+    }
 }
 
-void SciQLopGraphInterface::set_range(double lower, double upper)
+void TimeAxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
 {
-    if (m_range.first != lower || m_range.second != upper)
-    {
-        m_range = { lower, upper };
-        Q_EMIT range_changed(lower, upper);
-    }
+    AxisSynchronizer::updatePlotList(plots);
+    _display_x_axis_only_last_plot();
 }

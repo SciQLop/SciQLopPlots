@@ -19,18 +19,23 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#pragma once
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
-{
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-}
+#include "AxisSynchronizer.hpp"
+#include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 
-void SciQLopGraphInterface::set_range(double lower, double upper)
+class TimeAxisSynchronizer : public AxisSynchronizer
 {
-    if (m_range.first != lower || m_range.second != upper)
+    Q_OBJECT
+    QList<SciQLopPlotInterface*> _plots;
+    std::pair<double, double> _last_x_range;
+
+    void _display_x_axis_only_last_plot();
+
+public:
+    TimeAxisSynchronizer(QObject* parent = nullptr) : AxisSynchronizer(AxisType::TimeAxis, parent)
     {
-        m_range = { lower, upper };
-        Q_EMIT range_changed(lower, upper);
     }
-}
+
+    Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
+};
