@@ -95,7 +95,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this));
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
+#ifdef QCUSTOMPLOT_USE_OPENGL
     setOpenGl(true, 4);
+#endif
     for (auto gesture : { Qt::PanGesture, Qt::PinchGesture })
     {
         grabGesture(gesture);
