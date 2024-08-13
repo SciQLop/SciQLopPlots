@@ -57,13 +57,13 @@ DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
         &DataProviderInterface::_threaded_update, Qt::QueuedConnection);
 }
 
-QList<Array_view> DataProviderInterface::get_data(double lower, double upper)
+QList<PyBuffer> DataProviderInterface::get_data(double lower, double upper)
 {
     std::cout << "Not implemented please implement in derived class" << std::endl;
     return { {}, {}, {} };
 }
 
-void DataProviderInterface::test_data(Array_view x, Array_view y, Array_view z)
+void DataProviderInterface::test_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
     std::cout << "X size: " << x.size() << std::endl;
     std::cout << "Y size: " << y.size() << std::endl;

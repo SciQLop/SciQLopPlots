@@ -44,7 +44,7 @@ class SciQLopPlotCollectionInterface
 {
 
 protected:
-    inline virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
         ::GraphType graph_type = ::GraphType::Line, int index = -1)
@@ -52,8 +52,8 @@ protected:
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    inline virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
@@ -101,7 +101,7 @@ public:
     inline virtual void removeBehavior(const QString& type_name) { }
 
 
-    inline virtual SciQLopPlotInterface* line(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopPlotInterface* line(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
         int index = -1)
@@ -109,7 +109,7 @@ public:
         return plot_impl(x, y, labels, colors, data_order, plot_type, ::GraphType::Line, index);
     }
 
-    inline virtual SciQLopPlotInterface* parametric_curve(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopPlotInterface* parametric_curve(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
         int index = -1)
@@ -118,8 +118,8 @@ public:
             x, y, labels, colors, data_order, plot_type, ::GraphType::ParametricCurve, index);
     }
 
-    inline virtual SciQLopPlotInterface* colormap(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    inline virtual SciQLopPlotInterface* colormap(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {

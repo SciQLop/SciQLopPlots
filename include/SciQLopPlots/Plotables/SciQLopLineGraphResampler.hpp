@@ -78,8 +78,8 @@ static inline QVector<QCPGraphData> copy_data(
 
 struct ResamplerData
 {
-    Array_view x;
-    Array_view y;
+    PyBuffer x;
+    PyBuffer y;
     QCPRange _x_range;
     QCPRange _plot_range;
     bool new_data = true;
@@ -101,7 +101,7 @@ protected:
     void _resample_slot();
 
     virtual void _resample(
-        const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data)
+        const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
         = 0;
 
 public:
@@ -122,7 +122,7 @@ public:
         this->_line_cnt = line_cnt;
     }
 
-    inline void setData(Array_view&& x, Array_view&& y)
+    inline void setData(PyBuffer&& x, PyBuffer&& y)
     {
         {
             QCPRange _data_x_range;
@@ -147,7 +147,7 @@ public:
     inline std::size_t line_count() const { return _line_cnt; }
     inline ::DataOrder data_order() const { return _data_order; }
 
-    QList<Array_view> get_data()
+    QList<PyBuffer> get_data()
     {
         QMutexLocker locker(&_data_mutex);
         return { _data.x, _data.y };
@@ -163,7 +163,7 @@ struct LineGraphResampler : public AbstractResampler1d
     Q_OBJECT
 
     void _resample(
-        const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data) override;
+        const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data) override;
 
 public:
 #ifndef BINDINGS_H

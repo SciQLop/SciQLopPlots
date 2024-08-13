@@ -195,12 +195,12 @@ struct _Array_view_impl : PyObjectWrapper
 };
 
 
-void Array_view::steal(Array_view&& other)
+void PyBuffer::steal(PyBuffer&& other)
 {
     std::swap(this->_impl, other._impl);
 }
 
-void Array_view::share(const Array_view& other)
+void PyBuffer::share(const PyBuffer& other)
 {
     if (other.is_valid())
     {
@@ -208,47 +208,47 @@ void Array_view::share(const Array_view& other)
     }
 }
 
-Array_view::Array_view() { }
+PyBuffer::PyBuffer() { }
 
-Array_view::Array_view(const Array_view& other)
+PyBuffer::PyBuffer(const PyBuffer& other)
 {
     this->share(other);
 }
 
-Array_view::Array_view(Array_view&& other)
+PyBuffer::PyBuffer(PyBuffer&& other)
 {
     this->steal(std::move(other));
 }
 
-Array_view::Array_view(PyObject* obj)
+PyBuffer::PyBuffer(PyObject* obj)
 {
     this->_impl = std::shared_ptr<_Array_view_impl>(new _Array_view_impl(obj));
 }
 
-Array_view::~Array_view() { }
+PyBuffer::~PyBuffer() { }
 
-Array_view& Array_view::operator=(const Array_view& other)
+PyBuffer& PyBuffer::operator=(const PyBuffer& other)
 {
     if (this != &other)
         this->share(other);
     return *this;
 }
 
-Array_view& Array_view::operator=(Array_view&& other)
+PyBuffer& PyBuffer::operator=(PyBuffer&& other)
 {
     if (this != &other)
         this->steal(std::move(other));
     return *this;
 }
 
-bool Array_view::is_valid() const
+bool PyBuffer::is_valid() const
 {
     if (this->_impl)
         return this->_impl->is_valid;
     return false;
 }
 
-const std::vector<std::size_t>& Array_view::shape() const
+const std::vector<std::size_t>& PyBuffer::shape() const
 {
     if (this->_impl)
         return this->_impl->shape;
@@ -256,7 +256,7 @@ const std::vector<std::size_t>& Array_view::shape() const
     return empty;
 }
 
-std::size_t Array_view::ndim()
+std::size_t PyBuffer::ndim()
 {
     if (is_valid())
     {
@@ -265,7 +265,7 @@ std::size_t Array_view::ndim()
     return 0;
 }
 
-std::size_t Array_view::size(std::size_t index)
+std::size_t PyBuffer::size(std::size_t index)
 {
     if (is_valid())
     {
@@ -277,7 +277,7 @@ std::size_t Array_view::size(std::size_t index)
     return 0;
 }
 
-double* Array_view::data() const
+double* PyBuffer::data() const
 {
     if (is_valid())
     {
@@ -286,7 +286,7 @@ double* Array_view::data() const
     return nullptr;
 }
 
-std::vector<double> Array_view::to_std_vect()
+std::vector<double> PyBuffer::to_std_vect()
 {
     assert(this->_impl->is_valid);
     auto sz = flat_size();
@@ -296,7 +296,7 @@ std::vector<double> Array_view::to_std_vect()
     return v;
 }
 
-PyObject* Array_view::py_object() const
+PyObject* PyBuffer::py_object() const
 {
     if (_impl)
         return this->_impl->py_obj.py_object();
@@ -304,9 +304,9 @@ PyObject* Array_view::py_object() const
 }
 
 
-void Array_view::release() { }
+void PyBuffer::release() { }
 
-std::size_t Array_view::flat_size() const
+std::size_t PyBuffer::flat_size() const
 {
     if (is_valid())
     {
@@ -339,9 +339,9 @@ struct _GetDataPyCallable_impl
         this->_is_valid = PyCallable_Check(obj);
     }
 
-    inline std::vector<Array_view> get_data(double lower, double upper)
+    inline std::vector<PyBuffer> get_data(double lower, double upper)
     {
-        std::vector<Array_view> data;
+        std::vector<PyBuffer> data;
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
@@ -459,7 +459,7 @@ void GetDataPyCallable::release()
     }
 }
 
-std::vector<Array_view> GetDataPyCallable::get_data(double lower, double upper)
+std::vector<PyBuffer> GetDataPyCallable::get_data(double lower, double upper)
 {
     if (this->_impl)
         return this->_impl->get_data(lower, upper);

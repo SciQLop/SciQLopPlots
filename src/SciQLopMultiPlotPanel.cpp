@@ -138,7 +138,7 @@ void SciQLopMultiPlotPanel::removeBehavior(const QString& type_name)
     _container->removeBehavior(type_name);
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const Array_view& x, const Array_view& y,
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
     QStringList labels, QList<QColor> colors, DataOrder data_order, PlotType plot_type,
     GraphType graph_type, int index)
 {
@@ -157,8 +157,8 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const Array_view& x, cons
     return nullptr;
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const Array_view& x, const Array_view& y,
-    const Array_view& z, QString name, DataOrder data_order, bool y_log_scale, bool z_log_scale,
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
+    const PyBuffer& z, QString name, DataOrder data_order, bool y_log_scale, bool z_log_scale,
     PlotType plot_type, int index)
 {
     switch (plot_type)

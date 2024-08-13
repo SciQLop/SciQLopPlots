@@ -580,7 +580,7 @@ void SciQLopPlot::replot(bool immediate)
         m_impl->replot(QCustomPlot::rpQueuedReplot);
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(const Array_view& x, const Array_view& y,
+SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
     QStringList labels, QList<QColor> colors, ::DataOrder data_order, GraphType graph_type)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
@@ -604,8 +604,8 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const Array_view& x, const Array_v
     return plottable;
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(const Array_view& x, const Array_view& y,
-    const Array_view& z, QString name, ::DataOrder data_order, bool y_log_scale, bool z_log_scale)
+SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
+    const PyBuffer& z, QString name, ::DataOrder data_order, bool y_log_scale, bool z_log_scale)
 {
     auto cm = m_impl->addSciQLopColorMap(name, data_order, y_log_scale, z_log_scale);
     cm->set_data(std::move(x), std::move(y), std::move(z));

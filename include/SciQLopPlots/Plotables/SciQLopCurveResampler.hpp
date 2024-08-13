@@ -33,7 +33,7 @@ struct CurveResampler : public AbstractResampler1d
     Q_OBJECT
 
     void _resample(
-        const Array_view& x, const Array_view& y, const QCPRange newRange, bool new_data) override;
+        const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data) override;
 
 public:
 #ifndef BINDINGS_H

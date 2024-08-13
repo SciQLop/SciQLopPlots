@@ -74,13 +74,13 @@ protected:
         return plot;
     }
 
-    virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
+    virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
         ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
 
-    virtual SciQLopPlotInterface* plot_impl(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
         int index = -1) Q_DECL_OVERRIDE;

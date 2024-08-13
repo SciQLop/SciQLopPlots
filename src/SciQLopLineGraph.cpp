@@ -98,12 +98,12 @@ SciQLopLineGraph::~SciQLopLineGraph()
     clear_resampler();
 }
 
-void SciQLopLineGraph::set_data(Array_view x, Array_view y)
+void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
 {
     this->_resampler->setData(std::move(x), std::move(y));
 }
 
-QList<Array_view> SciQLopLineGraph::data() const noexcept
+QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 {
     return _resampler->get_data();
 }

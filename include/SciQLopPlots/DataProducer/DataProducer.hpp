@@ -65,13 +65,13 @@ public:
     DataProviderInterface(QObject* parent = nullptr);
     virtual ~DataProviderInterface() = default;
 
-    virtual QList<Array_view> get_data(double lower, double upper);
+    virtual QList<PyBuffer> get_data(double lower, double upper);
 
-    void test_data(Array_view x, Array_view y, Array_view z);
+    void test_data(PyBuffer x, PyBuffer y, PyBuffer z);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void new_data_3d(Array_view x, Array_view y, Array_view z);
-    Q_SIGNAL void new_data_2d(Array_view x, Array_view y);
+    Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
+    Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
 #endif
 
 protected:
@@ -116,10 +116,10 @@ public:
 
     virtual ~SimplePyCallablePWrapper() = default;
 
-    inline virtual QList<Array_view> get_data(double lower, double upper) override
+    inline virtual QList<PyBuffer> get_data(double lower, double upper) override
     {
         auto r = m_callable.get_data(lower, upper);
-        QList<Array_view> result;
+        QList<PyBuffer> result;
         for (auto& a : r)
             result.emplace_back(std::move(a));
         return result;
@@ -141,7 +141,7 @@ public:
     inline Q_SLOT void set_range(double lower, double upper) { m_worker->set_range(lower, upper); }
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void new_data_3d(Array_view x, Array_view y, Array_view z);
-    Q_SIGNAL void new_data_2d(Array_view x, Array_view y);
+    Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
+    Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
 #endif
 };

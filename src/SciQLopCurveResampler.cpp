@@ -36,7 +36,7 @@ QVector<QCPCurveData> curve_copy_data(
 
 
 void CurveResampler::_resample(
-    const Array_view& x, const Array_view& y, const QCPRange newRange, bool new_data)
+    const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data)
 {
     if (x.data() != nullptr && x.flat_size() > 0 && new_data)
     {
