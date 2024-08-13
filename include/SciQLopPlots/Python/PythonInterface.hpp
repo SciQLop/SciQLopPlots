@@ -41,15 +41,13 @@ extern "C"
 #endif
 }
 
-struct _Array_view_impl;
+struct _PyBuffer_impl;
 
 struct PyBuffer
 {
 private:
-    std::shared_ptr<_Array_view_impl> _impl = nullptr;
+    std::shared_ptr<_PyBuffer_impl> _impl = nullptr;
 
-
-    void steal(PyBuffer&& other);
 
     void share(const PyBuffer& other);
 
@@ -112,6 +110,31 @@ public:
     PyObject* py_object() const;
 };
 
+template <bool row_major = true>
+struct ArrayView2D
+{
+    double* ptr;
+    std::size_t n_rows;
+    std::size_t n_cols;
+    std::size_t offset;
+
+    ArrayView2D(double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t offset = 0)
+            : ptr(ptr), n_rows(n_rows), n_cols(n_cols), offset(offset)
+    {
+    }
+
+    inline double operator[](std::pair<std::size_t, std::size_t> index) const
+    {
+        if constexpr (row_major)
+        {
+            return ptr[index.first * n_cols + index.second + offset];
+        }
+        else
+        {
+            return ptr[index.second * n_rows + index.first + offset];
+        }
+    }
+};
 
 namespace std
 {

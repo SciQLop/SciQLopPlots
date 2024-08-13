@@ -135,41 +135,30 @@ public:
 };
 
 
-struct _Array_view_impl : PyObjectWrapper
+struct _PyBuffer_impl : PyObjectWrapper
 {
     Py_buffer buffer = { 0 };
     PyObjectWrapper py_obj;
     bool is_valid = false;
     std::vector<std::size_t> shape;
 
-    _Array_view_impl() = default;
-    explicit _Array_view_impl(PyObject* obj) { this->init_buffer(obj); }
-    _Array_view_impl(const _Array_view_impl& other) { this->init_buffer(other.py_obj.py_object()); }
-    _Array_view_impl(_Array_view_impl&& other) { this->init_buffer(other.py_obj.py_object()); }
-    ~_Array_view_impl() { this->release(); }
-
-    _Array_view_impl& operator=(const _Array_view_impl& other)
-    {
-        this->init_buffer(other.py_obj.py_object());
-        return *this;
-    }
-
-    _Array_view_impl& operator=(_Array_view_impl&& other)
-    {
-        this->init_buffer(other.py_obj.py_object());
-        return *this;
-    }
+    _PyBuffer_impl() = default;
+    explicit _PyBuffer_impl(PyObject* obj) { this->init_buffer(obj); }
+    ~_PyBuffer_impl() { this->release(); }
 
     inline void init_buffer(PyObject* obj)
     {
         this->py_obj.set_obj(obj);
         {
             auto scoped_gil = PyAutoScopedGIL();
-            this->is_valid = PyObject_GetBuffer(
-                                 obj, &this->buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS)
+            this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
+                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS | PyBUF_FORMAT)
                 == 0;
         }
-        assert(this->is_valid);
+        if (!this->is_valid)
+            throw std::runtime_error("Failed to get buffer from object");
+        if (this->buffer.format == nullptr || this->buffer.format[0] != 'd')
+            throw std::runtime_error("Buffer must be double type");
         if (this->buffer.ndim > 0)
         {
             this->shape.resize(this->buffer.ndim);
@@ -195,17 +184,9 @@ struct _Array_view_impl : PyObjectWrapper
 };
 
 
-void PyBuffer::steal(PyBuffer&& other)
-{
-    std::swap(this->_impl, other._impl);
-}
-
 void PyBuffer::share(const PyBuffer& other)
 {
-    if (other.is_valid())
-    {
-        this->_impl = other._impl;
-    }
+    this->_impl = other._impl;
 }
 
 PyBuffer::PyBuffer() { }
@@ -217,12 +198,12 @@ PyBuffer::PyBuffer(const PyBuffer& other)
 
 PyBuffer::PyBuffer(PyBuffer&& other)
 {
-    this->steal(std::move(other));
+    this->share(std::move(other));
 }
 
 PyBuffer::PyBuffer(PyObject* obj)
 {
-    this->_impl = std::shared_ptr<_Array_view_impl>(new _Array_view_impl(obj));
+    this->_impl = std::shared_ptr<_PyBuffer_impl>(new _PyBuffer_impl(obj));
 }
 
 PyBuffer::~PyBuffer() { }
@@ -237,7 +218,7 @@ PyBuffer& PyBuffer::operator=(const PyBuffer& other)
 PyBuffer& PyBuffer::operator=(PyBuffer&& other)
 {
     if (this != &other)
-        this->steal(std::move(other));
+        this->share(other);
     return *this;
 }
 
