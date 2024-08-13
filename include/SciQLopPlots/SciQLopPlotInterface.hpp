@@ -35,15 +35,15 @@ protected:
     QList<SciQLopPlotAxisInterface*> m_axes_to_rescale;
     QList<SciQLopPlotAxisInterface*> m_frozen_axes;
 
-    inline virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line)
     {
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    inline virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false)
     {
@@ -138,22 +138,22 @@ public:
     }
 
 
-    inline virtual SciQLopGraphInterface* line(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopGraphInterface* line(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor)
     {
         return plot_impl(x, y, labels, colors, data_order, ::GraphType::Line);
     }
 
-    inline virtual SciQLopGraphInterface* parametric_curve(const Array_view& x, const Array_view& y,
+    inline virtual SciQLopGraphInterface* parametric_curve(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor)
     {
         return plot_impl(x, y, labels, colors, data_order, ::GraphType::ParametricCurve);
     }
 
-    inline virtual SciQLopGraphInterface* colormap(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    inline virtual SciQLopGraphInterface* colormap(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false)
     {

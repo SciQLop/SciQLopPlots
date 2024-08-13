@@ -25,7 +25,7 @@
 
 
 std::vector<double> ColormapResampler::_optimal_y_scale(
-    const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type)
+    const PyBuffer& x, const PyBuffer& y, QCPAxis::ScaleType scale_type)
 {
     using namespace cpp_utils;
     std::vector<double> new_y(this->_max_y_size);
@@ -54,7 +54,7 @@ std::vector<double> ColormapResampler::_optimal_y_scale(
 }
 
 QCPColorMapData* ColormapResampler::_setDataLinear(
-    const Array_view& x, const Array_view& y, const Array_view& z)
+    const PyBuffer& x, const PyBuffer& y, const PyBuffer& z)
 {
 
     using namespace cpp_utils;
@@ -76,7 +76,7 @@ QCPColorMapData* ColormapResampler::_setDataLinear(
 }
 
 QCPColorMapData* ColormapResampler::_setDataLog(
-    const Array_view& x, const Array_view& y, const Array_view& z)
+    const PyBuffer& x, const PyBuffer& y, const PyBuffer& z)
 {
     using namespace cpp_utils;
     auto data = new QCPColorMapData(std::size(x), std::size(y),

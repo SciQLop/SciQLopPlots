@@ -80,7 +80,7 @@ SciQLopColorMap::~SciQLopColorMap()
     this->_resampler_thread = nullptr;
 }
 
-void SciQLopColorMap::set_data(Array_view x, Array_view y, Array_view z)
+void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
     if (this->_cmap)
     {

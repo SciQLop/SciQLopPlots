@@ -60,7 +60,7 @@ void AbstractResampler1d::resample(const QCPRange new_range)
 }
 
 void LineGraphResampler::_resample(
-    const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data)
+    const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
 {
     if (x.data() != nullptr && x.flat_size() > 0)
     {

@@ -241,13 +241,13 @@ protected:
     void _configure_plotable(SQPQCPAbstractPlottableWrapper* plottable, const QStringList& labels,
         const QList<QColor>& colors);
 
-    virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
+    virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
         ::DataOrder data_order = ::DataOrder::RowMajor,
         ::GraphType graph_type = ::GraphType::Line) override;
 
-    virtual SciQLopGraphInterface* plot_impl(const Array_view& x, const Array_view& y,
-        const Array_view& z, QString name = QStringLiteral("ColorMap"),
+    virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
         ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
         bool z_log_scale = false) override;
 

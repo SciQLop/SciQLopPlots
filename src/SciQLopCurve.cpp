@@ -90,12 +90,12 @@ SciQLopCurve::~SciQLopCurve()
     clear_resampler();
 }
 
-void SciQLopCurve::set_data(Array_view x, Array_view y)
+void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
 {
     this->_resampler->setData(std::move(x), std::move(y));
 }
 
-QList<Array_view> SciQLopCurve::data() const noexcept
+QList<PyBuffer> SciQLopCurve::data() const noexcept
 {
     return _resampler->get_data();
 }

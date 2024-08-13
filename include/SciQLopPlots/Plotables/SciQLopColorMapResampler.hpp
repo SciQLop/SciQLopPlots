@@ -34,9 +34,9 @@ struct ColormapResampler : public QObject
     Q_OBJECT
     QMutex _mutex;
     QMutex _range_mutex;
-    Array_view _x;
-    Array_view _y;
-    Array_view _z;
+    PyBuffer _x;
+    PyBuffer _y;
+    PyBuffer _z;
     QCPRange _data_x_range;
     std::size_t _line_cnt;
     QCPAxis::ScaleType _scale_type;
@@ -45,11 +45,11 @@ struct ColormapResampler : public QObject
 
 
     std::vector<double> _optimal_y_scale(
-        const Array_view& x, const Array_view& y, QCPAxis::ScaleType scale_type);
+        const PyBuffer& x, const PyBuffer& y, QCPAxis::ScaleType scale_type);
 
-    QCPColorMapData* _setDataLinear(const Array_view& x, const Array_view& y, const Array_view& z);
+    QCPColorMapData* _setDataLinear(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z);
 
-    QCPColorMapData* _setDataLog(const Array_view& x, const Array_view& y, const Array_view& z);
+    QCPColorMapData* _setDataLog(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z);
 
 #ifndef BINDINGS_H
     Q_SIGNAL void _resample_sig(const QCPRange& newRange);
@@ -73,7 +73,7 @@ public:
     }
 
     inline void setData(
-        Array_view&& x, Array_view&& y, Array_view&& z, QCPAxis::ScaleType scale_type)
+        PyBuffer&& x, PyBuffer&& y, PyBuffer&& z, QCPAxis::ScaleType scale_type)
     {
         const auto len = x.flat_size();
         {

@@ -49,10 +49,10 @@ public:
     virtual QString name() const noexcept { return this->objectName(); }
     virtual QList<QColor> colors() const noexcept { return QList<QColor>(); }
 
-    virtual void set_data(Array_view x, Array_view y) {};
-    virtual void set_data(Array_view x, Array_view y, Array_view z) {};
+    virtual void set_data(PyBuffer x, PyBuffer y) {};
+    virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) {};
 
-    virtual QList<Array_view> data() const noexcept { return QList<Array_view>(); }
+    virtual QList<PyBuffer> data() const noexcept { return QList<PyBuffer>(); }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(double lower, double upper);

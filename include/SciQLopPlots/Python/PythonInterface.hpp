@@ -43,15 +43,15 @@ extern "C"
 
 struct _Array_view_impl;
 
-struct Array_view
+struct PyBuffer
 {
 private:
     std::shared_ptr<_Array_view_impl> _impl = nullptr;
 
 
-    void steal(Array_view&& other);
+    void steal(PyBuffer&& other);
 
-    void share(const Array_view& other);
+    void share(const PyBuffer& other);
 
 public:
     using value_type = double;
@@ -62,15 +62,15 @@ public:
     using pointer = value_type*;
     using const_pointer = const value_type*;
 
-    Array_view();
-    Array_view(const Array_view& other);
-    Array_view(Array_view&& other);
-    explicit Array_view(PyObject* obj);
+    PyBuffer();
+    PyBuffer(const PyBuffer& other);
+    PyBuffer(PyBuffer&& other);
+    explicit PyBuffer(PyObject* obj);
 
-    ~Array_view();
+    ~PyBuffer();
 
-    Array_view& operator=(const Array_view& other);
-    Array_view& operator=(Array_view&& other);
+    PyBuffer& operator=(const PyBuffer& other);
+    PyBuffer& operator=(PyBuffer&& other);
 
 
     bool is_valid() const;
@@ -112,20 +112,21 @@ public:
     PyObject* py_object() const;
 };
 
+
 namespace std
 {
 
-inline auto size(const Array_view& v)
+inline auto size(const PyBuffer& v)
 {
     return v.flat_size();
 }
 
-inline auto cbegin(const Array_view& v)
+inline auto cbegin(const PyBuffer& v)
 {
     return v.cbegin();
 }
 
-inline auto cend(const Array_view& v)
+inline auto cend(const PyBuffer& v)
 {
     return v.cend();
 }
@@ -159,5 +160,5 @@ public:
 
     void release();
 
-    std::vector<Array_view> get_data(double lower, double upper);
+    std::vector<PyBuffer> get_data(double lower, double upper);
 };

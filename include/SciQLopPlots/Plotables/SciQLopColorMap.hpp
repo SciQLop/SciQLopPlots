@@ -55,7 +55,7 @@ public:
         const QString& name, DataOrder dataOrder = ::DataOrder::RowMajor);
     virtual ~SciQLopColorMap() override;
 
-    virtual void set_data(Array_view x, Array_view y, Array_view z) override;
+    virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 
     inline QCPColorMap* colorMap() const { return _cmap; }
     void set_auto_scale_y(bool auto_scale_y);
