@@ -37,7 +37,6 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    bool _auto_scale_y = true;
 
     Q_OBJECT
 
@@ -78,13 +77,6 @@ public:
     virtual QList<Array_view> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
-
-    void set_auto_scale_y(bool auto_scale_y);
-    inline bool auto_scale_y() const noexcept { return _auto_scale_y; }
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void auto_scale_y_changed(bool);
-#endif
 
 private:
     void create_graphs(const QStringList& labels);

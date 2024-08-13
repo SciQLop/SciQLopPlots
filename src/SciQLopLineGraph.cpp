@@ -34,11 +34,6 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
     _resampler->set_line_count(plottable_count());
 }
 
-void SciQLopLineGraph::set_auto_scale_y(bool auto_scale_y)
-{
-    _auto_scale_y = auto_scale_y;
-    Q_EMIT auto_scale_y_changed(auto_scale_y);
-}
 
 void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
 {
@@ -46,10 +41,6 @@ void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> da
     if (graph)
     {
         graph->data()->set(std::move(data), true);
-        if (_auto_scale_y)
-        {
-            _valueAxis->rescale();
-        }
     }
     this->replot();
 }
