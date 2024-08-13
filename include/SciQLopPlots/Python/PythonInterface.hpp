@@ -46,7 +46,7 @@ struct _Array_view_impl;
 struct Array_view
 {
 private:
-    _Array_view_impl* _impl = nullptr;
+    std::shared_ptr<_Array_view_impl> _impl = nullptr;
 
 
     void steal(Array_view&& other);

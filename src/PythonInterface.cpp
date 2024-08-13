@@ -96,62 +96,46 @@ inline void _dec_ref(PyObject* obj)
 struct PyObjectWrapper
 {
 private:
-    PyObject* _py_obj = nullptr;
-
-
-    inline void take(PyObjectWrapper& other)
-    {
-        this->set_obj(other.py_object());
-        other.release_obj();
-    }
-
-    inline void borrow(const PyObjectWrapper& other) { this->set_obj(other.py_object()); }
+    std::shared_ptr<PyObject> _py_obj = nullptr;
+    inline void share(const PyObjectWrapper& other) { this->_py_obj = other._py_obj; }
 
 public:
     inline PyObjectWrapper() : _py_obj { nullptr } { }
     inline PyObjectWrapper(const PyObjectWrapper& other) : _py_obj { nullptr }
     {
-        this->borrow(other);
+        this->share(other);
     }
-    inline PyObjectWrapper(PyObjectWrapper&& other) : _py_obj { nullptr } { this->take(other); }
+    inline PyObjectWrapper(PyObjectWrapper&& other) : _py_obj { nullptr } { this->share(other); }
     explicit PyObjectWrapper(PyObject* obj) : _py_obj { nullptr } { this->set_obj(obj); }
-    ~PyObjectWrapper() { this->release_obj(); }
+    ~PyObjectWrapper() { }
+
     inline PyObjectWrapper& operator=(PyObjectWrapper&& other)
     {
-        this->take(other);
+        this->share(other);
         return *this;
     }
     inline PyObjectWrapper& operator=(const PyObjectWrapper& other)
     {
-        this->borrow(other);
+        this->share(other);
         return *this;
     }
 
     inline void set_obj(PyObject* py_obj)
     {
-        this->release_obj();
-        _py_obj = py_obj;
+        _py_obj = std::shared_ptr<PyObject>(py_obj, [](PyObject* py_obj) { _dec_ref(py_obj); });
         if (_py_obj != nullptr)
         {
-            _inc_ref(_py_obj);
+            _inc_ref(py_obj);
         }
     }
 
-    inline void release_obj()
-    {
-        if (_py_obj != nullptr)
-        {
-            _dec_ref(_py_obj);
-            _py_obj = nullptr;
-        }
-    }
 
-    inline PyObject* py_object() const { return _py_obj; }
+    inline PyObject* py_object() const { return _py_obj.get(); }
     inline bool is_null() const { return _py_obj == nullptr; }
 };
 
 
-struct _Array_view_impl
+struct _Array_view_impl : PyObjectWrapper
 {
     Py_buffer buffer = { 0 };
     PyObjectWrapper py_obj;
@@ -207,7 +191,6 @@ struct _Array_view_impl
             this->is_valid = false;
             this->buffer = { 0 };
         }
-        this->py_obj.release_obj();
     }
 };
 
@@ -219,11 +202,9 @@ void Array_view::steal(Array_view&& other)
 
 void Array_view::share(const Array_view& other)
 {
-    if (is_valid())
-        this->release();
     if (other.is_valid())
     {
-        this->_impl = new _Array_view_impl(other.py_object());
+        this->_impl = other._impl;
     }
 }
 
@@ -241,16 +222,10 @@ Array_view::Array_view(Array_view&& other)
 
 Array_view::Array_view(PyObject* obj)
 {
-    this->_impl = new _Array_view_impl(obj);
+    this->_impl = std::shared_ptr<_Array_view_impl>(new _Array_view_impl(obj));
 }
 
-Array_view::~Array_view()
-{
-    if (this->_impl)
-    {
-        delete this->_impl;
-    }
-}
+Array_view::~Array_view() { }
 
 Array_view& Array_view::operator=(const Array_view& other)
 {
@@ -329,14 +304,7 @@ PyObject* Array_view::py_object() const
 }
 
 
-void Array_view::release()
-{
-    if (this->_impl)
-    {
-        delete this->_impl;
-        this->_impl = nullptr;
-    }
-}
+void Array_view::release() { }
 
 std::size_t Array_view::flat_size() const
 {
