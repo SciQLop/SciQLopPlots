@@ -30,7 +30,7 @@ LineGraphResampler::LineGraphResampler(DataOrder data_order, std::size_t line_cn
 }
 
 
-void AbstractResampler1d::_resample_slot(const QCPRange new_range)
+void AbstractResampler1d::_resample_slot()
 {
     {
         QMutexLocker locker(&_data_mutex);
@@ -39,7 +39,7 @@ void AbstractResampler1d::_resample_slot(const QCPRange new_range)
             _data = _next_data;
             _next_data.new_data = false;
         }
-        this->_resample(_data.x, _data.y, new_range, _data.new_data);
+        this->_resample(_data.x, _data.y, _data._plot_range, _data.new_data);
     }
 }
 
@@ -54,9 +54,9 @@ void AbstractResampler1d::resample(const QCPRange new_range)
 {
     {
         QMutexLocker locker(&_next_data_mutex);
-        _next_resample_range = new_range;
+        _next_data._plot_range = new_range;
     }
-    emit _resample_sig(new_range);
+    emit _resample_sig();
 }
 
 void LineGraphResampler::_resample(

@@ -81,6 +81,7 @@ struct ResamplerData
     Array_view x;
     Array_view y;
     QCPRange _x_range;
+    QCPRange _plot_range;
     bool new_data = true;
 };
 
@@ -88,17 +89,16 @@ struct AbstractResampler1d : public QObject
 {
 protected:
     Q_OBJECT
-    QMutex _data_mutex;
+    QRecursiveMutex _data_mutex;
     QRecursiveMutex _next_data_mutex;
     ResamplerData _data;
     ResamplerData _next_data;
-    QCPRange _next_resample_range;
     ::DataOrder _data_order;
     std::size_t _line_cnt;
 #ifndef BINDINGS_H
-    Q_SIGNAL void _resample_sig(const QCPRange new_range);
+    Q_SIGNAL void _resample_sig();
 #endif
-    void _resample_slot(const QCPRange new_range);
+    void _resample_slot();
 
     virtual void _resample(
         const Array_view& x, const Array_view& y, const QCPRange new_range, bool new_data)
@@ -138,7 +138,8 @@ public:
                 _data_x_range.upper = std::nan("");
             }
             QMutexLocker locker(&_next_data_mutex);
-            _next_data = ResamplerData { std::move(x), std::move(y), _data_x_range, true };
+            _next_data
+                = ResamplerData { std::move(x), std::move(y), _data_x_range, _data_x_range, true };
             this->resample(_data_x_range);
         }
     }
