@@ -22,14 +22,11 @@
 #pragma once
 
 #include "AxisSynchronizer.hpp"
-#include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 
 class TimeAxisSynchronizer : public AxisSynchronizer
 {
     Q_OBJECT
-    QList<SciQLopPlotInterface*> _plots;
-    std::pair<double, double> _last_x_range;
-
     void _display_x_axis_only_last_plot();
 
 public:

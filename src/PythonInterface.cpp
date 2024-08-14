@@ -365,6 +365,82 @@ struct _GetDataPyCallable_impl
         }
         return data;
     }
+
+    inline std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y)
+    {
+        std::vector<PyBuffer> data;
+        if (_is_valid)
+        {
+            auto scoped_gil = PyAutoScopedGIL();
+            auto args = PyTuple_New(2);
+            Py_IncRef(x.py_object());
+            Py_IncRef(y.py_object());
+            PyTuple_SetItem(args, 0, x.py_object());
+            PyTuple_SetItem(args, 1, y.py_object());
+            auto res = PyObject_CallObject(_py_obj.py_object(), args);
+            Py_DECREF(args);
+            if (res != nullptr)
+            {
+                if (PyList_Check(res))
+                {
+                    auto size = PyList_Size(res);
+                    for (Py_ssize_t i = 0; i < size; ++i)
+                    {
+                        data.emplace_back(PyList_GetItem(res, i));
+                    }
+                }
+                else if (PyTuple_Check(res))
+                {
+                    auto size = PyTuple_Size(res);
+                    for (Py_ssize_t i = 0; i < size; ++i)
+                    {
+                        data.emplace_back(PyTuple_GetItem(res, i));
+                    }
+                }
+                Py_DECREF(res);
+            }
+        }
+        return data;
+    }
+
+    inline std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    {
+        std::vector<PyBuffer> data;
+        if (_is_valid)
+        {
+            auto scoped_gil = PyAutoScopedGIL();
+            auto args = PyTuple_New(2);
+            Py_IncRef(x.py_object());
+            Py_IncRef(y.py_object());
+            Py_IncRef(z.py_object());
+            PyTuple_SetItem(args, 0, x.py_object());
+            PyTuple_SetItem(args, 1, y.py_object());
+            PyTuple_SetItem(args, 2, z.py_object());
+            auto res = PyObject_CallObject(_py_obj.py_object(), args);
+            Py_DECREF(args);
+            if (res != nullptr)
+            {
+                if (PyList_Check(res))
+                {
+                    auto size = PyList_Size(res);
+                    for (Py_ssize_t i = 0; i < size; ++i)
+                    {
+                        data.emplace_back(PyList_GetItem(res, i));
+                    }
+                }
+                else if (PyTuple_Check(res))
+                {
+                    auto size = PyTuple_Size(res);
+                    for (Py_ssize_t i = 0; i < size; ++i)
+                    {
+                        data.emplace_back(PyTuple_GetItem(res, i));
+                    }
+                }
+                Py_DECREF(res);
+            }
+        }
+        return data;
+    }
 };
 
 
@@ -455,5 +531,19 @@ std::vector<PyBuffer> GetDataPyCallable::get_data(double lower, double upper)
 {
     if (this->_impl)
         return this->_impl->get_data(lower, upper);
+    return {};
+}
+
+std::vector<PyBuffer> GetDataPyCallable::get_data(PyBuffer x, PyBuffer y)
+{
+    if (this->_impl)
+        return this->_impl->get_data(x, y);
+    return {};
+}
+
+std::vector<PyBuffer> GetDataPyCallable::get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+{
+    if (this->_impl)
+        return this->_impl->get_data(x, y, z);
     return {};
 }

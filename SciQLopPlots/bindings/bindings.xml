@@ -41,7 +41,7 @@
             </native-to-target>
         </conversion-rule>
     </primitive-type>
-    <value-type name="GetDataPyCallable">
+    <value-type name="GetDataPyCallable" allow-thread="yes">
         <conversion-rule>
             <target-to-native>
                 <add-conversion type="Py_None">
@@ -128,17 +128,17 @@
             <modify-argument index="5" rename="y_log_scale"/>
             <modify-argument index="6" rename="z_log_scale"/>
         </modify-function>
-        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,AxisType)">
+        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
             <modify-argument index="4" rename="sync_with"/>
         </modify-function>
-        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,AxisType)">
+        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
             <modify-argument index="4" rename="sync_with"/>
         </modify-function>
-        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,AxisType)">
+        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,QObject*)">
             <modify-argument index="2" rename="name"/>
             <modify-argument index="3" rename="y_log_scale"/>
             <modify-argument index="4" rename="z_log_scale"/>
@@ -429,21 +429,21 @@
             <modify-argument index="7" rename="plot_type"/>
             <modify-argument index="8" rename="index"/>
         </modify-function>
-        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,AxisType,int)">
+        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
             <modify-argument index="4" rename="plot_type"/>
             <modify-argument index="5" rename="sync_with"/>
             <modify-argument index="6" rename="index"/>
         </modify-function>
-        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,AxisType,int)">
+        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,QObject*,int)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
             <modify-argument index="4" rename="plot_type"/>
             <modify-argument index="5" rename="sync_with"/>
             <modify-argument index="6" rename="index"/>
         </modify-function>
-        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,AxisType,int)">
+        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,QObject*,int)">
             <modify-argument index="2" rename="name"/>
             <modify-argument index="3" rename="y_log_scale"/>
             <modify-argument index="4" rename="z_log_scale"/>

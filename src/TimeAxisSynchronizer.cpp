@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
 

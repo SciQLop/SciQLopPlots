@@ -60,27 +60,24 @@ def spz_get_data(start, stop):
 
 
 class Spectrum:
-    def __init__(self, graph):
-        self._graph = graph
-        self._fft_size = 2**9
+    def __init__(self, fft_size):
+        self._fft_size = fft_size
 
-    def __call__(self, start, stop):
+    def __call__(self, x, y):
         try:
-            d = self._graph.data()
-            if d is None or d[0] is None or d[1] is None:
+            if x is None or y is None:
                 return np.array([]), np.array([])
-            x, y = d
-            y=y[:,-1]
-            spec= np.zeros(self._fft_size, dtype='complex128')
+            y = y[:, -1]
+            spec = np.zeros(self._fft_size, dtype='complex128')
             han = np.hanning(self._fft_size)
             nw = len(y)//self._fft_size
             if nw != 0:
                 for i in range(nw):
-                    w=y[i*self._fft_size:(i+1)*self._fft_size]
-                    w=w-np.mean(w)
-                    w=w*han
-                    spec += (np.fft.fft(w)/len(w))**2
-                spec=np.abs(np.sqrt(spec/nw))
+                    y_w = y[i*self._fft_size:(i+1)*self._fft_size]
+                    y_w = y_w-np.mean(y_w)
+                    y_w = y_w*han
+                    spec += (np.fft.fft(y_w)/len(y_w))**2
+                spec = np.abs(np.sqrt(spec/nw))
                 freq = np.fft.fftfreq(len(spec), x[1]-x[0])[1:len(spec)//2]
                 spec = spec[1:len(spec)//2]
                 return freq, spec
@@ -92,12 +89,12 @@ class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         self.graphs = []
-        p=self.plot(spz_get_data,
-                    labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
-                    colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
-                    plot_type=PlotType.TimeSeries)
-        self._spec = Spectrum(p.graph(0))
-        self.plot(self._spec, index=0,labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=AxisType.TimeAxis)
+        _, graph = self.plot(spz_get_data,
+                             labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
+                             colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
+                             plot_type=PlotType.TimeSeries)
+        self._fft = Spectrum(2**9)
+        self.plot(self._fft, index=0, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
 
         self.set_x_axis_range(
                 datetime(2019,2,17,12,33,0,0,timezone.utc).timestamp(),

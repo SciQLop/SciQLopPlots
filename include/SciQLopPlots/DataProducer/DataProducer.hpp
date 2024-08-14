@@ -40,19 +40,38 @@ struct _TrivialRange
     }
 };
 
+struct _2D_data
+{
+    PyBuffer x;
+    PyBuffer y;
+};
+
+struct _3D_data
+{
+    PyBuffer x;
+    PyBuffer y;
+    PyBuffer z;
+};
+
 class DataProviderInterface : public QObject
 {
     Q_OBJECT
-    _TrivialRange m_next_range;
-    _TrivialRange m_current_range;
+    std::variant<_TrivialRange, _2D_data, _3D_data> m_next_state;
+    std::variant<_TrivialRange, _2D_data, _3D_data> m_current_state;
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
-    bool m_has_pending_range = false;
+    bool m_has_pending_change = false;
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void _range_changed();
+    Q_SIGNAL void _state_changed();
 #endif
     Q_SLOT void _threaded_update();
+
+    void _range_based_update(const _TrivialRange& new_range);
+    void _data_based_update(const _2D_data& new_data);
+    void _data_based_update(const _3D_data& new_data);
+
+
     inline Q_SLOT void _start_timer()
     {
         if (!m_rate_limit_timer->isActive())
@@ -66,8 +85,9 @@ public:
     virtual ~DataProviderInterface() = default;
 
     virtual QList<PyBuffer> get_data(double lower, double upper);
+    virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y);
+    virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
 
-    void test_data(PyBuffer x, PyBuffer y, PyBuffer z);
 
 #ifndef BINDINGS_H
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
@@ -76,6 +96,8 @@ public:
 
 protected:
     void set_range(_TrivialRange new_range) noexcept;
+    void set_data(_2D_data new_data) noexcept;
+    void set_data(_3D_data new_data) noexcept;
     friend class DataProviderWorker;
 };
 
@@ -96,9 +118,19 @@ public:
 
     virtual void set_data_provider(DataProviderInterface* data_provider);
 
-    Q_SLOT virtual void set_range(double lower, double upper)
+    inline Q_SLOT virtual void set_range(double lower, double upper)
     {
         m_data_provider->set_range({ lower, upper });
+    }
+
+    inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y)
+    {
+        m_data_provider->set_data(_2D_data { x, y });
+    }
+
+    inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    {
+        m_data_provider->set_data(_3D_data { x, y, z });
     }
 };
 
@@ -124,6 +156,24 @@ public:
             result.emplace_back(std::move(a));
         return result;
     }
+
+    inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y) override
+    {
+        auto r = m_callable.get_data(x, y);
+        QList<PyBuffer> result;
+        for (auto& a : r)
+            result.emplace_back(std::move(a));
+        return result;
+    }
+
+    inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z) override
+    {
+        auto r = m_callable.get_data(x, y, z);
+        QList<PyBuffer> result;
+        for (auto& a : r)
+            result.emplace_back(std::move(a));
+        return result;
+    }
 };
 
 
@@ -139,6 +189,9 @@ public:
     virtual ~SimplePyCallablePipeline() = default;
 
     inline Q_SLOT void set_range(double lower, double upper) { m_worker->set_range(lower, upper); }
+    inline Q_SLOT void set_data(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
+    inline Q_SLOT void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
+
 
 #ifndef BINDINGS_H
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);

@@ -160,7 +160,8 @@ class DataProducers(SciQLopMultiPlotPanel):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         for _ in range(3):
             self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
-        self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries, sync_with=AxisType.YAxis)
+        plot = self.create_plot(-1, PlotType.TimeSeries)
+        plot.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], sync_with=plot.y_axis())
 
 
 

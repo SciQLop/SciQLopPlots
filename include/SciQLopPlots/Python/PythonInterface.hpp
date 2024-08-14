@@ -273,4 +273,6 @@ public:
     void release();
 
     std::vector<PyBuffer> get_data(double lower, double upper);
+    std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y);
+    std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
 };

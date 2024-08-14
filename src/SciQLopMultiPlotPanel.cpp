@@ -113,9 +113,20 @@ void SciQLopMultiPlotPanel::removeWidget(QWidget* widget)
     _container->removeWidget(widget, true);
 }
 
-SciQLopPlot* SciQLopMultiPlotPanel::createPlot(int index)
+SciQLopPlotInterface* SciQLopMultiPlotPanel::create_plot(int index, PlotType plot_type)
 {
-    auto plot = new SciQLopPlot(this);
+    SciQLopPlotInterface* plot = nullptr;
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            plot = new SciQLopPlot();
+            break;
+        case ::PlotType::TimeSeries:
+            plot = new SciQLopTimeSeriesPlot();
+            break;
+        default:
+            break;
+    }
     if (index == -1)
         addPlot(plot);
     else
@@ -138,8 +149,9 @@ void SciQLopMultiPlotPanel::removeBehavior(const QString& type_name)
     _container->removeBehavior(type_name);
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    QStringList labels, QList<QColor> colors, PlotType plot_type, GraphType graph_type, int index)
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
+    const PyBuffer& x, const PyBuffer& y, QStringList labels, QList<QColor> colors,
+    PlotType plot_type, GraphType graph_type, int index)
 {
     switch (plot_type)
     {
@@ -152,12 +164,12 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const 
         default:
             break;
     }
-    return nullptr;
+    return { nullptr, nullptr };
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    const PyBuffer& z, QString name, bool y_log_scale, bool z_log_scale, PlotType plot_type,
-    int index)
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
+    const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, QString name, bool y_log_scale,
+    bool z_log_scale, PlotType plot_type, int index)
 {
     switch (plot_type)
     {
@@ -172,12 +184,12 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const 
         default:
             break;
     }
-    return nullptr;
+    return { nullptr, nullptr };
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable,
-    QStringList labels, QList<QColor> colors, GraphType graph_type, PlotType plot_type,
-    AxisType sync_with, int index)
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
+    GetDataPyCallable callable, QStringList labels, QList<QColor> colors, GraphType graph_type,
+    PlotType plot_type, QObject* sync_with, int index)
 {
     switch (plot_type)
     {
@@ -191,11 +203,12 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callabl
         default:
             break;
     }
-    return nullptr;
+    return { nullptr, nullptr };
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name,
-    bool y_log_scale, bool z_log_scale, PlotType plot_type, AxisType sync_with, int index)
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
+    GetDataPyCallable callable, QString name, bool y_log_scale, bool z_log_scale,
+    PlotType plot_type, QObject* sync_with, int index)
 {
     switch (plot_type)
     {
@@ -210,7 +223,7 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callabl
         default:
             break;
     }
-    return nullptr;
+    return { nullptr, nullptr };
 }
 
 
