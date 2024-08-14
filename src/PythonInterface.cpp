@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <stdexcept>
+
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
 #undef slots
