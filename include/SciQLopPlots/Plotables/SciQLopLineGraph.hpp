@@ -42,10 +42,10 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-    void _setGraphData(std::size_t index, QVector<QCPGraphData> data);
+    void _setGraphData(QList<QVector<QCPGraphData>> data);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void _setGraphDataSig(std::size_t index, QVector<QCPGraphData> data);
+    Q_SIGNAL void _setGraphDataSig(QList<QVector<QCPGraphData>> data);
 #endif // !BINDINGS
 
     void clear_graphs(bool graph_already_removed = false);

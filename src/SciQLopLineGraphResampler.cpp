@@ -61,17 +61,19 @@ void LineGraphResampler::_resample(
         const auto view = XYView(x, y, new_range.lower, new_range.upper);
         if (std::size(view))
         {
+            QList<QVector<QCPGraphData>> data;
             for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
                 if (std::size(view) > 10000)
                 {
-                    emit this->setGraphData(line_index, ::resample<10000>(view, line_index));
+                    data.emplace_back(::resample<10000>(view, line_index));
                 }
                 else
                 {
-                    emit this->setGraphData(line_index, copy_data(view, line_index));
+                    data.emplace_back(::copy_data(view, line_index));
                 }
             }
+            Q_EMIT setGraphData(data);
         }
     }
 }

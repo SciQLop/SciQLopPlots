@@ -35,12 +35,15 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
 }
 
 
-void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> data)
+void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
 {
-    auto graph = line(index);
-    if (graph)
+    for (std::size_t i = 0; i < plottable_count(); i++)
     {
-        graph->data()->set(std::move(data), true);
+        auto graph = line(i);
+        if (graph)
+        {
+            graph->data()->set(data[i], true);
+        }
     }
     this->replot();
 }
