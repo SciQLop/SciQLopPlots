@@ -45,6 +45,7 @@ class SciQLopPlot : public QCustomPlot
     TracerWithToolTip* m_tracer = nullptr;
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
+    bool m_replot_pending = false;
 
     QList<SQPQCPAbstractPlottableWrapper*> m_plottables;
 
