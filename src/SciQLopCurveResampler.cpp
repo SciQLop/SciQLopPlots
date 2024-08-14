@@ -40,8 +40,6 @@ void CurveResampler::_resample(
 {
     if (x.data() != nullptr && x.flat_size() > 0 && new_data)
     {
-
-
         const auto y_incr = 1UL;
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {

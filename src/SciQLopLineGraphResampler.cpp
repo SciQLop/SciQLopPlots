@@ -21,7 +21,6 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
-#include <iostream>
 
 LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
 
@@ -59,27 +58,18 @@ void LineGraphResampler::_resample(
 {
     if (x.data() != nullptr && x.flat_size() > 0)
     {
-        const auto start_x = std::upper_bound(x.data(), x.data() + x.flat_size(), new_range.lower);
-        const auto end_x = std::lower_bound(x.data(), x.data() + x.flat_size(), new_range.upper);
-        const auto x_window_size = end_x - start_x;
-        if (x_window_size > 0)
+        const auto view = XYView(x, y, new_range.lower, new_range.upper);
+        if (std::size(view))
         {
-            const auto y_incr = 1UL;
             for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
-                std::size_t start_y_index = std::distance(x.data(), start_x);
-                const auto start_y
-                    = y.data() + y_incr * (start_x - x.data()) + (line_index * x.flat_size());
-                auto y_view = y.view(start_y_index);
-                if (x_window_size > 10000)
+                if (std::size(view) > 10000)
                 {
-                    emit this->setGraphData(
-                        line_index, ::resample<10000>(start_x, *y_view, line_index, x_window_size));
+                    emit this->setGraphData(line_index, ::resample<10000>(view, line_index));
                 }
                 else
                 {
-                    emit this->setGraphData(
-                        line_index, copy_data(start_x, *y_view, line_index, x_window_size));
+                    emit this->setGraphData(line_index, copy_data(view, line_index));
                 }
             }
         }
