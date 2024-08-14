@@ -64,7 +64,11 @@ struct ArrayView2D : public ArrayViewBase
 
     ArrayView2D(
         double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start, std::size_t stop)
-            : ptr(ptr), n_rows(n_rows), n_cols(std::max(n_cols, 1UL)), start(start), stop(stop)
+            : ptr(ptr)
+            , n_rows(n_rows)
+            , n_cols(std::max(n_cols, std::size_t { 1UL }))
+            , start(start)
+            , stop(stop)
     {
         assert(stop <= n_rows);
     }
