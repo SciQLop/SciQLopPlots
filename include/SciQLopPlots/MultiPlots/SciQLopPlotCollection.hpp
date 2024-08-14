@@ -94,6 +94,7 @@ public:
     inline virtual std::size_t size() const { return 0; }
 
     inline virtual void set_x_axis_range(double min, double max) { }
+    inline virtual void set_time_axis_range(double min, double max) { }
 
     inline virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) { }
     inline virtual void removeBehavior(const QString& type_name) { }
@@ -188,6 +189,7 @@ public:
     inline std::size_t size() const final { return _plots.size(); }
 
     virtual void set_x_axis_range(double lower, double upper) final;
+    virtual void set_time_axis_range(double min, double max) final;
 
     void registerBehavior(SciQLopPlotCollectionBehavior* behavior) final;
     void removeBehavior(const QString& type_name) final;
