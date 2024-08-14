@@ -32,7 +32,7 @@
 
 template <std::size_t dest_size>
 static inline QVector<QCPGraphData> resample(
-    const double* x, const double* y, std::size_t x_size, const int y_incr = 1)
+    const double* x, const ArrayViewBase& y, std::size_t column_index, std::size_t x_size)
 {
     static_assert(dest_size % 2 == 0);
     const auto x_0 = x[0];
@@ -40,7 +40,7 @@ static inline QVector<QCPGraphData> resample(
     auto dx = 2. * (x_1 - x_0) / dest_size;
     QVector<QCPGraphData> data(dest_size);
     const double* current_x = x;
-    const double* current_y_it = y;
+    std::size_t row_index = 0;
     std::size_t data_index = 0;
     for (auto bucket = 0UL; bucket < dest_size / 2; bucket++)
     {
@@ -51,9 +51,9 @@ static inline QVector<QCPGraphData> resample(
             double min_value = std::nan("");
             while (*current_x < bucket_max_x)
             {
-                max_value = std::fmax(max_value, *current_y_it);
-                min_value = std::fmin(min_value, *current_y_it);
-                current_y_it += y_incr;
+                auto v = y[{ row_index++, column_index }];
+                max_value = std::fmax(max_value, v);
+                min_value = std::fmin(min_value, v);
                 current_x++;
             }
             data[data_index++] = QCPGraphData { bucket_start_x, min_value };
@@ -64,14 +64,12 @@ static inline QVector<QCPGraphData> resample(
 }
 
 static inline QVector<QCPGraphData> copy_data(
-    const double* x, const double* y, std::size_t x_size, const int y_incr = 1)
+    const double* x, const ArrayViewBase& y, std::size_t column_index, std::size_t x_size)
 {
     QVector<QCPGraphData> data(x_size);
-    const double* current_y_it = y;
     for (auto i = 0UL; i < x_size; i++)
     {
-        data[i] = QCPGraphData { x[i], *current_y_it };
-        current_y_it += y_incr;
+        data[i] = QCPGraphData { x[i], y[{ i, column_index }] };
     }
     return data;
 }
@@ -93,7 +91,6 @@ protected:
     QRecursiveMutex _next_data_mutex;
     ResamplerData _data;
     ResamplerData _next_data;
-    ::DataOrder _data_order;
     std::size_t _line_cnt;
 #ifndef BINDINGS_H
     Q_SIGNAL void _resample_sig();
@@ -105,7 +102,7 @@ protected:
         = 0;
 
 public:
-    AbstractResampler1d(::DataOrder data_order, std::size_t line_cnt);
+    AbstractResampler1d(std::size_t line_cnt);
 
     void resample(const QCPRange new_range);
 
@@ -145,7 +142,6 @@ public:
     }
 
     inline std::size_t line_count() const { return _line_cnt; }
-    inline ::DataOrder data_order() const { return _data_order; }
 
     QList<PyBuffer> get_data()
     {
@@ -170,5 +166,5 @@ public:
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
 #endif
 
-    LineGraphResampler(::DataOrder data_order, std::size_t line_cnt);
+    LineGraphResampler(std::size_t line_cnt);
 };

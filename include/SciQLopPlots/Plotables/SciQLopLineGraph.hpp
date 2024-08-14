@@ -69,7 +69,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        const QStringList& labels = QStringList(), DataOrder data_order = ::DataOrder::RowMajor);
+        const QStringList& labels = QStringList());
 
     virtual ~SciQLopLineGraph() override;
 
@@ -80,8 +80,6 @@ public:
 
 private:
     void create_graphs(const QStringList& labels);
-
-    ::DataOrder _data_order = DataOrder::RowMajor;
 };
 
 
@@ -92,8 +90,7 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph
 
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        GetDataPyCallable&& callable, const QStringList& labels,
-        ::DataOrder data_order = ::DataOrder::RowMajor);
+        GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopLineGraphFunction() override = default;
 };

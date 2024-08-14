@@ -46,15 +46,14 @@ class SciQLopPlotCollectionInterface
 protected:
     inline virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        ::GraphType graph_type = ::GraphType::Line, int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, ::GraphType graph_type = ::GraphType::Line,
+        int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopPlotInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
         throw std::runtime_error("Not implemented");
@@ -62,18 +61,16 @@ protected:
 
     inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
-        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
-        int index = -1)
+        ::GraphType graph_type = ::GraphType::Line, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopPlotInterface* plot_impl(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
-        int index = -1)
+        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+        bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -103,56 +100,49 @@ public:
 
     inline virtual SciQLopPlotInterface* line(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
-        return plot_impl(x, y, labels, colors, data_order, plot_type, ::GraphType::Line, index);
+        return plot_impl(x, y, labels, colors, plot_type, ::GraphType::Line, index);
     }
 
     inline virtual SciQLopPlotInterface* parametric_curve(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
-        return plot_impl(
-            x, y, labels, colors, data_order, plot_type, ::GraphType::ParametricCurve, index);
+        return plot_impl(x, y, labels, colors, plot_type, ::GraphType::ParametricCurve, index);
     }
 
     inline virtual SciQLopPlotInterface* colormap(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
         bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1)
     {
-        return plot_impl(x, y, z, name, data_order, y_log_scale, z_log_scale, plot_type, index);
+        return plot_impl(x, y, z, name, y_log_scale, z_log_scale, plot_type, index);
     }
 
 
     inline virtual SciQLopPlotInterface* line(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
+        ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
+        int index = -1)
     {
-        return plot_impl(
-            callable, labels, colors, data_order, ::GraphType::Line, plot_type, sync_with, index);
+        return plot_impl(callable, labels, colors, ::GraphType::Line, plot_type, sync_with, index);
     }
 
     inline virtual SciQLopPlotInterface* parametric_curve(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::PlotType plot_type = ::PlotType::BasicXY,
-        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
-    {
-        return plot_impl(callable, labels, colors, data_order, ::GraphType::ParametricCurve,
-            plot_type, sync_with, index);
-    }
-
-    inline virtual SciQLopPlotInterface* colormap(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
-        bool y_log_scale = false, bool z_log_scale = false,
         ::PlotType plot_type = ::PlotType::BasicXY, ::AxisType sync_with = ::AxisType::XAxis,
         int index = -1)
     {
         return plot_impl(
-            callable, name, data_order, y_log_scale, z_log_scale, plot_type, sync_with, index);
+            callable, labels, colors, ::GraphType::ParametricCurve, plot_type, sync_with, index);
+    }
+
+    inline virtual SciQLopPlotInterface* colormap(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+        bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+        ::AxisType sync_with = ::AxisType::XAxis, int index = -1)
+    {
+        return plot_impl(callable, name, y_log_scale, z_log_scale, plot_type, sync_with, index);
     }
 };
 

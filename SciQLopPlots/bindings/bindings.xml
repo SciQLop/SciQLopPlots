@@ -16,11 +16,10 @@
     <rejection class="SciQLop*" function-name="plot" />
     <enum-type name="GraphType"/>
     <enum-type name="PlotType"/>
-    <enum-type name="DataOrder"/>
     <enum-type name="AxisType"/>
 
     <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
-    <primitive-type name="Array_view" target-lang-api-name="PyObject">
+    <primitive-type name="PyBuffer" target-lang-api-name="PyObject">
         <conversion-rule>
             <target-to-native>
                 <add-conversion type="Py_None">
@@ -114,42 +113,36 @@
     </object-type>
 
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
-    <object-type name="SciQLopGraphInterface" parent-management="yes"/>
+    <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
-        <modify-function signature="line(const Array_view&amp;,const Array_view&amp;,QStringList,QList&lt;QColor&gt;,DataOrder)">
+        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;)">
             <modify-argument index="3" rename="labels"/>
             <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="data_order"/>
         </modify-function>
-        <modify-function signature="parametric_curve(const Array_view&amp;,const Array_view&amp;,QStringList,QList&lt;QColor&gt;,DataOrder)">
+        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;)">
             <modify-argument index="3" rename="labels"/>
             <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="data_order"/>
         </modify-function>
-        <modify-function signature="colormap(const Array_view&amp;,const Array_view&amp;,const Array_view&amp;,QString,DataOrder,bool,bool)">
+        <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool)">
             <modify-argument index="4" rename="name"/>
-            <modify-argument index="5" rename="data_order"/>
-            <modify-argument index="6" rename="y_log_scale"/>
-            <modify-argument index="7" rename="z_log_scale"/>
+            <modify-argument index="5" rename="y_log_scale"/>
+            <modify-argument index="6" rename="z_log_scale"/>
         </modify-function>
-        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,AxisType)">
+        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,AxisType)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="data_order"/>
-            <modify-argument index="5" rename="sync_with"/>
+            <modify-argument index="4" rename="sync_with"/>
         </modify-function>
-        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,AxisType)">
+        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,AxisType)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="data_order"/>
-            <modify-argument index="5" rename="sync_with"/>
+            <modify-argument index="4" rename="sync_with"/>
         </modify-function>
-        <modify-function signature="colormap(GetDataPyCallable,QString,DataOrder,bool,bool,AxisType)">
+        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,AxisType)">
             <modify-argument index="2" rename="name"/>
-            <modify-argument index="3" rename="data_order"/>
-            <modify-argument index="4" rename="y_log_scale"/>
-            <modify-argument index="5" rename="z_log_scale"/>
-            <modify-argument index="6" rename="sync_with"/>
+            <modify-argument index="3" rename="y_log_scale"/>
+            <modify-argument index="4" rename="z_log_scale"/>
+            <modify-argument index="5" rename="sync_with"/>
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
@@ -417,52 +410,46 @@
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
-        <modify-function signature="line(const Array_view&amp;,const Array_view&amp;,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,int)">
+        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
             <modify-argument index="3" rename="labels"/>
             <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="data_order"/>
-            <modify-argument index="6" rename="plot_type"/>
-            <modify-argument index="7" rename="index"/>
+            <modify-argument index="5" rename="plot_type"/>
+            <modify-argument index="6" rename="index"/>
         </modify-function>
-        <modify-function signature="parametric_curve(const Array_view&amp;,const Array_view&amp;,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,int)">
+        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
             <modify-argument index="3" rename="labels"/>
             <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="data_order"/>
-            <modify-argument index="6" rename="plot_type"/>
-            <modify-argument index="7" rename="index"/>
+            <modify-argument index="5" rename="plot_type"/>
+            <modify-argument index="6" rename="index"/>
         </modify-function>
-        <modify-function signature="colormap(const Array_view&amp;,const Array_view&amp;,const Array_view&amp;,QString,DataOrder,bool,bool,PlotType,int)">
+        <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool,PlotType,int)">
             <modify-argument index="4" rename="name"/>
-            <modify-argument index="5" rename="data_order"/>
-            <modify-argument index="6" rename="y_log_scale"/>
-            <modify-argument index="7" rename="z_log_scale"/>
-            <modify-argument index="8" rename="plot_type"/>
-            <modify-argument index="9" rename="index"/>
+            <modify-argument index="5" rename="y_log_scale"/>
+            <modify-argument index="6" rename="z_log_scale"/>
+            <modify-argument index="7" rename="plot_type"/>
+            <modify-argument index="8" rename="index"/>
         </modify-function>
-        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,AxisType,int)">
+        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,AxisType,int)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="data_order"/>
-            <modify-argument index="5" rename="plot_type"/>
-            <modify-argument index="6" rename="sync_with"/>
-            <modify-argument index="7" rename="index"/>
+            <modify-argument index="4" rename="plot_type"/>
+            <modify-argument index="5" rename="sync_with"/>
+            <modify-argument index="6" rename="index"/>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,AxisType,int)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="data_order"/>
+            <modify-argument index="4" rename="plot_type"/>
+            <modify-argument index="5" rename="sync_with"/>
+            <modify-argument index="6" rename="index"/>
+        </modify-function>
+        <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,AxisType,int)">
+            <modify-argument index="2" rename="name"/>
+            <modify-argument index="3" rename="y_log_scale"/>
+            <modify-argument index="4" rename="z_log_scale"/>
             <modify-argument index="5" rename="plot_type"/>
             <modify-argument index="6" rename="sync_with"/>
             <modify-argument index="7" rename="index"/>
-        </modify-function>
-        <modify-function signature="colormap(GetDataPyCallable,QString,DataOrder,bool,bool,PlotType,AxisType,int)">
-            <modify-argument index="2" rename="name"/>
-            <modify-argument index="3" rename="data_order"/>
-            <modify-argument index="4" rename="y_log_scale"/>
-            <modify-argument index="5" rename="z_log_scale"/>
-            <modify-argument index="6" rename="plot_type"/>
-            <modify-argument index="7" rename="sync_with"/>
-            <modify-argument index="8" rename="index"/>
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotCollection" parent-management="yes">

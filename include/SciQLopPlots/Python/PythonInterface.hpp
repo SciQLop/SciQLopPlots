@@ -41,6 +41,54 @@ extern "C"
 #endif
 }
 
+
+struct ArrayViewBase
+{
+    virtual ~ArrayViewBase() = default;
+    virtual double operator[](std::pair<std::size_t, std::size_t> index) const = 0;
+    virtual std::unique_ptr<ArrayViewBase> view(
+        std::size_t first_row = 0, std::size_t last_row = 0) const
+        = 0;
+};
+
+template <bool row_major = true>
+struct ArrayView2D : public ArrayViewBase
+{
+    double* ptr;
+    std::size_t n_rows;
+    std::size_t n_cols;
+    std::size_t start; // first row
+    std::size_t stop; // last row
+
+    ArrayView2D(
+        double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start, std::size_t stop)
+            : ptr(ptr), n_rows(n_rows), n_cols(std::max(n_cols, 1UL)), start(start), stop(stop)
+    {
+        assert(stop <= n_rows);
+    }
+
+    inline double operator[](std::pair<std::size_t, std::size_t> index) const override
+    {
+        if constexpr (row_major)
+        {
+            return ptr[(index.first + start) * n_cols + index.second];
+        }
+        else
+        {
+            return ptr[index.first + start + (index.second * n_rows)];
+        }
+    }
+
+    std::unique_ptr<ArrayViewBase> view(
+        std::size_t first_row = 0, std::size_t last_row = 0) const override
+    {
+        if (last_row == 0)
+            last_row = n_rows;
+        return std::make_unique<ArrayView2D<row_major>>(ptr, n_rows, n_cols, first_row, last_row);
+    }
+};
+
+
 struct _PyBuffer_impl;
 
 struct PyBuffer
@@ -78,7 +126,7 @@ public:
 
     const std::vector<std::size_t>& shape() const;
 
-    std::size_t ndim();
+    std::size_t ndim() const;
 
     std::size_t size(std::size_t index = 0);
 
@@ -107,33 +155,25 @@ public:
     inline auto front() { return *begin(); }
     inline auto back() { return *(end() - 1); }
 
+    bool row_major() const;
+
+    inline std::unique_ptr<ArrayViewBase> view(
+        std::size_t first_row = 0, std::size_t last_row = 0) const
+    {
+        if (last_row == 0)
+            last_row = shape()[0];
+        if (is_valid())
+        {
+            if (row_major())
+                return std::make_unique<ArrayView2D<true>>(
+                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row);
+            else
+                return std::make_unique<ArrayView2D<false>>(
+                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row);
+        }
+        return nullptr;
+    }
     PyObject* py_object() const;
-};
-
-template <bool row_major = true>
-struct ArrayView2D
-{
-    double* ptr;
-    std::size_t n_rows;
-    std::size_t n_cols;
-    std::size_t offset;
-
-    ArrayView2D(double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t offset = 0)
-            : ptr(ptr), n_rows(n_rows), n_cols(n_cols), offset(offset)
-    {
-    }
-
-    inline double operator[](std::pair<std::size_t, std::size_t> index) const
-    {
-        if constexpr (row_major)
-        {
-            return ptr[index.first * n_cols + index.second + offset];
-        }
-        else
-        {
-            return ptr[index.second * n_rows + index.first + offset];
-        }
-    }
 };
 
 namespace std

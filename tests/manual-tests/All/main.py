@@ -40,6 +40,7 @@ def add_graph(plot, time_axis=False, offset=0.):
     x=np.arange(start=start, stop=stop, dtype=np.float64)
     y=np.cos(np.array([x/6.,x/60.,x/600.])) * np.cos(np.array([x,x/6.,x/60.])) * [[100.],[1300],[17000]]
     y+=offset
+    y=np.array(y.T, copy=True)
     return plot.plot(x,y, labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green])
 
 def butterfly():
@@ -131,14 +132,14 @@ if NUMBA_AVAILABLE:
     @njit(parallel=True)
     def _make_data(x,y):
         for i in prange(len(x)):
-            y[0,i] = math.cos(x[i]*(1./6.)) * math.cos(x[i]) * 100.
-            y[1,i] = math.cos(x[i]*(1./60.)) * math.cos(x[i]*(1./6.)) * 1300.
-            y[2,i] = math.cos(x[i]*(1./600.)) * math.cos(x[i]*(1./60.)) * 17000.
+            y[i,0] = math.cos(x[i]*(1./6.)) * math.cos(x[i]) * 100.
+            y[i,1] = math.cos(x[i]*(1./60.)) * math.cos(x[i]*(1./6.)) * 1300.
+            y[i,2] = math.cos(x[i]*(1./600.)) * math.cos(x[i]*(1./60.)) * 17000.
         return x, y
 
     def make_data( start, end):
         x = np.arange(start, end, dtype=np.float64)
-        y = np.empty((3, len(x)), dtype=np.float64)
+        y = np.empty((len(x),3), dtype=np.float64)
         return _make_data(x, y)
 
 
@@ -146,10 +147,10 @@ else:
 
     def make_data( start, end):
         x = np.arange(start, end, dtype=np.float64)
-        y = np.empty((3, len(x)), dtype=np.float64)
-        y[0,:] = np.cos(x*(1./6.)) * np.cos(x) * 100.
-        y[1,:] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
-        y[2,:] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
+        y = np.empty((len(x), 3), dtype=np.float64)
+        y[:,0] = np.cos(x*(1./6.)) * np.cos(x) * 100.
+        y[:,1] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
+        y[:,2] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
         return x, y
 
 

@@ -139,7 +139,7 @@ SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(const QString& name)
 
 
 SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
-    const QString& name, ::DataOrder dataOrder, bool y_log_scale, bool z_log_scale)
+    const QString& name, bool y_log_scale, bool z_log_scale)
 {
     if (!m_color_scale->visible())
     {
@@ -148,8 +148,7 @@ SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
             set_axis_log(QCPAxis::atRight, true);
         }
         set_axis_visible(QCPAxis::atRight, true);
-        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(
-            this->xAxis, this->yAxis2, name, dataOrder);
+        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(this->xAxis, this->yAxis2, name);
         m_color_scale->setVisible(true);
         plotLayout()->addElement(0, 1, m_color_scale);
         cmap->colorMap()->setColorScale(m_color_scale);
@@ -581,16 +580,16 @@ void SciQLopPlot::replot(bool immediate)
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    QStringList labels, QList<QColor> colors, ::DataOrder data_order, GraphType graph_type)
+    QStringList labels, QList<QColor> colors, GraphType graph_type)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
-            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, data_order);
+            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels);
             break;
         case GraphType::ParametricCurve:
-            plottable = m_impl->add_plottable<SciQLopCurve>(labels, data_order);
+            plottable = m_impl->add_plottable<SciQLopCurve>(labels);
             break;
         default:
             throw std::runtime_error("Unsupported graph type");
@@ -605,9 +604,9 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    const PyBuffer& z, QString name, ::DataOrder data_order, bool y_log_scale, bool z_log_scale)
+    const PyBuffer& z, QString name, bool y_log_scale, bool z_log_scale)
 {
-    auto cm = m_impl->addSciQLopColorMap(name, data_order, y_log_scale, z_log_scale);
+    auto cm = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
     cm->set_data(std::move(x), std::move(y), std::move(z));
     return cm;
 }
@@ -639,19 +638,18 @@ inline void SciQLopPlot::_connect_callable_sync(
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-    QList<QColor> colors, DataOrder data_order, GraphType graph_type, AxisType sync_with)
+    QList<QColor> colors, GraphType graph_type, AxisType sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
-            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
-                std::move(callable), labels, data_order);
+            plottable
+                = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels);
 
             break;
         case GraphType::ParametricCurve:
-            plottable = m_impl->add_plottable<SciQLopCurveFunction>(
-                std::move(callable), labels, data_order);
+            plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels);
             break;
         default:
             break;
@@ -665,10 +663,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
-    DataOrder data_order, bool y_log_scale, bool z_log_scale, AxisType sync_with)
+    bool y_log_scale, bool z_log_scale, AxisType sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plotable = nullptr;
-    plotable = m_impl->addSciQLopColorMap(name, data_order, y_log_scale, z_log_scale);
+    plotable = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
     return plotable;
 }
 

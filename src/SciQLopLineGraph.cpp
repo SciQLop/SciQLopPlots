@@ -45,12 +45,9 @@ void SciQLopLineGraph::_setGraphData(std::size_t index, QVector<QCPGraphData> da
     this->replot();
 }
 
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-    const QStringList& labels, ::DataOrder data_order)
-        : SQPQCPAbstractPlottableWrapper(parent)
-        , _keyAxis { key_axis }
-        , _valueAxis { value_axis }
-        , _data_order { data_order }
+SciQLopLineGraph::SciQLopLineGraph(
+    QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis, const QStringList& labels)
+        : SQPQCPAbstractPlottableWrapper(parent), _keyAxis { key_axis }, _valueAxis { value_axis }
 {
     create_resampler(labels);
     if (!labels.isEmpty())
@@ -81,7 +78,7 @@ void SciQLopLineGraph::clear_resampler()
 
 void SciQLopLineGraph::create_resampler(const QStringList& labels)
 {
-    this->_resampler = new LineGraphResampler(_data_order, std::size(labels));
+    this->_resampler = new LineGraphResampler(std::size(labels));
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
@@ -109,9 +106,8 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 }
 
 SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
-    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels,
-    DataOrder data_order)
-        : SciQLopLineGraph(parent, key_axis, value_axis, labels, data_order)
+    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels)
+        : SciQLopLineGraph(parent, key_axis, value_axis, labels)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,

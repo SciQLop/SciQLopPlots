@@ -54,7 +54,7 @@ void SciQLopCurve::clear_resampler()
 
 void SciQLopCurve::create_resampler(const QStringList& labels)
 {
-    this->_resampler = new CurveResampler(_dataOrder, std::size(labels));
+    this->_resampler = new CurveResampler(std::size(labels));
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
@@ -63,23 +63,16 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
 }
 
 
-SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-    const QStringList& labels, ::DataOrder dataOrder)
-        : SQPQCPAbstractPlottableWrapper(parent)
-        , _keyAxis { keyAxis }
-        , _valueAxis { valueAxis }
-        , _dataOrder { dataOrder }
+SciQLopCurve::SciQLopCurve(
+    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QStringList& labels)
+        : SQPQCPAbstractPlottableWrapper(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }
 {
     create_resampler(labels);
     this->create_graphs(labels);
 }
 
-SciQLopCurve::SciQLopCurve(
-    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, ::DataOrder dataOrder)
-        : SQPQCPAbstractPlottableWrapper(parent)
-        , _keyAxis { keyAxis }
-        , _valueAxis { valueAxis }
-        , _dataOrder { dataOrder }
+SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis)
+        : SQPQCPAbstractPlottableWrapper(parent), _keyAxis { keyAxis }, _valueAxis { valueAxis }
 {
     create_resampler({});
 }
@@ -112,9 +105,8 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
 }
 
 SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis,
-    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels,
-    DataOrder data_order)
-        : SciQLopCurve(parent, key_axis, value_axis, labels, data_order)
+    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels)
+        : SciQLopCurve(parent, key_axis, value_axis, labels)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(

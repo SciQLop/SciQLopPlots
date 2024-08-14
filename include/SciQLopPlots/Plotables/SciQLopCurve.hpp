@@ -73,21 +73,16 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QStringList& labels, ::DataOrder dataOrder = ::DataOrder::RowMajor);
+    explicit SciQLopCurve(
+        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QStringList& labels);
 
-    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        ::DataOrder dataOrder = ::DataOrder::RowMajor);
+    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis);
 
     virtual ~SciQLopCurve() override;
 
     virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
     inline std::size_t line_count() const noexcept { return plottable_count(); }
-
-
-private:
-    ::DataOrder _dataOrder = ::DataOrder::RowMajor;
 };
 
 
@@ -98,8 +93,7 @@ class SciQLopCurveFunction : public SciQLopCurve
 
 public:
     explicit SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        GetDataPyCallable&& callable, const QStringList& labels,
-        ::DataOrder data_order = ::DataOrder::RowMajor);
+        GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopCurveFunction() override = default;
 };
