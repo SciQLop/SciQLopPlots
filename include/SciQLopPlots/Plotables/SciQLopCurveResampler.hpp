@@ -40,5 +40,5 @@ public:
     Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
 #endif // !BINDINGS_H
 
-    CurveResampler(::DataOrder dataOrder, std::size_t line_cnt);
+    CurveResampler(std::size_t line_cnt);
 };

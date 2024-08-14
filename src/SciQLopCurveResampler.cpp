@@ -42,18 +42,14 @@ void CurveResampler::_resample(
     {
 
 
-        const auto y_incr = (data_order() == ::DataOrder::RowMajor) ? 1UL : line_count();
+        const auto y_incr = 1UL;
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
             const auto count = std::size(x);
-            const auto start_y = y.data()
-                + (line_index * ((data_order() == ::DataOrder::RowMajor) ? x.flat_size() : 1));
+            const auto start_y = y.data() + (line_index * x.flat_size());
             emit this->setGraphData(line_index, curve_copy_data(x.data(), start_y, count, y_incr));
         }
     }
 }
 
-CurveResampler::CurveResampler(::DataOrder dataOrder, std::size_t line_cnt)
-        : AbstractResampler1d { dataOrder, line_cnt }
-{
-}
+CurveResampler::CurveResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }

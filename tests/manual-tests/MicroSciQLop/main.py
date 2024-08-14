@@ -1,6 +1,6 @@
 from SciQLopPlots import SciQLopPlot, \
                          MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, DataOrder, PlotType, AxisType
+                         SciQLopTimeSeriesPlot, PlotType, AxisType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt
@@ -62,20 +62,21 @@ def spz_get_data(start, stop):
 class Spectrum:
     def __init__(self, graph):
         self._graph = graph
+        self._fft_size = 2**9
 
     def __call__(self, start, stop):
         try:
-            v=spz_get_data(start, stop)
-            if v is None:
-                return None
-            x, y = v
+            d = self._graph.data()
+            if d is None or d[0] is None or d[1] is None:
+                return np.array([]), np.array([])
+            x, y = d
             y=y[:,-1]
-            spec= np.zeros(4096, dtype='complex128')
-            han = np.hanning(4096)
-            nw = len(y)//4096
+            spec= np.zeros(self._fft_size, dtype='complex128')
+            han = np.hanning(self._fft_size)
+            nw = len(y)//self._fft_size
             if nw != 0:
                 for i in range(nw):
-                    w=y[i*4096:(i+1)*4096]
+                    w=y[i*self._fft_size:(i+1)*self._fft_size]
                     w=w-np.mean(w)
                     w=w*han
                     spec += (np.fft.fft(w)/len(w))**2
@@ -94,7 +95,6 @@ class MMS(SciQLopMultiPlotPanel):
         p=self.plot(spz_get_data,
                     labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
                     colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
-                    data_order=DataOrder.ColumnMajor,
                     plot_type=PlotType.TimeSeries)
         self._spec = Spectrum(p.graph(0))
         self.plot(self._spec, index=0,labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=AxisType.TimeAxis)

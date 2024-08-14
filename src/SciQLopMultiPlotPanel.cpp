@@ -139,17 +139,15 @@ void SciQLopMultiPlotPanel::removeBehavior(const QString& type_name)
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    QStringList labels, QList<QColor> colors, DataOrder data_order, PlotType plot_type,
-    GraphType graph_type, int index)
+    QStringList labels, QList<QColor> colors, PlotType plot_type, GraphType graph_type, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(index, graph_type, x, y, labels, colors, data_order);
+            return _plot<SciQLopPlot>(index, graph_type, x, y, labels, colors);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(
-                index, graph_type, x, y, labels, colors, data_order);
+            return _plot<SciQLopTimeSeriesPlot>(index, graph_type, x, y, labels, colors);
             break;
         default:
             break;
@@ -158,18 +156,18 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const 
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    const PyBuffer& z, QString name, DataOrder data_order, bool y_log_scale, bool z_log_scale,
-    PlotType plot_type, int index)
+    const PyBuffer& z, QString name, bool y_log_scale, bool z_log_scale, PlotType plot_type,
+    int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot>(
-                index, GraphType::ColorMap, x, y, z, name, data_order, y_log_scale, z_log_scale);
+                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot>(
-                index, GraphType::ColorMap, x, y, z, name, data_order, y_log_scale, z_log_scale);
+                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale);
             break;
         default:
             break;
@@ -178,18 +176,17 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const 
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable,
-    QStringList labels, QList<QColor> colors, DataOrder data_order, GraphType graph_type,
-    PlotType plot_type, AxisType sync_with, int index)
+    QStringList labels, QList<QColor> colors, GraphType graph_type, PlotType plot_type,
+    AxisType sync_with, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(
-                index, graph_type, callable, labels, colors, data_order, sync_with);
+            return _plot<SciQLopPlot>(index, graph_type, callable, labels, colors, sync_with);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot>(
-                index, graph_type, callable, labels, colors, data_order, sync_with);
+                index, graph_type, callable, labels, colors, sync_with);
             break;
         default:
             break;
@@ -198,18 +195,17 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callabl
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name,
-    DataOrder data_order, bool y_log_scale, bool z_log_scale, PlotType plot_type,
-    AxisType sync_with, int index)
+    bool y_log_scale, bool z_log_scale, PlotType plot_type, AxisType sync_with, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(index, GraphType::ColorMap, callable, name, data_order,
-                y_log_scale, z_log_scale, sync_with);
+            return _plot<SciQLopPlot>(
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(index, GraphType::ColorMap, callable, name,
-                data_order, y_log_scale, z_log_scale, sync_with);
+            return _plot<SciQLopTimeSeriesPlot>(
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
             break;
         default:
             break;

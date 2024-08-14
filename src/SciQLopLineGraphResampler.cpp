@@ -23,11 +23,7 @@
 #include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
 #include <iostream>
 
-
-LineGraphResampler::LineGraphResampler(DataOrder data_order, std::size_t line_cnt)
-        : AbstractResampler1d { data_order, line_cnt }
-{
-}
+LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
 
 
 void AbstractResampler1d::_resample_slot()
@@ -43,8 +39,7 @@ void AbstractResampler1d::_resample_slot()
     }
 }
 
-AbstractResampler1d::AbstractResampler1d(DataOrder data_order, std::size_t line_cnt)
-        : _data_order { data_order }, _line_cnt { line_cnt }
+AbstractResampler1d::AbstractResampler1d(std::size_t line_cnt) : _line_cnt { line_cnt }
 {
     connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_resample_slot,
         Qt::QueuedConnection);
@@ -69,20 +64,22 @@ void LineGraphResampler::_resample(
         const auto x_window_size = end_x - start_x;
         if (x_window_size > 0)
         {
-            const auto y_incr = (data_order() == ::DataOrder::RowMajor) ? 1UL : line_count();
+            const auto y_incr = 1UL;
             for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
-                const auto start_y = y.data() + y_incr * (start_x - x.data())
-                    + (line_index * ((data_order() == ::DataOrder::RowMajor) ? x.flat_size() : 1));
+                std::size_t start_y_index = std::distance(x.data(), start_x);
+                const auto start_y
+                    = y.data() + y_incr * (start_x - x.data()) + (line_index * x.flat_size());
+                auto y_view = y.view(start_y_index);
                 if (x_window_size > 10000)
                 {
                     emit this->setGraphData(
-                        line_index, ::resample<10000>(start_x, start_y, x_window_size, y_incr));
+                        line_index, ::resample<10000>(start_x, *y_view, line_index, x_window_size));
                 }
                 else
                 {
                     emit this->setGraphData(
-                        line_index, copy_data(start_x, start_y, x_window_size, y_incr));
+                        line_index, copy_data(start_x, *y_view, line_index, x_window_size));
                 }
             }
         }

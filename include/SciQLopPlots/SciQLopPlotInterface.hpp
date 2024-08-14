@@ -37,14 +37,13 @@ protected:
 
     inline virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line)
+        ::GraphType graph_type = ::GraphType::Line)
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
         bool z_log_scale = false)
     {
         throw std::runtime_error("Not implemented");
@@ -52,16 +51,14 @@ protected:
 
     inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
-        ::AxisType sync_with = ::AxisType::XAxis)
+        ::GraphType graph_type = ::GraphType::Line, ::AxisType sync_with = ::AxisType::XAxis)
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::AxisType sync_with = ::AxisType::XAxis)
+        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -139,47 +136,42 @@ public:
 
 
     inline virtual SciQLopGraphInterface* line(const PyBuffer& x, const PyBuffer& y,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor)
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>())
     {
-        return plot_impl(x, y, labels, colors, data_order, ::GraphType::Line);
+        return plot_impl(x, y, labels, colors, ::GraphType::Line);
     }
 
     inline virtual SciQLopGraphInterface* parametric_curve(const PyBuffer& x, const PyBuffer& y,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor)
+        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>())
     {
-        return plot_impl(x, y, labels, colors, data_order, ::GraphType::ParametricCurve);
+        return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve);
     }
 
     inline virtual SciQLopGraphInterface* colormap(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
         bool z_log_scale = false)
     {
-        return plot_impl(x, y, z, name, data_order, y_log_scale, z_log_scale);
+        return plot_impl(x, y, z, name, y_log_scale, z_log_scale);
     }
 
 
     inline virtual SciQLopGraphInterface* line(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::AxisType sync_with = ::AxisType::XAxis)
+        ::AxisType sync_with = ::AxisType::XAxis)
     {
-        return plot_impl(callable, labels, colors, data_order, ::GraphType::Line, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::Line, sync_with);
     }
     inline virtual SciQLopGraphInterface* parametric_curve(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::AxisType sync_with = ::AxisType::XAxis)
-    {
-        return plot_impl(
-            callable, labels, colors, data_order, ::GraphType::ParametricCurve, sync_with);
-    }
-    inline virtual SciQLopGraphInterface* colormap(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
-        bool y_log_scale = false, bool z_log_scale = false,
         ::AxisType sync_with = ::AxisType::XAxis)
     {
-        return plot_impl(callable, name, data_order, y_log_scale, z_log_scale, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, sync_with);
+    }
+    inline virtual SciQLopGraphInterface* colormap(GetDataPyCallable callable,
+        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis)
+    {
+        return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with);
     }
 
 

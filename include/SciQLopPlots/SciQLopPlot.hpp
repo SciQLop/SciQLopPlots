@@ -70,9 +70,8 @@ public:
     SQPQCPAbstractPlottableWrapper* sqp_plottable(int index = -1);
     SQPQCPAbstractPlottableWrapper* sqp_plottable(const QString& name);
 
-    SciQLopColorMap* addSciQLopColorMap(const QString& name,
-        ::DataOrder dataOrder = ::DataOrder::RowMajor, bool y_log_scale = false,
-        bool z_log_scale = false);
+    SciQLopColorMap* addSciQLopColorMap(
+        const QString& name, bool y_log_scale = false, bool z_log_scale = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
@@ -243,23 +242,21 @@ protected:
 
     virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor,
+
         ::GraphType graph_type = ::GraphType::Line) override;
 
     virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        ::DataOrder data_order = ::DataOrder::RowMajor, bool y_log_scale = false,
+        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
         bool z_log_scale = false) override;
 
     virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::DataOrder data_order = ::DataOrder::RowMajor, ::GraphType graph_type = ::GraphType::Line,
+        ::GraphType graph_type = ::GraphType::Line,
         ::AxisType sync_with = ::AxisType::XAxis) override;
 
     virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), ::DataOrder data_order = ::DataOrder::RowMajor,
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::AxisType sync_with = ::AxisType::XAxis) override;
+        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis) override;
 
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);

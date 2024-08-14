@@ -139,8 +139,9 @@ struct _PyBuffer_impl : PyObjectWrapper
 {
     Py_buffer buffer = { 0 };
     PyObjectWrapper py_obj;
-    bool is_valid = false;
     std::vector<std::size_t> shape;
+    bool is_valid = false;
+    bool is_row_major = true;
 
     _PyBuffer_impl() = default;
     explicit _PyBuffer_impl(PyObject* obj) { this->init_buffer(obj); }
@@ -152,13 +153,14 @@ struct _PyBuffer_impl : PyObjectWrapper
         {
             auto scoped_gil = PyAutoScopedGIL();
             this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
-                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS | PyBUF_FORMAT)
+                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS | PyBUF_FORMAT)
                 == 0;
         }
         if (!this->is_valid)
             throw std::runtime_error("Failed to get buffer from object");
         if (this->buffer.format == nullptr || this->buffer.format[0] != 'd')
             throw std::runtime_error("Buffer must be double type");
+        this->is_row_major = PyBuffer_IsContiguous(&this->buffer, 'C') == 1;
         if (this->buffer.ndim > 0)
         {
             this->shape.resize(this->buffer.ndim);
@@ -237,7 +239,7 @@ const std::vector<std::size_t>& PyBuffer::shape() const
     return empty;
 }
 
-std::size_t PyBuffer::ndim()
+std::size_t PyBuffer::ndim() const
 {
     if (is_valid())
     {
@@ -275,6 +277,15 @@ std::vector<double> PyBuffer::to_std_vect()
     auto d_ptr = this->data();
     std::copy(d_ptr, d_ptr + sz, std::begin(v));
     return v;
+}
+
+bool PyBuffer::row_major() const
+{
+    if (is_valid())
+    {
+        return this->_impl->is_row_major;
+    }
+    return false;
 }
 
 PyObject* PyBuffer::py_object() const
