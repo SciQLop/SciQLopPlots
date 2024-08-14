@@ -85,7 +85,8 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
 {
-    this->_resampler->setData(std::move(x), std::move(y));
+    this->_resampler->setData(x, y);
+    Q_EMIT data_changed(x, y);
 }
 
 QList<PyBuffer> SciQLopCurve::data() const noexcept

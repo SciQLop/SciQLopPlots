@@ -116,7 +116,7 @@ public:
         this->_line_cnt = line_cnt;
     }
 
-    inline void setData(PyBuffer&& x, PyBuffer&& y)
+    inline void setData(PyBuffer x, PyBuffer y)
     {
         {
             QCPRange _data_x_range;

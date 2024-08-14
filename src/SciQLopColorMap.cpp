@@ -84,9 +84,9 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
     if (this->_cmap)
     {
-        this->_resampler->setData(
-            std::move(x), std::move(y), std::move(z), _valueAxis->scaleType());
+        this->_resampler->setData(x, y, z, _valueAxis->scaleType());
     }
+    Q_EMIT data_changed(x, y, z);
 }
 
 void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)

@@ -73,7 +73,7 @@ public:
 
     virtual ~SciQLopLineGraph() override;
 
-    virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
@@ -88,9 +88,13 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph
     Q_OBJECT
     SimplePyCallablePipeline* m_pipeline;
 
+    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopLineGraph::set_data(x, y); }
+
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
         GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopLineGraphFunction() override = default;
+
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
 };

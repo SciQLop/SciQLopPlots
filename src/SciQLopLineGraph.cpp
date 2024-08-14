@@ -97,7 +97,8 @@ SciQLopLineGraph::~SciQLopLineGraph()
 
 void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
 {
-    this->_resampler->setData(std::move(x), std::move(y));
+    this->_resampler->setData(x, y);
+    Q_EMIT data_changed(x, y);
 }
 
 QList<PyBuffer> SciQLopLineGraph::data() const noexcept
@@ -111,7 +112,12 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis*
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
-        &SciQLopLineGraphFunction::set_data);
+        &SciQLopLineGraphFunction::_set_data);
     connect(
         this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
+}
+
+void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y)
+{
+    m_pipeline->set_data(x, y);
 }

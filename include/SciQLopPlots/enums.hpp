@@ -23,7 +23,7 @@
 
 enum class AxisType
 {
-    None,
+    NoneAxis,
     TimeAxis,
     XAxis,
     YAxis,

@@ -612,33 +612,39 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
 }
 
 inline void SciQLopPlot::_connect_callable_sync(
-    SQPQCPAbstractPlottableWrapper* plottable, AxisType sync_with)
+    SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with)
 {
-    switch (sync_with)
+    if (sync_with != nullptr)
     {
-        case ::AxisType::TimeAxis:
-            connect(this, &SciQLopPlot::time_axis_range_changed, plottable,
+        if (auto axis = qobject_cast<SciQLopPlotAxisInterface*>(sync_with); axis != nullptr)
+        {
+            connect(axis, &SciQLopPlotAxisInterface::range_changed, plottable,
                 &SQPQCPAbstractPlottableWrapper::set_range);
-            break;
-        case ::AxisType::XAxis:
-            connect(this, &SciQLopPlot::x_axis_range_changed, plottable,
-                &SQPQCPAbstractPlottableWrapper::set_range);
-            break;
-        case ::AxisType::YAxis:
-            connect(this, &SciQLopPlot::y_axis_range_changed, plottable,
-                &SQPQCPAbstractPlottableWrapper::set_range);
-            break;
-        case ::AxisType::ZAxis:
-            connect(this, &SciQLopPlot::z_axis_range_changed, plottable,
-                &SQPQCPAbstractPlottableWrapper::set_range);
-            break;
-        default:
-            break;
+        }
+        if (auto graph = qobject_cast<SciQLopGraphInterface*>(sync_with); graph != nullptr)
+        {
+            connect(graph, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
+                plottable,
+                QOverload<PyBuffer, PyBuffer>::of(&SQPQCPAbstractPlottableWrapper::set_data),
+                Qt::QueuedConnection);
+
+            connect(graph,
+                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
+                plottable,
+                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(
+                    &SQPQCPAbstractPlottableWrapper::set_data),
+                Qt::QueuedConnection);
+        }
+    }
+    else
+    {
+        connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, plottable,
+            &SQPQCPAbstractPlottableWrapper::set_range);
     }
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-    QList<QColor> colors, GraphType graph_type, AxisType sync_with)
+    QList<QColor> colors, GraphType graph_type, QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -646,7 +652,6 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
         case GraphType::Line:
             plottable
                 = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels);
-
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels);
@@ -663,7 +668,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
-    bool y_log_scale, bool z_log_scale, AxisType sync_with)
+    bool y_log_scale, bool z_log_scale, QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plotable = nullptr;
     plotable = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);

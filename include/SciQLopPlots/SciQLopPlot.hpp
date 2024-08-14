@@ -224,7 +224,7 @@ class SciQLopPlot : public SciQLopPlotInterface
 protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
-    void _connect_callable_sync(SQPQCPAbstractPlottableWrapper* plottable, AxisType sync_with);
+    void _connect_callable_sync(SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with);
 
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
@@ -251,12 +251,11 @@ protected:
 
     virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::GraphType graph_type = ::GraphType::Line,
-        ::AxisType sync_with = ::AxisType::XAxis) override;
+        ::GraphType graph_type = ::GraphType::Line, QObject* sync_with = nullptr) override;
 
     virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis) override;
+        bool z_log_scale = false, QObject* sync_with = nullptr) override;
 
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
@@ -291,19 +290,22 @@ public:
     {
         return m_impl->axis(0);
     }
+
     inline virtual SciQLopPlotAxisInterface* y_axis() const noexcept Q_DECL_OVERRIDE
     {
         return m_impl->axis(1);
-        ;
     }
+
     inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept Q_DECL_OVERRIDE
     {
         return nullptr;
     }
+
     inline virtual SciQLopPlotAxisInterface* x2_axis() const noexcept Q_DECL_OVERRIDE
     {
         return m_impl->axis(2);
     }
+
     inline virtual SciQLopPlotAxisInterface* y2_axis() const noexcept Q_DECL_OVERRIDE
     {
         return m_impl->axis(3);

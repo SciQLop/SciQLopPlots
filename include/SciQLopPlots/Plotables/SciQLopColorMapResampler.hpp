@@ -72,8 +72,7 @@ public:
         return this->_data_x_range;
     }
 
-    inline void setData(
-        PyBuffer&& x, PyBuffer&& y, PyBuffer&& z, QCPAxis::ScaleType scale_type)
+    inline void setData(PyBuffer x, PyBuffer y, PyBuffer z, QCPAxis::ScaleType scale_type)
     {
         const auto len = x.flat_size();
         {

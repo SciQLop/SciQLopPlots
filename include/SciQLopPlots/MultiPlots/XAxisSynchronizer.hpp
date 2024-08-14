@@ -27,9 +27,6 @@
 class XAxisSynchronizer : public AxisSynchronizer
 {
     Q_OBJECT
-    QList<SciQLopPlotInterface*> _plots;
-    std::pair<double, double> _last_x_range;
-
     void _display_x_axis_only_last_plot();
 
 public:

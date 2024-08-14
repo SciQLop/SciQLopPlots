@@ -80,7 +80,7 @@ public:
 
     virtual ~SciQLopCurve() override;
 
-    virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 };

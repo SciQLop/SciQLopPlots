@@ -27,7 +27,6 @@
 #include <QPointF>
 #include <qcustomplot.h>
 
-
 class SciQLopPlotInterface : public QWidget
 {
     Q_OBJECT
@@ -51,14 +50,14 @@ protected:
 
     inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::GraphType graph_type = ::GraphType::Line, ::AxisType sync_with = ::AxisType::XAxis)
+        ::GraphType graph_type = ::GraphType::Line, QObject* sync_with = nullptr)
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis)
+        bool z_log_scale = false, QObject* sync_with = nullptr)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -157,19 +156,19 @@ public:
 
     inline virtual SciQLopGraphInterface* line(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::AxisType sync_with = ::AxisType::XAxis)
+        QObject* sync_with = nullptr)
     {
         return plot_impl(callable, labels, colors, ::GraphType::Line, sync_with);
     }
     inline virtual SciQLopGraphInterface* parametric_curve(GetDataPyCallable callable,
         QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::AxisType sync_with = ::AxisType::XAxis)
+        QObject* sync_with = nullptr)
     {
         return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, sync_with);
     }
     inline virtual SciQLopGraphInterface* colormap(GetDataPyCallable callable,
         QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-        bool z_log_scale = false, ::AxisType sync_with = ::AxisType::XAxis)
+        bool z_log_scale = false, QObject* sync_with = nullptr)
     {
         return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with);
     }

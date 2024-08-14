@@ -26,13 +26,39 @@
 void DataProviderInterface::_threaded_update()
 {
     m_mutex.lock();
-    auto new_range = m_next_range;
-    m_has_pending_range = false;
-    m_mutex.unlock();
-    if (new_range == m_current_range)
+    if (std::holds_alternative<_TrivialRange>(m_next_state))
+    {
+        auto new_range = std::get<_TrivialRange>(m_next_state);
+        m_has_pending_change = false;
+        m_mutex.unlock();
+        _range_based_update(new_range);
+    }
+    else if (std::holds_alternative<_2D_data>(m_next_state))
+    {
+        auto new_data = std::get<_2D_data>(m_next_state);
+        m_has_pending_change = false;
+        m_mutex.unlock();
+        _data_based_update(new_data);
+    }
+    else if (std::holds_alternative<_3D_data>(m_next_state))
+    {
+        auto new_data = std::get<_3D_data>(m_next_state);
+        m_has_pending_change = false;
+        m_mutex.unlock();
+        _data_based_update(new_data);
+    }
+    else
+    {
+        m_mutex.unlock();
+    }
+}
+
+void DataProviderInterface::_range_based_update(const _TrivialRange& new_range)
+{
+    if (new_range == std::get<_TrivialRange>(m_current_state))
         return;
     auto r = get_data(new_range.lower, new_range.upper);
-    m_current_range = new_range;
+    m_current_state = new_range;
     if (r.size() == 2)
     {
         Q_EMIT new_data_2d(r[0], r[1]);
@@ -47,13 +73,48 @@ void DataProviderInterface::_threaded_update()
     }
 }
 
+void DataProviderInterface::_data_based_update(const _2D_data& new_data)
+{
+    auto r = get_data(new_data.x, new_data.y);
+    if (r.size() == 2)
+    {
+        Q_EMIT new_data_2d(r[0], r[1]);
+    }
+    else if (r.size() == 3)
+    {
+        Q_EMIT new_data_3d(r[0], r[1], r[2]);
+    }
+    else if (r.size() != 0)
+    {
+        std::cerr << "Data provider returned invalid data" << std::endl;
+    }
+}
+
+void DataProviderInterface::_data_based_update(const _3D_data& new_data)
+{
+    auto r = get_data(new_data.x, new_data.y, new_data.z);
+    if (r.size() == 2)
+    {
+        Q_EMIT new_data_2d(r[0], r[1]);
+    }
+    else if (r.size() == 3)
+    {
+        Q_EMIT new_data_3d(r[0], r[1], r[2]);
+    }
+    else if (r.size() != 0)
+    {
+        std::cerr << "Data provider returned invalid data" << std::endl;
+    }
+}
+
+
 DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
 {
     m_rate_limit_timer = new QTimer(this);
     m_rate_limit_timer->setSingleShot(true);
     m_rate_limit_timer->setInterval(100);
     connect(m_rate_limit_timer, &QTimer::timeout, this, &DataProviderInterface::_threaded_update);
-    connect(this, &DataProviderInterface::_range_changed, this,
+    connect(this, &DataProviderInterface::_state_changed, this,
         &DataProviderInterface::_threaded_update, Qt::QueuedConnection);
 }
 
@@ -63,21 +124,50 @@ QList<PyBuffer> DataProviderInterface::get_data(double lower, double upper)
     return { {}, {}, {} };
 }
 
-void DataProviderInterface::test_data(PyBuffer x, PyBuffer y, PyBuffer z)
+QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y)
 {
-    std::cout << "X size: " << x.size() << std::endl;
-    std::cout << "Y size: " << y.size() << std::endl;
-    std::cout << "Z size: " << z.size() << std::endl;
+    std::cout << "Not implemented please implement in derived class" << std::endl;
+    return { {}, {}, {} };
 }
 
-void DataProviderInterface::set_range(_TrivialRange new_range) noexcept
+QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+{
+    std::cout << "Not implemented please implement in derived class" << std::endl;
+    return { {}, {}, {} };
+}
+
+void DataProviderInterface::set_range(_TrivialRange new_state) noexcept
 {
     m_mutex.lock();
-    m_next_range = new_range;
-    if (!m_has_pending_range)
+    m_next_state = new_state;
+    if (!m_has_pending_change)
     {
-        m_has_pending_range = true;
-        Q_EMIT _range_changed();
+        m_has_pending_change = true;
+        Q_EMIT _state_changed();
+    }
+    m_mutex.unlock();
+}
+
+void DataProviderInterface::set_data(_2D_data new_state) noexcept
+{
+    m_mutex.lock();
+    m_next_state = new_state;
+    if (!m_has_pending_change)
+    {
+        m_has_pending_change = true;
+        Q_EMIT _state_changed();
+    }
+    m_mutex.unlock();
+}
+
+void DataProviderInterface::set_data(_3D_data new_state) noexcept
+{
+    m_mutex.lock();
+    m_next_state = new_state;
+    if (!m_has_pending_change)
+    {
+        m_has_pending_change = true;
+        Q_EMIT _state_changed();
     }
     m_mutex.unlock();
 }

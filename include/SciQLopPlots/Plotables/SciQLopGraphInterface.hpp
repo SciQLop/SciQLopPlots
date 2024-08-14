@@ -49,8 +49,8 @@ public:
     virtual QString name() const noexcept { return this->objectName(); }
     virtual QList<QColor> colors() const noexcept { return QList<QColor>(); }
 
-    virtual void set_data(PyBuffer x, PyBuffer y) {};
-    virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) {};
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) {};
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) {};
 
     virtual QList<PyBuffer> data() const noexcept { return QList<PyBuffer>(); }
 
@@ -61,5 +61,7 @@ public:
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void replot();
+    Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
+    Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
 #endif
 };
