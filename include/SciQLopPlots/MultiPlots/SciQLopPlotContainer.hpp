@@ -68,6 +68,12 @@ public:
         _plots->set_x_axis_range(lower, upper);
     }
 
+    inline virtual void set_time_axis_range(double min, double max) Q_DECL_OVERRIDE
+    {
+        _plots->set_time_axis_range(min, max);
+    }
+
+
     inline void registerBehavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
     {
         _plots->registerBehavior(behavior);

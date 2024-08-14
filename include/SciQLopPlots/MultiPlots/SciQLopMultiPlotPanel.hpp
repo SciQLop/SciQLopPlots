@@ -122,6 +122,7 @@ public:
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
 
     void set_x_axis_range(double lower, double upper) Q_DECL_OVERRIDE;
+    void set_time_axis_range(double min, double max) Q_DECL_OVERRIDE;
 
     void registerBehavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
     void removeBehavior(const QString& type_name) Q_DECL_OVERRIDE;

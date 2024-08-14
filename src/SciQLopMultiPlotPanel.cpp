@@ -139,6 +139,11 @@ void SciQLopMultiPlotPanel::set_x_axis_range(double lower, double upper)
     _container->set_x_axis_range(lower, upper);
 }
 
+void SciQLopMultiPlotPanel::set_time_axis_range(double min, double max)
+{
+    _container->set_time_axis_range(min, max);
+}
+
 void SciQLopMultiPlotPanel::registerBehavior(SciQLopPlotCollectionBehavior* behavior)
 {
     _container->registerBehavior(behavior);

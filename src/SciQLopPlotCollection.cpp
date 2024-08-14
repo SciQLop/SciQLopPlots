@@ -56,6 +56,14 @@ void SciQLopPlotCollection::set_x_axis_range(double lower, double upper)
     }
 }
 
+void SciQLopPlotCollection::set_time_axis_range(double min, double max)
+{
+    for (auto* plot : _plots)
+    {
+        plot->time_axis()->set_range(min, max);
+    }
+}
+
 void SciQLopPlotCollection::registerBehavior(SciQLopPlotCollectionBehavior* behavior)
 {
     behavior->setParent(this);
