@@ -27,11 +27,14 @@ void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldR
     this->_resampler->resample(newRange);
 }
 
-void SciQLopCurve::_setCurveData(std::size_t index, QVector<QCPCurveData> data)
+void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
 {
-    auto curve = line(index);
-    if (curve)
-        curve->data()->set(std::move(data), true);
+    for (std::size_t i = 0; i < plottable_count(); i++)
+    {
+        auto curve = line(i);
+        if (curve)
+            curve->data()->set(data[i], true);
+    }
     this->replot();
 }
 

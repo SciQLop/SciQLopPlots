@@ -160,7 +160,7 @@ struct LineGraphResampler : public AbstractResampler1d
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPGraphData> data);
+    Q_SIGNAL void setGraphData(QList<QVector<QCPGraphData>> data);
 #endif
 
     LineGraphResampler(std::size_t line_cnt);

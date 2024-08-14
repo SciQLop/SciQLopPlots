@@ -44,10 +44,10 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
 
-    void _setCurveData(std::size_t index, QVector<QCPCurveData> data);
+    void _setCurveData(QList<QVector<QCPCurveData>> data);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void _setCurveDataSig(std::size_t index, QVector<QCPCurveData> data);
+    Q_SIGNAL void _setCurveDataSig(QList<QVector<QCPCurveData>> data);
 #endif // !BINDINGS_H
 
     void clear_curves(bool curve_already_removed = false);

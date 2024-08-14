@@ -41,12 +41,14 @@ void CurveResampler::_resample(
     if (x.data() != nullptr && x.flat_size() > 0 && new_data)
     {
         const auto y_incr = 1UL;
+        QList<QVector<QCPCurveData>> data;
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
             const auto count = std::size(x);
             const auto start_y = y.data() + (line_index * x.flat_size());
-            emit this->setGraphData(line_index, curve_copy_data(x.data(), start_y, count, y_incr));
+            data.emplace_back(curve_copy_data(x.data(), start_y, count, y_incr));
         }
+        Q_EMIT setGraphData(data);
     }
 }
 

@@ -10,8 +10,9 @@ from datetime import datetime, timezone
 import threading
 from typing import Dict, Any
 
-from qtconsole.rich_jupyter_widget import RichJupyterWidget
-from qtconsole.inprocess import QtInProcessKernelManager
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from common import MainWindow
+
 
 os.environ['QT_API'] = 'PySide6'
 
@@ -51,7 +52,7 @@ def spz_get_data(start, stop):
         v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.FGM.MMS1_FGM_SRVY_L2.mms1_fgm_b_gse_srvy_l2, start, stop)
         if v is None:
             return None
-        v=resample(v, 1./16.)
+        v=resample(v, 1./4)
         x=(v.time.astype(np.int64)/1e9).astype(np.float64)
         return x, v.values.astype(np.float64)
     except Exception as e:
@@ -88,78 +89,19 @@ class Spectrum:
 class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        self.graphs = []
         _, graph = self.plot(spz_get_data,
                              labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
                              colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
                              plot_type=PlotType.TimeSeries)
         self._fft = Spectrum(2**9)
-        self.plot(self._fft, index=0, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
-
-        self.set_x_axis_range(
+        p,_=self.plot(self._fft, index=0, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
+        p.x_axis().set_log(True)
+        p.x_axis().set_range(0.1, 2)
+        p.y_axis().set_log(True)
+        p.y_axis().set_range(1., 1e-4)
+        self.set_time_axis_range(
                 datetime(2019,2,17,12,33,0,0,timezone.utc).timestamp(),
                 datetime(2019,2,17,12,34,0,0,timezone.utc).timestamp())
-
-
-def fix_name(name):
-    return name.replace(" ", "_").replace(":", "_").replace("/", "_")
-
-class Tabs(QTabWidget):
-    def __init__(self,parent):
-        QTabWidget.__init__(self,parent)
-        self.setMouseTracking(True)
-        self.setTabPosition(QTabWidget.TabPosition.North)
-        self.setTabShape(QTabWidget.TabShape.Rounded)
-        self.setMovable(True)
-        self._objects_to_export ={}
-        self.add_tab(MMS(self), "MMS")
-
-
-    def add_tab(self, widget, title):
-        self.addTab(widget, title)
-        self._objects_to_export[fix_name(title)] = widget
-
-    def export_objects(self):
-        return self._objects_to_export
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        QMainWindow.__init__(self)
-        self.setMouseTracking(True)
-        self.axisRects=[]
-        self.graphs = []
-        self._setup_kernel()
-        self._setup_ui()
-        self.setGeometry(400, 250, 542, 390);
-        self.setWindowTitle("SciQLopPlots Test")
-        self.add_to_kernel_namespace(self, 'main_window')
-        for name, widget in self.tabs.export_objects().items():
-            self.add_to_kernel_namespace(widget, name)
-        self.add_to_kernel_namespace(spz, 'spz')
-
-    def _setup_kernel(self):
-        self.kernel_manager = QtInProcessKernelManager()
-        self.kernel_manager.start_kernel(show_banner=False)
-        self.kernel = self.kernel_manager.kernel
-        self.kernel.gui = 'qt'
-
-        self.kernel_client = self.kernel_manager.client()
-        self.kernel_client.start_channels()
-
-    def add_to_kernel_namespace(self, obj, name):
-        self.kernel.shell.push({name: obj})
-
-    def _setup_ui(self):
-        self.tabs = Tabs(self)
-        self.setCentralWidget(self.tabs)
-
-        self.ipython_widget = RichJupyterWidget(self)
-        dock = QDockWidget("IPython Console", self)
-        dock.setWidget(self.ipython_widget)
-        self.addDockWidget(Qt.BottomDockWidgetArea, dock)
-        self.ipython_widget.kernel_manager = self.kernel_manager
-        self.ipython_widget.kernel_client = self.kernel_client
 
 
 if __name__ == '__main__':
@@ -169,5 +111,6 @@ if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
+    w.add_tab(MMS(w), "MMS")
     w.show()
     app.exec()

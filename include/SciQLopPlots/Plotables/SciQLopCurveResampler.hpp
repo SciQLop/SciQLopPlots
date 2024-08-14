@@ -37,7 +37,7 @@ struct CurveResampler : public AbstractResampler1d
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(std::size_t index, QVector<QCPCurveData> data);
+    Q_SIGNAL void setGraphData(QList<QVector<QCPCurveData>> data);
 #endif // !BINDINGS_H
 
     CurveResampler(std::size_t line_cnt);
