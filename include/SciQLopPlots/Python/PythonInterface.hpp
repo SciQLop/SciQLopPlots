@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <cpp_utils/warnings.h>
 
+#include <algorithm>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -49,6 +50,7 @@ struct ArrayViewBase
     virtual std::unique_ptr<ArrayViewBase> view(
         std::size_t first_row = 0, std::size_t last_row = 0) const
         = 0;
+    virtual std::size_t flat_size() const noexcept = 0;
 };
 
 template <bool row_major = true>
@@ -86,6 +88,8 @@ struct ArrayView2D : public ArrayViewBase
             last_row = n_rows;
         return std::make_unique<ArrayView2D<row_major>>(ptr, n_rows, n_cols, first_row, last_row);
     }
+
+    inline std::size_t flat_size() const noexcept override { return (stop - start) * n_cols; }
 };
 
 
@@ -176,10 +180,16 @@ public:
     PyObject* py_object() const;
 };
 
+
 namespace std
 {
 
 inline auto size(const PyBuffer& v)
+{
+    return v.flat_size();
+}
+
+inline auto size(const ArrayViewBase& v)
 {
     return v.flat_size();
 }
@@ -194,6 +204,45 @@ inline auto cend(const PyBuffer& v)
     return v.cend();
 }
 
+}
+
+
+struct XYView
+{
+private:
+    std::unique_ptr<ArrayViewBase> _x;
+    std::unique_ptr<ArrayViewBase> _y;
+
+public:
+    explicit XYView(
+        const PyBuffer& x, const PyBuffer& y, std::size_t start = 0, std::size_t stop = 0)
+    {
+        this->_x = x.view(start, stop);
+        this->_y = y.view(start, stop);
+    }
+
+    explicit XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)
+    {
+        std::size_t start_index = std::distance(
+            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
+        std::size_t stop_index
+            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
+        this->_x = x.view(start_index, stop_index);
+        this->_y = y.view(start_index, stop_index);
+    }
+
+    inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
+    inline double y(std::size_t i, std::size_t j) const { return (*_y)[{ i, j }]; }
+
+    inline std::size_t size() const { return std::size(*_x); }
+};
+
+namespace std
+{
+inline std::size_t size(const XYView& view)
+{
+    return view.size();
+}
 }
 
 struct _GetDataPyCallable_impl;

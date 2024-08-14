@@ -24,37 +24,35 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 
-#include "SciQLopPlots/enums.hpp"
-
 #include <QMutex>
 #include <qcustomplot.h>
 
 
 template <std::size_t dest_size>
-static inline QVector<QCPGraphData> resample(
-    const double* x, const ArrayViewBase& y, std::size_t column_index, std::size_t x_size)
+static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t column_index)
 {
     static_assert(dest_size % 2 == 0);
-    const auto x_0 = x[0];
-    const auto x_1 = x[x_size - 1];
+    const auto x_0 = view.x(0);
+    const auto x_1 = view.x(std::size(view) - 1);
     auto dx = 2. * (x_1 - x_0) / dest_size;
     QVector<QCPGraphData> data(dest_size);
-    const double* current_x = x;
-    std::size_t row_index = 0;
-    std::size_t data_index = 0;
+    std::size_t data_index = 0UL;
+    std::size_t view_index = 0UL;
+
     for (auto bucket = 0UL; bucket < dest_size / 2; bucket++)
     {
         {
-            const auto bucket_start_x = *current_x;
+            const auto bucket_start_x = view.x(view_index);
             double bucket_max_x = std::min(bucket_start_x + dx, x_1);
             double max_value = std::nan("");
             double min_value = std::nan("");
-            while (*current_x < bucket_max_x)
+            auto current_x = bucket_start_x;
+            while (current_x < bucket_max_x && view_index < std::size(view))
             {
-                auto v = y[{ row_index++, column_index }];
+                current_x = view.x(view_index);
+                auto v = view.y(view_index++, column_index);
                 max_value = std::fmax(max_value, v);
                 min_value = std::fmin(min_value, v);
-                current_x++;
             }
             data[data_index++] = QCPGraphData { bucket_start_x, min_value };
             data[data_index++] = QCPGraphData { bucket_start_x + dx / 2., max_value };
@@ -63,13 +61,12 @@ static inline QVector<QCPGraphData> resample(
     return data;
 }
 
-static inline QVector<QCPGraphData> copy_data(
-    const double* x, const ArrayViewBase& y, std::size_t column_index, std::size_t x_size)
+static inline QVector<QCPGraphData> copy_data(const XYView& view, std::size_t column_index)
 {
-    QVector<QCPGraphData> data(x_size);
-    for (auto i = 0UL; i < x_size; i++)
+    QVector<QCPGraphData> data(std::size(view));
+    for (auto i = 0UL; i < std::size(data); i++)
     {
-        data[i] = QCPGraphData { x[i], y[{ i, column_index }] };
+        data[i] = QCPGraphData { view.x(i), view.y(i, column_index) };
     }
     return data;
 }
