@@ -60,7 +60,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->m_replot_timer = new QTimer(this);
     this->m_replot_timer->setSingleShot(true);
     this->m_replot_timer->setInterval(10);
-    connect(this->m_replot_timer, &QTimer::timeout, this, [this]() { QCustomPlot::replot(); });
+    connect(this->m_replot_timer, &QTimer::timeout, this,
+        [this]() { QCustomPlot::replot(rpQueuedReplot); });
+    connect(this, &QCustomPlot::afterReplot, this, [this]() { m_replot_pending = false; });
     using namespace Constants;
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
@@ -199,8 +201,11 @@ void SciQLopPlot::replot(RefreshPriority priority)
     }
     else
     {
-        if (!m_replot_timer->isActive())
+        if (!m_replot_timer->isActive() && !m_replot_pending)
+        {
+            m_replot_pending = true;
             m_replot_timer->start();
+        }
     }
 }
 
