@@ -4,12 +4,13 @@ from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale,
                          SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal
 import sys, os
 import math
 import numpy as np
 from datetime import datetime
 from types import SimpleNamespace
+import humanize
 
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
@@ -21,6 +22,10 @@ except ImportError:
     NUMBA_AVAILABLE = False
 
 os.environ['QT_API'] = 'PySide6'
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from common import MainWindow
+
 
 NPOINTS = 300000
 
@@ -132,14 +137,16 @@ if NUMBA_AVAILABLE:
     @njit(parallel=True)
     def _make_data(x,y):
         for i in prange(len(x)):
-            y[i,0] = math.cos(x[i]*(1./6.)) * math.cos(x[i]) * 100.
-            y[i,1] = math.cos(x[i]*(1./60.)) * math.cos(x[i]*(1./6.)) * 1300.
-            y[i,2] = math.cos(x[i]*(1./600.)) * math.cos(x[i]*(1./60.)) * 17000.
+            y[i,0] = (math.cos(x[i]*(1./3.)) * math.cos(x[i]) +  np.random.rand() )* 100.
+            y[i,1] = (math.cos(x[i]*(1./3.)) * math.cos(x[i]*(1./2.)) +  np.random.rand()) * 1300.
+            y[i,2] = (math.cos(x[i]*(1./30.)) * math.cos(x[i]*(1./3.)) + math.cos(x[i]*(1./30.)) +  np.random.rand()) * 17000.
         return x, y
 
     def make_data( start, end):
         x = np.arange(start, end, dtype=np.float64)
         y = np.empty((len(x),3), dtype=np.float64)
+        if len(x) > 100000:
+            print(f"Using Numba to generate {humanize.metric(len(x))} points")
         return _make_data(x, y)
 
 
@@ -148,9 +155,9 @@ else:
     def make_data( start, end):
         x = np.arange(start, end, dtype=np.float64)
         y = np.empty((len(x), 3), dtype=np.float64)
-        y[:,0] = np.cos(x*(1./6.)) * np.cos(x) * 100.
-        y[:,1] = np.cos(x*(1./60.)) * np.cos(x*(1./6.)) * 1300.
-        y[:,2] = np.cos(x*(1./600.)) * np.cos(x*(1./60.)) * 17000.
+        y[:,0] = np.cos(x*(1./3.)) * np.cos(x) * 100.
+        y[:,1] = np.cos(x*(1./30.)) * np.cos(x*(1./3.)) * 1300.
+        y[:,2] = np.cos(x*(1./300.)) * np.cos(x*(1./30.)) * 17000.
         return x, y
 
 
@@ -164,78 +171,80 @@ class DataProducers(SciQLopMultiPlotPanel):
         plot.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], sync_with=plot.y_axis())
 
 
+def fft(x, y, fft_size=2**12):
+    if x is None or y is None:
+        return np.array([]), np.array([])
+    y = y[:, -1]
+    spec = np.zeros(fft_size, dtype='complex128')
+    han = np.hanning(fft_size)
+    nw = len(y)//fft_size
+    if nw != 0:
+        for i in range(nw):
+            y_w = y[i*fft_size:(i+1)*fft_size]
+            y_w = y_w-np.mean(y_w)
+            y_w = y_w*han
+            spec += (np.fft.fft(y_w)/len(y_w))**2
+        spec = np.abs(np.sqrt(spec/nw))
+        freq = np.fft.fftfreq(len(spec), x[1]-x[0])[1:len(spec)//2]
+        spec = spec[1:len(spec)//2]
+        return freq, spec
 
-
-def fix_name(name):
-    return name.replace(" ", "_").replace(":", "_").replace("/", "_")
-
-class Tabs(QTabWidget):
+class TsAndFFT(SciQLopMultiPlotPanel):
     def __init__(self,parent):
-        QTabWidget.__init__(self,parent)
-        self.setTabPosition(QTabWidget.TabPosition.North)
-        self.setTabShape(QTabWidget.TabShape.Rounded)
-        self.setMovable(True)
-        self._objects_to_export ={}
-        self.add_tab(SimpleGraph(self), "Simple Graph")
-        self.add_tab(SimpleCurve(self), "Simple Curve")
-        self.add_tab(TimeSerieGraph(self), "Time Serie Graph")
-        self.add_tab(StackedPlots(self), "Stacked Plots")
-        self.add_tab(DataProducers(self), "DataProducers")
-
-    def add_tab(self, widget, title):
-        self.addTab(widget, title)
-        self._objects_to_export[fix_name(title)] = widget
-
-    def export_objects(self):
-        return self._objects_to_export
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        _,graph = self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
+        plot, _ = self.plot(fft,index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=graph)
+        plot.x_axis().set_log(True)
+        plot.x_axis().set_range(0.01, 1)
+        plot.y_axis().set_log(True)
+        plot.y_axis().set_range(1., 1e-4)
 
 
 
+class RealTimeAudio(SciQLopMultiPlotPanel):
+    class AudioDataProducer(QThread):
+        update_signal = Signal(np.ndarray, np.ndarray)
+        def __init__(self,parent=None, size=2**10):
+            super().__init__(parent)
+            self.moveToThread(self)
+            try:
+                import sounddevice as sd
+                self._sd = sd
+                sd.default.samplerate = 44100
+                sd.default.channels = 1
+                self._size = size
+                self.x = np.arange(self._size, dtype=np.float64)
+                self.index = 0
+                self.start()
+            except ImportError:
+                print("Sounddevice not found")
+
+        def audio_callback(self, indata, frames, time, status):
+            if status:
+                print(status)
+            if len(indata) == len(self.x):
+                self.update_signal.emit(self.x, indata.astype(np.float64))
 
 
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        QMainWindow.__init__(self)
-        self.setMouseTracking(True)
-        self.axisRects=[]
-        self.graphs = []
-        self._setup_kernel()
-        self._setup_ui()
-        self.setGeometry(400, 250, 542, 390);
-        self.setWindowTitle("SciQLopPlots Test")
-        self.add_to_kernel_namespace(self, 'main_window')
-        for name, widget in self.tabs.export_objects().items():
-            self.add_to_kernel_namespace(widget, name)
-        self.add_to_kernel_namespace(make_plot, 'make_plot')
-        self.add_to_kernel_namespace(add_graph, 'add_graph')
-        self.add_to_kernel_namespace(add_curve, 'add_curve')
-        self.add_to_kernel_namespace(add_colormap, 'add_colormap')
-        self.add_to_kernel_namespace(butterfly, 'butterfly')
+        def run(self):
+            stream = self._sd.InputStream(callback=self.audio_callback, blocksize=self._size)
+            with stream:
+                while True:
+                    self.sleep(1)
 
 
-    def _setup_kernel(self):
-        self.kernel_manager = QtInProcessKernelManager()
-        self.kernel_manager.start_kernel(show_banner=False)
-        self.kernel = self.kernel_manager.kernel
-        self.kernel.gui = 'qt'
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        (self._plot,self._graph) = self.plot(np.arange(10)*1., np.arange(10)*1.,labels=["Audio"], colors=[QColorConstants.Blue])
+        size = 2**10
+        plot, _ = self.plot(lambda x,y:fft(x,y,size),index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=self._graph)
+        plot.x_axis().set_log(True)
+        plot.x_axis().set_range(0.01, 1)
+        plot.y_axis().set_log(True)
+        plot.y_axis().set_range(1., 1e-4)
+        self._data_producer = RealTimeAudio.AudioDataProducer(size=size)
+        self._data_producer.update_signal.connect(lambda x,y: self._graph.set_data(x,y))
 
-        self.kernel_client = self.kernel_manager.client()
-        self.kernel_client.start_channels()
-
-    def add_to_kernel_namespace(self, obj, name):
-        self.kernel.shell.push({name: obj})
-
-    def _setup_ui(self):
-        self.tabs = Tabs(self)
-        self.setCentralWidget(self.tabs)
-
-        self.ipython_widget = RichJupyterWidget(self)
-        dock = QDockWidget("IPython Console", self)
-        dock.setWidget(self.ipython_widget)
-        self.addDockWidget(Qt.BottomDockWidgetArea, dock)
-        self.ipython_widget.kernel_manager = self.kernel_manager
-        self.ipython_widget.kernel_client = self.kernel_client
 
 
 if __name__ == '__main__':
@@ -243,5 +252,12 @@ if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
+    w.add_tab(SimpleGraph(w), "Simple Graph")
+    w.add_tab(SimpleCurve(w), "Simple Curve")
+    w.add_tab(TimeSerieGraph(w), "Time Serie Graph")
+    w.add_tab(StackedPlots(w), "Stacked Plots")
+    w.add_tab(DataProducers(w), "DataProducers")
+    w.add_tab(TsAndFFT(w), "TsAndFFT")
+    w.add_tab(RealTimeAudio(w), "RealTimeAudio")
     w.show()
     app.exec()
