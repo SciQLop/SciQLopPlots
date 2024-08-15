@@ -25,7 +25,6 @@
 
 #include "../DataProducer/DataProducer.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
-#include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
 struct LineGraphResampler;
 class QThread;

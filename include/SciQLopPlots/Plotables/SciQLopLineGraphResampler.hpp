@@ -145,10 +145,6 @@ public:
         QMutexLocker locker(&_data_mutex);
         return { _data.x, _data.y };
     }
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void refreshPlot();
-#endif
 };
 
 struct LineGraphResampler : public AbstractResampler1d
