@@ -35,7 +35,7 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
         if (curve)
             curve->data()->set(data[i], true);
     }
-    this->replot();
+    Q_EMIT this->replot();
 }
 
 void SciQLopCurve::clear_curves(bool curve_already_removed)
@@ -47,7 +47,6 @@ void SciQLopCurve::clear_resampler()
 {
     connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
     disconnect(this->_resampler, &CurveResampler::setGraphData, this, &SciQLopCurve::_setCurveData);
-    disconnect(this->_resampler, &CurveResampler::refreshPlot, nullptr, nullptr);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
     delete this->_resampler_thread;

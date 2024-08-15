@@ -45,7 +45,7 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
             graph->data()->set(data[i], true);
         }
     }
-    this->replot();
+    Q_EMIT this->replot();
 }
 
 SciQLopLineGraph::SciQLopLineGraph(
@@ -71,7 +71,6 @@ void SciQLopLineGraph::clear_resampler()
     connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
     disconnect(this->_resampler, &LineGraphResampler::setGraphData, this,
         &SciQLopLineGraph::_setGraphData);
-    disconnect(this->_resampler, &LineGraphResampler::refreshPlot, nullptr, nullptr);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
     delete this->_resampler_thread;
@@ -87,8 +86,6 @@ void SciQLopLineGraph::create_resampler(const QStringList& labels)
     this->_resampler_thread->start(QThread::LowPriority);
     connect(this->_resampler, &LineGraphResampler::setGraphData, this,
         &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
-    connect(this->_resampler, &LineGraphResampler::refreshPlot, this, &SciQLopLineGraph::replot,
-        Qt::QueuedConnection);
 }
 
 
