@@ -3,7 +3,7 @@ from .SciQLopPlotsBindings import GraphType, SciQLopPlot, SciQLopTimeSeriesPlot,
 from .SciQLopPlotsBindings import *
 
 
-__version__ = '0.8.1'
+__version__ = '0.9.0'
 
 
 def _patch_sciqlop_plot(cls):
