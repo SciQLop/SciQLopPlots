@@ -39,5 +39,5 @@ public:
 
     Q_SLOT virtual void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
 
-    Q_SLOT virtual void set_axis_range(double min, double max);
+    Q_SLOT virtual void set_axis_range(const SciQLopPlotRange &range);
 };

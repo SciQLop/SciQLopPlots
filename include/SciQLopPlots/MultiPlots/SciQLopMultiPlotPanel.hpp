@@ -62,9 +62,9 @@ protected:
     {
         auto* plot = new T();
         if (index == -1)
-            addPlot(plot);
+            add_plot(plot);
         else
-            insertPlot(index, plot);
+            insert_plot(index, plot);
         if (graph_type == GraphType::Line)
             __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...);
         if (graph_type == GraphType::ParametricCurve)
@@ -100,15 +100,18 @@ public:
     SciQLopMultiPlotPanel(
         QWidget* parent = nullptr, bool synchronize_x = true, bool synchronize_time = false);
 
-    void addPlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    void removePlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    SciQLopPlotInterface* plotAt(int index) const Q_DECL_OVERRIDE;
+    void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     const QList<SciQLopPlotInterface*>& plots() const;
 
-    virtual void insertPlot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    virtual void movePlot(int from, int to) Q_DECL_OVERRIDE;
-    virtual void movePlot(SciQLopPlotInterface* plot, int to) Q_DECL_OVERRIDE;
+    virtual void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    virtual void move_plot(int from, int to) Q_DECL_OVERRIDE;
+    virtual void move_plot(SciQLopPlotInterface* plot, int to) Q_DECL_OVERRIDE;
     void clear() Q_DECL_OVERRIDE;
+
+    int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE;
+    int indexOf(QWidget* widget) const;
 
 
     bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE;
@@ -121,11 +124,26 @@ public:
 
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
 
-    void set_x_axis_range(double lower, double upper) Q_DECL_OVERRIDE;
-    void set_time_axis_range(double min, double max) Q_DECL_OVERRIDE;
+    void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
+    void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
 
-    void registerBehavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
-    void removeBehavior(const QString& type_name) Q_DECL_OVERRIDE;
+
+    inline void set_x_axis_range(double start, double stop)
+    {
+        set_x_axis_range(SciQLopPlotRange(start, stop));
+    }
+    inline void set_time_axis_range(double start, double stop)
+    {
+        set_time_axis_range(SciQLopPlotRange(start, stop));
+    }
+
+    inline void set_time_axis_range(const QDateTime& start, const QDateTime& stop)
+    {
+        set_time_axis_range(SciQLopPlotRange(start, stop));
+    }
+
+    void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
 
 #ifndef BINDINGS_H

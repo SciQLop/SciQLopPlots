@@ -27,14 +27,16 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent)
         : SciQLopPlotAxisInterface(parent), m_axis(axis)
 {
     connect(axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range) { Q_EMIT range_changed(range.lower, range.upper); });
+        [this](const QCPRange& range)
+        { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
 }
 
-void SciQLopPlotAxis::set_range(double lower, double upper) noexcept
+void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (!m_axis.isNull() && (m_axis->range().lower != lower || m_axis->range().upper != upper))
+    if (!m_axis.isNull()
+        && (m_axis->range().lower != range.start() || m_axis->range().upper != range.stop()))
     {
-        m_axis->setRange(lower, upper);
+        m_axis->setRange(range.start(), range.stop());
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 }
@@ -78,11 +80,11 @@ void SciQLopPlotAxis::set_label(const QString& label) noexcept
     }
 }
 
-std::pair<double, double> SciQLopPlotAxis::range() const noexcept
+SciQLopPlotRange SciQLopPlotAxis::range() const noexcept
 {
     if (m_axis.isNull())
-        return std::make_pair(std::nan(""), std::nan(""));
-    return std::make_pair(m_axis->range().lower, m_axis->range().upper);
+        return SciQLopPlotRange();
+    return SciQLopPlotRange(m_axis->range().lower, m_axis->range().upper);
 }
 
 bool SciQLopPlotAxis::visible() const noexcept
@@ -167,11 +169,11 @@ QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
     return m_axis.data();
 }
 
-void SciQLopPlotDummyAxis::set_range(double lower, double upper) noexcept
+void SciQLopPlotDummyAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (m_range.first != lower || m_range.second != upper)
+    if (m_range != range)
     {
-        m_range = { lower, upper };
-        Q_EMIT this->range_changed(lower, upper);
+        m_range = range;
+        Q_EMIT this->range_changed(range);
     }
 }

@@ -79,25 +79,27 @@ protected:
 public:
     virtual ~SciQLopPlotCollectionInterface() = default;
 
-    inline virtual void addPlot(SciQLopPlotInterface* plot) { }
-    inline virtual void insertPlot(int index, SciQLopPlotInterface* plot) { }
-    inline virtual void removePlot(SciQLopPlotInterface* plot) { }
-    inline virtual void movePlot(int from, int to) { }
-    inline virtual void movePlot(SciQLopPlotInterface* plot, int to) { }
+    inline virtual void add_plot(SciQLopPlotInterface* plot) { }
+    inline virtual void insert_plot(int index, SciQLopPlotInterface* plot) { }
+    inline virtual void remove_plot(SciQLopPlotInterface* plot) { }
+    inline virtual void move_plot(int from, int to) { }
+    inline virtual void move_plot(SciQLopPlotInterface* plot, int to) { }
     inline virtual void clear() { }
 
-    inline virtual SciQLopPlotInterface* plotAt(int index) const { return nullptr; }
+    inline virtual int index(SciQLopPlotInterface* plot) const { return -1; }
+
+    inline virtual SciQLopPlotInterface* plot_at(int index) const { return nullptr; }
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const { return false; }
 
     inline virtual bool empty() const { return true; }
     inline virtual std::size_t size() const { return 0; }
 
-    inline virtual void set_x_axis_range(double min, double max) { }
-    inline virtual void set_time_axis_range(double min, double max) { }
+    virtual void set_x_axis_range(const SciQLopPlotRange& range);
+    virtual void set_time_axis_range(const SciQLopPlotRange& range);
 
-    inline virtual void registerBehavior(SciQLopPlotCollectionBehavior* behavior) { }
-    inline virtual void removeBehavior(const QString& type_name) { }
+    inline virtual void register_behavior(SciQLopPlotCollectionBehavior* behavior) { }
+    inline virtual void remove_behavior(const QString& type_name) { }
 
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> line(const PyBuffer& x,
@@ -152,15 +154,15 @@ public:
 };
 
 template <typename U, typename Interface_T, typename... Args>
-void registerBehavior(Interface_T* interface, Args&&... args)
+void register_behavior(Interface_T* interface, Args&&... args)
 {
-    interface->registerBehavior(new U(interface, std::forward<Args>(args)...));
+    interface->register_behavior(new U(interface, std::forward<Args>(args)...));
 }
 
 template <typename U, typename Interface_T>
-void removeBehavior(Interface_T* interface)
+void remove_behavior(Interface_T* interface)
 {
-    interface->removeBehavior(U::staticMetaObject.className());
+    interface->remove_behavior(U::staticMetaObject.className());
 }
 
 class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterface
@@ -173,14 +175,16 @@ class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterf
 public:
     SciQLopPlotCollection(QObject* parent = nullptr);
     virtual ~SciQLopPlotCollection() = default;
-    void addPlot(SciQLopPlotInterface* plot) final;
-    void insertPlot(int index, SciQLopPlotInterface* plot) final;
-    void removePlot(SciQLopPlotInterface* plot) final;
-    void movePlot(int from, int to) final;
-    void movePlot(SciQLopPlotInterface* plot, int to) final;
+    void add_plot(SciQLopPlotInterface* plot) final;
+    void insert_plot(int index, SciQLopPlotInterface* plot) final;
+    void remove_plot(SciQLopPlotInterface* plot) final;
+    void move_plot(int from, int to) final;
+    void move_plot(SciQLopPlotInterface* plot, int to) final;
     void clear() final;
 
-    SciQLopPlotInterface* plotAt(int index) const final;
+    int index(SciQLopPlotInterface* plot) const final;
+
+    SciQLopPlotInterface* plot_at(int index) const final;
     inline const QList<SciQLopPlotInterface*>& plots() const { return _plots; }
 
     inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
@@ -188,11 +192,11 @@ public:
     inline bool empty() const final { return _plots.isEmpty(); }
     inline std::size_t size() const final { return _plots.size(); }
 
-    virtual void set_x_axis_range(double lower, double upper) final;
-    virtual void set_time_axis_range(double min, double max) final;
+    virtual void set_x_axis_range(const SciQLopPlotRange& range) final;
+    virtual void set_time_axis_range(const SciQLopPlotRange& range) final;
 
-    void registerBehavior(SciQLopPlotCollectionBehavior* behavior) final;
-    void removeBehavior(const QString& type_name) final;
+    void register_behavior(SciQLopPlotCollectionBehavior* behavior) final;
+    void remove_behavior(const QString& type_name) final;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);

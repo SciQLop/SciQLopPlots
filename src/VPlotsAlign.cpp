@@ -86,18 +86,8 @@ void VPlotsAlign::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
     for (auto p : _plots)
     {
         connect(p, &SciQLopPlot::y_axis_range_changed, this,
-            [this](double min, double max)
-            {
-                Q_UNUSED(min);
-                Q_UNUSED(max);
-                _recompute_margins();
-            });
+            [this](SciQLopPlotRange) { _recompute_margins(); });
         connect(p, &SciQLopPlot::y2_axis_range_changed, this,
-            [this](double min, double max)
-            {
-                Q_UNUSED(min);
-                Q_UNUSED(max);
-                _recompute_margins();
-            });
+            [this](SciQLopPlotRange) { _recompute_margins(); });
     }
 }

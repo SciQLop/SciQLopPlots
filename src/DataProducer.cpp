@@ -26,9 +26,9 @@
 void DataProviderInterface::_threaded_update()
 {
     m_mutex.lock();
-    if (std::holds_alternative<_TrivialRange>(m_next_state))
+    if (std::holds_alternative<SciQLopPlotRange>(m_next_state))
     {
-        auto new_range = std::get<_TrivialRange>(m_next_state);
+        auto new_range = std::get<SciQLopPlotRange>(m_next_state);
         m_has_pending_change = false;
         m_mutex.unlock();
         _range_based_update(new_range);
@@ -53,11 +53,11 @@ void DataProviderInterface::_threaded_update()
     }
 }
 
-void DataProviderInterface::_range_based_update(const _TrivialRange& new_range)
+void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_range)
 {
-    if (new_range == std::get<_TrivialRange>(m_current_state))
+    if (new_range == std::get<SciQLopPlotRange>(m_current_state))
         return;
-    auto r = get_data(new_range.lower, new_range.upper);
+    auto r = get_data(new_range.start(), new_range.stop());
     m_current_state = new_range;
     if (r.size() == 2)
     {
@@ -136,7 +136,7 @@ QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y, PyBuffer
     return { {}, {}, {} };
 }
 
-void DataProviderInterface::set_range(_TrivialRange new_state) noexcept
+void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 {
     m_mutex.lock();
     m_next_state = new_state;

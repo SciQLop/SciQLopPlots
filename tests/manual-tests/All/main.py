@@ -1,7 +1,5 @@
-from SciQLopPlots import SciQLopPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, \
-                         QCPLegend, QCPColorGradient, QCPMarginGroup, QCPAxisRect,QCPAxisTickerDateTime, \
-                         MultiPlotsVerticalSpan, QCPAxisTickerLog,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType
+from SciQLopPlots import SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
+                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal
@@ -35,7 +33,7 @@ def make_plot(parent, time_axis=False):
         plot.x_axis().set_range(datetime.now().timestamp(), datetime.now().timestamp()+NPOINTS)
     else:
         plot = SciQLopPlot(parent)
-        plot.x_axis().set_range(0, NPOINTS)
+        plot.x_axis().set_range(SciQLopPlotRange(0, NPOINTS))
     plot.enable_legend(True)
     plot.minimize_margins()
     return plot
@@ -105,12 +103,9 @@ class TimeSerieGraph(QWidget):
 
         x_range = self.plot.x_axis().range()
 
-        middle =( x_range[0] + x_range[1]) / 2
-        width = x_range[1] - x_range[0]
+        self._verticalSpan = SciQLopVerticalSpan(self.plot, x_range/10, QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
-        self._verticalSpan = SciQLopVerticalSpan(self.plot, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
-
-        self._ro_verticalSpan = SciQLopVerticalSpan(self.plot, QCPRange(middle+width/20, middle+width/10), QColor(200, 100, 100, 100), read_only=True, visible=True, tool_tip="Vertical Span")
+        self._ro_verticalSpan = SciQLopVerticalSpan(self.plot, x_range/20 + 100, QColor(200, 100, 100, 100), read_only=True, visible=True, tool_tip="Vertical Span")
 
 
 
@@ -121,17 +116,14 @@ class StackedPlots(SciQLopMultiPlotPanel):
         self.graphs = []
         for _ in range(5):
             plot = make_plot(None, time_axis=True)
-            self.addPlot(plot)
+            self.add_plot(plot)
             self.graphs.append(add_graph(plot, time_axis=True))
 
         self.cmap = add_colormap(self.plots()[-1], time_axis=True)
 
-        x_range = self.plotAt(0).x_axis().range()
+        x_range = self.plot_at(0).x_axis().range()
 
-        middle = (x_range[0] + x_range[1]) / 2
-        width = x_range[1] - x_range[0]
-
-        self._verticalSpan = MultiPlotsVerticalSpan(self, QCPRange(middle-width/10, middle+width/10), QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
+        self._verticalSpan = MultiPlotsVerticalSpan(self, x_range/10, QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
 
 if NUMBA_AVAILABLE:
     @njit(parallel=True)

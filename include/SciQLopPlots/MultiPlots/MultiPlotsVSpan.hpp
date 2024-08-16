@@ -25,12 +25,13 @@
 #include "../Items/SciQLopVerticalSpan.hpp"
 #include "SciQLopMultiPlotObject.hpp"
 #include "SciQLopMultiPlotPanel.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 
 class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 {
     Q_OBJECT
     QList<SciQLopVerticalSpan*> _spans;
-    QCPRange _horizontal_range;
+    SciQLopPlotRange _horizontal_range;
     bool _selected = false;
     bool _lower_border_selected = false;
     bool _upper_border_selected = false;
@@ -48,13 +49,13 @@ protected:
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
     Q_SIGNAL void selection_changed(bool);
     Q_SIGNAL void delete_requested();
 #endif
 
-    MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, QCPRange horizontal_range, QColor color,
-        bool read_only = false, bool visible = true, const QString& tool_tip = "")
+    MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
+        QColor color, bool read_only = false, bool visible = true, const QString& tool_tip = "")
             : SciQLopMultiPlotObject(panel)
     {
         _horizontal_range = horizontal_range;
@@ -92,9 +93,9 @@ public:
 
     inline QColor get_color() const { return _color; }
 
-    void set_range(const QCPRange horizontal_range);
+    void set_range(const SciQLopPlotRange horizontal_range);
 
-    [[nodiscard]] inline QCPRange get_range() const noexcept { return _horizontal_range; }
+    [[nodiscard]] inline SciQLopPlotRange get_range() const noexcept { return _horizontal_range; }
 
     inline void set_visible(bool visible)
     {

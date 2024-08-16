@@ -24,6 +24,7 @@
 #include "../MultiPlots/SciQLopMultiPlotObject.hpp"
 #include "../constants.hpp"
 #include "SciQLopPlotItem.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
@@ -169,13 +170,13 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
     Q_SIGNAL void delete_requested();
 #endif
 
-    VerticalSpan(QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot = false,
+    VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot = false,
         bool immediate_replot = false);
 
     inline void setMovable(bool movable) noexcept final
@@ -222,11 +223,12 @@ public:
         }
     }
 
-    void set_range(const QCPRange horizontal_range);
+    void set_range(const SciQLopPlotRange horizontal_range);
 
-    [[nodiscard]] inline QCPRange range() const noexcept
+    [[nodiscard]] inline SciQLopPlotRange range() const noexcept
     {
-        return QCPRange { this->_lower_border()->position(), this->_upper_border()->position() };
+        return SciQLopPlotRange { this->_lower_border()->position(),
+            this->_upper_border()->position() };
     }
 
     void move(double dx, double dy) override;
@@ -308,12 +310,12 @@ protected:
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(QCPRange new_time_range);
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
     Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 #endif
 
-    SciQLopVerticalSpan(SciQLopPlot* plot, QCPRange horizontal_range, QColor color,
+    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range, QColor color,
         bool read_only = false, bool visible = true, const QString& tool_tip = "");
 
     ~SciQLopVerticalSpan()
@@ -348,12 +350,12 @@ public:
         return false;
     }
 
-    inline void set_range(const QCPRange horizontal_range)
+    inline void set_range(const SciQLopPlotRange horizontal_range)
     {
         if (!_impl.isNull())
             this->_impl->set_range(horizontal_range);
     }
-    [[nodiscard]] inline QCPRange range() const noexcept
+    [[nodiscard]] inline SciQLopPlotRange range() const noexcept
     {
         if (!_impl.isNull())
             return this->_impl->range();

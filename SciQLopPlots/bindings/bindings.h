@@ -24,6 +24,7 @@
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <SciQLopPlots/SciQLopPlotInterface.hpp>
+#include <SciQLopPlots/SciQLopPlotRange.hpp>
 #include <SciQLopPlots/SciQLopTimeSeriesPlot.hpp>
 #include <SciQLopPlots/enums.hpp>
 #include <qcustomplot.h>

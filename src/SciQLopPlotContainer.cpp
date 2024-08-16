@@ -42,7 +42,7 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
     QSplitter::insertWidget(index, widget);
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
     {
-        _plots->insertPlot(index, plot);
+        _plots->insert_plot(index, plot);
     }
 }
 
@@ -51,34 +51,34 @@ void SciQLopPlotContainer::addWidget(QWidget* widget)
     insertWidget(QSplitter::count(), widget);
 }
 
-void SciQLopPlotContainer::insertPlot(int index, SciQLopPlotInterface* plot)
+void SciQLopPlotContainer::insert_plot(int index, SciQLopPlotInterface* plot)
 {
     insertWidget(index, plot);
 }
 
-void SciQLopPlotContainer::addPlot(SciQLopPlotInterface* plot)
+void SciQLopPlotContainer::add_plot(SciQLopPlotInterface* plot)
 {
     addWidget(plot);
 }
 
-void SciQLopPlotContainer::movePlot(int from, int to)
+void SciQLopPlotContainer::move_plot(int from, int to)
 {
-    auto* plot = _plots->plotAt(from);
-    _plots->movePlot(from, to);
+    auto* plot = _plots->plot_at(from);
+    _plots->move_plot(from, to);
     QSplitter::insertWidget(to, plot);
 }
 
-void SciQLopPlotContainer::movePlot(SciQLopPlotInterface* plot, int to)
+void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
 {
-    movePlot(_plots->plots().indexOf(plot), to);
+    move_plot(_plots->plots().indexOf(plot), to);
 }
 
-void SciQLopPlotContainer::removePlot(SciQLopPlotInterface* plot)
+void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot)
 {
-    removePlot(plot, true);
+    remove_plot(plot, true);
 }
 
-void SciQLopPlotContainer::removePlot(SciQLopPlotInterface* plot, bool destroy)
+void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
 {
     if (_plots->contains(plot))
     {
@@ -93,7 +93,7 @@ void SciQLopPlotContainer::removePlot(SciQLopPlotInterface* plot, bool destroy)
 void SciQLopPlotContainer::removeWidget(QWidget* widget, bool destroy)
 {
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
-        removePlot(plot, destroy);
+        remove_plot(plot, destroy);
     else
     {
         widget->setParent(nullptr);

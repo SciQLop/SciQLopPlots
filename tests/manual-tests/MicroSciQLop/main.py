@@ -99,9 +99,7 @@ class MMS(SciQLopMultiPlotPanel):
         p.x_axis().set_range(0.1, 2)
         p.y_axis().set_log(True)
         p.y_axis().set_range(1., 1e-4)
-        self.set_time_axis_range(
-                datetime(2019,2,17,12,33,0,0,timezone.utc).timestamp(),
-                datetime(2019,2,17,12,34,0,0,timezone.utc).timestamp())
+        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
 
 
 if __name__ == '__main__':

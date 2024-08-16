@@ -81,7 +81,7 @@ void AxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
     _plots = plots;
 }
 
-void AxisSynchronizer::set_axis_range(double min, double max)
+void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
 {
     for (auto plot : _plots)
     {
@@ -89,19 +89,19 @@ void AxisSynchronizer::set_axis_range(double min, double max)
         {
             case AxisType::XAxis:
                 if (auto axis = plot->x_axis())
-                    axis->set_range(min, max);
+                    axis->set_range(range);
                 break;
             case AxisType::YAxis:
                 if (auto axis = plot->y_axis())
-                    axis->set_range(min, max);
+                    axis->set_range(range);
                 break;
             case AxisType::ZAxis:
                 if (auto axis = plot->z_axis())
-                    axis->set_range(min, max);
+                    axis->set_range(range);
                 break;
             case AxisType::TimeAxis:
                 if (auto axis = plot->time_axis())
-                    axis->set_range(min, max);
+                    axis->set_range(range);
                 break;
             default:
                 break;
