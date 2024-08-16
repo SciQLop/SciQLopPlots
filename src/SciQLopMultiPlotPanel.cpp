@@ -41,26 +41,26 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     setWidget(_container);
     this->setWidgetResizable(true);
 
-    ::registerBehavior<VPlotsAlign>(_container);
+    ::register_behavior<VPlotsAlign>(_container);
     if (synchronize_x)
-        ::registerBehavior<XAxisSynchronizer>(_container);
+        ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
-        ::registerBehavior<TimeAxisSynchronizer>(_container);
+        ::register_behavior<TimeAxisSynchronizer>(_container);
 }
 
-void SciQLopMultiPlotPanel::addPlot(SciQLopPlotInterface* plot)
+void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
 {
-    _container->addPlot(plot);
+    _container->add_plot(plot);
 }
 
-void SciQLopMultiPlotPanel::removePlot(SciQLopPlotInterface* plot)
+void SciQLopMultiPlotPanel::remove_plot(SciQLopPlotInterface* plot)
 {
-    _container->removePlot(plot);
+    _container->remove_plot(plot);
 }
 
-SciQLopPlotInterface* SciQLopMultiPlotPanel::plotAt(int index) const
+SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
 {
-    return _container->plotAt(index);
+    return _container->plot_at(index);
 }
 
 const QList<SciQLopPlotInterface*>& SciQLopMultiPlotPanel::plots() const
@@ -68,24 +68,34 @@ const QList<SciQLopPlotInterface*>& SciQLopMultiPlotPanel::plots() const
     return _container->plots();
 }
 
-void SciQLopMultiPlotPanel::insertPlot(int index, SciQLopPlotInterface* plot)
+void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)
 {
-    _container->insertPlot(index, plot);
+    _container->insert_plot(index, plot);
 }
 
-void SciQLopMultiPlotPanel::movePlot(int from, int to)
+void SciQLopMultiPlotPanel::move_plot(int from, int to)
 {
-    _container->movePlot(from, to);
+    _container->move_plot(from, to);
 }
 
-void SciQLopMultiPlotPanel::movePlot(SciQLopPlotInterface* plot, int to)
+void SciQLopMultiPlotPanel::move_plot(SciQLopPlotInterface* plot, int to)
 {
-    _container->movePlot(plot, to);
+    _container->move_plot(plot, to);
 }
 
 void SciQLopMultiPlotPanel::clear()
 {
     _container->clear();
+}
+
+int SciQLopMultiPlotPanel::index(SciQLopPlotInterface* plot) const
+{
+    return _container->index(plot);
+}
+
+int SciQLopMultiPlotPanel::indexOf(QWidget* widget) const
+{
+    return _container->indexOf(widget);
 }
 
 bool SciQLopMultiPlotPanel::contains(SciQLopPlotInterface* plot) const
@@ -128,30 +138,30 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::create_plot(int index, PlotType plo
             break;
     }
     if (index == -1)
-        addPlot(plot);
+        add_plot(plot);
     else
-        insertPlot(index, plot);
+        insert_plot(index, plot);
     return plot;
 }
 
-void SciQLopMultiPlotPanel::set_x_axis_range(double lower, double upper)
+void SciQLopMultiPlotPanel::set_x_axis_range(const SciQLopPlotRange& range)
 {
-    _container->set_x_axis_range(lower, upper);
+    _container->set_x_axis_range(range);
 }
 
-void SciQLopMultiPlotPanel::set_time_axis_range(double min, double max)
+void SciQLopMultiPlotPanel::set_time_axis_range(const SciQLopPlotRange& range)
 {
-    _container->set_time_axis_range(min, max);
+    _container->set_time_axis_range(range);
 }
 
-void SciQLopMultiPlotPanel::registerBehavior(SciQLopPlotCollectionBehavior* behavior)
+void SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
-    _container->registerBehavior(behavior);
+    _container->register_behavior(behavior);
 }
 
-void SciQLopMultiPlotPanel::removeBehavior(const QString& type_name)
+void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
 {
-    _container->removeBehavior(type_name);
+    _container->remove_behavior(type_name);
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(

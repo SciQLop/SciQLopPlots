@@ -23,6 +23,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QPointF>
 #include <qcustomplot.h>
@@ -186,12 +187,12 @@ public:
 
 #ifndef BINDINGS_H
     Q_SIGNAL void scroll_factor_changed(double factor);
-    Q_SIGNAL void x_axis_range_changed(double lower, double upper);
-    Q_SIGNAL void x2_axis_range_changed(double lower, double upper);
-    Q_SIGNAL void y_axis_range_changed(double lower, double upper);
-    Q_SIGNAL void z_axis_range_changed(double lower, double upper);
-    Q_SIGNAL void y2_axis_range_changed(double lower, double upper);
-    Q_SIGNAL void time_axis_range_changed(double lower, double upper);
+    Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
 #endif
 protected:
     inline virtual QList<SciQLopPlotAxisInterface*> axes_to_rescale() const noexcept

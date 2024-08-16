@@ -37,19 +37,24 @@ public:
 
     void insertWidget(int index, QWidget* widget);
     void addWidget(QWidget* widget);
-    void insertPlot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    void addPlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    void movePlot(int from, int to) Q_DECL_OVERRIDE;
-    void movePlot(SciQLopPlotInterface* plot, int to) Q_DECL_OVERRIDE;
-    void removePlot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
-    void removePlot(SciQLopPlotInterface* plot, bool destroy);
+    void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    void move_plot(int from, int to) Q_DECL_OVERRIDE;
+    void move_plot(SciQLopPlotInterface* plot, int to) Q_DECL_OVERRIDE;
+    void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+    void remove_plot(SciQLopPlotInterface* plot, bool destroy);
     void removeWidget(QWidget* widget, bool destroy);
+
+    inline int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
+    {
+        return _plots->index(plot);
+    }
 
     virtual void clear() Q_DECL_OVERRIDE;
 
-    inline virtual SciQLopPlotInterface* plotAt(int index) const Q_DECL_OVERRIDE
+    inline virtual SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE
     {
-        return _plots->plotAt(index);
+        return _plots->plot_at(index);
     }
 
     inline const QList<SciQLopPlotInterface*>& plots() const { return _plots->plots(); }
@@ -63,24 +68,24 @@ public:
     virtual std::size_t size() const Q_DECL_OVERRIDE { return _plots->size(); }
 
 
-    inline void set_x_axis_range(double lower, double upper) Q_DECL_OVERRIDE
+    inline void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
-        _plots->set_x_axis_range(lower, upper);
+        _plots->set_x_axis_range(range);
     }
 
-    inline virtual void set_time_axis_range(double min, double max) Q_DECL_OVERRIDE
+    inline virtual void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
-        _plots->set_time_axis_range(min, max);
+        _plots->set_time_axis_range(range);
     }
 
 
-    inline void registerBehavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
+    inline void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
     {
-        _plots->registerBehavior(behavior);
+        _plots->register_behavior(behavior);
     }
-    inline void removeBehavior(const QString& type_name) Q_DECL_OVERRIDE
+    inline void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE
     {
-        _plots->removeBehavior(type_name);
+        _plots->remove_behavior(type_name);
     }
     void organize_plots();
 

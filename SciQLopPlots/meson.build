@@ -54,6 +54,7 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
     project_source_root + '/include/SciQLopPlots/enums.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotInterface.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopTimeSeriesPlot.hpp',

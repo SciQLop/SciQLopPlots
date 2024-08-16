@@ -1,5 +1,5 @@
 from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL, QtPrintSupport, QtSvg
-from .SciQLopPlotsBindings import GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel, SciQLopGraphInterface, AxisType
+from .SciQLopPlotsBindings import GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel, SciQLopGraphInterface, AxisType, SciQLopPlotRange
 from .SciQLopPlotsBindings import *
 
 
@@ -38,6 +38,15 @@ def _patch_sciqlop_plot(cls):
     return cls
 
 
+def _patch_sciqlopplotrange_iter(cls):
+    def __iter__(self):
+        return iter((self[0], self[1]))
+    cls.__iter__ = __iter__
+    return cls
+
+
 SciQLopPlot = _patch_sciqlop_plot(SciQLopPlot)
 SciQLopTimeSeriesPlot = _patch_sciqlop_plot(SciQLopTimeSeriesPlot)
 SciQLopMultiPlotPanel = _patch_sciqlop_plot(SciQLopMultiPlotPanel)
+
+SciQLopPlotRange = _patch_sciqlopplotrange_iter(SciQLopPlotRange)

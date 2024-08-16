@@ -26,45 +26,45 @@
 
 SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
 
-void SciQLopPlotCollection::addPlot(SciQLopPlotInterface* plot)
+void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
 {
-    insertPlot(_plots.size(), plot);
+    insert_plot(_plots.size(), plot);
 }
 
-void SciQLopPlotCollection::insertPlot(int index, SciQLopPlotInterface* plot)
+void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
 {
     _plots.insert(index, plot);
     emit plotListChanged(_plots);
 }
 
-void SciQLopPlotCollection::removePlot(SciQLopPlotInterface* plot)
+void SciQLopPlotCollection::remove_plot(SciQLopPlotInterface* plot)
 {
     _plots.removeOne(plot);
     emit plotListChanged(_plots);
 }
 
-SciQLopPlotInterface* SciQLopPlotCollection::plotAt(int index) const
+SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
 {
     return _plots.at(index);
 }
 
-void SciQLopPlotCollection::set_x_axis_range(double lower, double upper)
+void SciQLopPlotCollection::set_x_axis_range(const SciQLopPlotRange& range)
 {
     for (auto* plot : _plots)
     {
-        plot->x_axis()->set_range(lower, upper);
+        plot->x_axis()->set_range(range);
     }
 }
 
-void SciQLopPlotCollection::set_time_axis_range(double min, double max)
+void SciQLopPlotCollection::set_time_axis_range(const SciQLopPlotRange& range)
 {
     for (auto* plot : _plots)
     {
-        plot->time_axis()->set_range(min, max);
+        plot->time_axis()->set_range(range);
     }
 }
 
-void SciQLopPlotCollection::registerBehavior(SciQLopPlotCollectionBehavior* behavior)
+void SciQLopPlotCollection::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
     behavior->setParent(this);
     _behaviors[behavior->metaObject()->className()] = behavior;
@@ -73,7 +73,7 @@ void SciQLopPlotCollection::registerBehavior(SciQLopPlotCollectionBehavior* beha
         &SciQLopPlotCollectionBehavior::updatePlotList);
 }
 
-void SciQLopPlotCollection::removeBehavior(const QString& type_name)
+void SciQLopPlotCollection::remove_behavior(const QString& type_name)
 {
     if (_behaviors.contains(type_name))
     {
@@ -91,13 +91,22 @@ void SciQLopPlotCollection::clear()
     emit plotListChanged(_plots);
 }
 
-void SciQLopPlotCollection::movePlot(int from, int to)
+int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
+{
+    return _plots.indexOf(plot);
+}
+
+void SciQLopPlotCollection::move_plot(int from, int to)
 {
     _plots.move(from, to);
     emit plotListChanged(_plots);
 }
 
-void SciQLopPlotCollection::movePlot(SciQLopPlotInterface* plot, int to)
+void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)
 {
-    movePlot(_plots.indexOf(plot), to);
+    move_plot(_plots.indexOf(plot), to);
 }
+
+void SciQLopPlotCollectionInterface::set_x_axis_range(const SciQLopPlotRange& range) { }
+
+void SciQLopPlotCollectionInterface::set_time_axis_range(const SciQLopPlotRange& range) { }

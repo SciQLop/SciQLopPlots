@@ -26,11 +26,11 @@ SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
     connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
 }
 
-void SciQLopGraphInterface::set_range(double lower, double upper)
+void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
 {
-    if (m_range.first != lower || m_range.second != upper)
+    if (m_range != range)
     {
-        m_range = { lower, upper };
-        Q_EMIT range_changed(lower, upper);
+        m_range = range;
+        Q_EMIT range_changed(range);
     }
 }

@@ -61,10 +61,11 @@ void VerticalSpan::border2_selection_changed(bool select)
 }
 
 VerticalSpan::VerticalSpan(
-    QCustomPlot* plot, QCPRange horizontal_range, bool do_not_replot, bool immediate_replot)
+    QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot, bool immediate_replot)
         : SciQLopPlotItem { plot }
-        , _border1 { new VerticalSpanBorder { plot, horizontal_range.lower, true } }
-        , _border2 { new VerticalSpanBorder { plot, horizontal_range.upper, do_not_replot } }
+        , _border1 { new VerticalSpanBorder { plot, horizontal_range.sorted().start(), true } }
+        , _border2 { new VerticalSpanBorder {
+              plot, horizontal_range.sorted().stop(), do_not_replot } }
 {
     this->setLayer(Constants::LayersNames::Spans);
     this->set_color(QColor(0, 255, 0, 40));
@@ -94,9 +95,9 @@ VerticalSpan::VerticalSpan(
         &VerticalSpan::border1_selection_changed);
     connect(this->_border2, &VerticalSpanBorder::selectionChanged, this,
         &VerticalSpan::border2_selection_changed);
-
-    this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
-    this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
+    auto sorted = horizontal_range.sorted();
+    this->set_left_pos(sorted.start());
+    this->set_right_pos(sorted.stop());
     if (!do_not_replot)
         this->replot(immediate_replot);
 }
@@ -112,14 +113,15 @@ void VerticalSpan::keyPressEvent(QKeyEvent* event)
     }
 }
 
-void VerticalSpan::set_range(const QCPRange horizontal_range)
+void VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
 {
-    if (this->range() != horizontal_range)
+    auto sorted = horizontal_range.sorted();
+    if (this->range() != sorted)
     {
-        this->set_left_pos(std::min(horizontal_range.lower, horizontal_range.upper));
-        this->set_right_pos(std::max(horizontal_range.lower, horizontal_range.upper));
+        this->set_left_pos(sorted.start());
+        this->set_right_pos(sorted.stop());
         this->replot();
-        emit range_changed(horizontal_range);
+        emit range_changed(sorted);
     }
 }
 
@@ -190,8 +192,8 @@ void VerticalSpan::select_upper_border(bool selected)
         }
     }
 }
-SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, QCPRange horizontal_range, QColor color,
-    bool read_only, bool visible, const QString& tool_tip)
+SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
+    QColor color, bool read_only, bool visible, const QString& tool_tip)
         : _impl { new VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
 {
     set_color(color);

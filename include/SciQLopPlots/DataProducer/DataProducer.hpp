@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 
 
 #include <QMutex>
@@ -28,17 +29,6 @@
 #include <QPointer>
 #include <QThread>
 #include <QTimer>
-
-
-struct _TrivialRange
-{
-    double lower;
-    double upper;
-    bool operator==(const _TrivialRange& other) const noexcept
-    {
-        return lower == other.lower && upper == other.upper;
-    }
-};
 
 struct _2D_data
 {
@@ -56,8 +46,8 @@ struct _3D_data
 class DataProviderInterface : public QObject
 {
     Q_OBJECT
-    std::variant<_TrivialRange, _2D_data, _3D_data> m_next_state;
-    std::variant<_TrivialRange, _2D_data, _3D_data> m_current_state;
+    std::variant<SciQLopPlotRange, _2D_data, _3D_data> m_next_state;
+    std::variant<SciQLopPlotRange, _2D_data, _3D_data> m_current_state;
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
     bool m_has_pending_change = false;
@@ -67,7 +57,7 @@ class DataProviderInterface : public QObject
 #endif
     Q_SLOT void _threaded_update();
 
-    void _range_based_update(const _TrivialRange& new_range);
+    void _range_based_update(const SciQLopPlotRange& new_range);
     void _data_based_update(const _2D_data& new_data);
     void _data_based_update(const _3D_data& new_data);
 
@@ -95,7 +85,7 @@ public:
 #endif
 
 protected:
-    void set_range(_TrivialRange new_range) noexcept;
+    void set_range(SciQLopPlotRange new_range) noexcept;
     void set_data(_2D_data new_data) noexcept;
     void set_data(_3D_data new_data) noexcept;
     friend class DataProviderWorker;
@@ -118,9 +108,9 @@ public:
 
     virtual void set_data_provider(DataProviderInterface* data_provider);
 
-    inline Q_SLOT virtual void set_range(double lower, double upper)
+    inline Q_SLOT virtual void set_range(const SciQLopPlotRange& range)
     {
-        m_data_provider->set_range({ lower, upper });
+        m_data_provider->set_range(range);
     }
 
     inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y)
@@ -188,7 +178,7 @@ public:
 
     virtual ~SimplePyCallablePipeline() = default;
 
-    inline Q_SLOT void set_range(double lower, double upper) { m_worker->set_range(lower, upper); }
+    inline Q_SLOT void set_range(const SciQLopPlotRange& range) { m_worker->set_range(range); }
     inline Q_SLOT void set_data(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
     inline Q_SLOT void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
 

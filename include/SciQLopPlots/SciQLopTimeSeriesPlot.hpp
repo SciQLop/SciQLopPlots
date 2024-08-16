@@ -40,9 +40,19 @@ public:
         return x_axis();
     }
 
-    Q_SLOT inline virtual void set_time_range(double min, double max)
+    Q_SLOT inline virtual void set_time_range(const SciQLopPlotRange& range)
     {
-        this->x_axis()->set_range(min, max);
+        this->x_axis()->set_range(range);
+    }
+
+    Q_SLOT inline virtual void set_time_range(double start, double stop)
+    {
+        this->x_axis()->set_range(SciQLopPlotRange { start, stop });
+    }
+
+    Q_SLOT inline virtual void set_time_range(const QDateTime& start, const QDateTime& stop)
+    {
+        this->x_axis()->set_range(SciQLopPlotRange { start, stop });
     }
 };
 

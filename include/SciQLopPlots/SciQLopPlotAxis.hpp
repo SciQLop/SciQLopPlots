@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlotRange.hpp"
 #include <QObject>
 #include <QPointer>
 class QCPAxis;
@@ -32,28 +33,32 @@ public:
     SciQLopPlotAxisInterface(QObject* parent = nullptr) : QObject(parent) { }
     virtual ~SciQLopPlotAxisInterface() = default;
 
-    virtual void set_range(double lower, double upper) noexcept { }
-    virtual void set_visible(bool visible) noexcept { }
-    virtual void set_log(bool log) noexcept { }
-    virtual void set_label(const QString& label) noexcept { }
-
-    inline virtual std::pair<double, double> range() const noexcept
+    inline virtual void set_range(const SciQLopPlotRange&) noexcept { }
+    inline void set_range(double start, double stop) noexcept
     {
-        return std::make_pair(std::nan(""), std::nan(""));
+        set_range(SciQLopPlotRange(start, stop));
     }
-    virtual bool visible() const noexcept { return false; }
-    virtual bool log() const noexcept { return false; }
-    virtual QString label() const noexcept { return QString(); }
-    virtual Qt::Orientation orientation() const noexcept { return Qt::Horizontal; }
-    virtual Qt::Axis axis() const noexcept { return Qt::XAxis; }
-    virtual Qt::AnchorPoint anchor() const noexcept { return Qt::AnchorBottom; }
+    inline virtual void set_visible(bool visible) noexcept { }
+    inline virtual void set_log(bool log) noexcept { }
+    inline virtual void set_label(const QString& label) noexcept { }
 
-    virtual bool selected() const noexcept { return false; }
+    inline virtual SciQLopPlotRange range() const noexcept
+    {
+        return SciQLopPlotRange(std::nan(""), std::nan(""));
+    }
+    inline virtual bool visible() const noexcept { return false; }
+    inline virtual bool log() const noexcept { return false; }
+    inline virtual QString label() const noexcept { return QString(); }
+    inline virtual Qt::Orientation orientation() const noexcept { return Qt::Horizontal; }
+    inline virtual Qt::Axis axis() const noexcept { return Qt::XAxis; }
+    inline virtual Qt::AnchorPoint anchor() const noexcept { return Qt::AnchorBottom; }
 
-    virtual void rescale() noexcept { }
+    inline virtual bool selected() const noexcept { return false; }
+
+    inline virtual void rescale() noexcept { }
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(double lower, double upper);
+    Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
@@ -63,14 +68,14 @@ public:
 class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
 {
     Q_OBJECT
-    std::pair<double, double> m_range;
+    SciQLopPlotRange m_range;
 
 public:
     explicit SciQLopPlotDummyAxis(QObject* parent = nullptr) : SciQLopPlotAxisInterface(parent) { }
     virtual ~SciQLopPlotDummyAxis() = default;
 
-    void set_range(double lower, double upper) noexcept override;
-    inline std::pair<double, double> range() const noexcept override { return m_range; }
+    void set_range(const SciQLopPlotRange& range) noexcept override;
+    inline SciQLopPlotRange range() const noexcept override { return m_range; }
 };
 
 class SciQLopPlotAxis : public SciQLopPlotAxisInterface
@@ -82,11 +87,11 @@ public:
     explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr);
     virtual ~SciQLopPlotAxis() = default;
 
-    void set_range(double lower, double upper) noexcept override;
+    void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
     void set_log(bool log) noexcept override;
     void set_label(const QString& label) noexcept override;
-    std::pair<double, double> range() const noexcept override;
+    SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
     bool log() const noexcept override;
     QString label() const noexcept override;

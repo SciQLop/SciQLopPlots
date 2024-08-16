@@ -23,6 +23,8 @@
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
+
 #include <QColor>
 #include <QList>
 #include <QObject>
@@ -30,19 +32,19 @@
 
 class SciQLopGraphInterface : public QObject
 {
-    std::pair<double, double> m_range = { std::nan(""), std::nan("") };
+    SciQLopPlotRange m_range;
     Q_OBJECT
 public:
     SciQLopGraphInterface(QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() = default;
 
-    virtual void set_range(double lower, double upper);
+    virtual void set_range(const SciQLopPlotRange& range);
     virtual void set_visible(bool visible) noexcept { }
     virtual void set_labels(const QStringList& labels) { }
     inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
     virtual void set_colors(const QList<QColor>& colors) { }
 
-    virtual std::pair<double, double> range() const noexcept { return m_range; }
+    virtual SciQLopPlotRange range() const noexcept { return m_range; }
 
     virtual bool visible() const noexcept { return false; }
     virtual QStringList labels() const noexcept { return QStringList(); }
@@ -55,7 +57,7 @@ public:
     virtual QList<PyBuffer> data() const noexcept { return QList<PyBuffer>(); }
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(double lower, double upper);
+    Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void labels_changed(const QStringList& labels);
     Q_SIGNAL void name_changed(const QString& name);

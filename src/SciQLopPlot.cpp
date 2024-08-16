@@ -83,13 +83,17 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
     connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range) { Q_EMIT x_axis_range_changed(range.lower, range.upper); });
+        [this](const QCPRange& range)
+        { Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
     connect(this->xAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range) { Q_EMIT x2_axis_range_changed(range.lower, range.upper); });
+        [this](const QCPRange& range)
+        { Q_EMIT x2_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range) { Q_EMIT y_axis_range_changed(range.lower, range.upper); });
+        [this](const QCPRange& range)
+        { Q_EMIT y_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range) { Q_EMIT y2_axis_range_changed(range.lower, range.upper); });
+        [this](const QCPRange& range)
+        { Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
 
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));

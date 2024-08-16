@@ -102,7 +102,7 @@ void MultiPlotsVerticalSpan::set_selected(bool selected)
     }
 }
 
-void MultiPlotsVerticalSpan::set_range(const QCPRange horizontal_range)
+void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
 {
     if (horizontal_range != _horizontal_range)
     {
