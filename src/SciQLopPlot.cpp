@@ -620,7 +620,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     return cm;
 }
 
-inline void SciQLopPlot::_connect_callable_sync(
+void SciQLopPlot::_connect_callable_sync(
     SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with)
 {
     if (sync_with != nullptr)
