@@ -1,5 +1,4 @@
 examples = [
-    {'name':'plots', 'source': meson.current_source_dir()+'/QCP_Examples/plots/main.py'},
     {'name':'SciQLopGraph', 'source': meson.current_source_dir()+'/SciQLopGraph/main.py'},
     {'name':'SciQLopColorMap', 'source': meson.current_source_dir()+'/SciQLopColorMap/main.py'},
     {'name':'StackedGraphs', 'source': meson.current_source_dir()+'/StackedGraphs/main.py'},

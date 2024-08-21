@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QPointer>
 class QCPAxis;
+class QCPColorScale;
 
 
 class SciQLopPlotAxisInterface : public QObject
@@ -102,5 +103,33 @@ public:
 
     void rescale() noexcept override;
 
-    QCPAxis* qcp_axis() const noexcept;
+    virtual QCPAxis* qcp_axis() const noexcept;
+};
+class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
+{
+    Q_OBJECT
+    QPointer<QCPColorScale> m_axis;
+
+public:
+    explicit SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent = nullptr);
+    virtual ~SciQLopPlotColorScaleAxis() = default;
+
+    void set_range(const SciQLopPlotRange& range) noexcept override;
+    void set_visible(bool visible) noexcept override;
+    void set_log(bool log) noexcept override;
+    void set_label(const QString& label) noexcept override;
+    SciQLopPlotRange range() const noexcept override;
+    bool visible() const noexcept override;
+    bool log() const noexcept override;
+    QString label() const noexcept override;
+    Qt::Orientation orientation() const noexcept override;
+    Qt::Axis axis() const noexcept override;
+    Qt::AnchorPoint anchor() const noexcept override;
+    bool selected() const noexcept override;
+
+    void rescale() noexcept override;
+
+
+    QCPAxis* qcp_axis() const noexcept override;
+    QCPColorScale* qcp_colorscale() const noexcept;
 };

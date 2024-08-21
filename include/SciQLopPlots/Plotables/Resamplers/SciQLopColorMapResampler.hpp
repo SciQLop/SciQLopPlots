@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,33 +19,43 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 
-#include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
+#include "SciQLopPlots/Python/PythonInterface.hpp"
 
-LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
+#include "AbstractResampler.hpp"
 
 
-void LineGraphResampler::_resample_impl(
-    const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
+#include <QAtomicInteger>
+#include <QMutex>
+#include <cpp_utils/containers/algorithms.hpp>
+#include <qcustomplot.h>
+
+
+struct ColormapResampler : public AbstractResampler2d
 {
-    if (x.data() != nullptr && x.flat_size() > 0)
+    Q_OBJECT
+    QAtomicInteger<bool> _log_scale = false;
+    std::size_t _max_x_size = 1000;
+    std::size_t _max_y_size = 1000;
+
+    void _resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+        const QCPRange new_range, bool new_data);
+
+public:
+#ifndef BINDINGS_H
+    Q_SIGNAL void setGraphData(QCPColorMapData* data);
+#endif // !BINDINGS_H
+
+    ColormapResampler(QCPAxis::ScaleType scale_type);
+    ~ColormapResampler();
+
+    inline void setScaleType(QCPAxis::ScaleType scale_type)
     {
-        const auto view = XYView(x, y, new_range.lower, new_range.upper);
-        if (std::size(view))
-        {
-            QList<QVector<QCPGraphData>> data;
-            for (auto line_index = 0UL; line_index < line_count(); line_index++)
-            {
-                if (std::size(view) > 10000)
-                {
-                    data.emplace_back(::resample<10000>(view, line_index));
-                }
-                else
-                {
-                    data.emplace_back(::copy_data(view, line_index));
-                }
-            }
-            Q_EMIT setGraphData(data);
-        }
+        _log_scale.storeRelaxed(scale_type == QCPAxis::stLogarithmic);
     }
-}
+    inline QCPAxis::ScaleType scaleType() const
+    {
+        return _log_scale.loadRelaxed() ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
+    }
+};

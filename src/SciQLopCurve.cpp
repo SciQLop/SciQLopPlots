@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
-#include "SciQLopPlots/Plotables/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 
 void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {
@@ -113,7 +113,17 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axi
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(
-        m_pipeline, &SimplePyCallablePipeline::new_data_2d, this, &SciQLopCurveFunction::set_data);
+        m_pipeline, &SimplePyCallablePipeline::new_data_2d, this, &SciQLopCurveFunction::_set_data);
     connect(
         this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
+}
+
+void SciQLopCurveFunction::set_data(PyBuffer x, PyBuffer y)
+{
+    m_pipeline->set_data(x, y);
+}
+
+void SciQLopCurveFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+{
+    m_pipeline->set_data(x, y, z);
 }

@@ -90,10 +90,14 @@ class SciQLopCurveFunction : public SciQLopCurve
 {
     Q_OBJECT
     SimplePyCallablePipeline* m_pipeline;
+    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopCurve::set_data(x, y); }
 
 public:
     explicit SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
         GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopCurveFunction() override = default;
+
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 };

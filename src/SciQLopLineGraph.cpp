@@ -20,7 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
-#include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
 
 void SciQLopLineGraph::create_graphs(const QStringList& labels)
 {
@@ -120,4 +120,9 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis*
 void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y)
 {
     m_pipeline->set_data(x, y);
+}
+
+void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+{
+    m_pipeline->set_data(x, y, z);
 }
