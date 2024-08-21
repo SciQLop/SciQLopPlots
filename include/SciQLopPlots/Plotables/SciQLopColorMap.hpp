@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include "QCPAbstractPlottableWrapper.hpp"
@@ -40,7 +41,7 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
     QCPRange _data_x_range;
     QCPAxis* _keyAxis;
     QCPAxis* _valueAxis;
-    QCPColorMap* _cmap;
+    QPointer<QCPColorMap> _cmap;
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
     Q_OBJECT
@@ -49,10 +50,12 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
     void _resample(const QCPRange& newRange);
     void _cmap_got_destroyed();
 
+    Q_SLOT void _setGraphData(QCPColorMapData* data);
+
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-        const QString& name, DataOrder dataOrder = ::DataOrder::RowMajor);
+    explicit SciQLopColorMap(
+        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name);
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
@@ -66,4 +69,24 @@ public:
 #endif
 private:
     ::DataOrder _dataOrder = DataOrder::RowMajor;
+};
+
+class SciQLopColorMapFunction : public SciQLopColorMap
+{
+    Q_OBJECT
+    SimplePyCallablePipeline* m_pipeline;
+
+    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    {
+        SciQLopColorMap::set_data(x, y, z);
+    }
+
+public:
+    explicit SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+        GetDataPyCallable&& callable, const QString& name);
+
+    virtual ~SciQLopColorMapFunction() override = default;
+
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
 };

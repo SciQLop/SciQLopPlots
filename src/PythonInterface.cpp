@@ -250,7 +250,7 @@ std::size_t PyBuffer::ndim() const
     return 0;
 }
 
-std::size_t PyBuffer::size(std::size_t index)
+std::size_t PyBuffer::size(std::size_t index) const
 {
     if (is_valid())
     {

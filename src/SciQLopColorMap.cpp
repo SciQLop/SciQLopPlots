@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 
-#include "SciQLopPlots/Plotables/SciQLopColorMapResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 void SciQLopColorMap::_cmap_got_destroyed()
@@ -29,13 +29,22 @@ void SciQLopColorMap::_cmap_got_destroyed()
     this->_cmap = nullptr;
 }
 
-SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-    const QString& name, ::DataOrder dataOrder)
+void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
+{
+    if (this->_cmap)
+    {
+        this->_cmap->setData(data, false);
+        Q_EMIT this->replot();
+        this->_icon_update_timer->start();
+    }
+}
+
+SciQLopColorMap::SciQLopColorMap(
+    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name)
         : SQPQCPAbstractPlottableWrapper(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
-        , _dataOrder { dataOrder }
 {
     this->_cmap = this->newPlottable<QCPColorMap>(keyAxis, valueAxis, name);
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
@@ -49,19 +58,10 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
     connect(
         this->_icon_update_timer, &QTimer::timeout, this->_cmap,
         [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
-    connect(
-        this->_resampler, &ColormapResampler::refreshPlot, this,
-        [this](QCPColorMapData* data)
-        {
-            this->colorMap()->setData(data, false);
-            if (this->_auto_scale_y)
-            {
-                this->_valueAxis->rescale(true);
-            }
-            this->_plot()->replot(QCustomPlot::rpQueuedReplot);
-            this->_icon_update_timer->start();
-        },
-        Qt::QueuedConnection);
+    connect(this->_valueAxis, &QCPAxis::scaleTypeChanged, this->_resampler,
+        &ColormapResampler::setScaleType);
+    connect(this->_resampler, &ColormapResampler::setGraphData, this,
+        &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
     this->colorMap()->updateLegendIcon();
     this->colorMap()->setLayer(parent->layer("background"));
 }
@@ -72,7 +72,6 @@ SciQLopColorMap::~SciQLopColorMap()
         this->_plot()->removePlottable(this->colorMap());
 
     connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
-    disconnect(this->_resampler, &ColormapResampler::refreshPlot, nullptr, nullptr);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
     delete this->_resampler_thread;
@@ -84,7 +83,7 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
     if (this->_cmap)
     {
-        this->_resampler->setData(x, y, z, _valueAxis->scaleType());
+        this->_resampler->setData(x, y, z);
     }
     Q_EMIT data_changed(x, y, z);
 }
@@ -93,4 +92,25 @@ void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
 {
     _auto_scale_y = auto_scale_y;
     Q_EMIT auto_scale_y_changed(auto_scale_y);
+}
+
+SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis,
+    QCPAxis* value_axis, GetDataPyCallable&& callable, const QString& name)
+        : SciQLopColorMap(parent, key_axis, value_axis, name)
+{
+    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this,
+        &SciQLopColorMapFunction::_set_data);
+    connect(
+        this, &SciQLopColorMap::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
+}
+
+void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+{
+    m_pipeline->set_data(x, y, z);
+}
+
+void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y)
+{
+    m_pipeline->set_data(x, y);
 }

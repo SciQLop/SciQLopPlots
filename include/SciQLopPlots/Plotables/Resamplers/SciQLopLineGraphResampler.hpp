@@ -23,8 +23,8 @@
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include "AbstractResampler.hpp"
 
-#include <QMutex>
 #include <qcustomplot.h>
 
 
@@ -61,97 +61,12 @@ static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t col
     return data;
 }
 
-static inline QVector<QCPGraphData> copy_data(const XYView& view, std::size_t column_index)
-{
-    QVector<QCPGraphData> data(std::size(view));
-    for (auto i = 0UL; i < std::size(data); i++)
-    {
-        data[i] = QCPGraphData { view.x(i), view.y(i, column_index) };
-    }
-    return data;
-}
-
-struct ResamplerData
-{
-    PyBuffer x;
-    PyBuffer y;
-    QCPRange _x_range;
-    QCPRange _plot_range;
-    bool new_data = true;
-};
-
-struct AbstractResampler1d : public QObject
-{
-protected:
-    Q_OBJECT
-    QRecursiveMutex _data_mutex;
-    QRecursiveMutex _next_data_mutex;
-    ResamplerData _data;
-    ResamplerData _next_data;
-    std::size_t _line_cnt;
-#ifndef BINDINGS_H
-    Q_SIGNAL void _resample_sig();
-#endif
-    void _resample_slot();
-
-    virtual void _resample(
-        const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
-        = 0;
-
-public:
-    AbstractResampler1d(std::size_t line_cnt);
-
-    void resample(const QCPRange new_range);
-
-    inline QCPRange x_range()
-    {
-        QMutexLocker locker(&_data_mutex);
-        auto rng = this->_data._x_range;
-        return rng;
-    }
-
-    inline void set_line_count(std::size_t line_cnt)
-    {
-        QMutexLocker locker(&_data_mutex);
-        this->_line_cnt = line_cnt;
-    }
-
-    inline void setData(PyBuffer x, PyBuffer y)
-    {
-        {
-            QCPRange _data_x_range;
-            const auto len = x.flat_size();
-            if (len > 0)
-            {
-                _data_x_range.lower = x.data()[0];
-                _data_x_range.upper = x.data()[len - 1];
-            }
-            else
-            {
-                _data_x_range.lower = std::nan("");
-                _data_x_range.upper = std::nan("");
-            }
-            QMutexLocker locker(&_next_data_mutex);
-            _next_data
-                = ResamplerData { std::move(x), std::move(y), _data_x_range, _data_x_range, true };
-            this->resample(_data_x_range);
-        }
-    }
-
-    inline std::size_t line_count() const { return _line_cnt; }
-
-    QList<PyBuffer> get_data()
-    {
-        QMutexLocker locker(&_data_mutex);
-        return { _data.x, _data.y };
-    }
-};
 
 struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample(
+    void _resample_impl(
         const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data) override;
 
 public:

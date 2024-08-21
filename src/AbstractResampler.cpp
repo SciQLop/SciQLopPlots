@@ -19,37 +19,39 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp"
 
-QVector<QCPCurveData> curve_copy_data(
-    const double* x, const double* y, std::size_t x_size, const int y_incr)
+
+void AbstractResampler1d::_async_resample()
 {
-    QVector<QCPCurveData> data(x_size);
-    const double* current_y_it = y;
-    for (auto i = 0UL; i < x_size; i++)
-    {
-        data[i] = QCPCurveData { static_cast<double>(i), x[i], *current_y_it };
-        current_y_it += y_incr;
-    }
-    return data;
+    _async_resample_callback();
 }
 
-
-void CurveResampler::_resample_impl(
-    const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data)
+AbstractResampler1d::AbstractResampler1d(std::size_t line_cnt) : _line_cnt { line_cnt }
 {
-    if (x.data() != nullptr && x.flat_size() > 0 && new_data)
-    {
-        const auto y_incr = 1UL;
-        QList<QVector<QCPCurveData>> data;
-        for (auto line_index = 0UL; line_index < line_count(); line_index++)
-        {
-            const auto count = std::size(x);
-            const auto start_y = y.data() + (line_index * x.flat_size());
-            data.emplace_back(curve_copy_data(x.data(), start_y, count, y_incr));
-        }
-        Q_EMIT setGraphData(data);
-    }
+    connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_async_resample,
+        Qt::QueuedConnection);
 }
 
-CurveResampler::CurveResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
+void AbstractResampler1d::resample(const QCPRange new_range)
+{
+    this->set_next_plot_range(new_range);
+    emit _resample_sig();
+}
+
+void AbstractResampler2d::_async_resample()
+{
+    _async_resample_callback();
+}
+
+AbstractResampler2d::AbstractResampler2d()
+{
+    connect(this, &AbstractResampler2d::_resample_sig, this, &AbstractResampler2d::_async_resample,
+        Qt::QueuedConnection);
+}
+
+void AbstractResampler2d::resample(const QCPRange new_range)
+{
+    this->set_next_plot_range(new_range);
+    emit _resample_sig();
+}

@@ -95,12 +95,15 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
         [this](const QCPRange& range)
         { Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
 
+    m_color_scale = new QCPColorScale(this);
+    m_color_scale->setVisible(false);
+
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis2, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this));
-    m_color_scale = new QCPColorScale(this);
-    m_color_scale->setVisible(false);
+    this->m_axes.append(new SciQLopPlotColorScaleAxis(this->m_color_scale, this));
+
 #ifdef QCUSTOMPLOT_USE_OPENGL
     setOpenGl(true, 4);
 #endif
@@ -143,34 +146,27 @@ SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(const QString& name)
     return nullptr;
 }
 
-
-SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
-    const QString& name, bool y_log_scale, bool z_log_scale)
+SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scale, bool z_log_scale)
 {
     if (!m_color_scale->visible())
     {
-        if (y_log_scale)
-        {
-            set_axis_log(QCPAxis::atRight, true);
-        }
-        set_axis_visible(QCPAxis::atRight, true);
-        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(this->xAxis, this->yAxis2, name);
-        m_color_scale->setVisible(true);
-        plotLayout()->addElement(0, 1, m_color_scale);
-        cmap->colorMap()->setColorScale(m_color_scale);
-        cmap->colorMap()->setInterpolate(false);
-        if (z_log_scale)
-        {
-            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->axis()->setTicker(
-                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-        }
 
-        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
-        gradient.setNanHandling(QCPColorGradient::nhTransparent);
-        cmap->colorMap()->setGradient(gradient);
-        cmap->set_auto_scale_y(true);
+        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(this->xAxis, this->yAxis2, name);
+        _configure_color_map(cmap, y_log_scale, z_log_scale);
+        return cmap;
+    }
+    return nullptr;
+}
+
+SciQLopColorMapFunction* SciQLopPlot::add_color_map(
+    GetDataPyCallable&& callable, const QString& name, bool y_log_scale, bool z_log_scale)
+{
+    if (!m_color_scale->visible())
+    {
+
+        auto cmap = this->_new_plottable_wrapper<SciQLopColorMapFunction>(
+            this->xAxis, this->yAxis2, std::move(callable), name);
+        _configure_color_map(cmap, y_log_scale, z_log_scale);
         return cmap;
     }
     return nullptr;
@@ -470,6 +466,34 @@ void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
     }
 }
 
+void SciQLopPlot::_configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale)
+{
+    if (!m_color_scale->visible())
+    {
+        if (y_log_scale)
+        {
+            set_axis_log(QCPAxis::atRight, true);
+        }
+        set_axis_visible(QCPAxis::atRight, true);
+        m_color_scale->setVisible(true);
+        plotLayout()->addElement(0, 1, m_color_scale);
+        cmap->colorMap()->setColorScale(m_color_scale);
+        cmap->colorMap()->setInterpolate(false);
+        if (z_log_scale)
+        {
+            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->axis()->setTicker(
+                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
+        }
+
+        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
+        gradient.setNanHandling(QCPColorGradient::nhTransparent);
+        cmap->colorMap()->setGradient(gradient);
+        cmap->set_auto_scale_y(true);
+    }
+}
+
 QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const
 {
     for (auto plottable : mPlottables)
@@ -542,7 +566,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent)
         &SciQLopPlot::scroll_factor_changed);
 
     set_axes_to_rescale(
-        QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis() });
+        QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
     this->enable_legend(true);
     this->minimize_margins();
 }
@@ -615,7 +639,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
     const PyBuffer& z, QString name, bool y_log_scale, bool z_log_scale)
 {
-    auto cm = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
+    auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
     cm->set_data(std::move(x), std::move(y), std::move(z));
     return cm;
 }
@@ -680,7 +704,11 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     bool y_log_scale, bool z_log_scale, QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plotable = nullptr;
-    plotable = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
+    plotable = m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale);
+    if (plotable)
+    {
+        _connect_callable_sync(plotable, sync_with);
+    }
     return plotable;
 }
 

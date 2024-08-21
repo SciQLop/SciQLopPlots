@@ -71,8 +71,10 @@ public:
     SQPQCPAbstractPlottableWrapper* sqp_plottable(int index = -1);
     SQPQCPAbstractPlottableWrapper* sqp_plottable(const QString& name);
 
-    SciQLopColorMap* addSciQLopColorMap(
+    SciQLopColorMap* add_color_map(
         const QString& name, bool y_log_scale = false, bool z_log_scale = false);
+    SciQLopColorMapFunction* add_color_map(GetDataPyCallable&& callable, const QString& name,
+        bool y_log_scale = false, bool z_log_scale = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
@@ -94,7 +96,7 @@ public:
         return axisRect()->axis(type);
     }
 
-    inline SciQLopPlotAxis* axis(int index) const noexcept
+    inline SciQLopPlotAxisInterface* axis(int index) const noexcept
     {
         if (index < m_axes.size())
             return m_axes[index];
@@ -206,6 +208,8 @@ protected:
     void _register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable);
     void _register_plottable(QCPAbstractPlottable* plotable);
 
+    void _configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale);
+
     QCPAbstractPlottable* plottable(const QString& name) const;
 
     void _legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item, QMouseEvent* event);
@@ -299,7 +303,7 @@ public:
 
     inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept Q_DECL_OVERRIDE
     {
-        return nullptr;
+        return m_impl->axis(4);
     }
 
     inline virtual SciQLopPlotAxisInterface* x2_axis() const noexcept Q_DECL_OVERRIDE

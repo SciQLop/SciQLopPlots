@@ -177,3 +177,125 @@ void SciQLopPlotDummyAxis::set_range(const SciQLopPlotRange& range) noexcept
         Q_EMIT this->range_changed(range);
     }
 }
+
+SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent)
+        : SciQLopPlotAxis(axis->axis(), parent), m_axis(axis)
+{
+    connect(axis, QOverload<const QCPRange&>::of(&QCPColorScale::dataRangeChanged), this,
+        [this](const QCPRange& range)
+        { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+}
+
+void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcept
+{
+    if (!m_axis.isNull()
+        && (m_axis->dataRange().lower != range.start()
+            || m_axis->dataRange().upper != range.stop()))
+    {
+        m_axis->setDataRange(QCPRange(range.start(), range.stop()));
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    }
+}
+
+void SciQLopPlotColorScaleAxis::set_visible(bool visible) noexcept
+{
+    if (!m_axis.isNull() && m_axis->visible() != visible)
+    {
+        m_axis->setVisible(visible);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT visible_changed(visible);
+    }
+}
+
+void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
+{
+    if (!m_axis.isNull() && m_axis->dataScaleType() == QCPAxis::stLogarithmic != log)
+    {
+        if (log)
+        {
+            m_axis->setDataScaleType(QCPAxis::stLogarithmic);
+        }
+        else
+        {
+            m_axis->setDataScaleType(QCPAxis::stLinear);
+        }
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT log_changed(log);
+    }
+}
+
+void SciQLopPlotColorScaleAxis::set_label(const QString& label) noexcept
+{
+    if (!m_axis.isNull() && m_axis->label() != label)
+    {
+        m_axis->setLabel(label);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT label_changed(label);
+    }
+}
+
+SciQLopPlotRange SciQLopPlotColorScaleAxis::range() const noexcept
+{
+    if (m_axis.isNull())
+        return SciQLopPlotRange();
+    return SciQLopPlotRange(m_axis->dataRange().lower, m_axis->dataRange().upper);
+}
+
+bool SciQLopPlotColorScaleAxis::visible() const noexcept
+{
+    if (m_axis.isNull())
+        return false;
+    return m_axis->visible();
+}
+
+bool SciQLopPlotColorScaleAxis::log() const noexcept
+{
+    if (m_axis.isNull())
+        return false;
+    return m_axis->dataScaleType() == QCPAxis::stLogarithmic;
+}
+
+QString SciQLopPlotColorScaleAxis::label() const noexcept
+{
+    if (m_axis.isNull())
+        return QString();
+    return m_axis->label();
+}
+
+Qt::Orientation SciQLopPlotColorScaleAxis::orientation() const noexcept
+{
+    return Qt::Vertical;
+}
+
+Qt::Axis SciQLopPlotColorScaleAxis::axis() const noexcept
+{
+    return Qt::ZAxis;
+}
+
+Qt::AnchorPoint SciQLopPlotColorScaleAxis::anchor() const noexcept
+{
+    return Qt::AnchorLeft;
+}
+
+bool SciQLopPlotColorScaleAxis::selected() const noexcept
+{
+    if (m_axis.isNull())
+        return false;
+    return m_axis->axis()->selectedParts().testFlag(QCPAxis::spAxis);
+}
+
+void SciQLopPlotColorScaleAxis::rescale() noexcept
+{
+    if (!m_axis.isNull())
+    {
+        m_axis->rescaleDataRange(true);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    }
+}
+
+QCPAxis* SciQLopPlotColorScaleAxis::qcp_axis() const noexcept
+{
+    if (m_axis.isNull())
+        return nullptr;
+    return m_axis->axis();
+}

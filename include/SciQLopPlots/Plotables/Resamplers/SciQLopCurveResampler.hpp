@@ -23,7 +23,7 @@
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
-#include "SciQLopLineGraphResampler.hpp"
+#include "AbstractResampler.hpp"
 #include <QMutex>
 #include <qcustomplot.h>
 
@@ -32,7 +32,7 @@ struct CurveResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample(
+    void _resample_impl(
         const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data) override;
 
 public:

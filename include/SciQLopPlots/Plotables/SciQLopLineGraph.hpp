@@ -96,4 +96,5 @@ public:
     virtual ~SciQLopLineGraphFunction() override = default;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 };
