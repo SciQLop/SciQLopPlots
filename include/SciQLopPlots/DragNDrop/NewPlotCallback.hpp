@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,41 +21,24 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include <QMimeData>
+#include <QObject>
 
-#include "AbstractResampler.hpp"
-
-
-#include <QAtomicInteger>
-#include <QMutex>
-#include <cpp_utils/containers/algorithms.hpp>
-#include <qcustomplot.h>
-
-
-struct ColormapResampler : public AbstractResampler2d
+class NewPlotCallback : public QObject
 {
     Q_OBJECT
-    QAtomicInteger<bool> _log_scale = false;
-    std::size_t _max_x_size = 1000;
-    std::size_t _max_y_size = 1000;
-
-    void _resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-        const QCPRange new_range, bool new_data);
+    QString _mime_type;
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void setGraphData(QCPColorMapData* data);
-#endif // !BINDINGS_H
-
-    ColormapResampler(QCPAxis::ScaleType scale_type);
-    ~ColormapResampler() = default;
-
-    inline void setScaleType(QCPAxis::ScaleType scale_type)
+    NewPlotCallback(const QString& mime_type, QObject* parent = nullptr)
+            : QObject(parent), _mime_type(mime_type)
     {
-        _log_scale.storeRelaxed(scale_type == QCPAxis::stLogarithmic);
     }
-    inline QCPAxis::ScaleType scaleType() const
-    {
-        return _log_scale.loadRelaxed() ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
-    }
+
+    inline const QString& mime_type() const { return _mime_type; }
+
+    virtual ~NewPlotCallback() = default;
+
+    inline virtual void call(SciQLopPlotInterface* plot, const QMimeData* mimeData) { }
 };

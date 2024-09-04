@@ -35,8 +35,10 @@
 class SciQLopPlotCollectionBehavior : public QObject
 {
     Q_OBJECT
+
 public:
     SciQLopPlotCollectionBehavior(QObject* parent = nullptr) : QObject(parent) { }
+
     inline virtual Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) { }
 };
 
@@ -80,27 +82,37 @@ public:
     virtual ~SciQLopPlotCollectionInterface() = default;
 
     inline virtual void add_plot(SciQLopPlotInterface* plot) { }
+
     inline virtual void insert_plot(int index, SciQLopPlotInterface* plot) { }
+
     inline virtual void remove_plot(SciQLopPlotInterface* plot) { }
+
     inline virtual void move_plot(int from, int to) { }
+
     inline virtual void move_plot(SciQLopPlotInterface* plot, int to) { }
+
     inline virtual void clear() { }
 
     inline virtual int index(SciQLopPlotInterface* plot) const { return -1; }
+
+    inline virtual int index(const QPointF& pos) const { return -1; }
+
+    inline virtual int index_from_global_position(const QPointF& pos) const { return -1; }
 
     inline virtual SciQLopPlotInterface* plot_at(int index) const { return nullptr; }
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const { return false; }
 
     inline virtual bool empty() const { return true; }
+
     inline virtual std::size_t size() const { return 0; }
 
     virtual void set_x_axis_range(const SciQLopPlotRange& range);
     virtual void set_time_axis_range(const SciQLopPlotRange& range);
 
     inline virtual void register_behavior(SciQLopPlotCollectionBehavior* behavior) { }
-    inline virtual void remove_behavior(const QString& type_name) { }
 
+    inline virtual void remove_behavior(const QString& type_name) { }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> line(const PyBuffer& x,
         const PyBuffer& y, QStringList labels = QStringList(),
@@ -125,7 +137,6 @@ public:
     {
         return plot_impl(x, y, z, name, y_log_scale, z_log_scale, plot_type, index);
     }
-
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> line(
         GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -174,7 +185,7 @@ class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterf
 
 public:
     SciQLopPlotCollection(QObject* parent = nullptr);
-    virtual ~SciQLopPlotCollection() = default;
+    virtual ~SciQLopPlotCollection();
     void add_plot(SciQLopPlotInterface* plot) final;
     void insert_plot(int index, SciQLopPlotInterface* plot) final;
     void remove_plot(SciQLopPlotInterface* plot) final;
@@ -185,11 +196,13 @@ public:
     int index(SciQLopPlotInterface* plot) const final;
 
     SciQLopPlotInterface* plot_at(int index) const final;
+
     inline const QList<SciQLopPlotInterface*>& plots() const { return _plots; }
 
     inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
 
     inline bool empty() const final { return _plots.isEmpty(); }
+
     inline std::size_t size() const final { return _plots.size(); }
 
     virtual void set_x_axis_range(const SciQLopPlotRange& range) final;

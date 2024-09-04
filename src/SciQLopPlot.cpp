@@ -26,7 +26,7 @@
 #include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
-#include <type_traits>
+#include <utility>
 
 template <typename T>
 inline void _set_selected(T* plottable, bool selected)
@@ -51,6 +51,7 @@ inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
         _set_selected(curve, selected);
     }
 }
+
 namespace _impl
 {
 
@@ -209,7 +210,6 @@ void SciQLopPlot::replot(RefreshPriority priority)
     }
 }
 
-
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
     QCustomPlot::mousePressEvent(event);
@@ -252,7 +252,6 @@ int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
 {
     return 0;
 }
-
 
 void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
 {
@@ -329,7 +328,6 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
     }
     QCustomPlot::keyPressEvent(event);
 }
-
 
 bool SciQLopPlot::event(QEvent* event)
 {
@@ -526,7 +524,6 @@ void SciQLopPlot::_legend_double_clicked(
 }
 }
 
-
 void SciQLopPlot::_configure_plotable(SQPQCPAbstractPlottableWrapper* plottable,
     const QStringList& labels, const QList<QColor>& colors)
 {
@@ -542,7 +539,7 @@ void SciQLopPlot::_configure_plotable(SQPQCPAbstractPlottableWrapper* plottable,
     }
 }
 
-SciQLopPlot::SciQLopPlot(QWidget* parent)
+SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
     this->m_time_axis = new SciQLopPlotDummyAxis(this);
@@ -711,7 +708,6 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     }
     return plotable;
 }
-
 
 SciQLopGraphInterface* SciQLopPlot::graph(int index)
 {

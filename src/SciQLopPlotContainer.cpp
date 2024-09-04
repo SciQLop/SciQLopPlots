@@ -37,6 +37,8 @@ SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent)
         &SciQLopPlotContainer::plotListChanged);
 }
 
+SciQLopPlotContainer::~SciQLopPlotContainer() { }
+
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
     QSplitter::insertWidget(index, widget);
@@ -82,7 +84,8 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
 {
     if (_plots->contains(plot))
     {
-        removeWidget(plot, destroy);
+        _plots->remove_plot(plot);
+        plot->setParent(nullptr);
         if (destroy)
             plot->deleteLater();
         if (_plots->empty())
