@@ -228,6 +228,7 @@
           </modify-argument>
         </modify-function>
     </object-type>
+    <object-type name="NewPlotCallback" parent-management="yes"/>
 </typesystem>
 
 

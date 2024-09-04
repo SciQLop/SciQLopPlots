@@ -21,21 +21,28 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/DragNDrop/NewPlotCallback.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
 #include <QWidget>
+#include <map>
 
 #include "qcustomplot.h"
 
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
+class PlaceHolderManager;
 
 class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
     SciQLopPlotContainer* _container = nullptr;
+    std::map<QString, NewPlotCallback*> _accepted_mime_types;
+    NewPlotCallback* _current_callback = nullptr;
+    PlaceHolderManager* _place_holder_manager = nullptr;
+    PlotType _default_plot_type = PlotType::BasicXY;
 
 protected:
     template <typename T, GraphType graph_type, typename... Args>
@@ -111,6 +118,8 @@ public:
     void clear() Q_DECL_OVERRIDE;
 
     int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE;
+    int index(const QPointF& pos) const Q_DECL_OVERRIDE;
+    int index_from_global_position(const QPointF& pos) const Q_DECL_OVERRIDE;
     int indexOf(QWidget* widget) const;
 
 
@@ -127,11 +136,11 @@ public:
     void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
     void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
 
-
     inline void set_x_axis_range(double start, double stop)
     {
         set_x_axis_range(SciQLopPlotRange(start, stop));
     }
+
     inline void set_time_axis_range(double start, double stop)
     {
         set_time_axis_range(SciQLopPlotRange(start, stop));
@@ -145,10 +154,17 @@ public:
     void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
+    void add_accepted_mime_type(NewPlotCallback* callback);
+
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
+
 protected:
     void keyPressEvent(QKeyEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void dragLeaveEvent(QDragLeaveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 };

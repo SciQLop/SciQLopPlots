@@ -33,7 +33,7 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
 
 public:
     SciQLopPlotContainer(QWidget* parent = nullptr);
-    virtual ~SciQLopPlotContainer() Q_DECL_OVERRIDE = default;
+    virtual ~SciQLopPlotContainer();
 
     void insertWidget(int index, QWidget* widget);
     void addWidget(QWidget* widget);
@@ -48,6 +48,17 @@ public:
     inline int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
         return _plots->index(plot);
+    }
+
+    inline virtual int index(const QPointF& pos) const Q_DECL_OVERRIDE
+    {
+        for (auto i = 0UL; i < _plots->size(); i++)
+        {
+            auto plot = _plots->plot_at(i);
+            if (plot->geometry().contains(pos.toPoint()))
+                return i;
+        }
+        return -1;
     }
 
     virtual void clear() Q_DECL_OVERRIDE;
@@ -65,8 +76,8 @@ public:
     }
 
     inline virtual bool empty() const Q_DECL_OVERRIDE { return _plots->empty(); }
-    virtual std::size_t size() const Q_DECL_OVERRIDE { return _plots->size(); }
 
+    virtual std::size_t size() const Q_DECL_OVERRIDE { return _plots->size(); }
 
     inline void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
@@ -78,15 +89,16 @@ public:
         _plots->set_time_axis_range(range);
     }
 
-
     inline void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
     {
         _plots->register_behavior(behavior);
     }
+
     inline void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE
     {
         _plots->remove_behavior(type_name);
     }
+
     void organize_plots();
 
 #ifndef BINDINGS_H

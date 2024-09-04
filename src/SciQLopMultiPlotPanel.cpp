@@ -22,6 +22,7 @@
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 
+#include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
@@ -29,13 +30,18 @@
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 #include "SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp"
 
+#include <cpp_utils/containers/algorithms.hpp>
+
 #include <QKeyEvent>
+
+#include <iostream>
 
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     QWidget* parent, bool synchronize_x, bool synchronize_time)
         : QScrollArea { nullptr }
 {
     _container = new SciQLopPlotContainer(this);
+    _place_holder_manager = new PlaceHolderManager(this);
     connect(_container, &SciQLopPlotContainer::plotListChanged, this,
         &SciQLopMultiPlotPanel::plotListChanged);
     setWidget(_container);
@@ -45,7 +51,11 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     if (synchronize_x)
         ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
+    {
         ::register_behavior<TimeAxisSynchronizer>(_container);
+        _default_plot_type = PlotType::TimeSeries;
+    }
+    this->setAcceptDrops(true);
 }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
@@ -91,6 +101,16 @@ void SciQLopMultiPlotPanel::clear()
 int SciQLopMultiPlotPanel::index(SciQLopPlotInterface* plot) const
 {
     return _container->index(plot);
+}
+
+int SciQLopMultiPlotPanel::index(const QPointF& pos) const
+{
+    return _container->index(_container->mapFromParent(pos));
+}
+
+int SciQLopMultiPlotPanel::index_from_global_position(const QPointF& pos) const
+{
+    return _container->index(_container->mapFromGlobal(pos));
 }
 
 int SciQLopMultiPlotPanel::indexOf(QWidget* widget) const
@@ -162,6 +182,11 @@ void SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* beh
 void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
 {
     _container->remove_behavior(type_name);
+}
+
+void SciQLopMultiPlotPanel::add_accepted_mime_type(NewPlotCallback* callback)
+{
+    _accepted_mime_types[callback->mime_type()] = callback;
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
@@ -241,7 +266,6 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
     return { nullptr, nullptr };
 }
 
-
 void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
 {
     switch (event->key())
@@ -255,4 +279,60 @@ void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
     }
     if (!event->isAccepted())
         QScrollArea::keyPressEvent(event);
+}
+
+void SciQLopMultiPlotPanel::dragEnterEvent(QDragEnterEvent* event)
+{
+    using namespace cpp_utils;
+    const auto formats = event->mimeData()->formats();
+    for (const auto& format : formats)
+    {
+        std::cout << format.toStdString() << std::endl;
+        if (containers::contains(_accepted_mime_types, format))
+        {
+            event->acceptProposedAction();
+            _current_callback = _accepted_mime_types[format];
+            _place_holder_manager->dragEnterEvent(event);
+            return;
+        }
+    }
+    _current_callback = nullptr;
+}
+
+void SciQLopMultiPlotPanel::dragMoveEvent(QDragMoveEvent* event)
+{
+    if (_current_callback)
+    {
+        _place_holder_manager->dragMoveEvent(event);
+        event->acceptProposedAction();
+    }
+}
+
+void SciQLopMultiPlotPanel::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    _place_holder_manager->dragLeaveEvent(event);
+    _current_callback = nullptr;
+}
+
+void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
+{
+    if (_current_callback)
+    {
+        SciQLopPlotInterface* drop_plot = nullptr;
+        auto drop_result = _place_holder_manager->dropEvent(event);
+        if (drop_result.location == DropLocation::NewPlot)
+        {
+            drop_plot = create_plot(drop_result.index, _default_plot_type);
+        }
+        else
+        {
+            std::cout << "Drop on plot " << drop_result.index << std::endl;
+            drop_plot = plot_at(drop_result.index);
+        }
+
+        event->acceptProposedAction();
+        if (drop_plot)
+            _current_callback->call(drop_plot, event->mimeData());
+        _current_callback = nullptr;
+    }
 }

@@ -26,6 +26,8 @@
 
 SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
 
+SciQLopPlotCollection::~SciQLopPlotCollection() { }
+
 void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
 {
     insert_plot(_plots.size(), plot);
@@ -39,8 +41,8 @@ void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
 
 void SciQLopPlotCollection::remove_plot(SciQLopPlotInterface* plot)
 {
-    _plots.removeOne(plot);
-    emit plotListChanged(_plots);
+    if (_plots.removeOne(plot))
+        emit plotListChanged(_plots);
 }
 
 SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
@@ -83,7 +85,6 @@ void SciQLopPlotCollection::remove_behavior(const QString& type_name)
         _behaviors.remove(type_name);
     }
 }
-
 
 void SciQLopPlotCollection::clear()
 {
