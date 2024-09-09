@@ -47,6 +47,7 @@ jobs:
         if: runner.os == 'Windows'
         with:
           arch: amd64
+          toolset: '17.10'
       - uses: actions/checkout@v4
       - name: Forward GITHUB_WORKSPACE env var
         shell: bash
