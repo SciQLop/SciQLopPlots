@@ -53,7 +53,7 @@ jobs:
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.1
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
