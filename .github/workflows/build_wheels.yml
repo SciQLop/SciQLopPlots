@@ -36,7 +36,7 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-          - os: windows-latest
+          - os: windows-2019
             arch: x86_64
           - os: macos-13  # Intel
             arch: x86_64
@@ -47,7 +47,6 @@ jobs:
         if: runner.os == 'Windows'
         with:
           arch: amd64
-          toolset: '17.10'
       - uses: actions/checkout@v4
       - name: Forward GITHUB_WORKSPACE env var
         shell: bash

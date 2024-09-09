@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -59,6 +58,7 @@ private:
     double* ptr;
     std::size_t start; // first row
     std::size_t stop; // last row
+
 public:
     ArrayView1D(double* ptr, std::size_t start, std::size_t stop)
             : ptr(ptr), start(start), stop(stop)
@@ -79,6 +79,7 @@ public:
     }
 
     inline std::size_t flat_size() const noexcept override { return stop - start; }
+
     inline std::size_t size(int index = 0) const noexcept override { return stop - start; }
 };
 
@@ -91,6 +92,7 @@ private:
     std::size_t n_cols;
     std::size_t start; // first row
     std::size_t stop; // last row
+
 public:
     ArrayView2D(
         double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start, std::size_t stop)
@@ -180,10 +182,10 @@ public:
     double* data() const;
 
     inline auto operator[](std::size_t position) { return data()[position]; }
+
     inline const auto operator[](std::size_t position) const { return data()[position]; }
 
     std::vector<double> to_std_vect();
-
 
     inline auto begin() noexcept { return data(); }
 
@@ -198,6 +200,7 @@ public:
     inline const auto cend() const noexcept { return data() + flat_size(); }
 
     inline auto front() { return *begin(); }
+
     inline auto back() { return *(end() - 1); }
 
     bool row_major() const;
@@ -220,9 +223,9 @@ public:
         }
         return nullptr;
     }
+
     PyObject* py_object() const;
 };
-
 
 namespace std
 {
@@ -249,7 +252,6 @@ inline auto cend(const PyBuffer& v)
 
 }
 
-
 struct XYView
 {
 private:
@@ -275,6 +277,7 @@ public:
     }
 
     inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
+
     inline double y(std::size_t i, std::size_t j) const { return (*_y)[{ i, j }]; }
 
     inline std::size_t size() const { return std::size(*_x); }
@@ -322,6 +325,7 @@ public:
     }
 
     inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
+
     inline double y(std::size_t i, std::size_t j) const
     {
         if (_y_is_2d)
@@ -330,11 +334,13 @@ public:
         }
         return (*_y)[{ j, 0 }];
     }
+
     inline double z(std::size_t i, std::size_t j) const { return (*_z)[{ i, j }]; }
 
     inline std::size_t size() const { return std::size(*_x); }
 
     inline bool y_is_2d() const { return _y_is_2d; }
+
     inline std::pair<std::size_t, std::size_t> y_shape() const
     {
         if (_y_is_2d)
