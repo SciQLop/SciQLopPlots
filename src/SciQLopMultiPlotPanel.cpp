@@ -34,16 +34,14 @@
 
 #include <QKeyEvent>
 
-#include <iostream>
-
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     QWidget* parent, bool synchronize_x, bool synchronize_time)
         : QScrollArea { nullptr }
 {
     _container = new SciQLopPlotContainer(this);
     _place_holder_manager = new PlaceHolderManager(this);
-    connect(_container, &SciQLopPlotContainer::plotListChanged, this,
-        &SciQLopMultiPlotPanel::plotListChanged);
+    connect(_container, &SciQLopPlotContainer::plot_list_changed, this,
+        &SciQLopMultiPlotPanel::plot_list_changed);
     setWidget(_container);
     this->setWidgetResizable(true);
 
@@ -169,9 +167,19 @@ void SciQLopMultiPlotPanel::set_x_axis_range(const SciQLopPlotRange& range)
     _container->set_x_axis_range(range);
 }
 
+const SciQLopPlotRange& SciQLopMultiPlotPanel::x_axis_range() const
+{
+    return _container->x_axis_range();
+}
+
 void SciQLopMultiPlotPanel::set_time_axis_range(const SciQLopPlotRange& range)
 {
     _container->set_time_axis_range(range);
+}
+
+const SciQLopPlotRange& SciQLopMultiPlotPanel::time_axis_range() const
+{
+    return _container->time_axis_range();
 }
 
 void SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* behavior)
@@ -184,7 +192,7 @@ void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
     _container->remove_behavior(type_name);
 }
 
-void SciQLopMultiPlotPanel::add_accepted_mime_type(NewPlotCallback* callback)
+void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
 {
     _accepted_mime_types[callback->mime_type()] = callback;
 }
@@ -287,12 +295,12 @@ void SciQLopMultiPlotPanel::dragEnterEvent(QDragEnterEvent* event)
     const auto formats = event->mimeData()->formats();
     for (const auto& format : formats)
     {
-        std::cout << format.toStdString() << std::endl;
         if (containers::contains(_accepted_mime_types, format))
         {
             event->acceptProposedAction();
             _current_callback = _accepted_mime_types[format];
-            _place_holder_manager->dragEnterEvent(event);
+            if (_current_callback->create_placeholder())
+                _place_holder_manager->dragEnterEvent(event);
             return;
         }
     }
@@ -303,14 +311,16 @@ void SciQLopMultiPlotPanel::dragMoveEvent(QDragMoveEvent* event)
 {
     if (_current_callback)
     {
-        _place_holder_manager->dragMoveEvent(event);
+        if (_current_callback->create_placeholder())
+            _place_holder_manager->dragMoveEvent(event);
         event->acceptProposedAction();
     }
 }
 
 void SciQLopMultiPlotPanel::dragLeaveEvent(QDragLeaveEvent* event)
 {
-    _place_holder_manager->dragLeaveEvent(event);
+    if (_current_callback && _current_callback->create_placeholder())
+        _place_holder_manager->dragLeaveEvent(event);
     _current_callback = nullptr;
 }
 
@@ -326,7 +336,6 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
         }
         else
         {
-            std::cout << "Drop on plot " << drop_result.index << std::endl;
             drop_plot = plot_at(drop_result.index);
         }
 

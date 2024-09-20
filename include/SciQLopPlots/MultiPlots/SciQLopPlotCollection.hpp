@@ -108,7 +108,9 @@ public:
     inline virtual std::size_t size() const { return 0; }
 
     virtual void set_x_axis_range(const SciQLopPlotRange& range);
+    virtual const SciQLopPlotRange& x_axis_range() const;
     virtual void set_time_axis_range(const SciQLopPlotRange& range);
+    virtual const SciQLopPlotRange& time_axis_range() const;
 
     inline virtual void register_behavior(SciQLopPlotCollectionBehavior* behavior) { }
 
@@ -183,6 +185,9 @@ class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterf
 
     QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
 
+    SciQLopPlotRange _time_axis_range;
+    SciQLopPlotRange _x_axis_range;
+
 public:
     SciQLopPlotCollection(QObject* parent = nullptr);
     virtual ~SciQLopPlotCollection();
@@ -206,12 +211,15 @@ public:
     inline std::size_t size() const final { return _plots.size(); }
 
     virtual void set_x_axis_range(const SciQLopPlotRange& range) final;
+    virtual const SciQLopPlotRange& x_axis_range() const final;
+
     virtual void set_time_axis_range(const SciQLopPlotRange& range) final;
+    virtual const SciQLopPlotRange& time_axis_range() const final;
 
     void register_behavior(SciQLopPlotCollectionBehavior* behavior) final;
     void remove_behavior(const QString& type_name) final;
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
 };

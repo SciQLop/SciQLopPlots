@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlotCollection.hpp"
-#include "SciQLopPlots/DragNDrop/NewPlotCallback.hpp"
+#include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
@@ -39,8 +39,8 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
 {
     Q_OBJECT
     SciQLopPlotContainer* _container = nullptr;
-    std::map<QString, NewPlotCallback*> _accepted_mime_types;
-    NewPlotCallback* _current_callback = nullptr;
+    std::map<QString, PlotDragNDropCallback*> _accepted_mime_types;
+    PlotDragNDropCallback* _current_callback = nullptr;
     PlaceHolderManager* _place_holder_manager = nullptr;
     PlotType _default_plot_type = PlotType::BasicXY;
 
@@ -133,8 +133,12 @@ public:
 
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
 
+
     void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
+    const SciQLopPlotRange& x_axis_range() const Q_DECL_OVERRIDE;
+
     void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
+    const SciQLopPlotRange& time_axis_range() const Q_DECL_OVERRIDE;
 
     inline void set_x_axis_range(double start, double stop)
     {
@@ -154,11 +158,11 @@ public:
     void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
-    void add_accepted_mime_type(NewPlotCallback* callback);
+    void add_accepted_mime_type(PlotDragNDropCallback* callback);
 
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
 
 protected:

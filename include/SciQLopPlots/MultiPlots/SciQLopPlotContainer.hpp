@@ -84,9 +84,19 @@ public:
         _plots->set_x_axis_range(range);
     }
 
+    inline virtual const SciQLopPlotRange& x_axis_range() const Q_DECL_OVERRIDE
+    {
+        return _plots->x_axis_range();
+    }
+
     inline virtual void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
         _plots->set_time_axis_range(range);
+    }
+
+    inline virtual const SciQLopPlotRange& time_axis_range() const Q_DECL_OVERRIDE
+    {
+        return _plots->time_axis_range();
     }
 
     inline void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
@@ -102,6 +112,6 @@ public:
     void organize_plots();
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
 };
