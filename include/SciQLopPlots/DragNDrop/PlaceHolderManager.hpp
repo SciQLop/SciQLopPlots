@@ -28,7 +28,6 @@
 #include <QObject>
 #include <QPointF>
 #include <QWidget>
-#include <iostream>
 
 
 enum class DropLocation
@@ -117,7 +116,6 @@ class PlaceHolderManager : public QObject
     {
         if (_interface()->empty())
         {
-            std::cout << "empty" << std::endl;
             return _create_place_holder(0);
         }
         auto location = _compute_location(pos);
