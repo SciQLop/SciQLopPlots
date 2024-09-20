@@ -8,7 +8,7 @@ on:
 
 env:
   PYSIDE_VERSION: 6.7.1
-  PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
+  #PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
 
 jobs:
   build_sdist:
