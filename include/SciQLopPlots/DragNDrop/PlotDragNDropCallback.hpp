@@ -25,20 +25,24 @@
 #include <QMimeData>
 #include <QObject>
 
-class NewPlotCallback : public QObject
+class PlotDragNDropCallback : public QObject
 {
     Q_OBJECT
     QString _mime_type;
+    bool _create_placeholder = false;
 
 public:
-    NewPlotCallback(const QString& mime_type, QObject* parent = nullptr)
-            : QObject(parent), _mime_type(mime_type)
+    PlotDragNDropCallback(
+        const QString& mime_type, bool create_placeholder = false, QObject* parent = nullptr)
+            : QObject(parent), _mime_type(mime_type), _create_placeholder(create_placeholder)
     {
     }
 
     inline const QString& mime_type() const { return _mime_type; }
 
-    virtual ~NewPlotCallback() = default;
+    virtual ~PlotDragNDropCallback() = default;
 
     inline virtual void call(SciQLopPlotInterface* plot, const QMimeData* mimeData) { }
+
+    inline bool create_placeholder() const { return _create_placeholder; }
 };

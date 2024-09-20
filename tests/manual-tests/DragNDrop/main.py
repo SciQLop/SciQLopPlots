@@ -1,6 +1,6 @@
 from SciQLopPlots import SciQLopPlot, \
                          MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, PlotType, AxisType, GraphType, NewPlotCallback
+                         SciQLopTimeSeriesPlot, PlotType, AxisType, GraphType, PlotDragNDropCallback
 from PySide6.QtWidgets import QMainWindow, QApplication, QListWidget ,QWidget, QSplitter, QHBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt, QMimeData
@@ -28,9 +28,9 @@ class DNDSource(QListWidget):
         return mime_data
 
 
-class MyCallback(NewPlotCallback):
+class MyCallback(PlotDragNDropCallback):
     def __init__(self,parent, source):
-        super().__init__("text/plain", parent)
+        super().__init__("text/plain", True, parent)
         self.source = source
 
     def call(self, plot, mime_data:QMimeData):
