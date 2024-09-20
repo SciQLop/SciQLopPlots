@@ -36,13 +36,13 @@ void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
 void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
 {
     _plots.insert(index, plot);
-    emit plotListChanged(_plots);
+    emit plot_list_changed(_plots);
 }
 
 void SciQLopPlotCollection::remove_plot(SciQLopPlotInterface* plot)
 {
     if (_plots.removeOne(plot))
-        emit plotListChanged(_plots);
+        emit plot_list_changed(_plots);
 }
 
 SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
@@ -52,18 +52,30 @@ SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
 
 void SciQLopPlotCollection::set_x_axis_range(const SciQLopPlotRange& range)
 {
+    _x_axis_range = range;
     for (auto* plot : _plots)
     {
         plot->x_axis()->set_range(range);
     }
 }
 
+const SciQLopPlotRange& SciQLopPlotCollection::x_axis_range() const
+{
+    return _x_axis_range;
+}
+
 void SciQLopPlotCollection::set_time_axis_range(const SciQLopPlotRange& range)
 {
+    _time_axis_range = range;
     for (auto* plot : _plots)
     {
         plot->time_axis()->set_range(range);
     }
+}
+
+const SciQLopPlotRange& SciQLopPlotCollection::time_axis_range() const
+{
+    return _time_axis_range;
 }
 
 void SciQLopPlotCollection::register_behavior(SciQLopPlotCollectionBehavior* behavior)
@@ -71,7 +83,7 @@ void SciQLopPlotCollection::register_behavior(SciQLopPlotCollectionBehavior* beh
     behavior->setParent(this);
     _behaviors[behavior->metaObject()->className()] = behavior;
     behavior->updatePlotList(_plots);
-    connect(this, &SciQLopPlotCollection::plotListChanged, behavior,
+    connect(this, &SciQLopPlotCollection::plot_list_changed, behavior,
         &SciQLopPlotCollectionBehavior::updatePlotList);
 }
 
@@ -79,7 +91,7 @@ void SciQLopPlotCollection::remove_behavior(const QString& type_name)
 {
     if (_behaviors.contains(type_name))
     {
-        disconnect(this, &SciQLopPlotCollection::plotListChanged, _behaviors[type_name],
+        disconnect(this, &SciQLopPlotCollection::plot_list_changed, _behaviors[type_name],
             &SciQLopPlotCollectionBehavior::updatePlotList);
         delete _behaviors[type_name];
         _behaviors.remove(type_name);
@@ -89,7 +101,7 @@ void SciQLopPlotCollection::remove_behavior(const QString& type_name)
 void SciQLopPlotCollection::clear()
 {
     _plots.clear();
-    emit plotListChanged(_plots);
+    emit plot_list_changed(_plots);
 }
 
 int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
@@ -100,7 +112,7 @@ int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
 void SciQLopPlotCollection::move_plot(int from, int to)
 {
     _plots.move(from, to);
-    emit plotListChanged(_plots);
+    emit plot_list_changed(_plots);
 }
 
 void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)
@@ -110,4 +122,16 @@ void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)
 
 void SciQLopPlotCollectionInterface::set_x_axis_range(const SciQLopPlotRange& range) { }
 
+const SciQLopPlotRange& SciQLopPlotCollectionInterface::x_axis_range() const
+{
+    static SciQLopPlotRange r {};
+    return r;
+}
+
 void SciQLopPlotCollectionInterface::set_time_axis_range(const SciQLopPlotRange& range) { }
+
+const SciQLopPlotRange& SciQLopPlotCollectionInterface::time_axis_range() const
+{
+    static SciQLopPlotRange r {};
+    return r;
+}

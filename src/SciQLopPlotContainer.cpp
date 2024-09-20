@@ -33,8 +33,8 @@ SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent)
     this->layout()->setSpacing(0);
     this->setChildrenCollapsible(false);
     setProperty("empty", true);
-    connect(_plots, &SciQLopPlotCollection::plotListChanged, this,
-        &SciQLopPlotContainer::plotListChanged);
+    connect(_plots, &SciQLopPlotCollection::plot_list_changed, this,
+        &SciQLopPlotContainer::plot_list_changed);
 }
 
 SciQLopPlotContainer::~SciQLopPlotContainer() { }

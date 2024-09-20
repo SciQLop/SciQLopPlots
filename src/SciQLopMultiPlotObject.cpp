@@ -41,7 +41,7 @@ SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* p
 {
     if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
         connect(dynamic_cast<QObject*>(parent),
-            SIGNAL(plotListChanged(const QList<SciQLopPlotInterface*>&)), this,
+            SIGNAL(plot_list_changed(const QList<SciQLopPlotInterface*>&)), this,
             SLOT(updatePlotList(const QList<SciQLopPlotInterface*>&)));
     else
         throw std::runtime_error("Invalid parent type");
