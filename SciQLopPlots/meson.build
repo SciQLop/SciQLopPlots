@@ -82,7 +82,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Items/SciQLopTracer.hpp',
     project_source_root + '/include/SciQLopPlots/Items/QCPItemRichText.hpp',
     project_source_root + '/include/SciQLopPlots/DataProducer/DataProducer.hpp',
-    project_source_root + '/include/SciQLopPlots/DragNDrop/NewPlotCallback.hpp',
+    project_source_root + '/include/SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp',
     project_source_root + '/include/SciQLopPlots/DragNDrop/PlaceHolderManager.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]

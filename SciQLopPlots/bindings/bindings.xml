@@ -115,20 +115,28 @@
             <modify-argument index="4" rename="z_log_scale"/>
             <modify-argument index="5" rename="sync_with"/>
         </modify-function>
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
     </object-type>
+
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes"/>
 
     <object-type name="SciQlopItemWithToolTip">
     </object-type>
 
-    <object-type name="SciQLopLineGraph" parent-management="yes"/>
-    <object-type name="SciQLopCurve" parent-management="yes"/>
-    <object-type name="SciQLopColorMap" parent-management="yes"/>
+    <object-type name="SciQLopLineGraph" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopCurve" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopColorMap" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
@@ -202,6 +210,7 @@
             <parent index="this" action="add"/>
           </modify-argument>
         </modify-function>
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="MultiPlotsVerticalSpan" parent-management="yes">
         <property name="range" type="QCPRange" get="get_range" set="set_range" generate-getsetdef="yes"/>
@@ -228,7 +237,7 @@
           </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="NewPlotCallback" parent-management="yes"/>
+    <object-type name="PlotDragNDropCallback" parent-management="yes"/>
 </typesystem>
 
 
