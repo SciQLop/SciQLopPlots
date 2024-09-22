@@ -20,8 +20,11 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
+
 #include <QGestureRecognizer>
 #include <QSharedPointer>
 #include <algorithm>
@@ -145,6 +148,11 @@ SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(const QString& name)
             return p;
     }
     return nullptr;
+}
+
+const QList<SQPQCPAbstractPlottableWrapper*>& SciQLopPlot::sqp_plottables() const
+{
+    return m_plottables;
 }
 
 SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scale, bool z_log_scale)
@@ -439,8 +447,13 @@ void SciQLopPlot::_register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* pl
     connect(plottable, &SQPQCPAbstractPlottableWrapper::plottable_created, this,
         &SciQLopPlot::_register_plottable);
     connect(plottable, &SQPQCPAbstractPlottableWrapper::destroyed, this,
-        [this, plottable]() { m_plottables.removeOne(plottable); });
+        [this, plottable]()
+        {
+            m_plottables.removeOne(plottable);
+            emit this->plotables_list_changed();
+        });
     connect(plottable, &SQPQCPAbstractPlottableWrapper::replot, this, [this]() { this->replot(); });
+    emit this->plotables_list_changed();
 }
 
 void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
@@ -561,6 +574,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
         &SciQLopPlot::y2_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::scroll_factor_changed, this,
         &SciQLopPlot::scroll_factor_changed);
+
+    connect(m_impl, &_impl::SciQLopPlot::plotables_list_changed, this,
+        &SciQLopPlot::graph_list_changed);
 
     set_axes_to_rescale(
         QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
@@ -717,4 +733,14 @@ SciQLopGraphInterface* SciQLopPlot::graph(int index)
 SciQLopGraphInterface* SciQLopPlot::graph(const QString& name)
 {
     return m_impl->sqp_plottable(name);
+}
+
+QList<SciQLopGraphInterface*> SciQLopPlot::graphs() const noexcept
+{
+    QList<SciQLopGraphInterface*> graphs;
+    for (auto p : m_impl->sqp_plottables())
+    {
+        graphs.append(p);
+    }
+    return graphs;
 }

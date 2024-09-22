@@ -19,20 +19,33 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#pragma once
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
+#include <QAbstractItemModel>
+#include <QObject>
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+class PlotsModel : public QAbstractItemModel
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
-}
+    Q_OBJECT
+    PlotsModelNode* m_rootNode;
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
-{
-    if (m_range != range)
-    {
-        m_range = range;
-        Q_EMIT range_changed(range);
-    }
-}
+    Q_SLOT void children_changed(PlotsModelNode* node);
+
+public:
+    PlotsModel(QObject* parent = nullptr);
+    ~PlotsModel() = default;
+
+    QModelIndex index(
+        int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    QModelIndex parent(const QModelIndex& index) const override;
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    Qt::ItemFlags flags(const QModelIndex& index) const override;
+
+    void select(const QList<QModelIndex>& indexes);
+
+    Q_SLOT void addTopLevelNode(QObject* obj);
+
+    static PlotsModel* instance();
+};

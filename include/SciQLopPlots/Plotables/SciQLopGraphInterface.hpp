@@ -34,27 +34,37 @@ class SciQLopGraphInterface : public QObject
 {
     SciQLopPlotRange m_range;
     Q_OBJECT
+
 public:
     SciQLopGraphInterface(QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() = default;
 
     virtual void set_range(const SciQLopPlotRange& range);
+
     virtual void set_visible(bool visible) noexcept { }
+
     virtual void set_labels(const QStringList& labels) { }
+
     inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
+
     virtual void set_colors(const QList<QColor>& colors) { }
 
     virtual SciQLopPlotRange range() const noexcept { return m_range; }
 
     virtual bool visible() const noexcept { return false; }
+
     virtual QStringList labels() const noexcept { return QStringList(); }
+
     virtual QString name() const noexcept { return this->objectName(); }
+
     virtual QList<QColor> colors() const noexcept { return QList<QColor>(); }
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) {};
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) {};
 
     virtual QList<PyBuffer> data() const noexcept { return QList<PyBuffer>(); }
+
+    virtual void set_selected(bool selected) noexcept { }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);

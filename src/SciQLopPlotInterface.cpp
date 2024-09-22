@@ -19,20 +19,14 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
-{
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
-}
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
+void SciQLopPlotInterface::set_selected(bool selected) noexcept
 {
-    if (m_range != range)
+    if (m_selected != selected)
     {
-        m_range = range;
-        Q_EMIT range_changed(range);
+        m_selected = selected;
+        Q_EMIT selection_changed();
     }
 }

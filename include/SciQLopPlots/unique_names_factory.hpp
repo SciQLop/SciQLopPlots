@@ -19,20 +19,42 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#pragma once
+#include <QMap>
+#include <QSet>
+#include <QString>
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+class UniqueNamesFactory
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
-}
+    UniqueNamesFactory() { }
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
-{
-    if (m_range != range)
+    QMap<QString, QSet<QString>> _used_names;
+
+    inline QString _unique_name(const QString& prefix)
     {
-        m_range = range;
-        Q_EMIT range_changed(range);
+        if (!_used_names.contains(prefix))
+        {
+            _used_names.insert(prefix, QSet<QString>());
+        }
+        QString name = prefix;
+        int i = 0;
+        while (_used_names[prefix].contains(name))
+        {
+            name = prefix + QString::number(i++);
+        }
+        _used_names[prefix].insert(name);
+        return name;
     }
-}
+
+public:
+    inline static UniqueNamesFactory& instance()
+    {
+        static UniqueNamesFactory instance;
+        return instance;
+    }
+
+    inline static QString unique_name(const QString& prefix)
+    {
+        return instance()._unique_name(prefix);
+    }
+};

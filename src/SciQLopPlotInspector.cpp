@@ -19,20 +19,45 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#include "SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+REGISTER_INSPECTOR(SciQLopPlotInspector)
+
+QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
+    QList<QObject*> children;
+    if (auto plot = _plot(obj); plot)
+    {
+        for (auto c : plot->graphs())
+        {
+            children.append(c);
+        }
+    }
+    return children;
 }
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
+QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
 {
-    if (m_range != range)
+    if (auto plot = _plot(obj); plot)
     {
-        m_range = range;
-        Q_EMIT range_changed(range);
+        return plot->graph(name);
     }
+    return nullptr;
+}
+
+void SciQLopPlotInspector::connect_node(PlotsModelNode* node, QObject* const obj)
+{
+    if (auto plot = _plot(obj); plot)
+    {
+        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::update_children);
+    }
+}
+
+void SciQLopPlotInspector::set_selected(QObject* obj, bool selected)
+{
+    if (auto plot = _plot(obj); plot)
+        plot->set_selected(selected);
 }

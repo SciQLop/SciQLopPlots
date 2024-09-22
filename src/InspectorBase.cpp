@@ -19,20 +19,48 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
+#include <QStringLiteral>
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+REGISTER_INSPECTOR(InspectorBase)
+
+InspectorBase::InspectorBase(QObject* parent) { }
+
+QList<QObject*> InspectorBase::children(QObject* obj)
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
+    if (obj != nullptr)
+        return obj->children();
+    return {};
 }
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
+QObject* InspectorBase::child(const QString& name, QObject* obj)
 {
-    if (m_range != range)
-    {
-        m_range = range;
-        Q_EMIT range_changed(range);
-    }
+    if (obj != nullptr)
+        return obj->findChild<QObject*>(name);
+    return nullptr;
+}
+
+QIcon InspectorBase::icon(const QObject* const obj)
+{
+    Q_UNUSED(obj);
+    return QIcon();
+}
+
+QString InspectorBase::tooltip(const QObject* const obj)
+{
+    Q_UNUSED(obj);
+    return QString();
+}
+
+void InspectorBase::connect_node(PlotsModelNode* node, QObject* const obj)
+{
+    connect(obj, &QObject::destroyed, node, [node]() { delete node; });
+}
+
+void InspectorBase::set_selected(QObject* obj, bool selected)
+{
+    Q_UNUSED(obj);
+    Q_UNUSED(selected);
 }

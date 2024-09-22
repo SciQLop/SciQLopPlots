@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
@@ -56,6 +57,7 @@ public:
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void plotables_list_changed();
 #endif
     explicit SciQLopPlot(QWidget* parent = nullptr);
 
@@ -70,6 +72,7 @@ public:
 
     SQPQCPAbstractPlottableWrapper* sqp_plottable(int index = -1);
     SQPQCPAbstractPlottableWrapper* sqp_plottable(const QString& name);
+    const QList<SQPQCPAbstractPlottableWrapper*>& sqp_plottables() const;
 
     SciQLopColorMap* add_color_map(
         const QString& name, bool y_log_scale = false, bool z_log_scale = false);
@@ -77,9 +80,11 @@ public:
         bool y_log_scale = false, bool z_log_scale = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
+
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
 
     inline bool has_colormap() { return m_color_scale->visible(); }
+
     inline QCPColorScale* color_scale() const noexcept { return m_color_scale; }
 
     void minimize_margins();
@@ -221,7 +226,6 @@ protected:
 };
 }
 
-
 class SciQLopPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
@@ -230,7 +234,6 @@ protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
     void _connect_callable_sync(SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with);
-
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
     {
@@ -278,8 +281,8 @@ public:
     void minimize_margins() override;
 
     inline bool has_colormap() { return m_impl->has_colormap(); }
-    inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 
+    inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 
     inline int calculateAutoMargin(QCP::MarginSide side)
     {
@@ -321,8 +324,8 @@ public:
 
     virtual SciQLopGraphInterface* graph(int index = -1) override;
     virtual SciQLopGraphInterface* graph(const QString& name) override;
+    virtual QList<SciQLopGraphInterface*> graphs() const noexcept override;
 };
-
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)
 {

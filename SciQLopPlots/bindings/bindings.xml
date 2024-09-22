@@ -238,6 +238,11 @@
         </modify-function>
     </object-type>
     <object-type name="PlotDragNDropCallback" parent-management="yes"/>
+
+    <object-type name="InspectorBase" parent-management="yes"/>
+    <object-type name="Inspectors" parent-management="yes"/>
+    <object-type name="PlotsModelNode" parent-management="yes"/>
+    <object-type name="PlotsModel" parent-management="yes"/>
 </typesystem>
 
 
