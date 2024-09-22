@@ -68,7 +68,10 @@ public:
         return _plots->plot_at(index);
     }
 
-    inline const QList<SciQLopPlotInterface*>& plots() const { return _plots->plots(); }
+    virtual inline QList<SciQLopPlotInterface*> plots() const Q_DECL_OVERRIDE
+    {
+        return _plots->plots();
+    }
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {

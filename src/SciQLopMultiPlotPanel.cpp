@@ -21,8 +21,13 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
+#include "SciQLopPlots/unique_names_factory.hpp"
 
 #include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
+
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
+
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
@@ -36,7 +41,7 @@
 
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     QWidget* parent, bool synchronize_x, bool synchronize_time)
-        : QScrollArea { nullptr }
+        : QScrollArea { nullptr }, _uuid { QUuid::createUuid() }
 {
     _container = new SciQLopPlotContainer(this);
     _place_holder_manager = new PlaceHolderManager(this);
@@ -54,6 +59,9 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
         _default_plot_type = PlotType::TimeSeries;
     }
     this->setAcceptDrops(true);
+    setObjectName(UniqueNamesFactory::unique_name("Panel"));
+
+    PlotsModel::instance()->addTopLevelNode(this);
 }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
@@ -71,9 +79,15 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
     return _container->plot_at(index);
 }
 
-const QList<SciQLopPlotInterface*>& SciQLopMultiPlotPanel::plots() const
+QList<SciQLopPlotInterface*> SciQLopMultiPlotPanel::plots() const
 {
-    return _container->plots();
+    QList<SciQLopPlotInterface*> plots;
+    for (auto plot : _container->plots())
+    {
+        if (!qobject_cast<PlaceHolder*>(plot))
+            plots.append(plot);
+    }
+    return plots;
 }
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)
@@ -195,6 +209,12 @@ void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
 void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
 {
     _accepted_mime_types[callback->mime_type()] = callback;
+}
+
+void SciQLopMultiPlotPanel::setSelected(bool selected)
+{
+    _selected = selected;
+    emit selectionChanged(selected);
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(

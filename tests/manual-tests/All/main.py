@@ -1,6 +1,6 @@
 from SciQLopPlots import SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange
-from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
+                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel
+from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal
 import sys, os
@@ -262,7 +262,13 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
         self._data_producer = RealTimeAudio.AudioDataProducer(size=size, sample_rate=sample_rate)
         self._data_producer.update_signal.connect(lambda x,y: self._graph.set_data(x,y))
 
-
+class Inspector(QWidget):
+    def __init__(self,parent):
+        QWidget.__init__(self,parent)
+        self.setLayout(QVBoxLayout())
+        self.tree_view = QTreeView(self)
+        self.layout().addWidget(self.tree_view)
+        self.tree_view.setModel(PlotsModel.instance())
 
 
 if __name__ == '__main__':
@@ -270,6 +276,7 @@ if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
+    w.add_tab(Inspector(w), "Inspector")
     w.add_tab(SimpleGraph(w), "Simple Graph")
     w.add_tab(SimpleCurve(w), "Simple Curve")
     w.add_tab(TimeSerieGraph(w), "Time Serie Graph")

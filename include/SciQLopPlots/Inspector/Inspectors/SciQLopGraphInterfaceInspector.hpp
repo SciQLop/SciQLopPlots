@@ -19,20 +19,45 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#include <QIcon>
+#include <QList>
+#include <QObject>
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+class SciQLopGraphInterfaceInspector : public InspectorBase
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
-}
+    Q_OBJECT
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
-{
-    if (m_range != range)
+    inline SciQLopGraphInterface* _graph(QObject* obj)
     {
-        m_range = range;
-        Q_EMIT range_changed(range);
+        return qobject_cast<SciQLopGraphInterface*>(obj);
     }
-}
+
+public:
+    using compatible_type = SciQLopGraphInterface;
+
+    SciQLopGraphInterfaceInspector() : InspectorBase() { }
+
+    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
+
+    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
+
+    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QIcon();
+    }
+
+    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QString();
+    }
+
+    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
+
+    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+};

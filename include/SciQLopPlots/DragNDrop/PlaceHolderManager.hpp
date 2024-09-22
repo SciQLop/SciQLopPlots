@@ -47,7 +47,7 @@ class PlaceHolder : public SciQLopPlotInterface
     Q_OBJECT
 
 public:
-    PlaceHolder(QWidget* parent = nullptr) : SciQLopPlotInterface(parent)
+    PlaceHolder(QWidget* parent = nullptr) : SciQLopPlotInterface(parent, "PlaceHolder")
     {
         setStyleSheet("background-color: #BBD5EE; border: 1px solid #2A7FD4");
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);

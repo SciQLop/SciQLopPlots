@@ -19,20 +19,29 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/unique_names_factory.hpp"
+#include "SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+REGISTER_INSPECTOR(SciQLopGraphInterfaceInspector)
+
+QList<QObject*> SciQLopGraphInterfaceInspector::children(QObject* obj)
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
-    setObjectName(UniqueNamesFactory::unique_name("Graph"));
+    return {};
 }
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
+QObject* SciQLopGraphInterfaceInspector::child(const QString& name, QObject* obj)
 {
-    if (m_range != range)
+    Q_UNUSED(name);
+    Q_UNUSED(obj);
+    return nullptr;
+}
+
+void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject* const obj) { }
+
+void SciQLopGraphInterfaceInspector::set_selected(QObject* obj, bool selected)
+{
+    if (auto graph = _graph(obj); graph)
     {
-        m_range = range;
-        Q_EMIT range_changed(range);
+        graph->set_selected(selected);
     }
 }

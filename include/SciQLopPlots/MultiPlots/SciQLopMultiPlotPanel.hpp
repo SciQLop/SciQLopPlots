@@ -22,14 +22,13 @@
 #pragma once
 #include "SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
+#include <QUuid>
 #include <QWidget>
 #include <map>
-
-#include "qcustomplot.h"
-
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
@@ -43,6 +42,8 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
     PlotDragNDropCallback* _current_callback = nullptr;
     PlaceHolderManager* _place_holder_manager = nullptr;
     PlotType _default_plot_type = PlotType::BasicXY;
+    QUuid _uuid;
+    bool _selected = false;
 
 protected:
     template <typename T, GraphType graph_type, typename... Args>
@@ -104,13 +105,16 @@ protected:
         int index = -1) Q_DECL_OVERRIDE;
 
 public:
+    Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);
     SciQLopMultiPlotPanel(
         QWidget* parent = nullptr, bool synchronize_x = true, bool synchronize_time = false);
+
+    inline QUuid uuid() const { return _uuid; }
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
-    const QList<SciQLopPlotInterface*>& plots() const;
+    QList<SciQLopPlotInterface*> plots() const Q_DECL_OVERRIDE;
 
     virtual void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     virtual void move_plot(int from, int to) Q_DECL_OVERRIDE;
@@ -160,9 +164,13 @@ public:
 
     void add_accepted_mime_type(PlotDragNDropCallback* callback);
 
+    inline bool selected() const { return _selected; }
+
+    void setSelected(bool selected);
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void selectionChanged(bool selected);
 #endif // BINDINGS_H
 
 protected:

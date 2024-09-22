@@ -32,6 +32,8 @@
 
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
+Q_DECLARE_METATYPE(QList<SciQLopPlotInterface*>)
+
 class SciQLopPlotCollectionBehavior : public QObject
 {
     Q_OBJECT
@@ -80,6 +82,8 @@ protected:
 
 public:
     virtual ~SciQLopPlotCollectionInterface() = default;
+
+    inline virtual QList<SciQLopPlotInterface*> plots() const { return {}; }
 
     inline virtual void add_plot(SciQLopPlotInterface* plot) { }
 
@@ -202,7 +206,7 @@ public:
 
     SciQLopPlotInterface* plot_at(int index) const final;
 
-    inline const QList<SciQLopPlotInterface*>& plots() const { return _plots; }
+    virtual inline QList<SciQLopPlotInterface*> plots() const final { return _plots; }
 
     inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
 

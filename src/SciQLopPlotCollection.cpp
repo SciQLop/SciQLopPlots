@@ -24,7 +24,10 @@
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 
-SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
+SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent)
+{
+    qRegisterMetaType<QList<SciQLopPlotInterface*>>();
+}
 
 SciQLopPlotCollection::~SciQLopPlotCollection() { }
 
@@ -36,13 +39,13 @@ void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
 void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
 {
     _plots.insert(index, plot);
-    emit plot_list_changed(_plots);
+    emit plot_list_changed(plots());
 }
 
 void SciQLopPlotCollection::remove_plot(SciQLopPlotInterface* plot)
 {
     if (_plots.removeOne(plot))
-        emit plot_list_changed(_plots);
+        emit plot_list_changed(plots());
 }
 
 SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
@@ -101,7 +104,7 @@ void SciQLopPlotCollection::remove_behavior(const QString& type_name)
 void SciQLopPlotCollection::clear()
 {
     _plots.clear();
-    emit plot_list_changed(_plots);
+    emit plot_list_changed(plots());
 }
 
 int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
@@ -112,7 +115,7 @@ int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
 void SciQLopPlotCollection::move_plot(int from, int to)
 {
     _plots.move(from, to);
-    emit plot_list_changed(_plots);
+    emit plot_list_changed(plots());
 }
 
 void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)

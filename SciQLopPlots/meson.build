@@ -53,6 +53,7 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/unique_names_factory.hpp',
     project_source_root + '/include/SciQLopPlots/enums.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotInterface.hpp',
@@ -84,6 +85,13 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/DataProducer/DataProducer.hpp',
     project_source_root + '/include/SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp',
     project_source_root + '/include/SciQLopPlots/DragNDrop/PlaceHolderManager.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/InspectorBase.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Model/Model.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Model/Node.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopMultiPlotPanelInspector.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -105,6 +113,7 @@ sources = moc_files \
         + shiboken_generator_out \
         + [
             '../src/PythonInterface.cpp',
+            '../src/SciQLopPlotInterface.cpp',
             '../src/SciQLopPlot.cpp',
             '../src/SciQLopTimeSeriesPlot.cpp',
             '../src/SciQLopPlotAxis.cpp',
@@ -131,6 +140,13 @@ sources = moc_files \
             '../src/SciQLopTracer.cpp',
             '../src/QCPItemRichText.cpp',
             '../src/DataProducer.cpp',
+            '../src/InspectorBase.cpp',
+            '../src/Inspectors.cpp',
+            '../src/Model.cpp',
+            '../src/Node.cpp',
+            '../src/SciQLopMultiPlotPanelInspector.cpp',
+            '../src/SciQLopPlotInspector.cpp',
+            '../src/SciQLopGraphInterfaceInspector.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
