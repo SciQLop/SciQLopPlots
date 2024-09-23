@@ -56,6 +56,8 @@ public:
 
     inline int children_count() { return m_children.size(); }
 
+    bool remove_child(int row);
+
     QIcon icon();
     QString tooltip();
 
@@ -79,8 +81,10 @@ public:
 
     void set_selected(bool selected);
 
+    void destroy();
+
 #ifndef BINDINGS_H
-    Q_SIGNAL void nameChanged(const QString& name);
+    Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);
 #endif
 };

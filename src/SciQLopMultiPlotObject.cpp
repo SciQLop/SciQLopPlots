@@ -30,9 +30,10 @@ void SciQLopMultiPlotObject::removeObject(SciQLopPlotInterface* plot) { }
 
 void SciQLopMultiPlotObject::replotAll()
 {
-    for (auto* plot : m_plots)
+    for (auto& plot : m_plots)
     {
-        plot->replot(QCustomPlot::rpQueuedReplot);
+        if (plot)
+            plot->replot(QCustomPlot::rpQueuedReplot);
     }
 }
 
@@ -41,27 +42,27 @@ SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* p
 {
     if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
         connect(dynamic_cast<QObject*>(parent),
-            SIGNAL(plot_list_changed(const QList<SciQLopPlotInterface*>&)), this,
-            SLOT(updatePlotList(const QList<SciQLopPlotInterface*>&)));
+            SIGNAL(plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>&)), this,
+            SLOT(updatePlotList(const QList<QPointer<SciQLopPlotInterface>>&)));
     else
         throw std::runtime_error("Invalid parent type");
 }
 
 SciQLopMultiPlotObject::~SciQLopMultiPlotObject() { }
 
-void SciQLopMultiPlotObject::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
+void SciQLopMultiPlotObject::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
-    for (auto* plot : plots)
+    for (auto& plot : plots)
     {
-        if (!m_plots.contains(plot))
+        if (!m_plots.contains(plot) && !plot.isNull())
         {
             m_plots.append(plot);
             addObject(plot);
         }
     }
-    for (auto* plot : m_plots)
+    for (auto& plot : m_plots)
     {
-        if (!plots.contains(plot))
+        if (!plots.contains(plot) && !plot.isNull())
         {
             m_plots.removeOne(plot);
             removeObject(plot);

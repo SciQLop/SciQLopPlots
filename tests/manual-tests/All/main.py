@@ -1,5 +1,5 @@
 from SciQLopPlots import SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel
+                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel, InspectorView
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
 from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal
@@ -266,9 +266,8 @@ class Inspector(QWidget):
     def __init__(self,parent):
         QWidget.__init__(self,parent)
         self.setLayout(QVBoxLayout())
-        self.tree_view = QTreeView(self)
-        self.layout().addWidget(self.tree_view)
-        self.tree_view.setModel(PlotsModel.instance())
+        self.view = InspectorView(self)
+        self.layout().addWidget(self.view)
 
 
 if __name__ == '__main__':

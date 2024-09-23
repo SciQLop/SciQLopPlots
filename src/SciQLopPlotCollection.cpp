@@ -24,6 +24,7 @@
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 
+/*
 SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent)
 {
     qRegisterMetaType<QList<SciQLopPlotInterface*>>();
@@ -39,6 +40,7 @@ void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
 void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
 {
     _plots.insert(index, plot);
+    connect(plot, &SciQLopPlotInterface::destroyed, this, [this, plot] { remove_plot(plot); });
     emit plot_list_changed(plots());
 }
 
@@ -122,6 +124,7 @@ void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)
 {
     move_plot(_plots.indexOf(plot), to);
 }
+*/
 
 void SciQLopPlotCollectionInterface::set_x_axis_range(const SciQLopPlotRange& range) { }
 

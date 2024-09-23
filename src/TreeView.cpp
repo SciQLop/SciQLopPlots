@@ -19,46 +19,32 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Inspector/View/TreeView.hpp"
+#include <QHeaderView>
+#include <QKeyEvent>
 
-REGISTER_INSPECTOR(SciQLopPlotInspector)
-
-QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
+PlotsTreeView::PlotsTreeView(QWidget* parent) : QTreeView(parent)
 {
-    QList<QObject*> children;
-    if (auto plot = _plot(obj); plot)
+    header()->setVisible(false);
+    setAlternatingRowColors(true);
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
+}
+
+void PlotsTreeView::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Delete)
     {
-        for (auto c : plot->graphs())
+        QModelIndexList indexes = selectionModel()->selectedIndexes();
+        for (const QModelIndex& index : indexes)
         {
-            children.append(c);
+            if (index.isValid())
+            {
+                model()->removeRow(index.row(), index.parent());
+            }
         }
     }
-    return children;
-}
-
-QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
-{
-    if (auto plot = _plot(obj); plot)
+    else
     {
-        return plot->graph(name);
+        QTreeView::keyPressEvent(event);
     }
-    return nullptr;
-}
-
-void SciQLopPlotInspector::connect_node(PlotsModelNode* node, QObject* const obj)
-{
-    InspectorBase::connect_node(node, obj);
-    if (auto plot = _plot(obj); plot)
-    {
-        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::update_children);
-    }
-}
-
-void SciQLopPlotInspector::set_selected(QObject* obj, bool selected)
-{
-    if (auto plot = _plot(obj); plot)
-        plot->set_selected(selected);
 }

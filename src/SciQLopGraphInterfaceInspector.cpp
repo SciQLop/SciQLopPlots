@@ -36,7 +36,10 @@ QObject* SciQLopGraphInterfaceInspector::child(const QString& name, QObject* obj
     return nullptr;
 }
 
-void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject* const obj) { }
+void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject* const obj)
+{
+    InspectorBase::connect_node(node, obj);
+}
 
 void SciQLopGraphInterfaceInspector::set_selected(QObject* obj, bool selected)
 {

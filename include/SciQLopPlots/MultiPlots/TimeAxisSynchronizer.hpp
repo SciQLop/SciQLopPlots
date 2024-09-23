@@ -34,5 +34,5 @@ public:
     {
     }
 
-    Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
+    Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
 };

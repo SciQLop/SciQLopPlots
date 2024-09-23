@@ -22,7 +22,7 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include <qapplicationstatic.h>
 
-void PlotsModel::children_changed(PlotsModelNode* node)
+void PlotsModel::node_changed(PlotsModelNode* node)
 {
     auto parent_node = node->parent_node();
     if (parent_node == nullptr)
@@ -34,7 +34,8 @@ void PlotsModel::children_changed(PlotsModelNode* node)
 PlotsModel::PlotsModel(QObject* parent)
 {
     m_rootNode = new PlotsModelNode(this);
-    connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::children_changed);
+    connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed);
+    connect(m_rootNode, &PlotsModelNode::nameChanged, this, &PlotsModel::node_changed);
 }
 
 QModelIndex PlotsModel::index(int row, int column, const QModelIndex& parent) const
@@ -117,6 +118,21 @@ Qt::ItemFlags PlotsModel::flags(const QModelIndex& index) const
     if (!index.isValid())
         return Qt::ItemIsEnabled;
     return QAbstractItemModel::flags(index);
+}
+
+bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
+{
+    bool result = true;
+    if (auto node = static_cast<PlotsModelNode*>(parent.internalPointer()); node != nullptr)
+    {
+        beginRemoveRows(parent, row, row + count - 1);
+        for (int i = 0; i < count; ++i)
+        {
+            result &= node->remove_child(row);
+        }
+        endRemoveRows();
+    }
+    return result;
 }
 
 void PlotsModel::select(const QList<QModelIndex>& indexes)

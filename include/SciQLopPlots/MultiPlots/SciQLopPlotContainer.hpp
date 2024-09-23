@@ -29,7 +29,11 @@ class SciQLopPlotInterface;
 class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
-    SciQLopPlotCollection* _plots;
+
+    QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
+
+    SciQLopPlotRange _time_axis_range;
+    SciQLopPlotRange _x_axis_range;
 
 public:
     SciQLopPlotContainer(QWidget* parent = nullptr);
@@ -47,14 +51,15 @@ public:
 
     inline int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
-        return _plots->index(plot);
+        return plots().indexOf(plot);
     }
 
     inline virtual int index(const QPointF& pos) const Q_DECL_OVERRIDE
     {
-        for (auto i = 0UL; i < _plots->size(); i++)
+        const auto _plots = plots();
+        for (auto i = 0UL; i < _plots.size(); i++)
         {
-            auto plot = _plots->plot_at(i);
+            auto plot = _plots[i];
             if (plot->geometry().contains(pos.toPoint()))
                 return i;
         }
@@ -65,56 +70,67 @@ public:
 
     inline virtual SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE
     {
-        return _plots->plot_at(index);
+        return plots().at(index);
     }
 
-    virtual inline QList<SciQLopPlotInterface*> plots() const Q_DECL_OVERRIDE
+    virtual inline QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE
     {
-        return _plots->plots();
+        QList<QPointer<SciQLopPlotInterface>> plots;
+        plots.reserve(count());
+        for (int i = 0; i < count(); i++)
+        {
+            if (auto p = qobject_cast<SciQLopPlotInterface*>(widget(i)); p)
+            {
+                plots.emplace_back(p);
+            }
+        }
+        return plots;
     }
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
-        return _plots->contains(plot);
+        return plots().contains(plot);
     }
 
-    inline virtual bool empty() const Q_DECL_OVERRIDE { return _plots->empty(); }
+    inline virtual bool empty() const Q_DECL_OVERRIDE { return count() == 0; }
 
-    virtual std::size_t size() const Q_DECL_OVERRIDE { return _plots->size(); }
+    virtual std::size_t size() const Q_DECL_OVERRIDE { return count(); }
 
     inline void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
-        _plots->set_x_axis_range(range);
+        _x_axis_range = range;
+        for (auto plot : plots())
+        {
+            plot->x_axis()->set_range(range);
+        }
     }
 
     inline virtual const SciQLopPlotRange& x_axis_range() const Q_DECL_OVERRIDE
     {
-        return _plots->x_axis_range();
+        return _x_axis_range;
     }
 
     inline virtual void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {
-        _plots->set_time_axis_range(range);
+        _time_axis_range = range;
+        for (auto plot : plots())
+        {
+            plot->time_axis()->set_range(range);
+        }
     }
 
     inline virtual const SciQLopPlotRange& time_axis_range() const Q_DECL_OVERRIDE
     {
-        return _plots->time_axis_range();
+        return _time_axis_range;
     }
 
-    inline void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE
-    {
-        _plots->register_behavior(behavior);
-    }
+    void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
 
-    inline void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE
-    {
-        _plots->remove_behavior(type_name);
-    }
+    void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
     void organize_plots();
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
 #endif // BINDINGS_H
 };

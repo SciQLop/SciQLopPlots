@@ -29,7 +29,7 @@ class PlotsModel : public QAbstractItemModel
     Q_OBJECT
     PlotsModelNode* m_rootNode;
 
-    Q_SLOT void children_changed(PlotsModelNode* node);
+    Q_SLOT void node_changed(PlotsModelNode* node);
 
 public:
     PlotsModel(QObject* parent = nullptr);
@@ -42,6 +42,8 @@ public:
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
+
+    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
     void select(const QList<QModelIndex>& indexes);
 

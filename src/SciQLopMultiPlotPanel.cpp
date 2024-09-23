@@ -79,15 +79,9 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
     return _container->plot_at(index);
 }
 
-QList<SciQLopPlotInterface*> SciQLopMultiPlotPanel::plots() const
+QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
 {
-    QList<SciQLopPlotInterface*> plots;
-    for (auto plot : _container->plots())
-    {
-        if (!qobject_cast<PlaceHolder*>(plot))
-            plots.append(plot);
-    }
-    return plots;
+    return _container->plots();
 }
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)

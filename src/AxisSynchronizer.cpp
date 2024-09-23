@@ -22,59 +22,65 @@
 
 #include "SciQLopPlots/MultiPlots/AxisSynchronizer.hpp"
 
-void AxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
+void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
-    for (auto plot : plots)
+    for (auto& plot : plots)
     {
-        if (!_plots.contains(plot))
+        if (!plot.isNull())
         {
-            switch (m_sync_axis)
+            if (!_plots.contains(plot))
             {
-                case AxisType::XAxis:
-                    connect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::YAxis:
-                    connect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::ZAxis:
-                    connect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::TimeAxis:
-                    connect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                default:
-                    break;
+                switch (m_sync_axis)
+                {
+                    case AxisType::XAxis:
+                        connect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::YAxis:
+                        connect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::ZAxis:
+                        connect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::TimeAxis:
+                        connect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
-    for (auto plot : _plots)
+    for (auto& plot : _plots)
     {
-        if (!plots.contains(plot))
+        if (!plot.isNull())
         {
-            switch (m_sync_axis)
+            if (!plots.contains(plot))
             {
-                case AxisType::XAxis:
-                    disconnect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::YAxis:
-                    disconnect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::ZAxis:
-                    disconnect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                case AxisType::TimeAxis:
-                    disconnect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
-                        &AxisSynchronizer::set_axis_range);
-                    break;
-                default:
-                    break;
+                switch (m_sync_axis)
+                {
+                    case AxisType::XAxis:
+                        disconnect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::YAxis:
+                        disconnect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::ZAxis:
+                        disconnect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    case AxisType::TimeAxis:
+                        disconnect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
+                            &AxisSynchronizer::set_axis_range);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -85,26 +91,29 @@ void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
 {
     for (auto plot : _plots)
     {
-        switch (m_sync_axis)
+        if (!plot.isNull())
         {
-            case AxisType::XAxis:
-                if (auto axis = plot->x_axis())
-                    axis->set_range(range);
-                break;
-            case AxisType::YAxis:
-                if (auto axis = plot->y_axis())
-                    axis->set_range(range);
-                break;
-            case AxisType::ZAxis:
-                if (auto axis = plot->z_axis())
-                    axis->set_range(range);
-                break;
-            case AxisType::TimeAxis:
-                if (auto axis = plot->time_axis())
-                    axis->set_range(range);
-                break;
-            default:
-                break;
+            switch (m_sync_axis)
+            {
+                case AxisType::XAxis:
+                    if (auto axis = plot->x_axis())
+                        axis->set_range(range);
+                    break;
+                case AxisType::YAxis:
+                    if (auto axis = plot->y_axis())
+                        axis->set_range(range);
+                    break;
+                case AxisType::ZAxis:
+                    if (auto axis = plot->z_axis())
+                        axis->set_range(range);
+                    break;
+                case AxisType::TimeAxis:
+                    if (auto axis = plot->time_axis())
+                        axis->set_range(range);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

@@ -42,7 +42,8 @@ PlotsModelNode::PlotsModelNode(QObject* obj, QObject* parent) : QObject(parent),
     if (obj != nullptr)
     {
         setObjectName(obj->objectName());
-        connect(this, &PlotsModelNode::objectNameChanged, this, &PlotsModelNode::nameChanged);
+        connect(
+            this, &PlotsModelNode::objectNameChanged, this, [this]() { emit nameChanged(this); });
         m_inspector = Inspectors::inspector(obj);
         if (m_inspector != nullptr)
         {
@@ -64,6 +65,7 @@ PlotsModelNode* PlotsModelNode::insert_child(QObject* obj, int row)
         m_children.insert(row, node);
     connect(node, &QObject::destroyed, this, [this, node]() { _child_destroyed(node); });
     connect(node, &PlotsModelNode::childrenChanged, _root_node(), &PlotsModelNode::childrenChanged);
+    connect(node, &PlotsModelNode::nameChanged, _root_node(), &PlotsModelNode::nameChanged);
     emit childrenChanged(this);
     return node;
 }
@@ -76,6 +78,17 @@ PlotsModelNode* PlotsModelNode::child_node(const QString& name)
             return child;
     }
     return nullptr;
+}
+
+bool PlotsModelNode::remove_child(int row)
+{
+    if (row < 0 || row >= m_children.size())
+        return false;
+    auto child = m_children.at(row);
+    m_children.removeAt(row);
+    child->destroy();
+    emit childrenChanged(this);
+    return true;
 }
 
 QIcon PlotsModelNode::icon()
@@ -97,8 +110,9 @@ void PlotsModelNode::setName(const QString& name)
     if (objectName() != name)
     {
         setObjectName(name);
-        emit nameChanged(name);
     }
+    if (m_obj != nullptr && m_obj->objectName() != name)
+        m_obj->setObjectName(name);
 }
 
 void PlotsModelNode::update_children()
@@ -124,4 +138,16 @@ void PlotsModelNode::set_selected(bool selected)
 {
     if (m_inspector)
         m_inspector->set_selected(m_obj, selected);
+}
+
+void PlotsModelNode::destroy()
+{
+    while (!m_children.isEmpty())
+    {
+        auto child = m_children.takeFirst();
+        child->destroy();
+    }
+    if (m_obj != nullptr)
+        m_obj->deleteLater();
+    deleteLater();
 }

@@ -15,6 +15,8 @@
 #include <SciQLopPlots/Inspector/Inspectors.hpp>
 #include <SciQLopPlots/Inspector/Model/Model.hpp>
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
+#include <SciQLopPlots/Inspector/View/InspectorView.hpp>
+#include <SciQLopPlots/Inspector/View/TreeView.hpp>
 #include <SciQLopPlots/Items/SciQLopVerticalSpan.hpp>
 #include <SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp>
