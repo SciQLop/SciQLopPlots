@@ -114,7 +114,7 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
-    QList<SciQLopPlotInterface*> plots() const Q_DECL_OVERRIDE;
+    QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
 
     virtual void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     virtual void move_plot(int from, int to) Q_DECL_OVERRIDE;
@@ -169,7 +169,7 @@ public:
     void setSelected(bool selected);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
     Q_SIGNAL void selectionChanged(bool selected);
 #endif // BINDINGS_H
 

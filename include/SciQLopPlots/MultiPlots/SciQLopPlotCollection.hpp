@@ -41,7 +41,8 @@ class SciQLopPlotCollectionBehavior : public QObject
 public:
     SciQLopPlotCollectionBehavior(QObject* parent = nullptr) : QObject(parent) { }
 
-    inline virtual Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) { }
+    inline virtual Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) {
+    }
 };
 
 class SciQLopPlotCollectionInterface
@@ -83,7 +84,7 @@ protected:
 public:
     virtual ~SciQLopPlotCollectionInterface() = default;
 
-    inline virtual QList<SciQLopPlotInterface*> plots() const { return {}; }
+    inline virtual QList<QPointer<SciQLopPlotInterface>> plots() const { return {}; }
 
     inline virtual void add_plot(SciQLopPlotInterface* plot) { }
 
@@ -182,6 +183,7 @@ void remove_behavior(Interface_T* interface)
     interface->remove_behavior(U::staticMetaObject.className());
 }
 
+/*
 class SciQLopPlotCollection : public QObject, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
@@ -206,7 +208,7 @@ public:
 
     SciQLopPlotInterface* plot_at(int index) const final;
 
-    virtual inline QList<SciQLopPlotInterface*> plots() const final { return _plots; }
+    virtual inline QList<QPointer<SciQLopPlotInterface>> plots() const final { return _plots; }
 
     inline bool contains(SciQLopPlotInterface* plot) const final { return _plots.contains(plot); }
 
@@ -227,3 +229,4 @@ public:
     Q_SIGNAL void plot_list_changed(const QList<SciQLopPlotInterface*>& plots);
 #endif // BINDINGS_H
 };
+*/

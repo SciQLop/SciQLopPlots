@@ -25,14 +25,13 @@
 
 #include "SciQLopPlotCollection.hpp"
 
-
 class VPlotsAlign : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
-    QList<SciQLopPlot*> _plots;
+    QList<QPointer<SciQLopPlot>> _plots;
     void _recompute_margins();
 
 public:
     VPlotsAlign(QObject* parent = nullptr);
-    Q_SLOT void updatePlotList(const QList<SciQLopPlotInterface*>& plots) override;
+    Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
 };

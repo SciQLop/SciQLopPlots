@@ -92,6 +92,8 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopMultiPlotPanelInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/View/TreeView.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/View/InspectorView.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -147,6 +149,8 @@ sources = moc_files \
             '../src/SciQLopMultiPlotPanelInspector.cpp',
             '../src/SciQLopPlotInspector.cpp',
             '../src/SciQLopGraphInterfaceInspector.cpp',
+            '../src/TreeView.cpp',
+            '../src/InspectorView.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 

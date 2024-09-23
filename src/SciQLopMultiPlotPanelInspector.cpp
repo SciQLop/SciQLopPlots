@@ -53,6 +53,7 @@ QObject* SciQLopMultiPlotPanelInspector::child(const QString& name, QObject* obj
 
 void SciQLopMultiPlotPanelInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
+    InspectorBase::connect_node(node, obj);
     connect(_panel(obj), &SciQLopMultiPlotPanel::plot_list_changed, node,
         &PlotsModelNode::update_children);
 }

@@ -337,3 +337,18 @@ inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>&
     }
     return filtered;
 }
+
+inline QList<QPointer<SciQLopPlot>> only_sciqlopplots(
+    const QList<QPointer<SciQLopPlotInterface>>& plots)
+{
+    QList<QPointer<SciQLopPlot>> filtered;
+    for (auto& plot : plots)
+    {
+        if (!plot.isNull())
+        {
+            if (auto p = dynamic_cast<SciQLopPlot*>(plot.data()))
+                filtered.append(p);
+        }
+    }
+    return filtered;
+}

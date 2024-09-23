@@ -26,6 +26,7 @@ class Tabs(QTabWidget):
 
     def add_tab(self, widget, title):
         self.addTab(widget, title)
+        widget.setObjectName(title)
 
 
 

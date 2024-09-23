@@ -19,46 +19,17 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#pragma once
 
-REGISTER_INSPECTOR(SciQLopPlotInspector)
+#include "SciQLopPlots/Inspector/View/TreeView.hpp"
+#include <QWidget>
 
-QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
+class InspectorView : public QWidget
 {
-    QList<QObject*> children;
-    if (auto plot = _plot(obj); plot)
-    {
-        for (auto c : plot->graphs())
-        {
-            children.append(c);
-        }
-    }
-    return children;
-}
+    Q_OBJECT
+    PlotsTreeView* m_treeView;
 
-QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
-{
-    if (auto plot = _plot(obj); plot)
-    {
-        return plot->graph(name);
-    }
-    return nullptr;
-}
-
-void SciQLopPlotInspector::connect_node(PlotsModelNode* node, QObject* const obj)
-{
-    InspectorBase::connect_node(node, obj);
-    if (auto plot = _plot(obj); plot)
-    {
-        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::update_children);
-    }
-}
-
-void SciQLopPlotInspector::set_selected(QObject* obj, bool selected)
-{
-    if (auto plot = _plot(obj); plot)
-        plot->set_selected(selected);
-}
+public:
+    InspectorView(QWidget* parent = nullptr);
+    virtual ~InspectorView() = default;
+};

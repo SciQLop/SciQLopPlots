@@ -19,46 +19,16 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Inspector/View/InspectorView.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
+#include <QSplitter>
+#include <QVBoxLayout>
 
-REGISTER_INSPECTOR(SciQLopPlotInspector)
-
-QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
+InspectorView::InspectorView(QWidget* parent) : QWidget(parent)
 {
-    QList<QObject*> children;
-    if (auto plot = _plot(obj); plot)
-    {
-        for (auto c : plot->graphs())
-        {
-            children.append(c);
-        }
-    }
-    return children;
-}
-
-QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
-{
-    if (auto plot = _plot(obj); plot)
-    {
-        return plot->graph(name);
-    }
-    return nullptr;
-}
-
-void SciQLopPlotInspector::connect_node(PlotsModelNode* node, QObject* const obj)
-{
-    InspectorBase::connect_node(node, obj);
-    if (auto plot = _plot(obj); plot)
-    {
-        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::update_children);
-    }
-}
-
-void SciQLopPlotInspector::set_selected(QObject* obj, bool selected)
-{
-    if (auto plot = _plot(obj); plot)
-        plot->set_selected(selected);
+    m_treeView = new PlotsTreeView(this);
+    m_treeView->setModel(PlotsModel::instance());
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->addWidget(m_treeView);
+    setLayout(layout);
 }

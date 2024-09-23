@@ -57,6 +57,7 @@ QString InspectorBase::tooltip(const QObject* const obj)
 void InspectorBase::connect_node(PlotsModelNode* node, QObject* const obj)
 {
     connect(obj, &QObject::destroyed, node, [node]() { delete node; });
+    connect(obj, &QObject::objectNameChanged, node, &PlotsModelNode::setName);
 }
 
 void InspectorBase::set_selected(QObject* obj, bool selected)
