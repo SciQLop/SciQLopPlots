@@ -36,6 +36,8 @@ class SciQLopGraphInterface : public QObject
     Q_OBJECT
 
 public:
+    Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
+
     SciQLopGraphInterface(QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() = default;
 
@@ -66,6 +68,8 @@ public:
 
     virtual void set_selected(bool selected) noexcept { }
 
+    virtual bool selected() const noexcept { return false; }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
@@ -75,5 +79,6 @@ public:
     Q_SIGNAL void replot();
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
+    Q_SIGNAL void selection_changed(bool selected);
 #endif
 };

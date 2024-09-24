@@ -24,17 +24,44 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include <qcustomplot.h>
 
+template <typename T>
+inline void _set_selected(T* plottable, bool selected)
+{
+    if (plottable->selected() != selected)
+    {
+        if (selected)
+            plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
+        else
+            plottable->setSelection(QCPDataSelection());
+    }
+}
+
+inline void set_selected(QCPAbstractPlottable* plottable, bool selected)
+{
+    if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
+    {
+        _set_selected(graph, selected);
+    }
+    else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
+    {
+        _set_selected(curve, selected);
+    }
+}
+
 class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 {
     Q_OBJECT
+
 protected:
     QList<QCPAbstractPlottable*> m_plottables;
+
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _register_plottable(QCPAbstractPlottable* plottable);
 
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
+
     virtual ~SQPQCPAbstractPlottableWrapper()
     {
         for (auto plottable : m_plottables)
@@ -87,6 +114,10 @@ public:
 
     virtual bool visible() const noexcept override;
     virtual QStringList labels() const noexcept override;
+
+    virtual void set_selected(bool selected) noexcept override;
+    virtual bool selected() const noexcept override;
+
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);

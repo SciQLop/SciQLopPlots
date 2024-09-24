@@ -24,11 +24,16 @@
 
 void PlotsModel::node_changed(PlotsModelNode* node)
 {
-    auto parent_node = node->parent_node();
-    if (parent_node == nullptr)
-        return;
-    QModelIndex index = createIndex(parent_node->child_row(node), 0, node);
-    emit dataChanged(index, index);
+    auto index = make_index(node);
+    if (index.isValid())
+        emit dataChanged(index, index);
+}
+
+void PlotsModel::node_selection_changed(PlotsModelNode* node, bool selected)
+{
+    auto index = make_index(node);
+    if (index.isValid())
+        emit item_selection_changed(index, selected);
 }
 
 PlotsModel::PlotsModel(QObject* parent)
@@ -36,6 +41,8 @@ PlotsModel::PlotsModel(QObject* parent)
     m_rootNode = new PlotsModelNode(this);
     connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed);
     connect(m_rootNode, &PlotsModelNode::nameChanged, this, &PlotsModel::node_changed);
+    connect(
+        m_rootNode, &PlotsModelNode::selectionChanged, this, &PlotsModel::node_selection_changed);
 }
 
 QModelIndex PlotsModel::index(int row, int column, const QModelIndex& parent) const
@@ -135,13 +142,13 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
     return result;
 }
 
-void PlotsModel::select(const QList<QModelIndex>& indexes)
+void PlotsModel::set_selected(const QList<QModelIndex>& indexes, bool selected)
 {
     for (auto index : indexes)
     {
         auto node = static_cast<PlotsModelNode*>(index.internalPointer());
         if (node != nullptr)
-            node->set_selected(true);
+            node->set_selected(selected);
     }
 }
 
@@ -157,4 +164,12 @@ Q_APPLICATION_STATIC(PlotsModel, _plots_model);
 PlotsModel* PlotsModel::instance()
 {
     return _plots_model();
+}
+
+QModelIndex PlotsModel::make_index(PlotsModelNode* node)
+{
+    auto parent_node = node->parent_node();
+    if (parent_node == nullptr)
+        return QModelIndex();
+    return createIndex(parent_node->child_row(node), 0, node);
 }

@@ -94,6 +94,20 @@ void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
     Q_EMIT auto_scale_y_changed(auto_scale_y);
 }
 
+void SciQLopColorMap::set_selected(bool selected) noexcept
+{
+    if (_selected != selected)
+    {
+        _selected = selected;
+        emit selection_changed(selected);
+    }
+}
+
+bool SciQLopColorMap::selected() const noexcept
+{
+    return _selected;
+}
+
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis,
     QCPAxis* value_axis, GetDataPyCallable&& callable, const QString& name)
         : SciQLopColorMap(parent, key_axis, value_axis, name)

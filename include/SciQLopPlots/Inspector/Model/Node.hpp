@@ -86,5 +86,6 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);
+    Q_SIGNAL void selectionChanged(PlotsModelNode* node, bool selected);
 #endif
 };

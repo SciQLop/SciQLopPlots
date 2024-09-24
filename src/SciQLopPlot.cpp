@@ -31,29 +31,29 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <utility>
 
-template <typename T>
-inline void _set_selected(T* plottable, bool selected)
-{
-    if (plottable->selected() != selected)
-    {
-        if (selected)
-            plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
-        else
-            plottable->setSelection(QCPDataSelection());
-    }
-}
+// template <typename T>
+// inline void _set_selected(T* plottable, bool selected)
+// {
+//     if (plottable->selected() != selected)
+//     {
+//         if (selected)
+//             plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
+//         else
+//             plottable->setSelection(QCPDataSelection());
+//     }
+// }
 
-inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
-{
-    if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
-    {
-        _set_selected(graph, selected);
-    }
-    else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
-    {
-        _set_selected(curve, selected);
-    }
-}
+// inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
+// {
+//     if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
+//     {
+//         _set_selected(graph, selected);
+//     }
+//     else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
+//     {
+//         _set_selected(curve, selected);
+//     }
+// }
 
 namespace _impl
 {
@@ -463,7 +463,11 @@ void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
         {
             auto item = this->legend->itemWithPlottable(plotable);
             if (item && item->selected() != selected)
+            {
                 item->setSelected(selected);
+            }
+            auto plotable_wrapper = this->plottable_wrapper(plotable);
+            emit this->plottable_wrapper(plotable)->selection_changed(plotable_wrapper->selected());
         });
 
     if (auto legend_item = this->legend->itemWithPlottable(plotable); legend_item)
@@ -471,10 +475,20 @@ void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
         connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
             [this, plotable](bool selected)
             {
-                _set_selected(plotable, selected);
+                set_selected(plotable, selected);
                 this->replot(rpQueuedReplot);
             });
     }
+}
+
+SQPQCPAbstractPlottableWrapper* SciQLopPlot::plottable_wrapper(QCPAbstractPlottable* plottable)
+{
+    for (auto p : m_plottables)
+    {
+        if (p->qcp_plottables().contains(plottable))
+            return p;
+    }
+    return nullptr;
 }
 
 void SciQLopPlot::_configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale)

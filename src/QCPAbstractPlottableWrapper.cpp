@@ -88,3 +88,28 @@ QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
     }
     return labels;
 }
+
+void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
+{
+    bool changed = false;
+    for (auto plottable : m_plottables)
+    {
+        if (plottable->selected() != selected)
+        {
+            ::set_selected(plottable, selected);
+            changed = true;
+        }
+    }
+    if (changed)
+        Q_EMIT selection_changed(selected);
+}
+
+bool SQPQCPAbstractPlottableWrapper::selected() const noexcept
+{
+    bool selected = false;
+    for (const auto plottable : m_plottables)
+    {
+        selected |= plottable->selected();
+    }
+    return selected;
+}

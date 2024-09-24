@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 import threading
 from typing import Dict, Any
 
+from SciQLopPlots import InspectorView
+
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
@@ -67,6 +69,11 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, dock)
         self.ipython_widget.kernel_manager = self.kernel_manager
         self.ipython_widget.kernel_client = self.kernel_client
+
+        self.plot_inspector = InspectorView(self)
+        dock = QDockWidget("Plot Inspector", self)
+        dock.setWidget(self.plot_inspector)
+        self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
 
 

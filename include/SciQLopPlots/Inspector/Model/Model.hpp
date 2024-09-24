@@ -30,6 +30,9 @@ class PlotsModel : public QAbstractItemModel
     PlotsModelNode* m_rootNode;
 
     Q_SLOT void node_changed(PlotsModelNode* node);
+    Q_SLOT void node_selection_changed(PlotsModelNode* node, bool selected);
+    QModelIndex make_index(PlotsModelNode* node);
+
 
 public:
     PlotsModel(QObject* parent = nullptr);
@@ -45,9 +48,13 @@ public:
 
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
-    void select(const QList<QModelIndex>& indexes);
+    void set_selected(const QList<QModelIndex>& indexes, bool selected);
 
     Q_SLOT void addTopLevelNode(QObject* obj);
 
     static PlotsModel* instance();
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
+#endif // !BINDINGS_H
 };
