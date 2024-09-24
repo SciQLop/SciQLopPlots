@@ -65,3 +65,9 @@ void InspectorBase::set_selected(QObject* obj, bool selected)
     Q_UNUSED(obj);
     Q_UNUSED(selected);
 }
+
+bool InspectorBase::selected(const QObject* obj)
+{
+    Q_UNUSED(obj);
+    return false;
+}

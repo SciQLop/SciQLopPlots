@@ -213,6 +213,8 @@ protected:
     void _register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable);
     void _register_plottable(QCPAbstractPlottable* plotable);
 
+    SQPQCPAbstractPlottableWrapper* plottable_wrapper(QCPAbstractPlottable* plottable);
+
     void _configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale);
 
     QCPAbstractPlottable* plottable(const QString& name) const;

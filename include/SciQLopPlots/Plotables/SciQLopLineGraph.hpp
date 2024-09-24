@@ -50,6 +50,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
+
     inline const QList<QCPGraph*> lines() const noexcept
     {
         QList<QCPGraph*> graphs;
@@ -80,7 +81,6 @@ public:
 private:
     void create_graphs(const QStringList& labels);
 };
-
 
 class SciQLopLineGraphFunction : public SciQLopLineGraph
 {

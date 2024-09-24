@@ -33,6 +33,7 @@ class QThread;
 
 class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
 {
+    bool _selected = false;
     ColormapResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
@@ -44,6 +45,7 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
     QPointer<QCPColorMap> _cmap;
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
+
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -61,12 +63,18 @@ public:
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 
     inline QCPColorMap* colorMap() const { return _cmap; }
+
     void set_auto_scale_y(bool auto_scale_y);
+
     inline bool auto_scale_y() const { return _auto_scale_y; }
+
+    virtual void set_selected(bool selected) noexcept override;
+    virtual bool selected() const noexcept override;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void auto_scale_y_changed(bool);
 #endif
+
 private:
     ::DataOrder _dataOrder = DataOrder::RowMajor;
 };

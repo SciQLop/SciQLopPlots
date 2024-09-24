@@ -262,12 +262,6 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
         self._data_producer = RealTimeAudio.AudioDataProducer(size=size, sample_rate=sample_rate)
         self._data_producer.update_signal.connect(lambda x,y: self._graph.set_data(x,y))
 
-class Inspector(QWidget):
-    def __init__(self,parent):
-        QWidget.__init__(self,parent)
-        self.setLayout(QVBoxLayout())
-        self.view = InspectorView(self)
-        self.layout().addWidget(self.view)
 
 
 if __name__ == '__main__':
@@ -275,7 +269,6 @@ if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
-    w.add_tab(Inspector(w), "Inspector")
     w.add_tab(SimpleGraph(w), "Simple Graph")
     w.add_tab(SimpleCurve(w), "Simple Curve")
     w.add_tab(TimeSerieGraph(w), "Time Serie Graph")

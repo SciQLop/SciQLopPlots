@@ -34,7 +34,6 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
     _resampler->set_line_count(plottable_count());
 }
 
-
 void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
 {
     for (std::size_t i = 0; i < plottable_count(); i++)
@@ -87,7 +86,6 @@ void SciQLopLineGraph::create_resampler(const QStringList& labels)
     connect(this->_resampler, &LineGraphResampler::setGraphData, this,
         &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
 }
-
 
 SciQLopLineGraph::~SciQLopLineGraph()
 {

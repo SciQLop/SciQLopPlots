@@ -66,6 +66,8 @@ PlotsModelNode* PlotsModelNode::insert_child(QObject* obj, int row)
     connect(node, &QObject::destroyed, this, [this, node]() { _child_destroyed(node); });
     connect(node, &PlotsModelNode::childrenChanged, _root_node(), &PlotsModelNode::childrenChanged);
     connect(node, &PlotsModelNode::nameChanged, _root_node(), &PlotsModelNode::nameChanged);
+    connect(
+        node, &PlotsModelNode::selectionChanged, _root_node(), &PlotsModelNode::selectionChanged);
     emit childrenChanged(this);
     return node;
 }
@@ -137,7 +139,10 @@ void PlotsModelNode::update_children()
 void PlotsModelNode::set_selected(bool selected)
 {
     if (m_inspector)
+    {
         m_inspector->set_selected(m_obj, selected);
+        emit selectionChanged(this, selected);
+    }
 }
 
 void PlotsModelNode::destroy()

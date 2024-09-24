@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp"
 #include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
 
 REGISTER_INSPECTOR(SciQLopGraphInterfaceInspector)
 
@@ -39,12 +40,26 @@ QObject* SciQLopGraphInterfaceInspector::child(const QString& name, QObject* obj
 void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
     InspectorBase::connect_node(node, obj);
+    if (auto graph = _graph(obj); graph)
+    {
+        connect(
+            graph, &SciQLopGraphInterface::selection_changed, node, &PlotsModelNode::set_selected);
+    }
 }
 
 void SciQLopGraphInterfaceInspector::set_selected(QObject* obj, bool selected)
 {
-    if (auto graph = _graph(obj); graph)
+    if (auto graph = _graph(obj); graph != nullptr && selected != graph->selected())
     {
         graph->set_selected(selected);
     }
+}
+
+bool SciQLopGraphInterfaceInspector::selected(const QObject* obj)
+{
+    if (auto graph = _graph(obj); graph)
+    {
+        return graph->selected();
+    }
+    return false;
 }

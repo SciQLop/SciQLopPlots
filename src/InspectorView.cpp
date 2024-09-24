@@ -31,4 +31,21 @@ InspectorView::InspectorView(QWidget* parent) : QWidget(parent)
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(m_treeView);
     setLayout(layout);
+
+    auto selectionModel = m_treeView->selectionModel();
+    connect(selectionModel, &QItemSelectionModel::selectionChanged, PlotsModel::instance(),
+        [](const QItemSelection& selected, const QItemSelection& deselected)
+        {
+            PlotsModel::instance()->set_selected(selected.indexes(), true);
+            PlotsModel::instance()->set_selected(deselected.indexes(), false);
+        });
+
+    connect(PlotsModel::instance(), &PlotsModel::item_selection_changed, selectionModel,
+        [selectionModel](const QModelIndex& index, bool selected)
+        {
+            if (selected)
+                selectionModel->select(index, QItemSelectionModel::Select);
+            else
+                selectionModel->select(index, QItemSelectionModel::Deselect);
+        });
 }

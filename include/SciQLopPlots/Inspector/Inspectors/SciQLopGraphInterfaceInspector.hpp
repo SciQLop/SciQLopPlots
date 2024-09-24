@@ -36,6 +36,11 @@ class SciQLopGraphInterfaceInspector : public InspectorBase
         return qobject_cast<SciQLopGraphInterface*>(obj);
     }
 
+    inline const SciQLopGraphInterface* _graph(const QObject* obj)
+    {
+        return qobject_cast<const SciQLopGraphInterface*>(obj);
+    }
+
 public:
     using compatible_type = SciQLopGraphInterface;
 
@@ -60,4 +65,5 @@ public:
     virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
 
     virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+    virtual bool selected(const QObject* obj) Q_DECL_OVERRIDE;
 };

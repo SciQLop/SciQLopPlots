@@ -41,4 +41,5 @@ public:
     virtual QString tooltip(const QObject* const obj);
     virtual void connect_node(PlotsModelNode* node, QObject* const obj);
     virtual void set_selected(QObject* obj, bool selected);
+    virtual bool selected(const QObject* obj);
 };
