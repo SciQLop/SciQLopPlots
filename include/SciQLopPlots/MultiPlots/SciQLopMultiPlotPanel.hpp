@@ -54,6 +54,7 @@ protected:
             return plot->line(std::forward<Args>(args)...);
         if constexpr (graph_type == GraphType::ParametricCurve)
             return plot->parametric_curve(std::forward<Args>(args)...);
+        return nullptr;
     }
 
     template <typename T, GraphType graph_type, typename... Args>
@@ -62,6 +63,7 @@ protected:
     {
         if constexpr (graph_type == GraphType::ColorMap)
             return plot->colormap(std::forward<Args>(args)...);
+        return nullptr;
     }
 
     template <typename T, typename U, typename... Args>
