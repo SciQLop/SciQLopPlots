@@ -107,6 +107,8 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
         return nullptr;
     }
 
+    bool m_selected = false;
+
 public:
     SciQLopGraphComponent(QCPAbstractPlottable* plottable, QObject* parent = nullptr);
     ~SciQLopGraphComponent();
@@ -210,10 +212,5 @@ public:
 
     inline virtual QString name() const noexcept override { return this->objectName(); }
 
-    inline virtual bool selected() const noexcept override
-    {
-        if (m_plottable)
-            return m_plottable->selected();
-        return false;
-    }
+    inline virtual bool selected() const noexcept override { return m_selected; }
 };

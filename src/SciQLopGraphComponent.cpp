@@ -86,8 +86,9 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
 {
     if (m_plottable)
     {
-        if (m_plottable->selected() != selected)
+        if (m_selected != selected)
         {
+            m_selected = selected;
             std::visit(visitor { [selected](auto any)
                                  {
                                      if (selected)
@@ -102,7 +103,6 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
                                  },
                                  [](std::monostate) {} },
                        to_variant());
-
             emit selection_changed(selected);
             emit replot();
         }
