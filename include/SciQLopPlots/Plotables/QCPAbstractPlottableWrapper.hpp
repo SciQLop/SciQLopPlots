@@ -56,10 +56,6 @@ class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 protected:
     QList<SciQLopGraphComponent*> m_components;
 
-    // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
-
-    void _register_plottable(QCPAbstractPlottable* plottable);
-
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
 
@@ -84,18 +80,29 @@ public:
                                                const QString& name)
     {
         auto plot = keyAxis->parentPlot();
+        SciQLopGraphComponent* component = nullptr;
         if constexpr (std::is_same_v<T, QCPGraph>)
         {
-            m_components.append(
-                new SciQLopGraphComponent(plot->addGraph(keyAxis, valueAxis), this));
+            component = new SciQLopGraphComponent(plot->addGraph(keyAxis, valueAxis), this);
+            m_components.append(component);
         }
         else if constexpr (std::is_same_v<T, QCPCurve>)
         {
+            component = new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this);
             m_components.append(new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this));
         }
-        else
-            return nullptr;
-        return m_components.last();
+        if (component)
+        {
+            connect(component, &SciQLopGraphComponent::replot, this,
+                    &SQPQCPAbstractPlottableWrapper::replot);
+            connect(component, &SciQLopGraphComponent::selection_changed, this,
+                    [this](bool selected)
+                    {
+                        if (selected == this->selected())
+                            emit this->selection_changed(selected);
+                    });
+        }
+        return component;
     }
 
     std::size_t plottable_count() const noexcept { return std::size(m_components); }
