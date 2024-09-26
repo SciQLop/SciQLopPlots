@@ -19,24 +19,21 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
+#include <QPushButton>
+#include <QVBoxLayout>
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+REGISTER_DELEGATE(SciQLopMultiPlotPanelDelegate);
 
-class InspectorView : public QWidget
+SciQLopMultiPlotPanel *SciQLopMultiPlotPanelDelegate::panel() const { return as_type<SciQLopMultiPlotPanel>(m_object); }
+
+SciQLopMultiPlotPanelDelegate::SciQLopMultiPlotPanelDelegate(SciQLopMultiPlotPanel *object, QWidget* parent)
+        : PropertyDelegateBase(object, parent)
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
-
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+    auto layout = new QVBoxLayout(this);
+    auto button = new QPushButton("Multi Plot Panel", this);
+    layout->addWidget(button);
+    setLayout(layout);
+}

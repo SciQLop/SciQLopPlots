@@ -18,6 +18,13 @@ extra_files=files(
     'tests/manual-tests/common.py'
 )
 
+if get_option('buildtype').startswith('release')
+    add_project_arguments('-DNDEBUG', language : ['cpp'])
+else
+    add_project_arguments('-DDEBUG', language : ['cpp'])
+endif
+
+
 subdir('SciQLopPlots')
 
 subdir('tests')

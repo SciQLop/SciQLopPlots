@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include <qcustomplot.h>
 
@@ -53,60 +54,51 @@ class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
     Q_OBJECT
 
 protected:
-    QList<QCPAbstractPlottable*> m_plottables;
+    QList<SciQLopGraphComponent*> m_components;
 
-    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
+    // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _register_plottable(QCPAbstractPlottable* plottable);
 
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
 
-    virtual ~SQPQCPAbstractPlottableWrapper()
-    {
-        for (auto plottable : m_plottables)
-        {
-            if (_plot()->hasPlottable(plottable))
-                _plot()->removePlottable(plottable);
-        }
-    }
+    virtual ~SQPQCPAbstractPlottableWrapper() { clear_plottables(); }
 
     inline void clear_plottables()
     {
-        for (auto plottable : m_plottables)
-        {
-            if (_plot()->hasPlottable(plottable))
-                _plot()->removePlottable(plottable);
-        }
-        m_plottables.clear();
+        while (!m_components.isEmpty())
+            delete m_components.takeFirst();
     }
 
-    const QList<QCPAbstractPlottable*>& qcp_plottables() const noexcept { return m_plottables; }
+    const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept
+    {
+        QList<QCPAbstractPlottable*> plottables;
+        for (auto component : m_components)
+            plottables.append(component->plottable());
+        return plottables;
+    }
 
     template <typename T>
-    inline T* newPlottable(QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name)
+    inline SciQLopGraphComponent* newComponent(QCPAxis* keyAxis, QCPAxis* valueAxis,
+                                               const QString& name)
     {
-        QCPAbstractPlottable* plottable = nullptr;
+        auto plot = keyAxis->parentPlot();
         if constexpr (std::is_same_v<T, QCPGraph>)
         {
-            plottable = _plot()->addGraph(keyAxis, valueAxis);
-        }
-        else if constexpr (std::is_same_v<T, QCPColorMap>)
-        {
-            plottable = new QCPColorMap(keyAxis, valueAxis);
+            m_components.append(
+                new SciQLopGraphComponent(plot->addGraph(keyAxis, valueAxis), this));
         }
         else if constexpr (std::is_same_v<T, QCPCurve>)
         {
-            plottable = new QCPCurve(keyAxis, valueAxis);
+            m_components.append(new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this));
         }
         else
             return nullptr;
-        _register_plottable(plottable);
-        plottable->setName(name);
-        return reinterpret_cast<T*>(plottable);
+        return m_components.last();
     }
 
-    std::size_t plottable_count() const noexcept { return std::size(m_plottables); }
+    std::size_t plottable_count() const noexcept { return std::size(m_components); }
 
     virtual void set_visible(bool visible) noexcept override;
     virtual void set_labels(const QStringList& labels) override;
@@ -117,6 +109,32 @@ public:
 
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;
+
+    virtual SciQLopGraphComponentInterface* component(const QString& name) const noexcept override
+    {
+        for (auto component : m_components)
+        {
+            if (component->name() == name)
+                return component;
+        }
+        return nullptr;
+    }
+
+    virtual SciQLopGraphComponentInterface* component(int index) const noexcept override
+    {
+        if (index >= plottable_count() || index == -1)
+            index = plottable_count() - 1;
+        return m_components[index];
+    }
+
+    virtual QList<SciQLopGraphComponentInterface*> components() const noexcept override
+    {
+        QList<SciQLopGraphComponentInterface*> components;
+        components.reserve(std::size(m_components));
+        for (auto component : m_components)
+            components.append(component);
+        return components;
+    }
 
 
 #ifndef BINDINGS_H

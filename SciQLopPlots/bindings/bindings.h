@@ -15,7 +15,9 @@
 #include <SciQLopPlots/Inspector/Inspectors.hpp>
 #include <SciQLopPlots/Inspector/Model/Model.hpp>
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
+#include <SciQLopPlots/Inspector/PropertyDelegateBase.hpp>
 #include <SciQLopPlots/Inspector/View/InspectorView.hpp>
+#include <SciQLopPlots/Inspector/View/PropertiesPanel.hpp>
 #include <SciQLopPlots/Inspector/View/TreeView.hpp>
 #include <SciQLopPlots/Items/SciQLopVerticalSpan.hpp>
 #include <SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp>
@@ -27,6 +29,8 @@
 #include <SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp>
 #include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
+#include <SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp>
+#include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>

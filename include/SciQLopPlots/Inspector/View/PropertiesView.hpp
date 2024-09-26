@@ -21,22 +21,16 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
 #include <QWidget>
+class PropertyDelegateBase;
 
-class InspectorView : public QWidget
+class PropertiesView : public QWidget
 {
     Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
-
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+    PropertyDelegateBase* m_delegateWidget = nullptr;
 
 public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
+    Q_SLOT void set_current_objects(const QList<QObject*>& objects);
+    PropertiesView(QWidget* parent = nullptr);
+    virtual ~PropertiesView() = default;
 };

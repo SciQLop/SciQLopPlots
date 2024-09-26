@@ -22,29 +22,22 @@
 
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 
-void SQPQCPAbstractPlottableWrapper::_register_plottable(QCPAbstractPlottable* plottable)
-{
-    connect(plottable, &QCPAbstractPlottable::destroyed, this,
-        [this, plottable]() { m_plottables.removeOne(plottable); });
-    m_plottables.append(plottable);
-}
-
 void SQPQCPAbstractPlottableWrapper::set_visible(bool visible) noexcept
 {
-    for (auto plottable : m_plottables)
+    for (auto plottable : m_components)
     {
-        plottable->setVisible(visible);
+        plottable->set_visible(visible);
     }
     Q_EMIT visible_changed(visible);
 }
 
 void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
-    if (std::size(labels) == std::size(m_plottables))
+    if (std::size(labels) == std::size(m_components))
     {
-        for (std::size_t i = 0; i < std::size(m_plottables); ++i)
+        for (auto i = 0UL; i < std::size(m_components); ++i)
         {
-            m_plottables[i]->setName(labels[i]);
+            m_components[i]->set_name(labels[i]);
         }
         Q_EMIT labels_changed(labels);
     }
@@ -56,13 +49,11 @@ void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 
 void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 {
-    if (std::size(colors) == std::size(m_plottables))
+    if (std::size(colors) == std::size(m_components))
     {
-        for (std::size_t i = 0; i < std::size(m_plottables); ++i)
+        for (std::size_t i = 0; i < std::size(m_components); ++i)
         {
-            auto pen = m_plottables[i]->pen();
-            pen.setColor(colors[i]);
-            m_plottables[i]->setPen(pen);
+            m_components[i]->set_color(colors[i]);
         }
         Q_EMIT colors_changed(colors);
     }
@@ -74,15 +65,19 @@ void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 
 bool SQPQCPAbstractPlottableWrapper::visible() const noexcept
 {
-    if (std::empty(m_plottables))
-        return false;
-    return m_plottables[0]->visible();
+    // True if at least one plottable is visible
+    for (const auto plottable : m_components)
+    {
+        if (plottable->visible())
+            return true;
+    }
+    return false;
 }
 
 QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
 {
     QStringList labels;
-    for (const auto plottable : m_plottables)
+    for (const auto plottable : m_components)
     {
         labels.append(plottable->name());
     }
@@ -92,11 +87,11 @@ QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
 void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
 {
     bool changed = false;
-    for (auto plottable : m_plottables)
+    for (auto plottable : m_components)
     {
         if (plottable->selected() != selected)
         {
-            ::set_selected(plottable, selected);
+            plottable->set_selected(selected);
             changed = true;
         }
     }
@@ -106,10 +101,11 @@ void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
 
 bool SQPQCPAbstractPlottableWrapper::selected() const noexcept
 {
-    bool selected = false;
-    for (const auto plottable : m_plottables)
+    // True if at least one plottable is selected
+    for (const auto plottable : m_components)
     {
-        selected |= plottable->selected();
+        if (plottable->selected())
+            return true;
     }
-    return selected;
+    return false;
 }

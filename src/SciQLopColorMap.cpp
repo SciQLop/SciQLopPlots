@@ -39,14 +39,15 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
     }
 }
 
-SciQLopColorMap::SciQLopColorMap(
-    QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name)
-        : SQPQCPAbstractPlottableWrapper(parent)
+SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+                                 const QString& name)
+        : SciQLopColorMapInterface(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
-    this->_cmap = this->newPlottable<QCPColorMap>(keyAxis, valueAxis, name);
+    this->_cmap = new QCPColorMap(this->_keyAxis, this->_valueAxis);
+    this->_cmap->setName(name);
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
 
     this->_resampler = new ColormapResampler(_valueAxis->scaleType());
@@ -59,9 +60,9 @@ SciQLopColorMap::SciQLopColorMap(
         this->_icon_update_timer, &QTimer::timeout, this->_cmap,
         [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
     connect(this->_valueAxis, &QCPAxis::scaleTypeChanged, this->_resampler,
-        &ColormapResampler::setScaleType);
+            &ColormapResampler::setScaleType);
     connect(this->_resampler, &ColormapResampler::setGraphData, this,
-        &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
+            &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
     this->colorMap()->updateLegendIcon();
     this->colorMap()->setLayer(parent->layer("background"));
 }
@@ -109,14 +110,15 @@ bool SciQLopColorMap::selected() const noexcept
 }
 
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis,
-    QCPAxis* value_axis, GetDataPyCallable&& callable, const QString& name)
+                                                 QCPAxis* value_axis, GetDataPyCallable&& callable,
+                                                 const QString& name)
         : SciQLopColorMap(parent, key_axis, value_axis, name)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this,
-        &SciQLopColorMapFunction::_set_data);
-    connect(
-        this, &SciQLopColorMap::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
+            &SciQLopColorMapFunction::_set_data);
+    connect(this, &SciQLopColorMap::range_changed, m_pipeline,
+            &SimplePyCallablePipeline::set_range);
 }
 
 void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)

@@ -19,24 +19,23 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Profiling.hpp"
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+#ifdef TRACY_ENABLE
+#ifdef PROFILE_MEMORY
+#include <cstdlib>
 
-class InspectorView : public QWidget
+void* operator new(std::size_t n)
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+    void* ptr = malloc(n);
+    TracyAlloc(ptr, n);
+    return ptr;
+}
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
+void operator delete(void* ptr) noexcept
+{
+    TracyFree(ptr);
+    free(ptr);
+}
 #endif
-};
+#endif

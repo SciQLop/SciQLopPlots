@@ -31,7 +31,7 @@
 struct ColormapResampler;
 class QThread;
 
-class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
+class SciQLopColorMap : public SciQLopColorMapInterface
 {
     bool _selected = false;
     ColormapResampler* _resampler = nullptr;
@@ -56,8 +56,8 @@ class SciQLopColorMap : public SQPQCPAbstractPlottableWrapper
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(
-        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QString& name);
+    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+                             const QString& name);
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
@@ -91,7 +91,7 @@ class SciQLopColorMapFunction : public SciQLopColorMap
 
 public:
     explicit SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        GetDataPyCallable&& callable, const QString& name);
+                                     GetDataPyCallable&& callable, const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
 

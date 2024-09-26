@@ -24,6 +24,31 @@
 #include <QSplitter>
 #include <QVBoxLayout>
 
+void InspectorView::expand_recursively(const QModelIndex& index)
+{
+    auto parent = index.parent();
+    while (parent.isValid())
+    {
+        m_treeView->setExpanded(parent, true);
+        parent = parent.parent();
+    }
+}
+
+void InspectorView::selectionChanged(
+    const QItemSelection& selected, const QItemSelection& deselected)
+{
+    PlotsModel::instance()->set_selected(selected.indexes(), true);
+    PlotsModel::instance()->set_selected(deselected.indexes(), false);
+    auto selected_objects = QList<QObject*>();
+    for (const auto& index : selected.indexes())
+    {
+        auto object = PlotsModel::object(index);
+        if (object)
+            selected_objects.append(object);
+    }
+    emit objects_selected(selected_objects);
+}
+
 InspectorView::InspectorView(QWidget* parent) : QWidget(parent)
 {
     m_treeView = new PlotsTreeView(this);
@@ -33,18 +58,17 @@ InspectorView::InspectorView(QWidget* parent) : QWidget(parent)
     setLayout(layout);
 
     auto selectionModel = m_treeView->selectionModel();
-    connect(selectionModel, &QItemSelectionModel::selectionChanged, PlotsModel::instance(),
-        [](const QItemSelection& selected, const QItemSelection& deselected)
-        {
-            PlotsModel::instance()->set_selected(selected.indexes(), true);
-            PlotsModel::instance()->set_selected(deselected.indexes(), false);
-        });
+    connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
+        &InspectorView::selectionChanged);
 
     connect(PlotsModel::instance(), &PlotsModel::item_selection_changed, selectionModel,
-        [selectionModel](const QModelIndex& index, bool selected)
+        [selectionModel, this](const QModelIndex& index, bool selected)
         {
             if (selected)
+            {
+                this->expand_recursively(index);
                 selectionModel->select(index, QItemSelectionModel::Select);
+            }
             else
                 selectionModel->select(index, QItemSelectionModel::Deselect);
         });

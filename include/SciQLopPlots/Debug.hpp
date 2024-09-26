@@ -20,23 +20,17 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <iostream>
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+#ifdef DEBUG
 
-class InspectorView : public QWidget
-{
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+#define WARN_ABSTRACT_METHOD                                                                       \
+    {                                                                                              \
+        std::cout << "Abstract method called:" << __PRETTY_FUNCTION__ << std::endl;                \
+    }
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+#else
 
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
+#define WARN_ABSTRACT_METHOD
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
 #endif
-};

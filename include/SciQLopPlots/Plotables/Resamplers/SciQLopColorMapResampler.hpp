@@ -31,7 +31,6 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <qcustomplot.h>
 
-
 struct ColormapResampler : public AbstractResampler2d
 {
     Q_OBJECT
@@ -54,6 +53,7 @@ public:
     {
         _log_scale.storeRelaxed(scale_type == QCPAxis::stLogarithmic);
     }
+
     inline QCPAxis::ScaleType scaleType() const
     {
         return _log_scale.loadRelaxed() ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
