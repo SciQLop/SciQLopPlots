@@ -102,7 +102,7 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
         clear_curves();
     for (const auto& label : labels)
     {
-        this->newPlottable<QCPCurve>(_keyAxis, _valueAxis, label);
+        this->newComponent<QCPCurve>(_keyAxis, _valueAxis, label);
     }
     _resampler->set_line_count(plottable_count());
 }

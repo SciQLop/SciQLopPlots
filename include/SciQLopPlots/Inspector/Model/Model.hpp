@@ -53,6 +53,7 @@ public:
     Q_SLOT void addTopLevelNode(QObject* obj);
 
     static PlotsModel* instance();
+    static QObject* object(const QModelIndex& index);
 
 #ifndef BINDINGS_H
     Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);

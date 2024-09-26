@@ -20,23 +20,19 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+class SciQLopGraphInterface;
 
-class InspectorView : public QWidget
+class SciQLopGraphDelegate : public PropertyDelegateBase
 {
     Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+    SciQLopGraphInterface* graph() const;
 
 public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
+    using compatible_type = SciQLopGraphInterface;
+    SciQLopGraphDelegate(SciQLopGraphInterface* object, QWidget* parent = nullptr);
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
+    virtual ~SciQLopGraphDelegate() = default;
 };

@@ -28,8 +28,7 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
         clear_graphs();
     for (const auto& label : labels)
     {
-        const auto graph = this->newPlottable<QCPGraph>(_keyAxis, _valueAxis, label);
-        graph->setAdaptiveSampling(true);
+        this->newComponent<QCPGraph>(_keyAxis, _valueAxis, label);
     }
     _resampler->set_line_count(plottable_count());
 }
@@ -47,8 +46,8 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
     Q_EMIT this->replot();
 }
 
-SciQLopLineGraph::SciQLopLineGraph(
-    QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis, const QStringList& labels)
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+                                   const QStringList& labels)
         : SQPQCPAbstractPlottableWrapper(parent), _keyAxis { key_axis }, _valueAxis { value_axis }
 {
     create_resampler(labels);
@@ -57,7 +56,7 @@ SciQLopLineGraph::SciQLopLineGraph(
         this->create_graphs(labels);
     }
     connect(key_axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
-        &LineGraphResampler::resample);
+            &LineGraphResampler::resample);
 }
 
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
@@ -69,7 +68,7 @@ void SciQLopLineGraph::clear_resampler()
 {
     connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
     disconnect(this->_resampler, &LineGraphResampler::setGraphData, this,
-        &SciQLopLineGraph::_setGraphData);
+               &SciQLopLineGraph::_setGraphData);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
     delete this->_resampler_thread;
@@ -84,7 +83,7 @@ void SciQLopLineGraph::create_resampler(const QStringList& labels)
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
     connect(this->_resampler, &LineGraphResampler::setGraphData, this,
-        &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
+            &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
 }
 
 SciQLopLineGraph::~SciQLopLineGraph()
@@ -105,14 +104,16 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 }
 
 SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
-    QCPAxis* value_axis, GetDataPyCallable&& callable, const QStringList& labels)
+                                                   QCPAxis* value_axis,
+                                                   GetDataPyCallable&& callable,
+                                                   const QStringList& labels)
         : SciQLopLineGraph(parent, key_axis, value_axis, labels)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
-        &SciQLopLineGraphFunction::_set_data);
-    connect(
-        this, &SciQLopLineGraph::range_changed, m_pipeline, &SimplePyCallablePipeline::set_range);
+            &SciQLopLineGraphFunction::_set_data);
+    connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
+            &SimplePyCallablePipeline::set_range);
 }
 
 void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y)

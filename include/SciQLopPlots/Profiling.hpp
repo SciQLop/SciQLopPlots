@@ -21,22 +21,31 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+#ifdef TRACY_ENABLE
 
-class InspectorView : public QWidget
-{
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+#include <tracy/Tracy.hpp>
+#define PROFILE_HERE ZoneScoped
+#define PROFILE_HERE_N(name) ZoneScopedN(name)
+#define PROFILE_HERE_NC(name, color) ZoneScopedNC(name, color)
+#define PROFILE_PASS_VALUE(value) ZoneValue(value)
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
+#ifdef PROFILE_MEMORY
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
+#include <cstddef>
+#include <new>
+
+void* operator new(std::size_t n);
+
+void operator delete(void* ptr) noexcept;
+
 #endif
-};
+
+#else
+
+#define PROFILE_HERE
+#define PROFILE_HERE_N(name)
+#define PROFILE_HERE_NC(name, color)
+#define PROFILE_PASS_VALUE(value)
+
+#endif

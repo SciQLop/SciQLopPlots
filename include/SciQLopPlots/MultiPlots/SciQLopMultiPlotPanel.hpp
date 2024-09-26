@@ -48,66 +48,75 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
 protected:
     template <typename T, GraphType graph_type, typename... Args>
     auto __plot(T* plot,
-        Args&&... args) -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...), void())
+                Args&&... args) -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...))
     {
         if constexpr (graph_type == GraphType::Line)
-            plot->line(std::forward<Args>(args)...);
+            return plot->line(std::forward<Args>(args)...);
         if constexpr (graph_type == GraphType::ParametricCurve)
-            plot->parametric_curve(std::forward<Args>(args)...);
+            return plot->parametric_curve(std::forward<Args>(args)...);
     }
 
     template <typename T, GraphType graph_type, typename... Args>
-    auto __plot(T* plot,
-        Args&&... args) -> decltype(std::declval<T*>()->colormap(std::forward<Args>(args)...),
-                            void())
+    auto __plot(T* plot, Args&&... args)
+        -> decltype(std::declval<T*>()->colormap(std::forward<Args>(args)...))
     {
         if constexpr (graph_type == GraphType::ColorMap)
-            plot->colormap(std::forward<Args>(args)...);
+            return plot->colormap(std::forward<Args>(args)...);
     }
 
-    template <typename T, typename... Args>
-    QPair<T*, SciQLopGraphInterface*> _plot(int index, GraphType graph_type, Args&&... args)
+    template <typename T, typename U, typename... Args>
+    QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
         auto* plot = new T();
         if (index == -1)
             add_plot(plot);
         else
             insert_plot(index, plot);
+
         if (graph_type == GraphType::Line)
-            __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...);
+        {
+            return { plot, __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...) };
+        }
+
         if (graph_type == GraphType::ParametricCurve)
-            __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...);
+        {
+            return { plot,
+                     __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...) };
+        }
         if (graph_type == GraphType::ColorMap)
-            __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...);
-        return { plot, plot->graph(-1) };
+        {
+            return { plot, __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...) };
+        }
+        return { nullptr, nullptr };
     }
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(const PyBuffer& x,
-        const PyBuffer& y, QStringList labels = QStringList(),
-        QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
-        ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
+              ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(const PyBuffer& x,
-        const PyBuffer& y, const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+              QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+              bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+              int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(
-        GetDataPyCallable callable, QStringList labels = QStringList(),
-        QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-        ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-        int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(
-        GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-        int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+              bool y_log_scale = false, bool z_log_scale = false,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1) Q_DECL_OVERRIDE;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);
-    SciQLopMultiPlotPanel(
-        QWidget* parent = nullptr, bool synchronize_x = true, bool synchronize_time = false);
+    SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true,
+                          bool synchronize_time = false);
 
     inline QUuid uuid() const { return _uuid; }
 

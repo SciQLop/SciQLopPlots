@@ -19,24 +19,22 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Inspector/View/PropertiesPanel.hpp"
+#include "SciQLopPlots/Inspector/View/InspectorView.hpp"
+#include "SciQLopPlots/Inspector/View/PropertiesView.hpp"
+#include <QSplitter>
+#include <QVBoxLayout>
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
-
-class InspectorView : public QWidget
+PropertiesPanel::PropertiesPanel(QWidget* parent)
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
-
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+    auto splitter = new QSplitter(Qt::Vertical, this);
+    splitter->setChildrenCollapsible(false);
+    setLayout(new QVBoxLayout(this));
+    layout()->addWidget(splitter);
+    m_inspectorView = new InspectorView(this);
+    m_propertiesView = new PropertiesView(this);
+    splitter->addWidget(m_inspectorView);
+    splitter->addWidget(m_propertiesView);
+    connect(m_inspectorView, &InspectorView::objects_selected, m_propertiesView,
+        &PropertiesView::set_current_objects);
+}

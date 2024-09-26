@@ -21,13 +21,15 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
+#include "SciQLopPlots/Profiling.hpp"
 
 LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
-
 
 void LineGraphResampler::_resample_impl(
     const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
 {
+    PROFILE_HERE_N("LineGraphResampler::_resample_impl");
+    PROFILE_PASS_VALUE(x.flat_size());
     if (x.data() != nullptr && x.flat_size() > 0)
     {
         const auto view = XYView(x, y, new_range.lower, new_range.upper);

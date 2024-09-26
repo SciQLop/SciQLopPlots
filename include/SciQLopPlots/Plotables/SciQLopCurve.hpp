@@ -41,7 +41,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
 
     void _setCurveData(QList<QVector<QCPCurveData>> data);
@@ -54,27 +53,28 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     void clear_resampler();
     void create_resampler(const QStringList& labels);
     void create_graphs(const QStringList& labels);
+
     inline void create_curves(const QStringList& labels) { create_graphs(labels); }
 
     inline QCPCurve* line(std::size_t index) const
     {
         if (index < plottable_count())
-            return dynamic_cast<QCPCurve*>(m_plottables[index]);
+            return dynamic_cast<QCPCurve*>(m_components[index]->plottable());
         return nullptr;
     }
 
     inline const QList<QCPCurve*> lines() const
     {
         QList<QCPCurve*> curves;
-        for (auto plottable : m_plottables)
-            curves.append(qobject_cast<QCPCurve*>(plottable));
+        for (auto plottable : m_components)
+            curves.append(qobject_cast<QCPCurve*>(plottable->plottable()));
         return curves;
     }
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopCurve(
-        QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis, const QStringList& labels);
+    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+                          const QStringList& labels);
 
     explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis);
 
@@ -82,19 +82,20 @@ public:
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
+
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 };
-
 
 class SciQLopCurveFunction : public SciQLopCurve
 {
     Q_OBJECT
     SimplePyCallablePipeline* m_pipeline;
+
     inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopCurve::set_data(x, y); }
 
 public:
     explicit SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        GetDataPyCallable&& callable, const QStringList& labels);
+                                  GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopCurveFunction() override = default;
 

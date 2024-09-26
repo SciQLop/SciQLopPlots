@@ -19,24 +19,28 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Inspector/Inspectors/SciQLopGraphComponentInspector.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
-
-class InspectorView : public QWidget
+QList<QObject*> SciQLopGraphComponentInspector::children(QObject* obj)
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+    return {};
+}
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+QObject* SciQLopGraphComponentInspector::child(const QString& name, QObject* obj)
+{
+    return nullptr;
+}
 
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
+void SciQLopGraphComponentInspector::connect_node(PlotsModelNode* node, QObject* const obj)
+{
+    InspectorBase::connect_node(node, obj);
+}
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+void SciQLopGraphComponentInspector::set_selected(QObject* obj, bool selected) { }
+
+bool SciQLopGraphComponentInspector::selected(const QObject* obj)
+{
+    return false;
+}

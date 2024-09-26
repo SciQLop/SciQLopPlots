@@ -20,23 +20,20 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+class SciQLopMultiPlotPanel;
 
-class InspectorView : public QWidget
+class SciQLopMultiPlotPanelDelegate : public PropertyDelegateBase
 {
     Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+    SciQLopMultiPlotPanel* panel() const;
+
 
 public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
+    using compatible_type = SciQLopMultiPlotPanel;
+    SciQLopMultiPlotPanelDelegate(SciQLopMultiPlotPanel* object, QWidget* parent = nullptr);
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
+    virtual ~SciQLopMultiPlotPanelDelegate() = default;
 };

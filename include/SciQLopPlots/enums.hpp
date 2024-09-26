@@ -48,3 +48,17 @@ enum class PlotType
     BasicXY,
     TimeSeries
 };
+
+enum class GraphMarkerShape
+{
+    NoMarker,
+    Circle,
+    Square,
+    Triangle,
+    Diamond,
+    Star,
+    Plus,
+    Cross,
+    X,
+    Custom
+};

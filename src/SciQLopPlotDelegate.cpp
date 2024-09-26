@@ -19,24 +19,19 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
 
-class InspectorView : public QWidget
+REGISTER_DELEGATE(SciQLopPlotDelegate);
+
+SciQLopPlot* SciQLopPlotDelegate::plot() const
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+    return as_type<SciQLopPlot>(m_object);
+}
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
+        : PropertyDelegateBase(object, parent)
+{
+}

@@ -16,27 +16,22 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
+
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
+REGISTER_DELEGATE(SciQLopColorMapDelegate);
 
-class InspectorView : public QWidget
+SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+    return as_type<SciQLopColorMap>(m_object);
+}
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent)
+        : PropertyDelegateBase(object, parent)
+{
+}

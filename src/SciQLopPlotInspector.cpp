@@ -31,7 +31,7 @@ QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
     QList<QObject*> children;
     if (auto plot = _plot(obj); plot)
     {
-        for (auto c : plot->graphs())
+        for (auto c : plot->plottables())
         {
             children.append(c);
         }
@@ -43,7 +43,7 @@ QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
 {
     if (auto plot = _plot(obj); plot)
     {
-        return plot->graph(name);
+        return plot->plottable(name);
     }
     return nullptr;
 }

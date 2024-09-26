@@ -83,6 +83,8 @@ public:
 
     void destroy();
 
+    inline QObject* object() { return m_obj; }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);

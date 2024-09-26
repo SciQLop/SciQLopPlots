@@ -24,6 +24,7 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <iostream>
 
+#include "SciQLopPlots/Profiling.hpp"
 
 inline std::vector<double> _generate_range(
     double start, double end, std::size_t n, bool log = false)
@@ -120,6 +121,7 @@ template <typename T>
 inline void _divide(
     QCPColorMapData* data, const T& avg_count, const std::size_t n_x, const std::size_t n_y)
 {
+    PROFILE_HERE;
     for (auto i = 0UL; i < n_x; i++)
     {
         for (auto j = 0UL; j < n_y; j++)
@@ -171,6 +173,7 @@ template <typename T>
 inline void _x_loop(
     const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis, T& avg_count)
 {
+    PROFILE_HERE;
     auto n_x = std::size(x_axis);
     auto x_dest_idx = 0UL;
     auto prev_x_val = view.x(0);
@@ -199,11 +202,11 @@ inline void _x_loop(
     }
 }
 
-
 template <typename T>
 inline void _copy_and_average(
     const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis)
 {
+    PROFILE_HERE;
     auto n_x = std::size(x_axis);
     auto n_y = std::size(y_axis);
     std::vector<double> avg_count(n_x * n_y, 0);
@@ -222,10 +225,10 @@ auto _generate_axes(const XYZView& view, std::size_t max_x_size, std::size_t max
     return std::pair { x_axis, y_axis };
 }
 
-
 void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
     const QCPRange new_range, bool new_data)
 {
+    PROFILE_HERE_N("ColormapResampler::_resample_impl");
     if (x.data() != nullptr && x.flat_size())
     {
         const auto view = XYZView(x, y, z, new_range.lower, new_range.upper);

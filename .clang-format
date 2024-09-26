@@ -26,3 +26,7 @@ MaxEmptyLinesToKeep: 2
 Standard: Cpp11
 UseTab: Never
 
+ContinuationIndentWidth: 4
+AlignAfterOpenBracket: true
+LambdaBodyIndentation: Signature
+

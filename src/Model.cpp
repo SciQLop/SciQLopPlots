@@ -166,6 +166,13 @@ PlotsModel* PlotsModel::instance()
     return _plots_model();
 }
 
+QObject* PlotsModel::object(const QModelIndex& index)
+{
+    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()); node != nullptr)
+        return node->object();
+    return nullptr;
+}
+
 QModelIndex PlotsModel::make_index(PlotsModelNode* node)
 {
     auto parent_node = node->parent_node();

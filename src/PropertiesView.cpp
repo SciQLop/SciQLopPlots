@@ -19,24 +19,31 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
+#include "SciQLopPlots/Inspector/View/PropertiesView.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include <QVBoxLayout>
 
-#include "SciQLopPlots/Inspector/View/TreeView.hpp"
-#include <QWidget>
-
-class InspectorView : public QWidget
+void PropertiesView::set_current_objects(const QList<QObject*>& objects)
 {
-    Q_OBJECT
-    PlotsTreeView* m_treeView;
-    void expand_recursively(const QModelIndex& index);
+    if (m_delegateWidget)
+    {
+        delete m_delegateWidget;
+        m_delegateWidget = nullptr;
+    }
+    if (!objects.isEmpty())
+    {
+        auto first = objects.first();
+        auto delegate = PropertyDelegates::delegate(first, this);
+        if (delegate)
+        {
+            m_delegateWidget = delegate;
+            this->layout()->addWidget(m_delegateWidget);
+        }
+    }
+}
 
-    Q_SLOT void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-
-public:
-    InspectorView(QWidget* parent = nullptr);
-    virtual ~InspectorView() = default;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
-#endif
-};
+PropertiesView::PropertiesView(QWidget* parent)
+{
+    this->setLayout(new QVBoxLayout(this));
+}

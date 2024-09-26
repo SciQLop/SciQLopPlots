@@ -53,6 +53,8 @@ shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args:
 
 moc_headers = [
     'bindings/_QCustomPlot.hpp',
+    project_source_root + '/include/SciQLopPlots/Debug.hpp',
+    project_source_root + '/include/SciQLopPlots/Profiling.hpp',
     project_source_root + '/include/SciQLopPlots/unique_names_factory.hpp',
     project_source_root + '/include/SciQLopPlots/enums.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
@@ -70,6 +72,8 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/VPlotsAlign.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphInterface.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphComponent.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopLineGraph.hpp',
@@ -92,8 +96,17 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopMultiPlotPanelInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphComponentInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/TreeView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/InspectorView.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegateBase.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegates.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -114,6 +127,7 @@ sources = moc_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [
+            '../src/Profiling.cpp',
             '../src/PythonInterface.cpp',
             '../src/SciQLopPlotInterface.cpp',
             '../src/SciQLopPlot.cpp',
@@ -129,6 +143,8 @@ sources = moc_files \
             '../src/SciQLopPlotContainer.cpp',
             '../src/MultiPlotsVSpan.cpp',
             '../src/SciQLopGraphInterface.cpp',
+            '../src/SciQLopGraphComponentInterface.cpp',
+            '../src/SciQLopGraphComponent.cpp',
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
@@ -149,8 +165,16 @@ sources = moc_files \
             '../src/SciQLopMultiPlotPanelInspector.cpp',
             '../src/SciQLopPlotInspector.cpp',
             '../src/SciQLopGraphInterfaceInspector.cpp',
+            '../src/SciQLopGraphComponentInspector.cpp',
             '../src/TreeView.cpp',
             '../src/InspectorView.cpp',
+            '../src/PropertyDelegateBase.cpp',
+            '../src/SciQLopMultiPlotPanelDelegate.cpp',
+            '../src/PropertiesPanel.cpp',
+            '../src/PropertiesView.cpp',
+            '../src/SciQLopPlotDelegate.cpp',
+            '../src/SciQLopGraphDelegate.cpp',
+            '../src/SciQLopColorMapDelegate.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
@@ -164,9 +188,19 @@ if get_option('trace_refcount') == true
     cpp_args += ['-D_TRACE_REF_COUNT']
 endif
 
+optional_deps = []
+
+if get_option ( 'tracy_enable')
+    if get_option ( 'buildtype') != 'debugoptimized'
+        warning ( 'Profiling builds should set -- buildtype = debugoptimized')
+    endif
+    tracy = dependency ( 'tracy', static : true )
+    optional_deps += [ tracy ]
+endif
+
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep, fmt_dep],
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep, fmt_dep] + optional_deps,
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
