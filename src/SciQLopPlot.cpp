@@ -265,8 +265,22 @@ int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
 
 void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
 {
-    axis->moveRange(wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.
-                    * axis->range().size());
+    if (axis->scaleType() == QCPAxis::stLinear)
+    {
+        axis->moveRange(wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.
+                        * axis->range().size());
+    }
+    else
+    {
+        if (wheelSteps > 0)
+            axis->moveRange(std::pow(
+                10, wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.));
+        else
+            axis->moveRange(1.
+                            / std::pow(10,
+                                       -wheelSteps * m_scroll_factor
+                                           * QApplication::wheelScrollLines() / 100.));
+    }
 }
 
 void SciQLopPlot::wheelEvent(QWheelEvent* event)
