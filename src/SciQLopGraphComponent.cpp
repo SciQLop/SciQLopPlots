@@ -36,6 +36,8 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
         {
             graph->setAdaptiveSampling(true);
         }
+        connect(plottable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
+                &SciQLopGraphComponent::set_selected);
     }
 }
 
@@ -51,7 +53,7 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
     }
 }
 
-void SciQLopGraphComponent::set_pen(const QPen &pen) noexcept
+void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept
 {
     if (m_plottable)
     {
@@ -122,6 +124,7 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
         if (auto legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
         {
             legend_item->setSelected(selected);
+            emit replot();
         }
     }
 }
