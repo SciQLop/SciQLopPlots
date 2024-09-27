@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Debug.hpp"
 #include <QMap>
 #include <QObject>
 
@@ -50,28 +51,21 @@ public:
     }
 
     template <typename T>
-    inline static auto registerInspector(
-        InspectorBase* inspector) -> decltype(T::staticMetaObject.className(), int())
+    inline static auto
+    registerInspector(InspectorBase* inspector) -> decltype(T::staticMetaObject.className(), int())
     {
         return registerInspector(T::staticMetaObject.className(), inspector);
     }
 
     inline static InspectorBase* inspector(const QString& typeName)
     {
+        DEBUG_MESSAGE("Looking for inspector for type : " << typeName.toStdString());
+        DEBUG_MESSAGE(
+            "Available inspectors : " << instance().m_inspectors.keys().join(", ").toStdString());
         return instance().m_inspectors.value(typeName, nullptr);
     }
 
-    inline static InspectorBase* inspector(const QObject* obj)
-    {
-        auto metaObject = obj->metaObject();
-        InspectorBase* _inspector = nullptr;
-        do
-        {
-            _inspector = inspector(metaObject->className());
-            metaObject = metaObject->superClass();
-        } while (_inspector == nullptr && metaObject != nullptr);
-        return _inspector;
-    }
+    static InspectorBase* inspector(const QObject* obj);
 };
 
 #define REGISTER_INSPECTOR(INSPECTOR)                                                              \

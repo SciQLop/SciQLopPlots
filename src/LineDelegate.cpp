@@ -19,22 +19,34 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
+#include <QSpinBox>
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+LineDelegate::LineDelegate(const QPen& pen, QWidget* parent) : QWidget(parent)
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
-    {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
-    return _inspector;
+    m_pen = pen;
+    m_layout = new QFormLayout();
+    setLayout(m_layout);
+
+    auto width = new QSpinBox();
+    m_layout->addRow("Width", width);
+    width->setValue(pen.width());
+    connect(width, QOverload<int>::of(&QSpinBox::valueChanged), this,
+            [this](int value)
+            {
+                m_pen.setWidth(value);
+                emit widthChanged(value);
+                emit penChanged(m_pen);
+            });
+
+    auto color = new ColorDelegate(pen.color());
+    m_layout->addRow("Color", color);
+    connect(color, &ColorDelegate::colorChanged, this,
+            [this](const QColor& color)
+            {
+                m_pen.setColor(color);
+                emit colorChanged(color);
+                emit penChanged(m_pen);
+            });
 }

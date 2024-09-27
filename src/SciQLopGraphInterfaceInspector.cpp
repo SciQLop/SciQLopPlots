@@ -27,13 +27,23 @@ REGISTER_INSPECTOR(SciQLopGraphInterfaceInspector)
 
 QList<QObject*> SciQLopGraphInterfaceInspector::children(QObject* obj)
 {
-    return {};
+    QList<QObject*> children;
+    if (auto graph = _graph(obj); graph)
+    {
+        for (auto component : graph->components())
+        {
+            children.append(component);
+        }
+    }
+    return children;
 }
 
 QObject* SciQLopGraphInterfaceInspector::child(const QString& name, QObject* obj)
 {
-    Q_UNUSED(name);
-    Q_UNUSED(obj);
+    if (auto graph = _graph(obj); graph)
+    {
+        return graph->component(name);
+    }
     return nullptr;
 }
 
@@ -42,8 +52,10 @@ void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject*
     InspectorBase::connect_node(node, obj);
     if (auto graph = _graph(obj); graph)
     {
-        connect(
-            graph, &SciQLopGraphInterface::selection_changed, node, &PlotsModelNode::set_selected);
+        connect(graph, &SciQLopGraphInterface::selection_changed, node,
+                &PlotsModelNode::set_selected);
+        connect(graph, &SciQLopGraphInterface::component_list_changed, node,
+                &PlotsModelNode::update_children);
     }
 }
 

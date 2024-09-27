@@ -29,8 +29,14 @@
         std::cout << "Abstract method called:" << __PRETTY_FUNCTION__ << std::endl;                \
     }
 
+#define DEBUG_MESSAGE(message)                                                                     \
+    {                                                                                              \
+        std::cout << message << std::endl;                                                         \
+    }
+
 #else
 
 #define WARN_ABSTRACT_METHOD
+#define DEBUG_MESSAGE(message)
 
 #endif

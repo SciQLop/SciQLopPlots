@@ -22,6 +22,13 @@
 
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 
+void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent *component)
+{
+    m_components.append(component);
+    connect(component, &SciQLopGraphComponent::replot, this, &SQPQCPAbstractPlottableWrapper::replot);
+    Q_EMIT this->component_list_changed();
+}
+
 void SQPQCPAbstractPlottableWrapper::set_visible(bool visible) noexcept
 {
     for (auto plottable : m_components)

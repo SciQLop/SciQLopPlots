@@ -56,6 +56,8 @@ class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 protected:
     QList<SciQLopGraphComponent*> m_components;
 
+    void _register_component(SciQLopGraphComponent* component);
+
 public:
     SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
 
@@ -84,23 +86,14 @@ public:
         if constexpr (std::is_same_v<T, QCPGraph>)
         {
             component = new SciQLopGraphComponent(plot->addGraph(keyAxis, valueAxis), this);
-            m_components.append(component);
         }
         else if constexpr (std::is_same_v<T, QCPCurve>)
         {
             component = new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this);
-            m_components.append(new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this));
         }
         if (component)
         {
-            connect(component, &SciQLopGraphComponent::replot, this,
-                    &SQPQCPAbstractPlottableWrapper::replot);
-            connect(component, &SciQLopGraphComponent::selection_changed, this,
-                    [this](bool selected)
-                    {
-                        if (selected == this->selected())
-                            emit this->selection_changed(selected);
-                    });
+            _register_component(component);
         }
         return component;
     }

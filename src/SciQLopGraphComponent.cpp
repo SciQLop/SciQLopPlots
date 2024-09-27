@@ -51,6 +51,19 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
     }
 }
 
+void SciQLopGraphComponent::set_pen(const QPen &pen) noexcept
+{
+    if (m_plottable)
+    {
+        m_plottable->setPen(pen);
+        QPen selectionPen = pen;
+        selectionPen.setColor(Qt::darkGray);
+        selectionPen.setWidthF(pen.widthF() + 3);
+        m_plottable->selectionDecorator()->setPen(selectionPen);
+        emit replot();
+    }
+}
+
 void SciQLopGraphComponent::set_line_width(const qreal width) noexcept
 {
     if (m_plottable)

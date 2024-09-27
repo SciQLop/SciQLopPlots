@@ -19,22 +19,25 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#pragma once
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+#include <QVBoxLayout>
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+class SciQLopGraphComponentInterface;
+class LineDelegate;
+
+class SciQLopGraphComponentDelegate : public PropertyDelegateBase
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
-    {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
-    return _inspector;
-}
+    Q_OBJECT
+
+    SciQLopGraphComponentInterface* component() const;
+    QVBoxLayout* m_layout;
+    LineDelegate* m_lineDelegate;
+
+public:
+    using compatible_type = SciQLopGraphComponentInterface;
+    SciQLopGraphComponentDelegate(SciQLopGraphComponentInterface* object,
+                                  QWidget* parent = nullptr);
+
+    virtual ~SciQLopGraphComponentDelegate() = default;
+};

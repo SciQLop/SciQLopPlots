@@ -31,18 +31,18 @@ class SciQLopGraphComponentInspector : public InspectorBase
 {
     Q_OBJECT
 
-    inline SciQLopGraphInterface* _graph(QObject* obj)
+    inline SciQLopGraphComponentInterface* _component(QObject* obj)
     {
-        return qobject_cast<SciQLopGraphInterface*>(obj);
+        return qobject_cast<SciQLopGraphComponentInterface*>(obj);
     }
 
-    inline const SciQLopGraphInterface* _graph(const QObject* obj)
+    inline const SciQLopGraphComponentInterface* _component(const QObject* obj)
     {
-        return qobject_cast<const SciQLopGraphInterface*>(obj);
+        return qobject_cast<const SciQLopGraphComponentInterface*>(obj);
     }
 
 public:
-    using compatible_type = SciQLopGraphInterface;
+    using compatible_type = SciQLopGraphComponentInterface;
 
     SciQLopGraphComponentInspector() : InspectorBase() { }
 
