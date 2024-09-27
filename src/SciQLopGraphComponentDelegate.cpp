@@ -19,22 +19,27 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
+
+REGISTER_DELEGATE(SciQLopGraphComponentDelegate);
+
+SciQLopGraphComponentInterface* SciQLopGraphComponentDelegate::component() const
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
-    {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
-    return _inspector;
+    return as_type<SciQLopGraphComponentInterface>(m_object);
+}
+
+SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphComponentInterface* object,
+                                                             QWidget* parent)
+        : PropertyDelegateBase(object, parent)
+{
+    m_layout = new QVBoxLayout();
+    setLayout(m_layout);
+    m_lineDelegate = new LineDelegate(object->pen(), this);
+    m_layout->addWidget(m_lineDelegate);
+    connect(m_lineDelegate, &LineDelegate::penChanged, object,
+            &SciQLopGraphComponentInterface::set_pen);
 }

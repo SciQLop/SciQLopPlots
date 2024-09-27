@@ -19,22 +19,30 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#pragma once
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+#include <QColor>
+#include <QColorDialog>
+
+#include <QFormLayout>
+#include <QPen>
+#include <QWidget>
+
+class LineDelegate : public QWidget
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
-    {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
-    return _inspector;
-}
+    Q_OBJECT
+
+    QPen m_pen;
+    QFormLayout* m_layout;
+
+public:
+    LineDelegate(const QPen& pen, QWidget* parent = nullptr);
+    virtual ~LineDelegate() = default;
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void colorChanged(const QColor& color);
+    Q_SIGNAL void widthChanged(int width);
+    Q_SIGNAL void styleChanged(Qt::PenStyle style);
+    Q_SIGNAL void penChanged(const QPen& pen);
+#endif
+};

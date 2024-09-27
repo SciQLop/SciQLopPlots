@@ -115,19 +115,15 @@ public:
 
     inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
 
-    inline virtual void set_pen(const QPen& pen) noexcept override
-    {
-        if (m_plottable)
-            m_plottable->setPen(pen);
-    }
+    virtual void set_pen(const QPen& pen) noexcept override;
 
     inline virtual void set_color(const QColor& color) noexcept override
     {
         if (m_plottable)
         {
-            auto pen = m_plottable->pen();
+            auto pen = this->pen();
             pen.setColor(color);
-            m_plottable->setPen(pen);
+            this->set_pen(pen);
         }
     }
 
@@ -170,6 +166,13 @@ public:
     virtual void set_name(const QString& name) noexcept override;
 
     virtual void set_selected(bool selected) noexcept override;
+
+    inline virtual QPen pen() const noexcept override
+    {
+        if (m_plottable)
+            return m_plottable->pen();
+        return QPen();
+    }
 
     virtual QColor color() const noexcept override;
 

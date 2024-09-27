@@ -19,22 +19,30 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#pragma once
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+#include <QColor>
+#include <QColorDialog>
+
+#include <QWidget>
+
+class ColorDelegate : public QWidget
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
-    {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
-    return _inspector;
-}
+    Q_OBJECT
+
+    QColor m_color;
+
+public:
+    ColorDelegate(QColor color, QWidget* parent = nullptr);
+    virtual ~ColorDelegate() = default;
+
+    void setColor(const QColor& color);
+    QColor color() const;
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void colorChanged(const QColor& color);
+#endif
+
+protected:
+    void mousePressEvent(QMouseEvent* event) override;
+};

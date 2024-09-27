@@ -23,6 +23,8 @@
 #include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Inspector/Model/Node.hpp"
 
+REGISTER_INSPECTOR(SciQLopGraphComponentInspector)
+
 QList<QObject*> SciQLopGraphComponentInspector::children(QObject* obj)
 {
     return {};
@@ -36,11 +38,26 @@ QObject* SciQLopGraphComponentInspector::child(const QString& name, QObject* obj
 void SciQLopGraphComponentInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
     InspectorBase::connect_node(node, obj);
+    if (auto component = _component(obj); component)
+    {
+        connect(component, &SciQLopGraphComponentInterface::selection_changed, node,
+                &PlotsModelNode::set_selected);
+    }
 }
 
-void SciQLopGraphComponentInspector::set_selected(QObject* obj, bool selected) { }
+void SciQLopGraphComponentInspector::set_selected(QObject* obj, bool selected)
+{
+    if (auto component = _component(obj); component)
+    {
+        component->set_selected(selected);
+    }
+}
 
 bool SciQLopGraphComponentInspector::selected(const QObject* obj)
 {
+    if (auto component = _component(obj); component)
+    {
+        return component->selected();
+    }
     return false;
 }

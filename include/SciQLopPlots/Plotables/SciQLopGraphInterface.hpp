@@ -138,6 +138,7 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void labels_changed(const QStringList& labels);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
+    Q_SIGNAL void component_list_changed();
 #endif
 };
 

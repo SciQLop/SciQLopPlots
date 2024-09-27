@@ -19,22 +19,39 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+ColorDelegate::ColorDelegate(QColor color, QWidget* parent) : QWidget(parent), m_color(color)
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
+    setAutoFillBackground(true);
+    setColor(color);
+}
+
+void ColorDelegate::setColor(const QColor& color)
+{
+    if (m_color != color)
     {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
+        m_color = color;
+        setPalette(QPalette(m_color));
+        emit colorChanged(m_color);
     }
-    return _inspector;
+}
+
+QColor ColorDelegate::color() const
+{
+    return m_color;
+}
+
+void ColorDelegate::mousePressEvent(QMouseEvent* event)
+{
+    Q_UNUSED(event);
+    QColorDialog dialog;
+    dialog.setCurrentColor(m_color);
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        if (dialog.selectedColor().isValid())
+        {
+            setColor(dialog.selectedColor());
+        }
+    }
 }
