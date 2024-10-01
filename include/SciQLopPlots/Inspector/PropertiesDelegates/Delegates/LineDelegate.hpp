@@ -36,7 +36,7 @@ class LineDelegate : public QWidget
     QFormLayout* m_layout;
 
 public:
-    LineDelegate(const QPen& pen, QWidget* parent = nullptr);
+    LineDelegate(QPen pen, QWidget* parent = nullptr);
     virtual ~LineDelegate() = default;
 
 #ifndef BINDINGS_H

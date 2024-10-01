@@ -16,64 +16,45 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
+
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/Inspectors/SciQLopColorMapInspector.hpp"
 #include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include <QStringLiteral>
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 
-REGISTER_INSPECTOR(InspectorBase)
 
-InspectorBase::InspectorBase(QObject* parent) { }
+REGISTER_INSPECTOR(SciQLopColorMapInspector);
 
-QList<QObject*> InspectorBase::children(QObject* obj)
+QList<QObject*> SciQLopColorMapInspector::children(QObject* obj)
 {
-    if (obj != nullptr)
-        return obj->children();
+    Q_UNUSED(obj);
     return {};
 }
 
-QObject* InspectorBase::child(const QString& name, QObject* obj)
+QObject* SciQLopColorMapInspector::child(const QString& name, QObject* obj)
 {
-    if (obj != nullptr)
-        return obj->findChild<QObject*>(name);
+    Q_UNUSED(name);
+    Q_UNUSED(obj);
     return nullptr;
 }
 
-QIcon InspectorBase::icon(const QObject* const obj)
+void SciQLopColorMapInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
-    Q_UNUSED(obj);
-    return QIcon();
+    InspectorBase::connect_node(node, obj);
+    if (auto cmap = _colormap(obj); cmap)
+    {
+        connect(cmap, &SciQLopColorMap::selection_changed, node, &PlotsModelNode::set_selected);
+    }
 }
 
-QString InspectorBase::tooltip(const QObject* const obj)
+void SciQLopColorMapInspector::set_selected(QObject* obj, bool selected)
 {
-    Q_UNUSED(obj);
-    return QString();
-}
-
-void InspectorBase::connect_node(PlotsModelNode* node, QObject* const obj)
-{
-    connect(obj, &QObject::destroyed, node, [node]() { delete node; });
-    connect(obj, &QObject::objectNameChanged, node, &PlotsModelNode::setName);
-}
-
-void InspectorBase::set_selected(QObject* obj, bool selected)
-{
-    Q_UNUSED(obj);
-    Q_UNUSED(selected);
-}
-
-bool InspectorBase::selected(const QObject* obj)
-{
-    Q_UNUSED(obj);
-    return false;
-}
-
-bool InspectorBase::deletable(const QObject* obj)
-{
-    Q_UNUSED(obj);
-    return true;
+    auto colormap = _colormap(obj);
+    if (colormap)
+    {
+        colormap->set_selected(selected);
+    }
 }

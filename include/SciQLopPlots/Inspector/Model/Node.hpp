@@ -35,6 +35,7 @@ class PlotsModelNode : public QObject
 
     void _child_destroyed(PlotsModelNode* child);
     PlotsModelNode* _root_node();
+    bool _deletable = true;
 
 public:
     PlotsModelNode(QObject* obj, QObject* parent = nullptr);
@@ -80,6 +81,10 @@ public:
     }
 
     void set_selected(bool selected);
+
+    inline void set_deletable(bool deletable) { _deletable = deletable; }
+
+    inline bool deletable() { return _deletable; }
 
     void destroy();
 

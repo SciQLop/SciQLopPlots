@@ -31,7 +31,6 @@ class SciQLopGraphComponentDelegate : public PropertyDelegateBase
     Q_OBJECT
 
     SciQLopGraphComponentInterface* component() const;
-    QVBoxLayout* m_layout;
     LineDelegate* m_lineDelegate;
 
 public:

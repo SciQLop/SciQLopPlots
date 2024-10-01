@@ -36,8 +36,6 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
                                                              QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    m_layout = new QVBoxLayout();
-    setLayout(m_layout);
     m_lineDelegate = new LineDelegate(object->pen(), this);
     m_layout->addWidget(m_lineDelegate);
     connect(m_lineDelegate, &LineDelegate::penChanged, object,

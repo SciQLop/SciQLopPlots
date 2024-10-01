@@ -41,8 +41,8 @@ PlotsModel::PlotsModel(QObject* parent)
     m_rootNode = new PlotsModelNode(this);
     connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed);
     connect(m_rootNode, &PlotsModelNode::nameChanged, this, &PlotsModel::node_changed);
-    connect(
-        m_rootNode, &PlotsModelNode::selectionChanged, this, &PlotsModel::node_selection_changed);
+    connect(m_rootNode, &PlotsModelNode::selectionChanged, this,
+            &PlotsModel::node_selection_changed);
 }
 
 QModelIndex PlotsModel::index(int row, int column, const QModelIndex& parent) const
@@ -133,9 +133,13 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
     if (auto node = static_cast<PlotsModelNode*>(parent.internalPointer()); node != nullptr)
     {
         beginRemoveRows(parent, row, row + count - 1);
-        for (int i = 0; i < count; ++i)
+        for (int index = row + count - 1; index >= row; --index)
         {
-            result &= node->remove_child(row);
+            auto child = node->child(index);
+            if (child != nullptr && child->deletable())
+                node->remove_child(index);
+            else
+                result = false;
         }
         endRemoveRows();
     }

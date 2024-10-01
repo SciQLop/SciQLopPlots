@@ -20,11 +20,19 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <QLabel>
+#include <QObject>
+#include <QVBoxLayout>
 #include <QWidget>
+#include <fmt/format.h>
 
 class PropertyDelegateBase : public QWidget
 {
     Q_OBJECT
+
+protected:
+    QVBoxLayout* m_layout;
+    QLabel* m_title;
 
 protected:
     QObject* m_object = nullptr;
@@ -39,6 +47,18 @@ public:
     PropertyDelegateBase(QObject* object, QWidget* parent = nullptr)
             : QWidget(parent), m_object { object }
     {
+        m_layout = new QVBoxLayout();
+        setLayout(m_layout);
+        m_title = new QLabel();
+        m_layout->addWidget(m_title);
+        connect(object, &QObject::objectNameChanged, this,
+                &PropertyDelegateBase::object_name_changed);
+        object_name_changed(object->objectName());
+    }
+
+    Q_SLOT void object_name_changed(const QString& name)
+    {
+        m_title->setText(fmt::format("{} properties", name.toStdString()).c_str());
     }
 
     virtual ~PropertyDelegateBase() = default;

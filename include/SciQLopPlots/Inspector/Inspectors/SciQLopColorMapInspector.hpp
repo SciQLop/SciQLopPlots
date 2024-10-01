@@ -19,61 +19,41 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 #include "SciQLopPlots/Inspector/InspectorBase.hpp"
 #include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include <QStringLiteral>
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include <QIcon>
+#include <QList>
+#include <QObject>
 
-REGISTER_INSPECTOR(InspectorBase)
-
-InspectorBase::InspectorBase(QObject* parent) { }
-
-QList<QObject*> InspectorBase::children(QObject* obj)
+class SciQLopColorMapInspector : public InspectorBase
 {
-    if (obj != nullptr)
-        return obj->children();
-    return {};
-}
+    Q_OBJECT
+    inline SciQLopColorMap* _colormap(QObject* obj) { return qobject_cast<SciQLopColorMap*>(obj); }
 
-QObject* InspectorBase::child(const QString& name, QObject* obj)
-{
-    if (obj != nullptr)
-        return obj->findChild<QObject*>(name);
-    return nullptr;
-}
+public:
+    using compatible_type = SciQLopColorMap;
 
-QIcon InspectorBase::icon(const QObject* const obj)
-{
-    Q_UNUSED(obj);
-    return QIcon();
-}
+    SciQLopColorMapInspector() : InspectorBase() { }
 
-QString InspectorBase::tooltip(const QObject* const obj)
-{
-    Q_UNUSED(obj);
-    return QString();
-}
+    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
 
-void InspectorBase::connect_node(PlotsModelNode* node, QObject* const obj)
-{
-    connect(obj, &QObject::destroyed, node, [node]() { delete node; });
-    connect(obj, &QObject::objectNameChanged, node, &PlotsModelNode::setName);
-}
+    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
 
-void InspectorBase::set_selected(QObject* obj, bool selected)
-{
-    Q_UNUSED(obj);
-    Q_UNUSED(selected);
-}
+    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QIcon();
+    }
 
-bool InspectorBase::selected(const QObject* obj)
-{
-    Q_UNUSED(obj);
-    return false;
-}
+    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QString();
+    }
 
-bool InspectorBase::deletable(const QObject* obj)
-{
-    Q_UNUSED(obj);
-    return true;
-}
+    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
+
+    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+};

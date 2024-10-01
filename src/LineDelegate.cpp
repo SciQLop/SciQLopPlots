@@ -23,7 +23,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 #include <QSpinBox>
 
-LineDelegate::LineDelegate(const QPen& pen, QWidget* parent) : QWidget(parent)
+LineDelegate::LineDelegate(QPen pen, QWidget* parent) : QWidget(parent)
 {
     m_pen = pen;
     m_layout = new QFormLayout();

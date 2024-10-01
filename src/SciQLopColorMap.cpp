@@ -65,6 +65,12 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
     this->colorMap()->updateLegendIcon();
     this->colorMap()->setLayer(parent->layer("background"));
+
+    if (auto legend_item = _legend_item(); legend_item)
+    {
+        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
+                &SciQLopColorMap::set_selected);
+    }
 }
 
 SciQLopColorMap::~SciQLopColorMap()
@@ -78,6 +84,12 @@ SciQLopColorMap::~SciQLopColorMap()
     delete this->_resampler_thread;
     this->_resampler = nullptr;
     this->_resampler_thread = nullptr;
+
+    if (auto legend_item = _legend_item(); legend_item)
+    {
+        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
+                &SciQLopColorMap::set_selected);
+    }
 }
 
 void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
@@ -100,6 +112,9 @@ void SciQLopColorMap::set_selected(bool selected) noexcept
     if (_selected != selected)
     {
         _selected = selected;
+        auto legend_item = _legend_item();
+        if (legend_item && legend_item->selected() != selected)
+            legend_item->setSelected(selected);
         emit selection_changed(selected);
     }
 }

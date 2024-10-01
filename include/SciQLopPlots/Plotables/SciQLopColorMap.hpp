@@ -52,6 +52,16 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     void _resample(const QCPRange& newRange);
     void _cmap_got_destroyed();
 
+    inline QCPPlottableLegendItem* _legend_item()
+    {
+        if (_cmap)
+        {
+            auto plot = _plot();
+            return plot->legend->itemWithPlottable(_cmap.data());
+        }
+        return nullptr;
+    }
+
     Q_SLOT void _setGraphData(QCPColorMapData* data);
 
 public:

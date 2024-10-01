@@ -31,30 +31,6 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <utility>
 
-// template <typename T>
-// inline void _set_selected(T* plottable, bool selected)
-// {
-//     if (plottable->selected() != selected)
-//     {
-//         if (selected)
-//             plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
-//         else
-//             plottable->setSelection(QCPDataSelection());
-//     }
-// }
-
-// inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
-// {
-//     if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
-//     {
-//         _set_selected(graph, selected);
-//     }
-//     else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
-//     {
-//         _set_selected(curve, selected);
-//     }
-// }
-
 namespace _impl
 {
 
@@ -161,8 +137,8 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
     if (m_color_map == nullptr)
     {
         m_color_map = new SciQLopColorMap(this, this->xAxis, this->yAxis2, name);
-        connect(m_color_map, &SciQLopColorMap::replot, this, [this]() { this->replot(); });
         _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        _register_plottable_wrapper(m_color_map);
         return m_color_map;
     }
     return nullptr;
@@ -176,8 +152,8 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
     {
         m_color_map = new SciQLopColorMapFunction(this, this->xAxis, this->yAxis2,
                                                   std::move(callable), name);
-        connect(m_color_map, &SciQLopColorMap::replot, this, [this]() { this->replot(); });
         _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        _register_plottable_wrapper(m_color_map);
         return qobject_cast<SciQLopColorMapFunction*>(m_color_map);
     }
     return nullptr;
@@ -272,14 +248,15 @@ void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPoin
     }
     else
     {
+        auto size = log10(axis->range().upper) - log10(axis->range().lower);
         if (wheelSteps > 0)
             axis->moveRange(std::pow(
-                10, wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.));
+                10, wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100. * size));
         else
             axis->moveRange(1.
                             / std::pow(10,
                                        -wheelSteps * m_scroll_factor
-                                           * QApplication::wheelScrollLines() / 100.));
+                                           * QApplication::wheelScrollLines() / 100. * size));
     }
 }
 
