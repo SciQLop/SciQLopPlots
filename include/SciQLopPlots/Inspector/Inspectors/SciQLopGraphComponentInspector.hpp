@@ -67,4 +67,6 @@ public:
     virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
 
     virtual bool selected(const QObject* obj) Q_DECL_OVERRIDE;
+
+    inline virtual bool deletable(const QObject* obj) Q_DECL_OVERRIDE { return false; }
 };

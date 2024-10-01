@@ -42,11 +42,12 @@ PlotsModelNode::PlotsModelNode(QObject* obj, QObject* parent) : QObject(parent),
     if (obj != nullptr)
     {
         setObjectName(obj->objectName());
-        connect(
-            this, &PlotsModelNode::objectNameChanged, this, [this]() { emit nameChanged(this); });
+        connect(this, &PlotsModelNode::objectNameChanged, this,
+                [this]() { emit nameChanged(this); });
         m_inspector = Inspectors::inspector(obj);
         if (m_inspector != nullptr)
         {
+            set_deletable(m_inspector->deletable(obj));
             m_inspector->connect_node(this, obj);
             for (auto child : m_inspector->children(obj))
             {
@@ -66,8 +67,8 @@ PlotsModelNode* PlotsModelNode::insert_child(QObject* obj, int row)
     connect(node, &QObject::destroyed, this, [this, node]() { _child_destroyed(node); });
     connect(node, &PlotsModelNode::childrenChanged, _root_node(), &PlotsModelNode::childrenChanged);
     connect(node, &PlotsModelNode::nameChanged, _root_node(), &PlotsModelNode::nameChanged);
-    connect(
-        node, &PlotsModelNode::selectionChanged, _root_node(), &PlotsModelNode::selectionChanged);
+    connect(node, &PlotsModelNode::selectionChanged, _root_node(),
+            &PlotsModelNode::selectionChanged);
     emit childrenChanged(this);
     return node;
 }

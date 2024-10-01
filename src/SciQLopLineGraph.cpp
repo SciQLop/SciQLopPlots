@@ -48,7 +48,9 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
                                    const QStringList& labels)
-        : SQPQCPAbstractPlottableWrapper(parent), _keyAxis { key_axis }, _valueAxis { value_axis }
+        : SQPQCPAbstractPlottableWrapper("Line", parent)
+        , _keyAxis { key_axis }
+        , _valueAxis { value_axis }
 {
     create_resampler(labels);
     if (!labels.isEmpty())

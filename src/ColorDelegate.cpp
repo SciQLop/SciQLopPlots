@@ -21,10 +21,12 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 
-ColorDelegate::ColorDelegate(QColor color, QWidget* parent) : QWidget(parent), m_color(color)
+ColorDelegate::ColorDelegate(QColor color, QWidget* parent) : QPushButton(parent)
 {
     setAutoFillBackground(true);
+    setFlat(true);
     setColor(color);
+    connect(this, &QPushButton::clicked, this, &ColorDelegate::pick_color);
 }
 
 void ColorDelegate::setColor(const QColor& color)
@@ -32,7 +34,9 @@ void ColorDelegate::setColor(const QColor& color)
     if (m_color != color)
     {
         m_color = color;
-        setPalette(QPalette(m_color));
+        QPalette palette;
+        palette.setColor(QPalette::Button, m_color);
+        setPalette(palette);
         emit colorChanged(m_color);
     }
 }
@@ -42,9 +46,8 @@ QColor ColorDelegate::color() const
     return m_color;
 }
 
-void ColorDelegate::mousePressEvent(QMouseEvent* event)
+void ColorDelegate::pick_color()
 {
-    Q_UNUSED(event);
     QColorDialog dialog;
     dialog.setCurrentColor(m_color);
     if (dialog.exec() == QDialog::Accepted)

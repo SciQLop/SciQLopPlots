@@ -24,9 +24,9 @@
 #include <QColor>
 #include <QColorDialog>
 
-#include <QWidget>
+#include <QPushButton>
 
-class ColorDelegate : public QWidget
+class ColorDelegate : public QPushButton
 {
     Q_OBJECT
 
@@ -44,5 +44,5 @@ public:
 #endif
 
 protected:
-    void mousePressEvent(QMouseEvent* event) override;
+    Q_SLOT void pick_color();
 };

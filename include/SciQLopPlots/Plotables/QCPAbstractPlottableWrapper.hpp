@@ -54,20 +54,19 @@ class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
     Q_OBJECT
 
 protected:
-    QList<SciQLopGraphComponent*> m_components;
+    QList<QPointer<SciQLopGraphComponent>> m_components;
 
     void _register_component(SciQLopGraphComponent* component);
 
 public:
-    SQPQCPAbstractPlottableWrapper(QCustomPlot* parent) : SciQLopGraphInterface(parent) { }
+    SQPQCPAbstractPlottableWrapper(const QString& prefix, QCustomPlot* parent)
+            : SciQLopGraphInterface(prefix, parent)
+    {
+    }
 
     virtual ~SQPQCPAbstractPlottableWrapper() { clear_plottables(); }
 
-    inline void clear_plottables()
-    {
-        while (!m_components.isEmpty())
-            delete m_components.takeFirst();
-    }
+    inline void clear_plottables() { m_components.clear(); }
 
     const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept
     {
