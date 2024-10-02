@@ -21,9 +21,10 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
+#include <QComboBox>
 #include <QSpinBox>
 
-LineDelegate::LineDelegate(QPen pen, QWidget* parent) : QWidget(parent)
+LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, QWidget* parent) : QWidget(parent)
 {
     m_pen = pen;
     m_layout = new QFormLayout();
@@ -39,6 +40,23 @@ LineDelegate::LineDelegate(QPen pen, QWidget* parent) : QWidget(parent)
                 emit widthChanged(value);
                 emit penChanged(m_pen);
             });
+
+    auto style_qcb = new QComboBox();
+    m_layout->addRow("Style", style_qcb);
+    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::Line),
+                       QVariant::fromValue(GraphLineStyle::Line));
+    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepCenter),
+                       QVariant::fromValue(GraphLineStyle::StepCenter));
+    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepLeft),
+                       QVariant::fromValue(GraphLineStyle::StepLeft));
+    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepRight),
+                       QVariant::fromValue(GraphLineStyle::StepRight));
+    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::NoLine),
+                       QVariant::fromValue(GraphLineStyle::NoLine));
+    style_qcb->setCurrentIndex(style_qcb->findData(QVariant::fromValue(style)));
+    connect(style_qcb, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this, style_qcb](int index)
+            { emit styleChanged(style_qcb->itemData(index).value<GraphLineStyle>()); });
 
     auto color = new ColorDelegate(pen.color());
     m_layout->addRow("Color", color);

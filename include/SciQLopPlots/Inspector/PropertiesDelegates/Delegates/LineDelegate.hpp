@@ -24,6 +24,7 @@
 #include <QColor>
 #include <QColorDialog>
 
+#include "SciQLopPlots/enums.hpp"
 #include <QFormLayout>
 #include <QPen>
 #include <QWidget>
@@ -34,15 +35,16 @@ class LineDelegate : public QWidget
 
     QPen m_pen;
     QFormLayout* m_layout;
+    GraphLineStyle m_style;
 
 public:
-    LineDelegate(QPen pen, QWidget* parent = nullptr);
+    LineDelegate(QPen pen, GraphLineStyle style, QWidget* parent = nullptr);
     virtual ~LineDelegate() = default;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void colorChanged(const QColor& color);
     Q_SIGNAL void widthChanged(int width);
-    Q_SIGNAL void styleChanged(Qt::PenStyle style);
+    Q_SIGNAL void styleChanged(GraphLineStyle style);
     Q_SIGNAL void penChanged(const QPen& pen);
 #endif
 };

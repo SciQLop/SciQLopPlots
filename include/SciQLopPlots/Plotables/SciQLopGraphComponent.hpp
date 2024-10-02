@@ -66,6 +66,40 @@ inline GraphMarkerShape _from_qcp_scatter_style(QCPScatterStyle::ScatterShape sh
     }
 }
 
+inline QCPGraph::LineStyle _to_qcp_line_style(GraphLineStyle style)
+{
+    switch (style)
+    {
+        case GraphLineStyle::Line:
+            return QCPGraph::LineStyle::lsLine;
+        case GraphLineStyle::StepLeft:
+            return QCPGraph::LineStyle::lsStepLeft;
+        case GraphLineStyle::StepRight:
+            return QCPGraph::LineStyle::lsStepRight;
+        case GraphLineStyle::StepCenter:
+            return QCPGraph::LineStyle::lsStepCenter;
+        default:
+            return QCPGraph::LineStyle::lsNone;
+    }
+}
+
+inline GraphLineStyle _from_qcp_line_style(QCPGraph::LineStyle style)
+{
+    switch (style)
+    {
+        case QCPGraph::LineStyle::lsLine:
+            return GraphLineStyle::Line;
+        case QCPGraph::LineStyle::lsStepLeft:
+            return GraphLineStyle::StepLeft;
+        case QCPGraph::LineStyle::lsStepRight:
+            return GraphLineStyle::StepRight;
+        case QCPGraph::LineStyle::lsStepCenter:
+            return GraphLineStyle::StepCenter;
+        default:
+            return GraphLineStyle::NoLine;
+    }
+}
+
 class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 {
     using graph_or_curve = std::variant<QCPGraph*, QCPCurve*, std::monostate>;
@@ -127,15 +161,32 @@ public:
         }
     }
 
+    inline virtual void set_line_style(GraphLineStyle style) noexcept override
+    {
+        if (m_plottable)
+        {
+            std::visit(visitor { [style](QCPGraph* any)
+                                 { any->setLineStyle(_to_qcp_line_style(style)); },
+                                 [style](QCPCurve* any)
+                                 {
+                                     if (style == GraphLineStyle::NoLine)
+                                         any->setLineStyle(QCPCurve::lsNone);
+                                     else
+                                         any->setLineStyle(QCPCurve::lsLine);
+                                 },
+                                 [](std::monostate) {} },
+                       to_variant());
+        }
+    }
+
     inline virtual void set_marker_shape(GraphMarkerShape marker) noexcept override
     {
         if (m_plottable)
         {
-            auto qcp_shape = _to_qcp_scatter_shape(marker);
-            std::visit(visitor { [qcp_shape](auto any)
+            std::visit(visitor { [marker](auto any)
                                  {
                                      auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setShape(qcp_shape);
+                                     scatterStyle.setShape(_to_qcp_scatter_shape(marker));
                                      any->setScatterStyle(scatterStyle);
                                  },
                                  [](std::monostate) {} },
@@ -147,11 +198,10 @@ public:
     {
         if (m_plottable)
         {
-            auto qcp_pen = pen;
-            std::visit(visitor { [qcp_pen](auto any)
+            std::visit(visitor { [pen](auto any)
                                  {
                                      auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setPen(qcp_pen);
+                                     scatterStyle.setPen(pen);
                                      any->setScatterStyle(scatterStyle);
                                  },
                                  [](std::monostate) {} },
@@ -176,14 +226,33 @@ public:
 
     virtual QColor color() const noexcept override;
 
+    inline virtual GraphLineStyle line_style() const noexcept override
+    {
+        if (m_plottable)
+        {
+            return std::visit(visitor { [](QCPGraph* any)
+                                        { return _from_qcp_line_style(any->lineStyle()); },
+                                        [](QCPCurve* any)
+                                        {
+                                            if (any->lineStyle() == QCPCurve::lsNone)
+                                                return GraphLineStyle::NoLine;
+                                            return GraphLineStyle::Line;
+                                        },
+                                        [](std::monostate) { return GraphLineStyle::NoLine; } },
+                              to_variant());
+        }
+        return GraphLineStyle::NoLine;
+    }
+
     inline virtual GraphMarkerShape marker_shape() const noexcept override
     {
         if (m_plottable)
         {
-            std::visit(visitor { [](auto any)
-                                 { return _from_qcp_scatter_style(any->scatterStyle().shape()); },
-                                 [](std::monostate) { return GraphMarkerShape::NoMarker; } },
-                       to_variant());
+            return std::visit(
+                visitor { [](auto any)
+                          { return _from_qcp_scatter_style(any->scatterStyle().shape()); },
+                          [](std::monostate) { return GraphMarkerShape::NoMarker; } },
+                to_variant());
         }
         return GraphMarkerShape::NoMarker;
     }
@@ -192,9 +261,9 @@ public:
     {
         if (m_plottable)
         {
-            std::visit(visitor { [](auto any) { return any->scatterStyle().pen(); },
-                                 [](std::monostate) { return QPen(); } },
-                       to_variant());
+            return std::visit(visitor { [](auto any) { return any->scatterStyle().pen(); },
+                                        [](std::monostate) { return QPen(); } },
+                              to_variant());
         }
         return QPen();
     }

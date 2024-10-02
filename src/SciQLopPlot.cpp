@@ -443,16 +443,6 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
     emit this->plotables_list_changed();
 }
 
-/*SciQLopGraphInterface* SciQLopPlot::plottable_wrapper(QCPAbstractPlottable* plottable)
-{
-    for (auto p : m_plottables)
-    {
-        if (p->contains(plottable))
-            return p;
-    }
-    return nullptr;
-}*/
-
 void SciQLopPlot::_configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale)
 {
     if (!m_color_scale->visible())
