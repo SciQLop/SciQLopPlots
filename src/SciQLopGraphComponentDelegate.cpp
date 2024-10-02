@@ -36,8 +36,10 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
                                                              QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    m_lineDelegate = new LineDelegate(object->pen(), this);
+    m_lineDelegate = new LineDelegate(object->pen(), object->line_style(), this);
     m_layout->addWidget(m_lineDelegate);
     connect(m_lineDelegate, &LineDelegate::penChanged, object,
             &SciQLopGraphComponentInterface::set_pen);
+    connect(m_lineDelegate, &LineDelegate::styleChanged, object,
+            &SciQLopGraphComponentInterface::set_line_style);
 }

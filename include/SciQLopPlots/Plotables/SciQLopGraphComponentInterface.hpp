@@ -46,6 +46,8 @@ public:
 
     inline virtual void set_color(const QColor& color) noexcept { WARN_ABSTRACT_METHOD; }
 
+    inline virtual void set_line_style(GraphLineStyle style) noexcept { WARN_ABSTRACT_METHOD; }
+
     inline virtual void set_marker_shape(GraphMarkerShape marker) noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void set_marker_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
@@ -72,6 +74,12 @@ public:
     {
         WARN_ABSTRACT_METHOD;
         return QColor();
+    }
+
+    inline virtual GraphLineStyle line_style() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return GraphLineStyle::NoLine;
     }
 
     inline virtual GraphMarkerShape marker_shape() const noexcept

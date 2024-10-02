@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <QObject>
+#include <QString>
 
 enum class AxisType
 {
@@ -62,3 +64,45 @@ enum class GraphMarkerShape
     X,
     Custom
 };
+
+
+enum class GraphLineStyle
+{
+    NoLine,
+    Line,
+    StepLeft,
+    StepRight,
+    StepCenter
+};
+
+Q_DECLARE_METATYPE(GraphLineStyle);
+
+inline GraphLineStyle graph_line_style_from_string(const QString& str)
+{
+    if (str == "Line")
+        return GraphLineStyle::Line;
+    if (str == "StepLeft")
+        return GraphLineStyle::StepLeft;
+    if (str == "StepRight")
+        return GraphLineStyle::StepRight;
+    if (str == "StepCenter")
+        return GraphLineStyle::StepCenter;
+    return GraphLineStyle::NoLine;
+}
+
+inline QString graph_line_style_to_string(GraphLineStyle style)
+{
+    switch (style)
+    {
+        case GraphLineStyle::Line:
+            return "Line";
+        case GraphLineStyle::StepLeft:
+            return "StepLeft";
+        case GraphLineStyle::StepRight:
+            return "StepRight";
+        case GraphLineStyle::StepCenter:
+            return "StepCenter";
+        default:
+            return "NoLine";
+    }
+}
