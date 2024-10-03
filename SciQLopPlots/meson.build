@@ -111,6 +111,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -183,6 +184,7 @@ sources = moc_files \
             '../src/SciQLopGraphComponentDelegate.cpp',
             '../src/ColorDelegate.cpp',
             '../src/LineDelegate.cpp',
+            '../src/ColorGradientDelegate.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
