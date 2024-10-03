@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QString>
 
+
 enum class AxisType
 {
     NoneAxis,
@@ -77,6 +78,24 @@ enum class GraphLineStyle
 
 Q_DECLARE_METATYPE(GraphLineStyle);
 
+enum class ColorGradient
+{
+    Grayscale,
+    Hot,
+    Cold,
+    Night,
+    Candy,
+    Geography,
+    Ion,
+    Thermal,
+    Polar,
+    Spectrum,
+    Jet,
+    Hues
+};
+
+Q_DECLARE_METATYPE(ColorGradient);
+
 inline GraphLineStyle graph_line_style_from_string(const QString& str)
 {
     if (str == "Line")
@@ -104,5 +123,67 @@ inline QString graph_line_style_to_string(GraphLineStyle style)
             return "StepCenter";
         default:
             return "NoLine";
+    }
+}
+
+inline ColorGradient color_gradient_from_string(const QString& str)
+{
+    if (str == "Grayscale")
+        return ColorGradient::Grayscale;
+    if (str == "Hot")
+        return ColorGradient::Hot;
+    if (str == "Cold")
+        return ColorGradient::Cold;
+    if (str == "Night")
+        return ColorGradient::Night;
+    if (str == "Candy")
+        return ColorGradient::Candy;
+    if (str == "Geography")
+        return ColorGradient::Geography;
+    if (str == "Ion")
+        return ColorGradient::Ion;
+    if (str == "Thermal")
+        return ColorGradient::Thermal;
+    if (str == "Polar")
+        return ColorGradient::Polar;
+    if (str == "Spectrum")
+        return ColorGradient::Spectrum;
+    if (str == "Jet")
+        return ColorGradient::Jet;
+    if (str == "Hues")
+        return ColorGradient::Hues;
+    return ColorGradient::Grayscale;
+}
+
+inline QString color_gradient_to_string(ColorGradient gradient)
+{
+    switch (gradient)
+    {
+        case ColorGradient::Grayscale:
+            return "Grayscale";
+        case ColorGradient::Hot:
+            return "Hot";
+        case ColorGradient::Cold:
+            return "Cold";
+        case ColorGradient::Night:
+            return "Night";
+        case ColorGradient::Candy:
+            return "Candy";
+        case ColorGradient::Geography:
+            return "Geography";
+        case ColorGradient::Ion:
+            return "Ion";
+        case ColorGradient::Thermal:
+            return "Thermal";
+        case ColorGradient::Polar:
+            return "Polar";
+        case ColorGradient::Spectrum:
+            return "Spectrum";
+        case ColorGradient::Jet:
+            return "Jet";
+        case ColorGradient::Hues:
+            return "Hues";
+        default:
+            return "Grayscale";
     }
 }

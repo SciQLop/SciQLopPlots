@@ -26,21 +26,21 @@
 
 #include "SciQLopPlots/Profiling.hpp"
 
-inline std::vector<double> _generate_range(
-    double start, double end, std::size_t n, bool log = false)
+inline std::vector<double> _generate_range(double start, double end, std::size_t n,
+                                           bool log = false)
 {
     std::vector<double> range(n);
     if (log)
     {
         auto step = std::log10((end - start)) / n;
         std::generate(std::begin(range), std::end(range),
-            [start, step, i = 0]() mutable { return start * std::pow(10, i++ * step); });
+                      [start, step, i = 0]() mutable { return start * std::pow(10, i++ * step); });
     }
     else
     {
         auto step = (end - start) / n;
         std::generate(std::begin(range), std::end(range),
-            [start, step, i = 0]() mutable { return start + i++ * step; });
+                      [start, step, i = 0]() mutable { return start + i++ * step; });
     }
     return range;
 }
@@ -72,7 +72,7 @@ inline double _nan_safe_max(const double a, const double b)
 }
 
 inline std::pair<double, double> _y_bounds(const XYZView& v, std::size_t row, std::size_t n_cols,
-    double min = std::nan(""), double max = std::nan(""))
+                                           double min = std::nan(""), double max = std::nan(""))
 {
     {
         auto j = 0UL;
@@ -118,8 +118,8 @@ inline std::pair<double, double> _y_bounds(const XYZView& v)
 }
 
 template <typename T>
-inline void _divide(
-    QCPColorMapData* data, const T& avg_count, const std::size_t n_x, const std::size_t n_y)
+inline void _divide(QCPColorMapData* data, const T& avg_count, const std::size_t n_x,
+                    const std::size_t n_y)
 {
     PROFILE_HERE;
     for (auto i = 0UL; i < n_x; i++)
@@ -141,8 +141,8 @@ inline void _divide(
 
 template <typename T>
 inline void _average_value(const XYZView& view, QCPColorMapData* data, T& avg_count,
-    std::size_t x_src_idx, std::size_t x_dest_idx, std::size_t y_src_idx, std::size_t y_dest_idx,
-    std::size_t n_y)
+                           std::size_t x_src_idx, std::size_t x_dest_idx, std::size_t y_src_idx,
+                           std::size_t y_dest_idx, std::size_t n_y)
 {
     auto z_val = view.z(x_src_idx, y_src_idx);
     data->setCell(x_dest_idx, y_dest_idx, data->cell(x_dest_idx, y_dest_idx) + z_val);
@@ -151,7 +151,7 @@ inline void _average_value(const XYZView& view, QCPColorMapData* data, T& avg_co
 
 template <typename T>
 inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis, T& avg_count,
-    std::size_t x_src_idx, std::size_t x_dest_idx)
+                    std::size_t x_src_idx, std::size_t x_dest_idx)
 {
     auto n_y = std::size(y_axis);
     auto y_dest_idx = 0UL;
@@ -161,8 +161,8 @@ inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis,
         while (y_dest_idx < (n_y - 1) && y_val > y_axis[y_dest_idx])
         {
             if (y_src_idx > 0 && y_src_idx != view.z_shape().second - 1)
-                _average_value(
-                    view, data, avg_count, x_src_idx, x_dest_idx, y_src_idx - 1, y_dest_idx, n_y);
+                _average_value(view, data, avg_count, x_src_idx, x_dest_idx, y_src_idx - 1,
+                               y_dest_idx, n_y);
             y_dest_idx++;
         }
         _average_value(view, data, avg_count, x_src_idx, x_dest_idx, y_src_idx, y_dest_idx, n_y);
@@ -170,8 +170,8 @@ inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis,
 }
 
 template <typename T>
-inline void _x_loop(
-    const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis, T& avg_count)
+inline void _x_loop(const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis,
+                    T& avg_count)
 {
     PROFILE_HERE;
     auto n_x = std::size(x_axis);
@@ -203,8 +203,8 @@ inline void _x_loop(
 }
 
 template <typename T>
-inline void _copy_and_average(
-    const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis)
+inline void _copy_and_average(const XYZView& view, QCPColorMapData* data, const T& x_axis,
+                              const T& y_axis)
 {
     PROFILE_HERE;
     auto n_x = std::size(x_axis);
@@ -226,7 +226,7 @@ auto _generate_axes(const XYZView& view, std::size_t max_x_size, std::size_t max
 }
 
 void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-    const QCPRange new_range, bool new_data)
+                                       const QCPRange new_range, bool new_data)
 {
     PROFILE_HERE_N("ColormapResampler::_resample_impl");
     if (x.data() != nullptr && x.flat_size())
@@ -234,11 +234,13 @@ void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, con
         const auto view = XYZView(x, y, z, new_range.lower, new_range.upper);
         if (std::size(view) > 10) // less does not make much sense
         {
-            auto [x_axis, y_axis] = _generate_axes(
-                view, this->_max_x_size, this->_max_y_size, _log_scale.loadRelaxed());
+            auto [x_axis, y_axis] = _generate_axes(view, this->_max_x_size, this->_max_y_size,
+                                                   _log_scale.loadRelaxed());
             QCPColorMapData* data = new QCPColorMapData(std::size(x_axis), std::size(y_axis),
-                { x_axis.front(), x_axis.back() }, { y_axis.front(), y_axis.back() });
+                                                        { x_axis.front(), x_axis.back() },
+                                                        { y_axis.front(), y_axis.back() });
             _copy_and_average(view, data, x_axis, y_axis);
+            data->recalculateDataBounds();
             Q_EMIT setGraphData(data);
         }
     }

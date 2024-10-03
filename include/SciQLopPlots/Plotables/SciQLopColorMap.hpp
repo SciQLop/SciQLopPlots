@@ -46,6 +46,8 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
 
+    ColorGradient _gradient;
+
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -78,8 +80,66 @@ public:
 
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
+    inline virtual ColorGradient gradient() const noexcept override { return _gradient; }
+
+    inline virtual void set_gradient(ColorGradient gradient) noexcept override
+    {
+        _gradient = gradient;
+        if (_cmap)
+        {
+            switch (gradient)
+            {
+
+                case ColorGradient::Grayscale:
+                    _cmap->setGradient(QCPColorGradient::gpGrayscale);
+                    break;
+                case ColorGradient::Hot:
+                    _cmap->setGradient(QCPColorGradient::gpHot);
+                    break;
+                case ColorGradient::Cold:
+                    _cmap->setGradient(QCPColorGradient::gpCold);
+                    break;
+                case ColorGradient::Night:
+                    _cmap->setGradient(QCPColorGradient::gpNight);
+                    break;
+                case ColorGradient::Candy:
+                    _cmap->setGradient(QCPColorGradient::gpCandy);
+                    break;
+                case ColorGradient::Geography:
+                    _cmap->setGradient(QCPColorGradient::gpGeography);
+                    break;
+                case ColorGradient::Ion:
+                    _cmap->setGradient(QCPColorGradient::gpIon);
+                    break;
+                case ColorGradient::Thermal:
+                    _cmap->setGradient(QCPColorGradient::gpThermal);
+                    break;
+                case ColorGradient::Polar:
+                    _cmap->setGradient(QCPColorGradient::gpPolar);
+                    break;
+                case ColorGradient::Spectrum:
+                    _cmap->setGradient(QCPColorGradient::gpSpectrum);
+                    break;
+                case ColorGradient::Jet:
+                    _cmap->setGradient(QCPColorGradient::gpJet);
+                    break;
+                case ColorGradient::Hues:
+                    _cmap->setGradient(QCPColorGradient::gpHues);
+                    break;
+            }
+        }
+    }
+
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;
+
+    inline virtual void set_name(const QString& name) noexcept override
+    {
+        this->setObjectName(name);
+        if (_cmap)
+            _cmap->setName(name);
+    }
+
 
 #ifndef BINDINGS_H
     Q_SIGNAL void auto_scale_y_changed(bool);

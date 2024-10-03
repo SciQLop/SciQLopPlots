@@ -47,8 +47,9 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
         , _valueAxis { valueAxis }
 {
     this->_cmap = new QCPColorMap(this->_keyAxis, this->_valueAxis);
-    this->_cmap->setName(name);
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
+    this->set_gradient(ColorGradient::Jet);
+    this->set_name(name);
 
     this->_resampler = new ColormapResampler(_valueAxis->scaleType());
     this->_resampler_thread = new QThread();

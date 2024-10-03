@@ -16,27 +16,48 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
-
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
-#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#pragma once
+#include "SciQLopPlots/enums.hpp"
+#include <QComboBox>
+#include <QString>
+#include <QStyledItemDelegate>
 
-REGISTER_DELEGATE(SciQLopColorMapDelegate);
-
-SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
+class ColorGradientItemDelegate : public QStyledItemDelegate
 {
-    return as_type<SciQLopColorMap>(m_object);
-}
+    Q_OBJECT
 
-SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
+    QSize _text_size_hint(const QString& text) const;
+    QSize _gradient_size_hint() const;
+    int _h_margin = 5;
+    int _v_margin = 5;
+
+public:
+    ColorGradientItemDelegate(QObject* parent = nullptr);
+    virtual ~ColorGradientItemDelegate() = default;
+
+    virtual void paint(QPainter* painter, const QStyleOptionViewItem& option,
+                       const QModelIndex& index) const override;
+    virtual QSize sizeHint(const QStyleOptionViewItem& option,
+                           const QModelIndex& index) const override;
+};
+
+class ColorGradientDelegate : public QComboBox
 {
-    ColorGradientDelegate* gradient = new ColorGradientDelegate(colorMap()->gradient(), this);
-    m_layout->addWidget(gradient);
-    connect(gradient, &ColorGradientDelegate::gradientChanged, this,
-            [this](ColorGradient gradient) { colorMap()->set_gradient(gradient); });
-}
+    Q_OBJECT
+
+    ColorGradient m_gradient;
+
+public:
+    ColorGradientDelegate(ColorGradient gradient, QWidget* parent = nullptr);
+    virtual ~ColorGradientDelegate() = default;
+
+    void setGradient(ColorGradient gradient);
+    ColorGradient gradient() const;
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void gradientChanged(ColorGradient gradient);
+#endif
+};
