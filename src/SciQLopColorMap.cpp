@@ -39,19 +39,19 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
     }
 }
 
-SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-                                 const QString& name)
+SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
+                                 SciQLopPlotAxis* valueAxis, const QString& name)
         : SciQLopColorMapInterface(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
-    this->_cmap = new QCPColorMap(this->_keyAxis, this->_valueAxis);
+    this->_cmap = new QCPColorMap(this->_keyAxis->qcp_axis(), this->_valueAxis->qcp_axis());
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
     this->set_gradient(ColorGradient::Jet);
     this->set_name(name);
 
-    this->_resampler = new ColormapResampler(_valueAxis->scaleType());
+    this->_resampler = new ColormapResampler(_valueAxis->qcp_axis()->scaleType());
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
@@ -60,8 +60,8 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis*
     connect(
         this->_icon_update_timer, &QTimer::timeout, this->_cmap,
         [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
-    connect(this->_valueAxis, &QCPAxis::scaleTypeChanged, this->_resampler,
-            &ColormapResampler::setScaleType);
+    connect(this->_valueAxis->qcp_axis(), &QCPAxis::scaleTypeChanged, this->_resampler,
+            &ColormapResampler::setScaleType, Qt::DirectConnection);
     connect(this->_resampler, &ColormapResampler::setGraphData, this,
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
     this->colorMap()->updateLegendIcon();
@@ -125,9 +125,27 @@ bool SciQLopColorMap::selected() const noexcept
     return _selected;
 }
 
-SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis,
-                                                 QCPAxis* value_axis, GetDataPyCallable&& callable,
-                                                 const QString& name)
+void SciQLopColorMap::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_keyAxis = qcp_axis;
+        this->_cmap->setKeyAxis(this->_keyAxis->qcp_axis());
+    }
+}
+
+void SciQLopColorMap::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_valueAxis = qcp_axis;
+        this->_cmap->setValueAxis(this->_valueAxis->qcp_axis());
+    }
+}
+
+SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                                 SciQLopPlotAxis* value_axis,
+                                                 GetDataPyCallable&& callable, const QString& name)
         : SciQLopColorMap(parent, key_axis, value_axis, name)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);

@@ -22,10 +22,11 @@
 
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 
-void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent *component)
+void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* component)
 {
     m_components.append(component);
-    connect(component, &SciQLopGraphComponent::replot, this, &SQPQCPAbstractPlottableWrapper::replot);
+    connect(component, &SciQLopGraphComponent::replot, this,
+            &SQPQCPAbstractPlottableWrapper::replot);
     Q_EMIT this->component_list_changed();
 }
 
@@ -42,7 +43,7 @@ void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
     if (std::size(labels) == std::size(m_components))
     {
-        for (auto i = 0UL; i < std::size(m_components); ++i)
+        for (decltype(std::size(m_components)) i = 0UL; i < std::size(m_components); ++i)
         {
             m_components[i]->set_name(labels[i]);
         }
@@ -58,7 +59,7 @@ void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 {
     if (std::size(colors) == std::size(m_components))
     {
-        for (std::size_t i = 0; i < std::size(m_components); ++i)
+        for (decltype(std::size(m_components)) i = 0; i < std::size(m_components); ++i)
         {
             m_components[i]->set_color(colors[i]);
         }
@@ -73,7 +74,7 @@ void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 bool SQPQCPAbstractPlottableWrapper::visible() const noexcept
 {
     // True if at least one plottable is visible
-    for (const auto plottable : m_components)
+    for (const auto& plottable : m_components)
     {
         if (plottable->visible())
             return true;
@@ -84,7 +85,7 @@ bool SQPQCPAbstractPlottableWrapper::visible() const noexcept
 QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
 {
     QStringList labels;
-    for (const auto plottable : m_components)
+    for (const auto& plottable : m_components)
     {
         labels.append(plottable->name());
     }
@@ -109,7 +110,7 @@ void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
 bool SQPQCPAbstractPlottableWrapper::selected() const noexcept
 {
     // True if at least one plottable is selected
-    for (const auto plottable : m_components)
+    for (const auto& plottable : m_components)
     {
         if (plottable->selected())
             return true;

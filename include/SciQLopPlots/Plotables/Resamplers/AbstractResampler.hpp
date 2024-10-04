@@ -30,7 +30,7 @@
 static inline QVector<QCPGraphData> copy_data(const XYView& view, std::size_t column_index)
 {
     QVector<QCPGraphData> data(std::size(view));
-    for (auto i = 0UL; i < std::size(data); i++)
+    for (decltype(std::size(data)) i = 0UL; i < std::size(data); i++)
     {
         data[i] = QCPGraphData { view.x(i), view.y(i, column_index) };
     }
@@ -77,13 +77,13 @@ protected:
             }
             if constexpr (data2d)
             {
-                static_cast<U*>(this)->_resample_impl(
-                    _data.x, _data.y, _data.z, _data._plot_range, _data.new_data);
+                static_cast<U*>(this)->_resample_impl(_data.x, _data.y, _data.z, _data._plot_range,
+                                                      _data.new_data);
             }
             else
             {
-                static_cast<U*>(this)->_resample_impl(
-                    _data.x, _data.y, _data._plot_range, _data.new_data);
+                static_cast<U*>(this)->_resample_impl(_data.x, _data.y, _data._plot_range,
+                                                      _data.new_data);
             }
         }
     }
@@ -116,7 +116,6 @@ public:
             static_cast<U*>(this)->resample(_data_x_range);
         }
     }
-
 
     inline QCPRange x_range()
     {
@@ -153,8 +152,8 @@ protected:
     Q_SIGNAL void _resample_sig();
 #endif
 
-    virtual void _resample_impl(
-        const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
+    virtual void _resample_impl(const PyBuffer& x, const PyBuffer& y, const QCPRange new_range,
+                                bool new_data)
         = 0;
 
 public:
@@ -182,7 +181,7 @@ protected:
 #endif
 
     virtual void _resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-        const QCPRange new_range, bool new_data)
+                                const QCPRange new_range, bool new_data)
         = 0;
 
 public:

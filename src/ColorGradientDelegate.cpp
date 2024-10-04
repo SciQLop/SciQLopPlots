@@ -144,8 +144,8 @@ void ColorGradientItemDelegate::paint(QPainter* painter, const QStyleOptionViewI
             painter->restore();
             painter->resetTransform();
             painter->save();
-            painter->translate(rect.x() + tx.width() + _h_margin, rect.y());
-            auto width = rect.width() - tx.width() - _h_margin - _h_margin;
+            painter->translate(rect.width() - _h_margin - sh.width(), rect.y());
+            auto width = sh.width();
             for (auto i = 0; i < width; i++)
             {
                 painter->setPen(gradient.color(double(i) / width, QCPRange(0, 1)));
@@ -158,35 +158,10 @@ void ColorGradientItemDelegate::paint(QPainter* painter, const QStyleOptionViewI
             QStyledItemDelegate::paint(painter, option, index);
         }
     }
-    /*      if index.isValid():
-              data = index.data(Qt.UserRole)
-              if isinstance(data, QCPColorGradient.GradientPreset):
-                  gradient = QCPColorGradient(data)
-                  sh = self._gradient_size_hint()
-                  tx = self._text_size_hint(index.data())
-                  rect: QRect = option.rect
-                  if option.state & QStyle.StateFlag.State_Selected ==
-       QStyle.StateFlag.State_Selected: painter.fillRect(rect, option.palette.highlight())
-                  rect.adjust(+5, 0, -5, 0)
-                  painter.save()
-                  painter.translate(rect.x(), rect.y() + tx.height())
-                  if option.state & QStyle.StateFlag.State_Selected ==
-       QStyle.StateFlag.State_Selected: painter.setPen(option.palette.highlightedText().color())
-                  painter.drawText(0, 0, index.data())
-                  painter.restore()
-                  painter.resetTransform()
-                  painter.save()
-                  painter.translate(rect.x() + tx.width() + self._h_margin, rect.y())
-                  width = rect.width() - tx.width() - self._h_margin - self._h_margin
-                  for i in range(width):
-                      painter.setPen(gradient.color(i / width, QCPRange(0, 1)))
-                      painter.drawLine(i, 0, i, sh.height())
-                  painter.restore()
-              else:
-                  super().paint(painter, option, index)
-          else:
-              super().paint(painter, option, index)
-      */
+    else
+    {
+        QStyledItemDelegate::paint(painter, option, index);
+    }
 }
 
 QSize ColorGradientItemDelegate::sizeHint(const QStyleOptionViewItem& option,

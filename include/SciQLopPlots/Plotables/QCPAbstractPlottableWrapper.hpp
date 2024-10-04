@@ -121,7 +121,7 @@ public:
 
     virtual SciQLopGraphComponentInterface* component(int index) const noexcept override
     {
-        if (index >= plottable_count() || index == -1)
+        if (index == -1 || static_cast<std::size_t>(index) >= plottable_count())
             index = plottable_count() - 1;
         return m_components[index];
     }

@@ -32,6 +32,8 @@
 #include <QObject>
 #include <utility>
 
+class SciQLopPlotAxisInterface;
+
 class SciQLopPlottableInterface : public QObject
 {
     Q_OBJECT
@@ -78,6 +80,39 @@ public:
     {
         WARN_ABSTRACT_METHOD;
         return false;
+    }
+
+    inline virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_z_axis(SciQLopPlotAxisInterface* axis) noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual SciQLopPlotAxisInterface* x_axis() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline virtual SciQLopPlotAxisInterface* y_axis() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
     }
 
 #ifndef BINDINGS_H

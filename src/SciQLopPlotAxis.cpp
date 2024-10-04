@@ -27,8 +27,8 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent)
         : SciQLopPlotAxisInterface(parent), m_axis(axis)
 {
     connect(axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
 }
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
@@ -53,7 +53,7 @@ void SciQLopPlotAxis::set_visible(bool visible) noexcept
 
 void SciQLopPlotAxis::set_log(bool log) noexcept
 {
-    if (!m_axis.isNull() && m_axis->scaleType() == QCPAxis::stLogarithmic != log)
+    if (!m_axis.isNull() && (m_axis->scaleType() == QCPAxis::stLogarithmic) != log)
     {
         if (log)
         {
@@ -182,8 +182,8 @@ SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObjec
         : SciQLopPlotAxis(axis->axis(), parent), m_axis(axis)
 {
     connect(axis, QOverload<const QCPRange&>::of(&QCPColorScale::dataRangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
 }
 
 void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcept
@@ -209,7 +209,7 @@ void SciQLopPlotColorScaleAxis::set_visible(bool visible) noexcept
 
 void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
 {
-    if (!m_axis.isNull() && m_axis->dataScaleType() == QCPAxis::stLogarithmic != log)
+    if (!m_axis.isNull() && (m_axis->dataScaleType() == QCPAxis::stLogarithmic) != log)
     {
         if (log)
         {
