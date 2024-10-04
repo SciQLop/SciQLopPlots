@@ -136,7 +136,7 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
 {
     if (m_color_map == nullptr)
     {
-        m_color_map = new SciQLopColorMap(this, this->xAxis, this->yAxis2, name);
+        m_color_map = new SciQLopColorMap(this, this->m_axes[0], this->m_axes[3], name);
         _configure_color_map(m_color_map, y_log_scale, z_log_scale);
         _register_plottable_wrapper(m_color_map);
         return m_color_map;
@@ -150,7 +150,7 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
 {
     if (m_color_map == nullptr)
     {
-        m_color_map = new SciQLopColorMapFunction(this, this->xAxis, this->yAxis2,
+        m_color_map = new SciQLopColorMapFunction(this, this->m_axes[0], this->m_axes[3],
                                                   std::move(callable), name);
         _configure_color_map(m_color_map, y_log_scale, z_log_scale);
         _register_plottable_wrapper(m_color_map);

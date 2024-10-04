@@ -58,11 +58,12 @@ extern "C"
 #define SKIP_PYTHON_INTERFACE_CPP
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
-
 struct PyAutoScopedGIL
 {
     PyGILState_STATE gstate;
+
     PyAutoScopedGIL() { gstate = PyGILState_Ensure(); }
+
     ~PyAutoScopedGIL() { PyGILState_Release(gstate); }
 };
 
@@ -76,7 +77,6 @@ inline void _inc_ref(PyObject* obj)
     Py_INCREF(obj);
     PyGILState_Release(state);
 }
-
 
 inline void _dec_ref(PyObject* obj)
 {
@@ -99,16 +99,21 @@ struct PyObjectWrapper
 {
 private:
     std::shared_ptr<PyObject> _py_obj = nullptr;
+
     inline void share(const PyObjectWrapper& other) { this->_py_obj = other._py_obj; }
 
 public:
     inline PyObjectWrapper() : _py_obj { nullptr } { }
+
     inline PyObjectWrapper(const PyObjectWrapper& other) : _py_obj { nullptr }
     {
         this->share(other);
     }
+
     inline PyObjectWrapper(PyObjectWrapper&& other) : _py_obj { nullptr } { this->share(other); }
+
     explicit PyObjectWrapper(PyObject* obj) : _py_obj { nullptr } { this->set_obj(obj); }
+
     ~PyObjectWrapper() { }
 
     inline PyObjectWrapper& operator=(PyObjectWrapper&& other)
@@ -116,6 +121,7 @@ public:
         this->share(other);
         return *this;
     }
+
     inline PyObjectWrapper& operator=(const PyObjectWrapper& other)
     {
         this->share(other);
@@ -131,11 +137,10 @@ public:
         }
     }
 
-
     inline PyObject* py_object() const { return _py_obj.get(); }
+
     inline bool is_null() const { return _py_obj == nullptr; }
 };
-
 
 struct _PyBuffer_impl : PyObjectWrapper
 {
@@ -146,7 +151,9 @@ struct _PyBuffer_impl : PyObjectWrapper
     bool is_row_major = true;
 
     _PyBuffer_impl() = default;
+
     explicit _PyBuffer_impl(PyObject* obj) { this->init_buffer(obj); }
+
     ~_PyBuffer_impl() { this->release(); }
 
     inline void init_buffer(PyObject* obj)
@@ -155,7 +162,8 @@ struct _PyBuffer_impl : PyObjectWrapper
         {
             auto scoped_gil = PyAutoScopedGIL();
             this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
-                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS | PyBUF_FORMAT)
+                                                PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS
+                                                    | PyBUF_FORMAT)
                 == 0;
         }
         if (!this->is_valid)
@@ -186,7 +194,6 @@ struct _PyBuffer_impl : PyObjectWrapper
         }
     }
 };
-
 
 void PyBuffer::share(const PyBuffer& other)
 {
@@ -254,7 +261,8 @@ std::size_t PyBuffer::size(std::size_t index) const
 {
     if (is_valid())
     {
-        if (static_cast<int>(index) < std::size(this->_impl->shape))
+        if (static_cast<decltype(std::size(this->_impl->shape))>(index)
+            < std::size(this->_impl->shape))
         {
             return this->_impl->shape[index];
         }
@@ -297,7 +305,6 @@ PyObject* PyBuffer::py_object() const
     return nullptr;
 }
 
-
 void PyBuffer::release() { }
 
 std::size_t PyBuffer::flat_size() const
@@ -309,7 +316,6 @@ std::size_t PyBuffer::flat_size() const
     return 0;
 }
 
-
 struct _GetDataPyCallable_impl
 {
     PyObjectWrapper _py_obj;
@@ -318,13 +324,13 @@ struct _GetDataPyCallable_impl
     _GetDataPyCallable_impl() = default;
     _GetDataPyCallable_impl(const _GetDataPyCallable_impl&) = default;
     _GetDataPyCallable_impl(_GetDataPyCallable_impl&&) = default;
+
     _GetDataPyCallable_impl(PyObject* obj) { this->_init_callable(obj); }
 
     ~_GetDataPyCallable_impl() { }
 
     _GetDataPyCallable_impl& operator=(const _GetDataPyCallable_impl&) = default;
     _GetDataPyCallable_impl& operator=(_GetDataPyCallable_impl&&) = default;
-
 
     inline void _init_callable(PyObject* obj)
     {
@@ -445,7 +451,6 @@ struct _GetDataPyCallable_impl
     }
 };
 
-
 void GetDataPyCallable::steal(GetDataPyCallable& other)
 {
     if (is_valid())
@@ -483,7 +488,6 @@ GetDataPyCallable::GetDataPyCallable(GetDataPyCallable&& other)
 {
     steal(other);
 }
-
 
 GetDataPyCallable& GetDataPyCallable::operator=(const GetDataPyCallable& other)
 {

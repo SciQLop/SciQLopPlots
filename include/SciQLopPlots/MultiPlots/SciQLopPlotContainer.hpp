@@ -57,7 +57,7 @@ public:
     inline virtual int index(const QPointF& pos) const Q_DECL_OVERRIDE
     {
         const auto _plots = plots();
-        for (auto i = 0UL; i < _plots.size(); i++)
+        for (decltype(_plots.size()) i = 0; i < _plots.size(); i++)
         {
             auto plot = _plots[i];
             if (plot->geometry().contains(pos.toPoint()))

@@ -33,7 +33,7 @@ void SciQLopMultiPlotObject::replotAll()
     for (auto& plot : m_plots)
     {
         if (plot)
-            plot->replot(QCustomPlot::rpQueuedReplot);
+            plot->replot(false);
     }
 }
 
@@ -42,8 +42,8 @@ SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* p
 {
     if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
         connect(dynamic_cast<QObject*>(parent),
-            SIGNAL(plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>&)), this,
-            SLOT(updatePlotList(const QList<QPointer<SciQLopPlotInterface>>&)));
+                SIGNAL(plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>&)), this,
+                SLOT(updatePlotList(const QList<QPointer<SciQLopPlotInterface>>&)));
     else
         throw std::runtime_error("Invalid parent type");
 }

@@ -22,6 +22,7 @@
 #pragma once
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -40,8 +41,8 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     QTimer* _icon_update_timer;
 
     QCPRange _data_x_range;
-    QCPAxis* _keyAxis;
-    QCPAxis* _valueAxis;
+    SciQLopPlotAxis* _keyAxis;
+    SciQLopPlotAxis* _valueAxis;
     QPointer<QCPColorMap> _cmap;
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
@@ -68,8 +69,8 @@ class SciQLopColorMap : public SciQLopColorMapInterface
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
-                             const QString& name);
+    explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
+                             SciQLopPlotAxis* valueAxis, const QString& name);
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
@@ -127,6 +128,7 @@ public:
                     _cmap->setGradient(QCPColorGradient::gpHues);
                     break;
             }
+            _cmap->gradient().setNanHandling(QCPColorGradient::nhTransparent);
         }
     }
 
@@ -139,6 +141,16 @@ public:
         if (_cmap)
             _cmap->setName(name);
     }
+
+    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
+
+    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
+
+    virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return nullptr; }
 
 
 #ifndef BINDINGS_H
@@ -160,8 +172,9 @@ class SciQLopColorMapFunction : public SciQLopColorMap
     }
 
 public:
-    explicit SciQLopColorMapFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-                                     GetDataPyCallable&& callable, const QString& name);
+    explicit SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                     SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
+                                     const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
 
