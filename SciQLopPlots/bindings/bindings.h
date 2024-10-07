@@ -38,6 +38,11 @@
 #include <SciQLopPlots/SciQLopPlotRange.hpp>
 #include <SciQLopPlots/SciQLopTimeSeriesPlot.hpp>
 #include <SciQLopPlots/enums.hpp>
+
+#include <Products/ProductsModel.hpp>
+#include <Products/ProductsNode.hpp>
+#include <Products/ProductsView.hpp>
+
 #include <qcustomplot.h>
 
 #endif // SCIQLOPPLOTS_BINDINGS_H

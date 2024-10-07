@@ -27,13 +27,13 @@
 
 REGISTER_DELEGATE(SciQLopMultiPlotPanelDelegate);
 
-SciQLopMultiPlotPanel *SciQLopMultiPlotPanelDelegate::panel() const { return as_type<SciQLopMultiPlotPanel>(m_object); }
+SciQLopMultiPlotPanel* SciQLopMultiPlotPanelDelegate::panel() const
+{
+    return as_type<SciQLopMultiPlotPanel>(m_object);
+}
 
-SciQLopMultiPlotPanelDelegate::SciQLopMultiPlotPanelDelegate(SciQLopMultiPlotPanel *object, QWidget* parent)
+SciQLopMultiPlotPanelDelegate::SciQLopMultiPlotPanelDelegate(SciQLopMultiPlotPanel* object,
+                                                             QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    auto layout = new QVBoxLayout(this);
-    auto button = new QPushButton("Multi Plot Panel", this);
-    layout->addWidget(button);
-    setLayout(layout);
 }

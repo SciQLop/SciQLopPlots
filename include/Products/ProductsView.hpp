@@ -19,23 +19,24 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/View/PropertiesPanel.hpp"
-#include "SciQLopPlots/Inspector/View/InspectorView.hpp"
-#include "SciQLopPlots/Inspector/View/PropertiesView.hpp"
-#include <QSplitter>
-#include <QVBoxLayout>
+#pragma once
+#include <QObject>
+#include <QWidget>
 
-PropertiesPanel::PropertiesPanel(QWidget* parent)
+class QLineEdit;
+class QTreeView;
+class QCompleter;
+class QSortFilterProxyModel;
+
+class ProductsView : public QWidget
 {
-    this->setWindowTitle("Properties");
-    auto splitter = new QSplitter(Qt::Vertical, this);
-    splitter->setChildrenCollapsible(false);
-    setLayout(new QVBoxLayout(this));
-    layout()->addWidget(splitter);
-    m_inspectorView = new InspectorView(this);
-    m_propertiesView = new PropertiesView(this);
-    splitter->addWidget(m_inspectorView);
-    splitter->addWidget(m_propertiesView);
-    connect(m_inspectorView, &InspectorView::objects_selected, m_propertiesView,
-            &PropertiesView::set_current_objects);
-}
+    Q_OBJECT
+    QTreeView* m_tree_view;
+    QLineEdit* m_search_line_edit;
+    QCompleter* m_completer;
+    QSortFilterProxyModel* m_proxy_model;
+
+public:
+    ProductsView(QWidget* parent = nullptr);
+    virtual ~ProductsView() = default;
+};

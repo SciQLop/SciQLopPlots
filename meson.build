@@ -15,7 +15,8 @@ extra_files=files(
     'Docker/build.sh',
     'README.md', 'COPYING',
     'tests/sanity/signal_and_slots.sh',
-    'tests/manual-tests/common.py'
+    'tests/manual-tests/common.py',
+    'resources/resources.qrc'
 )
 
 if get_option('buildtype').startswith('release')

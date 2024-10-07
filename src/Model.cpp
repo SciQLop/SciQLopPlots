@@ -161,6 +161,7 @@ void PlotsModel::addTopLevelNode(QObject* obj)
     beginInsertRows(QModelIndex(), m_rootNode->children_count(), m_rootNode->children_count());
     m_rootNode->insert_child(obj);
     endInsertRows();
+    Q_EMIT top_level_nodes_list_changed();
 }
 
 Q_APPLICATION_STATIC(PlotsModel, _plots_model);
