@@ -14,7 +14,11 @@
     <enum-type name="GraphType"/>
     <enum-type name="PlotType"/>
     <enum-type name="AxisType"/>
-    <enum-type name="GraphMarker"/>
+    <enum-type name="GraphMarkerShape"/>
+    <enum-type name="GraphLineStyle"/>
+    <enum-type name="ColorGradient"/>
+    <enum-type name="ProductsModelNodeType"/>
+
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr"/>
 
 
@@ -245,6 +249,16 @@
     <object-type name="InspectorView" parent-management="yes"/>
     <object-type name="PropertyDelegateBase" parent-management="yes"/>
     <object-type name="PropertiesPanel" parent-management="yes"/>
+
+    <object-type name="ProductsView" parent-management="yes"/>
+    <object-type name="ProductsModel" parent-management="yes">
+        <modify-function signature="add_node(QStringList, ProductsModelNode*)">
+          <modify-argument index="2">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="ProductsModelNode" parent-management="yes"/>
 </typesystem>
 
 

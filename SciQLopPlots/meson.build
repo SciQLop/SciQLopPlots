@@ -107,11 +107,15 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp',
+    project_source_root + '/include/Products/ProductsModel.hpp',
+    project_source_root + '/include/Products/ProductsNode.hpp',
+    project_source_root + '/include/Products/ProductsView.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -122,13 +126,15 @@ headers = moc_headers + \
 
 includes = include_directories(['../include', '../qcustomplot-source'])
 
-moc_files = qtmod.preprocess(
-                            moc_headers : moc_headers,
-                            moc_sources : moc_sources,
+moc_files = qtmod.compile_moc(
+                            headers : moc_headers,
+                            sources : moc_sources,
                             include_directories : includes)
 
+resources_files = qtmod.compile_resources(sources : ['../resources/resources.qrc'])
 
 sources = moc_files \
+        + resources_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [
@@ -182,9 +188,13 @@ sources = moc_files \
             '../src/SciQLopGraphDelegate.cpp',
             '../src/SciQLopColorMapDelegate.cpp',
             '../src/SciQLopGraphComponentDelegate.cpp',
+            '../src/SciQLopPlotAxisDelegate.cpp',
             '../src/ColorDelegate.cpp',
             '../src/LineDelegate.cpp',
             '../src/ColorGradientDelegate.cpp',
+            '../src/ProductsModel.cpp',
+            '../src/ProductsNode.cpp',
+            '../src/ProductsView.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 

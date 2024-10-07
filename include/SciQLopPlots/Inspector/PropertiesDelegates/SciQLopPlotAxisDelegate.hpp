@@ -19,23 +19,21 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/View/PropertiesPanel.hpp"
-#include "SciQLopPlots/Inspector/View/InspectorView.hpp"
-#include "SciQLopPlots/Inspector/View/PropertiesView.hpp"
-#include <QSplitter>
-#include <QVBoxLayout>
+#pragma once
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 
-PropertiesPanel::PropertiesPanel(QWidget* parent)
+class SciQLopPlotAxisInterface;
+
+class SciQLopPlotAxisDelegate : public PropertyDelegateBase
 {
-    this->setWindowTitle("Properties");
-    auto splitter = new QSplitter(Qt::Vertical, this);
-    splitter->setChildrenCollapsible(false);
-    setLayout(new QVBoxLayout(this));
-    layout()->addWidget(splitter);
-    m_inspectorView = new InspectorView(this);
-    m_propertiesView = new PropertiesView(this);
-    splitter->addWidget(m_inspectorView);
-    splitter->addWidget(m_propertiesView);
-    connect(m_inspectorView, &InspectorView::objects_selected, m_propertiesView,
-            &PropertiesView::set_current_objects);
-}
+    Q_OBJECT
+
+    SciQLopPlotAxisInterface* plot() const;
+
+
+public:
+    using compatible_type = SciQLopPlotAxisInterface;
+    SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* object, QWidget* parent = nullptr);
+
+    virtual ~SciQLopPlotAxisDelegate() = default;
+};

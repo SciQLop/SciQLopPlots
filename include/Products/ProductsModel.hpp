@@ -20,23 +20,27 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Inspector/Model/Node.hpp"
+#include "Products/ProductsNode.hpp"
 #include <QAbstractItemModel>
 #include <QObject>
+#include <QStringListModel>
 
-class PlotsModel : public QAbstractItemModel
+class ProductsModel : public QAbstractItemModel
 {
     Q_OBJECT
-    PlotsModelNode* m_rootNode;
+    ProductsModelNode* m_rootNode;
+    QStringListModel* m_completer_model;
 
-    Q_SLOT void node_changed(PlotsModelNode* node);
-    Q_SLOT void node_selection_changed(PlotsModelNode* node, bool selected);
-    QModelIndex make_index(PlotsModelNode* node);
+    QModelIndex make_index(ProductsModelNode* node);
 
+    void _add_to_completer(const QString& value);
+    void _add_to_completer(ProductsModelNode* node);
+
+    void _insert_node(ProductsModelNode* node, ProductsModelNode* parent);
 
 public:
-    PlotsModel(QObject* parent = nullptr);
-    ~PlotsModel() = default;
+    ProductsModel(QObject* parent = nullptr);
+    ~ProductsModel() = default;
 
     QModelIndex index(int row, int column,
                       const QModelIndex& parent = QModelIndex()) const override;
@@ -46,17 +50,9 @@ public:
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+    inline QStringListModel* completer_model() const { return m_completer_model; }
 
-    void set_selected(const QList<QModelIndex>& indexes, bool selected);
+    Q_SLOT void add_node(QStringList path, ProductsModelNode* obj);
 
-    Q_SLOT void addTopLevelNode(QObject* obj);
-
-    static PlotsModel* instance();
-    static QObject* object(const QModelIndex& index);
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
-    Q_SIGNAL void top_level_nodes_list_changed();
-#endif // !BINDINGS_H
+    static ProductsModel* instance();
 };
