@@ -8,7 +8,7 @@ on:
 
 env:
   PYSIDE_VERSION: 6.7.1
-  PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
+  #PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
 
 jobs:
   build_sdist:
@@ -36,7 +36,7 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-          - os: windows-latest
+          - os: windows-2019
             arch: x86_64
           - os: macos-13  # Intel
             arch: x86_64
@@ -53,7 +53,7 @@ jobs:
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.1
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
@@ -73,7 +73,7 @@ jobs:
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.7 --exclude libshiboken6.abi3.so.6.7 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.7 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat manylinux_2_28_x86_64 {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_SKIP: "*-win32 *i686 *38-* pp* *musllinux*"
+          CIBW_SKIP: "*-win32 *i686 *38-* pp* *musllinux* *313*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
 

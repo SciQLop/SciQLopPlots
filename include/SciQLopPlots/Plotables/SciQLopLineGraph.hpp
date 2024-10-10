@@ -50,25 +50,26 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
+
     inline const QList<QCPGraph*> lines() const noexcept
     {
         QList<QCPGraph*> graphs;
-        for (auto plottable : m_plottables)
-            graphs.append(qobject_cast<QCPGraph*>(plottable));
+        for (auto plottable : m_components)
+            graphs.append(qobject_cast<QCPGraph*>(plottable->plottable()));
         return graphs;
     }
 
     inline QCPGraph* line(std::size_t index) const
     {
         if (index < plottable_count())
-            return qobject_cast<QCPGraph*>(m_plottables[index]);
+            return qobject_cast<QCPGraph*>(m_components[index]->plottable());
         return nullptr;
     }
 
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        const QStringList& labels = QStringList());
+                              const QStringList& labels = QStringList());
 
     virtual ~SciQLopLineGraph() override;
 
@@ -81,7 +82,6 @@ private:
     void create_graphs(const QStringList& labels);
 };
 
-
 class SciQLopLineGraphFunction : public SciQLopLineGraph
 {
     Q_OBJECT
@@ -91,9 +91,10 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph
 
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
-        GetDataPyCallable&& callable, const QStringList& labels);
+                                      GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopLineGraphFunction() override = default;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 };

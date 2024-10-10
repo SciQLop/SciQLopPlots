@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 import threading
 from typing import Dict, Any
 
+from SciQLopPlots import PropertiesPanel
+
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
@@ -26,6 +28,7 @@ class Tabs(QTabWidget):
 
     def add_tab(self, widget, title):
         self.addTab(widget, title)
+        widget.setObjectName(title)
 
 
 
@@ -66,6 +69,11 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, dock)
         self.ipython_widget.kernel_manager = self.kernel_manager
         self.ipython_widget.kernel_client = self.kernel_client
+
+        self.properties_panel = PropertiesPanel(self)
+        dock = QDockWidget("Properties panel", self)
+        dock.setWidget(self.properties_panel)
+        self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
 
 

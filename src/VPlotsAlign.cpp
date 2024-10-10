@@ -32,12 +32,11 @@ public:
     }
 };
 
-
 void VPlotsAlign::_recompute_margins()
 {
     std::size_t max_left_margin = 0UL;
     std::size_t max_right_pos = 1000000000UL;
-    for (auto p : _plots)
+    for (auto& p : _plots)
     {
         auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
         std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
@@ -51,7 +50,7 @@ void VPlotsAlign::_recompute_margins()
         max_left_margin = std::max(max_left_margin, left_margin);
         max_right_pos = std::min(max_right_pos, p->width() - cmw);
     }
-    for (auto p : _plots)
+    for (auto& p : _plots)
     {
         auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
         std::size_t new_right_margin = p->width() - max_right_pos;
@@ -76,14 +75,14 @@ void VPlotsAlign::_recompute_margins()
 
 VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent) { }
 
-void VPlotsAlign::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
+void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
     _plots = only_sciqlopplots(plots);
     if (!_plots.isEmpty())
     {
         _recompute_margins();
     }
-    for (auto p : _plots)
+    for (auto& p : _plots)
     {
         connect(p, &SciQLopPlot::y_axis_range_changed, this,
             [this](SciQLopPlotRange) { _recompute_margins(); });

@@ -20,37 +20,17 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
+
 #include <QGestureRecognizer>
 #include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
-#include <type_traits>
+#include <utility>
 
-template <typename T>
-inline void _set_selected(T* plottable, bool selected)
-{
-    if (plottable->selected() != selected)
-    {
-        if (selected)
-            plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
-        else
-            plottable->setSelection(QCPDataSelection());
-    }
-}
-
-inline void _set_selected(QCPAbstractPlottable* plottable, bool selected)
-{
-    if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
-    {
-        _set_selected(graph, selected);
-    }
-    else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
-    {
-        _set_selected(curve, selected);
-    }
-}
 namespace _impl
 {
 
@@ -61,14 +41,14 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->m_replot_timer->setSingleShot(true);
     this->m_replot_timer->setInterval(10);
     connect(this->m_replot_timer, &QTimer::timeout, this,
-        [this]() { QCustomPlot::replot(rpQueuedReplot); });
+            [this]() { QCustomPlot::replot(rpQueuedReplot); });
     connect(this, &QCustomPlot::afterReplot, this, [this]() { m_replot_pending = false; });
     using namespace Constants;
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
-    this->addLayer(
-        LayersNames::SpansBorders, this->layer(LayersNames::Spans), QCustomPlot::limAbove);
+    this->addLayer(LayersNames::SpansBorders, this->layer(LayersNames::Spans),
+                   QCustomPlot::limAbove);
     this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::SpansBorders)->setVisible(true);
     this->setFocusPolicy(Qt::StrongFocus);
@@ -78,29 +58,33 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->m_tracer = new TracerWithToolTip(this);
     this->setMouseTracking(true);
     this->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables
-        | QCP::iSelectAxes | QCP::iSelectLegend | QCP::iSelectItems | QCP::iMultiSelect);
+                          | QCP::iSelectAxes | QCP::iSelectLegend | QCP::iSelectItems
+                          | QCP::iMultiSelect);
 
 
     connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
     connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
     connect(this->xAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT x2_axis_range_changed({ range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT x2_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT y_axis_range_changed({ range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT y_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
-        [this](const QCPRange& range)
-        { Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
+            [this](const QCPRange& range)
+            { Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
+
+    m_color_scale = new QCPColorScale(this);
+    m_color_scale->setVisible(false);
 
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis2, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this));
-    m_color_scale = new QCPColorScale(this);
-    m_color_scale->setVisible(false);
+    this->m_axes.append(new SciQLopPlotColorScaleAxis(this->m_color_scale, this));
+
 #ifdef QCUSTOMPLOT_USE_OPENGL
     setOpenGl(true, 4);
 #endif
@@ -126,14 +110,14 @@ QCPColorMap* SciQLopPlot::addColorMap()
     return cm;
 }
 
-SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(int index)
+SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(int index)
 {
     if (index == -1 || index >= std::size(m_plottables))
         index = std::size(m_plottables) - 1;
     return m_plottables[index];
 }
 
-SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(const QString& name)
+SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(const QString& name)
 {
     for (auto p : m_plottables)
     {
@@ -143,35 +127,34 @@ SQPQCPAbstractPlottableWrapper* SciQLopPlot::sqp_plottable(const QString& name)
     return nullptr;
 }
 
-
-SciQLopColorMap* SciQLopPlot::addSciQLopColorMap(
-    const QString& name, bool y_log_scale, bool z_log_scale)
+const QList<SciQLopPlottableInterface*>& SciQLopPlot::sqp_plottables() const
 {
-    if (!m_color_scale->visible())
-    {
-        if (y_log_scale)
-        {
-            set_axis_log(QCPAxis::atRight, true);
-        }
-        set_axis_visible(QCPAxis::atRight, true);
-        auto cmap = this->_new_plottable_wrapper<SciQLopColorMap>(this->xAxis, this->yAxis2, name);
-        m_color_scale->setVisible(true);
-        plotLayout()->addElement(0, 1, m_color_scale);
-        cmap->colorMap()->setColorScale(m_color_scale);
-        cmap->colorMap()->setInterpolate(false);
-        if (z_log_scale)
-        {
-            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->axis()->setTicker(
-                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-        }
+    return m_plottables;
+}
 
-        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
-        gradient.setNanHandling(QCPColorGradient::nhTransparent);
-        cmap->colorMap()->setGradient(gradient);
-        cmap->set_auto_scale_y(true);
-        return cmap;
+SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scale, bool z_log_scale)
+{
+    if (m_color_map == nullptr)
+    {
+        m_color_map = new SciQLopColorMap(this, this->m_axes[0], this->m_axes[3], name);
+        _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        _register_plottable_wrapper(m_color_map);
+        return m_color_map;
+    }
+    return nullptr;
+}
+
+SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable,
+                                                    const QString& name, bool y_log_scale,
+                                                    bool z_log_scale)
+{
+    if (m_color_map == nullptr)
+    {
+        m_color_map = new SciQLopColorMapFunction(this, this->m_axes[0], this->m_axes[3],
+                                                  std::move(callable), name);
+        _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        _register_plottable_wrapper(m_color_map);
+        return qobject_cast<SciQLopColorMapFunction*>(m_color_map);
     }
     return nullptr;
 }
@@ -194,7 +177,7 @@ void SciQLopPlot::minimize_margins()
 QMargins SciQLopPlot::minimal_axis_margins()
 {
     return QMargins(_minimal_margin(QCP::msLeft), _minimal_margin(QCP::msTop),
-        _minimal_margin(QCP::msRight), _minimal_margin(QCP::msBottom));
+                    _minimal_margin(QCP::msRight), _minimal_margin(QCP::msBottom));
 }
 
 void SciQLopPlot::replot(RefreshPriority priority)
@@ -212,7 +195,6 @@ void SciQLopPlot::replot(RefreshPriority priority)
         }
     }
 }
-
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 {
@@ -248,8 +230,8 @@ void SciQLopPlot::mouseReleaseEvent(QMouseEvent* event)
 void SciQLopPlot::_wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
 {
     const auto factor = qPow(axis->axisRect()->rangeZoomFactor(axis->orientation()), wheelSteps);
-    axis->scaleRange(
-        factor, axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
+    axis->scaleRange(factor,
+                     axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
 }
 
 int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
@@ -257,11 +239,25 @@ int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
     return 0;
 }
 
-
 void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
 {
-    axis->moveRange(wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.
-        * axis->range().size());
+    if (axis->scaleType() == QCPAxis::stLinear)
+    {
+        axis->moveRange(wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100.
+                        * axis->range().size());
+    }
+    else
+    {
+        auto size = log10(axis->range().upper) - log10(axis->range().lower);
+        if (wheelSteps > 0)
+            axis->moveRange(std::pow(
+                10, wheelSteps * m_scroll_factor * QApplication::wheelScrollLines() / 100. * size));
+        else
+            axis->moveRange(1.
+                            / std::pow(10,
+                                       -wheelSteps * m_scroll_factor
+                                           * QApplication::wheelScrollLines() / 100. * size));
+    }
 }
 
 void SciQLopPlot::wheelEvent(QWheelEvent* event)
@@ -299,14 +295,14 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
     auto items = selectedItems();
     std::for_each(items.begin(), items.end(),
-        [event](auto item)
-        {
-            if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
-                sciItem != nullptr)
-            {
-                sciItem->keyPressEvent(event);
-            }
-        });
+                  [event](auto item)
+                  {
+                      if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
+                          sciItem != nullptr)
+                      {
+                          sciItem->keyPressEvent(event);
+                      }
+                  });
     if (event->key() == Qt::Key_Escape)
     {
         for (auto item : items)
@@ -333,7 +329,6 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
     }
     QCustomPlot::keyPressEvent(event);
 }
-
 
 bool SciQLopPlot::event(QEvent* event)
 {
@@ -418,8 +413,8 @@ QCPGraph* SciQLopPlot::_nearest_graph(const QPointF& pos)
     return plottableAt<QCPGraph>(pos, false);
 }
 
-std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
-    const QPointF& pos, QCPGraph* graph)
+std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(const QPointF& pos,
+                                                                           QCPGraph* graph)
 {
     QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
     QVariant details;
@@ -435,38 +430,44 @@ std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(
     return std::nullopt;
 }
 
-void SciQLopPlot::_register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable)
+void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottable)
 {
-    for (auto qcp_plottable : plottable->qcp_plottables())
-    {
-        _register_plottable(qcp_plottable);
-    }
     m_plottables.append(plottable);
-    connect(plottable, &SQPQCPAbstractPlottableWrapper::plottable_created, this,
-        &SciQLopPlot::_register_plottable);
-    connect(plottable, &SQPQCPAbstractPlottableWrapper::destroyed, this,
-        [this, plottable]() { m_plottables.removeOne(plottable); });
-    connect(plottable, &SQPQCPAbstractPlottableWrapper::replot, this, [this]() { this->replot(); });
+    connect(plottable, &SciQLopGraphInterface::destroyed, this,
+            [this, plottable]()
+            {
+                m_plottables.removeOne(plottable);
+                emit this->plotables_list_changed();
+            });
+    connect(plottable, &SciQLopGraphInterface::replot, this, [this]() { this->replot(); });
+    emit this->plotables_list_changed();
 }
 
-void SciQLopPlot::_register_plottable(QCPAbstractPlottable* plotable)
+void SciQLopPlot::_configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale)
 {
-    connect(plotable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
-        [this, plotable](bool selected)
-        {
-            auto item = this->legend->itemWithPlottable(plotable);
-            if (item && item->selected() != selected)
-                item->setSelected(selected);
-        });
-
-    if (auto legend_item = this->legend->itemWithPlottable(plotable); legend_item)
+    if (!m_color_scale->visible())
     {
-        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-            [this, plotable](bool selected)
-            {
-                _set_selected(plotable, selected);
-                this->replot(rpQueuedReplot);
-            });
+        if (y_log_scale)
+        {
+            set_axis_log(QCPAxis::atRight, true);
+        }
+        set_axis_visible(QCPAxis::atRight, true);
+        m_color_scale->setVisible(true);
+        plotLayout()->addElement(0, 1, m_color_scale);
+        cmap->colorMap()->setColorScale(m_color_scale);
+        cmap->colorMap()->setInterpolate(false);
+        if (z_log_scale)
+        {
+            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
+            m_color_scale->axis()->setTicker(
+                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
+        }
+
+        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
+        gradient.setNanHandling(QCPColorGradient::nhTransparent);
+        cmap->colorMap()->setGradient(gradient);
+        cmap->set_auto_scale_y(true);
     }
 }
 
@@ -480,8 +481,8 @@ QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const
     return nullptr;
 }
 
-void SciQLopPlot::_legend_double_clicked(
-    QCPLegend* legend, QCPAbstractLegendItem* item, QMouseEvent* event)
+void SciQLopPlot::_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item,
+                                         QMouseEvent* event)
 {
     if (auto legend_item = dynamic_cast<QCPPlottableLegendItem*>(item); legend_item != nullptr)
     {
@@ -502,28 +503,25 @@ void SciQLopPlot::_legend_double_clicked(
 }
 }
 
-
-void SciQLopPlot::_configure_plotable(SQPQCPAbstractPlottableWrapper* plottable,
-    const QStringList& labels, const QList<QColor>& colors)
+void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
+                                      const QList<QColor>& colors)
 {
     if (plottable)
     {
-        if (std::size(colors) <= plottable->plottable_count())
+        if (std::size(colors) == std::size(plottable->components()))
         {
-            for (std::size_t i = 0; i < std::size(colors); i++)
-            {
-                plottable->qcp_plottables()[i]->setPen(QPen(colors[i]));
-            }
+            plottable->set_colors(colors);
+            plottable->set_labels(labels);
         }
     }
 }
 
-SciQLopPlot::SciQLopPlot(QWidget* parent)
+SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
     this->m_time_axis = new SciQLopPlotDummyAxis(this);
     connect(this->m_time_axis, &SciQLopPlotDummyAxis::range_changed, this,
-        &SciQLopPlot::time_axis_range_changed);
+            &SciQLopPlot::time_axis_range_changed);
 
     // connect(m_impl, &_impl::SciQLopPlot::x2_axis_range_changed, this,
     //    &SciQLopPlot::time_axis_range_changed);
@@ -531,18 +529,21 @@ SciQLopPlot::SciQLopPlot(QWidget* parent)
     this->setLayout(new QVBoxLayout);
     this->layout()->addWidget(m_impl);
     connect(m_impl, &_impl::SciQLopPlot::x_axis_range_changed, this,
-        &SciQLopPlot::x_axis_range_changed);
+            &SciQLopPlot::x_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::x2_axis_range_changed, this,
-        &SciQLopPlot::x2_axis_range_changed);
+            &SciQLopPlot::x2_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::y_axis_range_changed, this,
-        &SciQLopPlot::y_axis_range_changed);
+            &SciQLopPlot::y_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::y2_axis_range_changed, this,
-        &SciQLopPlot::y2_axis_range_changed);
+            &SciQLopPlot::y2_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::scroll_factor_changed, this,
-        &SciQLopPlot::scroll_factor_changed);
+            &SciQLopPlot::scroll_factor_changed);
+
+    connect(m_impl, &_impl::SciQLopPlot::plotables_list_changed, this,
+            &SciQLopPlot::graph_list_changed);
 
     set_axes_to_rescale(
-        QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis() });
+        QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
     this->enable_legend(true);
     this->minimize_margins();
 }
@@ -589,7 +590,8 @@ void SciQLopPlot::replot(bool immediate)
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    QStringList labels, QList<QColor> colors, GraphType graph_type)
+                                              QStringList labels, QList<QColor> colors,
+                                              GraphType graph_type)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -612,48 +614,48 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     return plottable;
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
-    const PyBuffer& z, QString name, bool y_log_scale, bool z_log_scale)
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
+                                                 const PyBuffer& z, QString name, bool y_log_scale,
+                                                 bool z_log_scale)
 {
-    auto cm = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
+    auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
     cm->set_data(std::move(x), std::move(y), std::move(z));
     return cm;
 }
 
-void SciQLopPlot::_connect_callable_sync(
-    SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with)
+void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with)
 {
     if (sync_with != nullptr)
     {
         if (auto axis = qobject_cast<SciQLopPlotAxisInterface*>(sync_with); axis != nullptr)
         {
             connect(axis, &SciQLopPlotAxisInterface::range_changed, plottable,
-                &SQPQCPAbstractPlottableWrapper::set_range);
+                    &SciQLopGraphInterface::set_range);
         }
         if (auto graph = qobject_cast<SciQLopGraphInterface*>(sync_with); graph != nullptr)
         {
             connect(graph, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                plottable,
-                QOverload<PyBuffer, PyBuffer>::of(&SQPQCPAbstractPlottableWrapper::set_data),
-                Qt::QueuedConnection);
+                    plottable, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data),
+                    Qt::QueuedConnection);
 
-            connect(graph,
+            connect(
+                graph,
                 QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
                 plottable,
-                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(
-                    &SQPQCPAbstractPlottableWrapper::set_data),
+                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data),
                 Qt::QueuedConnection);
         }
     }
     else
     {
         connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, plottable,
-            &SQPQCPAbstractPlottableWrapper::set_range);
+                &SQPQCPAbstractPlottableWrapper::set_range);
     }
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-    QList<QColor> colors, GraphType graph_type, QObject* sync_with)
+                                              QList<QColor> colors, GraphType graph_type,
+                                              QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -676,21 +678,30 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     return plottable;
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
-    bool y_log_scale, bool z_log_scale, QObject* sync_with)
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
+                                                 bool y_log_scale, bool z_log_scale,
+                                                 QObject* sync_with)
 {
-    SQPQCPAbstractPlottableWrapper* plotable = nullptr;
-    plotable = m_impl->addSciQLopColorMap(name, y_log_scale, z_log_scale);
+    SciQLopColorMapInterface* plotable = nullptr;
+    plotable = m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale);
+    if (plotable)
+    {
+        _connect_callable_sync(plotable, sync_with);
+    }
     return plotable;
 }
 
-
-SciQLopGraphInterface* SciQLopPlot::graph(int index)
+SciQLopPlottableInterface* SciQLopPlot::plottable(int index)
 {
     return m_impl->sqp_plottable(index);
 }
 
-SciQLopGraphInterface* SciQLopPlot::graph(const QString& name)
+SciQLopPlottableInterface* SciQLopPlot::plottable(const QString& name)
 {
     return m_impl->sqp_plottable(name);
+}
+
+QList<SciQLopPlottableInterface*> SciQLopPlot::plottables() const noexcept
+{
+    return m_impl->sqp_plottables();
 }

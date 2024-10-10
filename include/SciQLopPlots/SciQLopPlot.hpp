@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
@@ -47,7 +48,8 @@ class SciQLopPlot : public QCustomPlot
     QList<SciQLopPlotAxis*> m_axes;
     bool m_replot_pending = false;
 
-    QList<SQPQCPAbstractPlottableWrapper*> m_plottables;
+    QList<SciQLopPlottableInterface*> m_plottables;
+    SciQLopColorMap* m_color_map = nullptr;
 
 public:
 #ifndef BINDINGS_H
@@ -56,6 +58,7 @@ public:
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void plotables_list_changed();
 #endif
     explicit SciQLopPlot(QWidget* parent = nullptr);
 
@@ -68,16 +71,21 @@ public:
         return _new_plottable_wrapper<T>(this->xAxis, this->yAxis, std::forward<Args>(args)...);
     }
 
-    SQPQCPAbstractPlottableWrapper* sqp_plottable(int index = -1);
-    SQPQCPAbstractPlottableWrapper* sqp_plottable(const QString& name);
+    SciQLopPlottableInterface* sqp_plottable(int index = -1);
+    SciQLopPlottableInterface* sqp_plottable(const QString& name);
+    const QList<SciQLopPlottableInterface*>& sqp_plottables() const;
 
-    SciQLopColorMap* addSciQLopColorMap(
-        const QString& name, bool y_log_scale = false, bool z_log_scale = false);
+    SciQLopColorMap* add_color_map(const QString& name, bool y_log_scale = false,
+                                   bool z_log_scale = false);
+    SciQLopColorMapFunction* add_color_map(GetDataPyCallable&& callable, const QString& name,
+                                           bool y_log_scale = false, bool z_log_scale = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
+
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
 
     inline bool has_colormap() { return m_color_scale->visible(); }
+
     inline QCPColorScale* color_scale() const noexcept { return m_color_scale; }
 
     void minimize_margins();
@@ -94,7 +102,7 @@ public:
         return axisRect()->axis(type);
     }
 
-    inline SciQLopPlotAxis* axis(int index) const noexcept
+    inline SciQLopPlotAxisInterface* axis(int index) const noexcept
     {
         if (index < m_axes.size())
             return m_axes[index];
@@ -192,19 +200,23 @@ protected:
     bool _update_mouse_cursor(QMouseEvent* event);
     bool _handle_tool_tip(QEvent* event);
     QCPGraph* _nearest_graph(const QPointF& pos);
-    std::optional<std::tuple<double, double>> _nearest_data_point(
-        const QPointF& pos, QCPGraph* graph);
+    std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
+                                                                  QCPGraph* graph);
 
     template <typename T, typename... Args>
     T* _new_plottable_wrapper(Args&&... args)
     {
-        SQPQCPAbstractPlottableWrapper* plottable = new T(this, std::forward<Args>(args)...);
+        SciQLopGraphInterface* plottable = new T(this, std::forward<Args>(args)...);
         _register_plottable_wrapper(plottable);
         return reinterpret_cast<T*>(plottable);
     }
 
-    void _register_plottable_wrapper(SQPQCPAbstractPlottableWrapper* plottable);
+    void _register_plottable_wrapper(SciQLopPlottableInterface* plottable);
     void _register_plottable(QCPAbstractPlottable* plotable);
+
+    SciQLopGraphInterface* plottable_wrapper(QCPAbstractPlottable* plottable);
+
+    void _configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale);
 
     QCPAbstractPlottable* plottable(const QString& name) const;
 
@@ -217,16 +229,17 @@ protected:
 };
 }
 
-
 class SciQLopPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
 
+
 protected:
+    QList<QColor> m_color_palette;
+
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
-    void _connect_callable_sync(SQPQCPAbstractPlottableWrapper* plottable, QObject* sync_with);
-
+    void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
     {
@@ -238,25 +251,31 @@ protected:
         return m_impl->axis_at(m_impl->mapFrom(this, pos));
     }
 
-    void _configure_plotable(SQPQCPAbstractPlottableWrapper* plottable, const QStringList& labels,
-        const QList<QColor>& colors);
+    void _configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
+                             const QList<QColor>& colors);
 
     virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
+                                             QStringList labels = QStringList(),
+                                             QList<QColor> colors = QList<QColor>(),
 
-        ::GraphType graph_type = ::GraphType::Line) override;
+                                             ::GraphType graph_type = ::GraphType::Line) override;
 
-    virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-        const PyBuffer& z, QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-        bool z_log_scale = false) override;
+    virtual SciQLopColorMapInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
+                                                const PyBuffer& z,
+                                                QString name = QStringLiteral("ColorMap"),
+                                                bool y_log_scale = false,
+                                                bool z_log_scale = false) override;
 
     virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-        QStringList labels = QStringList(), QList<QColor> colors = QList<QColor>(),
-        ::GraphType graph_type = ::GraphType::Line, QObject* sync_with = nullptr) override;
+                                             QStringList labels = QStringList(),
+                                             QList<QColor> colors = QList<QColor>(),
+                                             ::GraphType graph_type = ::GraphType::Line,
+                                             QObject* sync_with = nullptr) override;
 
-    virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-        QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-        bool z_log_scale = false, QObject* sync_with = nullptr) override;
+    virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
+                                                QString name = QStringLiteral("ColorMap"),
+                                                bool y_log_scale = false, bool z_log_scale = false,
+                                                QObject* sync_with = nullptr) override;
 
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
@@ -274,8 +293,8 @@ public:
     void minimize_margins() override;
 
     inline bool has_colormap() { return m_impl->has_colormap(); }
-    inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 
+    inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 
     inline int calculateAutoMargin(QCP::MarginSide side)
     {
@@ -299,7 +318,7 @@ public:
 
     inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept Q_DECL_OVERRIDE
     {
-        return nullptr;
+        return m_impl->axis(4);
     }
 
     inline virtual SciQLopPlotAxisInterface* x2_axis() const noexcept Q_DECL_OVERRIDE
@@ -315,10 +334,17 @@ public:
     void replot(bool immediate = false) override;
 
 
-    virtual SciQLopGraphInterface* graph(int index = -1) override;
-    virtual SciQLopGraphInterface* graph(const QString& name) override;
-};
+    virtual SciQLopPlottableInterface* plottable(int index = -1) override;
+    virtual SciQLopPlottableInterface* plottable(const QString& name) override;
+    virtual QList<SciQLopPlottableInterface*> plottables() const noexcept override;
 
+    inline virtual QList<QColor> color_palette() const noexcept override { return m_color_palette; }
+
+    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept
+    {
+        m_color_palette = palette;
+    }
+};
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)
 {
@@ -327,6 +353,21 @@ inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>&
     {
         if (auto p = dynamic_cast<SciQLopPlot*>(plot))
             filtered.append(p);
+    }
+    return filtered;
+}
+
+inline QList<QPointer<SciQLopPlot>>
+only_sciqlopplots(const QList<QPointer<SciQLopPlotInterface>>& plots)
+{
+    QList<QPointer<SciQLopPlot>> filtered;
+    for (auto& plot : plots)
+    {
+        if (!plot.isNull())
+        {
+            if (auto p = dynamic_cast<SciQLopPlot*>(plot.data()))
+                filtered.append(p);
+        }
     }
     return filtered;
 }

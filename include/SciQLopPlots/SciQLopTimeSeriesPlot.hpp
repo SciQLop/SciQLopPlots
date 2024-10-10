@@ -23,7 +23,6 @@
 
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
-
 class SciQLopTimeSeriesPlot : public SciQLopPlot
 {
     Q_OBJECT
@@ -33,6 +32,7 @@ public:
     virtual ~SciQLopTimeSeriesPlot() Q_DECL_OVERRIDE = default;
 
     inline QList<PyBuffer> unity(const QList<PyBuffer>& views) { return views; }
+
     inline PyBuffer unity(const PyBuffer& view) { return view; }
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
@@ -64,6 +64,21 @@ inline QList<SciQLopTimeSeriesPlot*> only_sciqlop_timeserieplots(
     {
         if (auto p = dynamic_cast<SciQLopTimeSeriesPlot*>(plot))
             filtered.append(p);
+    }
+    return filtered;
+}
+
+inline QList<QPointer<SciQLopTimeSeriesPlot>> only_sciqlop_timeserieplots(
+    const QList<QPointer<SciQLopPlotInterface>>& plots)
+{
+    QList<QPointer<SciQLopTimeSeriesPlot>> filtered;
+    for (auto& plot : plots)
+    {
+        if (!plot.isNull())
+        {
+            if (auto p = dynamic_cast<SciQLopTimeSeriesPlot*>(plot.data()))
+                filtered.append(p);
+        }
     }
     return filtered;
 }

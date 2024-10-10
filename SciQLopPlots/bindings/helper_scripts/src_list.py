@@ -28,6 +28,7 @@ def find_all_objects(node, found=None):
     for sp in smart_ptrs:
         classes = sp.attrib.get('instantiations', '').split(',')
         for c in classes:
+            c = c.split('=')[0].strip()
             found.append(f"{sp.attrib['name']}_{c}")
     for item in node.findall('namespace-type'):
         if item.attrib.get('visible', 'true') in ['true', 'auto']:

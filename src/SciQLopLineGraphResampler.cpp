@@ -20,42 +20,17 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/Plotables/SciQLopLineGraphResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
+#include "SciQLopPlots/Profiling.hpp"
 
 LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
 
-
-void AbstractResampler1d::_resample_slot()
+void LineGraphResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y,
+                                        const QCPRange new_range, bool new_data)
 {
-    {
-        QMutexLocker locker(&_data_mutex);
-        {
-            QMutexLocker locker(&_next_data_mutex);
-            _data = _next_data;
-            _next_data.new_data = false;
-        }
-        this->_resample(_data.x, _data.y, _data._plot_range, _data.new_data);
-    }
-}
 
-AbstractResampler1d::AbstractResampler1d(std::size_t line_cnt) : _line_cnt { line_cnt }
-{
-    connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_resample_slot,
-        Qt::QueuedConnection);
-}
-
-void AbstractResampler1d::resample(const QCPRange new_range)
-{
-    {
-        QMutexLocker locker(&_next_data_mutex);
-        _next_data._plot_range = new_range;
-    }
-    emit _resample_sig();
-}
-
-void LineGraphResampler::_resample(
-    const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data)
-{
+    PROFILE_HERE_N("LineGraphResampler::_resample_impl");
+    PROFILE_PASS_VALUE(x.flat_size());
     if (x.data() != nullptr && x.flat_size() > 0)
     {
         const auto view = XYView(x, y, new_range.lower, new_range.upper);

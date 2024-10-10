@@ -25,9 +25,10 @@
 
 void XAxisSynchronizer::_display_x_axis_only_last_plot()
 {
-    for (auto* plot : _plots)
+    for (auto& plot : _plots)
     {
-        plot->x_axis()->set_visible(false);
+        if (!plot.isNull())
+            plot->x_axis()->set_visible(false);
     }
     if (!_plots.isEmpty())
     {
@@ -35,7 +36,7 @@ void XAxisSynchronizer::_display_x_axis_only_last_plot()
     }
 }
 
-void XAxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
+void XAxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
     AxisSynchronizer::updatePlotList(plots);
     _display_x_axis_only_last_plot();

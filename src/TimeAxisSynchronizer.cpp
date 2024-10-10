@@ -26,7 +26,7 @@
 void TimeAxisSynchronizer::_display_x_axis_only_last_plot()
 {
     auto ts_plots = only_sciqlop_timeserieplots(_plots);
-    for (auto* plot : ts_plots)
+    for (auto& plot : ts_plots)
     {
         plot->x_axis()->set_visible(false);
     }
@@ -36,7 +36,7 @@ void TimeAxisSynchronizer::_display_x_axis_only_last_plot()
     }
 }
 
-void TimeAxisSynchronizer::updatePlotList(const QList<SciQLopPlotInterface*>& plots)
+void TimeAxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
     AxisSynchronizer::updatePlotList(plots);
     _display_x_axis_only_last_plot();

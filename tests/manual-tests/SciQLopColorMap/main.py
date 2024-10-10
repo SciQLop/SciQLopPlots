@@ -1,62 +1,63 @@
-from SciQLopPlots import QCustomPlot, QCP, QCPColorMap, QCPRange, QCPColorScale, QCPAxis, QCPColorGradient, QCPMarginGroup
+from SciQLopPlots import SciQLopPlot, SciQLopMultiPlotPanel
 from PySide6.QtWidgets import QMainWindow, QApplication
-from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
+from PySide6.QtCore import Qt
 import sys
+import os
 import math
 import numpy as np
 from types import SimpleNamespace
 
+os.environ['QT_API'] = 'PySide6'
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        QMainWindow.__init__(self)
-        self._setup_ui()
-        self.setGeometry(400, 250, 542, 390);
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from common import MainWindow
 
-    def _setup_ui(self):
-        plot: QCustomPlot = QCustomPlot(self)
-        plot.setInteractions(QCP.iRangeDrag|QCP.iRangeZoom|QCP.iSelectPlottables)
-        self.setCentralWidget(plot)
-        self.graph = plot.addSciQLopColorMap(plot.xAxis, plot.yAxis, 'MyColorMap')
-        nx = 2000
-        ny = 2000
-        data = np.empty((nx,ny))
-        x_vect= (np.arange(nx)*8./nx -4.).reshape((-1,1))
-        y_vect= (np.arange(ny)*8./ny -4.).reshape((-1,1))
+def make_uniform_colormap(nx, ny):
 
-        data[:,:] = np.cos(np.sqrt((x_vect+2)**2 @ y_vect.T**2))
-        self.graph.setData(x_vect, y_vect, data)
+    z = np.empty((nx,ny))
+    x_vect= np.arange(nx)*8./nx -4.
+    y_vect= np.arange(ny)*8./ny -4.
 
-        plot.legend.setVisible(True)
+    z[:,:] = np.cos(np.sqrt((x_vect.reshape(-1,1)+2)**2 @ y_vect.reshape(-1,1).T**2))
+    return x_vect, y_vect, z
 
-        plot.colorScale = QCPColorScale(plot)
-        plot.plotLayout().addElement(0, 1, plot.colorScale); # add it to the right of the main axis rect
-        plot.colorScale.setType(QCPAxis.atRight) # scale shall be vertical bar with tick/axis labels right (actually atRight is already the default)
 
-        self.graph.colorMap().setColorScale(plot.colorScale) # associate the color map with the color scale
-        plot.colorScale.axis().setLabel("Magnetic Field Strength");
+class UniformColormap(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.plot(*make_uniform_colormap(200, 200))
 
-        # set the color gradient of the color map to one of the presets:
-        self.graph.colorMap().setGradient(QCPColorGradient.GradientPreset.gpPolar)
-        # we could have also created a QCPColorGradient instance and added own colors to
-        # the gradient, see the documentation of QCPColorGradient for what's possible.
 
-        # rescale the data dimension (color) such that all data points lie in the span visualized by the color gradient:
-        self.graph.colorMap().rescaleDataRange();
+class UniformColormap2DY(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        x, y, z = make_uniform_colormap(300, 200)
+        y = np.array(np.repeat(y, 300).reshape(200, 300).T)
+        self.plot(x, y, z)
 
-        # make sure the axis rect and color scale synchronize their bottom and top margins (so they line up):
-        plot.marginGroup = QCPMarginGroup(plot)
-        plot.axisRect().setMarginGroup(QCP.msBottom|QCP.msTop, plot.marginGroup)
-        plot.colorScale.setMarginGroup(QCP.msBottom|QCP.msTop, plot.marginGroup)
 
-        # rescale the key (x) and value (y) axes so the whole color map is visible:
-        plot.rescaleAxes()
-
-        plot.setOpenGl(True)
+class ColormapWithNonUniformXAxis(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self, parent, synchronize_x=False, synchronize_time=True)
+        _x, y, _z = make_uniform_colormap(2010, 200)
+        x = np.linspace(-4, 4, 210)
+        z = np.empty((210, 200))
+        x[:100] = _x[:1000:10]
+        x[100:110] = _x[1000:1010]
+        x[110:] = _x[1010::10]
+        z[:100, :] = _z[:1000:10, :]
+        z[100:110, :] = _z[1000:1010, :]
+        z[110:, :] = _z[1010::10, :]
+        self.plot(x, y, z)
 
 
 if __name__ == '__main__':
+    QApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
+    QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
+    w.add_tab(UniformColormap(w), "UniformColormap")
+    w.add_tab(UniformColormap2DY(w), "UniformColormap2DY")
+    w.add_tab(ColormapWithNonUniformXAxis(w), "ColormapWithNonUniformXAxis")
     w.show()
     app.exec()

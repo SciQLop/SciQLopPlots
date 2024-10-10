@@ -21,6 +21,12 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
+#include "SciQLopPlots/unique_names_factory.hpp"
+
+#include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
+
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
@@ -29,15 +35,18 @@
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 #include "SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp"
 
+#include <cpp_utils/containers/algorithms.hpp>
+
 #include <QKeyEvent>
 
-SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
-    QWidget* parent, bool synchronize_x, bool synchronize_time)
-        : QScrollArea { nullptr }
+SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x,
+                                             bool synchronize_time)
+        : QScrollArea { nullptr }, _uuid { QUuid::createUuid() }
 {
     _container = new SciQLopPlotContainer(this);
-    connect(_container, &SciQLopPlotContainer::plotListChanged, this,
-        &SciQLopMultiPlotPanel::plotListChanged);
+    _place_holder_manager = new PlaceHolderManager(this);
+    connect(_container, &SciQLopPlotContainer::plot_list_changed, this,
+            &SciQLopMultiPlotPanel::plot_list_changed);
     setWidget(_container);
     this->setWidgetResizable(true);
 
@@ -45,7 +54,14 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(
     if (synchronize_x)
         ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
+    {
         ::register_behavior<TimeAxisSynchronizer>(_container);
+        _default_plot_type = PlotType::TimeSeries;
+    }
+    this->setAcceptDrops(true);
+    setObjectName(UniqueNamesFactory::unique_name("Panel"));
+
+    PlotsModel::instance()->addTopLevelNode(this);
 }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
@@ -63,7 +79,7 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
     return _container->plot_at(index);
 }
 
-const QList<SciQLopPlotInterface*>& SciQLopMultiPlotPanel::plots() const
+QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
 {
     return _container->plots();
 }
@@ -91,6 +107,16 @@ void SciQLopMultiPlotPanel::clear()
 int SciQLopMultiPlotPanel::index(SciQLopPlotInterface* plot) const
 {
     return _container->index(plot);
+}
+
+int SciQLopMultiPlotPanel::index(const QPointF& pos) const
+{
+    return _container->index(_container->mapFromParent(pos));
+}
+
+int SciQLopMultiPlotPanel::index_from_global_position(const QPointF& pos) const
+{
+    return _container->index(_container->mapFromGlobal(pos));
 }
 
 int SciQLopMultiPlotPanel::indexOf(QWidget* widget) const
@@ -149,9 +175,19 @@ void SciQLopMultiPlotPanel::set_x_axis_range(const SciQLopPlotRange& range)
     _container->set_x_axis_range(range);
 }
 
+const SciQLopPlotRange& SciQLopMultiPlotPanel::x_axis_range() const
+{
+    return _container->x_axis_range();
+}
+
 void SciQLopMultiPlotPanel::set_time_axis_range(const SciQLopPlotRange& range)
 {
     _container->set_time_axis_range(range);
+}
+
+const SciQLopPlotRange& SciQLopMultiPlotPanel::time_axis_range() const
+{
+    return _container->time_axis_range();
 }
 
 void SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* behavior)
@@ -164,17 +200,31 @@ void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
     _container->remove_behavior(type_name);
 }
 
-QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
-    const PyBuffer& x, const PyBuffer& y, QStringList labels, QList<QColor> colors,
-    PlotType plot_type, GraphType graph_type, int index)
+void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
+{
+    _accepted_mime_types[callback->mime_type()] = callback;
+}
+
+void SciQLopMultiPlotPanel::setSelected(bool selected)
+{
+    _selected = selected;
+    emit selectionChanged(selected);
+}
+
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels,
+                                 QList<QColor> colors, PlotType plot_type, GraphType graph_type,
+                                 int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(index, graph_type, x, y, labels, colors);
+            return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, x, y, labels,
+                                                             colors);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(index, graph_type, x, y, labels, colors);
+            return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, x, y,
+                                                                       labels, colors);
             break;
         default:
             break;
@@ -182,19 +232,41 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
     return { nullptr, nullptr };
 }
 
-QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
-    const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, QString name, bool y_log_scale,
-    bool z_log_scale, PlotType plot_type, int index)
+QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+                                 QString name, bool y_log_scale, bool z_log_scale,
+                                 PlotType plot_type, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(
+            return _plot<SciQLopPlot, SciQLopColorMapInterface>(index, GraphType::ColorMap, x, y, z,
+                                                                name, y_log_scale, z_log_scale);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
                 index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale);
             break;
+        default:
+            break;
+    }
+    return { nullptr, nullptr };
+}
+
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QStringList labels,
+                                 QList<QColor> colors, GraphType graph_type, PlotType plot_type,
+                                 QObject* sync_with, int index)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, callable, labels,
+                                                             colors, sync_with);
+            break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(
-                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale);
+            return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, callable,
+                                                                       labels, colors, sync_with);
             break;
         default:
             break;
@@ -202,37 +274,19 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
     return { nullptr, nullptr };
 }
 
-QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
-    GetDataPyCallable callable, QStringList labels, QList<QColor> colors, GraphType graph_type,
-    PlotType plot_type, QObject* sync_with, int index)
+QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool y_log_scale,
+                                 bool z_log_scale, PlotType plot_type, QObject* sync_with,
+                                 int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(index, graph_type, callable, labels, colors, sync_with);
-            break;
-        case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(
-                index, graph_type, callable, labels, colors, sync_with);
-            break;
-        default:
-            break;
-    }
-    return { nullptr, nullptr };
-}
-
-QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
-    GetDataPyCallable callable, QString name, bool y_log_scale, bool z_log_scale,
-    PlotType plot_type, QObject* sync_with, int index)
-{
-    switch (plot_type)
-    {
-        case ::PlotType::BasicXY:
-            return _plot<SciQLopPlot>(
+            return _plot<SciQLopPlot, SciQLopColorMapInterface>(
                 index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot>(
+            return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
                 index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
             break;
         default:
@@ -240,7 +294,6 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
     }
     return { nullptr, nullptr };
 }
-
 
 void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
 {
@@ -255,4 +308,61 @@ void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
     }
     if (!event->isAccepted())
         QScrollArea::keyPressEvent(event);
+}
+
+void SciQLopMultiPlotPanel::dragEnterEvent(QDragEnterEvent* event)
+{
+    using namespace cpp_utils;
+    const auto formats = event->mimeData()->formats();
+    for (const auto& format : formats)
+    {
+        if (containers::contains(_accepted_mime_types, format))
+        {
+            event->acceptProposedAction();
+            _current_callback = _accepted_mime_types[format];
+            if (_current_callback->create_placeholder())
+                _place_holder_manager->dragEnterEvent(event);
+            return;
+        }
+    }
+    _current_callback = nullptr;
+}
+
+void SciQLopMultiPlotPanel::dragMoveEvent(QDragMoveEvent* event)
+{
+    if (_current_callback)
+    {
+        if (_current_callback->create_placeholder())
+            _place_holder_manager->dragMoveEvent(event);
+        event->acceptProposedAction();
+    }
+}
+
+void SciQLopMultiPlotPanel::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    if (_current_callback && _current_callback->create_placeholder())
+        _place_holder_manager->dragLeaveEvent(event);
+    _current_callback = nullptr;
+}
+
+void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
+{
+    if (_current_callback)
+    {
+        SciQLopPlotInterface* drop_plot = nullptr;
+        auto drop_result = _place_holder_manager->dropEvent(event);
+        if (drop_result.location == DropLocation::NewPlot)
+        {
+            drop_plot = create_plot(drop_result.index, _default_plot_type);
+        }
+        else
+        {
+            drop_plot = plot_at(drop_result.index);
+        }
+
+        event->acceptProposedAction();
+        if (drop_plot)
+            _current_callback->call(drop_plot, event->mimeData());
+        _current_callback = nullptr;
+    }
 }

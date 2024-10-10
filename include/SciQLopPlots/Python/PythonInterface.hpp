@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -42,7 +41,6 @@ extern "C"
 #endif
 }
 
-
 struct ArrayViewBase
 {
     virtual ~ArrayViewBase() = default;
@@ -51,17 +49,51 @@ struct ArrayViewBase
         std::size_t first_row = 0, std::size_t last_row = 0) const
         = 0;
     virtual std::size_t flat_size() const noexcept = 0;
+    virtual std::size_t size(int index = 0) const noexcept = 0;
+};
+
+struct ArrayView1D : public ArrayViewBase
+{
+private:
+    double* ptr;
+    std::size_t start; // first row
+    std::size_t stop; // last row
+
+public:
+    ArrayView1D(double* ptr, std::size_t start, std::size_t stop)
+            : ptr(ptr), start(start), stop(stop)
+    {
+    }
+
+    inline double operator[](std::pair<std::size_t, std::size_t> index) const override
+    {
+        return ptr[index.first + start];
+    }
+
+    std::unique_ptr<ArrayViewBase> view(
+        std::size_t first_row = 0, std::size_t last_row = 0) const override
+    {
+        if (last_row == 0)
+            last_row = stop - start;
+        return std::make_unique<ArrayView1D>(ptr, first_row + start, last_row + start);
+    }
+
+    inline std::size_t flat_size() const noexcept override { return stop - start; }
+
+    inline std::size_t size(int index = 0) const noexcept override { return stop - start; }
 };
 
 template <bool row_major = true>
 struct ArrayView2D : public ArrayViewBase
 {
+private:
     double* ptr;
     std::size_t n_rows;
     std::size_t n_cols;
     std::size_t start; // first row
     std::size_t stop; // last row
 
+public:
     ArrayView2D(
         double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start, std::size_t stop)
             : ptr(ptr)
@@ -70,7 +102,6 @@ struct ArrayView2D : public ArrayViewBase
             , start(start)
             , stop(stop)
     {
-        assert(stop <= n_rows);
     }
 
     inline double operator[](std::pair<std::size_t, std::size_t> index) const override
@@ -90,10 +121,18 @@ struct ArrayView2D : public ArrayViewBase
     {
         if (last_row == 0)
             last_row = n_rows;
-        return std::make_unique<ArrayView2D<row_major>>(ptr, n_rows, n_cols, first_row, last_row);
+        return std::make_unique<ArrayView2D<row_major>>(
+            ptr, n_rows, n_cols, first_row + start, last_row + start);
     }
 
     inline std::size_t flat_size() const noexcept override { return (stop - start) * n_cols; }
+
+    inline std::size_t size(int index = 0) const noexcept override
+    {
+        if (index == 0)
+            return stop - start;
+        return n_cols;
+    }
 };
 
 
@@ -136,17 +175,17 @@ public:
 
     std::size_t ndim() const;
 
-    std::size_t size(std::size_t index = 0);
+    std::size_t size(std::size_t index = 0) const;
 
     std::size_t flat_size() const;
 
     double* data() const;
 
     inline auto operator[](std::size_t position) { return data()[position]; }
+
     inline const auto operator[](std::size_t position) const { return data()[position]; }
 
     std::vector<double> to_std_vect();
-
 
     inline auto begin() noexcept { return data(); }
 
@@ -161,6 +200,7 @@ public:
     inline const auto cend() const noexcept { return data() + flat_size(); }
 
     inline auto front() { return *begin(); }
+
     inline auto back() { return *(end() - 1); }
 
     bool row_major() const;
@@ -172,6 +212,8 @@ public:
             last_row = shape()[0];
         if (is_valid())
         {
+            if (ndim() == 1)
+                return std::make_unique<ArrayView1D>(data(), first_row, last_row);
             if (row_major())
                 return std::make_unique<ArrayView2D<true>>(
                     data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row);
@@ -181,9 +223,9 @@ public:
         }
         return nullptr;
     }
+
     PyObject* py_object() const;
 };
-
 
 namespace std
 {
@@ -210,7 +252,6 @@ inline auto cend(const PyBuffer& v)
 
 }
 
-
 struct XYView
 {
 private:
@@ -236,9 +277,83 @@ public:
     }
 
     inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
+
     inline double y(std::size_t i, std::size_t j) const { return (*_y)[{ i, j }]; }
 
     inline std::size_t size() const { return std::size(*_x); }
+};
+
+struct XYZView
+{
+private:
+    std::unique_ptr<ArrayViewBase> _x;
+    std::unique_ptr<ArrayViewBase> _y;
+    std::unique_ptr<ArrayViewBase> _z;
+    bool _y_is_2d;
+
+    inline void _init_views(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+        std::size_t start, std::size_t stop)
+    {
+        _y_is_2d = (y.ndim() == 2) ? 1 : 0;
+        this->_x = x.view(start, stop);
+        this->_z = z.view(start, stop);
+        if (_y_is_2d)
+        {
+            this->_y = y.view(start, stop);
+        }
+        else
+        {
+            this->_y = y.view();
+        }
+    }
+
+public:
+    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, std::size_t start = 0,
+        std::size_t stop = 0)
+    {
+        _init_views(x, y, z, start, stop);
+    }
+
+    explicit XYZView(
+        const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, double x_start, double x_stop)
+    {
+        std::size_t start_index = std::distance(
+            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
+        std::size_t stop_index
+            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
+        _init_views(x, y, z, start_index, stop_index);
+    }
+
+    inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
+
+    inline double y(std::size_t i, std::size_t j) const
+    {
+        if (_y_is_2d)
+        {
+            return (*_y)[{ i, j }];
+        }
+        return (*_y)[{ j, 0 }];
+    }
+
+    inline double z(std::size_t i, std::size_t j) const { return (*_z)[{ i, j }]; }
+
+    inline std::size_t size() const { return std::size(*_x); }
+
+    inline bool y_is_2d() const { return _y_is_2d; }
+
+    inline std::pair<std::size_t, std::size_t> y_shape() const
+    {
+        if (_y_is_2d)
+        {
+            return { _y->size(0), _y->size(1) };
+        }
+        return { 1UL, _y->size(0) };
+    }
+
+    inline std::pair<std::size_t, std::size_t> z_shape() const
+    {
+        return { _z->size(0), _z->size(1) };
+    }
 };
 
 namespace std
@@ -247,6 +362,12 @@ inline std::size_t size(const XYView& view)
 {
     return view.size();
 }
+
+inline std::size_t size(const XYZView& view)
+{
+    return view.size();
+}
+
 }
 
 struct _GetDataPyCallable_impl;

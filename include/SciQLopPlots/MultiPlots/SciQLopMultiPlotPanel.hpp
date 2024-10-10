@@ -21,89 +21,111 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
+#include <QUuid>
 #include <QWidget>
-
-#include "qcustomplot.h"
-
+#include <map>
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
+class PlaceHolderManager;
 
 class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
     SciQLopPlotContainer* _container = nullptr;
+    std::map<QString, PlotDragNDropCallback*> _accepted_mime_types;
+    PlotDragNDropCallback* _current_callback = nullptr;
+    PlaceHolderManager* _place_holder_manager = nullptr;
+    PlotType _default_plot_type = PlotType::BasicXY;
+    QUuid _uuid;
+    bool _selected = false;
 
 protected:
     template <typename T, GraphType graph_type, typename... Args>
     auto __plot(T* plot,
-        Args&&... args) -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...), void())
+                Args&&... args) -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...))
     {
         if constexpr (graph_type == GraphType::Line)
-            plot->line(std::forward<Args>(args)...);
+            return plot->line(std::forward<Args>(args)...);
         if constexpr (graph_type == GraphType::ParametricCurve)
-            plot->parametric_curve(std::forward<Args>(args)...);
+            return plot->parametric_curve(std::forward<Args>(args)...);
+        return nullptr;
     }
 
     template <typename T, GraphType graph_type, typename... Args>
-    auto __plot(T* plot,
-        Args&&... args) -> decltype(std::declval<T*>()->colormap(std::forward<Args>(args)...),
-                            void())
+    auto __plot(T* plot, Args&&... args)
+        -> decltype(std::declval<T*>()->colormap(std::forward<Args>(args)...))
     {
         if constexpr (graph_type == GraphType::ColorMap)
-            plot->colormap(std::forward<Args>(args)...);
+            return plot->colormap(std::forward<Args>(args)...);
+        return nullptr;
     }
 
-    template <typename T, typename... Args>
-    QPair<T*, SciQLopGraphInterface*> _plot(int index, GraphType graph_type, Args&&... args)
+    template <typename T, typename U, typename... Args>
+    QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
         auto* plot = new T();
         if (index == -1)
             add_plot(plot);
         else
             insert_plot(index, plot);
+
         if (graph_type == GraphType::Line)
-            __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...);
+        {
+            return { plot, __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...) };
+        }
+
         if (graph_type == GraphType::ParametricCurve)
-            __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...);
+        {
+            return { plot,
+                     __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...) };
+        }
         if (graph_type == GraphType::ColorMap)
-            __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...);
-        return { plot, plot->graph(-1) };
+        {
+            return { plot, __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...) };
+        }
+        return { nullptr, nullptr };
     }
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(const PyBuffer& x,
-        const PyBuffer& y, QStringList labels = QStringList(),
-        QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
-        ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
+              ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(const PyBuffer& x,
-        const PyBuffer& y, const PyBuffer& z, QString name = QStringLiteral("ColorMap"),
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+              QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+              bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+              int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(
-        GetDataPyCallable callable, QStringList labels = QStringList(),
-        QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-        ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-        int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1) Q_DECL_OVERRIDE;
 
-    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> plot_impl(
-        GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
-        bool y_log_scale = false, bool z_log_scale = false,
-        ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-        int index = -1) Q_DECL_OVERRIDE;
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+              bool y_log_scale = false, bool z_log_scale = false,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1) Q_DECL_OVERRIDE;
 
 public:
-    SciQLopMultiPlotPanel(
-        QWidget* parent = nullptr, bool synchronize_x = true, bool synchronize_time = false);
+    Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);
+    SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true,
+                          bool synchronize_time = false);
+
+    inline QUuid uuid() const { return _uuid; }
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
-    const QList<SciQLopPlotInterface*>& plots() const;
+    QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
 
     virtual void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     virtual void move_plot(int from, int to) Q_DECL_OVERRIDE;
@@ -111,6 +133,8 @@ public:
     void clear() Q_DECL_OVERRIDE;
 
     int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE;
+    int index(const QPointF& pos) const Q_DECL_OVERRIDE;
+    int index_from_global_position(const QPointF& pos) const Q_DECL_OVERRIDE;
     int indexOf(QWidget* widget) const;
 
 
@@ -124,14 +148,18 @@ public:
 
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
 
-    void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
-    void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
 
+    void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
+    const SciQLopPlotRange& x_axis_range() const Q_DECL_OVERRIDE;
+
+    void set_time_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;
+    const SciQLopPlotRange& time_axis_range() const Q_DECL_OVERRIDE;
 
     inline void set_x_axis_range(double start, double stop)
     {
         set_x_axis_range(SciQLopPlotRange(start, stop));
     }
+
     inline void set_time_axis_range(double start, double stop)
     {
         set_time_axis_range(SciQLopPlotRange(start, stop));
@@ -145,10 +173,21 @@ public:
     void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
+    void add_accepted_mime_type(PlotDragNDropCallback* callback);
+
+    inline bool selected() const { return _selected; }
+
+    void setSelected(bool selected);
 
 #ifndef BINDINGS_H
-    Q_SIGNAL void plotListChanged(const QList<SciQLopPlotInterface*>& plots);
+    Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
+    Q_SIGNAL void selectionChanged(bool selected);
 #endif // BINDINGS_H
+
 protected:
     void keyPressEvent(QKeyEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void dragLeaveEvent(QDragLeaveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 };

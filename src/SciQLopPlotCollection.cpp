@@ -24,89 +24,26 @@
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 
-SciQLopPlotCollection::SciQLopPlotCollection(QObject* parent) : QObject(parent) { }
-
-void SciQLopPlotCollection::add_plot(SciQLopPlotInterface* plot)
+void SciQLopPlotCollectionInterface::set_x_axis_range(const SciQLopPlotRange& range)
 {
-    insert_plot(_plots.size(), plot);
+    WARN_ABSTRACT_METHOD;
 }
 
-void SciQLopPlotCollection::insert_plot(int index, SciQLopPlotInterface* plot)
+const SciQLopPlotRange& SciQLopPlotCollectionInterface::x_axis_range() const
 {
-    _plots.insert(index, plot);
-    emit plotListChanged(_plots);
+    WARN_ABSTRACT_METHOD;
+    static SciQLopPlotRange r {};
+    return r;
 }
 
-void SciQLopPlotCollection::remove_plot(SciQLopPlotInterface* plot)
+void SciQLopPlotCollectionInterface::set_time_axis_range(const SciQLopPlotRange& range)
 {
-    _plots.removeOne(plot);
-    emit plotListChanged(_plots);
+    WARN_ABSTRACT_METHOD;
 }
 
-SciQLopPlotInterface* SciQLopPlotCollection::plot_at(int index) const
+const SciQLopPlotRange& SciQLopPlotCollectionInterface::time_axis_range() const
 {
-    return _plots.at(index);
+    WARN_ABSTRACT_METHOD;
+    static SciQLopPlotRange r {};
+    return r;
 }
-
-void SciQLopPlotCollection::set_x_axis_range(const SciQLopPlotRange& range)
-{
-    for (auto* plot : _plots)
-    {
-        plot->x_axis()->set_range(range);
-    }
-}
-
-void SciQLopPlotCollection::set_time_axis_range(const SciQLopPlotRange& range)
-{
-    for (auto* plot : _plots)
-    {
-        plot->time_axis()->set_range(range);
-    }
-}
-
-void SciQLopPlotCollection::register_behavior(SciQLopPlotCollectionBehavior* behavior)
-{
-    behavior->setParent(this);
-    _behaviors[behavior->metaObject()->className()] = behavior;
-    behavior->updatePlotList(_plots);
-    connect(this, &SciQLopPlotCollection::plotListChanged, behavior,
-        &SciQLopPlotCollectionBehavior::updatePlotList);
-}
-
-void SciQLopPlotCollection::remove_behavior(const QString& type_name)
-{
-    if (_behaviors.contains(type_name))
-    {
-        disconnect(this, &SciQLopPlotCollection::plotListChanged, _behaviors[type_name],
-            &SciQLopPlotCollectionBehavior::updatePlotList);
-        delete _behaviors[type_name];
-        _behaviors.remove(type_name);
-    }
-}
-
-
-void SciQLopPlotCollection::clear()
-{
-    _plots.clear();
-    emit plotListChanged(_plots);
-}
-
-int SciQLopPlotCollection::index(SciQLopPlotInterface* plot) const
-{
-    return _plots.indexOf(plot);
-}
-
-void SciQLopPlotCollection::move_plot(int from, int to)
-{
-    _plots.move(from, to);
-    emit plotListChanged(_plots);
-}
-
-void SciQLopPlotCollection::move_plot(SciQLopPlotInterface* plot, int to)
-{
-    move_plot(_plots.indexOf(plot), to);
-}
-
-void SciQLopPlotCollectionInterface::set_x_axis_range(const SciQLopPlotRange& range) { }
-
-void SciQLopPlotCollectionInterface::set_time_axis_range(const SciQLopPlotRange& range) { }

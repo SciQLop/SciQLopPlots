@@ -20,17 +20,26 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/unique_names_factory.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(QObject* parent) : QObject(parent)
+SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix, QObject* parent)
+        : SciQLopPlottableInterface(parent)
 {
     connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
+    setObjectName(UniqueNamesFactory::unique_name(prefix));
 }
 
-void SciQLopGraphInterface::set_range(const SciQLopPlotRange& range)
+void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
 {
     if (m_range != range)
     {
         m_range = range;
         Q_EMIT range_changed(range);
     }
+}
+
+SciQLopColorMapInterface::SciQLopColorMapInterface(QObject* parent)
+        : SciQLopPlottableInterface(parent)
+{
+    setObjectName(UniqueNamesFactory::unique_name("ColorMap"));
 }

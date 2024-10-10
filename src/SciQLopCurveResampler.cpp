@@ -19,7 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Plotables/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 
 QVector<QCPCurveData> curve_copy_data(
     const double* x, const double* y, std::size_t x_size, const int y_incr)
@@ -35,7 +35,7 @@ QVector<QCPCurveData> curve_copy_data(
 }
 
 
-void CurveResampler::_resample(
+void CurveResampler::_resample_impl(
     const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data)
 {
     if (x.data() != nullptr && x.flat_size() > 0 && new_data)

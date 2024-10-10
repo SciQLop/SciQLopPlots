@@ -25,12 +25,12 @@
 #include <QObject>
 class SciQLopPlot;
 
-
 class SciQLopMultiPlotObject : public QObject
 {
     Q_OBJECT
+
 protected:
-    QList<SciQLopPlotInterface*> m_plots;
+    QList<QPointer<SciQLopPlotInterface>> m_plots;
 
     virtual void addObject(SciQLopPlotInterface* plot);
     virtual void removeObject(SciQLopPlotInterface* plot);
@@ -41,5 +41,5 @@ public:
 
     virtual ~SciQLopMultiPlotObject() Q_DECL_OVERRIDE;
 
-    Q_SLOT virtual void updatePlotList(const QList<SciQLopPlotInterface*>& plots);
+    Q_SLOT virtual void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots);
 };
