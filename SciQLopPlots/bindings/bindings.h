@@ -39,9 +39,11 @@
 #include <SciQLopPlots/SciQLopTimeSeriesPlot.hpp>
 #include <SciQLopPlots/enums.hpp>
 
-#include <Products/ProductsModel.hpp>
-#include <Products/ProductsNode.hpp>
-#include <Products/ProductsView.hpp>
+#include <SciQLopPlots/Products/ProductsModel.hpp>
+#include <SciQLopPlots/Products/ProductsNode.hpp>
+#include <SciQLopPlots/Products/ProductsView.hpp>
+
+#include <SciQLopPlots/Icons/icons.hpp>
 
 #include <qcustomplot.h>
 

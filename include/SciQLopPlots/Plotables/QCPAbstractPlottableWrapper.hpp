@@ -92,6 +92,7 @@ public:
         }
         if (component)
         {
+            component->set_name(name);
             _register_component(component);
         }
         return component;

@@ -36,10 +36,19 @@ void PlotsModel::node_selection_changed(PlotsModelNode* node, bool selected)
         emit item_selection_changed(index, selected);
 }
 
+void PlotsModel::children_destroyed(PlotsModelNode* parent, int index)
+{
+    beginRemoveRows(make_index(parent), index, index);
+    endRemoveRows();
+}
+
 PlotsModel::PlotsModel(QObject* parent)
 {
     m_rootNode = new PlotsModelNode(this);
-    connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed);
+    connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed,
+            Qt::DirectConnection);
+    connect(m_rootNode, &PlotsModelNode::childrenDestroyed, this, &PlotsModel::children_destroyed,
+            Qt::DirectConnection);
     connect(m_rootNode, &PlotsModelNode::nameChanged, this, &PlotsModel::node_changed);
     connect(m_rootNode, &PlotsModelNode::selectionChanged, this,
             &PlotsModel::node_selection_changed);

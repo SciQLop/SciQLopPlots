@@ -18,6 +18,7 @@
     <enum-type name="GraphLineStyle"/>
     <enum-type name="ColorGradient"/>
     <enum-type name="ProductsModelNodeType"/>
+    <enum-type name="ParameterType"/>
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr"/>
 
@@ -258,7 +259,15 @@
           </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="ProductsModelNode" parent-management="yes"/>
+    <object-type name="ProductsModelNode" parent-management="yes">
+        <modify-function signature="add_child(ProductsModelNode*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
+
+    <object-type name="Icons" parent-management="yes"/>
 </typesystem>
 
 

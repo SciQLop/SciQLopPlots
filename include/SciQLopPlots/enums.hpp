@@ -23,6 +23,14 @@
 #include <QObject>
 #include <QString>
 
+enum class ParameterType
+{
+    NotAParameter,
+    Scalar,
+    Vector,
+    Multicomponents,
+    Spectrogram
+};
 
 enum class AxisType
 {

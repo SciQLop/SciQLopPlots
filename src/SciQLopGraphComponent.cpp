@@ -34,7 +34,7 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
         }
         if (auto graph = qobject_cast<QCPGraph*>(m_plottable); graph)
         {
-            graph->setAdaptiveSampling(true);
+            // graph->setAdaptiveSampling(true);
         }
         connect(plottable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
                 &SciQLopGraphComponent::set_selected);

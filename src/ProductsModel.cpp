@@ -19,8 +19,9 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "Products/ProductsModel.hpp"
-#include "Products/ProductsNode.hpp"
+#include "SciQLopPlots/Products/ProductsModel.hpp"
+#include "SciQLopPlots/Products/ProductsNode.hpp"
+#include <QIODevice>
 #include <qapplicationstatic.h>
 
 QModelIndex ProductsModel::make_index(ProductsModelNode* node)
@@ -41,16 +42,8 @@ void ProductsModel::_add_to_completer(const QString& value)
 
 void ProductsModel::_add_to_completer(ProductsModelNode* node)
 {
-    _add_to_completer(node->name());
-    for (auto [key, value] : node->metadata().asKeyValueRange())
-    {
-        auto entry = key + " : " + value.toString();
-        _add_to_completer(entry);
-    }
-    for (auto child : node->children_nodes())
-    {
-        _add_to_completer(child);
-    }
+    for (auto str : node->completions())
+        _add_to_completer(str);
 }
 
 void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* parent)
@@ -63,7 +56,7 @@ void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* par
 
 ProductsModel::ProductsModel(QObject* parent) : QAbstractItemModel(parent)
 {
-    m_rootNode = new ProductsModelNode("root", {}, ProductsModelNodeType::ROOT, this);
+    m_rootNode = new ProductsModelNode("root", {}, "", this);
     m_completer_model = new QStringListModel(this);
 }
 
@@ -135,6 +128,8 @@ QVariant ProductsModel::data(const QModelIndex& index, int role) const
                 return node->icon();
             case Qt::ToolTipRole:
                 return node->tooltip();
+            case PRODUCT_FILTER_ROLE:
+                return node->raw_text();
             default:
                 break;
         }
@@ -147,11 +142,47 @@ Qt::ItemFlags ProductsModel::flags(const QModelIndex& index) const
     if (index.isValid())
     {
         auto node = static_cast<ProductsModelNode*>(index.internalPointer());
-        if (node->node_type() == ProductsModelNodeType::PRODUCT)
+        if (node->node_type() == ProductsModelNodeType::PARAMETER)
             return Qt::ItemIsEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsSelectable;
         return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
     }
     return QAbstractItemModel::flags(index);
+}
+
+QMimeData* ProductsModel::mimeData(const QModelIndexList& indexes) const
+{
+    if (indexes.isEmpty())
+        return nullptr;
+    auto mimeData = new QMimeData();
+    QByteArray encodedData;
+    QDataStream stream(&encodedData, QIODevice::WriteOnly);
+    for (const auto& index : indexes)
+    {
+        if (index.isValid())
+        {
+            auto node = static_cast<ProductsModelNode*>(index.internalPointer());
+            stream << node->path();
+        }
+    }
+    mimeData->setData(mime_type(), encodedData);
+    return mimeData;
+}
+
+QList<QStringList> ProductsModel::decode_mime_data(const QMimeData* mime_data)
+{
+    QList<QStringList> data;
+    if (mime_data->hasFormat(mime_type()))
+    {
+        QByteArray encodedData = mime_data->data(mime_type());
+        QDataStream stream(&encodedData, QIODevice::ReadOnly);
+        while (!stream.atEnd())
+        {
+            QStringList path;
+            stream >> path;
+            data.append(path);
+        }
+    }
+    return data;
 }
 
 void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
@@ -162,12 +193,31 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
         auto node = parent->child(name);
         if (node == nullptr)
         {
-            node = new ProductsModelNode(name, {}, ProductsModelNodeType::FOLDER, parent);
+            node = new ProductsModelNode(name);
             _insert_node(node, parent);
         }
         parent = node;
     }
     _insert_node(obj, parent);
+}
+
+ProductsModelNode* ProductsModel::node(const QStringList& path)
+{
+    if (!path.isEmpty())
+    {
+        auto parent = ProductsModel::instance()->m_rootNode;
+        auto without_root = path;
+        without_root.removeFirst();
+        for (const auto& name : without_root)
+        {
+            auto node = parent->child(name);
+            if (node == nullptr)
+                return nullptr;
+            parent = node;
+        }
+        return parent;
+    }
+    return nullptr;
 }
 
 Q_APPLICATION_STATIC(ProductsModel, _products_model);

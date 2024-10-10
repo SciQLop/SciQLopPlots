@@ -22,6 +22,7 @@
 #pragma once
 #include <QIcon>
 #include <QObject>
+#include <QPointer>
 #include <QUuid>
 
 class InspectorBase;
@@ -29,7 +30,7 @@ class InspectorBase;
 class PlotsModelNode : public QObject
 {
     Q_OBJECT
-    QObject* m_obj;
+    QPointer<QObject> m_obj;
     InspectorBase* m_inspector;
     QList<PlotsModelNode*> m_children;
 
@@ -55,6 +56,8 @@ public:
 
     inline int child_row(PlotsModelNode* child) { return m_children.indexOf(child); }
 
+    int child_row(QObject* obj);
+
     inline int children_count() { return m_children.size(); }
 
     bool remove_child(int row);
@@ -67,7 +70,9 @@ public:
 
     inline bool holds(QObject* obj)
     {
-        return m_obj == obj && m_obj->objectName() == obj->objectName();
+        if (m_obj)
+            return m_obj == obj && m_obj->objectName() == obj->objectName();
+        return false;
     }
 
     inline bool contains(QObject* obj)
@@ -93,6 +98,7 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);
+    Q_SIGNAL void childrenDestroyed(PlotsModelNode* parent, int row);
     Q_SIGNAL void selectionChanged(PlotsModelNode* node, bool selected);
 #endif
 };

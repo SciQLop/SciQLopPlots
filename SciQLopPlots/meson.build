@@ -113,9 +113,10 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp',
-    project_source_root + '/include/Products/ProductsModel.hpp',
-    project_source_root + '/include/Products/ProductsNode.hpp',
-    project_source_root + '/include/Products/ProductsView.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
+    project_source_root + '/include/SciQLopPlots/Icons/icons.hpp',
     project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
@@ -195,6 +196,7 @@ sources = moc_files \
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
             '../src/ProductsView.cpp',
+            '../src/icons.cpp',
             '../qcustomplot-source/qcustomplot.cpp'
         ]
 
