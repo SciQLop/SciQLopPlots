@@ -25,8 +25,9 @@
 
 void PlotsModelNode::_child_destroyed(PlotsModelNode* child)
 {
+    auto index = m_children.indexOf(child);
     m_children.removeOne(child);
-    emit childrenChanged(this);
+    emit childrenDestroyed(this, index);
 }
 
 PlotsModelNode* PlotsModelNode::_root_node()
@@ -44,6 +45,7 @@ PlotsModelNode::PlotsModelNode(QObject* obj, QObject* parent) : QObject(parent),
         setObjectName(obj->objectName());
         connect(this, &PlotsModelNode::objectNameChanged, this,
                 [this]() { emit nameChanged(this); });
+        connect(obj, &QObject::destroyed, this, &PlotsModelNode::destroy, Qt::DirectConnection);
         m_inspector = Inspectors::inspector(obj);
         if (m_inspector != nullptr)
         {
@@ -64,7 +66,9 @@ PlotsModelNode* PlotsModelNode::insert_child(QObject* obj, int row)
         m_children.append(node);
     else
         m_children.insert(row, node);
-    connect(node, &QObject::destroyed, this, [this, node]() { _child_destroyed(node); });
+    connect(
+        node, &QObject::destroyed, this, [this, node]() { _child_destroyed(node); },
+        Qt::DirectConnection);
     connect(node, &PlotsModelNode::childrenChanged, _root_node(), &PlotsModelNode::childrenChanged);
     connect(node, &PlotsModelNode::nameChanged, _root_node(), &PlotsModelNode::nameChanged);
     connect(node, &PlotsModelNode::selectionChanged, _root_node(),
@@ -83,6 +87,16 @@ PlotsModelNode* PlotsModelNode::child_node(const QString& name)
     return nullptr;
 }
 
+int PlotsModelNode::child_row(QObject* obj)
+{
+    for (int i = 0; i < children_count(); i++)
+    {
+        if (m_children[i]->holds(obj))
+            return i;
+    }
+    return -1;
+}
+
 bool PlotsModelNode::remove_child(int row)
 {
     if (row < 0 || row >= m_children.size())
@@ -90,20 +104,20 @@ bool PlotsModelNode::remove_child(int row)
     auto child = m_children.at(row);
     m_children.removeAt(row);
     child->destroy();
-    emit childrenChanged(this);
+    emit childrenDestroyed(this, row);
     return true;
 }
 
 QIcon PlotsModelNode::icon()
 {
-    if (m_inspector == nullptr)
+    if (m_inspector == nullptr || m_obj == nullptr)
         return QIcon();
     return m_inspector->icon(m_obj);
 }
 
 QString PlotsModelNode::tooltip()
 {
-    if (m_inspector == nullptr)
+    if (m_inspector == nullptr || m_obj == nullptr)
         return QString();
     return m_inspector->tooltip(m_obj);
 }
@@ -114,7 +128,7 @@ void PlotsModelNode::setName(const QString& name)
     {
         setObjectName(name);
     }
-    if (m_obj != nullptr && m_obj->objectName() != name)
+    if (m_obj && m_obj->objectName() != name)
         m_obj->setObjectName(name);
 }
 
@@ -122,7 +136,7 @@ void PlotsModelNode::update_children()
 {
     if (m_inspector != nullptr)
     {
-        auto new_children = m_inspector->children(m_obj);
+        auto new_children = m_inspector->children(m_obj.data());
         for (auto child : new_children)
         {
             if (!contains(child))
@@ -130,7 +144,7 @@ void PlotsModelNode::update_children()
         }
         for (auto child : m_children)
         {
-            if (!new_children.contains(child->m_obj))
+            if (!new_children.contains(child->m_obj.data()))
                 delete child;
         }
     }
@@ -139,9 +153,9 @@ void PlotsModelNode::update_children()
 
 void PlotsModelNode::set_selected(bool selected)
 {
-    if (m_inspector)
+    if (m_inspector && m_obj)
     {
-        m_inspector->set_selected(m_obj, selected);
+        m_inspector->set_selected(m_obj.data(), selected);
         emit selectionChanged(this, selected);
     }
 }
@@ -150,10 +164,9 @@ void PlotsModelNode::destroy()
 {
     while (!m_children.isEmpty())
     {
-        auto child = m_children.takeFirst();
-        child->destroy();
+        remove_child(0);
     }
-    if (m_obj != nullptr)
+    if (m_obj)
         m_obj->deleteLater();
     deleteLater();
 }

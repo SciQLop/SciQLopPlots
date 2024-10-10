@@ -19,7 +19,9 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "Products/ProductsNode.hpp"
+#include "SciQLopPlots/Products/ProductsNode.hpp"
+#include "SciQLopPlots/Icons/icons.hpp"
+#include "fmt/core.h"
 
 ProductsModelNode* ProductsModelNode::_root_node()
 {
@@ -30,14 +32,32 @@ ProductsModelNode* ProductsModelNode::_root_node()
 }
 
 ProductsModelNode::ProductsModelNode(const QString& name, const QMap<QString, QVariant>& metadata,
-                                     ProductsModelNodeType m_node_type, QObject* parent)
-        : QObject(parent), m_node_type(m_node_type), m_metadata(metadata)
+                                     const QString& icon, QObject* parent)
+        : ProductsModelNode(name, "", metadata, ProductsModelNodeType::FOLDER,
+                            ParameterType::NotAParameter, icon, parent)
+{
+}
+
+ProductsModelNode::ProductsModelNode(const QString& name, const QString& provider,
+                                     const QMap<QString, QVariant>& metadata,
+                                     ProductsModelNodeType node_type, ParameterType parameter_type,
+                                     const QString& icon, QObject* parent)
+        : QObject(parent)
+        , m_node_type(node_type)
+        , m_metadata(metadata)
+        , m_icon(icon)
+        , m_parameter_type(parameter_type)
+        , m_provider(provider)
 {
     this->setObjectName(name);
-    m_tooltip.append(name + "\n");
+    m_tooltip.append(fmt::format("<h3>{}</h3>", name.toStdString()).c_str());
+    m_raw_text.append(name);
     for (auto [key, value] : metadata.asKeyValueRange())
     {
-        m_tooltip.append(key + " : " + value.toString() + "\n");
+        m_tooltip.append(
+            fmt::format("<br/><b>{}:</b> {}", key.toStdString(), value.toString().toStdString())
+                .c_str());
+        m_raw_text.append(key + ": " + value.toString());
     }
 }
 
@@ -66,14 +86,14 @@ QStringList ProductsModelNode::path()
     return path;
 }
 
-void ProductsModelNode::set_icon(const QIcon& icon)
+void ProductsModelNode::set_icon(const QString& name)
 {
-    m_icon = icon;
+    m_icon = name;
 }
 
-QIcon ProductsModelNode::icon()
+const QIcon& ProductsModelNode::icon()
 {
-    return m_icon;
+    return Icons::get_icon(m_icon);
 }
 
 void ProductsModelNode::set_tooltip(const QString& tooltip)
@@ -81,7 +101,14 @@ void ProductsModelNode::set_tooltip(const QString& tooltip)
     m_tooltip = tooltip;
 }
 
-QString ProductsModelNode::tooltip()
+QStringList ProductsModelNode::completions() const noexcept
 {
-    return m_tooltip;
+    QStringList completions;
+    completions.append(this->name());
+    for (auto [key, value] : m_metadata.asKeyValueRange())
+    {
+        if (auto v = value.toString(); v.size() < 100)
+            completions.append(key + ": " + v);
+    }
+    return completions;
 }

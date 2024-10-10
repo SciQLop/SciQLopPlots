@@ -263,6 +263,15 @@ public:
         return {};
     }
 
+    virtual QList<QColor> color_palette() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    virtual void set_color_palette(const QList<QColor>& colors) noexcept { WARN_ABSTRACT_METHOD; }
+
+
 #ifndef BINDINGS_H
     Q_SIGNAL void scroll_factor_changed(double factor);
     Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);

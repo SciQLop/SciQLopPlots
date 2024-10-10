@@ -19,19 +19,33 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "Products/ProductsView.hpp"
-#include "Products/ProductsModel.hpp"
+#include "SciQLopPlots/Products/ProductsView.hpp"
+#include "SciQLopPlots/Products/ProductsModel.hpp"
 #include <QCompleter>
 #include <QLineEdit>
 #include <QRegularExpression>
 #include <QSortFilterProxyModel>
+#include <QTimer>
 #include <QTreeView>
 #include <QVBoxLayout>
+
 #include <QWidget>
+
+void ProductsView::update_filter()
+{
+    m_proxy_model->setFilterRegularExpression(
+        QRegularExpression(".*" + QRegularExpression::escape(m_search_line_edit->text()) + ".*"));
+}
 
 ProductsView::ProductsView(QWidget* parent)
 {
+    this->setWindowTitle("Products");
     auto layout = new QVBoxLayout(this);
+    m_search_timer = new QTimer(this);
+    m_search_timer->setSingleShot(true);
+    m_search_timer->setInterval(500);
+    connect(m_search_timer, &QTimer::timeout, this, &ProductsView::update_filter);
+
     m_search_line_edit = new QLineEdit(this);
     m_search_line_edit->setClearButtonEnabled(true);
     m_search_line_edit->setPlaceholderText("Search...");
@@ -49,13 +63,13 @@ ProductsView::ProductsView(QWidget* parent)
     m_proxy_model->setSourceModel(ProductsModel::instance());
     m_proxy_model->setFilterCaseSensitivity(Qt::CaseInsensitive);
     m_proxy_model->setFilterKeyColumn(0);
-    m_proxy_model->setFilterRole(Qt::ToolTipRole);
+    m_proxy_model->setFilterRole(PRODUCT_FILTER_ROLE);
     m_proxy_model->setSortCaseSensitivity(Qt::CaseInsensitive);
     m_proxy_model->setRecursiveFilteringEnabled(true);
     m_proxy_model->setDynamicSortFilter(true);
 
-    connect(m_search_line_edit, &QLineEdit::textChanged, m_proxy_model, [this](const QString& text)
-            { m_proxy_model->setFilterRegularExpression(QRegularExpression(".*" + text + ".*")); });
+    connect(m_search_line_edit, &QLineEdit::textChanged, this,
+            [this]() { m_search_timer->start(); });
 
 
     m_tree_view = new QTreeView(this);

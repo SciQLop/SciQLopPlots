@@ -31,6 +31,7 @@ class PlotsModel : public QAbstractItemModel
 
     Q_SLOT void node_changed(PlotsModelNode* node);
     Q_SLOT void node_selection_changed(PlotsModelNode* node, bool selected);
+    Q_SLOT void children_destroyed(PlotsModelNode* parent, int index);
     QModelIndex make_index(PlotsModelNode* node);
 
 

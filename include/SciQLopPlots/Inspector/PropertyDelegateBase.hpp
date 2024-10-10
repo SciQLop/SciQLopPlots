@@ -22,6 +22,7 @@
 #pragma once
 #include <QLabel>
 #include <QObject>
+#include <QPointer>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <fmt/format.h>
@@ -35,7 +36,7 @@ protected:
     QLabel* m_title;
 
 protected:
-    QObject* m_object = nullptr;
+    QPointer<QObject> m_object = nullptr;
 
     template <typename T>
     static T* as_type(QObject* object)

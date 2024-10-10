@@ -27,47 +27,52 @@
 
 #include <qcustomplot.h>
 
-
 template <std::size_t dest_size>
 static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t column_index)
 {
     static_assert(dest_size % 2 == 0);
     const auto x_0 = view.x(0);
     const auto x_1 = view.x(std::size(view) - 1);
-    auto dx = 2. * (x_1 - x_0) / dest_size;
+    auto dx = 2. * (x_1 - x_0) / static_cast<double>(dest_size);
     QVector<QCPGraphData> data(dest_size);
-    std::size_t data_index = 0UL;
-    std::size_t view_index = 0UL;
-
-    for (auto bucket = 0UL; bucket < dest_size / 2; bucket++)
     {
+        auto key = x_0;
+        auto dest_index = 0UL;
+        auto next_x = x_0 + dx;
+        data[0].key = key;
+        data[0].value = std::nan("");
+        data[1].key = key + dx / 2.;
+        data[1].value = std::nan("");
+        for (auto view_index = 0UL; view_index < std::size(view); view_index++)
         {
-            const auto bucket_start_x = view.x(view_index);
-            double bucket_max_x = std::min(bucket_start_x + dx, x_1);
-            double max_value = std::nan("");
-            double min_value = std::nan("");
-            auto current_x = bucket_start_x;
-            while (current_x < bucket_max_x && view_index < std::size(view))
+            auto x = view.x(view_index);
+            auto y = view.y(view_index, column_index);
+            while (x > next_x && dest_index < dest_size - 4)
             {
-                current_x = view.x(view_index);
-                auto v = view.y(view_index++, column_index);
-                max_value = std::fmax(max_value, v);
-                min_value = std::fmin(min_value, v);
+                dest_index += 2;
+                data[dest_index].key = next_x;
+                data[dest_index].value = std::nan("");
+                data[dest_index + 1].key = next_x + dx / 2.;
+                data[dest_index + 1].value = std::nan("");
+                next_x += dx;
             }
-            data[data_index++] = QCPGraphData { bucket_start_x, min_value };
-            data[data_index++] = QCPGraphData { bucket_start_x + dx / 2., max_value };
+            data[dest_index].value = std::fmin(data[dest_index].value, y);
+            data[dest_index + 1].value = std::fmax(data[dest_index + 1].value, y);
+        }
+        if (dest_index < dest_size - 1)
+        {
+            data.resize(dest_index + 2);
         }
     }
     return data;
 }
 
-
 struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample_impl(
-        const PyBuffer& x, const PyBuffer& y, const QCPRange new_range, bool new_data) override;
+    void _resample_impl(const PyBuffer& x, const PyBuffer& y, const QCPRange new_range,
+                        bool new_data) override;
 
 public:
 #ifndef BINDINGS_H

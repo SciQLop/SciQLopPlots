@@ -211,7 +211,7 @@ protected:
         return reinterpret_cast<T*>(plottable);
     }
 
-    void _register_plottable_wrapper(SciQLopPlottableInterface *plottable);
+    void _register_plottable_wrapper(SciQLopPlottableInterface* plottable);
     void _register_plottable(QCPAbstractPlottable* plotable);
 
     SciQLopGraphInterface* plottable_wrapper(QCPAbstractPlottable* plottable);
@@ -233,10 +233,13 @@ class SciQLopPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
 
+
 protected:
+    QList<QColor> m_color_palette;
+
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
-    void _connect_callable_sync(SciQLopPlottableInterface *plottable, QObject* sync_with);
+    void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
     {
@@ -334,6 +337,13 @@ public:
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;
     virtual SciQLopPlottableInterface* plottable(const QString& name) override;
     virtual QList<SciQLopPlottableInterface*> plottables() const noexcept override;
+
+    inline virtual QList<QColor> color_palette() const noexcept override { return m_color_palette; }
+
+    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept
+    {
+        m_color_palette = palette;
+    }
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)
