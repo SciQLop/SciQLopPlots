@@ -25,6 +25,13 @@ else
     add_project_arguments('-DDEBUG', language : ['cpp'])
 endif
 
+# enables fast-math optimizations
+#if meson.get_compiler('c').get_id() == 'msvc'
+#    add_project_arguments('/fp:fast', language: 'cpp')
+#else
+#    add_project_arguments('-ffast-math', language: 'cpp')
+#endif
+
 
 subdir('SciQLopPlots')
 

@@ -179,6 +179,10 @@ public:
 
     void setSelected(bool selected);
 
+    virtual QList<QColor> color_palette() const noexcept override;
+
+    virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
+
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
     Q_SIGNAL void selectionChanged(bool selected);

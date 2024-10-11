@@ -149,6 +149,17 @@ public:
         return 0;
     }
 
+    inline virtual QList<QColor> color_palette() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
     virtual void set_x_axis_range(const SciQLopPlotRange& range);
     virtual const SciQLopPlotRange& x_axis_range() const;
     virtual void set_time_axis_range(const SciQLopPlotRange& range);

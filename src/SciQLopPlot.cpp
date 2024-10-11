@@ -511,8 +511,17 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         if (std::size(colors) == std::size(plottable->components()))
         {
             plottable->set_colors(colors);
-            plottable->set_labels(labels);
         }
+        else
+        {
+            for (auto& component : plottable->components())
+            {
+                component->set_color(m_color_palette[m_color_palette_index]);
+                m_color_palette_index = (m_color_palette_index + 1) % std::size(m_color_palette);
+            }
+        }
+        if (std::size(labels) == std::size(plottable->components()))
+            plottable->set_labels(labels);
     }
 }
 

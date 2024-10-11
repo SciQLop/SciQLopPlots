@@ -184,6 +184,7 @@ public:
 
     void replot(QCustomPlot::RefreshPriority priority = rpQueuedReplot);
 
+
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -235,10 +236,11 @@ class SciQLopPlot : public SciQLopPlotInterface
 
 
 protected:
-    QList<QColor> m_color_palette;
-
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
+    QList<QColor> m_color_palette;
+    int m_color_palette_index = 0;
+
     void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
@@ -340,7 +342,7 @@ public:
 
     inline virtual QList<QColor> color_palette() const noexcept override { return m_color_palette; }
 
-    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept
+    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept override
     {
         m_color_palette = palette;
     }

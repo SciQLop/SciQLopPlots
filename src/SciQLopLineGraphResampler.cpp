@@ -41,7 +41,7 @@ void LineGraphResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y,
             {
                 if (std::size(view) > 10000)
                 {
-                    data.emplace_back(::resample<10000>(view, line_index));
+                    data.emplace_back(::resample(view, line_index, 10000));
                 }
                 else
                 {
