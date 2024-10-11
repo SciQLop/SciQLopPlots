@@ -45,8 +45,8 @@ struct ArrayViewBase
 {
     virtual ~ArrayViewBase() = default;
     virtual double operator[](std::pair<std::size_t, std::size_t> index) const = 0;
-    virtual std::unique_ptr<ArrayViewBase> view(
-        std::size_t first_row = 0, std::size_t last_row = 0) const
+    virtual std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
+                                                std::size_t last_row = 0) const
         = 0;
     virtual std::size_t flat_size() const noexcept = 0;
     virtual std::size_t size(int index = 0) const noexcept = 0;
@@ -58,10 +58,11 @@ private:
     double* ptr;
     std::size_t start; // first row
     std::size_t stop; // last row
+    std::size_t _size;
 
 public:
     ArrayView1D(double* ptr, std::size_t start, std::size_t stop)
-            : ptr(ptr), start(start), stop(stop)
+            : ptr(ptr), start(start), stop(stop), _size(stop - start)
     {
     }
 
@@ -70,17 +71,17 @@ public:
         return ptr[index.first + start];
     }
 
-    std::unique_ptr<ArrayViewBase> view(
-        std::size_t first_row = 0, std::size_t last_row = 0) const override
+    std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
+                                        std::size_t last_row = 0) const override
     {
         if (last_row == 0)
             last_row = stop - start;
         return std::make_unique<ArrayView1D>(ptr, first_row + start, last_row + start);
     }
 
-    inline std::size_t flat_size() const noexcept override { return stop - start; }
+    inline std::size_t flat_size() const noexcept override { return _size; }
 
-    inline std::size_t size(int index = 0) const noexcept override { return stop - start; }
+    inline std::size_t size(int index = 0) const noexcept override { return _size; }
 };
 
 template <bool row_major = true>
@@ -92,15 +93,17 @@ private:
     std::size_t n_cols;
     std::size_t start; // first row
     std::size_t stop; // last row
+    std::size_t _flat_size;
 
 public:
-    ArrayView2D(
-        double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start, std::size_t stop)
+    ArrayView2D(double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start,
+                std::size_t stop)
             : ptr(ptr)
             , n_rows(n_rows)
             , n_cols(std::max(n_cols, std::size_t { 1UL }))
             , start(start)
             , stop(stop)
+            , _flat_size((stop - start) * n_cols)
     {
     }
 
@@ -116,16 +119,16 @@ public:
         }
     }
 
-    std::unique_ptr<ArrayViewBase> view(
-        std::size_t first_row = 0, std::size_t last_row = 0) const override
+    std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
+                                        std::size_t last_row = 0) const override
     {
         if (last_row == 0)
             last_row = n_rows;
-        return std::make_unique<ArrayView2D<row_major>>(
-            ptr, n_rows, n_cols, first_row + start, last_row + start);
+        return std::make_unique<ArrayView2D<row_major>>(ptr, n_rows, n_cols, first_row + start,
+                                                        last_row + start);
     }
 
-    inline std::size_t flat_size() const noexcept override { return (stop - start) * n_cols; }
+    inline std::size_t flat_size() const noexcept override { return _flat_size; }
 
     inline std::size_t size(int index = 0) const noexcept override
     {
@@ -205,8 +208,8 @@ public:
 
     bool row_major() const;
 
-    inline std::unique_ptr<ArrayViewBase> view(
-        std::size_t first_row = 0, std::size_t last_row = 0) const
+    inline std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
+                                               std::size_t last_row = 0) const
     {
         if (last_row == 0)
             last_row = shape()[0];
@@ -259,8 +262,8 @@ private:
     std::unique_ptr<ArrayViewBase> _y;
 
 public:
-    explicit XYView(
-        const PyBuffer& x, const PyBuffer& y, std::size_t start = 0, std::size_t stop = 0)
+    explicit XYView(const PyBuffer& x, const PyBuffer& y, std::size_t start = 0,
+                    std::size_t stop = 0)
     {
         this->_x = x.view(start, stop);
         this->_y = y.view(start, stop);
@@ -292,7 +295,7 @@ private:
     bool _y_is_2d;
 
     inline void _init_views(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-        std::size_t start, std::size_t stop)
+                            std::size_t start, std::size_t stop)
     {
         _y_is_2d = (y.ndim() == 2) ? 1 : 0;
         this->_x = x.view(start, stop);
@@ -309,13 +312,13 @@ private:
 
 public:
     explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, std::size_t start = 0,
-        std::size_t stop = 0)
+                     std::size_t stop = 0)
     {
         _init_views(x, y, z, start, stop);
     }
 
-    explicit XYZView(
-        const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, double x_start, double x_stop)
+    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, double x_start,
+                     double x_stop)
     {
         std::size_t start_index = std::distance(
             x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));

@@ -211,6 +211,16 @@ void SciQLopMultiPlotPanel::setSelected(bool selected)
     emit selectionChanged(selected);
 }
 
+QList<QColor> SciQLopMultiPlotPanel::color_palette() const noexcept
+{
+    return _container->color_palette();
+}
+
+void SciQLopMultiPlotPanel::set_color_palette(const QList<QColor>& palette) noexcept
+{
+    _container->set_color_palette(palette);
+}
+
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels,
                                  QList<QColor> colors, PlotType plot_type, GraphType graph_type,

@@ -41,6 +41,8 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
     QSplitter::insertWidget(index, widget);
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
     {
+        if (plot->color_palette().empty())
+            plot->set_color_palette(_color_palette);
         emit plot_list_changed(plots());
     }
 }
@@ -119,7 +121,7 @@ void SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* beha
     _behaviors[behavior->metaObject()->className()] = behavior;
     behavior->updatePlotList(plots());
     connect(this, &SciQLopPlotContainer::plot_list_changed, behavior,
-        &SciQLopPlotCollectionBehavior::updatePlotList);
+            &SciQLopPlotCollectionBehavior::updatePlotList);
 }
 
 void SciQLopPlotContainer::remove_behavior(const QString& type_name)
@@ -127,7 +129,7 @@ void SciQLopPlotContainer::remove_behavior(const QString& type_name)
     if (_behaviors.contains(type_name))
     {
         disconnect(this, &SciQLopPlotContainer::plot_list_changed, _behaviors[type_name],
-            &SciQLopPlotCollectionBehavior::updatePlotList);
+                   &SciQLopPlotCollectionBehavior::updatePlotList);
         delete _behaviors[type_name];
         _behaviors.remove(type_name);
     }
@@ -139,6 +141,6 @@ void SciQLopPlotContainer::organize_plots()
     const auto total_height = std::accumulate(std::cbegin(_sizes), std::cend(_sizes), 0);
     const auto per_widget_height = total_height / std::size(_sizes);
     std::transform(std::cbegin(_sizes), std::cend(_sizes), std::begin(_sizes),
-        [per_widget_height](int height) { return per_widget_height; });
+                   [per_widget_height](int height) { return per_widget_height; });
     setSizes(_sizes);
 }

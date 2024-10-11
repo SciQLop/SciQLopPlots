@@ -27,12 +27,14 @@
 
 #include <qcustomplot.h>
 
-template <std::size_t dest_size>
-static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t column_index)
+static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t column_index,
+                                             std::size_t dest_size)
 {
-    static_assert(dest_size % 2 == 0);
+    if (dest_size & 1)
+        dest_size++;
+    const auto view_size = std::size(view);
     const auto x_0 = view.x(0);
-    const auto x_1 = view.x(std::size(view) - 1);
+    const auto x_1 = view.x(view_size - 1);
     auto dx = 2. * (x_1 - x_0) / static_cast<double>(dest_size);
     QVector<QCPGraphData> data(dest_size);
     {
@@ -43,8 +45,10 @@ static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t col
         data[0].value = std::nan("");
         data[1].key = key + dx / 2.;
         data[1].value = std::nan("");
-        for (auto view_index = 0UL; view_index < std::size(view); view_index++)
+        for (auto view_index = 0UL; view_index < view_size; view_index++)
         {
+            // @todo: A possible optimization would be to use a kind of iterator
+            // that polymorphic view is not cheap
             auto x = view.x(view_index);
             auto y = view.y(view_index, column_index);
             while (x > next_x && dest_index < dest_size - 4)
@@ -54,10 +58,19 @@ static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t col
                 data[dest_index].value = std::nan("");
                 data[dest_index + 1].key = next_x + dx / 2.;
                 data[dest_index + 1].value = std::nan("");
-                next_x += dx;
+                next_x = dx * (dest_index + 2) + x_0;
             }
-            data[dest_index].value = std::fmin(data[dest_index].value, y);
-            data[dest_index + 1].value = std::fmax(data[dest_index + 1].value, y);
+
+            if (!std::isnan(y)) [[likely]]
+            {
+                // NaN comparison is always false
+                // Either value is NaN or y is smaller than value
+                if (!(data[dest_index].value < y))
+                    data[dest_index].value = y;
+                // Either value is NaN or y is greater than value
+                if (!(data[dest_index + 1].value > y))
+                    data[dest_index + 1].value = y;
+            }
         }
         if (dest_index < dest_size - 1)
         {

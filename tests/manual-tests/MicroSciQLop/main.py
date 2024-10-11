@@ -70,6 +70,17 @@ def mms1_spectro(product, start, stop):
         print(f"Error: {e}")
         return None
 
+def mms1_edp_hmfe_dsl_brst_l2(start, stop):
+    try:
+        v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.ADP_SDP.MMS1_EDP_BRST_L2_HMFE.mms1_edp_hmfe_dsl_brst_l2, start, stop)
+        if v is None:
+            return None
+        x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        return x, v.values.astype(np.float64)
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
 class Spectrum:
     def __init__(self, fft_size):
         self._fft_size = fft_size
@@ -134,7 +145,15 @@ class MMS_Spectro_Only(SciQLopMultiPlotPanel):
                   z_log_scale=True)
         self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
 
+class MMS_edp_hmfe(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        _, graph = self.plot(mms1_edp_hmfe_dsl_brst_l2,
+                             labels=['Ex', 'Ey', 'Ez'],
+                             colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue],
+                             plot_type=PlotType.TimeSeries)
 
+        self.set_time_axis_range(datetime(2023,10,20,7,0,0,0,timezone.utc), datetime(2023,10,20,9,0,0,0,timezone.utc))
 
 if __name__ == '__main__':
     from speasy.core.cache import _cache
@@ -145,5 +164,6 @@ if __name__ == '__main__':
     w = MainWindow()
     w.add_tab(MMS(w), "MMS")
     w.add_tab(MMS_Spectro_Only(w), "MMS Spectro Only")
+    w.add_tab(MMS_edp_hmfe(w), "MMS EDP HMFE")
     w.show()
     app.exec()

@@ -31,7 +31,7 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
     Q_OBJECT
 
     QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
-
+    QList<QColor> _color_palette;
     SciQLopPlotRange _time_axis_range;
     SciQLopPlotRange _x_axis_range;
 
@@ -129,6 +129,13 @@ public:
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
     void organize_plots();
+
+    inline virtual QList<QColor> color_palette() const noexcept override { return _color_palette; }
+
+    inline virtual void set_color_palette(const QList<QColor>& palette) noexcept override
+    {
+        _color_palette = palette;
+    }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
