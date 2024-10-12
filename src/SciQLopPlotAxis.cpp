@@ -214,10 +214,13 @@ void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
         if (log)
         {
             m_axis->setDataScaleType(QCPAxis::stLogarithmic);
+            m_axis.data()->axis()->setTicker(
+                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
         }
         else
         {
             m_axis->setDataScaleType(QCPAxis::stLinear);
+            m_axis.data()->axis()->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
         }
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT log_changed(log);
