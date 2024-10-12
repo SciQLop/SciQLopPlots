@@ -51,15 +51,15 @@ std::string _render_value(const double value, const QCPAxis* const axis)
         if (duration > 60 * 60 * 24)
             return fmt::format("{:%Y-%m-%d %H:%M}", datetime);
         if (duration > 60 * 60)
-            return fmt::format(
-                "{:%H:%M:%S}", std::chrono::floor<std::chrono::milliseconds>(datetime));
+            return fmt::format("{:%H:%M:%S}",
+                               std::chrono::floor<std::chrono::milliseconds>(datetime));
         return fmt::format("{:%M:%S}", std::chrono::floor<std::chrono::microseconds>(datetime));
     }
     return _render_value(value);
 }
 
-std::optional<std::tuple<double, double>> _nearest_data_point(
-    const QPointF& pos, const QCPGraph* graph)
+std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
+                                                              const QCPGraph* graph)
 {
     QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
     QVariant details;
@@ -75,9 +75,8 @@ std::optional<std::tuple<double, double>> _nearest_data_point(
     return std::nullopt;
 }
 
-
-std::optional<std::tuple<double, double>> _nearest_data_point(
-    const QPointF& pos, const QCPCurve* curve)
+std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
+                                                              const QCPCurve* curve)
 {
     auto it = curve->data()->constEnd();
     QVariant details;
@@ -99,8 +98,8 @@ double _discretize(const double value, const double lower, const double upper, c
     return (floor((value - lower) / q) + 0.5) * q + lower;
 }
 
-double _nearest_axis_value(
-    const double value, const QCPRange& range, const QCPAxis::ScaleType scale_type, const int count)
+double _nearest_axis_value(const double value, const QCPRange& range,
+                           const QCPAxis::ScaleType scale_type, const int count)
 {
     if (scale_type == QCPAxis::stLinear)
     {
@@ -108,25 +107,49 @@ double _nearest_axis_value(
     }
     else // log scale
     {
-        return std::pow(
-            10., _discretize(log10(value), log10(range.lower), log10(range.upper), count));
+        return std::pow(10.,
+                        _discretize(log10(value), log10(range.lower), log10(range.upper), count));
     }
 }
 
-std::optional<std::tuple<double, double, double>> _nearest_data_point(
-    const QPointF& pos, const QCPColorMap* colormap)
+int _log_scale_index(const double value, const QCPRange& range, const int count)
 {
-
-    const auto key = _nearest_axis_value(colormap->keyAxis()->pixelToCoord(pos.x()),
-        colormap->data()->keyRange(), colormap->keyAxis()->scaleType(),
-        colormap->data()->keySize());
-    const auto value = _nearest_axis_value(colormap->valueAxis()->pixelToCoord(pos.y()),
-        colormap->data()->valueRange(), colormap->valueAxis()->scaleType(),
-        colormap->data()->valueSize());
-    const auto data = colormap->data()->data(key, value);
-    return std::make_tuple(key, value, data);
+    return static_cast<int>(count * (log10(value) - log10(range.lower))
+                            / (log10(range.upper) - log10(range.lower)));
 }
 
+std::optional<std::tuple<double, double, double>> _nearest_data_point(const QPointF& pos,
+                                                                      const QCPColorMap* colormap)
+{
+
+    const auto key = _nearest_axis_value(
+        colormap->keyAxis()->pixelToCoord(pos.x()), colormap->data()->keyRange(),
+        colormap->keyAxis()->scaleType(), colormap->data()->keySize());
+    const auto value = _nearest_axis_value(
+        colormap->valueAxis()->pixelToCoord(pos.y()), colormap->data()->valueRange(),
+        colormap->valueAxis()->scaleType(), colormap->data()->valueSize());
+
+    int keyIndex, valueIndex;
+    if (colormap->keyAxis()->scaleType() == QCPAxis::stLogarithmic)
+    {
+        keyIndex = _log_scale_index(key, colormap->data()->keyRange(), colormap->data()->keySize());
+    }
+    else
+    {
+        colormap->data()->coordToCell(key, value, &keyIndex, nullptr);
+    }
+    if (colormap->valueAxis()->scaleType() == QCPAxis::stLogarithmic)
+    {
+        valueIndex = _log_scale_index(value, colormap->data()->valueRange(),
+                                      colormap->data()->valueSize());
+    }
+    else
+    {
+        colormap->data()->coordToCell(key, value, nullptr, &valueIndex);
+    }
+    const auto data = colormap->data()->cell(keyIndex, valueIndex);
+    return std::make_tuple(key, value, data);
+}
 
 PlotQuadrant _quadrant(const QPointF& pos, const QCPAxisRect* axisRect)
 {
@@ -165,7 +188,6 @@ void _update_tooltip_alignment(QCPItemRichText* tooltip, const PlotQuadrant quad
 
 } // namespace _impl
 
-
 TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
         : m_tooltip(new QCPItemRichText(parent)), m_tracer(new SciQLopTracer(parent))
 {
@@ -198,12 +220,13 @@ void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
     auto keyAxis = m_tracer->plotable()->keyAxis();
     auto valueAxis = m_tracer->plotable()->valueAxis();
     if (!std::isnan(m_data))
-        m_tooltip->setHtml(fmt::format("x: <b>{}</b><br>y: <b>{}</b><br>z: <b>{}</b>",
-            _impl::_render_value(m_x, keyAxis), _impl::_render_value(m_y, valueAxis),
-            _impl::_render_value(m_data)));
+        m_tooltip->setHtml(fmt::format(
+            "x: <b>{}</b><br>y: <b>{}</b><br>z: <b>{}</b>", _impl::_render_value(m_x, keyAxis),
+            _impl::_render_value(m_y, valueAxis), _impl::_render_value(m_data)));
     else
         m_tooltip->setHtml(fmt::format("x: <b>{}</b><br>y: <b>{}</b>",
-            _impl::_render_value(m_x, keyAxis), _impl::_render_value(m_y, valueAxis)));
+                                       _impl::_render_value(m_x, keyAxis),
+                                       _impl::_render_value(m_y, valueAxis)));
     if (replot)
         this->replot();
 }
@@ -275,19 +298,19 @@ double SciQLopTracer::selectTest(const QPointF& pos, bool onlySelectable, QVaria
         {
             if (clipRect().intersects(
                     QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
-                return qSqrt(qMin(QCPVector2D(pos).distanceSquaredToLine(
-                                      center + QPointF(-w, 0), center + QPointF(w, 0)),
-                    QCPVector2D(pos).distanceSquaredToLine(
-                        center + QPointF(0, -w), center + QPointF(0, w))));
+                return qSqrt(qMin(QCPVector2D(pos).distanceSquaredToLine(center + QPointF(-w, 0),
+                                                                         center + QPointF(w, 0)),
+                                  QCPVector2D(pos).distanceSquaredToLine(center + QPointF(0, -w),
+                                                                         center + QPointF(0, w))));
             break;
         }
         case TracerStyle::tsCrosshair:
         {
-            return qSqrt(
-                qMin(QCPVector2D(pos).distanceSquaredToLine(QCPVector2D(clip.left(), center.y()),
-                         QCPVector2D(clip.right(), center.y())),
-                    QCPVector2D(pos).distanceSquaredToLine(QCPVector2D(center.x(), clip.top()),
-                        QCPVector2D(center.x(), clip.bottom()))));
+            return qSqrt(qMin(
+                QCPVector2D(pos).distanceSquaredToLine(QCPVector2D(clip.left(), center.y()),
+                                                       QCPVector2D(clip.right(), center.y())),
+                QCPVector2D(pos).distanceSquaredToLine(QCPVector2D(center.x(), clip.top()),
+                                                       QCPVector2D(center.x(), clip.bottom()))));
         }
         case TracerStyle::tsCircle:
         {
@@ -425,8 +448,8 @@ void QCPAbstractPlottableDataLocator::setPosition(const QPointF& pos)
     }
 }
 
-std::tuple<double, double, double> QCPAbstractPlottableDataLocator::locate_data_graph(
-    const QPointF& pos, QCPGraph* graph)
+std::tuple<double, double, double>
+QCPAbstractPlottableDataLocator::locate_data_graph(const QPointF& pos, QCPGraph* graph)
 {
     if (auto data = _impl::_nearest_data_point(pos, graph); data.has_value())
     {
@@ -435,8 +458,8 @@ std::tuple<double, double, double> QCPAbstractPlottableDataLocator::locate_data_
     return std::make_tuple(std::nan(""), std::nan(""), std::nan(""));
 }
 
-std::tuple<double, double, double> QCPAbstractPlottableDataLocator::locate_data_curve(
-    const QPointF& pos, QCPCurve* curve)
+std::tuple<double, double, double>
+QCPAbstractPlottableDataLocator::locate_data_curve(const QPointF& pos, QCPCurve* curve)
 {
     if (auto data = _impl::_nearest_data_point(pos, curve); data.has_value())
     {
@@ -445,8 +468,8 @@ std::tuple<double, double, double> QCPAbstractPlottableDataLocator::locate_data_
     return std::make_tuple(std::nan(""), std::nan(""), std::nan(""));
 }
 
-std::tuple<double, double, double> QCPAbstractPlottableDataLocator::locate_data_colormap(
-    const QPointF& pos, QCPColorMap* colormap)
+std::tuple<double, double, double>
+QCPAbstractPlottableDataLocator::locate_data_colormap(const QPointF& pos, QCPColorMap* colormap)
 {
     return *_impl::_nearest_data_point(pos, colormap);
 }
