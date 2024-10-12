@@ -174,22 +174,24 @@ inline void _x_loop(const XYZView& view, QCPColorMapData* data, const T& x_axis,
                     T& avg_count)
 {
     PROFILE_HERE;
-    auto n_x = std::size(x_axis);
+    const auto n_x = std::size(x_axis);
+    const auto view_size = std::size(view);
     auto x_dest_idx = 0UL;
-    auto prev_x_val = view.x(0);
-    auto dx = view.x(1) - prev_x_val;
+    auto x_val = view.x(0);
+    auto dx = view.x(1) - x_val;
+    auto prev_x_val = x_val - dx;
     auto prev_dx = dx;
-    for (auto x_src_idx = 0UL; x_src_idx < std::size(view); x_src_idx++)
+    for (auto x_src_idx = 0UL; x_src_idx < view_size; x_src_idx++)
     {
-        auto x_val = view.x(x_src_idx);
+        x_val = view.x(x_src_idx);
         dx = x_val - prev_x_val;
         while (x_dest_idx < (n_x - 1) && x_val > x_axis[x_dest_idx])
         {
             if (x_src_idx < std::size(view) - 1)
             {
                 auto next_dx = view.x(x_src_idx + 1) - x_val;
-                if ((next_dx < (1.5 * dx))
-                    && (dx < 1.5 * prev_dx)) // data gap criterion (50%) increase in dx
+                if (((next_dx < (1.5 * dx)) && (dx < 1.5 * prev_dx))
+                    || dx == 0.) // data gap criterion (50%) increase in dx
                 {
                     _y_loop(view, data, y_axis, avg_count, x_src_idx, x_dest_idx);
                 }
