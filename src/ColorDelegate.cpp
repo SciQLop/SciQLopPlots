@@ -21,9 +21,12 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 
+#include <QPaintEvent>
+#include <QPainter>
+
 ColorDelegate::ColorDelegate(QColor color, QWidget* parent) : QPushButton(parent)
 {
-    setAutoFillBackground(true);
+    setAutoFillBackground(false);
     setFlat(true);
     setColor(color);
     connect(this, &QPushButton::clicked, this, &ColorDelegate::pick_color);
@@ -57,4 +60,14 @@ void ColorDelegate::pick_color()
             setColor(dialog.selectedColor());
         }
     }
+}
+
+void ColorDelegate::paintEvent(QPaintEvent* event)
+{
+    QPushButton::paintEvent(event);
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::black);
+    painter.setBrush(m_color);
+    painter.drawRect(rect().adjusted(2, 2, -2, -2));
 }

@@ -33,6 +33,8 @@ class ColorDelegate : public QPushButton
     QColor m_color;
 
 public:
+    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
+
     ColorDelegate(QColor color, QWidget* parent = nullptr);
     virtual ~ColorDelegate() = default;
 
@@ -45,4 +47,5 @@ public:
 
 protected:
     Q_SLOT void pick_color();
+    void paintEvent(QPaintEvent* event) override;
 };
