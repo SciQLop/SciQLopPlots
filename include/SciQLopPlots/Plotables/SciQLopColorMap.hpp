@@ -88,47 +88,50 @@ public:
         _gradient = gradient;
         if (_cmap)
         {
+            QCPColorGradient new_gradient;
             switch (gradient)
             {
 
                 case ColorGradient::Grayscale:
-                    _cmap->setGradient(QCPColorGradient::gpGrayscale);
+                    new_gradient = QCPColorGradient::gpGrayscale;
                     break;
                 case ColorGradient::Hot:
-                    _cmap->setGradient(QCPColorGradient::gpHot);
+                    new_gradient = QCPColorGradient::gpHot;
                     break;
                 case ColorGradient::Cold:
-                    _cmap->setGradient(QCPColorGradient::gpCold);
+                    new_gradient = QCPColorGradient::gpCold;
                     break;
                 case ColorGradient::Night:
-                    _cmap->setGradient(QCPColorGradient::gpNight);
+                    new_gradient = QCPColorGradient::gpNight;
                     break;
                 case ColorGradient::Candy:
-                    _cmap->setGradient(QCPColorGradient::gpCandy);
+                    new_gradient = QCPColorGradient::gpCandy;
                     break;
                 case ColorGradient::Geography:
-                    _cmap->setGradient(QCPColorGradient::gpGeography);
+                    new_gradient = QCPColorGradient::gpGeography;
                     break;
                 case ColorGradient::Ion:
-                    _cmap->setGradient(QCPColorGradient::gpIon);
+                    new_gradient = QCPColorGradient::gpIon;
                     break;
                 case ColorGradient::Thermal:
-                    _cmap->setGradient(QCPColorGradient::gpThermal);
+                    new_gradient = QCPColorGradient::gpThermal;
                     break;
                 case ColorGradient::Polar:
-                    _cmap->setGradient(QCPColorGradient::gpPolar);
+                    new_gradient = QCPColorGradient::gpPolar;
                     break;
                 case ColorGradient::Spectrum:
-                    _cmap->setGradient(QCPColorGradient::gpSpectrum);
+                    new_gradient = QCPColorGradient::gpSpectrum;
                     break;
                 case ColorGradient::Jet:
-                    _cmap->setGradient(QCPColorGradient::gpJet);
+                    new_gradient = QCPColorGradient::gpJet;
                     break;
                 case ColorGradient::Hues:
-                    _cmap->setGradient(QCPColorGradient::gpHues);
+                    new_gradient = QCPColorGradient::gpHues;
                     break;
             }
-            _cmap->gradient().setNanHandling(QCPColorGradient::nhTransparent);
+            new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
+            _cmap->setGradient(new_gradient);
+            _cmap->rescaleDataRange(true);
         }
     }
 
