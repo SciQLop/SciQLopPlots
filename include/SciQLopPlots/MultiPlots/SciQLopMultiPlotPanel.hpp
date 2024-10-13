@@ -117,6 +117,8 @@ protected:
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);
+    Q_PROPERTY(bool empty READ empty FINAL);
+
     SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true,
                           bool synchronize_time = false);
 
@@ -182,6 +184,7 @@ public:
     virtual QList<QColor> color_palette() const noexcept override;
 
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
+
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);

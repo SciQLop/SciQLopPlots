@@ -5,6 +5,7 @@ cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
+QCustomPlot_dep = dependency('qcustomplot')
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
@@ -17,9 +18,11 @@ src_list = find_program('bindings/helper_scripts/src_list.py')
 shiboken_helper = find_program('bindings/helper_scripts/shiboken-helper.py')
 shiboken_gen = find_program('bindings/helper_scripts/shiboken-gen.py')
 
-
 shiboken = find_program(f'shiboken@pyside_version@')
 qmake = find_program(qmake_possible_names)
+
+message(find_program('python3', required:true).full_path())
+
 
 pymod = import('python')
 python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
@@ -116,8 +119,8 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
-    project_source_root + '/include/SciQLopPlots/Icons/icons.hpp',
-    project_source_root + '/qcustomplot-source/qcustomplot.h'
+    project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
+    #project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
 moc_sources = []
@@ -196,15 +199,15 @@ sources = moc_files \
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
             '../src/ProductsView.cpp',
-            '../src/icons.cpp',
-            '../qcustomplot-source/qcustomplot.cpp'
+            '../src/icons.cpp'
+           # '../qcustomplot-source/qcustomplot.cpp'
         ]
 
 cpp_args = []
 
-if target_machine.system() != 'darwin'
-    cpp_args += ['-DQCUSTOMPLOT_USE_OPENGL']
-endif
+#if target_machine.system() != 'darwin'
+#    cpp_args += ['-DQCUSTOMPLOT_USE_OPENGL']
+#endif
 
 if get_option('trace_refcount') == true
     cpp_args += ['-D_TRACE_REF_COUNT']
@@ -222,7 +225,7 @@ endif
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, cpp_utils_dep, gl_dep, fmt_dep] + optional_deps,
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, QCustomPlot_dep, cpp_utils_dep, gl_dep, fmt_dep] + optional_deps,
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
