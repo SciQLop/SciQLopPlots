@@ -27,11 +27,12 @@
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
+#include <QFrame>
 #include <QPointF>
 #include <QUuid>
 #include <qcustomplot.h>
 
-class SciQLopPlotInterface : public QWidget
+class SciQLopPlotInterface : public QFrame
 {
 
     Q_OBJECT
@@ -80,7 +81,7 @@ public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed FINAL)
 
     SciQLopPlotInterface(QWidget* parent = nullptr, const QString& name = "")
-            : QWidget(parent), m_uuid(QUuid::createUuid())
+            : QFrame(parent), m_uuid(QUuid::createUuid())
     {
         if (!name.isEmpty())
             setObjectName(name);
@@ -280,7 +281,7 @@ public:
     Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
-    Q_SIGNAL void selection_changed();
+    Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void graph_list_changed();
 #endif
 

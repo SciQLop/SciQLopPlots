@@ -27,6 +27,8 @@ void SciQLopPlotInterface::set_selected(bool selected) noexcept
     if (m_selected != selected)
     {
         m_selected = selected;
-        Q_EMIT selection_changed();
+        Q_EMIT selection_changed(selected);
+        // to ensure that the style is updated
+        this->update();
     }
 }

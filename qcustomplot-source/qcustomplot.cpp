@@ -16841,7 +16841,8 @@ bool QCustomPlot::setupOpenGl()
 {
 #ifdef QCP_OPENGL_FBO
     freeOpenGl();
-    QSurfaceFormat proposedSurfaceFormat;
+    mGlContext = QSharedPointer<QOpenGLContext>(new QOpenGLContext);
+    QSurfaceFormat proposedSurfaceFormat= mGlContext->format();
     proposedSurfaceFormat.setSamples(mOpenGlMultisamples);
 #ifdef QCP_OPENGL_OFFSCREENSURFACE
     QOffscreenSurface* surface = new QOffscreenSurface;
@@ -16852,7 +16853,6 @@ bool QCustomPlot::setupOpenGl()
     surface->setFormat(proposedSurfaceFormat);
     surface->create();
     mGlSurface = QSharedPointer<QSurface>(surface);
-    mGlContext = QSharedPointer<QOpenGLContext>(new QOpenGLContext);
     mGlContext->setFormat(mGlSurface->format());
     if (!mGlContext->create())
     {

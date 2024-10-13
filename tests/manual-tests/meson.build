@@ -10,8 +10,9 @@ examples = [
 ]
 
 foreach example:examples
-    run_target('examples_'+example['name'],
-        command:[python3, example['source']],
+    test('examples_'+example['name'],
+        python3,
+        args: [example['source']],
         env: ['PYTHONPATH='+meson.project_build_root()]
     )
 endforeach

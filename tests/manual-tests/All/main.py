@@ -167,7 +167,8 @@ def fft(x, y, fft_size=2**12):
     if x is None or y is None:
         return np.array([]), np.array([])
     y = y[:, -1]
-    spec = np.zeros(fft_size, dtype='complex128')
+    freq = np.fft.rfftfreq(len(y), x[1]-x[0])
+    spec = np.zeros(len(freq), dtype='complex128')
     han = np.hanning(fft_size)
     nw = len(y)//fft_size
     if nw != 0:
@@ -175,10 +176,8 @@ def fft(x, y, fft_size=2**12):
             y_w = y[i*fft_size:(i+1)*fft_size]
             y_w = y_w-np.mean(y_w)
             y_w = y_w*han
-            spec += (np.fft.fft(y_w)/len(y_w))**2
+            spec += (np.fft.rfft(y_w)/len(y_w))**2
         spec = np.abs(np.sqrt(spec/nw))
-        freq = np.fft.fftfreq(len(spec), x[1]-x[0])[1:len(spec)//2]
-        spec = spec[1:len(spec)//2]
         return freq, spec
 
 class TsAndFFT(SciQLopMultiPlotPanel):
@@ -195,8 +194,8 @@ class TsAndFFT(SciQLopMultiPlotPanel):
 
 class RealTimeAudio(SciQLopMultiPlotPanel):
     class AudioDataProducer(QThread):
-        update_signal = Signal(np.ndarray, np.ndarray)
-        def __init__(self,parent=None, size=2**10, sample_rate=192000):
+        update_signal = Signal(object, object)
+        def __init__(self,parent=None, size=2**10, sample_rate=48000):
             super().__init__(parent)
             self.moveToThread(self)
             try:
@@ -204,6 +203,7 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
                 self._sd = sd
                 sd.default.samplerate = sample_rate
                 sd.default.channels = 1
+                #sd.default.device = 'pipewire'
                 self._size = size
                 self.x = np.arange(self._size, dtype=np.float64)
                 self.index = 0
@@ -228,7 +228,7 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
         def __init__(self, size, fft_size, sample_rate, roll=True):
             self._size = size
             self._x = np.arange(size, dtype=np.float64)
-            self._y = np.fft.fftfreq(fft_size, 1./sample_rate)[1:fft_size//2]
+            self._y = np.fft.rfftfreq(fft_size, 1./sample_rate)
             self._cutof = np.where(self._y>20000)[0][0]
             self._y = self._y[:self._cutof]
             self._z = np.zeros((size,len(self._y)), dtype=np.float64)
@@ -247,11 +247,14 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
                 print(f"Error: {e}")
                 return None
 
+    def _update_data(self, x, y):
+        self._graph.set_data(x, y)
+
     def __init__(self, parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         (self._plot,self._graph) = self.plot(np.arange(10)*1., np.arange(10)*1.,labels=["Audio"], colors=[QColorConstants.Blue])
         size = 2**12
-        sample_rate = 48000
+        sample_rate = 192000
         plot, self._fft_graph = self.plot(lambda x,y:fft(x,y,size),index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=self._graph)
         plot.x_axis().set_log(True)
         plot.x_axis().set_range(0.01, 1)
@@ -260,7 +263,8 @@ class RealTimeAudio(SciQLopMultiPlotPanel):
         self._audio_spec = RealTimeAudio.AudioSpectrogram(300,size,sample_rate)
         plot, _ = self.plot(self._audio_spec, name="Spectrogram",graph_type=GraphType.ColorMap, plot_type=PlotType.BasicXY, sync_with=self._fft_graph,y_log_scale=False,z_log_scale=True)
         self._data_producer = RealTimeAudio.AudioDataProducer(size=size, sample_rate=sample_rate)
-        self._data_producer.update_signal.connect(lambda x,y: self._graph.set_data(x,y))
+
+        self._data_producer.update_signal.connect(self._update_data)
 
 
 

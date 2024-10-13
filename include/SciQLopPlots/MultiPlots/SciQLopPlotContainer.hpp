@@ -36,6 +36,8 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
     SciQLopPlotRange _x_axis_range;
 
 public:
+    Q_PROPERTY(bool empty READ empty FINAL);
+
     SciQLopPlotContainer(QWidget* parent = nullptr);
     virtual ~SciQLopPlotContainer();
 
