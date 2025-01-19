@@ -75,4 +75,5 @@ void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
             _set_axis_range(range, plot, m_sync_axis);
         }
     }
+    emit range_changed(range);
 }

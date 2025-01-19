@@ -122,6 +122,8 @@ public:
     SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true,
                           bool synchronize_time = false);
 
+    virtual void replot(bool immediate = false) Q_DECL_OVERRIDE;
+
     inline QUuid uuid() const { return _uuid; }
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
@@ -190,6 +192,7 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
     Q_SIGNAL void selectionChanged(bool selected);
+    Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
 #endif // BINDINGS_H
 
 protected:

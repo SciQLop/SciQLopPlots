@@ -51,6 +51,14 @@ public:
     void remove_plot(SciQLopPlotInterface* plot, bool destroy);
     void removeWidget(QWidget* widget, bool destroy);
 
+    inline virtual void replot(bool immediate = false) Q_DECL_OVERRIDE
+    {
+        for (auto plot : plots())
+        {
+            plot->replot(immediate);
+        }
+    }
+
     inline int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
         return plots().indexOf(plot);
