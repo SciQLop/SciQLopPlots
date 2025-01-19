@@ -27,7 +27,7 @@ PlotsTreeView::PlotsTreeView(QWidget* parent) : QTreeView(parent)
 {
     header()->setVisible(false);
     setAlternatingRowColors(true);
-    setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setSelectionMode(QAbstractItemView::ExtendedSelection | QAbstractItemView::SingleSelection);
 }
 
 void PlotsTreeView::keyPressEvent(QKeyEvent* event)
