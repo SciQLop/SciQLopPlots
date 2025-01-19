@@ -41,4 +41,7 @@ public:
     Q_SLOT virtual void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
     Q_SLOT virtual void plotAdded(SciQLopPlotInterface* plot) override;
     Q_SLOT virtual void set_axis_range(const SciQLopPlotRange& range);
+#ifndef BINDINGS_H
+    Q_SIGNAL void range_changed(const SciQLopPlotRange& range);
+#endif
 };

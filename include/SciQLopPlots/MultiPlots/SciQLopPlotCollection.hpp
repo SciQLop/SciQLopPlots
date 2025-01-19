@@ -97,6 +97,9 @@ public:
         return {};
     }
 
+    inline virtual void  replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
+
+
     inline virtual void add_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void insert_plot(int index, SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }

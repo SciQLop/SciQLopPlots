@@ -55,13 +55,20 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
         ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
     {
-        ::register_behavior<TimeAxisSynchronizer>(_container);
+        auto b= ::register_behavior<TimeAxisSynchronizer>(_container);
         _default_plot_type = PlotType::TimeSeries;
+        connect(b, &TimeAxisSynchronizer::range_changed, this,
+                &SciQLopMultiPlotPanel::time_range_changed);
     }
     this->setAcceptDrops(true);
     setObjectName(UniqueNamesFactory::unique_name("Panel"));
 
     PlotsModel::instance()->addTopLevelNode(this);
+}
+
+void SciQLopMultiPlotPanel::replot(bool immediate)
+{
+    _container->replot(immediate);
 }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
