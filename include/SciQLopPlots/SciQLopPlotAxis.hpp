@@ -105,6 +105,7 @@ public:
 
     virtual QCPAxis* qcp_axis() const noexcept;
 };
+
 class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
 {
     Q_OBJECT
