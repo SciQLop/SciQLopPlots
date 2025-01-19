@@ -167,18 +167,21 @@ def fft(x, y, fft_size=2**12):
     if x is None or y is None:
         return np.array([]), np.array([])
     y = y[:, -1]
-    freq = np.fft.rfftfreq(len(y), x[1]-x[0])
+    freq = np.fft.rfftfreq(fft_size, x[1]-x[0])
     spec = np.zeros(len(freq), dtype='complex128')
     han = np.hanning(fft_size)
     nw = len(y)//fft_size
-    if nw != 0:
-        for i in range(nw):
-            y_w = y[i*fft_size:(i+1)*fft_size]
-            y_w = y_w-np.mean(y_w)
-            y_w = y_w*han
-            spec += (np.fft.rfft(y_w)/len(y_w))**2
-        spec = np.abs(np.sqrt(spec/nw))
-        return freq, spec
+    try:
+        if nw != 0:
+            for i in range(nw):
+                y_w = y[i*fft_size:(i+1)*fft_size]
+                y_w = y_w-np.mean(y_w)
+                y_w = y_w*han
+                spec += (np.fft.rfft(y_w)/len(y_w))**2
+            spec = np.abs(np.sqrt(spec/nw))
+            return freq, spec
+    except Exception as e:
+        print(f"Error: {e}")
 
 class TsAndFFT(SciQLopMultiPlotPanel):
     def __init__(self,parent):

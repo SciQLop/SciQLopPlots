@@ -190,13 +190,16 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
     auto parent = m_rootNode;
     for (const auto& name : path)
     {
-        auto node = parent->child(name);
-        if (node == nullptr)
+        if (!name.isEmpty())
         {
-            node = new ProductsModelNode(name);
-            _insert_node(node, parent);
+            auto node = parent->child(name);
+            if (node == nullptr)
+            {
+                node = new ProductsModelNode(name);
+                _insert_node(node, parent);
+            }
+            parent = node;
         }
-        parent = node;
     }
     _insert_node(obj, parent);
 }

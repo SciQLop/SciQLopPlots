@@ -22,30 +22,11 @@
 
 #include "SciQLopPlots/MultiPlots/AxisSynchronizer.hpp"
 
-
-void _set_axis_range(const SciQLopPlotRange& range, const QPointer<SciQLopPlotInterface>& plot, AxisType m_sync_axis)
+void _set_axis_range(const SciQLopPlotRange& range, const QPointer<SciQLopPlotInterface>& plot,
+                     AxisType m_sync_axis)
 {
-    switch (m_sync_axis)
-    {
-        case AxisType::XAxis:
-            if (auto axis = plot->x_axis())
-                axis->set_range(range);
-            break;
-        case AxisType::YAxis:
-            if (auto axis = plot->y_axis())
-                axis->set_range(range);
-            break;
-        case AxisType::ZAxis:
-            if (auto axis = plot->z_axis())
-                axis->set_range(range);
-            break;
-        case AxisType::TimeAxis:
-            if (auto axis = plot->time_axis())
-                axis->set_range(range);
-            break;
-        default:
-            break;
-    }
+    if (auto axis = plot->axis(m_sync_axis))
+        axis->set_range(range);
 }
 
 void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
@@ -56,27 +37,9 @@ void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>
         {
             if (!_plots.contains(plot))
             {
-                switch (m_sync_axis)
-                {
-                    case AxisType::XAxis:
-                        connect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
+                if (auto axis = plot->axis(m_sync_axis))
+                    connect(axis, &SciQLopPlotAxisInterface::range_changed, this,
                             &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::YAxis:
-                        connect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::ZAxis:
-                        connect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::TimeAxis:
-                        connect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    default:
-                        break;
-                }
             }
         }
     }
@@ -86,41 +49,23 @@ void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>
         {
             if (!plots.contains(plot))
             {
-                switch (m_sync_axis)
-                {
-                    case AxisType::XAxis:
-                        disconnect(plot, &SciQLopPlotInterface::x_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::YAxis:
-                        disconnect(plot, &SciQLopPlotInterface::y_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::ZAxis:
-                        disconnect(plot, &SciQLopPlotInterface::z_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    case AxisType::TimeAxis:
-                        disconnect(plot, &SciQLopPlotInterface::time_axis_range_changed, this,
-                            &AxisSynchronizer::set_axis_range);
-                        break;
-                    default:
-                        break;
-                }
+                if (auto axis = plot->axis(m_sync_axis))
+                    disconnect(axis, &SciQLopPlotAxisInterface::range_changed, this,
+                               &AxisSynchronizer::set_axis_range);
             }
         }
     }
     _plots = plots;
 }
 
-void AxisSynchronizer::plotAdded(SciQLopPlotInterface *plot)
+void AxisSynchronizer::plotAdded(SciQLopPlotInterface* plot)
 {
     _set_axis_range(_last_range, plot, m_sync_axis);
 }
 
 void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
 {
-    if (range == _last_range || range.isValid() == false)
+    if (range == _last_range || range.is_valid() == false)
         return;
     this->_last_range = range;
     for (auto plot : _plots)

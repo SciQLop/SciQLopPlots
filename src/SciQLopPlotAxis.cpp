@@ -33,7 +33,7 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent)
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (!m_axis.isNull()
+    if (!m_axis.isNull() && range.is_valid()
         && (m_axis->range().lower != range.start() || m_axis->range().upper != range.stop()))
     {
         m_axis->setRange(range.start(), range.stop());
