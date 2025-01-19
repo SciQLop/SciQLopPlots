@@ -32,21 +32,30 @@ private:
 
 public:
     SciQLopPlotRange() : m_start(std::nan("")), m_stop(std::nan("")) { }
+
     SciQLopPlotRange(double start, double stop)
             : m_start(std::min(start, stop)), m_stop(std::max(stop, start))
     {
     }
+
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
             : m_start(start.toSecsSinceEpoch()), m_stop(end.toSecsSinceEpoch())
     {
     }
 
     inline double start() const { return m_start; }
+
     inline double stop() const { return m_stop; }
+
     inline double size() const { return m_stop - m_start; }
+
     inline double center() const { return (m_start + m_stop) / 2; }
+
     inline bool is_empty() const { return m_start == m_stop; }
+
     inline bool contains(double value) const { return m_start <= value && value <= m_stop; }
+
+    inline bool isValid() const { return !std::isnan(m_start) && !std::isnan(m_stop); }
 
     inline bool contains(const SciQLopPlotRange& range) const
     {
@@ -115,5 +124,6 @@ public:
     }
 
     inline double operator[](int index) const { return index == 0 ? m_start : m_stop; }
+
     inline double& operator[](int index) { return index == 0 ? m_start : m_stop; }
 };

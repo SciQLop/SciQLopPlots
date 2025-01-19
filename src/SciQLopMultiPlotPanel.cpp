@@ -182,6 +182,9 @@ const SciQLopPlotRange& SciQLopMultiPlotPanel::x_axis_range() const
 
 void SciQLopMultiPlotPanel::set_time_axis_range(const SciQLopPlotRange& range)
 {
+    if (_container->empty())
+        if (auto* time_axis_synchronizer = ::behavior<TimeAxisSynchronizer>(_container))
+            time_axis_synchronizer->set_axis_range(range);
     _container->set_time_axis_range(range);
 }
 
@@ -190,9 +193,15 @@ const SciQLopPlotRange& SciQLopMultiPlotPanel::time_axis_range() const
     return _container->time_axis_range();
 }
 
-void SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* behavior)
+SciQLopPlotCollectionBehavior*
+SciQLopMultiPlotPanel::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
-    _container->register_behavior(behavior);
+    return _container->register_behavior(behavior);
+}
+
+SciQLopPlotCollectionBehavior* SciQLopMultiPlotPanel::behavior(const QString& type_name) const
+{
+    return _container->behavior(type_name);
 }
 
 void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)

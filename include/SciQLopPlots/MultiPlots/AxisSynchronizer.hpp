@@ -29,7 +29,7 @@ class AxisSynchronizer : public SciQLopPlotCollectionBehavior
 
 protected:
     QList<QPointer<SciQLopPlotInterface>> _plots;
-    std::pair<double, double> _last_x_range;
+    SciQLopPlotRange _last_range;
     AxisType m_sync_axis = AxisType::XAxis;
 
 public:
@@ -39,6 +39,6 @@ public:
     }
 
     Q_SLOT virtual void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
-
+    Q_SLOT virtual void plotAdded(SciQLopPlotInterface* plot) override;
     Q_SLOT virtual void set_axis_range(const SciQLopPlotRange& range);
 };
