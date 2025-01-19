@@ -44,6 +44,7 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
         if (plot->color_palette().empty())
             plot->set_color_palette(_color_palette);
         emit plot_list_changed(plots());
+        emit plot_added(plot);
     }
 }
 
@@ -115,13 +116,21 @@ void SciQLopPlotContainer::clear()
     emit plot_list_changed({});
 }
 
-void SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
+SciQLopPlotCollectionBehavior* SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
     behavior->setParent(this);
     _behaviors[behavior->metaObject()->className()] = behavior;
     behavior->updatePlotList(plots());
     connect(this, &SciQLopPlotContainer::plot_list_changed, behavior,
             &SciQLopPlotCollectionBehavior::updatePlotList);
+    connect(this, &SciQLopPlotContainer::plot_added, behavior,
+            &SciQLopPlotCollectionBehavior::plotAdded);
+    return behavior;
+}
+
+SciQLopPlotCollectionBehavior *SciQLopPlotContainer::behavior(const QString &type_name) const
+{
+    return _behaviors.value(type_name, nullptr);
 }
 
 void SciQLopPlotContainer::remove_behavior(const QString& type_name)

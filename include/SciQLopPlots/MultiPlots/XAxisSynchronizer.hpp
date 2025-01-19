@@ -33,4 +33,5 @@ public:
     XAxisSynchronizer(QObject* parent = nullptr) : AxisSynchronizer(AxisType::XAxis, parent) { }
 
     Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
+    Q_SLOT void plotAdded(SciQLopPlotInterface* plot) override;
 };

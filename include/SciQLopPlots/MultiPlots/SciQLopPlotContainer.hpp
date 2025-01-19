@@ -126,7 +126,9 @@ public:
         return _time_axis_range;
     }
 
-    void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    SciQLopPlotCollectionBehavior* register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+
+    SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const Q_DECL_OVERRIDE;
 
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
@@ -141,5 +143,6 @@ public:
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
+    Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
 #endif // BINDINGS_H
 };

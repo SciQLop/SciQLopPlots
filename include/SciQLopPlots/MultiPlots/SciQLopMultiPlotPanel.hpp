@@ -172,7 +172,8 @@ public:
         set_time_axis_range(SciQLopPlotRange(start, stop));
     }
 
-    void register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    SciQLopPlotCollectionBehavior* register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
     void add_accepted_mime_type(PlotDragNDropCallback* callback);

@@ -41,3 +41,8 @@ void XAxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface
     AxisSynchronizer::updatePlotList(plots);
     _display_x_axis_only_last_plot();
 }
+
+void XAxisSynchronizer::plotAdded(SciQLopPlotInterface *plot)
+{
+    AxisSynchronizer::plotAdded(plot);
+}

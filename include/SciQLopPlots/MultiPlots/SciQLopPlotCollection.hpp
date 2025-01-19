@@ -46,6 +46,8 @@ public:
     {
         WARN_ABSTRACT_METHOD;
     }
+
+    inline virtual Q_SLOT void plotAdded(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
 };
 
 class SciQLopPlotCollectionInterface
@@ -165,9 +167,17 @@ public:
     virtual void set_time_axis_range(const SciQLopPlotRange& range);
     virtual const SciQLopPlotRange& time_axis_range() const;
 
-    inline virtual void register_behavior(SciQLopPlotCollectionBehavior* behavior)
+    inline virtual SciQLopPlotCollectionBehavior*
+    register_behavior(SciQLopPlotCollectionBehavior* behavior)
     {
         WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline virtual SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
     }
 
     inline virtual void remove_behavior(const QString& type_name) { WARN_ABSTRACT_METHOD; }
@@ -225,9 +235,16 @@ public:
 };
 
 template <typename U, typename Interface_T, typename... Args>
-void register_behavior(Interface_T* interface, Args&&... args)
+U* register_behavior(Interface_T* interface, Args&&... args)
 {
-    interface->register_behavior(new U(interface, std::forward<Args>(args)...));
+    return qobject_cast<U*>(
+        interface->register_behavior(new U(interface, std::forward<Args>(args)...)));
+}
+
+template <typename U, typename Interface_T>
+U* behavior(Interface_T* interface)
+{
+    return qobject_cast<U*>(interface->behavior(U::staticMetaObject.className()));
 }
 
 template <typename U, typename Interface_T>
