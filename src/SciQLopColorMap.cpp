@@ -153,6 +153,7 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
             &SciQLopColorMapFunction::_set_data);
     connect(this, &SciQLopColorMap::range_changed, m_pipeline,
             &SimplePyCallablePipeline::set_range);
+    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }
 
 void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
