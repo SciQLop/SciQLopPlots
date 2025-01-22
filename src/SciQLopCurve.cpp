@@ -120,6 +120,7 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axi
             &SciQLopCurveFunction::_set_data);
     connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
             &SimplePyCallablePipeline::set_range);
+    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }
 
 void SciQLopCurveFunction::set_data(PyBuffer x, PyBuffer y)

@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
+#include <iostream>
 
 void SciQLopLineGraph::create_graphs(const QStringList& labels)
 {
@@ -116,6 +117,7 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis*
             &SciQLopLineGraphFunction::_set_data);
     connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
             &SimplePyCallablePipeline::set_range);
+    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }
 
 void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y)
