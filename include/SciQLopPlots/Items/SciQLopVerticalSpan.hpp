@@ -82,6 +82,7 @@ public:
     }
 
     void move(double dx, double dy) override;
+
     inline QCursor cursor(QMouseEvent*) const noexcept override
     {
         if (movable())
@@ -89,7 +90,6 @@ public:
         return Qt::ArrowCursor;
     }
 };
-
 
 class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
                      public SciQlopItemWithToolTip,
@@ -123,6 +123,7 @@ class VerticalSpan : public SciQLopPlotItem<QCPItemRect>,
         }
         return nullptr;
     }
+
     inline VerticalSpanBorder* _upper_border() const
     {
         if (!_border1.isNull() && !_border2.isNull())
@@ -177,7 +178,7 @@ public:
 #endif
 
     VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot = false,
-        bool immediate_replot = false);
+                 bool immediate_replot = false);
 
     inline void setMovable(bool movable) noexcept final
     {
@@ -188,7 +189,6 @@ public:
             this->_border2->setMovable(movable);
         }
     }
-
 
     ~VerticalSpan()
     {
@@ -228,13 +228,13 @@ public:
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept
     {
         return SciQLopPlotRange { this->_lower_border()->position(),
-            this->_upper_border()->position() };
+                                  this->_upper_border()->position() };
     }
 
     void move(double dx, double dy) override;
 
-    double selectTest(
-        const QPointF& pos, bool onlySelectable, QVariant* details = nullptr) const override;
+    double selectTest(const QPointF& pos, bool onlySelectable,
+                      QVariant* details = nullptr) const override;
 
     inline void set_borders_tool_tip(const QString& tool_tip)
     {
@@ -276,6 +276,7 @@ public:
         this->setPen(QPen { Qt::NoPen });
         this->setSelectedPen(QPen { Qt::NoPen });
     }
+
     [[nodiscard]] inline QColor color() const noexcept { return this->brush().color(); }
 
     inline void replot(bool immediate = false) final
@@ -291,7 +292,6 @@ public:
     }
 };
 
-
 class SciQLopVerticalSpan : public QObject
 {
     Q_OBJECT
@@ -301,6 +301,7 @@ class SciQLopVerticalSpan : public QObject
 
 protected:
     inline void select_lower_border(bool selected) { _impl->select_lower_border(selected); }
+
     inline void select_upper_border(bool selected) { _impl->select_upper_border(selected); }
 
 #ifndef BINDINGS_H
@@ -315,10 +316,11 @@ public:
     Q_SIGNAL void delete_requested();
 #endif
 
-    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range, QColor color,
-        bool read_only = false, bool visible = true, const QString& tool_tip = "");
+    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
+                        QColor color = QColor(100, 100, 100, 100), bool read_only = false,
+                        bool visible = true, const QString& tool_tip = "");
 
-    ~SciQLopVerticalSpan()
+    virtual ~SciQLopVerticalSpan() override
     {
         if (!this->_impl.isNull())
         {
@@ -343,6 +345,7 @@ public:
         if (!_impl.isNull())
             _impl->set_visible(visible);
     }
+
     inline bool visible() const noexcept
     {
         if (!_impl.isNull())
@@ -355,6 +358,7 @@ public:
         if (!_impl.isNull())
             this->_impl->set_range(horizontal_range);
     }
+
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept
     {
         if (!_impl.isNull())
@@ -367,6 +371,7 @@ public:
         if (!_impl.isNull())
             this->_impl->set_color(color);
     }
+
     [[nodiscard]] inline QColor color() const
     {
         if (!_impl.isNull())
@@ -379,6 +384,7 @@ public:
         if (!_impl.isNull())
             this->_impl->set_borders_color(color);
     }
+
     [[nodiscard]] inline QColor borders_color() const noexcept
     {
         if (!_impl.isNull())
@@ -391,6 +397,7 @@ public:
         if (!_impl.isNull())
             this->_impl->setSelected(selected);
     }
+
     [[nodiscard]] inline bool selected() const noexcept
     {
         if (!_impl.isNull())
@@ -403,6 +410,7 @@ public:
         if (!_impl.isNull())
             this->_impl->setMovable(!read_only);
     }
+
     [[nodiscard]] inline bool read_only() const noexcept
     {
         if (!_impl.isNull())
@@ -418,6 +426,7 @@ public:
             this->_impl->set_borders_tool_tip(tool_tip);
         }
     }
+
     [[nodiscard]] inline QString tool_tip() const noexcept
     {
         if (!_impl.isNull())
