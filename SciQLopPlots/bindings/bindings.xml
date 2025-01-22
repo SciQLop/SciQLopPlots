@@ -66,6 +66,27 @@
     </value-type>
 
     <value-type name="SciQLopPlotRange">
+        <extra-includes>
+          <include file-name="datetime.h" location="global"/>
+        </extra-includes>
+        <add-function signature="datetime_start" >
+            <inject-code class="target" position="end">
+                if (!PyDateTimeAPI)
+                    PyDateTime_IMPORT;
+                PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->start());
+                PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
+                return PyDateTime_FromTimestamp(timeTuple);
+            </inject-code>
+        </add-function>
+        <add-function signature="datetime_stop" >
+            <inject-code class="target" position="end">
+                if (!PyDateTimeAPI)
+                    PyDateTime_IMPORT;
+                PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->stop());
+                PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
+                return PyDateTime_FromTimestamp(timeTuple);
+            </inject-code>
+        </add-function>
         <add-function signature="__len__" >
             <inject-code class="target" position="end">
                 return PyLong_AsSsize_t(PyLong_FromLong(2));
@@ -216,6 +237,20 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="MultiPlotsVerticalSpan" parent-management="yes">
+        <modify-function signature="MultiPlotsVerticalSpan(SciQLopMultiPlotPanel*,SciQLopPlotRange,QColor,bool,bool,QString)">
+            <modify-argument index="3">
+                <rename to="color"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="read_only"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="visible"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="tool_tip"/>
+            </modify-argument>
+        </modify-function>
         <property name="range" type="SciQLopPlotRange" get="get_range" set="set_range" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="get_color" set="set_color" generate-getsetdef="yes"/>
         <property name="visible" type="bool" get="is_visible" set="set_visible" generate-getsetdef="yes"/>

@@ -68,9 +68,19 @@ if 'linux' in platform.system().lower():
 
 cmd = [args.shiboken, args.input_header, args.input_xml ] + shiboken_constant_args + cpp_flags(args.build_directory, args.ref_build_target) + [ f'--typesystem-paths={args.typesystem_paths}', f'--output-directory={args.output_directory}']
 
-subprocess.run(
-    cmd,
-    check=True,
-    env=env
-)
+try:
+    r = subprocess.run(
+        cmd,
+        check=True,
+        env=env,
+        capture_output=True
+    )
+except subprocess.CalledProcessError as e:
+    print(e)
+    print(e.stdout.decode())
+    print(e.stderr.decode())
+    sys.exit(e.returncode)
 
+print(r.stdout.decode())
+print(r.stderr.decode())
+sys.exit(r.returncode)

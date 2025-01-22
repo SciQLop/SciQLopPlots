@@ -55,7 +55,8 @@ public:
 #endif
 
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
-        QColor color, bool read_only = false, bool visible = true, const QString& tool_tip = "")
+        QColor color = QColor(100, 100, 100)
+            , bool read_only = false, bool visible = true, const QString tool_tip = "")
             : SciQLopMultiPlotObject(panel)
     {
         _horizontal_range = horizontal_range;
@@ -66,7 +67,7 @@ public:
         updatePlotList(panel->plots());
     }
 
-    ~MultiPlotsVerticalSpan()
+    virtual ~MultiPlotsVerticalSpan() override
     {
         for (auto span : _spans)
         {

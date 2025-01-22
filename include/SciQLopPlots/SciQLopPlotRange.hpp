@@ -55,7 +55,9 @@ public:
 
     inline bool contains(double value) const { return m_start <= value && value <= m_stop; }
 
-    inline bool is_valid() const { return !std::isnan(m_start) && !std::isnan(m_stop); }
+    inline bool is_null() const { return std::isnan(m_start) || std::isnan(m_stop); }
+
+    inline bool is_valid() const { return !is_null() && !is_empty(); }
 
     inline bool contains(const SciQLopPlotRange& range) const
     {
