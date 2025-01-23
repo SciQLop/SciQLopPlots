@@ -55,6 +55,8 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
+    this->_resampler->setMaxXSize(QGuiApplication::primaryScreen()->size().width());
+    this->_resampler->setMaxYSize(QGuiApplication::primaryScreen()->size().height());
     this->_icon_update_timer->setInterval(1000);
     this->_icon_update_timer->setSingleShot(true);
     connect(
@@ -64,6 +66,7 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
             &ColormapResampler::setScaleType, Qt::DirectConnection);
     connect(this->_resampler, &ColormapResampler::setGraphData, this,
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
+
     this->colorMap()->updateLegendIcon();
     this->colorMap()->setLayer(parent->layer("background"));
 
