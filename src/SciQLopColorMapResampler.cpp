@@ -22,9 +22,23 @@
 
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
-#include <iostream>
 
 #include "SciQLopPlots/Profiling.hpp"
+
+struct UnprotectQCPColorMapData : public QCPColorMapData
+{
+    double* data_ptr() { return mData; }
+
+    inline double unsafe_cell(int keyIndex, int valueIndex)
+    {
+        return mData[valueIndex * mKeySize + keyIndex];
+    }
+
+    inline void unsafe_setCell(int keyIndex, int valueIndex, double value)
+    {
+        mData[valueIndex * mKeySize + keyIndex] = value;
+    }
+};
 
 inline std::vector<double> _generate_range(double start, double end, std::size_t n,
                                            bool log = false)
@@ -122,18 +136,19 @@ inline void _divide(QCPColorMapData* data, const T& avg_count, const std::size_t
                     const std::size_t n_y)
 {
     PROFILE_HERE;
+    auto udata = static_cast<UnprotectQCPColorMapData*>(data);
     for (auto i = 0UL; i < n_x; i++)
     {
         for (auto j = 0UL; j < n_y; j++)
         {
-            auto count = avg_count[i * n_y + j];
+            auto count = static_cast<double>(avg_count[i * n_y + j]);
             if (count != 0)
             {
-                data->setCell(i, j, data->cell(i, j) / count);
+                udata->unsafe_setCell(i, j, udata->unsafe_cell(i, j) / count);
             }
             else
             {
-                data->setCell(i, j, std::nan(""));
+                udata->unsafe_setCell(i, j, std::nan(""));
             }
         }
     }
@@ -144,15 +159,18 @@ inline void _average_value(const XYZView& view, QCPColorMapData* data, T& avg_co
                            std::size_t x_src_idx, std::size_t x_dest_idx, std::size_t y_src_idx,
                            std::size_t y_dest_idx, std::size_t n_y)
 {
+    auto udata = static_cast<UnprotectQCPColorMapData*>(data);
     auto z_val = view.z(x_src_idx, y_src_idx);
-    data->setCell(x_dest_idx, y_dest_idx, data->cell(x_dest_idx, y_dest_idx) + z_val);
+    udata->unsafe_setCell(x_dest_idx, y_dest_idx,
+                          udata->unsafe_cell(x_dest_idx, y_dest_idx) + z_val);
     avg_count[x_dest_idx * n_y + y_dest_idx] += 1;
 }
 
-template <typename T>
-inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis, T& avg_count,
+template <typename T, typename U>
+inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis, U& avg_count,
                     std::size_t x_src_idx, std::size_t x_dest_idx)
 {
+    PROFILE_HERE;
     auto n_y = std::size(y_axis);
     auto y_dest_idx = 0UL;
     for (auto y_src_idx = 0UL; y_src_idx < view.z_shape().second; y_src_idx++)
@@ -169,9 +187,9 @@ inline void _y_loop(const XYZView& view, QCPColorMapData* data, const T& y_axis,
     }
 }
 
-template <typename T>
+template <typename T, typename U>
 inline void _x_loop(const XYZView& view, QCPColorMapData* data, const T& x_axis, const T& y_axis,
-                    T& avg_count)
+                    U& avg_count)
 {
     PROFILE_HERE;
     const auto n_x = std::size(x_axis);
@@ -211,7 +229,7 @@ inline void _copy_and_average(const XYZView& view, QCPColorMapData* data, const 
     PROFILE_HERE;
     auto n_x = std::size(x_axis);
     auto n_y = std::size(y_axis);
-    std::vector<double> avg_count(n_x * n_y, 0);
+    std::vector<uint16_t> avg_count(n_x * n_y, 0);
     _x_loop(view, data, x_axis, y_axis, avg_count);
     _divide(data, avg_count, n_x, n_y);
 }
@@ -220,8 +238,8 @@ auto _generate_axes(const XYZView& view, std::size_t max_x_size, std::size_t max
 {
     auto y_bounds = _y_bounds(view);
     auto x_bounds = std::pair { view.x(0), view.x(std::size(view) - 1) };
-    auto n_y = std::min(max_y_size, view.y_shape().second * 2);
-    auto n_x = std::min(max_x_size, std::size(view) * 2);
+    auto n_y = std::min(max_y_size, view.y_shape().second);
+    auto n_x = std::min(max_x_size, std::size(view));
     auto x_axis = _generate_range(x_bounds.first, x_bounds.second, n_x);
     auto y_axis = _generate_range(y_bounds.first, y_bounds.second, n_y, log);
     return std::pair { x_axis, y_axis };
@@ -231,12 +249,13 @@ void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, con
                                        const QCPRange new_range, bool new_data)
 {
     PROFILE_HERE_N("ColormapResampler::_resample_impl");
+    PROFILE_PASS_VALUE(z.flat_size());
     if (x.data() != nullptr && x.flat_size())
     {
         const auto view = XYZView(x, y, z, new_range.lower, new_range.upper);
         if (std::size(view) > 10) // less does not make much sense
         {
-            auto [x_axis, y_axis] = _generate_axes(view, this->_max_x_size, this->_max_y_size,
+            auto [x_axis, y_axis] = _generate_axes(view, this->maxXSize(), this->maxYSize(),
                                                    _log_scale.loadRelaxed());
             QCPColorMapData* data = new QCPColorMapData(std::size(x_axis), std::size(y_axis),
                                                         { x_axis.front(), x_axis.back() },

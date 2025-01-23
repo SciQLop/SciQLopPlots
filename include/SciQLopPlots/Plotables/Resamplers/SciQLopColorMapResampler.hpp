@@ -35,8 +35,8 @@ struct ColormapResampler : public AbstractResampler2d
 {
     Q_OBJECT
     QAtomicInteger<bool> _log_scale = false;
-    std::size_t _max_x_size = 1000;
-    std::size_t _max_y_size = 1000;
+    QAtomicInteger<std::size_t> _max_x_size = 1000;
+    QAtomicInteger<std::size_t> _max_y_size = 1000;
 
     void _resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
         const QCPRange new_range, bool new_data);
@@ -58,4 +58,10 @@ public:
     {
         return _log_scale.loadRelaxed() ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
     }
+
+    inline void setMaxXSize(std::size_t size) { _max_x_size.storeRelaxed(size); }
+    inline void setMaxYSize(std::size_t size) { _max_y_size.storeRelaxed(size); }
+
+    inline std::size_t maxXSize() const { return _max_x_size.loadRelaxed(); }
+    inline std::size_t maxYSize() const { return _max_y_size.loadRelaxed(); }
 };
