@@ -79,6 +79,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
+    m_color_scale->axis()->setNumberFormat("gb");
+
+    m_color_scale->axis()->setNumberPrecision(0);
 
     connect(m_color_scale->axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
