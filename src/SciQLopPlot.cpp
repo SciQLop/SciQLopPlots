@@ -37,6 +37,7 @@ namespace _impl
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
+    setAttribute(Qt::WA_OpaquePaintEvent);
     this->m_replot_timer = new QTimer(this);
     this->m_replot_timer->setSingleShot(true);
     this->m_replot_timer->setInterval(10);
@@ -78,6 +79,10 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
+
+    connect(m_color_scale->axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
+            [this](const QCPRange& range)
+            { Q_EMIT z_axis_range_changed({ range.lower, range.upper }); });
 
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));
@@ -545,6 +550,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
             &SciQLopPlot::y_axis_range_changed);
     connect(m_impl, &_impl::SciQLopPlot::y2_axis_range_changed, this,
             &SciQLopPlot::y2_axis_range_changed);
+    connect(m_impl, &_impl::SciQLopPlot::z_axis_range_changed, this,
+            &SciQLopPlot::z_axis_range_changed);
+
     connect(m_impl, &_impl::SciQLopPlot::scroll_factor_changed, this,
             &SciQLopPlot::scroll_factor_changed);
 

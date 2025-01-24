@@ -88,5 +88,7 @@ void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& pl
             [this](SciQLopPlotRange) { _recompute_margins(); });
         connect(p, &SciQLopPlot::y2_axis_range_changed, this,
             [this](SciQLopPlotRange) { _recompute_margins(); });
+        connect(p, &SciQLopPlot::z_axis_range_changed, this,
+            [this](SciQLopPlotRange) { _recompute_margins(); });
     }
 }

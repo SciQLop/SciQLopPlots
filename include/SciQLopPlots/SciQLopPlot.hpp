@@ -58,6 +58,7 @@ public:
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void plotables_list_changed();
 #endif
     explicit SciQLopPlot(QWidget* parent = nullptr);
