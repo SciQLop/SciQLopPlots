@@ -84,13 +84,12 @@ struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample_impl(const PyBuffer& x, const PyBuffer& y, const QCPRange new_range,
-                        bool new_data) override;
+    void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info) override;
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(QList<QVector<QCPGraphData>> data);
 #endif
 
-    LineGraphResampler(std::size_t line_cnt);
+    LineGraphResampler(SciQLopPlottableInterface* parent,std::size_t line_cnt);
 };

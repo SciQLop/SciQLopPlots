@@ -24,7 +24,9 @@
 #include <QObject>
 #include <QRecursiveMutex>
 #include <QVector>
+#include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Python/PythonInterface.hpp>
+#include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <qcustomplot.h>
 
 static inline QVector<QCPGraphData> copy_data(const XYView& view, std::size_t column_index)
@@ -37,33 +39,54 @@ static inline QVector<QCPGraphData> copy_data(const XYView& view, std::size_t co
     return data;
 }
 
+struct ResamplerPlotInfo
+{
+    bool x_is_log = false;
+    bool y_is_log = false;
+    QSize plot_size;
+    QCPRange plot_range;
+};
+
 struct ResamplerData1d
 {
     PyBuffer x;
     PyBuffer y;
-    QCPRange _x_range;
-    QCPRange _plot_range;
+    QCPRange x_range;
     bool new_data = true;
 };
+
+inline XYView make_view(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
+{
+    return XYView(data.x, data.y, plot_info.plot_range.lower, plot_info.plot_range.upper);
+}
 
 struct ResamplerData2d
 {
     PyBuffer x;
     PyBuffer y;
     PyBuffer z;
-    QCPRange _x_range;
-    QCPRange _plot_range;
+    QCPRange x_range;
     bool new_data = true;
 };
+
+inline XYZView make_view(const ResamplerData2d& data, const ResamplerPlotInfo& plot_info)
+{
+    return XYZView(data.x, data.y, data.z, plot_info.plot_range.lower, plot_info.plot_range.upper);
+}
 
 template <bool data2d, typename U>
 class _AbstractResampler
 {
-    using T = std::conditional_t<data2d, ResamplerData2d, ResamplerData1d>;
+public:
+    using data_t = std::conditional_t<data2d, ResamplerData2d, ResamplerData1d>;
+
+private:
     QRecursiveMutex _data_mutex;
     QRecursiveMutex _next_data_mutex;
-    T _data;
-    T _next_data;
+    data_t _data;
+    data_t _next_data;
+    QRecursiveMutex _plot_info_mutex;
+    ResamplerPlotInfo _plot_info;
 
 protected:
     inline void _async_resample_callback()
@@ -77,44 +100,55 @@ protected:
             }
             if constexpr (data2d)
             {
-                static_cast<U*>(this)->_resample_impl(_data.x, _data.y, _data.z, _data._plot_range,
-                                                      _data.new_data);
+                static_cast<U*>(this)->_resample_impl(_data, _plot_info);
             }
             else
             {
-                static_cast<U*>(this)->_resample_impl(_data.x, _data.y, _data._plot_range,
-                                                      _data.new_data);
+                static_cast<U*>(this)->_resample_impl(_data, _plot_info);
             }
         }
     }
 
     inline void set_next_plot_range(const QCPRange new_range)
     {
-        QMutexLocker locker(&_next_data_mutex);
-        _next_data._plot_range = new_range;
+        QMutexLocker locker(&_plot_info_mutex);
+        _plot_info.plot_range = new_range;
+    }
+
+    QCPRange _bounds(const PyBuffer& b)
+    {
+        const auto len = b.flat_size();
+        if (len > 0)
+        {
+            return { b.data()[0], b.data()[len - 1] };
+        }
+        return { std::nan(""), std::nan("") };
     }
 
 public:
-    template <typename... Args>
-    inline void setData(PyBuffer x, Args... args)
+
+    inline void setData(PyBuffer x, PyBuffer y, auto... maybe_z)
     {
+        constexpr auto has_z = sizeof...(maybe_z) == 1;
+        static_assert(! (data2d xor has_z), "Data must be 2D or 3D");
         {
-            QCPRange _data_x_range;
-            const auto len = x.flat_size();
-            if (len > 0)
-            {
-                _data_x_range.lower = x.data()[0];
-                _data_x_range.upper = x.data()[len - 1];
-            }
-            else
-            {
-                _data_x_range.lower = std::nan("");
-                _data_x_range.upper = std::nan("");
-            }
+            const QCPRange data_x_range = _bounds(x);
             QMutexLocker locker(&_next_data_mutex);
-            _next_data = T { std::move(x), std::move(args)..., _data_x_range, _data_x_range, true };
-            static_cast<U*>(this)->resample(_data_x_range);
+            _next_data = data_t { std::move(x), std::move(y), std::move(maybe_z)..., data_x_range, true };
+            static_cast<U*>(this)->resample(data_x_range);
         }
+    }
+
+    inline void set_x_scale_log(bool log)
+    {
+        QMutexLocker locker(&_plot_info_mutex);
+        _plot_info.x_is_log = log;
+    }
+
+    inline void set_y_scale_log(bool log)
+    {
+        QMutexLocker locker(&_plot_info_mutex);
+        _plot_info.y_is_log = log;
     }
 
     inline QCPRange x_range()
@@ -136,10 +170,18 @@ public:
             return { _data.x, _data.y };
         }
     }
+
+    void set_plot_size(QSize size)
+    {
+        QMutexLocker locker(&_plot_info_mutex);
+        _plot_info.plot_size = size;
+        static_cast<U*>(this)->resample(_plot_info.plot_range);
+    }
 };
 
 struct AbstractResampler1d : public QObject, public _AbstractResampler<false, AbstractResampler1d>
 {
+private:
     friend class _AbstractResampler<false, AbstractResampler1d>;
 
 protected:
@@ -152,13 +194,16 @@ protected:
     Q_SIGNAL void _resample_sig();
 #endif
 
-    virtual void _resample_impl(const PyBuffer& x, const PyBuffer& y, const QCPRange new_range,
-                                bool new_data)
-        = 0;
+    virtual void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info) = 0;
 
 public:
-    AbstractResampler1d(std::size_t line_cnt);
+    AbstractResampler1d(SciQLopPlottableInterface* parent, std::size_t line_cnt);
     virtual ~AbstractResampler1d() = default;
+
+    inline SciQLopPlottableInterface* parent_plottable() const
+    {
+        return static_cast<SciQLopPlottableInterface*>(QObject::parent());
+    }
 
     void resample(const QCPRange new_range);
 
@@ -180,13 +225,16 @@ protected:
     Q_SIGNAL void _resample_sig();
 #endif
 
-    virtual void _resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-                                const QCPRange new_range, bool new_data)
-        = 0;
+    virtual void _resample_impl(const ResamplerData2d& data, const ResamplerPlotInfo& plot_info) = 0;
 
 public:
-    AbstractResampler2d();
+    AbstractResampler2d(SciQLopPlottableInterface* parent);
     virtual ~AbstractResampler2d() = default;
+
+    inline SciQLopPlottableInterface* parent_plottable() const
+    {
+        return static_cast<SciQLopPlottableInterface*>(QObject::parent());
+    }
 
     void resample(const QCPRange new_range);
 };

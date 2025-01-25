@@ -60,6 +60,7 @@ public:
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void plotables_list_changed();
+    Q_SIGNAL void resized(QSize size);
 #endif
     explicit SciQLopPlot(QWidget* parent = nullptr);
 
@@ -197,6 +198,8 @@ protected:
     virtual void keyPressEvent(QKeyEvent* event) override;
 
     virtual bool event(QEvent* event) override;
+
+    virtual void resizeEvent(QResizeEvent* event) override;
 
     bool _update_tracer(const QPointF& pos);
     bool _update_mouse_cursor(QMouseEvent* event);

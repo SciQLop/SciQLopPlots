@@ -51,19 +51,18 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
     this->set_gradient(ColorGradient::Jet);
     this->set_name(name);
 
-    this->_resampler = new ColormapResampler(_valueAxis->qcp_axis()->scaleType());
+    this->_resampler = new ColormapResampler(this, _valueAxis->log());
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
-    this->_resampler->setMaxXSize(QGuiApplication::primaryScreen()->size().width());
-    this->_resampler->setMaxYSize(QGuiApplication::primaryScreen()->size().height());
     this->_icon_update_timer->setInterval(1000);
     this->_icon_update_timer->setSingleShot(true);
     connect(
         this->_icon_update_timer, &QTimer::timeout, this->_cmap,
         [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
-    connect(this->_valueAxis->qcp_axis(), &QCPAxis::scaleTypeChanged, this->_resampler,
-            &ColormapResampler::setScaleType, Qt::DirectConnection);
+    connect(
+        this->_valueAxis, &SciQLopPlotAxis::log_changed, this->_resampler,
+        [this](bool log) { this->_resampler->set_y_scale_log(log); }, Qt::DirectConnection);
     connect(this->_resampler, &ColormapResampler::setGraphData, this,
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
 

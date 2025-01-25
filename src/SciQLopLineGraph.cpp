@@ -59,7 +59,7 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAx
         this->create_graphs(labels);
     }
     connect(key_axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
-            &LineGraphResampler::resample);
+            [this](const QCPRange& newRange) { this->_resampler->resample(newRange); });
 }
 
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
@@ -81,7 +81,7 @@ void SciQLopLineGraph::clear_resampler()
 
 void SciQLopLineGraph::create_resampler(const QStringList& labels)
 {
-    this->_resampler = new LineGraphResampler(std::size(labels));
+    this->_resampler = new LineGraphResampler(this, std::size(labels));
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);

@@ -56,7 +56,7 @@ void SciQLopCurve::clear_resampler()
 
 void SciQLopCurve::create_resampler(const QStringList& labels)
 {
-    this->_resampler = new CurveResampler(std::size(labels));
+    this->_resampler = new CurveResampler(this, std::size(labels));
     this->_resampler_thread = new QThread();
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
