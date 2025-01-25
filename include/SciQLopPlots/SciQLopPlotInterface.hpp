@@ -283,6 +283,7 @@ public:
     Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void graph_list_changed();
+    Q_SIGNAL void resized();
 #endif
 
 protected:

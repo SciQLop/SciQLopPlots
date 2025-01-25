@@ -21,16 +21,19 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp"
 
-
 void AbstractResampler1d::_async_resample()
 {
     _async_resample_callback();
 }
 
-AbstractResampler1d::AbstractResampler1d(std::size_t line_cnt) : _line_cnt { line_cnt }
+AbstractResampler1d::AbstractResampler1d(SciQLopPlottableInterface* parent, std::size_t line_cnt)
+        : QObject(parent), _line_cnt { line_cnt }
 {
     connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_async_resample,
-        Qt::QueuedConnection);
+            Qt::QueuedConnection);
+    connect(parent, &SciQLopPlottableInterface::parent_plot_resized, this,
+            [this](const QSize& size) { this->set_plot_size(size); });
+    this->set_plot_size(parent->parent_plot_size());
 }
 
 void AbstractResampler1d::resample(const QCPRange new_range)
@@ -44,10 +47,13 @@ void AbstractResampler2d::_async_resample()
     _async_resample_callback();
 }
 
-AbstractResampler2d::AbstractResampler2d()
+AbstractResampler2d::AbstractResampler2d(SciQLopPlottableInterface* parent) : QObject(parent)
 {
     connect(this, &AbstractResampler2d::_resample_sig, this, &AbstractResampler2d::_async_resample,
-        Qt::QueuedConnection);
+            Qt::QueuedConnection);
+    connect(parent, &SciQLopPlottableInterface::parent_plot_resized, this,
+            [this](const QSize& size) { this->set_plot_size(size); });
+    this->set_plot_size(parent->parent_plot_size());
 }
 
 void AbstractResampler2d::resample(const QCPRange new_range)

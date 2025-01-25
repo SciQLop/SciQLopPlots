@@ -23,25 +23,30 @@
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 
-LineGraphResampler::LineGraphResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
-
-void LineGraphResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y,
-                                        const QCPRange new_range, bool new_data)
+LineGraphResampler::LineGraphResampler(SciQLopPlottableInterface* parent, std::size_t line_cnt)
+        : AbstractResampler1d { parent, line_cnt }
 {
+}
 
+void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
+                                        const ResamplerPlotInfo& plot_info)
+{
     PROFILE_HERE_N("LineGraphResampler::_resample_impl");
-    PROFILE_PASS_VALUE(x.flat_size());
-    if (x.data() != nullptr && x.flat_size() > 0)
+    PROFILE_PASS_VALUE(data.x.flat_size());
+    // 4x the plot width is a reasonable maximum size for the data,
+    // with anti-aliasing we have to provide a little points than pixels
+    const auto max_x_size = static_cast<std::size_t>(plot_info.plot_size.width() * 4);
+    if (data.x.data() && data.x.flat_size() && max_x_size)
     {
-        const auto view = XYView(x, y, new_range.lower, new_range.upper);
+        const auto view = make_view(data, plot_info);
         if (std::size(view))
         {
             QList<QVector<QCPGraphData>> data;
             for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
-                if (std::size(view) > 10000)
+                if ((std::size(view) > max_x_size) && !plot_info.x_is_log)
                 {
-                    data.emplace_back(::resample(view, line_index, 10000));
+                    data.emplace_back(::resample(view, line_index, max_x_size));
                 }
                 else
                 {

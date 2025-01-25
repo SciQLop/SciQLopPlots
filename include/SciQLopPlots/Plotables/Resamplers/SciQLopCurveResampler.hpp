@@ -27,18 +27,16 @@
 #include <QMutex>
 #include <qcustomplot.h>
 
-
 struct CurveResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    void _resample_impl(
-        const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data) override;
+    void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info);
 
 public:
 #ifndef BINDINGS_H
     Q_SIGNAL void setGraphData(QList<QVector<QCPCurveData>> data);
 #endif // !BINDINGS_H
 
-    CurveResampler(std::size_t line_cnt);
+    CurveResampler(SciQLopPlottableInterface* parent, std::size_t line_cnt);
 };

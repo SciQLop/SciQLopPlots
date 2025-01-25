@@ -245,18 +245,20 @@ auto _generate_axes(const XYZView& view, std::size_t max_x_size, std::size_t max
     return std::pair { x_axis, y_axis };
 }
 
-void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-                                       const QCPRange new_range, bool new_data)
+void ColormapResampler::_resample_impl(const ResamplerData2d& data,
+                                       const ResamplerPlotInfo& plot_info)
 {
     PROFILE_HERE_N("ColormapResampler::_resample_impl");
-    PROFILE_PASS_VALUE(z.flat_size());
-    if (x.data() != nullptr && x.flat_size())
+    PROFILE_PASS_VALUE(data.z.flat_size());
+    const auto max_x_size = plot_info.plot_size.width();
+    const auto max_y_size = plot_info.plot_size.height();
+    if (data.x.data() && data.x.flat_size() && max_x_size && max_y_size)
     {
-        const auto view = XYZView(x, y, z, new_range.lower, new_range.upper);
+        const auto view = make_view(data, plot_info);
         if (std::size(view) > 10) // less does not make much sense
         {
-            auto [x_axis, y_axis] = _generate_axes(view, this->maxXSize(), this->maxYSize(),
-                                                   _log_scale.loadRelaxed());
+            auto [x_axis, y_axis]
+                = _generate_axes(view, max_x_size, max_y_size, plot_info.y_is_log);
             QCPColorMapData* data = new QCPColorMapData(std::size(x_axis), std::size(y_axis),
                                                         { x_axis.front(), x_axis.back() },
                                                         { y_axis.front(), y_axis.back() });
@@ -267,7 +269,8 @@ void ColormapResampler::_resample_impl(const PyBuffer& x, const PyBuffer& y, con
     }
 }
 
-ColormapResampler::ColormapResampler(QCPAxis::ScaleType scale_type)
-        : AbstractResampler2d {}, _log_scale { scale_type == QCPAxis::stLogarithmic }
+ColormapResampler::ColormapResampler(SciQLopPlottableInterface* parent, bool y_scale_is_log)
+        : AbstractResampler2d { parent }
 {
+    set_y_scale_log(y_scale_is_log);
 }

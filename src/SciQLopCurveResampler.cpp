@@ -21,8 +21,8 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 
-QVector<QCPCurveData> curve_copy_data(
-    const double* x, const double* y, std::size_t x_size, const int y_incr)
+QVector<QCPCurveData> curve_copy_data(const double* x, const double* y, std::size_t x_size,
+                                      const int y_incr)
 {
     QVector<QCPCurveData> data(x_size);
     const double* current_y_it = y;
@@ -34,22 +34,23 @@ QVector<QCPCurveData> curve_copy_data(
     return data;
 }
 
-
-void CurveResampler::_resample_impl(
-    const PyBuffer& x, const PyBuffer& y, const QCPRange newRange, bool new_data)
+void CurveResampler::_resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
 {
-    if (x.data() != nullptr && x.flat_size() > 0 && new_data)
+    if (data.x.data()  && data.x.flat_size() > 0 && data.new_data)
     {
         const auto y_incr = 1UL;
-        QList<QVector<QCPCurveData>> data;
+        QList<QVector<QCPCurveData>> curve_data;
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
-            const auto count = std::size(x);
-            const auto start_y = y.data() + (line_index * x.flat_size());
-            data.emplace_back(curve_copy_data(x.data(), start_y, count, y_incr));
+            const auto count = std::size(data.x);
+            const auto start_y = data.y.data() + (line_index * data.x.flat_size());
+            curve_data.emplace_back(curve_copy_data(data.x.data(), start_y, count, y_incr));
         }
-        Q_EMIT setGraphData(data);
+        Q_EMIT setGraphData(curve_data);
     }
 }
 
-CurveResampler::CurveResampler(std::size_t line_cnt) : AbstractResampler1d { line_cnt } { }
+CurveResampler::CurveResampler(SciQLopPlottableInterface* parent, std::size_t line_cnt)
+        : AbstractResampler1d { parent, line_cnt }
+{
+}

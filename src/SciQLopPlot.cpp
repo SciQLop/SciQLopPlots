@@ -367,6 +367,12 @@ bool SciQLopPlot::event(QEvent* event)
     return r;
 }
 
+void SciQLopPlot::resizeEvent(QResizeEvent* event)
+{
+    QCustomPlot::resizeEvent(event);
+    Q_EMIT resized(event->size());
+}
+
 bool SciQLopPlot::_update_tracer(const QPointF& pos)
 {
     auto plotable = plottableAt(pos, false);
@@ -448,6 +454,8 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
                 emit this->plotables_list_changed();
             });
     connect(plottable, &SciQLopGraphInterface::replot, this, [this]() { this->replot(); });
+    connect(this, &SciQLopPlot::resized, plottable,
+            &SciQLopPlottableInterface::parent_plot_resized);
     emit this->plotables_list_changed();
 }
 

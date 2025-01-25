@@ -30,6 +30,7 @@
 #include <QColor>
 #include <QList>
 #include <QObject>
+#include <QWidget>
 #include <utility>
 
 class SciQLopPlotAxisInterface;
@@ -115,6 +116,21 @@ public:
         return nullptr;
     }
 
+    inline virtual std::size_t parent_plot_height() const noexcept
+    {
+        return qobject_cast<QWidget*>(parent())->height();
+    }
+
+    inline virtual std::size_t parent_plot_width() const noexcept
+    {
+        return qobject_cast<QWidget*>(parent())->width();
+    }
+
+    inline virtual QSize parent_plot_size() const noexcept
+    {
+        return qobject_cast<QWidget*>(parent())->size();
+    }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
@@ -123,6 +139,7 @@ public:
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void parent_plot_resized(const QSize& size);
 #endif
 };
 
