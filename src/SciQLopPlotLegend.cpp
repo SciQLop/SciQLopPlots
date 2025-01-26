@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,27 +20,38 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopPlotLegend.hpp"
+#include "SciQLopPlots/Debug.hpp"
+#include <qcp.h>
 
-REGISTER_DELEGATE(SciQLopPlotDelegate);
-
-SciQLopPlot* SciQLopPlotDelegate::plot() const
+SciQLopPlotLegend::SciQLopPlotLegend(QCPLegend* legend, QObject* parent)
+        : SciQLopPlotLegendInterface(parent), m_legend(legend)
 {
-    return as_type<SciQLopPlot>(m_object);
+    legend->setSelectableParts(QCPLegend::spItems);
 }
 
-SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
+bool SciQLopPlotLegend::is_visible() const
 {
-    auto legend = object->legend();
-    auto legend_delegate = new LegendDelegate(legend->is_visible(), this);
-    m_layout->addWidget(legend_delegate);
-    connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
-            &SciQLopPlotLegendInterface::set_visible);
-    connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
-            &LegendDelegate::set_visible);
+    return m_legend->visible();
+}
 
+void SciQLopPlotLegend::set_visible(bool visible)
+{
+    if (visible != is_visible())
+    {
+        m_legend->setVisible(visible);
+        m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT visibility_changed(visible);
+    }
+}
+
+QPointF SciQLopPlotLegend::position() const
+{
+    WARN_UNSUPPORTED_FUNCTIONALITY;
+    return QPointF();
+}
+
+void SciQLopPlotLegend::set_position(const QPointF&)
+{
+    WARN_UNSUPPORTED_FUNCTIONALITY;
 }

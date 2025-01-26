@@ -53,8 +53,8 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::SpansBorders)->setVisible(true);
     this->setFocusPolicy(Qt::StrongFocus);
-    this->grabGesture(Qt::PinchGesture);
-    this->grabGesture(Qt::PanGesture);
+    this->grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren);
+    this->grabGesture(Qt::PanGesture, Qt::DontStartGestureOnChildren);
 
     this->m_tracer = new TracerWithToolTip(this);
     this->setMouseTracking(true);
@@ -559,7 +559,8 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 
     set_axes_to_rescale(
         QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
-    this->enable_legend(true);
+    this->m_legend = new SciQLopPlotLegend(m_impl->legend, this);
+    m_legend->set_visible(true);
     this->minimize_margins();
 }
 
@@ -577,13 +578,6 @@ double SciQLopPlot::scroll_factor() const noexcept
 }
 
 void SciQLopPlot::enable_cursor(bool enable) noexcept { }
-
-void SciQLopPlot::enable_legend(bool show) noexcept
-{
-    m_impl->legend->setVisible(show);
-    m_impl->legend->setSelectableParts(QCPLegend::spItems);
-    replot();
-}
 
 void SciQLopPlot::minimize_margins()
 {
@@ -728,6 +722,15 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
         _connect_callable_sync(plotable, sync_with);
     }
     return plotable;
+}
+
+void SciQLopPlot::toggle_selected_objects_visibility() noexcept
+{
+    for (auto item : m_impl->selectedItems())
+    {
+        item->setVisible(!item->visible());
+    }
+    replot();
 }
 
 SciQLopPlottableInterface* SciQLopPlot::plottable(int index)
