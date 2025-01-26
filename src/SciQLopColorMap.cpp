@@ -39,17 +39,18 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
     }
 }
 
-SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                                 SciQLopPlotAxis* valueAxis, const QString& name)
+SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, const QString& name)
         : SciQLopColorMapInterface(parent)
         , _icon_update_timer { new QTimer(this) }
-        , _keyAxis { keyAxis }
-        , _valueAxis { valueAxis }
+        , _keyAxis { xAxis }
+        , _valueAxis { yAxis }
+        , _colorScaleAxis { zAxis }
 {
     this->_cmap = new QCPColorMap(this->_keyAxis->qcp_axis(), this->_valueAxis->qcp_axis());
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
-    this->set_gradient(ColorGradient::Jet);
-    this->set_name(name);
+    SciQLopColorMap::set_gradient(ColorGradient::Jet);
+    SciQLopColorMap::set_name(name);
 
     this->_resampler = new ColormapResampler(this, _valueAxis->log());
     this->_resampler_thread = new QThread();
@@ -145,10 +146,10 @@ void SciQLopColorMap::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
     }
 }
 
-SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
-                                                 SciQLopPlotAxis* value_axis,
+SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                                  GetDataPyCallable&& callable, const QString& name)
-        : SciQLopColorMap(parent, key_axis, value_axis, name)
+        : SciQLopColorMap(parent, xAxis, yAxis, zAxis, name)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this,

@@ -27,7 +27,7 @@ void AbstractResampler1d::_async_resample()
 }
 
 AbstractResampler1d::AbstractResampler1d(SciQLopPlottableInterface* parent, std::size_t line_cnt)
-        : QObject(parent), _line_cnt { line_cnt }
+        : QObject(), _line_cnt { line_cnt }
 {
     connect(this, &AbstractResampler1d::_resample_sig, this, &AbstractResampler1d::_async_resample,
             Qt::QueuedConnection);
@@ -47,7 +47,7 @@ void AbstractResampler2d::_async_resample()
     _async_resample_callback();
 }
 
-AbstractResampler2d::AbstractResampler2d(SciQLopPlottableInterface* parent) : QObject(parent)
+AbstractResampler2d::AbstractResampler2d(SciQLopPlottableInterface* parent) : QObject()
 {
     connect(this, &AbstractResampler2d::_resample_sig, this, &AbstractResampler2d::_async_resample,
             Qt::QueuedConnection);

@@ -144,8 +144,10 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
 {
     if (m_color_map == nullptr)
     {
-        m_color_map = new SciQLopColorMap(this, this->m_axes[0], this->m_axes[3], name);
-        _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        m_color_map = new SciQLopColorMap(
+            this, this->m_axes[0], this->m_axes[3],
+            reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name);
+        _ensure_colorscale_is_visible(m_color_map);
         _register_plottable_wrapper(m_color_map);
         return m_color_map;
     }
@@ -158,9 +160,11 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
 {
     if (m_color_map == nullptr)
     {
-        m_color_map = new SciQLopColorMapFunction(this, this->m_axes[0], this->m_axes[3],
-                                                  std::move(callable), name);
-        _configure_color_map(m_color_map, y_log_scale, z_log_scale);
+        m_color_map = new SciQLopColorMapFunction(
+            this, this->m_axes[0], this->m_axes[3],
+            reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable),
+            name);
+        _ensure_colorscale_is_visible(m_color_map);
         _register_plottable_wrapper(m_color_map);
         return qobject_cast<SciQLopColorMapFunction*>(m_color_map);
     }
@@ -459,31 +463,14 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
     emit this->plotables_list_changed();
 }
 
-void SciQLopPlot::_configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale)
+void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
 {
     if (!m_color_scale->visible())
     {
-        if (y_log_scale)
-        {
-            set_axis_log(QCPAxis::atRight, true);
-        }
-        set_axis_visible(QCPAxis::atRight, true);
         m_color_scale->setVisible(true);
         plotLayout()->addElement(0, 1, m_color_scale);
         cmap->colorMap()->setColorScale(m_color_scale);
         cmap->colorMap()->setInterpolate(false);
-        if (z_log_scale)
-        {
-            cmap->colorMap()->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->setDataScaleType(QCPAxis::stLogarithmic);
-            m_color_scale->axis()->setTicker(
-                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-        }
-
-        auto gradient = QCPColorGradient(QCPColorGradient::gpJet);
-        gradient.setNanHandling(QCPColorGradient::nhTransparent);
-        cmap->colorMap()->setGradient(gradient);
-        cmap->set_auto_scale_y(true);
     }
 }
 
@@ -648,7 +635,29 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuff
 {
     auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
     cm->set_data(std::move(x), std::move(y), std::move(z));
+    _configure_color_map(cm, y_log_scale, z_log_scale);
     return cm;
+}
+
+void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale,
+                                       bool z_log_scale)
+{
+    if (cmap)
+    {
+        {
+            auto y_axis = cmap->y_axis();
+            y_axis->set_log(y_log_scale);
+            y_axis->set_visible(true);
+        }
+        {
+            if (auto z_axis = reinterpret_cast<SciQLopPlotColorScaleAxis*>(cmap->z_axis()))
+            {
+                z_axis->set_log(z_log_scale);
+                z_axis->set_visible(true);
+            }
+        }
+        cmap->set_gradient(ColorGradient::Jet);
+    }
 }
 
 void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with)
@@ -712,8 +721,10 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
 {
     SciQLopColorMapInterface* plotable = nullptr;
     plotable = m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale);
+
     if (plotable)
     {
+        _configure_color_map(plotable, y_log_scale, z_log_scale);
         _connect_callable_sync(plotable, sync_with);
     }
     return plotable;

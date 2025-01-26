@@ -64,7 +64,7 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
             Qt::QueuedConnection);
 }
 
-SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                            const QStringList& labels)
         : SQPQCPAbstractPlottableWrapper("Curve", parent)
         , _keyAxis { keyAxis }
@@ -74,7 +74,7 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* value
     this->create_graphs(labels);
 }
 
-SciQLopCurve::SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis)
+SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis *valueAxis)
         : SQPQCPAbstractPlottableWrapper("Curve", parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
@@ -99,19 +99,45 @@ QList<PyBuffer> SciQLopCurve::data() const noexcept
     return _resampler->get_data();
 }
 
+void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_keyAxis = qcp_axis;
+        for (auto plottable : m_components)
+        {
+            auto curve = qobject_cast<QCPCurve*>(plottable->plottable());
+            curve->setKeyAxis(qcp_axis->qcp_axis());
+        }
+    }
+}
+
+void SciQLopCurve::set_y_axis(SciQLopPlotAxisInterface *axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_valueAxis = qcp_axis;
+        for (auto plottable : m_components)
+        {
+            auto curve = qobject_cast<QCPCurve*>(plottable->plottable());
+            curve->setValueAxis(qcp_axis->qcp_axis());
+        }
+    }
+}
+
 void SciQLopCurve::create_graphs(const QStringList& labels)
 {
     if (plottable_count())
         clear_curves();
     for (const auto& label : labels)
     {
-        this->newComponent<QCPCurve>(_keyAxis, _valueAxis, label);
+        this->newComponent<QCPCurve>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(), label);
     }
     _resampler->set_line_count(plottable_count());
 }
 
-SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis,
-                                           QCPAxis* value_axis, GetDataPyCallable&& callable,
+SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis *key_axis,
+                                           SciQLopPlotAxis *value_axis, GetDataPyCallable&& callable,
                                            const QStringList& labels)
         : SciQLopCurve(parent, key_axis, value_axis, labels)
 {

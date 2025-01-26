@@ -70,7 +70,7 @@ public:
     template <typename T, typename... Args>
     T* add_plottable(Args&&... args)
     {
-        return _new_plottable_wrapper<T>(this->xAxis, this->yAxis, std::forward<Args>(args)...);
+        return _new_plottable_wrapper<T>(this->m_axes[0], this->m_axes[1], std::forward<Args>(args)...);
     }
 
     SciQLopPlottableInterface* sqp_plottable(int index = -1);
@@ -119,42 +119,6 @@ public:
             ax->setRange(lower, upper);
             replot(rpQueuedReplot);
         }
-    }
-
-    inline void set_axis_visible(const QCPAxis::AxisType type, bool visible)
-    {
-        auto ax = this->axis(type);
-        if (ax->visible() != visible)
-        {
-            ax->setVisible(visible);
-            replot(rpQueuedReplot);
-        }
-    }
-
-    inline void set_axis_log(QCPAxis* axis, bool log)
-    {
-        if (log and axis->scaleType() != QCPAxis::stLogarithmic)
-        {
-            axis->setScaleType(QCPAxis::stLogarithmic);
-            axis->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTickerLog));
-        }
-        else if (not log and axis->scaleType() != QCPAxis::stLinear)
-        {
-            axis->setScaleType(QCPAxis::stLinear);
-            axis->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
-        }
-    }
-
-    inline void set_axis_log(const QCPAxis::AxisType type, bool log)
-    {
-        auto ax = this->axis(type);
-        set_axis_log(ax, log);
-    }
-
-    inline void set_axis_label(const QCPAxis::AxisType type, const QString& label)
-    {
-        auto ax = this->axis(type);
-        ax->setLabel(label);
     }
 
     inline std::pair<double, double> axis_range(const QCPAxis::AxisType type) const noexcept
@@ -221,7 +185,7 @@ protected:
 
     SciQLopGraphInterface* plottable_wrapper(QCPAbstractPlottable* plottable);
 
-    void _configure_color_map(SciQLopColorMap* cmap, bool y_log_scale, bool z_log_scale);
+    void _ensure_colorscale_is_visible(SciQLopColorMap* cmap);
 
     QCPAbstractPlottable* plottable(const QString& name) const;
 
@@ -244,6 +208,8 @@ protected:
     _impl::SciQLopPlot* m_impl = nullptr;
     QList<QColor> m_color_palette;
     int m_color_palette_index = 0;
+
+    void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
 
     void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
 

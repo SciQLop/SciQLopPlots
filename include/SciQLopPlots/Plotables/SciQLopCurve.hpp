@@ -22,6 +22,7 @@
 #pragma once
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopLineGraph.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -34,8 +35,8 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     CurveResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
-    QCPAxis* _keyAxis;
-    QCPAxis* _valueAxis;
+    SciQLopPlotAxis* _keyAxis;
+    SciQLopPlotAxis* _valueAxis;
 
     Q_OBJECT
 
@@ -73,10 +74,10 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis,
+    explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                           const QStringList& labels);
 
-    explicit SciQLopCurve(QCustomPlot* parent, QCPAxis* keyAxis, QCPAxis* valueAxis);
+    explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis *keyAxis, SciQLopPlotAxis* valueAxis);
 
     virtual ~SciQLopCurve() override;
 
@@ -84,6 +85,15 @@ public:
     virtual QList<PyBuffer> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
+
+    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
+
+    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
+
 };
 
 class SciQLopCurveFunction : public SciQLopCurve
@@ -94,7 +104,7 @@ class SciQLopCurveFunction : public SciQLopCurve
     inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopCurve::set_data(x, y); }
 
 public:
-    explicit SciQLopCurveFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+    explicit SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
                                   GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopCurveFunction() override = default;

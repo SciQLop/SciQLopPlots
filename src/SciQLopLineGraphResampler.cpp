@@ -26,6 +26,9 @@
 LineGraphResampler::LineGraphResampler(SciQLopPlottableInterface* parent, std::size_t line_cnt)
         : AbstractResampler1d { parent, line_cnt }
 {
+    connect(parent->x_axis(), &SciQLopPlotAxisInterface::log_changed, this,
+            [this](bool log) { this->set_x_scale_log(log); });
+    this->set_x_scale_log(parent->x_axis()->log());
 }
 
 void LineGraphResampler::_resample_impl(const ResamplerData1d& data,

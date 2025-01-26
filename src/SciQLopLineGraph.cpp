@@ -29,7 +29,7 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
         clear_graphs();
     for (const auto& label : labels)
     {
-        this->newComponent<QCPGraph>(_keyAxis, _valueAxis, label);
+        this->newComponent<QCPGraph>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(), label);
     }
     _resampler->set_line_count(plottable_count());
 }
@@ -47,7 +47,7 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
     Q_EMIT this->replot();
 }
 
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
                                    const QStringList& labels)
         : SQPQCPAbstractPlottableWrapper("Line", parent)
         , _keyAxis { key_axis }
@@ -58,7 +58,7 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAx
     {
         this->create_graphs(labels);
     }
-    connect(key_axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
+    connect(key_axis->qcp_axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
             [this](const QCPRange& newRange) { this->_resampler->resample(newRange); });
 }
 
@@ -106,8 +106,34 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
     return _resampler->get_data();
 }
 
-SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis,
-                                                   QCPAxis* value_axis,
+
+
+void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_keyAxis = qcp_axis;
+        for (auto plottable : m_components)
+        {
+            qobject_cast<QCPGraph*>(plottable->plottable())->setKeyAxis(qcp_axis->qcp_axis());
+        }
+    }
+}
+
+void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface *axis) noexcept
+{
+    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
+    {
+        this->_valueAxis = qcp_axis;
+        for (auto plottable : m_components)
+        {
+            qobject_cast<QCPGraph*>(plottable->plottable())->setValueAxis(qcp_axis->qcp_axis());
+        }
+    }
+}
+
+SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                                   SciQLopPlotAxis* value_axis,
                                                    GetDataPyCallable&& callable,
                                                    const QStringList& labels)
         : SciQLopLineGraph(parent, key_axis, value_axis, labels)
