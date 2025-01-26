@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,28 +19,45 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Debug.hpp"
+#include <QPointF>
+#include <QObject>
 
-REGISTER_DELEGATE(SciQLopPlotDelegate);
-
-SciQLopPlot* SciQLopPlotDelegate::plot() const
+class SciQLopPlotLegendInterface : public QObject
 {
-    return as_type<SciQLopPlot>(m_object);
-}
+    Q_OBJECT
 
-SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
-{
-    auto legend = object->legend();
-    auto legend_delegate = new LegendDelegate(legend->is_visible(), this);
-    m_layout->addWidget(legend_delegate);
-    connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
-            &SciQLopPlotLegendInterface::set_visible);
-    connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
-            &LegendDelegate::set_visible);
+public:
+    SciQLopPlotLegendInterface(QObject* parent = nullptr) : QObject(parent) { }
 
-}
+    virtual ~SciQLopPlotLegendInterface() = default;
+
+    inline virtual bool is_visible() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual void set_visible(bool visible)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual QPointF position() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return QPointF();
+    }
+
+    inline virtual void set_position(const QPointF&)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void visibility_changed(bool value);
+    Q_SIGNAL void position_changed(const QPointF& value);
+#endif
+};

@@ -62,6 +62,8 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/enums.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotInterface.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopPlotLegendInterface.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopPlotLegend.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopTimeSeriesPlot.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotAxis.hpp',
@@ -108,8 +110,10 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp',
@@ -120,7 +124,6 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
     project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
-    #project_source_root + '/qcustomplot-source/qcustomplot.h'
 ]
 
 moc_sources = []
@@ -146,6 +149,7 @@ sources = moc_files \
             '../src/PythonInterface.cpp',
             '../src/SciQLopPlotInterface.cpp',
             '../src/SciQLopPlot.cpp',
+            '../src/SciQLopPlotLegend.cpp',
             '../src/SciQLopTimeSeriesPlot.cpp',
             '../src/SciQLopPlotAxis.cpp',
             '../src/SciQLopPlotCollection.cpp',
@@ -188,7 +192,9 @@ sources = moc_files \
             '../src/SciQLopMultiPlotPanelDelegate.cpp',
             '../src/PropertiesPanel.cpp',
             '../src/PropertiesView.cpp',
+            '../src/BooleanDelegate.cpp',
             '../src/SciQLopPlotDelegate.cpp',
+            '../src/LegendDelegate.cpp',
             '../src/SciQLopGraphDelegate.cpp',
             '../src/SciQLopColorMapDelegate.cpp',
             '../src/SciQLopGraphComponentDelegate.cpp',

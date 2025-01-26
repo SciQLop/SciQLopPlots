@@ -25,6 +25,7 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
+#include "SciQLopPlots/SciQLopPlotLegendInterface.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 #include <QFrame>
@@ -172,6 +173,12 @@ public:
         return nullptr;
     }
 
+    virtual SciQLopPlotLegendInterface* legend() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
     virtual void set_scroll_factor(double factor) noexcept { WARN_ABSTRACT_METHOD; }
 
     virtual double scroll_factor() const noexcept
@@ -311,6 +318,11 @@ protected:
         return nullptr;
     }
 
+    virtual void toggle_selected_objects_visibility() noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
     inline virtual void keyPressEvent(QKeyEvent* event) override
     {
         QList<SciQLopPlotAxisInterface*> axes;
@@ -339,6 +351,9 @@ protected:
                     ax->set_log(not ax->log());
                 event->accept();
                 replot();
+                break;
+            case Qt::Key_H:
+                toggle_selected_objects_visibility();
                 break;
             default:
                 break;

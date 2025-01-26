@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,28 +19,28 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#pragma once
 
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopPlotLegendInterface.hpp"
 
-REGISTER_DELEGATE(SciQLopPlotDelegate);
+class QCPLegend;
 
-SciQLopPlot* SciQLopPlotDelegate::plot() const
+class SciQLopPlotLegend : public SciQLopPlotLegendInterface
 {
-    return as_type<SciQLopPlot>(m_object);
-}
+    Q_OBJECT
 
-SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
-{
-    auto legend = object->legend();
-    auto legend_delegate = new LegendDelegate(legend->is_visible(), this);
-    m_layout->addWidget(legend_delegate);
-    connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
-            &SciQLopPlotLegendInterface::set_visible);
-    connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
-            &LegendDelegate::set_visible);
+    QCPLegend* m_legend;
 
-}
+public:
+    SciQLopPlotLegend(QCPLegend* legend, QObject* parent = nullptr);
+
+    virtual ~SciQLopPlotLegend() = default;
+
+    bool is_visible() const override;
+
+    void set_visible(bool visible) override;
+
+    QPointF position() const override;
+
+    void set_position(const QPointF&) override;
+};

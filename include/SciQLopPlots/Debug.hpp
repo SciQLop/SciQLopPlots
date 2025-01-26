@@ -34,9 +34,15 @@
         std::cout << message << std::endl;                                                         \
     }
 
+#define WARN_UNSUPPORTED_FUNCTIONALITY                                                                 \
+    {                                                                                              \
+        std::cout << "Unsupported functionality:" << __PRETTY_FUNCTION__ << std::endl;            \
+    }
+
 #else
 
 #define WARN_ABSTRACT_METHOD
 #define DEBUG_MESSAGE(message)
+#define WARN_UNSUPPORTED_FUNCTIONALITY
 
 #endif

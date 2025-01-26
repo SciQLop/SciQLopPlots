@@ -29,6 +29,7 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotLegend.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QPointF>
 #include <optional>
@@ -207,7 +208,9 @@ protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
     QList<QColor> m_color_palette;
+    SciQLopPlotLegend * m_legend = nullptr;
     int m_color_palette_index = 0;
+
 
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
 
@@ -249,6 +252,8 @@ protected:
                                                 bool y_log_scale = false, bool z_log_scale = false,
                                                 QObject* sync_with = nullptr) override;
 
+    virtual void toggle_selected_objects_visibility() noexcept override;
+
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
@@ -259,8 +264,6 @@ public:
     double scroll_factor() const noexcept override;
 
     void enable_cursor(bool enable = true) noexcept override;
-
-    void enable_legend(bool show = true) noexcept override;
 
     void minimize_margins() override;
 
@@ -301,6 +304,11 @@ public:
     inline virtual SciQLopPlotAxisInterface* y2_axis() const noexcept Q_DECL_OVERRIDE
     {
         return m_impl->axis(3);
+    }
+
+    inline virtual SciQLopPlotLegendInterface* legend() const noexcept override
+    {
+        return m_legend;
     }
 
     void replot(bool immediate = false) override;

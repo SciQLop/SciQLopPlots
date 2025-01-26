@@ -276,6 +276,8 @@
         </modify-function>
     </object-type>
     <object-type name="PlotDragNDropCallback" parent-management="yes"/>
+    <object-type name="SciQLopPlotLegend" parent-management="yes"/>
+    <object-type name="SciQLopPlotLegendInterface" parent-management="yes"/>
 
     <object-type name="InspectorBase" parent-management="yes"/>
     <object-type name="Inspectors" parent-management="yes"/>
