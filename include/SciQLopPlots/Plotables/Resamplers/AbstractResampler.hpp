@@ -125,30 +125,36 @@ protected:
         return { std::nan(""), std::nan("") };
     }
 
-public:
+    void _resample() { static_cast<U*>(this)->resample(_plot_info.plot_range); }
 
+public:
     inline void setData(PyBuffer x, PyBuffer y, auto... maybe_z)
     {
         constexpr auto has_z = sizeof...(maybe_z) == 1;
-        static_assert(! (data2d xor has_z), "Data must be 2D or 3D");
+        static_assert(!(data2d xor has_z), "Data must be 2D or 3D");
         {
             const QCPRange data_x_range = _bounds(x);
             QMutexLocker locker(&_next_data_mutex);
-            _next_data = data_t { std::move(x), std::move(y), std::move(maybe_z)..., data_x_range, true };
+            _next_data
+                = data_t { std::move(x), std::move(y), std::move(maybe_z)..., data_x_range, true };
             static_cast<U*>(this)->resample(data_x_range);
         }
     }
 
     inline void set_x_scale_log(bool log)
     {
-        QMutexLocker locker(&_plot_info_mutex);
-        _plot_info.x_is_log = log;
+        {
+            QMutexLocker locker(&_plot_info_mutex);
+            _plot_info.x_is_log = log;
+        }
+        this->_resample();
     }
 
     inline void set_y_scale_log(bool log)
     {
         QMutexLocker locker(&_plot_info_mutex);
         _plot_info.y_is_log = log;
+        this->_resample();
     }
 
     inline QCPRange x_range()
@@ -175,7 +181,7 @@ public:
     {
         QMutexLocker locker(&_plot_info_mutex);
         _plot_info.plot_size = size;
-        static_cast<U*>(this)->resample(_plot_info.plot_range);
+        this->_resample();
     }
 };
 
@@ -194,7 +200,8 @@ protected:
     Q_SIGNAL void _resample_sig();
 #endif
 
-    virtual void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info) = 0;
+    virtual void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
+        = 0;
 
 public:
     AbstractResampler1d(SciQLopPlottableInterface* parent, std::size_t line_cnt);
@@ -225,7 +232,8 @@ protected:
     Q_SIGNAL void _resample_sig();
 #endif
 
-    virtual void _resample_impl(const ResamplerData2d& data, const ResamplerPlotInfo& plot_info) = 0;
+    virtual void _resample_impl(const ResamplerData2d& data, const ResamplerPlotInfo& plot_info)
+        = 0;
 
 public:
     AbstractResampler2d(SciQLopPlottableInterface* parent);

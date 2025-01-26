@@ -272,5 +272,7 @@ void ColormapResampler::_resample_impl(const ResamplerData2d& data,
 ColormapResampler::ColormapResampler(SciQLopPlottableInterface* parent, bool y_scale_is_log)
         : AbstractResampler2d { parent }
 {
+    connect(parent->y_axis(), &SciQLopPlotAxisInterface::log_changed, this,
+            [this](bool log) { set_y_scale_log(log); });
     set_y_scale_log(y_scale_is_log);
 }

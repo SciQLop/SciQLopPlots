@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "../DataProducer/DataProducer.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include <qcustomplot.h>
@@ -34,8 +35,8 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
     LineGraphResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;
 
-    QCPAxis* _keyAxis;
-    QCPAxis* _valueAxis;
+    SciQLopPlotAxis* _keyAxis;
+    SciQLopPlotAxis* _valueAxis;
 
     Q_OBJECT
 
@@ -68,7 +69,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopLineGraph(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+    explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis *key_axis, SciQLopPlotAxis *value_axis,
                               const QStringList& labels = QStringList());
 
     virtual ~SciQLopLineGraph() override;
@@ -77,6 +78,14 @@ public:
     virtual QList<PyBuffer> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
+
+    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+
+    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
+
+    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
 private:
     void create_graphs(const QStringList& labels);
@@ -90,7 +99,7 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph
     inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopLineGraph::set_data(x, y); }
 
 public:
-    explicit SciQLopLineGraphFunction(QCustomPlot* parent, QCPAxis* key_axis, QCPAxis* value_axis,
+    explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
                                       GetDataPyCallable&& callable, const QStringList& labels);
 
     virtual ~SciQLopLineGraphFunction() override = default;

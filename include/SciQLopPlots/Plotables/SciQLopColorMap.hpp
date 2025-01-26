@@ -43,6 +43,7 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     QCPRange _data_x_range;
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
+    SciQLopPlotColorScaleAxis* _colorScaleAxis;
     QPointer<QCPColorMap> _cmap;
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
@@ -69,8 +70,8 @@ class SciQLopColorMap : public SciQLopColorMapInterface
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                             SciQLopPlotAxis* valueAxis, const QString& name);
+    explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                             SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, const QString& name);
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
@@ -153,7 +154,7 @@ public:
 
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
-    virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return nullptr; }
+    virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return _colorScaleAxis; }
 
 
 #ifndef BINDINGS_H
@@ -175,8 +176,8 @@ class SciQLopColorMapFunction : public SciQLopColorMap
     }
 
 public:
-    explicit SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
-                                     SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
+    explicit SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                     SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, GetDataPyCallable&& callable,
                                      const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
