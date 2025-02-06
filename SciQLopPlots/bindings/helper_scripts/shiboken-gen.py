@@ -37,7 +37,7 @@ shiboken_constant_args=['--generator-set=shiboken',
     '--avoid-protected-hack',
     '--enable-pyside-extensions',
     #'--debug-level=full',
-    '-std=c++17',
+    '-std=c++20',
     '--generator-set=shiboken']
 
 if 'linux' in platform.system().lower():
