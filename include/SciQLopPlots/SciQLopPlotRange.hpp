@@ -22,78 +22,87 @@
 #pragma once
 
 #include <QDateTime>
+#include <QPair>
 #include <utility>
+#include <fmt/chrono.h>
+#include <fmt/core.h>
 
-struct SciQLopPlotRange
+struct SciQLopPlotRange:QPair<double, double>
 {
-private:
-    double m_start;
-    double m_stop;
+protected:
 
 public:
-    SciQLopPlotRange() : m_start(std::nan("")), m_stop(std::nan("")) { }
+    SciQLopPlotRange() : QPair<double, double>{std::nan(""), std::nan("")} { }
 
     SciQLopPlotRange(double start, double stop)
-            : m_start(std::min(start, stop)), m_stop(std::max(stop, start))
+            :  QPair<double, double>{std::min(start, stop), std::max(start, stop)}
     {
     }
 
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
-            : m_start(start.toSecsSinceEpoch()), m_stop(end.toSecsSinceEpoch())
+            : QPair<double, double>{start.toSecsSinceEpoch(), end.toSecsSinceEpoch()}
     {
     }
 
-    inline double start() const { return m_start; }
+    std::string __repr__() const
+    {
+        return fmt::format("SciQLopPlotRange({:%Y-%m-%d %H:%M:%S}, {:%Y-%m-%d %H:%M:%S})", start_date().toStdSysSeconds(), stop_date().toStdSysSeconds());
+    }
 
-    inline double stop() const { return m_stop; }
+    inline double start() const { return first; }
 
-    inline double size() const { return m_stop - m_start; }
+    inline double stop() const { return second; }
 
-    inline double center() const { return (m_start + m_stop) / 2; }
+    inline QDateTime start_date() const { return QDateTime::fromSecsSinceEpoch(first); }
+    inline QDateTime stop_date() const { return QDateTime::fromSecsSinceEpoch(second); }
 
-    inline bool is_empty() const { return m_start == m_stop; }
+    inline double size() const { return second - first; }
 
-    inline bool contains(double value) const { return m_start <= value && value <= m_stop; }
+    inline double center() const { return (first + second) / 2; }
 
-    inline bool is_null() const { return std::isnan(m_start) || std::isnan(m_stop); }
+    inline bool is_empty() const { return first == second; }
+
+    inline bool contains(double value) const { return first <= value && value <= second; }
+
+    inline bool is_null() const { return std::isnan(first) || std::isnan(second); }
 
     inline bool is_valid() const { return !is_null() && !is_empty(); }
 
     inline bool contains(const SciQLopPlotRange& range) const
     {
-        return m_start <= range.m_start && range.m_stop <= m_stop;
+        return first <= range.first && range.second <= second;
     }
 
     inline bool intersects(const SciQLopPlotRange& range) const
     {
-        return m_start <= range.m_stop && range.m_start <= m_stop;
+        return first <= range.second && range.first <= second;
     }
 
     inline SciQLopPlotRange intersection_with(const SciQLopPlotRange& range) const
     {
-        return SciQLopPlotRange(std::max(m_start, range.m_start), std::min(m_stop, range.m_stop));
+        return SciQLopPlotRange(std::max(first, range.first), std::min(second, range.second));
     }
 
     inline SciQLopPlotRange union_with(const SciQLopPlotRange& range) const
     {
-        return SciQLopPlotRange(std::min(m_start, range.m_start), std::max(m_stop, range.m_stop));
+        return SciQLopPlotRange(std::min(first, range.first), std::max(second, range.second));
     }
 
     inline bool operator==(const SciQLopPlotRange& other) const
     {
-        return m_start == other.m_start && m_stop == other.m_stop;
+        return first == other.first && second == other.second;
     }
 
     inline bool operator!=(const SciQLopPlotRange& other) const { return !(*this == other); }
 
     inline SciQLopPlotRange operator+(double value) const
     {
-        return SciQLopPlotRange(m_start + value, m_stop + value);
+        return SciQLopPlotRange(first + value, second + value);
     }
 
     inline SciQLopPlotRange operator-(double value) const
     {
-        return SciQLopPlotRange(m_start - value, m_stop - value);
+        return SciQLopPlotRange(first - value, second - value);
     }
 
     inline SciQLopPlotRange operator*(double value) const
@@ -112,9 +121,9 @@ public:
 
     inline void sort()
     {
-        if (m_start > m_stop)
+        if (first > second)
         {
-            std::swap(m_start, m_stop);
+            std::swap(first, second);
         }
     }
 
@@ -125,7 +134,7 @@ public:
         return copy;
     }
 
-    inline double operator[](int index) const { return index == 0 ? m_start : m_stop; }
+    inline double operator[](int index) const { return index == 0 ? first : second; }
 
-    inline double& operator[](int index) { return index == 0 ? m_start : m_stop; }
+    inline double& operator[](int index) { return index == 0 ? first : second; }
 };
