@@ -111,6 +111,21 @@
                 }
             </inject-code>
         </add-function>
+        <add-function signature="__getstate__" >
+            <inject-code class="target" position="end">
+                return Py_BuildValue("(dd)", %CPPSELF->start(), %CPPSELF->stop());
+            </inject-code>
+        </add-function>
+        <add-function signature="__setstate__(PyObject *@state@)" >
+            <inject-code class="target" position="beginning">
+                double start, stop;
+                if (PyArg_ParseTuple(%1, "dd", &amp;start, &amp;stop))
+                {
+                   %CPPSELF->first = start;
+                   %CPPSELF->second = stop;
+                }
+            </inject-code>
+        </add-function>
     </value-type>
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
     <object-type name="SciQLopPlottableInterface" parent-management="yes"/>

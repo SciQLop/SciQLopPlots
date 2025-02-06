@@ -1,10 +1,15 @@
 from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL, QtPrintSupport, QtSvg
+from . import SciQLopPlotsBindings
 from .SciQLopPlotsBindings import GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel, SciQLopGraphInterface, AxisType, SciQLopPlotRange
 from .SciQLopPlotsBindings import *
-from datetime import datetime
+from datetime import datetime, timezone
+from dateutil.parser import parse as dateparse
+
+import sys
+
+sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
 
 __version__ = '0.9.0'
-
 
 def _patch_sciqlop_plot(cls):
     def plot_func(self, callback, graph_type=None, **kwargs):
@@ -38,29 +43,7 @@ def _patch_sciqlop_plot(cls):
     return cls
 
 
-def _patch_sciqlopplotrange_iter(cls):
-    def __iter__(self):
-        return iter((self[0], self[1]))
-
-    def __getstate__(self):
-        return (self[0], self[1])
-
-    def __setstate__(self, state):
-        self[0], self[1] = state
-
-    def __repr__(self):
-        return f"SciQLopPlotRange({datetime.fromtimestamp(self[0])}, {datetime.fromtimestamp(self[1])})"
-
-    cls.__iter__ = __iter__
-    cls.__getstate__ = __getstate__
-    cls.__setstate__ = __setstate__
-    cls.__repr__ = __repr__
-
-    return cls
-
-
 SciQLopPlot = _patch_sciqlop_plot(SciQLopPlot)
 SciQLopTimeSeriesPlot = _patch_sciqlop_plot(SciQLopTimeSeriesPlot)
 SciQLopMultiPlotPanel = _patch_sciqlop_plot(SciQLopMultiPlotPanel)
 
-SciQLopPlotRange = _patch_sciqlopplotrange_iter(SciQLopPlotRange)
