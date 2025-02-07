@@ -26,6 +26,7 @@
 #include <utility>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <QDataStream>
 
 struct SciQLopPlotRange:QPair<double, double>
 {
@@ -33,6 +34,8 @@ protected:
 
 public:
     SciQLopPlotRange() : QPair<double, double>{std::nan(""), std::nan("")} { }
+
+    SciQLopPlotRange(const SciQLopPlotRange& other) : QPair<double, double>{other.first, other.second} { }
 
     SciQLopPlotRange(double start, double stop)
             :  QPair<double, double>{std::min(start, stop), std::max(start, stop)}
@@ -42,6 +45,13 @@ public:
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
             : QPair<double, double>{start.toSecsSinceEpoch(), end.toSecsSinceEpoch()}
     {
+    }
+
+    inline SciQLopPlotRange& operator=(const SciQLopPlotRange& other)
+    {
+        first = other.first;
+        second = other.second;
+        return *this;
     }
 
     std::string __repr__() const
