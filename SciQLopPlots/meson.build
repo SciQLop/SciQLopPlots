@@ -129,6 +129,7 @@ moc_headers = [
 moc_sources = []
 headers = moc_headers + \
          [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
+         project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp']
 
 includes = include_directories(['../include', '../qcustomplot-source'])

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/Python/Views.hpp"
 
 #include "AbstractResampler.hpp"
 

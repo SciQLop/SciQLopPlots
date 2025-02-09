@@ -26,6 +26,7 @@
 #include <QVector>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Python/PythonInterface.hpp>
+#include <SciQLopPlots/Python/Views.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <qcustomplot.h>
 
