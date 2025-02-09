@@ -259,7 +259,8 @@
                 <rename to="tool_tip"/>
             </modify-argument>
         </modify-function>
-        <property name="range" type="SciQLopPlotRange" get="get_range" set="set_range" generate-getsetdef="yes"/>
+        <modify-function signature="range()" rename="_range"/>
+        <property name="range" type="SciQLopPlotRange" get="range" set="set_range" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="get_color" set="set_color" generate-getsetdef="yes"/>
         <property name="visible" type="bool" get="is_visible" set="set_visible" generate-getsetdef="yes"/>
         <property name="selected" type="bool" get="is_selected" set="set_selected" generate-getsetdef="yes"/>
