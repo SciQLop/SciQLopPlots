@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include <iostream>
+#include "SciQLopPlots/Debug.hpp"
 
 
 void DataProviderInterface::_threaded_update()
@@ -120,19 +121,19 @@ DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
 
 QList<PyBuffer> DataProviderInterface::get_data(double lower, double upper)
 {
-    std::cout << "Not implemented please implement in derived class" << std::endl;
+    WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 
 QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y)
 {
-    std::cout << "Not implemented please implement in derived class" << std::endl;
+    WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 
 QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
-    std::cout << "Not implemented please implement in derived class" << std::endl;
+    WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 

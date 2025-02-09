@@ -21,7 +21,6 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-
 #include <assert.h>
 #include <cmath>
 #include <cpp_utils/warnings.h>
@@ -255,7 +254,6 @@ inline auto cend(const PyBuffer& v)
 }
 
 }
-
 
 
 struct _GetDataPyCallable_impl;
