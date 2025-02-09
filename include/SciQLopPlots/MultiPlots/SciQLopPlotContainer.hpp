@@ -80,7 +80,22 @@ public:
 
     inline virtual SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE
     {
-        return plots().at(index);
+        if ((index >=0) && (index < count()))
+            return plots().at(index);
+        return nullptr;
+    }
+
+    virtual inline std::size_t plot_count() const Q_DECL_OVERRIDE
+    {
+        std::size_t count = 0;
+        for (int i = 0; i < this->count(); i++)
+        {
+            if (qobject_cast<SciQLopPlotInterface*>(widget(i)))
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     virtual inline QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE
@@ -134,7 +149,8 @@ public:
         return _time_axis_range;
     }
 
-    SciQLopPlotCollectionBehavior* register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    SciQLopPlotCollectionBehavior*
+    register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
 
     SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const Q_DECL_OVERRIDE;
 
