@@ -28,7 +28,6 @@ class AxisSynchronizer : public SciQLopPlotCollectionBehavior
     Q_OBJECT
 
 protected:
-    QList<QPointer<SciQLopPlotInterface>> _plots;
     SciQLopPlotRange _last_range;
     AxisType m_sync_axis = AxisType::XAxis;
 

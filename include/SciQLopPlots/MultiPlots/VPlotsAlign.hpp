@@ -28,7 +28,6 @@
 class VPlotsAlign : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
-    QList<QPointer<SciQLopPlot>> _plots;
     void _recompute_margins();
 
 public:
