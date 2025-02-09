@@ -97,8 +97,9 @@ public:
         return {};
     }
 
-    inline virtual void  replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
+    virtual inline std::size_t plot_count() const { return plots().size(); }
 
+    inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void add_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
 
