@@ -59,12 +59,14 @@ def mms1_fgm_b_gse_srvy_l2(start, stop):
         print(f"Error: {e}")
         return None
 
-def mms1_spectro(product, start, stop):
+def speasy_spectro(product, start, stop, invert_y=False):
     try:
         v=spz.get_data(product, start, stop)
         if v is None:
             return None
         x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        if invert_y:
+            return x, v.axes[1].values.astype(np.float64)[::-1].copy() ,v.values.astype(np.float64)[:,::-1].copy()
         return x, v.axes[1].values.astype(np.float64) ,v.values.astype(np.float64)
     except Exception as e:
         print(f"Error: {e}")
@@ -110,7 +112,7 @@ class Spectrum:
 class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        self.plot(lambda start, stop: mms1_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
+        self.plot(lambda start, stop: speasy_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
                   name="mms1_dis_energyspectr_omni_fast",
                   graph_type=GraphType.ColorMap,
                   plot_type=PlotType.TimeSeries,
@@ -131,13 +133,13 @@ class MMS(SciQLopMultiPlotPanel):
 class MMS_Spectro_Only(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        self.plot(lambda start, stop: mms1_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
+        self.plot(lambda start, stop: speasy_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
                   name="mms1_dis_energyspectr_omni_fast",
                   graph_type=GraphType.ColorMap,
                   plot_type=PlotType.TimeSeries,
                   y_log_scale=True,
                   z_log_scale=True)
-        self.plot(lambda start, stop: mms1_spectro('cda/MMS1_FPI_BRST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_brst', start, stop),
+        self.plot(lambda start, stop: speasy_spectro('cda/MMS1_FPI_BRST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_brst', start, stop),
                   name="mms1_dis_energyspectr_omni_brst",
                   graph_type=GraphType.ColorMap,
                   plot_type=PlotType.TimeSeries,
@@ -155,6 +157,18 @@ class MMS_edp_hmfe(SciQLopMultiPlotPanel):
 
         self.set_time_axis_range(datetime(2023,10,20,7,0,0,0,timezone.utc), datetime(2023,10,20,9,0,0,0,timezone.utc))
 
+class Maven_swia_spectra_diff_en_fluxes(SciQLopMultiPlotPanel):
+    def __init__(self,parent):
+        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.plot(lambda start, stop: speasy_spectro('cda/MVN_SWI_L2_ONBOARDSVYSPEC/spectra_diff_en_fluxes', start, stop, True),
+                  name="spectra_diff_en_fluxes",
+                  graph_type=GraphType.ColorMap,
+                  plot_type=PlotType.TimeSeries,
+                  y_log_scale=True,
+                  z_log_scale=True)
+
+        self.set_time_axis_range(datetime(2022,2,13,0,0,0,0,timezone.utc), datetime(2022,2,14,0,0,0,0,timezone.utc))
+
 if __name__ == '__main__':
     from speasy.core.cache import _cache
     _cache._data._local = ThreadStorage()
@@ -165,5 +179,6 @@ if __name__ == '__main__':
     w.add_tab(MMS(w), "MMS")
     w.add_tab(MMS_Spectro_Only(w), "MMS Spectro Only")
     w.add_tab(MMS_edp_hmfe(w), "MMS EDP HMFE")
+    w.add_tab(Maven_swia_spectra_diff_en_fluxes(w), "Maven SWIA Spectra Diff En Fluxes")
     w.show()
     app.exec()

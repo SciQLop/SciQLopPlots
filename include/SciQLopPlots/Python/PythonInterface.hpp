@@ -23,6 +23,7 @@
 
 
 #include <assert.h>
+#include <cmath>
 #include <cpp_utils/warnings.h>
 
 #include <algorithm>
@@ -255,123 +256,7 @@ inline auto cend(const PyBuffer& v)
 
 }
 
-struct XYView
-{
-private:
-    std::unique_ptr<ArrayViewBase> _x;
-    std::unique_ptr<ArrayViewBase> _y;
 
-public:
-    explicit XYView(const PyBuffer& x, const PyBuffer& y, std::size_t start = 0,
-                    std::size_t stop = 0)
-    {
-        this->_x = x.view(start, stop);
-        this->_y = y.view(start, stop);
-    }
-
-    explicit XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)
-    {
-        std::size_t start_index = std::distance(
-            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
-        std::size_t stop_index
-            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
-        this->_x = x.view(start_index, stop_index);
-        this->_y = y.view(start_index, stop_index);
-    }
-
-    inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
-
-    inline double y(std::size_t i, std::size_t j) const { return (*_y)[{ i, j }]; }
-
-    inline std::size_t size() const { return std::size(*_x); }
-};
-
-struct XYZView
-{
-private:
-    std::unique_ptr<ArrayViewBase> _x;
-    std::unique_ptr<ArrayViewBase> _y;
-    std::unique_ptr<ArrayViewBase> _z;
-    bool _y_is_2d;
-
-    inline void _init_views(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
-                            std::size_t start, std::size_t stop)
-    {
-        _y_is_2d = (y.ndim() == 2) ? 1 : 0;
-        this->_x = x.view(start, stop);
-        this->_z = z.view(start, stop);
-        if (_y_is_2d)
-        {
-            this->_y = y.view(start, stop);
-        }
-        else
-        {
-            this->_y = y.view();
-        }
-    }
-
-public:
-    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, std::size_t start = 0,
-                     std::size_t stop = 0)
-    {
-        _init_views(x, y, z, start, stop);
-    }
-
-    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, double x_start,
-                     double x_stop)
-    {
-        std::size_t start_index = std::distance(
-            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
-        std::size_t stop_index
-            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
-        _init_views(x, y, z, start_index, stop_index);
-    }
-
-    inline double x(std::size_t i) const { return (*_x)[{ i, 0 }]; }
-
-    inline double y(std::size_t i, std::size_t j) const
-    {
-        if (_y_is_2d)
-        {
-            return (*_y)[{ i, j }];
-        }
-        return (*_y)[{ j, 0 }];
-    }
-
-    inline double z(std::size_t i, std::size_t j) const { return (*_z)[{ i, j }]; }
-
-    inline std::size_t size() const { return std::size(*_x); }
-
-    inline bool y_is_2d() const { return _y_is_2d; }
-
-    inline std::pair<std::size_t, std::size_t> y_shape() const
-    {
-        if (_y_is_2d)
-        {
-            return { _y->size(0), _y->size(1) };
-        }
-        return { 1UL, _y->size(0) };
-    }
-
-    inline std::pair<std::size_t, std::size_t> z_shape() const
-    {
-        return { _z->size(0), _z->size(1) };
-    }
-};
-
-namespace std
-{
-inline std::size_t size(const XYView& view)
-{
-    return view.size();
-}
-
-inline std::size_t size(const XYZView& view)
-{
-    return view.size();
-}
-
-}
 
 struct _GetDataPyCallable_impl;
 

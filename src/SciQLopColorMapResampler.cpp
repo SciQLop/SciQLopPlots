@@ -46,89 +46,17 @@ inline std::vector<double> _generate_range(double start, double end, std::size_t
     std::vector<double> range(n);
     if (log)
     {
-        auto step = std::log10((end - start)) / n;
+        auto step = (std::log10(end) - std::log10(start)) / static_cast<double>(n-1);
         std::generate(std::begin(range), std::end(range),
-                      [start, step, i = 0]() mutable { return start * std::pow(10, i++ * step); });
+                      [start, step, i = 0.]() mutable { return start * std::pow(10, i++ * step); });
     }
     else
     {
         auto step = (end - start) / n;
         std::generate(std::begin(range), std::end(range),
-                      [start, step, i = 0]() mutable { return start + i++ * step; });
+                      [start, step, i = 0.]() mutable { return start + i++ * step; });
     }
     return range;
-}
-
-inline double _nan_safe_min(const double a, const double b)
-{
-    if (std::isnan(a))
-    {
-        return b;
-    }
-    if (std::isnan(b))
-    {
-        return a;
-    }
-    return std::min(a, b);
-}
-
-inline double _nan_safe_max(const double a, const double b)
-{
-    if (std::isnan(a))
-    {
-        return b;
-    }
-    if (std::isnan(b))
-    {
-        return a;
-    }
-    return std::max(a, b);
-}
-
-inline std::pair<double, double> _y_bounds(const XYZView& v, std::size_t row, std::size_t n_cols,
-                                           double min = std::nan(""), double max = std::nan(""))
-{
-    {
-        auto j = 0UL;
-        auto val = v.y(row, j);
-        while (std::isnan(val) && j < n_cols)
-        {
-            j++;
-            val = v.y(row, j);
-        }
-        min = _nan_safe_min(val, min);
-    }
-    {
-        auto j = n_cols - 1;
-        auto val = v.y(row, j);
-        while (std::isnan(val) && j > 0)
-        {
-            j--;
-            val = v.y(row, j);
-        }
-        max = _nan_safe_max(val, max);
-    }
-
-    return { min, max };
-}
-
-inline std::pair<double, double> _y_bounds(const XYZView& v)
-{
-    using namespace cpp_utils;
-    auto shape = v.y_shape();
-    if (!v.y_is_2d())
-    {
-        return _y_bounds(v, 0, shape.second);
-    }
-    else
-    {
-        auto bounds = std::pair { std::nan(""), std::nan("") };
-        for (auto i = 0UL; i < shape.first; i++)
-        {
-            bounds = _y_bounds(v, i, shape.second, bounds.first, bounds.second);
-        }
-        return bounds;
-    }
 }
 
 template <typename T>
@@ -236,12 +164,12 @@ inline void _copy_and_average(const XYZView& view, QCPColorMapData* data, const 
 
 auto _generate_axes(const XYZView& view, std::size_t max_x_size, std::size_t max_y_size, bool log)
 {
-    auto y_bounds = _y_bounds(view);
-    auto x_bounds = std::pair { view.x(0), view.x(std::size(view) - 1) };
+    auto _y_bounds = y_bounds(view);
+    auto _x_bounds = std::pair { view.x(0), view.x(std::size(view) - 1) };
     auto n_y = std::min(max_y_size, view.y_shape().second);
     auto n_x = std::min(max_x_size, std::size(view));
-    auto x_axis = _generate_range(x_bounds.first, x_bounds.second, n_x);
-    auto y_axis = _generate_range(y_bounds.first, y_bounds.second, n_y, log);
+    auto x_axis = _generate_range(_x_bounds.first, _x_bounds.second, n_x);
+    auto y_axis = _generate_range(_y_bounds.first, _y_bounds.second, n_y, log);
     return std::pair { x_axis, y_axis };
 }
 
@@ -262,6 +190,7 @@ void ColormapResampler::_resample_impl(const ResamplerData2d& data,
             QCPColorMapData* data = new QCPColorMapData(std::size(x_axis), std::size(y_axis),
                                                         { x_axis.front(), x_axis.back() },
                                                         { y_axis.front(), y_axis.back() });
+            std::cout << "y_axis: " << y_axis.front() << " " << y_axis.back() << std::endl;
             _copy_and_average(view, data, x_axis, y_axis);
             data->recalculateDataBounds();
             Q_EMIT setGraphData(data);

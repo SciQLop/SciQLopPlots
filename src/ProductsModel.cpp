@@ -210,7 +210,7 @@ ProductsModelNode* ProductsModel::node(const QStringList& path)
     {
         auto parent = ProductsModel::instance()->m_rootNode;
         auto without_root = path;
-        if (without_root.first().isEmpty())
+        if (without_root.first().isEmpty() or without_root.first() == parent->name())
             without_root.removeFirst();
         for (const auto& name : without_root)
         {
