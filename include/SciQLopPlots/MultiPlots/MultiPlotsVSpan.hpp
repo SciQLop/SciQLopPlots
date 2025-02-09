@@ -96,7 +96,7 @@ public:
 
     void set_range(const SciQLopPlotRange horizontal_range);
 
-    [[nodiscard]] inline SciQLopPlotRange get_range() const noexcept { return _horizontal_range; }
+    [[nodiscard]] inline SciQLopPlotRange range() const noexcept { return _horizontal_range; }
 
     inline void set_visible(bool visible)
     {
