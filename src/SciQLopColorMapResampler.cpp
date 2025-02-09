@@ -190,7 +190,6 @@ void ColormapResampler::_resample_impl(const ResamplerData2d& data,
             QCPColorMapData* data = new QCPColorMapData(std::size(x_axis), std::size(y_axis),
                                                         { x_axis.front(), x_axis.back() },
                                                         { y_axis.front(), y_axis.back() });
-            std::cout << "y_axis: " << y_axis.front() << " " << y_axis.back() << std::endl;
             _copy_and_average(view, data, x_axis, y_axis);
             data->recalculateDataBounds();
             Q_EMIT setGraphData(data);
