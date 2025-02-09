@@ -36,39 +36,46 @@ void VPlotsAlign::_recompute_margins()
 {
     std::size_t max_left_margin = 0UL;
     std::size_t max_right_pos = 1000000000UL;
-    for (auto& p : _plots)
+    for (auto& _p : _plots)
     {
-        auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
-        std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
-        std::size_t cmw = 0UL;
-        if (p->has_colormap())
+        if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
 
-            cmw = p->color_scale()->outerRect().width();
-            cmw += ar->calculateAutoMargin(QCP::MarginSide::msRight);
+            auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
+            std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
+            std::size_t cmw = 0UL;
+            if (p->has_colormap())
+            {
+
+                cmw = p->color_scale()->outerRect().width();
+                cmw += ar->calculateAutoMargin(QCP::MarginSide::msRight);
+            }
+            max_left_margin = std::max(max_left_margin, left_margin);
+            max_right_pos = std::min(max_right_pos, p->width() - cmw);
         }
-        max_left_margin = std::max(max_left_margin, left_margin);
-        max_right_pos = std::min(max_right_pos, p->width() - cmw);
     }
-    for (auto& p : _plots)
+    for (auto& _p : _plots)
     {
-        auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
-        std::size_t new_right_margin = p->width() - max_right_pos;
-        if (p->has_colormap())
+        if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
-            new_right_margin -= p->color_scale()->outerRect().width();
-        }
-        else
-        {
-            new_right_margin += p->qcp_plot()->plotLayout()->columnSpacing();
-        }
-        auto new_margins
-            = QMargins(max_left_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop),
-                new_right_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop));
-        if (ar->minimumMargins() != new_margins)
-        {
-            ar->setMinimumMargins(new_margins);
-            p->replot();
+            auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
+            std::size_t new_right_margin = p->width() - max_right_pos;
+            if (p->has_colormap())
+            {
+                new_right_margin -= p->color_scale()->outerRect().width();
+            }
+            else
+            {
+                new_right_margin += p->qcp_plot()->plotLayout()->columnSpacing();
+            }
+            auto new_margins
+                = QMargins(max_left_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop),
+                           new_right_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop));
+            if (ar->minimumMargins() != new_margins)
+            {
+                ar->setMinimumMargins(new_margins);
+                p->replot();
+            }
         }
     }
 }
@@ -77,18 +84,30 @@ VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent
 
 void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
-    _plots = only_sciqlopplots(plots);
+    SciQLopPlotCollectionBehavior::_update_plots(
+        plots,
+        [this](SciQLopPlotInterface* plot)
+        {
+            if (auto p = qobject_cast<SciQLopPlot*>(plot))
+            {
+                connect(p, &SciQLopPlot::y_axis_range_changed, this,
+                        [this](SciQLopPlotRange) { _recompute_margins(); });
+                connect(p, &SciQLopPlot::y2_axis_range_changed, this,
+                        [this](SciQLopPlotRange) { _recompute_margins(); });
+                connect(p, &SciQLopPlot::z_axis_range_changed, this,
+                        [this](SciQLopPlotRange) { _recompute_margins(); });
+            }
+        },
+        [this](SciQLopPlotInterface* plot)
+        {
+            if (auto p = qobject_cast<SciQLopPlot*>(plot))
+            {
+
+                this->disconnect(p);
+            }
+        });
     if (!_plots.isEmpty())
     {
         _recompute_margins();
-    }
-    for (auto& p : _plots)
-    {
-        connect(p, &SciQLopPlot::y_axis_range_changed, this,
-            [this](SciQLopPlotRange) { _recompute_margins(); });
-        connect(p, &SciQLopPlot::y2_axis_range_changed, this,
-            [this](SciQLopPlotRange) { _recompute_margins(); });
-        connect(p, &SciQLopPlot::z_axis_range_changed, this,
-            [this](SciQLopPlotRange) { _recompute_margins(); });
     }
 }
