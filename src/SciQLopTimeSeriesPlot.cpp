@@ -29,6 +29,7 @@ SciQLopTimeSeriesPlot::SciQLopTimeSeriesPlot(QWidget* parent) : SciQLopPlot { pa
     qcp_plot()->xAxis->setTicker(date_ticker);
     set_axes_to_rescale(QList<SciQLopPlotAxisInterface*> { y_axis(), y2_axis(), z_axis() });
     freeze_axis(x_axis());
+    x_axis()->set_is_time_axis(true);
     connect(this, &SciQLopTimeSeriesPlot::x_axis_range_changed, this,
-        &SciQLopTimeSeriesPlot::time_axis_range_changed);
+            &SciQLopTimeSeriesPlot::time_axis_range_changed);
 }

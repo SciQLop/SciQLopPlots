@@ -30,6 +30,8 @@ class QCPColorScale;
 class SciQLopPlotAxisInterface : public QObject
 {
     Q_OBJECT
+protected:
+    bool _is_time_axis = false;
 public:
     SciQLopPlotAxisInterface(QObject* parent = nullptr) : QObject(parent) { }
     virtual ~SciQLopPlotAxisInterface() = default;
@@ -58,6 +60,9 @@ public:
 
     inline virtual void rescale() noexcept { }
 
+    inline bool is_time_axis() const noexcept { return _is_time_axis; }
+    inline void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
+
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
@@ -85,7 +90,7 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     QPointer<QCPAxis> m_axis;
 
 public:
-    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr);
+    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false);
     virtual ~SciQLopPlotAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;

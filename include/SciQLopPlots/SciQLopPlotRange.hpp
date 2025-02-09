@@ -21,31 +21,43 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include <QDataStream>
 #include <QDateTime>
 #include <QPair>
-#include <utility>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
-#include <QDataStream>
+#include <utility>
 
-struct SciQLopPlotRange:QPair<double, double>
+struct SciQLopPlotRange : QPair<double, double>
 {
 protected:
+    bool _is_time_range = false;
 
 public:
-    SciQLopPlotRange() : QPair<double, double>{std::nan(""), std::nan("")} { }
+    SciQLopPlotRange() : QPair<double, double> { std::nan(""), std::nan("") } { }
 
-    SciQLopPlotRange(const SciQLopPlotRange& other) : QPair<double, double>{other.first, other.second} { }
-
-    SciQLopPlotRange(double start, double stop)
-            :  QPair<double, double>{std::min(start, stop), std::max(start, stop)}
+    SciQLopPlotRange(const SciQLopPlotRange& other)
+            : QPair<double, double> { other.first, other.second }
+            , _is_time_range(other._is_time_range)
     {
     }
 
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
-            : QPair<double, double>{start.toSecsSinceEpoch(), end.toSecsSinceEpoch()}
+            : QPair<double, double> { static_cast<double>(start.toSecsSinceEpoch()),
+                                      static_cast<double>(end.toSecsSinceEpoch()) }
+            , _is_time_range(true)
     {
     }
+
+    SciQLopPlotRange(double start, double stop, bool is_time_range = false)
+            : QPair<double, double> { std::min(start, stop), std::max(start, stop) }
+            , _is_time_range(is_time_range)
+    {
+    }
+
+    inline QDateTime start_date() const { return QDateTime::fromSecsSinceEpoch(first); }
+
+    inline QDateTime stop_date() const { return QDateTime::fromSecsSinceEpoch(second); }
 
     inline SciQLopPlotRange& operator=(const SciQLopPlotRange& other)
     {
@@ -56,15 +68,16 @@ public:
 
     std::string __repr__() const
     {
-        return fmt::format("SciQLopPlotRange({:%Y-%m-%d %H:%M:%S}, {:%Y-%m-%d %H:%M:%S})", start_date().toStdSysSeconds(), stop_date().toStdSysSeconds());
+        if (this->_is_time_range)
+            return fmt::format("SciQLopPlotTimeRange({:%Y-%m-%d %H:%M:%S}, {:%Y-%m-%d %H:%M:%S})",
+                               start_date().toStdSysSeconds(), stop_date().toStdSysSeconds());
+        else
+            return fmt::format("SciQLopPlotRange({}, {})", first, second);
     }
 
     inline double start() const { return first; }
 
     inline double stop() const { return second; }
-
-    inline QDateTime start_date() const { return QDateTime::fromSecsSinceEpoch(first); }
-    inline QDateTime stop_date() const { return QDateTime::fromSecsSinceEpoch(second); }
 
     inline double size() const { return second - first; }
 
