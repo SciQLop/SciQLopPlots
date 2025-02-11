@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include <chrono>
 #include <QDataStream>
 #include <QDateTime>
 #include <QTimeZone>
@@ -58,6 +59,12 @@ inline double date_to_double(const QDateTime& date)
 {
     return static_cast<double>(date.toSecsSinceEpoch())+static_cast<double>(date.time().msec())/1000.0;
 }
+
+inline auto epoch_to_std_time(double epoch)
+{
+    return std::chrono::system_clock::from_time_t(epoch);
+}
+
 
 struct SciQLopPlotRange : QPair<double, double>
 {
@@ -106,7 +113,7 @@ public:
     {
         if (this->_is_time_range)
             return fmt::format("SciQLopPlotTimeRange({:%Y-%m-%d %H:%M:%S}, {:%Y-%m-%d %H:%M:%S})",
-                               start_date().toStdSysSeconds(), stop_date().toStdSysSeconds());
+                               epoch_to_std_time(first), epoch_to_std_time(second));
         else
             return fmt::format("SciQLopPlotRange({}, {})", first, second);
     }
