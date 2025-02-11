@@ -23,10 +23,41 @@
 
 #include <QDataStream>
 #include <QDateTime>
+#include <QTimeZone>
 #include <QPair>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <utility>
+#include <QRegularExpression>
+
+inline int _capture_or_default(const QRegularExpressionMatch& match, const QString& name, int def)
+{
+    return match.captured(name).isEmpty() ? def : match.captured(name).toInt();
+}
+
+inline double str_date_to_double(const QString& str)
+{
+    static const QRegularExpression date_regex(R"(^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T? ?(?<hour>\d{2})?:?(?<minute>\d{2})?:?(?<second>\d{2})?\.?(?<millisecond>\d{3})?)");
+    if(auto match = date_regex.match(str); match.hasMatch())
+    {
+        auto year = _capture_or_default(match, "year", 1973);
+        auto month = _capture_or_default(match, "month", 1);
+        auto day = _capture_or_default(match, "day", 1);
+        auto hour = _capture_or_default(match, "hour", 0);
+        auto minute = _capture_or_default(match, "minute", 0);
+        auto second = _capture_or_default(match, "second", 0);
+        auto millisecond = _capture_or_default(match, "millisecond", 0);
+        QDateTime date(QDate(year, month, day), QTime(hour, minute, second, millisecond));
+        date.setTimeZone(QTimeZone::utc());
+        return date.toSecsSinceEpoch();
+    }
+    return std::nan("");
+}
+
+inline double date_to_double(const QDateTime& date)
+{
+    return static_cast<double>(date.toSecsSinceEpoch())+static_cast<double>(date.time().msec())/1000.0;
+}
 
 struct SciQLopPlotRange : QPair<double, double>
 {
@@ -43,8 +74,13 @@ public:
     }
 
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
-            : QPair<double, double> { static_cast<double>(start.toSecsSinceEpoch()),
-                                      static_cast<double>(end.toSecsSinceEpoch()) }
+            : QPair<double, double> { date_to_double(start), date_to_double(end) }
+            , _is_time_range(true)
+    {
+    }
+
+    explicit SciQLopPlotRange(const QString& start, const QString& end)
+            : QPair<double, double> { str_date_to_double(start), str_date_to_double(end) }
             , _is_time_range(true)
     {
     }
