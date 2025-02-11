@@ -40,4 +40,4 @@ homepage = "https://github.com/SciQLop/SciQLopPlots"
 
 [tool.meson-python.args]
 install = ['--tags=runtime,python-runtime']
-setup = ['-Doptimization=3']
+setup = ['-Doptimization=3', '-Dbuildtype=release', '-Dcpp_std=c++20']

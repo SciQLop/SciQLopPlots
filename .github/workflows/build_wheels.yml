@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  PYSIDE_VERSION: 6.8.1
+  PYSIDE_VERSION: 6.8.2
   #PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
 
 jobs:
