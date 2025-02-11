@@ -23,7 +23,7 @@ jobs:
           aqt install-qt -O "$GITHUB_WORKSPACE"/Qt linux desktop ${{ env.PYSIDE_VERSION }}
           PATH="$GITHUB_WORKSPACE"/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/bin:$PATH" LD_LIBRARY_PATH="$GITHUB_WORKSPACE"/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH" pipx run build --sdist
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cibw-sdist
           path: dist/*.tar.gz
