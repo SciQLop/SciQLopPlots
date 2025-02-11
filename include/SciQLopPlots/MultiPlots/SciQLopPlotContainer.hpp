@@ -32,7 +32,7 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
 
     QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
     QList<QColor> _color_palette;
-    SciQLopPlotRange _time_axis_range;
+    SciQLopPlotRange _time_axis_range{ std::nan(""), std::nan("") , true };
     SciQLopPlotRange _x_axis_range;
 
 public:
