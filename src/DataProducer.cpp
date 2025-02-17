@@ -48,9 +48,32 @@ void DataProviderInterface::_threaded_update()
         m_mutex.unlock();
         _data_based_update(new_data);
     }
+    else if (std::holds_alternative<_NDdata>(m_next_state))
+    {
+        auto new_data = std::get<_NDdata>(m_next_state);
+        m_has_pending_change = false;
+        m_mutex.unlock();
+        _data_based_update(new_data);
+    }
     else
     {
         m_mutex.unlock();
+    }
+}
+
+void DataProviderInterface::_notify_new_data(const QList<PyBuffer> &data)
+{
+    if (data.size() == 2)
+    {
+        Q_EMIT new_data_2d(data[0], data[1]);
+    }
+    else if (data.size() == 3)
+    {
+        Q_EMIT new_data_3d(data[0], data[1], data[2]);
+    }
+    else if (data.size() != 0)
+    {
+        Q_EMIT new_data_nd(data);
     }
 }
 
@@ -60,52 +83,22 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
         return;
     auto r = get_data(new_range.start(), new_range.stop());
     m_current_state = new_range;
-    if (r.size() == 2)
-    {
-        Q_EMIT new_data_2d(r[0], r[1]);
-    }
-    else if (r.size() == 3)
-    {
-        Q_EMIT new_data_3d(r[0], r[1], r[2]);
-    }
-    else if (r.size() != 0)
-    {
-        std::cerr << "Data provider returned invalid data" << std::endl;
-    }
+    _notify_new_data(r);
 }
 
 void DataProviderInterface::_data_based_update(const _2D_data& new_data)
 {
-    auto r = get_data(new_data.x, new_data.y);
-    if (r.size() == 2)
-    {
-        Q_EMIT new_data_2d(r[0], r[1]);
-    }
-    else if (r.size() == 3)
-    {
-        Q_EMIT new_data_3d(r[0], r[1], r[2]);
-    }
-    else if (r.size() != 0)
-    {
-        std::cerr << "Data provider returned invalid data" << std::endl;
-    }
+    _notify_new_data(get_data(new_data.x, new_data.y));
 }
 
 void DataProviderInterface::_data_based_update(const _3D_data& new_data)
 {
-    auto r = get_data(new_data.x, new_data.y, new_data.z);
-    if (r.size() == 2)
-    {
-        Q_EMIT new_data_2d(r[0], r[1]);
-    }
-    else if (r.size() == 3)
-    {
-        Q_EMIT new_data_3d(r[0], r[1], r[2]);
-    }
-    else if (r.size() != 0)
-    {
-        std::cerr << "Data provider returned invalid data" << std::endl;
-    }
+   _notify_new_data(get_data(new_data.x, new_data.y, new_data.z));
+}
+
+void DataProviderInterface::_data_based_update(const _NDdata &new_data)
+{
+    _notify_new_data(get_data(new_data));
 }
 
 
@@ -135,6 +128,12 @@ QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y, PyBuffer
 {
     WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
+}
+
+QList<PyBuffer> DataProviderInterface::get_data(QList<PyBuffer> values)
+{
+    WARN_ABSTRACT_METHOD;
+    return { {}, {}, {} , {} };
 }
 
 void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
@@ -173,6 +172,18 @@ void DataProviderInterface::set_data(_3D_data new_state) noexcept
     m_mutex.unlock();
 }
 
+void DataProviderInterface::set_data(_NDdata new_state) noexcept
+{
+    m_mutex.lock();
+    m_next_state = new_state;
+    if (!m_has_pending_change)
+    {
+        m_has_pending_change = true;
+        Q_EMIT _state_changed();
+    }
+    m_mutex.unlock();
+}
+
 DataProviderWorker::~DataProviderWorker()
 {
     m_worker_thread->quit();
@@ -197,4 +208,6 @@ SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable,
         &SimplePyCallablePipeline::new_data_2d);
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_3d, this,
         &SimplePyCallablePipeline::new_data_3d);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_nd, this,
+        &SimplePyCallablePipeline::new_data_nd);
 }

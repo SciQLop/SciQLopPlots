@@ -41,6 +41,8 @@ class ProductsModel : public QAbstractItemModel
 
     void _insert_node(ProductsModelNode* node, ProductsModelNode* parent);
 
+    void _add_text_mime_data(QMimeData* mime_data, const QModelIndexList& indexes) const;
+
 public:
     ProductsModel(QObject* parent = nullptr);
     ~ProductsModel() = default;

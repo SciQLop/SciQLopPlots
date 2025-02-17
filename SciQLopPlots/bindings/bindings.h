@@ -37,6 +37,7 @@
 #include <SciQLopPlots/SciQLopPlotInterface.hpp>
 #include <SciQLopPlots/SciQLopPlotRange.hpp>
 #include <SciQLopPlots/SciQLopTimeSeriesPlot.hpp>
+#include <SciQLopPlots/SciQLopNDProjectionPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotLegendInterface.hpp>
 #include <SciQLopPlots/SciQLopPlotLegend.hpp>
 #include <SciQLopPlots/enums.hpp>

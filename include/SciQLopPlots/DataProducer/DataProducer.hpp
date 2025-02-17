@@ -43,11 +43,13 @@ struct _3D_data
     PyBuffer z;
 };
 
+using _NDdata = QList<PyBuffer>;
+
 class DataProviderInterface : public QObject
 {
     Q_OBJECT
-    std::variant<SciQLopPlotRange, _2D_data, _3D_data> m_next_state;
-    std::variant<SciQLopPlotRange, _2D_data, _3D_data> m_current_state;
+    std::variant<SciQLopPlotRange, _2D_data, _3D_data, _NDdata> m_next_state;
+    std::variant<SciQLopPlotRange, _2D_data, _3D_data, _NDdata> m_current_state;
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
     bool m_has_pending_change = false;
@@ -57,9 +59,12 @@ class DataProviderInterface : public QObject
 #endif
     Q_SLOT void _threaded_update();
 
+    void _notify_new_data(const QList<PyBuffer>& data);
+
     void _range_based_update(const SciQLopPlotRange& new_range);
     void _data_based_update(const _2D_data& new_data);
     void _data_based_update(const _3D_data& new_data);
+    void _data_based_update(const _NDdata& new_data);
 
 
     inline Q_SLOT void _start_timer()
@@ -77,17 +82,20 @@ public:
     virtual QList<PyBuffer> get_data(double lower, double upper);
     virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y);
     virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
+    virtual QList<PyBuffer> get_data(QList<PyBuffer> values);
 
 
 #ifndef BINDINGS_H
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
+    Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
 #endif
 
 protected:
     void set_range(SciQLopPlotRange new_range) noexcept;
     void set_data(_2D_data new_data) noexcept;
     void set_data(_3D_data new_data) noexcept;
+    void set_data(_NDdata new_data) noexcept;
     friend class DataProviderWorker;
 };
 
@@ -121,6 +129,11 @@ public:
     inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     {
         m_data_provider->set_data(_3D_data { x, y, z });
+    }
+
+    inline Q_SLOT virtual void set_data(QList<PyBuffer> values)
+    {
+        m_data_provider->set_data(values);
     }
 };
 
@@ -181,10 +194,13 @@ public:
     inline Q_SLOT void set_range(const SciQLopPlotRange& range) { m_worker->set_range(range); }
     inline Q_SLOT void set_data(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
     inline Q_SLOT void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
+    inline Q_SLOT void set_data(QList<PyBuffer> values) { m_worker->set_data(values); }
+
 
 
 #ifndef BINDINGS_H
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
+    Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
 #endif
 };

@@ -7,6 +7,7 @@ examples = [
     {'name':'MicroSciQLop', 'source': meson.current_source_dir()+'/MicroSciQLop/main.py'},
     {'name':'DragNDrop', 'source': meson.current_source_dir()+'/DragNDrop/main.py'},
     {'name':'Products', 'source': meson.current_source_dir()+'/Products/main.py'},
+    {'name': 'Projections', 'source': meson.current_source_dir()+'/Projections/main.py'},
 ]
 
 foreach example:examples

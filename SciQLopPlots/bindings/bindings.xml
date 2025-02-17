@@ -133,6 +133,14 @@
             <modify-argument index="3" rename="labels"/>
             <modify-argument index="4" rename="colors"/>
         </modify-function>
+        <modify-function signature="parametric_curve(const QList&lt;PyBuffer&amp;&gt;&amp;,QStringList,QList&lt;QColor&gt;)">
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool)">
             <modify-argument index="4" rename="name"/>
             <modify-argument index="5" rename="y_log_scale"/>
@@ -163,6 +171,7 @@
     </object-type>
 
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes"/>
+    <object-type name="SciQLopNDProjectionPlot" parent-management="yes"/>
 
     <object-type name="SciQlopItemWithToolTip">
     </object-type>

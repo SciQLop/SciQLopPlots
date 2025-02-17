@@ -53,6 +53,14 @@ protected:
         throw std::runtime_error("Not implemented");
     }
 
+    inline virtual SciQLopGraphInterface* plot_impl(const QList<PyBuffer>& values,
+                                                    QStringList labels = QStringList(),
+                                                    QList<QColor> colors = QList<QColor>(),
+                                                    ::GraphType graph_type = ::GraphType::Line)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
     inline virtual SciQLopColorMapInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
                                                        const PyBuffer& z,
                                                        QString name = QStringLiteral("ColorMap"),
@@ -218,6 +226,16 @@ public:
     {
         return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve);
     }
+
+    inline virtual SciQLopGraphInterface* parametric_curve(const QList<PyBuffer>& values,
+                                                           QStringList labels = QStringList(),
+                                                           QList<QColor> colors = QList<QColor>())
+    {
+        return plot_impl(values, labels, colors, ::GraphType::ParametricCurve);
+    }
+
+
+
 
     inline virtual SciQLopColorMapInterface* colormap(const PyBuffer& x, const PyBuffer& y,
                                                       const PyBuffer& z,

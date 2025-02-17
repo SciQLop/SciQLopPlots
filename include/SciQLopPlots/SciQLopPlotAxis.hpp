@@ -63,6 +63,9 @@ public:
     inline bool is_time_axis() const noexcept { return _is_time_axis; }
     inline void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
 
+    void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
+    void decouple_range_from(SciQLopPlotAxisInterface* other) noexcept;
+
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
@@ -70,6 +73,7 @@ public:
     Q_SIGNAL void label_changed(const QString& label);
 #endif
 };
+
 
 class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
 {
