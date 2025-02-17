@@ -136,13 +136,13 @@ void PlotsModelNode::update_children()
 {
     if (m_inspector != nullptr)
     {
-        auto new_children = m_inspector->children(m_obj.data());
+        const auto new_children = m_inspector->children(m_obj.data());
         for (auto child : new_children)
         {
             if (!contains(child))
                 insert_child(child);
         }
-        for (auto child : m_children)
+        for (auto child : std::as_const(m_children))
         {
             if (!new_children.contains(child->m_obj.data()))
                 delete child;

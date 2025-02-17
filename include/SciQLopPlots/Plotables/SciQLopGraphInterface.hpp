@@ -69,6 +69,8 @@ public:
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { WARN_ABSTRACT_METHOD; };
 
+    Q_SLOT virtual void set_data(const QList<PyBuffer>& values) { WARN_ABSTRACT_METHOD; }
+
     virtual QList<PyBuffer> data() const noexcept
     {
         WARN_ABSTRACT_METHOD;
@@ -138,6 +140,7 @@ public:
     Q_SIGNAL void replot();
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
+    Q_SIGNAL void data_changed(const QList<PyBuffer>& values);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
 #endif
@@ -225,6 +228,4 @@ public:
         WARN_ABSTRACT_METHOD;
         return false;
     }
-
-    inline virtual void set_selected(bool selected) noexcept { WARN_ABSTRACT_METHOD; }
 };

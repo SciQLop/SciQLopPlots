@@ -39,8 +39,8 @@ def make_plot(parent, time_axis=False):
     return plot
 
 def add_graph(plot, time_axis=False, offset=0.):
-    start, stop = plot.x_axis().range()
-    x=np.arange(start=start, stop=stop, dtype=np.float64)
+    r = plot.x_axis().range()
+    x=np.arange(start=r.start(), stop=r.stop(), dtype=np.float64)
     y=np.cos(np.array([x/6.,x/60.,x/600.])) * np.cos(np.array([x,x/6.,x/60.])) * [[100.],[1300],[17000]]
     y+=offset
     y=np.array(y.T, copy=True)

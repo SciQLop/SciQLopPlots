@@ -107,7 +107,6 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 }
 
 
-
 void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))

@@ -54,6 +54,20 @@ void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* par
     endInsertRows();
 }
 
+void ProductsModel::_add_text_mime_data(QMimeData* mime_data, const QModelIndexList& indexes) const
+{
+    QStringList paths;
+    for (const auto& index : indexes)
+    {
+        if (index.isValid())
+        {
+            auto node = static_cast<ProductsModelNode*>(index.internalPointer());
+            paths += node->path().join("//");
+        }
+    }
+    mime_data->setText(paths.join("\n"));
+}
+
 ProductsModel::ProductsModel(QObject* parent) : QAbstractItemModel(parent)
 {
     m_rootNode = new ProductsModelNode("root", {}, "", this);
@@ -165,6 +179,7 @@ QMimeData* ProductsModel::mimeData(const QModelIndexList& indexes) const
         }
     }
     mimeData->setData(mime_type(), encodedData);
+    _add_text_mime_data(mimeData, indexes);
     return mimeData;
 }
 

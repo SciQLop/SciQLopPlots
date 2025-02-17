@@ -302,3 +302,15 @@ QCPAxis* SciQLopPlotColorScaleAxis::qcp_axis() const noexcept
         return nullptr;
     return m_axis->axis();
 }
+
+void SciQLopPlotAxisInterface::couple_range_with(SciQLopPlotAxisInterface *other) noexcept
+{
+    QObject::connect(this, &SciQLopPlotAxisInterface::range_changed, other, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::connect(other, &SciQLopPlotAxisInterface::range_changed, this, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+}
+
+void SciQLopPlotAxisInterface::decouple_range_from(SciQLopPlotAxisInterface *other) noexcept
+{
+    QObject::disconnect(this, &SciQLopPlotAxisInterface::range_changed, other, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::disconnect(other, &SciQLopPlotAxisInterface::range_changed, this, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+}

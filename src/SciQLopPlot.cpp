@@ -531,6 +531,10 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
 SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
+
+    for (auto i=0; i<16; i++)
+        m_color_palette.append(QColor::fromHsvF(i/16., 1., 1.));
+
     this->m_time_axis = new SciQLopPlotDummyAxis(this);
     connect(this->m_time_axis, &SciQLopPlotDummyAxis::range_changed, this,
             &SciQLopPlot::time_axis_range_changed);

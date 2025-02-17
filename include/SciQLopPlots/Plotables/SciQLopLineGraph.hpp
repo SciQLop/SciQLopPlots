@@ -40,7 +40,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     Q_OBJECT
 
-    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
+    //inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _setGraphData(QList<QVector<QCPGraphData>> data);
 
