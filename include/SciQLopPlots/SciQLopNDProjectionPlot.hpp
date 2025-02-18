@@ -64,6 +64,8 @@ public:
     inline virtual void set_color_palette(const QList<QColor>& palette) noexcept override
     {
         m_color_palette = palette;
+        for (auto* plot : m_plots)
+            plot->set_color_palette(palette);
     }
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override

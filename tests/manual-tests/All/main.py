@@ -70,7 +70,7 @@ def add_colormap(plot, time_axis=False):
     sig = np.cos(np.arange(NPOINTS*64, dtype=np.float64)*6.28/(NPOINTS*10)).reshape(NPOINTS,64)
     z = (v_mod * sig * h_mod + noise)
     z = (z*sig)/(z + 1)
-    return plot.plot(x,y,z, labels = "Cmap", y_log_scale=True, z_log_scale=True)
+    return plot.plot(x,y,z, name = "Cmap", y_log_scale=True, z_log_scale=True)
 
 
 class SimpleGraph(QWidget):

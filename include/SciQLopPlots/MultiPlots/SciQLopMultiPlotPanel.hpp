@@ -47,8 +47,8 @@ class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionIn
 
 protected:
     template <typename T, GraphType graph_type, typename... Args>
-    auto __plot(T* plot,
-                Args&&... args) -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...))
+    auto __plot(T* plot, Args&&... args)
+        -> decltype(std::declval<T*>()->line(std::forward<Args>(args)...))
     {
         if constexpr (graph_type == GraphType::Line)
             return plot->line(std::forward<Args>(args)...);
@@ -102,6 +102,10 @@ protected:
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
               int index = -1) Q_DECL_OVERRIDE;
+
+    virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), int index = -1) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -174,7 +178,8 @@ public:
         set_time_axis_range(SciQLopPlotRange(start, stop));
     }
 
-    SciQLopPlotCollectionBehavior* register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
+    SciQLopPlotCollectionBehavior*
+    register_behavior(SciQLopPlotCollectionBehavior* behavior) Q_DECL_OVERRIDE;
     SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 

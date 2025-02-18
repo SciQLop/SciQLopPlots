@@ -57,7 +57,8 @@ enum class GraphType
 enum class PlotType
 {
     BasicXY,
-    TimeSeries
+    TimeSeries,
+    Projections,
 };
 
 enum class GraphMarkerShape

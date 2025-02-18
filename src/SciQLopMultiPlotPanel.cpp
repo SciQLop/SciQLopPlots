@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
@@ -55,7 +56,7 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
         ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
     {
-        auto b= ::register_behavior<TimeAxisSynchronizer>(_container);
+        auto b = ::register_behavior<TimeAxisSynchronizer>(_container);
         _default_plot_type = PlotType::TimeSeries;
         connect(b, &TimeAxisSynchronizer::range_changed, this,
                 &SciQLopMultiPlotPanel::time_range_changed);
@@ -280,6 +281,19 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyB
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labels,
+                                 QList<QColor> colors, int index)
+{
+    auto* plot = new SciQLopNDProjectionPlot();
+    if (index == -1)
+        add_plot(plot);
+    else
+        insert_plot(index, plot);
+
+    return { plot, plot->parametric_curve(values, labels, colors) };
+}
+
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QStringList labels,
                                  QList<QColor> colors, GraphType graph_type, PlotType plot_type,
                                  QObject* sync_with, int index)
@@ -294,6 +308,9 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QStringList labels,
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, callable,
                                                                        labels, colors, sync_with);
             break;
+        case ::PlotType::Projections:
+            return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
+                index, graph_type, callable, labels, colors, sync_with);
         default:
             break;
     }

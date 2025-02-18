@@ -31,8 +31,17 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
     Q_OBJECT
 
     QMap<QString, SciQLopPlotCollectionBehavior*> _behaviors;
-    QList<QColor> _color_palette;
-    SciQLopPlotRange _time_axis_range{ std::nan(""), std::nan("") , true };
+    QList<QColor> _color_palette = {
+        QColor(31, 119, 180),  QColor(256, 127, 14),  QColor(44, 160, 44),   QColor(214, 39, 40),
+        QColor(148, 103, 189), QColor(140, 86, 75),   QColor(227, 119, 194), QColor(127, 127, 127),
+        QColor(188, 189, 34),  QColor(23, 190, 207),  QColor(31, 119, 180),  QColor(256, 127, 14),
+        QColor(44, 160, 44),   QColor(214, 39, 40),   QColor(148, 103, 189), QColor(140, 86, 75),
+        QColor(227, 119, 194), QColor(127, 127, 127), QColor(188, 189, 34),  QColor(23, 190, 207),
+        QColor(31, 119, 180),  QColor(256, 127, 14),  QColor(44, 160, 44),   QColor(214, 39, 40),
+        QColor(148, 103, 189), QColor(140, 86, 75),   QColor(227, 119, 194), QColor(127, 127, 127),
+        QColor(188, 189, 34),  QColor(23, 190, 207),  QColor(31, 119, 180),  QColor(256, 127, 14)
+    };
+    SciQLopPlotRange _time_axis_range { std::nan(""), std::nan(""), true };
     SciQLopPlotRange _x_axis_range;
 
 public:
@@ -80,7 +89,7 @@ public:
 
     inline virtual SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE
     {
-        if ((index >=0) && (index < count()))
+        if ((index >= 0) && (index < count()))
             return plots().at(index);
         return nullptr;
     }

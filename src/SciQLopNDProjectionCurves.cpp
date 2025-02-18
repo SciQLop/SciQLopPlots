@@ -21,7 +21,9 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 
-SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface *parent, QList<SciQLopPlot *> &plots, const QStringList &labels)
+SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
+                                                     QList<SciQLopPlot*>& plots,
+                                                     const QStringList& labels)
         : SciQLopGraphInterface("Projection", parent)
 {
     if (plots.size() != labels.size())
@@ -31,13 +33,16 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface *paren
     }
     for (int i = 0; i < plots.size(); ++i)
     {
-        auto curve = qobject_cast<SciQLopCurve*>(plots[i]->parametric_curve(PyBuffer(), PyBuffer(), {labels[i]}));
+        auto curve = qobject_cast<SciQLopCurve*>(
+            plots[i]->parametric_curve(PyBuffer(), PyBuffer(), { labels[i] }));
         m_curves.append(curve);
     }
 }
 
-SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent, QList<SciQLopPlot *> &plots,
-                                                                     GetDataPyCallable&& callable, const QStringList& labels)
+SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent,
+                                                                     QList<SciQLopPlot*>& plots,
+                                                                     GetDataPyCallable&& callable,
+                                                                     const QStringList& labels)
         : SciQLopNDProjectionCurves(parent, plots, labels)
 {
     m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
@@ -47,7 +52,7 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
             &SimplePyCallablePipeline::set_range);
 }
 
-void SciQLopNDProjectionCurvesFunction::set_data(const QList<PyBuffer> &data)
+void SciQLopNDProjectionCurvesFunction::set_data(const QList<PyBuffer>& data)
 {
     m_pipeline->set_data(data);
 }
@@ -69,24 +74,28 @@ bool SciQLopNDProjectionCurves::selected() const noexcept
     return false;
 }
 
-
-
-void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer> &data)
+void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
 {
-    const auto curves_count = m_curves.size();
+    const std::size_t curves_count = m_curves.size();
 
-    if (data.size() ==curves_count+1)
+    if (data.size() == curves_count + 1)
     {
-        for (int i = 0; i <curves_count; ++i)
+        auto data_without_time = data.sliced(1);
+        // Expected sequence for 3 curves:
+        // Y(x)
+        // Z(y)
+        // Z(x)
+        for (std::size_t i = 0UL; i < curves_count; ++i)
         {
-            m_curves[i]->set_data(data[i+1], data[(i+2)%curves_count+1]);
+            m_curves[i]->set_data(data_without_time[i % (curves_count - 1)],
+                                  data_without_time[std::min((i + 1), curves_count - 1)]);
         }
     }
-    else if (data.size() == 2*curves_count)
+    else if (data.size() == 2 * curves_count)
     {
-        for (int i = 0; i <curves_count; ++i)
+        for (int i = 0; i < curves_count; ++i)
         {
-            m_curves[i]->set_data(data[2*i], data[2*i+1]);
+            m_curves[i]->set_data(data[2 * i], data[2 * i + 1]);
         }
     }
     else

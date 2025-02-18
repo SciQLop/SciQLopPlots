@@ -40,7 +40,6 @@ class SciQLopPlotCollectionBehavior : public QObject
     Q_OBJECT
 
 protected:
-
     QList<QPointer<SciQLopPlotInterface>> _plots;
 
     inline void _update_plots(const auto& plots, auto&& connect, auto&& disconnect)
@@ -87,6 +86,13 @@ protected:
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
               ::GraphType graph_type = ::GraphType::Line, int index = -1)
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), int index = -1)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -240,6 +246,13 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    projection(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+               QList<QColor> colors = QList<QColor>(), int index = -1)
+    {
+        return plot_impl(values, labels, colors, index);
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     line(GetDataPyCallable callable, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
          QObject* sync_with = nullptr, int index = -1)
@@ -264,6 +277,14 @@ public:
              int index = -1)
     {
         return plot_impl(callable, name, y_log_scale, z_log_scale, plot_type, sync_with, index);
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    projection(GetDataPyCallable callable, QStringList labels = QStringList(),
+               QList<QColor> colors = QList<QColor>(), QObject* sync_with = nullptr, int index = -1)
+    {
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
+                         ::PlotType::Projections, sync_with, index);
     }
 };
 
