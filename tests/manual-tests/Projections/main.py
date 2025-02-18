@@ -63,9 +63,9 @@ def spc_pos_gse(spacecraft, start, stop):
 class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        proj = SciQLopNDProjectionPlot()
-        self.add_plot(proj)
-        for i in range(4):
+        proj,_ = self.plot(lambda start,stop: spc_pos_gse("mms1", start, stop), labels=['mms1']*3, graph_type=GraphType.ParametricCurve,
+                            plot_type=PlotType.Projections)
+        for i in range(2,4):
             proj.plot(lambda start,stop: spc_pos_gse(f"mms{i+1}", start, stop), labels=[f'mms{i+1}']*3, graph_type=GraphType.ParametricCurve)
         for i in range(4):
             proj.plot(lambda start,stop: spc_pos_gse(f"c{i+1}", start, stop), labels=[f'c{i+1}']*3, graph_type=GraphType.ParametricCurve)

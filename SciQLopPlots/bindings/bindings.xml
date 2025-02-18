@@ -190,16 +190,43 @@
     </object-type>
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
         <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
-            <modify-argument index="3" rename="labels"/>
-            <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="plot_type"/>
-            <modify-argument index="6" rename="index"/>
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
-            <modify-argument index="3" rename="labels"/>
-            <modify-argument index="4" rename="colors"/>
-            <modify-argument index="5" rename="plot_type"/>
-            <modify-argument index="6" rename="index"/>
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="index"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="projection(const QList&lt;PyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool,PlotType,int)">
             <modify-argument index="4" rename="name"/>
@@ -215,7 +242,7 @@
             <modify-argument index="5" rename="sync_with"/>
             <modify-argument index="6" rename="index"/>
         </modify-function>
-        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,DataOrder,PlotType,QObject*,int)">
+        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int)">
             <modify-argument index="2" rename="labels"/>
             <modify-argument index="3" rename="colors"/>
             <modify-argument index="4" rename="plot_type"/>
@@ -229,6 +256,20 @@
             <modify-argument index="5" rename="plot_type"/>
             <modify-argument index="6" rename="sync_with"/>
             <modify-argument index="7" rename="index"/>
+        </modify-function>
+        <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
     </object-type>
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
