@@ -23,6 +23,11 @@
 #include <QObject>
 #include <QString>
 
+enum class Coordinates {
+    Pixels,
+    Data
+};
+
 enum class ParameterType
 {
     NotAParameter,
@@ -51,6 +56,7 @@ enum class GraphType
 {
     Line,
     ParametricCurve,
+    Scatter,
     ColorMap
 };
 

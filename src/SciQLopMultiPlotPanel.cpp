@@ -241,17 +241,17 @@ void SciQLopMultiPlotPanel::set_color_palette(const QList<QColor>& palette) noex
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels,
                                  QList<QColor> colors, PlotType plot_type, GraphType graph_type,
-                                 int index)
+                                 GraphMarkerShape marker, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, x, y, labels,
-                                                             colors);
+                                                             colors, marker);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, x, y,
-                                                                       labels, colors);
+                                                                       labels, colors, marker);
             break;
         default:
             break;
@@ -282,7 +282,7 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyB
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labels,
-                                 QList<QColor> colors, int index)
+                                 QList<QColor> colors, GraphMarkerShape marker, int index)
 {
     auto* plot = new SciQLopNDProjectionPlot();
     if (index == -1)
@@ -293,24 +293,23 @@ SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labe
     return { plot, plot->parametric_curve(values, labels, colors) };
 }
 
-QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QStringList labels,
-                                 QList<QColor> colors, GraphType graph_type, PlotType plot_type,
-                                 QObject* sync_with, int index)
+QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
+    GetDataPyCallable callable, QStringList labels, QList<QColor> colors, GraphType graph_type,
+    GraphMarkerShape marker, PlotType plot_type, QObject* sync_with, int index)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, callable, labels,
-                                                             colors, sync_with);
+                                                             colors, marker, sync_with);
             break;
         case ::PlotType::TimeSeries:
-            return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, callable,
-                                                                       labels, colors, sync_with);
+            return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(
+                index, graph_type, callable, labels, colors, marker, sync_with);
             break;
         case ::PlotType::Projections:
             return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
-                index, graph_type, callable, labels, colors, sync_with);
+                index, graph_type, callable, labels, colors, marker, sync_with);
         default:
             break;
     }

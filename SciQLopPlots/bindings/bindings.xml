@@ -19,6 +19,7 @@
     <enum-type name="ColorGradient"/>
     <enum-type name="ProductsModelNodeType"/>
     <enum-type name="ParameterType"/>
+    <enum-type name="Coordinates"/>
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr"/>
 
@@ -125,42 +126,116 @@
     <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
-        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;)">
-            <modify-argument index="3" rename="labels"/>
-            <modify-argument index="4" rename="colors"/>
-        </modify-function>
-        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;)">
-            <modify-argument index="3" rename="labels"/>
-            <modify-argument index="4" rename="colors"/>
-        </modify-function>
-        <modify-function signature="parametric_curve(const QList&lt;PyBuffer&amp;&gt;&amp;,QStringList,QList&lt;QColor&gt;)">
+        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
             <modify-argument index="4">
                 <rename to="colors"/>
             </modify-argument>
+            <modify-argument index="5">
+                <rename to="marker"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="scatter(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape)">
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="marker"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape)">
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="marker"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="parametric_curve(const QList&lt;PyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="marker"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool)">
-            <modify-argument index="4" rename="name"/>
-            <modify-argument index="5" rename="y_log_scale"/>
-            <modify-argument index="6" rename="z_log_scale"/>
+            <modify-argument index="4">
+                <rename to="name"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="y_log_scale"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="z_log_scale"/>
+            </modify-argument>
         </modify-function>
-        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*)">
-            <modify-argument index="2" rename="labels"/>
-            <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="sync_with"/>
+        <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="marker"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
         </modify-function>
-        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*)">
-            <modify-argument index="2" rename="labels"/>
-            <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="sync_with"/>
+        <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="marker"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="marker"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,QObject*)">
-            <modify-argument index="2" rename="name"/>
-            <modify-argument index="3" rename="y_log_scale"/>
-            <modify-argument index="4" rename="z_log_scale"/>
-            <modify-argument index="5" rename="sync_with"/>
+            <modify-argument index="2">
+                <rename to="name"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="y_log_scale"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="z_log_scale"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
         </modify-function>
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
@@ -188,6 +263,8 @@
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes">
     </object-type>
+    <object-type name="SciQLopPixmapItem" parent-management="yes">
+    </object-type>
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
         <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
             <modify-argument index="3">
@@ -200,6 +277,23 @@
                 <rename to="plot_type"/>
             </modify-argument>
             <modify-argument index="6">
+                <rename to="index"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="scatter(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,int)">
+            <modify-argument index="3">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="marker"/>
+            </modify-argument>
+            <modify-argument index="7">
                 <rename to="index"/>
             </modify-argument>
         </modify-function>
@@ -229,33 +323,95 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool,PlotType,int)">
-            <modify-argument index="4" rename="name"/>
-            <modify-argument index="5" rename="y_log_scale"/>
-            <modify-argument index="6" rename="z_log_scale"/>
-            <modify-argument index="7" rename="plot_type"/>
-            <modify-argument index="8" rename="index"/>
+            <modify-argument index="4">
+                <rename to="name"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="y_log_scale"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="z_log_scale"/>
+            </modify-argument>
+            <modify-argument index="7">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="8">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int)">
-            <modify-argument index="2" rename="labels"/>
-            <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="plot_type"/>
-            <modify-argument index="5" rename="sync_with"/>
-            <modify-argument index="6" rename="index"/>
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="index"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,GraphMarkerShape,QObject*,int)">
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="marker"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="7">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int)">
-            <modify-argument index="2" rename="labels"/>
-            <modify-argument index="3" rename="colors"/>
-            <modify-argument index="4" rename="plot_type"/>
-            <modify-argument index="5" rename="sync_with"/>
-            <modify-argument index="6" rename="index"/>
+            <modify-argument index="2">
+                <rename to="labels"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="colors"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,QObject*,int)">
-            <modify-argument index="2" rename="name"/>
-            <modify-argument index="3" rename="y_log_scale"/>
-            <modify-argument index="4" rename="z_log_scale"/>
-            <modify-argument index="5" rename="plot_type"/>
-            <modify-argument index="6" rename="sync_with"/>
-            <modify-argument index="7" rename="index"/>
+            <modify-argument index="2">
+                <rename to="name"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="y_log_scale"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="z_log_scale"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="7">
+                <rename to="index"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int)">
             <modify-argument index="2">
@@ -274,8 +430,12 @@
     </object-type>
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
         <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool)">
-            <modify-argument index="2" rename="synchronize_x"/>
-            <modify-argument index="3" rename="synchronize_time"/>
+            <modify-argument index="2">
+                <rename to="synchronize_x"/>
+            </modify-argument>
+            <modify-argument index="3">
+                <rename to="synchronize_time"/>
+            </modify-argument>
         </modify-function>
         <modify-function signature="add_plot(SciQLopPlotInterface*)">
           <modify-argument index="1">

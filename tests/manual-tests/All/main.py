@@ -1,8 +1,10 @@
-from SciQLopPlots import SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel, InspectorView
+from SciQLopPlots import (SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan,
+                         SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel,
+                         InspectorView, SciQLopPixmapItem,
+                         Coordinates)
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
-from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush
-from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal
+from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush, QPixmap
+from PySide6.QtCore import Qt, QTimer, QObject, QThread, Signal, QRectF
 import sys, os
 import math
 import numpy as np
@@ -89,6 +91,7 @@ class SimpleCurve(QWidget):
         self.plot = make_plot(self)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
+        self.pix = SciQLopPixmapItem(self.plot, QPixmap("://icons/SciQLop.png"), QRectF(-1, -1, 2, 2), True, Coordinates.Data)
         self.curve = add_curve(self.plot)
 
 class TimeSerieGraph(QWidget):

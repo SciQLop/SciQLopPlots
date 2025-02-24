@@ -71,7 +71,8 @@ public:
     template <typename T, typename... Args>
     T* add_plottable(Args&&... args)
     {
-        return _new_plottable_wrapper<T>(this->m_axes[0], this->m_axes[1], std::forward<Args>(args)...);
+        return _new_plottable_wrapper<T>(this->m_axes[0], this->m_axes[1],
+                                         std::forward<Args>(args)...);
     }
 
     SciQLopPlottableInterface* sqp_plottable(int index = -1);
@@ -199,6 +200,10 @@ protected:
 };
 }
 
+/*!
+ * \brief The SciQLopPlot class
+ *
+ */
 class SciQLopPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
@@ -208,7 +213,7 @@ protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
     QList<QColor> m_color_palette;
-    SciQLopPlotLegend * m_legend = nullptr;
+    SciQLopPlotLegend* m_legend = nullptr;
     int m_color_palette_index = 0;
 
 
@@ -227,13 +232,13 @@ protected:
     }
 
     void _configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
-                             const QList<QColor>& colors);
+                             const QList<QColor>& colors, ::GraphType graph_type,
+                             ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker);
 
-    virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-                                             QStringList labels = QStringList(),
-                                             QList<QColor> colors = QList<QColor>(),
-
-                                             ::GraphType graph_type = ::GraphType::Line) override;
+    virtual SciQLopGraphInterface*
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker) override;
 
     virtual SciQLopColorMapInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
                                                 const PyBuffer& z,
@@ -241,11 +246,11 @@ protected:
                                                 bool y_log_scale = false,
                                                 bool z_log_scale = false) override;
 
-    virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-                                             QStringList labels = QStringList(),
-                                             QList<QColor> colors = QList<QColor>(),
-                                             ::GraphType graph_type = ::GraphType::Line,
-                                             QObject* sync_with = nullptr) override;
+    virtual SciQLopGraphInterface*
+    plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              QObject* sync_with = nullptr) override;
 
     virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
                                                 QString name = QStringLiteral("ColorMap"),
@@ -260,9 +265,30 @@ public:
 
     inline QCustomPlot* qcp_plot() const noexcept { return m_impl; }
 
+    /*!
+     * \brief set_scroll_factor Set the scroll factor of the plot.
+     * \param factor The new scroll factor.
+     * \note The scroll factor is used to adjust the scroll speed of the plot.
+     *
+     * \sa scroll_factor
+     */
     void set_scroll_factor(double factor) noexcept override;
+
+    /*!
+     * \brief scroll_factor Get the scroll factor of the plot.
+     * \return The scroll factor.
+     * \note The scroll factor is used to adjust the scroll speed of the plot.
+     *
+     * \sa set_scroll_factor
+     */
     double scroll_factor() const noexcept override;
 
+    /*!
+     * \brief enable_cursor Enable or disable the cursor.
+     * \param enable True to enable the cursor, false to disable it.
+     * \note The cursor is a round marker that follows the mouse cursor on the plot and displays the
+     * corresponding graph values.
+     */
     void enable_cursor(bool enable = true) noexcept override;
 
     void minimize_margins() override;
@@ -306,10 +332,7 @@ public:
         return m_impl->axis(3);
     }
 
-    inline virtual SciQLopPlotLegendInterface* legend() const noexcept override
-    {
-        return m_legend;
-    }
+    inline virtual SciQLopPlotLegendInterface* legend() const noexcept override { return m_legend; }
 
     void replot(bool immediate = false) override;
 
