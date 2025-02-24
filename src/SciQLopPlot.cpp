@@ -507,7 +507,7 @@ void SciQLopPlot::_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendIte
 }
 
 void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
-                                      const QList<QColor>& colors)
+                                      const QList<QColor>& colors, ::GraphType graph_type, ::GraphMarkerShape marker)
 {
     if (plottable)
     {
@@ -520,7 +520,12 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
             for (auto& component : plottable->components())
             {
                 component->set_color(m_color_palette[m_color_palette_index]);
+                component->set_marker_shape(marker);
                 m_color_palette_index = (m_color_palette_index + 1) % std::size(m_color_palette);
+                if(graph_type == ::GraphType::Scatter)
+                {
+                    component->set_line_style(::GraphLineStyle::NoLine);
+                }
             }
         }
         if (std::size(labels) == std::size(plottable->components()))
@@ -601,12 +606,13 @@ void SciQLopPlot::replot(bool immediate)
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
                                               QStringList labels, QList<QColor> colors,
-                                              GraphType graph_type)
+                                              GraphType graph_type, GraphMarkerShape marker)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
+        case GraphType::Scatter:
             plottable = m_impl->add_plottable<SciQLopLineGraph>(labels);
             break;
         case GraphType::ParametricCurve:
@@ -619,7 +625,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     if (plottable)
     {
         plottable->set_data(std::move(x), std::move(y));
-        _configure_plotable(plottable, labels, colors);
+        _configure_plotable(plottable, labels, colors, graph_type, marker);
     }
     return plottable;
 }
@@ -686,13 +692,14 @@ void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, Q
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-                                              QList<QColor> colors, GraphType graph_type,
+                                              QList<QColor> colors, GraphType graph_type, GraphMarkerShape marker,
                                               QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
+        case GraphType::Scatter:
             plottable
                 = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels);
             break;
@@ -705,7 +712,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     if (plottable)
     {
         _connect_callable_sync(plottable, sync_with);
-        _configure_plotable(plottable, labels, colors);
+        _configure_plotable(plottable, labels, colors, graph_type, marker);
     }
     return plottable;
 }

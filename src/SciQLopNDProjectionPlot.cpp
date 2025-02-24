@@ -25,7 +25,7 @@
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable callable,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type, QObject* sync_with)
+                                                          GraphType graph_type, GraphMarkerShape marker, QObject* sync_with)
 {
     SciQLopGraphInterface* graph
         = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels);
@@ -38,7 +38,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<PyBuffer>& data,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type)
+                                                          GraphType graph_type,GraphMarkerShape marker)
 {
     SciQLopGraphInterface* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels);
     graph->set_data(data);

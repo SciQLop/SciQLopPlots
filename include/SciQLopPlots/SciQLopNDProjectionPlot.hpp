@@ -22,8 +22,8 @@
 #pragma once
 
 
-#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface
 {
@@ -36,23 +36,25 @@ protected:
     QList<SciQLopPlot*> m_plots;
     bool m_linked_axes = false;
 
-    virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-                                                    QStringList labels = QStringList(),
-                                                    QList<QColor> colors = QList<QColor>(),
-                                                    ::GraphType graph_type = ::GraphType::Line,
-                                                    QObject* sync_with = nullptr) override;
+    virtual SciQLopGraphInterface*
+    plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              QObject* sync_with = nullptr) override;
 
-    virtual SciQLopGraphInterface* plot_impl(const QList<PyBuffer>& data,
-                                                    QStringList labels = QStringList(),
-                                                    QList<QColor> colors = QList<QColor>(),
-                                                    ::GraphType graph_type = ::GraphType::ParametricCurve) override;
+    virtual SciQLopGraphInterface*
+    plot_impl(const QList<PyBuffer>& data, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(),
+              ::GraphType graph_type = ::GraphType::ParametricCurve,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker) override;
 
 
 public:
-    SciQLopNDProjectionPlot(std::size_t projection_count=3, QWidget* parent = nullptr);
+    SciQLopNDProjectionPlot(std::size_t projection_count = 3, QWidget* parent = nullptr);
     virtual ~SciQLopNDProjectionPlot() Q_DECL_OVERRIDE = default;
 
     void set_linked_axes(bool linked) noexcept;
+
     inline bool linked_axes() const noexcept { return m_linked_axes; }
 
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;
@@ -72,5 +74,4 @@ public:
     {
         return m_time_axis;
     }
-
 };

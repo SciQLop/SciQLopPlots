@@ -292,6 +292,9 @@ public:
     }
 };
 
+/*! \brief Vertical span that can be added to a plot
+ *
+ */
 class SciQLopVerticalSpan : public QObject
 {
     Q_OBJECT
@@ -315,7 +318,15 @@ public:
     Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 #endif
-
+    /*! \brief SciQLopVerticalSpan
+     *
+     * \param plot The plot where the vertical span will be added
+     * \param horizontal_range The range of the span
+     * \param color The color of the span
+     * \param read_only If the span is read only
+     * \param visible If the span is visible
+     * \param tool_tip The tool tip of the span
+     */
     SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
                         QColor color = QColor(100, 100, 100, 100), bool read_only = false,
                         bool visible = true, const QString& tool_tip = "");
@@ -340,12 +351,20 @@ public:
         return nullptr;
     }
 
+    /*! \brief Set the span as movable
+     *
+     * \param movable
+     */
     inline void set_visible(bool visible)
     {
         if (!_impl.isNull())
             _impl->set_visible(visible);
     }
 
+    /*! \brief Set the span as movable
+     *
+     * \param movable
+     */
     inline bool visible() const noexcept
     {
         if (!_impl.isNull())

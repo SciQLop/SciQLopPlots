@@ -54,6 +54,8 @@ protected:
             return plot->line(std::forward<Args>(args)...);
         if constexpr (graph_type == GraphType::ParametricCurve)
             return plot->parametric_curve(std::forward<Args>(args)...);
+        if constexpr (graph_type == GraphType::Scatter)
+            return plot->scatter(std::forward<Args>(args)...);
         return nullptr;
     }
 
@@ -80,6 +82,11 @@ protected:
             return { plot, __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...) };
         }
 
+        if (graph_type == GraphType::Scatter)
+        {
+            return { plot, __plot<T, GraphType::Scatter>(plot, std::forward<Args>(args)...) };
+        }
+
         if (graph_type == GraphType::ParametricCurve)
         {
             return { plot,
@@ -95,7 +102,7 @@ protected:
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
-              ::GraphType graph_type = ::GraphType::Line, int index = -1) Q_DECL_OVERRIDE;
+              ::GraphType graph_type = ::GraphType::Line, ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
@@ -105,11 +112,12 @@ protected:
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(), int index = -1) Q_DECL_OVERRIDE;
+              QList<QColor> colors = QList<QColor>(),::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1) Q_DECL_OVERRIDE;
 

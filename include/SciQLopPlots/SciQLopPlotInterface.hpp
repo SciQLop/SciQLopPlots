@@ -24,8 +24,8 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
-#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/SciQLopPlotLegendInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 #include <QFrame>
@@ -45,18 +45,18 @@ protected:
     QUuid m_uuid;
     bool m_selected = false;
 
-    inline virtual SciQLopGraphInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-                                                    QStringList labels = QStringList(),
-                                                    QList<QColor> colors = QList<QColor>(),
-                                                    ::GraphType graph_type = ::GraphType::Line)
+    inline virtual SciQLopGraphInterface*
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopGraphInterface* plot_impl(const QList<PyBuffer>& values,
-                                                    QStringList labels = QStringList(),
-                                                    QList<QColor> colors = QList<QColor>(),
-                                                    ::GraphType graph_type = ::GraphType::Line)
+    inline virtual SciQLopGraphInterface*
+    plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -70,11 +70,11 @@ protected:
         throw std::runtime_error("Not implemented");
     }
 
-    inline virtual SciQLopGraphInterface* plot_impl(GetDataPyCallable callable,
-                                                    QStringList labels = QStringList(),
-                                                    QList<QColor> colors = QList<QColor>(),
-                                                    ::GraphType graph_type = ::GraphType::Line,
-                                                    QObject* sync_with = nullptr)
+    inline virtual SciQLopGraphInterface*
+    plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              QObject* sync_with = nullptr)
     {
         throw std::runtime_error("Not implemented");
     }
@@ -213,29 +213,37 @@ public:
         }
     }
 
-    inline virtual SciQLopGraphInterface* line(const PyBuffer& x, const PyBuffer& y,
-                                               QStringList labels = QStringList(),
-                                               QList<QColor> colors = QList<QColor>())
+    inline virtual SciQLopGraphInterface*
+    line(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+         QList<QColor> colors = QList<QColor>(),
+         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::Line);
+        return plot_impl(x, y, labels, colors, ::GraphType::Line, marker);
     }
 
-    inline virtual SciQLopGraphInterface* parametric_curve(const PyBuffer& x, const PyBuffer& y,
-                                                           QStringList labels = QStringList(),
-                                                           QList<QColor> colors = QList<QColor>())
+    inline virtual SciQLopGraphInterface*
+    scatter(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+            QList<QColor> colors = QList<QColor>(),
+            ::GraphMarkerShape marker = ::GraphMarkerShape::Cross)
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve);
+        return plot_impl(x, y, labels, colors, ::GraphType::Scatter, marker);
     }
 
-    inline virtual SciQLopGraphInterface* parametric_curve(const QList<PyBuffer>& values,
-                                                           QStringList labels = QStringList(),
-                                                           QList<QColor> colors = QList<QColor>())
+    inline virtual SciQLopGraphInterface*
+    parametric_curve(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+                     QList<QColor> colors = QList<QColor>(),
+                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
-        return plot_impl(values, labels, colors, ::GraphType::ParametricCurve);
+        return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve, marker);
     }
 
-
-
+    inline virtual SciQLopGraphInterface*
+    parametric_curve(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+                     QList<QColor> colors = QList<QColor>(),
+                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+    {
+        return plot_impl(values, labels, colors, ::GraphType::ParametricCurve, marker);
+    }
 
     inline virtual SciQLopColorMapInterface* colormap(const PyBuffer& x, const PyBuffer& y,
                                                       const PyBuffer& z,
@@ -246,20 +254,30 @@ public:
         return plot_impl(x, y, z, name, y_log_scale, z_log_scale);
     }
 
-    inline virtual SciQLopGraphInterface* line(GetDataPyCallable callable,
-                                               QStringList labels = QStringList(),
-                                               QList<QColor> colors = QList<QColor>(),
-                                               QObject* sync_with = nullptr)
+    inline virtual SciQLopGraphInterface*
+    line(GetDataPyCallable callable, QStringList labels = QStringList(),
+         QList<QColor> colors = QList<QColor>(),
+         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QObject* sync_with = nullptr)
     {
-        return plot_impl(callable, labels, colors, ::GraphType::Line, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::Line, marker, sync_with);
+    }
+
+    inline virtual SciQLopGraphInterface*
+    scatter(GetDataPyCallable callable, QStringList labels = QStringList(),
+            QList<QColor> colors = QList<QColor>(),
+            GraphMarkerShape marker = ::GraphMarkerShape::Cross, QObject* sync_with = nullptr)
+    {
+        return plot_impl(callable, labels, colors, ::GraphType::Scatter, marker, sync_with);
     }
 
     inline virtual SciQLopGraphInterface* parametric_curve(GetDataPyCallable callable,
                                                            QStringList labels = QStringList(),
                                                            QList<QColor> colors = QList<QColor>(),
+                                                           ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
                                                            QObject* sync_with = nullptr)
     {
-        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
+                         marker, sync_with);
     }
 
     inline virtual SciQLopColorMapInterface*
@@ -336,10 +354,7 @@ protected:
         return nullptr;
     }
 
-    virtual void toggle_selected_objects_visibility() noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-    }
+    virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void keyPressEvent(QKeyEvent* event) override
     {
