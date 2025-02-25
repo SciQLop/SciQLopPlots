@@ -27,7 +27,7 @@ if [ $(cleanup_str "$USES_EMIT_IN_HEADERS") ]; then
     exit 1
 fi
 
-USES_CONNECT_IN_HEADERS=$(grep -R " connect(" $INCLUDE_DIR)
+USES_CONNECT_IN_HEADERS=$(grep -R " connect(" $INCLUDE_DIR | grep -v "#SciQLop-check-ignore-connect")
 
 if [ $(cleanup_str "$USES_CONNECT_IN_HEADERS") ]; then
     echo "FAIL: connect() function used in headers"

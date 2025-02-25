@@ -48,27 +48,4 @@ const SciQLopPlotRange& SciQLopPlotCollectionInterface::time_axis_range() const
     return r;
 }
 
-void SciQLopPlotCollectionBehavior::_update_plots(auto plots, auto connect, auto disconnect)
-{
-    for (auto& plot : plots)
-    {
-        if (!plot.isNull())
-        {
-            if (!_plots.contains(plot))
-            {
-                connect(plot);
-            }
-        }
-    }
-    for (auto& plot : _plots)
-    {
-        if (!plot.isNull())
-        {
-            if (!plots.contains(plot))
-            {
-                disconnect(plot);
-            }
-        }
-    }
-    _plots = plots;
-}
+
