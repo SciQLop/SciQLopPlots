@@ -45,17 +45,7 @@ protected:
     }
 
 public:
-    PropertyDelegateBase(QObject* object, QWidget* parent = nullptr)
-            : QWidget(parent), m_object { object }
-    {
-        m_layout = new QVBoxLayout();
-        setLayout(m_layout);
-        m_title = new QLabel();
-        m_layout->addWidget(m_title);
-        connect(object, &QObject::objectNameChanged, this,
-                &PropertyDelegateBase::object_name_changed);
-        object_name_changed(object->objectName());
-    }
+    PropertyDelegateBase(QObject* object, QWidget* parent = nullptr);
 
     Q_SLOT void object_name_changed(const QString& name)
     {

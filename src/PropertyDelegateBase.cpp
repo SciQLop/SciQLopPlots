@@ -20,3 +20,15 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+
+PropertyDelegateBase::PropertyDelegateBase(QObject *object, QWidget *parent)
+        : QWidget(parent), m_object { object }
+{
+    m_layout = new QVBoxLayout();
+    setLayout(m_layout);
+    m_title = new QLabel();
+    m_layout->addWidget(m_title);
+    connect(object, &QObject::objectNameChanged, this,
+            &PropertyDelegateBase::object_name_changed);
+    object_name_changed(object->objectName());
+}

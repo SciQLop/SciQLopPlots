@@ -42,30 +42,7 @@ class SciQLopPlotCollectionBehavior : public QObject
 protected:
     QList<QPointer<SciQLopPlotInterface>> _plots;
 
-    inline void _update_plots(const auto& plots, auto&& connect, auto&& disconnect)
-    {
-        for (auto& plot : plots)
-        {
-            if (!plot.isNull())
-            {
-                if (!_plots.contains(plot))
-                {
-                    connect(plot);
-                }
-            }
-        }
-        for (auto& plot : _plots)
-        {
-            if (!plot.isNull())
-            {
-                if (!plots.contains(plot))
-                {
-                    disconnect(plot);
-                }
-            }
-        }
-        _plots = plots;
-    }
+    void _update_plots(const auto& plots, auto&& connect, auto&& disconnect);
 
 public:
     SciQLopPlotCollectionBehavior(QObject* parent = nullptr) : QObject(parent) { }
