@@ -265,6 +265,10 @@
     </object-type>
     <object-type name="SciQLopPixmapItem" parent-management="yes">
     </object-type>
+    <object-type name="SciQLopStraightLine" parent-management="yes"/>
+    <object-type name="SciQLopVerticalLine" parent-management="yes"/>
+    <object-type name="SciQLopHorizontalLine" parent-management="yes"/>
+
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
         <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int)">
             <modify-argument index="3">

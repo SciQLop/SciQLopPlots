@@ -1,6 +1,8 @@
-from SciQLopPlots import SciQLopPlot, \
-                         MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
-                         SciQLopTimeSeriesPlot, PlotType, AxisType, GraphType
+from SciQLopPlots import (SciQLopPlot,
+                         MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel,
+                         SciQLopVerticalSpan, SciQLopTimeSeriesPlot,
+                         PlotType, AxisType, GraphType, SciQLopVerticalLine,
+                         SciQLopHorizontalLine)
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants
 from PySide6.QtCore import Qt
@@ -123,11 +125,12 @@ class MMS(SciQLopMultiPlotPanel):
                              colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
                              plot_type=PlotType.TimeSeries)
         self._fft = Spectrum(2**9)
-        p,_=self.plot(self._fft, index=1, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
+        p,g=self.plot(self._fft, index=1, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
         p.x_axis().set_log(True)
         p.x_axis().set_range(0.1, 2)
         p.y_axis().set_log(True)
         p.y_axis().set_range(1., 1e-4)
+        self._g = g
         self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
 
 class MMS_Spectro_Only(SciQLopMultiPlotPanel):

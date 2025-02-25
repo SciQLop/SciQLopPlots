@@ -21,6 +21,7 @@
 #include <SciQLopPlots/Inspector/View/TreeView.hpp>
 #include <SciQLopPlots/Items/SciQLopVerticalSpan.hpp>
 #include <SciQLopPlots/Items/SciQLopPixmapItem.hpp>
+#include <SciQLopPlots/Items/SciQLopStraightLines.hpp>
 #include <SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp>

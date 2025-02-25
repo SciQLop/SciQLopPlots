@@ -26,5 +26,5 @@ void PixmapItem::move(double dx, double dy)
     this->topLeft->setPixelPosition({ this->topLeft->pixelPosition().x() + dx, this->topLeft->pixelPosition().y() + dy });
     this->bottomRight->setPixelPosition({ this->bottomRight->pixelPosition().x() + dx, this->bottomRight->pixelPosition().y() + dy });
     this->replot();
-    emit moved(this->topLeft->coords().x());
+    emit moved(this->topLeft->coords().x(), this->topLeft->coords().y());
 }

@@ -35,7 +35,7 @@ class PixmapItem :public SciQLopPlotItem<QCPItemPixmap>, public SciQlopItemWithT
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_position);
+    Q_SIGNAL void moved(double new_x, double new_y);
 #endif // !BINDINGS_H
 
     inline PixmapItem(QCustomPlot* plot, const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
