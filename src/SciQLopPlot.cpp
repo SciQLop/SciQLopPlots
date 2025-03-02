@@ -284,10 +284,18 @@ void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps)
     }
 }
 
+inline double _signed_length(const QPoint& p)
+{
+    auto sign = p.y() - p.x();
+    return sign < 0 ? -p.manhattanLength() : p.manhattanLength();
+}
+
 void SciQLopPlot::wheelEvent(QWheelEvent* event)
 {
     const auto pos = event->position();
-    const auto wheelSteps = event->angleDelta().y() / 120.0;
+    // Qt converts two finger scroll to wheel events, use manhattanLength to
+    // ingore the direction of the scroll
+    const auto wheelSteps = _signed_length(event->angleDelta()) / 120.0;
     foreach (QCPLayerable* candidate, layerableListAt(pos, false))
     {
         if (auto axis = qobject_cast<QCPAxis*>(candidate); axis != nullptr)
