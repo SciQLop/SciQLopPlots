@@ -96,7 +96,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 #ifdef QCUSTOMPLOT_USE_OPENGL
     setOpenGl(true, 4);
 #endif
-    for (auto gesture : { Qt::PanGesture, Qt::PinchGesture })
+    for (auto gesture : { Qt::PinchGesture })
     {
         grabGesture(gesture);
     }
@@ -246,12 +246,24 @@ void SciQLopPlot::_wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPoi
                      axis->pixelToCoord(axis->orientation() == Qt::Horizontal ? pos.x() : pos.y()));
 }
 
+void SciQLopPlot::_pinch_zoom(QPinchGesture* gesture)
+{
+    QPinchGesture::ChangeFlags changeFlags = gesture->changeFlags();
+    if (changeFlags & QPinchGesture::ScaleFactorChanged)
+    {
+        auto axis = this->xAxis;
+        if (gesture->scaleFactor() != 0.)
+            axis->scaleRange(1. / gesture->scaleFactor(),
+                             axis->pixelToCoord(gesture->centerPoint().x()));
+    }
+}
+
 int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
 {
     return 0;
 }
 
-void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps, const QPointF& pos)
+void SciQLopPlot::_wheel_pan(QCPAxis* axis, const double wheelSteps)
 {
     if (axis->scaleType() == QCPAxis::stLinear)
     {
@@ -288,13 +300,13 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
         else if (auto axisRect = qobject_cast<QCPAxisRect*>(candidate); axisRect != nullptr)
         {
             if (event->modifiers().testFlags(Qt::ShiftModifier | Qt::ControlModifier))
-                this->_wheel_pan(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
+                this->_wheel_pan(axisRect->axis(QCPAxis::atLeft), wheelSteps);
             else if (event->modifiers().testFlag(Qt::ControlModifier))
                 this->_wheel_zoom(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
             else if (event->modifiers().testFlag(Qt::ShiftModifier))
                 this->_wheel_zoom(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
             else
-                this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
+                this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps);
             this->replot(rpQueuedReplot);
             event->accept();
             return;
@@ -352,17 +364,11 @@ bool SciQLopPlot::event(QEvent* event)
     if (event->type() == QEvent::Gesture)
     {
         QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
-        if (QGesture* pan = gestureEvent->gesture(Qt::PanGesture); pan != nullptr)
+        if (QGesture* gesture = gestureEvent->gesture(Qt::PinchGesture); gesture != nullptr)
         {
-            if (auto p = dynamic_cast<QPanGesture*>(pan); p != nullptr)
+            if (auto p = dynamic_cast<QPinchGesture*>(gesture); p != nullptr)
             {
-                event->accept();
-            }
-        }
-        if (QGesture* pinch = gestureEvent->gesture(Qt::PinchGesture); pinch != nullptr)
-        {
-            if (auto p = dynamic_cast<QPinchGesture*>(pinch); p != nullptr)
-            {
+                _pinch_zoom(p);
                 event->accept();
             }
         }
@@ -507,7 +513,8 @@ void SciQLopPlot::_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendIte
 }
 
 void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
-                                      const QList<QColor>& colors, ::GraphType graph_type, ::GraphMarkerShape marker)
+                                      const QList<QColor>& colors, ::GraphType graph_type,
+                                      ::GraphMarkerShape marker)
 {
     if (plottable)
     {
@@ -522,7 +529,7 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
                 component->set_color(m_color_palette[m_color_palette_index]);
                 component->set_marker_shape(marker);
                 m_color_palette_index = (m_color_palette_index + 1) % std::size(m_color_palette);
-                if(graph_type == ::GraphType::Scatter)
+                if (graph_type == ::GraphType::Scatter)
                 {
                     component->set_line_style(::GraphLineStyle::NoLine);
                 }
@@ -692,8 +699,8 @@ void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, Q
 }
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
-                                              QList<QColor> colors, GraphType graph_type, GraphMarkerShape marker,
-                                              QObject* sync_with)
+                                              QList<QColor> colors, GraphType graph_type,
+                                              GraphMarkerShape marker, QObject* sync_with)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
