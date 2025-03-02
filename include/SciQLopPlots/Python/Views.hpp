@@ -32,6 +32,11 @@
 #include <memory>
 #include <vector>
 
+// TODO add support numpy datetime64 (int64)
+// Since speasy provides numpy datetime64 for time axis, we should add support for it.
+// One option would be to convert it to double from the ctor
+// and release the underlying buffer. This would require to check the unit of the datetime64 array.
+
 
 struct XYView
 {

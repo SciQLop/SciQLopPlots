@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,44 +21,41 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/enums.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
-
 #include <QColor>
 #include <QColorDialog>
-#include <QFormLayout>
-#include <QPen>
+
+#include "SciQLopPlots/enums.hpp"
+#include <QComboBox>
 #include <QWidget>
 
-class LineStyleItemDelegate : public StyledItemDelegate
+
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
+
+class MarkerItemDelegate : public StyledItemDelegate
 {
     Q_OBJECT
-    virtual QSize graphic_item_size_hint() const override;
-    virtual void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                                    const QModelIndex& index) const override;
+
+    QSize graphic_item_size_hint() const override;
+    void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
+                            const QModelIndex& index) const override;
 
 public:
-    LineStyleItemDelegate(QObject* parent = nullptr);
-    virtual ~LineStyleItemDelegate() = default;
+    MarkerItemDelegate(QObject* parent = nullptr);
+    virtual ~MarkerItemDelegate() = default;
 };
 
-class LineDelegate : public QWidget
+class MarkerDelegate : public QComboBox
 {
     Q_OBJECT
-
-    QPen m_pen;
-    QFormLayout* m_layout;
-    GraphLineStyle m_style;
+    GraphMarkerShape m_shape;
 
 public:
-    LineDelegate(QPen pen, GraphLineStyle style,GraphMarkerShape marker_shape, QWidget* parent = nullptr);
-    virtual ~LineDelegate() = default;
+    MarkerDelegate(GraphMarkerShape shape, QWidget* parent = nullptr);
+    virtual ~MarkerDelegate() = default;
 
+    void setMarkerShape(GraphMarkerShape shape);
+    GraphMarkerShape markerShape() const;
 #ifndef BINDINGS_H
-    Q_SIGNAL void colorChanged(const QColor& color);
-    Q_SIGNAL void widthChanged(int width);
-    Q_SIGNAL void styleChanged(GraphLineStyle style);
-    Q_SIGNAL void penChanged(const QPen& pen);
     Q_SIGNAL void markerShapeChanged(GraphMarkerShape shape);
 #endif
 };

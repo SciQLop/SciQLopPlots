@@ -21,10 +21,20 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
-#include <QComboBox>
-#include <QSpinBox>
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/MarkerDelegate.hpp"
+#include "SciQLopPlots/enums.hpp"
+#include "magic_enum/magic_enum_utility.hpp"
 
-LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, QWidget* parent) : QWidget(parent)
+#include <QComboBox>
+#include<QSpinBox>
+#include <QFile>
+#include <QIcon>
+#include <QPainter>
+#include <fmt/core.h>
+
+LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, GraphMarkerShape marker_shape,
+                           QWidget* parent)
+        : QWidget(parent)
 {
     m_pen = pen;
     m_layout = new QFormLayout();
@@ -42,17 +52,13 @@ LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, QWidget* parent) : QW
             });
 
     auto style_qcb = new QComboBox();
+    style_qcb->setItemDelegate(new LineStyleItemDelegate(this));
     m_layout->addRow("Style", style_qcb);
-    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::Line),
-                       QVariant::fromValue(GraphLineStyle::Line));
-    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepCenter),
-                       QVariant::fromValue(GraphLineStyle::StepCenter));
-    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepLeft),
-                       QVariant::fromValue(GraphLineStyle::StepLeft));
-    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::StepRight),
-                       QVariant::fromValue(GraphLineStyle::StepRight));
-    style_qcb->addItem(graph_line_style_to_string(GraphLineStyle::NoLine),
-                       QVariant::fromValue(GraphLineStyle::NoLine));
+
+    magic_enum::enum_for_each<GraphLineStyle>(
+        [style_qcb](GraphLineStyle line_style)
+        { style_qcb->addItem(to_string(line_style), QVariant::fromValue(line_style)); });
+
     style_qcb->setCurrentIndex(style_qcb->findData(QVariant::fromValue(style)));
     connect(style_qcb, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [this, style_qcb](int index)
@@ -67,4 +73,39 @@ LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, QWidget* parent) : QW
                 emit colorChanged(color);
                 emit penChanged(m_pen);
             });
+
+    auto marker = new MarkerDelegate(marker_shape);
+    m_layout->addRow("Marker", marker);
+    connect(marker, &MarkerDelegate::markerShapeChanged, this,
+            [this](GraphMarkerShape shape) { emit this->markerShapeChanged(shape); });
+}
+
+QSize LineStyleItemDelegate::graphic_item_size_hint() const
+{
+    return text_size_hint("000000000");
+}
+
+void LineStyleItemDelegate::paint_graphic_item(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    auto data = index.data(Qt::UserRole);
+    if (data.canConvert<GraphLineStyle>())
+    {
+        auto resourcename = QString::fromStdString(
+            fmt::format(":/LineStyles/{}.png", magic_enum::enum_name(data.value<GraphLineStyle>())));
+        auto sh = graphic_item_size_hint();
+        auto rect = option.rect;
+        if (QFile::exists(resourcename))
+        {
+            auto image = QIcon(resourcename).pixmap(sh.width(), rect.height());
+            painter->save();
+            painter->translate(rect.x() + rect.width() - sh.width(), rect.y());
+            painter->drawPixmap(0, 0, image);
+            painter->restore();
+        }
+    }
+}
+
+LineStyleItemDelegate::LineStyleItemDelegate(QObject *parent)
+: StyledItemDelegate(parent)
+{
 }

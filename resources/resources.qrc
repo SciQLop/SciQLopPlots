@@ -39,5 +39,24 @@
         <file>icons/amda.png</file>
         <file>icons/Cluster_mission_logo_pillars.jpg</file>
         <file>icons/plot_panel_128.png</file>
+        <file>Markers/PlusCircle.png</file>
+        <file>Markers/CrossedCircle.png</file>
+        <file>Markers/PlusSquare.png</file>
+        <file>Markers/CrossedSquare.png</file>
+        <file>Markers/InvertedTriangle.png</file>
+        <file>Markers/Triangle.png</file>
+        <file>Markers/Star.png</file>
+        <file>Markers/Diamond.png</file>
+        <file>Markers/Square.png</file>
+        <file>Markers/FilledCircle.png</file>
+        <file>Markers/Circle.png</file>
+        <file>Markers/Plus.png</file>
+        <file>Markers/Dot.png</file>
+        <file>Markers/Cross.png</file>
+        <file>LineStyles/StepRight.png</file>
+        <file>LineStyles/StepLeft.png</file>
+        <file>LineStyles/StepCenter.png</file>
+        <file>LineStyles/NoLine.png</file>
+        <file>LineStyles/Line.png</file>
     </qresource>
 </RCC>

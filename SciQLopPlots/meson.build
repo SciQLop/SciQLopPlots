@@ -6,6 +6,7 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 QCustomPlot_dep = dependency('qcustomplot')
+magic_enum_dep = dependency('magic_enum', static:true)
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
@@ -60,6 +61,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Profiling.hpp',
     project_source_root + '/include/SciQLopPlots/unique_names_factory.hpp',
     project_source_root + '/include/SciQLopPlots/enums.hpp',
+    project_source_root + '/include/SciQLopPlots/qcp_enums.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotInterface.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopPlotLegendInterface.hpp',
@@ -116,6 +118,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp',
@@ -126,6 +129,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/MarkerDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
@@ -208,12 +212,14 @@ sources = moc_files \
             '../src/BooleanDelegate.cpp',
             '../src/SciQLopPlotDelegate.cpp',
             '../src/LegendDelegate.cpp',
+            '../src/StyledItemDelegate.cpp',
             '../src/SciQLopGraphDelegate.cpp',
             '../src/SciQLopColorMapDelegate.cpp',
             '../src/SciQLopGraphComponentDelegate.cpp',
             '../src/SciQLopPlotAxisDelegate.cpp',
             '../src/ColorDelegate.cpp',
             '../src/LineDelegate.cpp',
+            '../src/MarkerDelegate.cpp',
             '../src/ColorGradientDelegate.cpp',
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
@@ -244,7 +250,7 @@ endif
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, QCustomPlot_dep, cpp_utils_dep, gl_dep, fmt_dep] + optional_deps,
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, QCustomPlot_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,

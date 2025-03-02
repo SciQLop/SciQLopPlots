@@ -22,11 +22,37 @@
 #pragma once
 #include <QObject>
 #include <QString>
+#include <magic_enum/magic_enum.hpp>
 
-enum class Coordinates {
+template <typename T>
+T from_string(const QString& str);
+
+#define ENUM_TO_STRING(enum_type)                                                                  \
+    inline QString to_string(enum_type value)                                                      \
+    {                                                                                              \
+        return QString::fromLatin1(magic_enum::enum_name(value));                                  \
+    }
+
+#define STRING_TO_ENUM(enum_type)                                                                  \
+    template <>                                                                                    \
+    inline enum_type from_string<enum_type>(const QString& str)                                    \
+    {                                                                                              \
+        return magic_enum::enum_cast<enum_type>(str.toStdString())                                 \
+            .value_or(static_cast<enum_type>(0));                                                  \
+    }
+
+#define ADD_ENUM(enum_type)                                                                        \
+    ENUM_TO_STRING(enum_type)                                                                      \
+    STRING_TO_ENUM(enum_type)
+
+
+enum class Coordinates
+{
     Pixels,
     Data
 };
+ADD_ENUM(Coordinates)
+Q_DECLARE_METATYPE(Coordinates);
 
 enum class ParameterType
 {
@@ -36,6 +62,8 @@ enum class ParameterType
     Multicomponents,
     Spectrogram
 };
+ADD_ENUM(ParameterType)
+Q_DECLARE_METATYPE(ParameterType);
 
 enum class AxisType
 {
@@ -45,12 +73,16 @@ enum class AxisType
     YAxis,
     ZAxis
 };
+ADD_ENUM(AxisType)
+Q_DECLARE_METATYPE(AxisType);
 
 enum class DataOrder
 {
     RowMajor,
     ColumnMajor
 };
+ADD_ENUM(DataOrder)
+Q_DECLARE_METATYPE(DataOrder);
 
 enum class GraphType
 {
@@ -59,6 +91,8 @@ enum class GraphType
     Scatter,
     ColorMap
 };
+ADD_ENUM(GraphType)
+Q_DECLARE_METATYPE(GraphType);
 
 enum class PlotType
 {
@@ -66,21 +100,67 @@ enum class PlotType
     TimeSeries,
     Projections,
 };
+ADD_ENUM(PlotType)
+Q_DECLARE_METATYPE(PlotType);
 
 enum class GraphMarkerShape
 {
     NoMarker,
-    Circle,
-    Square,
-    Triangle,
-    Diamond,
-    Star,
-    Plus,
-    Cross,
-    X,
+    Dot, // .
+    Circle, // ○
+    Square, // □
+    Triangle, // △
+    Diamond, // ◇
+    Star, // *
+    Plus, // +
+    Cross, // X
+    FilledCircle, // ●
+    InvertedTriangle, // ▽
+    CrossedSquare, // ☒
+    PlusSquare, // ⊞
+    CrossedCircle, // ☒
+    PlusCircle, // ⊕
     Custom
 };
+ADD_ENUM(GraphMarkerShape)
+Q_DECLARE_METATYPE(GraphMarkerShape);
 
+inline QString GraphMarkerShapeToUTF8(GraphMarkerShape shape)
+{
+    switch (shape)
+    {
+    case GraphMarkerShape::NoMarker:
+        return "";
+    case GraphMarkerShape::Circle:
+        return "○";
+    case GraphMarkerShape::Square:
+        return "□";
+    case GraphMarkerShape::Triangle:
+        return "△";
+    case GraphMarkerShape::Diamond:
+        return "◇";
+    case GraphMarkerShape::Star:
+        return "*";
+    case GraphMarkerShape::Plus:
+        return "+";
+    case GraphMarkerShape::Cross:
+        return "X";
+    case GraphMarkerShape::FilledCircle:
+        return "●";
+    case GraphMarkerShape::InvertedTriangle:
+        return "▽";
+    case GraphMarkerShape::CrossedSquare:
+        return "☒";
+    case GraphMarkerShape::PlusSquare:
+        return "⊞";
+    case GraphMarkerShape::CrossedCircle:
+        return "☒";
+    case GraphMarkerShape::PlusCircle:
+        return "⊕";
+    case GraphMarkerShape::Custom:
+        return "";
+    }
+}
 
 enum class GraphLineStyle
 {
@@ -90,7 +170,7 @@ enum class GraphLineStyle
     StepRight,
     StepCenter
 };
-
+ADD_ENUM(GraphLineStyle)
 Q_DECLARE_METATYPE(GraphLineStyle);
 
 enum class ColorGradient
@@ -108,97 +188,5 @@ enum class ColorGradient
     Jet,
     Hues
 };
-
+ADD_ENUM(ColorGradient)
 Q_DECLARE_METATYPE(ColorGradient);
-
-inline GraphLineStyle graph_line_style_from_string(const QString& str)
-{
-    if (str == "Line")
-        return GraphLineStyle::Line;
-    if (str == "StepLeft")
-        return GraphLineStyle::StepLeft;
-    if (str == "StepRight")
-        return GraphLineStyle::StepRight;
-    if (str == "StepCenter")
-        return GraphLineStyle::StepCenter;
-    return GraphLineStyle::NoLine;
-}
-
-inline QString graph_line_style_to_string(GraphLineStyle style)
-{
-    switch (style)
-    {
-        case GraphLineStyle::Line:
-            return "Line";
-        case GraphLineStyle::StepLeft:
-            return "StepLeft";
-        case GraphLineStyle::StepRight:
-            return "StepRight";
-        case GraphLineStyle::StepCenter:
-            return "StepCenter";
-        default:
-            return "NoLine";
-    }
-}
-
-inline ColorGradient color_gradient_from_string(const QString& str)
-{
-    if (str == "Grayscale")
-        return ColorGradient::Grayscale;
-    if (str == "Hot")
-        return ColorGradient::Hot;
-    if (str == "Cold")
-        return ColorGradient::Cold;
-    if (str == "Night")
-        return ColorGradient::Night;
-    if (str == "Candy")
-        return ColorGradient::Candy;
-    if (str == "Geography")
-        return ColorGradient::Geography;
-    if (str == "Ion")
-        return ColorGradient::Ion;
-    if (str == "Thermal")
-        return ColorGradient::Thermal;
-    if (str == "Polar")
-        return ColorGradient::Polar;
-    if (str == "Spectrum")
-        return ColorGradient::Spectrum;
-    if (str == "Jet")
-        return ColorGradient::Jet;
-    if (str == "Hues")
-        return ColorGradient::Hues;
-    return ColorGradient::Grayscale;
-}
-
-inline QString color_gradient_to_string(ColorGradient gradient)
-{
-    switch (gradient)
-    {
-        case ColorGradient::Grayscale:
-            return "Grayscale";
-        case ColorGradient::Hot:
-            return "Hot";
-        case ColorGradient::Cold:
-            return "Cold";
-        case ColorGradient::Night:
-            return "Night";
-        case ColorGradient::Candy:
-            return "Candy";
-        case ColorGradient::Geography:
-            return "Geography";
-        case ColorGradient::Ion:
-            return "Ion";
-        case ColorGradient::Thermal:
-            return "Thermal";
-        case ColorGradient::Polar:
-            return "Polar";
-        case ColorGradient::Spectrum:
-            return "Spectrum";
-        case ColorGradient::Jet:
-            return "Jet";
-        case ColorGradient::Hues:
-            return "Hues";
-        default:
-            return "Grayscale";
-    }
-}

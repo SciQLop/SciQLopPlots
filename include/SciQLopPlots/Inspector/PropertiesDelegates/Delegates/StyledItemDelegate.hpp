@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,40 +20,34 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/enums.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
-#include <QComboBox>
-#include <QString>
+
+
 #include <QStyledItemDelegate>
 
-class ColorGradientItemDelegate : public StyledItemDelegate
+/**
+ * @brief The StyledItemDelegate class
+ * This class is a base class for all item delegates that display a text and a graphic item in a
+ * QComboBox. The text is displayed on the left and the graphic item on the right.
+ */
+
+class StyledItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
-    QSize graphic_item_size_hint() const override;
-    void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                            const QModelIndex& index) const override;
+protected:
+    QSize text_size_hint(const QString& text) const;
+    virtual QSize graphic_item_size_hint() const = 0;
+    virtual void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
+                            const QModelIndex& index) const = 0;
+    int _h_margin = 5;
+    int _v_margin = 5;
 
 public:
-    ColorGradientItemDelegate(QObject* parent = nullptr);
-    virtual ~ColorGradientItemDelegate() = default;
+    StyledItemDelegate(QObject* parent = nullptr);
+    virtual ~StyledItemDelegate() = default;
 
-};
-
-class ColorGradientDelegate : public QComboBox
-{
-    Q_OBJECT
-
-    ColorGradient m_gradient;
-
-public:
-    ColorGradientDelegate(ColorGradient gradient, QWidget* parent = nullptr);
-    virtual ~ColorGradientDelegate() = default;
-
-    void setGradient(ColorGradient gradient);
-    ColorGradient gradient() const;
-
-#ifndef BINDINGS_H
-    Q_SIGNAL void gradientChanged(ColorGradient gradient);
-#endif
+    virtual void paint(QPainter* painter, const QStyleOptionViewItem& option,
+                       const QModelIndex& index) const override;
+    virtual QSize sizeHint(const QStyleOptionViewItem& option,
+                           const QModelIndex& index) const override;
 };

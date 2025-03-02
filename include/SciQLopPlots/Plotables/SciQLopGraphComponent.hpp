@@ -23,82 +23,8 @@
 
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include <qcustomplot.h>
+#include "SciQLopPlots/qcp_enums.hpp"
 
-inline QCPScatterStyle::ScatterShape _to_qcp_scatter_shape(GraphMarkerShape marker)
-{
-    switch (marker)
-    {
-        case GraphMarkerShape::Circle:
-            return QCPScatterStyle::ScatterShape::ssCircle;
-        case GraphMarkerShape::Square:
-            return QCPScatterStyle::ScatterShape::ssSquare;
-        case GraphMarkerShape::Triangle:
-            return QCPScatterStyle::ScatterShape::ssTriangle;
-        case GraphMarkerShape::Diamond:
-            return QCPScatterStyle::ScatterShape::ssDiamond;
-        case GraphMarkerShape::Star:
-            return QCPScatterStyle::ScatterShape::ssStar;
-        case GraphMarkerShape::Plus:
-            return QCPScatterStyle::ScatterShape::ssPlus;
-        default:
-            return QCPScatterStyle::ScatterShape::ssNone;
-    }
-}
-
-inline GraphMarkerShape _from_qcp_scatter_style(QCPScatterStyle::ScatterShape shape)
-{
-    switch (shape)
-    {
-        case QCPScatterStyle::ssCircle:
-            return GraphMarkerShape::Circle;
-        case QCPScatterStyle::ssSquare:
-            return GraphMarkerShape::Square;
-        case QCPScatterStyle::ssTriangle:
-            return GraphMarkerShape::Triangle;
-        case QCPScatterStyle::ssDiamond:
-            return GraphMarkerShape::Diamond;
-        case QCPScatterStyle::ssStar:
-            return GraphMarkerShape::Star;
-        case QCPScatterStyle::ssPlus:
-            return GraphMarkerShape::Plus;
-        default:
-            return GraphMarkerShape::NoMarker;
-    }
-}
-
-inline QCPGraph::LineStyle _to_qcp_line_style(GraphLineStyle style)
-{
-    switch (style)
-    {
-        case GraphLineStyle::Line:
-            return QCPGraph::LineStyle::lsLine;
-        case GraphLineStyle::StepLeft:
-            return QCPGraph::LineStyle::lsStepLeft;
-        case GraphLineStyle::StepRight:
-            return QCPGraph::LineStyle::lsStepRight;
-        case GraphLineStyle::StepCenter:
-            return QCPGraph::LineStyle::lsStepCenter;
-        default:
-            return QCPGraph::LineStyle::lsNone;
-    }
-}
-
-inline GraphLineStyle _from_qcp_line_style(QCPGraph::LineStyle style)
-{
-    switch (style)
-    {
-        case QCPGraph::LineStyle::lsLine:
-            return GraphLineStyle::Line;
-        case QCPGraph::LineStyle::lsStepLeft:
-            return GraphLineStyle::StepLeft;
-        case QCPGraph::LineStyle::lsStepRight:
-            return GraphLineStyle::StepRight;
-        case QCPGraph::LineStyle::lsStepCenter:
-            return GraphLineStyle::StepCenter;
-        default:
-            return GraphLineStyle::NoLine;
-    }
-}
 
 class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 {
@@ -166,7 +92,7 @@ public:
         if (m_plottable)
         {
             std::visit(visitor { [style](QCPGraph* any)
-                                 { any->setLineStyle(_to_qcp_line_style(style)); },
+                                 { any->setLineStyle(to_qcp(style)); },
                                  [style](QCPCurve* any)
                                  {
                                      if (style == GraphLineStyle::NoLine)
@@ -186,7 +112,7 @@ public:
             std::visit(visitor { [marker](auto any)
                                  {
                                      auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setShape(_to_qcp_scatter_shape(marker));
+                                     scatterStyle.setShape(to_qcp(marker));
                                      any->setScatterStyle(scatterStyle);
                                  },
                                  [](std::monostate) {} },
@@ -231,7 +157,7 @@ public:
         if (m_plottable)
         {
             return std::visit(visitor { [](QCPGraph* any)
-                                        { return _from_qcp_line_style(any->lineStyle()); },
+                                        { return from_qcp(any->lineStyle()); },
                                         [](QCPCurve* any)
                                         {
                                             if (any->lineStyle() == QCPCurve::lsNone)
@@ -250,7 +176,7 @@ public:
         {
             return std::visit(
                 visitor { [](auto any)
-                          { return _from_qcp_scatter_style(any->scatterStyle().shape()); },
+                          { return from_qcp(any->scatterStyle().shape()); },
                           [](std::monostate) { return GraphMarkerShape::NoMarker; } },
                 to_variant());
         }
