@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime, timezone
 import threading
 from typing import Dict, Any
+import platform
 
 from SciQLopPlots import PropertiesPanel
 
@@ -13,6 +14,8 @@ from qtconsole.inprocess import QtInProcessKernelManager
 
 os.environ['QT_API'] = 'PySide6'
 
+if platform.system() == 'Linux':
+    os.environ['QT_QPA_PLATFORM'] = os.environ.get("QT_QPA_PLATFORM", 'xcb')
 
 
 def fix_name(name):

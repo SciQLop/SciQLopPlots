@@ -168,9 +168,7 @@ public:
     PyBuffer& operator=(const PyBuffer& other);
     PyBuffer& operator=(PyBuffer&& other);
 
-
     bool is_valid() const;
-
 
     void release();
 
@@ -187,8 +185,6 @@ public:
     inline auto operator[](std::size_t position) { return data()[position]; }
 
     inline const auto operator[](std::size_t position) const { return data()[position]; }
-
-    std::vector<double> to_std_vect();
 
     inline auto begin() noexcept { return data(); }
 

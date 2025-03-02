@@ -21,6 +21,8 @@ os.environ['QT_API'] = 'PySide6'
 try:
     import speasy as spz
     from speasy.signal.resampling import resample
+    from speasy.core import datetime64_to_epoch
+
     def _current_thread_id():
         return threading.get_native_id()
 
@@ -51,11 +53,13 @@ except ImportError:
 
 def mms1_fgm_b_gse_srvy_l2(start, stop):
     try:
-        v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.FGM.MMS1_FGM_SRVY_L2.mms1_fgm_b_gse_srvy_l2, start, stop)
+        v = spz.get_data(
+                        spz.inventories.tree.cda.MMS.MMS1.FGM.MMS1_FGM_SRVY_L2.mms1_fgm_b_gse_srvy_l2,
+                        start, stop)
         if v is None:
             return None
-        v=resample(v, 1./4)
-        x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        v = resample(v, 1./4)
+        x = datetime64_to_epoch(v.time)
         return x, v.values.astype(np.float64)
     except Exception as e:
         print(f"Error: {e}")
@@ -66,7 +70,7 @@ def speasy_spectro(product, start, stop, invert_y=False):
         v=spz.get_data(product, start, stop)
         if v is None:
             return None
-        x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        x=datetime64_to_epoch(v.time)
         if invert_y:
             return x, v.axes[1].values.astype(np.float64)[::-1].copy() ,v.values.astype(np.float64)[:,::-1].copy()
         return x, v.axes[1].values.astype(np.float64) ,v.values.astype(np.float64)
@@ -79,7 +83,7 @@ def mms1_edp_hmfe_dsl_brst_l2(start, stop):
         v=spz.get_data(spz.inventories.tree.cda.MMS.MMS1.ADP_SDP.MMS1_EDP_BRST_L2_HMFE.mms1_edp_hmfe_dsl_brst_l2, start, stop)
         if v is None:
             return None
-        x=(v.time.astype(np.int64)/1e9).astype(np.float64)
+        x=datetime64_to_epoch(v.time)
         return x, v.values.astype(np.float64)
     except Exception as e:
         print(f"Error: {e}")

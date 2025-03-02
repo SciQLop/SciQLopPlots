@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
 
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
@@ -141,6 +142,54 @@ public:
 
     inline bool is_null() const { return _py_obj == nullptr; }
 };
+
+
+// TODO: Add a function to create a memoryview from a pointer based on this code:
+/*
+template <typename T>
+PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
+{
+    // Step 1: Create a capsule to manage the pointer's lifetime
+    PyObject* capsule = PyCapsule_New(ptr, "cpp_buffer", nullptr);
+    if (!capsule)
+    {
+        return NULL;
+    }
+
+    // Step 2: Fill the Py_buffer struct
+    Py_buffer view;
+    if (PyBuffer_FillInfo(
+            &view, capsule, ptr,
+            std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<std::size_t>()),
+            1, 1, PyBUF_READ)
+        < 0)
+    {
+        Py_DECREF(capsule);
+        return NULL;
+    }
+
+
+    view.ndim = 1;
+    // view.shape = &size;
+    view.strides = nullptr;
+    view.suboffsets = nullptr;
+    // view.format = "d"; //todo
+
+    // Step 3: Create the memoryview
+    PyObject* memoryview = PyMemoryView_FromBuffer(&view);
+    if (!memoryview)
+    {
+        Py_DECREF(capsule);
+        return NULL;
+    }
+
+    // Step 4: Decrement the capsule's refcount (memoryview holds a reference)
+    Py_DECREF(capsule);
+
+    return memoryview;
+}
+*/
+
 
 struct _PyBuffer_impl : PyObjectWrapper
 {
@@ -277,16 +326,6 @@ double* PyBuffer::data() const
         return reinterpret_cast<double*>(this->_impl->buffer.buf);
     }
     return nullptr;
-}
-
-std::vector<double> PyBuffer::to_std_vect()
-{
-    assert(this->_impl->is_valid);
-    auto sz = flat_size();
-    std::vector<double> v(sz);
-    auto d_ptr = this->data();
-    std::copy(d_ptr, d_ptr + sz, std::begin(v));
-    return v;
 }
 
 bool PyBuffer::row_major() const
