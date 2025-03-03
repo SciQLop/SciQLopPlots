@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/MarkerDelegate.hpp"
 #include "magic_enum/magic_enum_utility.hpp"
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QFile>
 #include <QIcon>
@@ -31,12 +32,17 @@
 
 MarkerDelegate::MarkerDelegate(GraphMarkerShape shape, QWidget* parent) : QComboBox(parent)
 {
-    setItemDelegate(new MarkerItemDelegate(this));
+
     connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index)
             { emit markerShapeChanged(this->itemData(index).value<GraphMarkerShape>()); });
 
     magic_enum::enum_for_each<GraphMarkerShape>(
-        [this](GraphMarkerShape shape) { addItem(to_string(shape), QVariant::fromValue(shape)); });
+        [this](GraphMarkerShape shape)
+        {
+            addItem(QIcon(QString::fromStdString(
+                        fmt::format(":/Markers/{}.png", magic_enum::enum_name(shape)))),
+                    to_string(shape), QVariant::fromValue(shape));
+        });
     setMarkerShape(shape);
 }
 
@@ -50,37 +56,3 @@ GraphMarkerShape MarkerDelegate::markerShape() const
 {
     return currentData().value<GraphMarkerShape>();
 }
-
-inline QSize expanded(QSize size, int w, int h)
-{
-    return QSize(size.width() + 2 * w, size.height() + 2 * h);
-}
-
-QSize MarkerItemDelegate::graphic_item_size_hint() const
-{
-    auto height = text_size_hint("T").height();
-    return QSize(height, height);
-}
-
-void MarkerItemDelegate::paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                                            const QModelIndex& index) const
-{
-    auto data = index.data(Qt::UserRole);
-    if (data.canConvert<GraphMarkerShape>())
-    {
-        auto resourcename = QString::fromStdString(
-            fmt::format(":/Markers/{}.png", magic_enum::enum_name(data.value<GraphMarkerShape>())));
-        auto sh = graphic_item_size_hint();
-        auto rect = option.rect;
-        if (QFile::exists(resourcename))
-        {
-            auto image = QIcon(resourcename).pixmap(sh);
-            painter->save();
-            painter->translate(rect.x() + rect.width() - sh.width(), rect.y() + this->_v_margin);
-            painter->drawPixmap(0, 0, image);
-            painter->restore();
-        }
-    }
-}
-
-MarkerItemDelegate::MarkerItemDelegate(QObject* parent) : StyledItemDelegate(parent) { }

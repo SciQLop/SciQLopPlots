@@ -26,10 +26,10 @@
 #include "magic_enum/magic_enum_utility.hpp"
 
 #include <QComboBox>
-#include<QSpinBox>
 #include <QFile>
 #include <QIcon>
 #include <QPainter>
+#include <QSpinBox>
 #include <fmt/core.h>
 
 LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, GraphMarkerShape marker_shape,
@@ -52,13 +52,14 @@ LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, GraphMarkerShape mark
             });
 
     auto style_qcb = new QComboBox();
-    style_qcb->setItemDelegate(new LineStyleItemDelegate(this));
     m_layout->addRow("Style", style_qcb);
-
     magic_enum::enum_for_each<GraphLineStyle>(
         [style_qcb](GraphLineStyle line_style)
-        { style_qcb->addItem(to_string(line_style), QVariant::fromValue(line_style)); });
-
+        {
+            style_qcb->addItem(QIcon(QString::fromStdString(fmt::format(
+                                   ":/LineStyles/{}.png", magic_enum::enum_name(line_style)))),
+                               to_string(line_style), QVariant::fromValue(line_style));
+        });
     style_qcb->setCurrentIndex(style_qcb->findData(QVariant::fromValue(style)));
     connect(style_qcb, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [this, style_qcb](int index)
@@ -78,34 +79,4 @@ LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, GraphMarkerShape mark
     m_layout->addRow("Marker", marker);
     connect(marker, &MarkerDelegate::markerShapeChanged, this,
             [this](GraphMarkerShape shape) { emit this->markerShapeChanged(shape); });
-}
-
-QSize LineStyleItemDelegate::graphic_item_size_hint() const
-{
-    return text_size_hint("000000000");
-}
-
-void LineStyleItemDelegate::paint_graphic_item(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
-{
-    auto data = index.data(Qt::UserRole);
-    if (data.canConvert<GraphLineStyle>())
-    {
-        auto resourcename = QString::fromStdString(
-            fmt::format(":/LineStyles/{}.png", magic_enum::enum_name(data.value<GraphLineStyle>())));
-        auto sh = graphic_item_size_hint();
-        auto rect = option.rect;
-        if (QFile::exists(resourcename))
-        {
-            auto image = QIcon(resourcename).pixmap(sh.width(), rect.height());
-            painter->save();
-            painter->translate(rect.x() + rect.width() - sh.width(), rect.y());
-            painter->drawPixmap(0, 0, image);
-            painter->restore();
-        }
-    }
-}
-
-LineStyleItemDelegate::LineStyleItemDelegate(QObject *parent)
-: StyledItemDelegate(parent)
-{
 }

@@ -25,15 +25,29 @@
 #include "qcustomplot.h"
 #include <QPainter>
 
+
+QIcon icon(ColorGradient gradient)
+{
+    auto gradient_qcp = QCPColorGradient(to_qcp(gradient));
+    QPixmap pixmap(128, 128);
+    QPainter painter(&pixmap);
+    for (auto i = 0; i < pixmap.width(); i++)
+    {
+        painter.fillRect(i, 0, 1, pixmap.height(), gradient_qcp.color(double(i) / pixmap.width(), QCPRange(0, 1)));
+    }
+    return QIcon(pixmap);
+}
+
 ColorGradientDelegate::ColorGradientDelegate(ColorGradient gradient, QWidget* parent)
         : QComboBox(parent)
 {
-    setItemDelegate(new ColorGradientItemDelegate(this));
     connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index)
             { emit gradientChanged(this->itemData(index).value<ColorGradient>()); });
 
     magic_enum::enum_for_each<ColorGradient>(
-        [this](ColorGradient gradient) { addItem(to_string(gradient), QVariant::fromValue(gradient)); });
+        [this](ColorGradient gradient) {
+            addItem(icon(gradient),
+              to_string(gradient), QVariant::fromValue(gradient)); });
     setGradient(gradient);
 }
 
@@ -48,32 +62,3 @@ ColorGradient ColorGradientDelegate::gradient() const
 {
     return m_gradient;
 }
-
-
-QSize ColorGradientItemDelegate::graphic_item_size_hint() const
-{
-    return text_size_hint("000000000");
-}
-
-void ColorGradientItemDelegate::paint_graphic_item(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
-{
-    auto data = index.data(Qt::UserRole);
-    auto gradient = QCPColorGradient(to_qcp(data.value<ColorGradient>()));
-    auto sh = graphic_item_size_hint();
-    auto rect = option.rect;
-    painter->save();
-    painter->translate(rect.width() - _h_margin - sh.width(), rect.y());
-    auto width = sh.width();
-    for (auto i = 0; i < width; i++)
-    {
-        painter->setPen(gradient.color(double(i) / width, QCPRange(0, 1)));
-        painter->drawLine(i, 0, i, sh.height());
-    }
-    painter->restore();
-
-}
-
-ColorGradientItemDelegate::ColorGradientItemDelegate(QObject* parent) : StyledItemDelegate(parent)
-{
-}
-

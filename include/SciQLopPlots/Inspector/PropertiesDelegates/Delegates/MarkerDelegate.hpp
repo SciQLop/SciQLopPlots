@@ -28,22 +28,6 @@
 #include <QComboBox>
 #include <QWidget>
 
-
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
-
-class MarkerItemDelegate : public StyledItemDelegate
-{
-    Q_OBJECT
-
-    QSize graphic_item_size_hint() const override;
-    void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                            const QModelIndex& index) const override;
-
-public:
-    MarkerItemDelegate(QObject* parent = nullptr);
-    virtual ~MarkerItemDelegate() = default;
-};
-
 class MarkerDelegate : public QComboBox
 {
     Q_OBJECT

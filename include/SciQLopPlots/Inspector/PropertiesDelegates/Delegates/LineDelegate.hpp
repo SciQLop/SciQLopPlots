@@ -22,7 +22,6 @@
 #pragma once
 
 #include "SciQLopPlots/enums.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
 
 #include <QColor>
 #include <QColorDialog>
@@ -30,17 +29,6 @@
 #include <QPen>
 #include <QWidget>
 
-class LineStyleItemDelegate : public StyledItemDelegate
-{
-    Q_OBJECT
-    virtual QSize graphic_item_size_hint() const override;
-    virtual void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                                    const QModelIndex& index) const override;
-
-public:
-    LineStyleItemDelegate(QObject* parent = nullptr);
-    virtual ~LineStyleItemDelegate() = default;
-};
 
 class LineDelegate : public QWidget
 {

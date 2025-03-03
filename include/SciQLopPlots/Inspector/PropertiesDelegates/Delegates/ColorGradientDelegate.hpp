@@ -21,24 +21,9 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/enums.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/StyledItemDelegate.hpp"
 #include <QComboBox>
 #include <QString>
-#include <QStyledItemDelegate>
 
-class ColorGradientItemDelegate : public StyledItemDelegate
-{
-    Q_OBJECT
-
-    QSize graphic_item_size_hint() const override;
-    void paint_graphic_item(QPainter* painter, const QStyleOptionViewItem& option,
-                            const QModelIndex& index) const override;
-
-public:
-    ColorGradientItemDelegate(QObject* parent = nullptr);
-    virtual ~ColorGradientItemDelegate() = default;
-
-};
 
 class ColorGradientDelegate : public QComboBox
 {
