@@ -48,6 +48,13 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
     _place_holder_manager = new PlaceHolderManager(this);
     connect(_container, &SciQLopPlotContainer::plot_list_changed, this,
             &SciQLopMultiPlotPanel::plot_list_changed);
+    connect(_container, &SciQLopPlotContainer::plot_added, this, &SciQLopMultiPlotPanel::plot_added);
+    connect(_container, &SciQLopPlotContainer::plot_removed, this,
+            &SciQLopMultiPlotPanel::plot_removed);
+    connect(_container, &SciQLopPlotContainer::plot_inserted, this,
+            &SciQLopMultiPlotPanel::plot_inserted);
+    connect(_container, &SciQLopPlotContainer::plot_moved, this, &SciQLopMultiPlotPanel::plot_moved);
+
     setWidget(_container);
     this->setWidgetResizable(true);
 

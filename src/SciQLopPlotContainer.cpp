@@ -45,6 +45,7 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
             plot->set_color_palette(_color_palette);
         emit plot_list_changed(plots());
         emit plot_added(plot);
+        emit plot_inserted(plot, index);
         connect(
             plot, &SciQLopPlotInterface::destroyed, this, [this, plot]() { remove_plot(plot); },
             Qt::QueuedConnection);
@@ -75,6 +76,7 @@ void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
 {
     QSplitter::insertWidget(to, plot);
     emit plot_list_changed(plots());
+    emit plot_moved(plot, to);
 }
 
 void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot)
@@ -92,6 +94,7 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
         if (empty())
             setProperty("empty", true);
         emit plot_list_changed(plots());
+        emit plot_removed(plot);
     }
 }
 

@@ -204,6 +204,10 @@ public:
 
 #ifndef BINDINGS_H
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
+    Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
+    Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
+    Q_SIGNAL void plot_moved(SciQLopPlotInterface* plot, int to);
+    Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
     Q_SIGNAL void selectionChanged(bool selected);
     Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
 #endif // BINDINGS_H
