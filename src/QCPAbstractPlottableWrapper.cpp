@@ -95,14 +95,14 @@ QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
 void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
 {
     bool changed = false;
-    for (auto plottable : m_components)
+    /*for (auto plottable : m_components)
     {
         if (plottable->selected() != selected)
         {
             plottable->set_selected(selected);
             changed = true;
         }
-    }
+    }*/
     if (changed)
         Q_EMIT selection_changed(selected);
 }
