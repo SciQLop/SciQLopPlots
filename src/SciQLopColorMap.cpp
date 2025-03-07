@@ -36,11 +36,17 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
         this->_cmap->setData(data, false);
         Q_EMIT this->replot();
         this->_icon_update_timer->start();
+        if (!_got_first_data && data->keySize() > 0)
+        {
+            _got_first_data = true;
+            Q_EMIT request_rescale();
+        }
     }
 }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
-                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, const QString& name)
+                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
+                                 const QString& name)
         : SciQLopColorMapInterface(parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { xAxis }
@@ -147,7 +153,8 @@ void SciQLopColorMap::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 }
 
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
-                                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
+                                                 SciQLopPlotAxis* yAxis,
+                                                 SciQLopPlotColorScaleAxis* zAxis,
                                                  GetDataPyCallable&& callable, const QString& name)
         : SciQLopColorMap(parent, xAxis, yAxis, zAxis, name)
 {

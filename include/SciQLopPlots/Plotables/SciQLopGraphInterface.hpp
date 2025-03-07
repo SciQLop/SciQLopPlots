@@ -143,6 +143,7 @@ public:
     Q_SIGNAL void data_changed(const QList<PyBuffer>& values);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
+    Q_SIGNAL void request_rescale();
 #endif
 };
 

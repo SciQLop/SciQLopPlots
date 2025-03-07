@@ -35,6 +35,7 @@ class QThread;
 
 class SciQLopColorMap : public SciQLopColorMapInterface
 {
+    bool _got_first_data = false;
     bool _selected = false;
     ColormapResampler* _resampler = nullptr;
     QThread* _resampler_thread = nullptr;

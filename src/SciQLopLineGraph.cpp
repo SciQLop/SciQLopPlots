@@ -36,19 +36,26 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
 
 void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
 {
+    bool not_empty = false;
     for (std::size_t i = 0; i < plottable_count(); i++)
     {
         auto graph = line(i);
         if (graph)
         {
             graph->data()->set(data[i], true);
+            not_empty = !data[i].isEmpty();
         }
     }
     Q_EMIT this->replot();
+    if (!_got_first_data && not_empty)
+    {
+        _got_first_data = true;
+        Q_EMIT request_rescale();
+    }
 }
 
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
-                                   const QStringList& labels)
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                   SciQLopPlotAxis* value_axis, const QStringList& labels)
         : SQPQCPAbstractPlottableWrapper("Line", parent)
         , _keyAxis { key_axis }
         , _valueAxis { value_axis }
@@ -58,7 +65,8 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axi
     {
         this->create_graphs(labels);
     }
-    connect(key_axis->qcp_axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this->_resampler,
+    connect(key_axis->qcp_axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged),
+            this->_resampler,
             [this](const QCPRange& newRange) { this->_resampler->resample(newRange); });
 }
 
@@ -106,8 +114,7 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
     return _resampler->get_data();
 }
 
-
-void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
+void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
@@ -119,7 +126,7 @@ void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
     }
 }
 
-void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface *axis) noexcept
+void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {

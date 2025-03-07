@@ -545,6 +545,10 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         }
         if (std::size(labels) == std::size(plottable->components()))
             plottable->set_labels(labels);
+
+        connect(
+            plottable, &SciQLopGraphInterface::request_rescale, this,
+            [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
     }
 }
 
@@ -673,6 +677,9 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
             }
         }
         cmap->set_gradient(ColorGradient::Jet);
+        connect(
+            cmap, &SciQLopGraphInterface::request_rescale, this, [this]() { this->rescale_axes(); },
+            Qt::QueuedConnection);
     }
 }
 
