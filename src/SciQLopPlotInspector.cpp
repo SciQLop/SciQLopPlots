@@ -62,3 +62,8 @@ void SciQLopPlotInspector::set_selected(QObject* obj, bool selected)
     if (auto plot = _plot(obj); plot)
         plot->set_selected(selected);
 }
+
+Qt::ItemFlags SciQLopPlotInspector::flags()
+{
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+}

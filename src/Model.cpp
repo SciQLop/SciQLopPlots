@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include <QMimeData>
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include <qapplicationstatic.h>
 
@@ -133,6 +134,8 @@ Qt::ItemFlags PlotsModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid())
         return Qt::ItemIsEnabled;
+    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()); node != nullptr)
+        return node->flags();
     return QAbstractItemModel::flags(index);
 }
 
@@ -185,6 +188,12 @@ QObject* PlotsModel::object(const QModelIndex& index)
     if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()); node != nullptr)
         return node->object();
     return nullptr;
+}
+
+QMimeData *PlotsModel::mimeData(const QModelIndexList &indexes) const
+{
+    auto mimeData = new QMimeData();
+    return mimeData;
 }
 
 QModelIndex PlotsModel::make_index(PlotsModelNode* node)

@@ -28,6 +28,9 @@ PlotsTreeView::PlotsTreeView(QWidget* parent) : QTreeView(parent)
     header()->setVisible(false);
     setAlternatingRowColors(true);
     setSelectionMode(QAbstractItemView::SingleSelection);
+    setDragEnabled(true);
+    setAcceptDrops(true);
+    setDropIndicatorShown(true);
 }
 
 void PlotsTreeView::keyPressEvent(QKeyEvent* event)

@@ -56,4 +56,6 @@ public:
     virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
 
     virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+
+    virtual Qt::ItemFlags flags() Q_DECL_OVERRIDE;
 };

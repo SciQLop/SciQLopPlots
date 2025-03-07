@@ -56,6 +56,8 @@ public:
     static PlotsModel* instance();
     static QObject* object(const QModelIndex& index);
 
+    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+
 #ifndef BINDINGS_H
     Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
     Q_SIGNAL void top_level_nodes_list_changed();

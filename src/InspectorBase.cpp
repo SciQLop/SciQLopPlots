@@ -77,3 +77,8 @@ bool InspectorBase::deletable(const QObject* obj)
     Q_UNUSED(obj);
     return true;
 }
+
+Qt::ItemFlags InspectorBase::flags()
+{
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}

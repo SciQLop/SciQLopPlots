@@ -170,3 +170,10 @@ void PlotsModelNode::destroy()
         m_obj->deleteLater();
     deleteLater();
 }
+
+Qt::ItemFlags PlotsModelNode::flags()
+{
+    if (m_inspector)
+        return m_inspector->flags();
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}

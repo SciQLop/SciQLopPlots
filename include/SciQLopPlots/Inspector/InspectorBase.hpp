@@ -43,4 +43,5 @@ public:
     virtual void set_selected(QObject* obj, bool selected);
     virtual bool selected(const QObject* obj);
     virtual bool deletable(const QObject* obj);
+    virtual Qt::ItemFlags flags();
 };

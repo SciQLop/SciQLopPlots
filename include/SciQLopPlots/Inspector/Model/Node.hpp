@@ -95,6 +95,8 @@ public:
 
     inline QObject* object() { return m_obj; }
 
+    Qt::ItemFlags flags();
+
 #ifndef BINDINGS_H
     Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);
