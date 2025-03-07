@@ -85,6 +85,16 @@ void SciQLopPlotAxis::set_tick_labels_visible(bool visible) noexcept
     if (!m_axis.isNull() && m_axis->tickLabels() != visible)
     {
         m_axis->setTickLabels(visible);
+        if (!visible)
+        {
+            m_axis->setTickLabelPadding(0);
+            m_axis->setPadding(std::max(1, m_axis->basePen().width()));
+        }
+        else
+        {
+            m_axis->setTickLabelPadding(5);
+            m_axis->setPadding(5);
+        }
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT tick_labels_visible_changed(visible);
     }
@@ -320,14 +330,20 @@ QCPAxis* SciQLopPlotColorScaleAxis::qcp_axis() const noexcept
     return m_axis->axis();
 }
 
-void SciQLopPlotAxisInterface::couple_range_with(SciQLopPlotAxisInterface *other) noexcept
+void SciQLopPlotAxisInterface::couple_range_with(SciQLopPlotAxisInterface* other) noexcept
 {
-    QObject::connect(this, &SciQLopPlotAxisInterface::range_changed, other, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
-    QObject::connect(other, &SciQLopPlotAxisInterface::range_changed, this, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::connect(this, &SciQLopPlotAxisInterface::range_changed, other,
+                     QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::connect(other, &SciQLopPlotAxisInterface::range_changed, this,
+                     QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
 }
 
-void SciQLopPlotAxisInterface::decouple_range_from(SciQLopPlotAxisInterface *other) noexcept
+void SciQLopPlotAxisInterface::decouple_range_from(SciQLopPlotAxisInterface* other) noexcept
 {
-    QObject::disconnect(this, &SciQLopPlotAxisInterface::range_changed, other, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
-    QObject::disconnect(other, &SciQLopPlotAxisInterface::range_changed, this, QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::disconnect(
+        this, &SciQLopPlotAxisInterface::range_changed, other,
+        QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
+    QObject::disconnect(
+        other, &SciQLopPlotAxisInterface::range_changed, this,
+        QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
 }
