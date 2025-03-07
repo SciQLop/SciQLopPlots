@@ -80,6 +80,16 @@ void SciQLopPlotAxis::set_label(const QString& label) noexcept
     }
 }
 
+void SciQLopPlotAxis::set_tick_labels_visible(bool visible) noexcept
+{
+    if (!m_axis.isNull() && m_axis->tickLabels() != visible)
+    {
+        m_axis->setTickLabels(visible);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT tick_labels_visible_changed(visible);
+    }
+}
+
 SciQLopPlotRange SciQLopPlotAxis::range() const noexcept
 {
     if (m_axis.isNull())
@@ -106,6 +116,13 @@ QString SciQLopPlotAxis::label() const noexcept
     if (m_axis.isNull())
         return QString();
     return m_axis->label();
+}
+
+bool SciQLopPlotAxis::tick_labels_visible() const noexcept
+{
+    if (m_axis.isNull())
+        return false;
+    return m_axis->tickLabels();
 }
 
 Qt::Orientation SciQLopPlotAxis::orientation() const noexcept

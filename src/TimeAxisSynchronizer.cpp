@@ -28,11 +28,11 @@ void TimeAxisSynchronizer::_display_x_axis_only_last_plot()
     auto ts_plots = only_sciqlop_timeserieplots(_plots);
     for (auto& plot : ts_plots)
     {
-        plot->x_axis()->set_visible(false);
+        plot->x_axis()->set_tick_labels_visible(false);
     }
     if (!ts_plots.isEmpty())
     {
-        ts_plots.last()->x_axis()->set_visible(true);
+        ts_plots.last()->x_axis()->set_tick_labels_visible(true);
     }
 }
 

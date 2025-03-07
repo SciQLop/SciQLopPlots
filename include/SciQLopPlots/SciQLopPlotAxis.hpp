@@ -44,6 +44,7 @@ public:
     inline virtual void set_visible(bool visible) noexcept { }
     inline virtual void set_log(bool log) noexcept { }
     inline virtual void set_label(const QString& label) noexcept { }
+    inline virtual void set_tick_labels_visible(bool visible) noexcept { }
 
     inline virtual SciQLopPlotRange range() const noexcept
     {
@@ -52,6 +53,7 @@ public:
     inline virtual bool visible() const noexcept { return false; }
     inline virtual bool log() const noexcept { return false; }
     inline virtual QString label() const noexcept { return QString(); }
+    inline virtual bool tick_labels_visible() const noexcept { return false; }
     inline virtual Qt::Orientation orientation() const noexcept { return Qt::Horizontal; }
     inline virtual Qt::Axis axis() const noexcept { return Qt::XAxis; }
     inline virtual Qt::AnchorPoint anchor() const noexcept { return Qt::AnchorBottom; }
@@ -69,6 +71,7 @@ public:
 #ifndef BINDINGS_H
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
+    Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
 #endif
@@ -101,10 +104,12 @@ public:
     void set_visible(bool visible) noexcept override;
     void set_log(bool log) noexcept override;
     void set_label(const QString& label) noexcept override;
+    void set_tick_labels_visible(bool visible) noexcept override;
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
     bool log() const noexcept override;
     QString label() const noexcept override;
+    bool tick_labels_visible() const noexcept override;
     Qt::Orientation orientation() const noexcept override;
     Qt::Axis axis() const noexcept override;
     Qt::AnchorPoint anchor() const noexcept override;
