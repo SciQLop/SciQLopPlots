@@ -87,11 +87,11 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
             [this](const QCPRange& range)
             { Q_EMIT z_axis_range_changed({ range.lower, range.upper }); });
 
-    this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this));
-    this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this));
-    this->m_axes.append(new SciQLopPlotAxis(this->xAxis2, this));
-    this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this));
-    this->m_axes.append(new SciQLopPlotColorScaleAxis(this->m_color_scale, this));
+    this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this, false, "X Axis"));
+    this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this, false, "Y Axis"));
+    this->m_axes.append(new SciQLopPlotAxis(this->xAxis2, this, false, "X Axis 2"));
+    this->m_axes.append(new SciQLopPlotAxis(this->yAxis2, this, false, "Y Axis 2"));
+    this->m_axes.append(new SciQLopPlotColorScaleAxis(this->m_color_scale, this, "Color Scale"));
 
 #ifdef QCUSTOMPLOT_USE_OPENGL
     setOpenGl(true, 4);

@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
@@ -42,5 +43,4 @@ SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
             &SciQLopPlotLegendInterface::set_visible);
     connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
             &LegendDelegate::set_visible);
-
 }

@@ -19,8 +19,8 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include <QMimeData>
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
+#include <QMimeData>
 #include <qapplicationstatic.h>
 
 void PlotsModel::node_changed(PlotsModelNode* node)
@@ -43,7 +43,7 @@ void PlotsModel::children_destroyed(PlotsModelNode* parent, int index)
     endRemoveRows();
 }
 
-PlotsModel::PlotsModel(QObject* parent)
+PlotsModel::PlotsModel(QObject* parent) : QAbstractItemModel(parent)
 {
     m_rootNode = new PlotsModelNode(this);
     connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::node_changed,
@@ -190,7 +190,7 @@ QObject* PlotsModel::object(const QModelIndex& index)
     return nullptr;
 }
 
-QMimeData *PlotsModel::mimeData(const QModelIndexList &indexes) const
+QMimeData* PlotsModel::mimeData(const QModelIndexList& indexes) const
 {
     auto mimeData = new QMimeData();
     return mimeData;

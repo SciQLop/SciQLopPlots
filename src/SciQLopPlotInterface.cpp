@@ -28,7 +28,7 @@ void SciQLopPlotInterface::set_selected(bool selected) noexcept
     {
         m_selected = selected;
         if(selected)
-            this->setStyleSheet("border: 3px solid black;border-style: dashed;");
+            this->setStyleSheet("border: 2px solid black;border-style: dashed;");
         else
             this->setStyleSheet("border: 0px;");
         Q_EMIT selection_changed(selected);

@@ -31,6 +31,13 @@ QList<QObject*> SciQLopPlotInspector::children(QObject* obj)
     QList<QObject*> children;
     if (auto plot = _plot(obj); plot)
     {
+        children.append(plot->x_axis());
+        children.append(plot->y_axis());
+        if (plot->has_colormap())
+        {
+            children.append(plot->z_axis());
+            children.append(plot->y2_axis());
+        }
         for (auto c : plot->plottables())
         {
             children.append(c);
@@ -43,6 +50,8 @@ QObject* SciQLopPlotInspector::child(const QString& name, QObject* obj)
 {
     if (auto plot = _plot(obj); plot)
     {
+        if (auto axis = plot->axis(name))
+            return axis;
         return plot->plottable(name);
     }
     return nullptr;

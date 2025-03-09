@@ -21,15 +21,24 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
+#include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
 
-SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_axis)
-        : SciQLopPlotAxisInterface(parent), m_axis(axis)
+SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_axis,
+                                 const QString& name)
+        : SciQLopPlotAxisInterface(parent, name), m_axis(axis)
 {
     _is_time_axis = is_time_axis;
     connect(axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
             { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+
+    connect(axis, &QCPAxis::selectionChanged, this,
+            [this](const QCPAxis::SelectableParts& parts)
+            {
+                Q_EMIT selection_changed(parts.testAnyFlags(QCPAxis::spAxis | QCPAxis::spTickLabels
+                                                            | QCPAxis::spAxisLabel));
+            });
 }
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
@@ -77,6 +86,20 @@ void SciQLopPlotAxis::set_label(const QString& label) noexcept
         m_axis->setLabel(label);
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT label_changed(label);
+    }
+}
+
+void SciQLopPlotAxis::set_selected(bool selected) noexcept
+{
+    if (!m_axis.isNull() && (this->selected() != selected))
+    {
+        if (selected)
+            m_axis->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels
+                                     | QCPAxis::spAxisLabel);
+        else
+            m_axis->setSelectedParts(QCPAxis::spNone);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT selection_changed(selected);
     }
 }
 
@@ -205,8 +228,9 @@ void SciQLopPlotDummyAxis::set_range(const SciQLopPlotRange& range) noexcept
     }
 }
 
-SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent)
-        : SciQLopPlotAxis(axis->axis(), parent), m_axis(axis)
+SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent,
+                                                     const QString& name)
+        : SciQLopPlotAxis(axis->axis(), parent, false, name), m_axis(axis)
 {
     connect(axis, QOverload<const QCPRange&>::of(&QCPColorScale::dataRangeChanged), this,
             [this](const QCPRange& range)
@@ -264,6 +288,20 @@ void SciQLopPlotColorScaleAxis::set_label(const QString& label) noexcept
     }
 }
 
+void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient) noexcept
+{
+    if (!m_axis.isNull() && m_color_gradient != gradient)
+    {
+        m_color_gradient = gradient;
+        QCPColorGradient new_gradient = to_qcp(gradient);
+        new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
+        m_axis->setGradient(new_gradient);
+        m_axis->rescaleDataRange(true);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT color_gradient_changed(gradient);
+    }
+}
+
 SciQLopPlotRange SciQLopPlotColorScaleAxis::range() const noexcept
 {
     if (m_axis.isNull())
@@ -290,6 +328,11 @@ QString SciQLopPlotColorScaleAxis::label() const noexcept
     if (m_axis.isNull())
         return QString();
     return m_axis->label();
+}
+
+ColorGradient SciQLopPlotColorScaleAxis::color_gradient() const noexcept
+{
+    return m_color_gradient;
 }
 
 Qt::Orientation SciQLopPlotColorScaleAxis::orientation() const noexcept

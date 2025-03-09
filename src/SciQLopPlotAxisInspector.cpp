@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,24 +19,42 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+#include "SciQLopPlots/Inspector/Inspectors/SciQLopPlotAxisInspector.hpp"
+#include "SciQLopPlots/Inspector/Model/Node.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
-class SciQLopPlotAxisInterface;
-class SciQLopPlotColorScaleAxis;
+REGISTER_INSPECTOR(SciQLopPlotAxisInspector)
 
-class SciQLopPlotAxisDelegate : public PropertyDelegateBase
+QList<QObject*> SciQLopPlotAxisInspector::children(QObject* obj)
 {
-    Q_OBJECT
+    Q_UNUSED(obj);
+    return {};
+}
 
-    SciQLopPlotAxisInterface* axis() const;
-    SciQLopPlotColorScaleAxis* color_scale() const;
+QObject* SciQLopPlotAxisInspector::child(const QString& name, QObject* obj)
+{
+    Q_UNUSED(name);
+    Q_UNUSED(obj);
+    return nullptr;
+}
 
-    void addWidgetWithLabel(QWidget* widget, const QString& label);
+void SciQLopPlotAxisInspector::connect_node(PlotsModelNode* node, QObject* const obj)
+{
+    InspectorBase::connect_node(node, obj);
+    if (auto ax = _axis(obj); ax)
+    {
+        connect(ax, &SciQLopPlotAxisInterface::selection_changed, node,
+                &PlotsModelNode::set_selected);
+    }
+}
 
-public:
-    using compatible_type = SciQLopPlotAxisInterface;
-    SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* object, QWidget* parent = nullptr);
+void SciQLopPlotAxisInspector::set_selected(QObject* obj, bool selected)
+{
+    if (auto axis = _axis(obj))
+        axis->set_selected(selected);
+}
 
-    virtual ~SciQLopPlotAxisDelegate() = default;
-};
+Qt::ItemFlags SciQLopPlotAxisInspector::flags()
+{
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}

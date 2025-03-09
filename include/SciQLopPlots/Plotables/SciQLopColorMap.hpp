@@ -50,8 +50,6 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     QMutex _data_swap_mutex;
     bool _auto_scale_y = false;
 
-    ColorGradient _gradient;
-
     Q_OBJECT
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -72,8 +70,8 @@ class SciQLopColorMap : public SciQLopColorMapInterface
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
-                             SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, const QString& name);
+    explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,
+                             SciQLopPlotColorScaleAxis* zAxis, const QString& name);
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
@@ -84,18 +82,14 @@ public:
 
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
-    inline virtual ColorGradient gradient() const noexcept override { return _gradient; }
+    inline virtual ColorGradient gradient() const noexcept override
+    {
+        return _colorScaleAxis->color_gradient();
+    }
 
     inline virtual void set_gradient(ColorGradient gradient) noexcept override
     {
-        _gradient = gradient;
-        if (_cmap)
-        {
-            QCPColorGradient new_gradient =to_qcp(gradient);
-            new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
-            _cmap->setGradient(new_gradient);
-            _cmap->rescaleDataRange(true);
-        }
+        _colorScaleAxis->set_color_gradient(gradient);
     }
 
     virtual void set_selected(bool selected) noexcept override;
@@ -139,8 +133,8 @@ class SciQLopColorMapFunction : public SciQLopColorMap
 
 public:
     explicit SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
-                                     SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis, GetDataPyCallable&& callable,
-                                     const QString& name);
+                                     SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
+                                     GetDataPyCallable&& callable, const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
 

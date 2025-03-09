@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,23 +20,41 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
-class SciQLopPlotAxisInterface;
-class SciQLopPlotColorScaleAxis;
 
-class SciQLopPlotAxisDelegate : public PropertyDelegateBase
+
+class SciQLopPlotAxisInspector : public InspectorBase
 {
     Q_OBJECT
-
-    SciQLopPlotAxisInterface* axis() const;
-    SciQLopPlotColorScaleAxis* color_scale() const;
-
-    void addWidgetWithLabel(QWidget* widget, const QString& label);
+    inline SciQLopPlotAxisInterface* _axis(QObject* obj) { return qobject_cast<SciQLopPlotAxisInterface*>(obj); }
 
 public:
     using compatible_type = SciQLopPlotAxisInterface;
-    SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* object, QWidget* parent = nullptr);
 
-    virtual ~SciQLopPlotAxisDelegate() = default;
+    SciQLopPlotAxisInspector() : InspectorBase() { }
+
+    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
+
+    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
+
+    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QIcon();
+    }
+
+    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
+    {
+        Q_UNUSED(obj);
+        return QString();
+    }
+
+    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
+
+    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+
+    virtual Qt::ItemFlags flags() Q_DECL_OVERRIDE;
 };

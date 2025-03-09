@@ -159,7 +159,7 @@ public:
         }
     }
 
-    virtual SciQLopPlotAxisInterface* axis(Qt::AnchorPoint pos, int index = 0) const noexcept
+    inline virtual SciQLopPlotAxisInterface* axis(Qt::AnchorPoint pos, int index = 0) const noexcept
     {
         if (index == 0)
         {
@@ -181,27 +181,42 @@ public:
         return nullptr;
     }
 
-    virtual SciQLopPlotLegendInterface* legend() const noexcept
+    inline virtual SciQLopPlotAxisInterface* axis(const QString& name) const noexcept
+    {
+        if (auto ax = x_axis(); ax && ax->objectName() == name)
+            return ax;
+        if (auto ax = y_axis(); ax && ax->objectName() == name)
+            return ax;
+        if (auto ax = z_axis(); ax && ax->objectName() == name)
+            return ax;
+        if (auto ax = x2_axis(); ax && ax->objectName() == name)
+            return ax;
+        if (auto ax = y2_axis(); ax && ax->objectName() == name)
+            return ax;
+        return nullptr;
+    }
+
+    inline virtual SciQLopPlotLegendInterface* legend() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return nullptr;
     }
 
-    virtual void set_scroll_factor(double factor) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_scroll_factor(double factor) noexcept { WARN_ABSTRACT_METHOD; }
 
-    virtual double scroll_factor() const noexcept
+    inline virtual double scroll_factor() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return std::nan("");
     }
 
-    virtual void enable_cursor(bool enable = true) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void enable_cursor(bool enable = true) noexcept { WARN_ABSTRACT_METHOD; }
 
-    virtual void enable_legend(bool show = true) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void enable_legend(bool show = true) noexcept { WARN_ABSTRACT_METHOD; }
 
-    virtual void minimize_margins() { WARN_ABSTRACT_METHOD; }
+    inline virtual void minimize_margins() { WARN_ABSTRACT_METHOD; }
 
-    virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
+    inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void rescale_axes() noexcept { rescale_axes(m_axes_to_rescale); }
 
@@ -270,14 +285,13 @@ public:
         return plot_impl(callable, labels, colors, ::GraphType::Scatter, marker, sync_with);
     }
 
-    inline virtual SciQLopGraphInterface* parametric_curve(GetDataPyCallable callable,
-                                                           QStringList labels = QStringList(),
-                                                           QList<QColor> colors = QList<QColor>(),
-                                                           ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-                                                           QObject* sync_with = nullptr)
+    inline virtual SciQLopGraphInterface*
+    parametric_curve(GetDataPyCallable callable, QStringList labels = QStringList(),
+                     QList<QColor> colors = QList<QColor>(),
+                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+                     QObject* sync_with = nullptr)
     {
-        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
-                         marker, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, marker, sync_with);
     }
 
     inline virtual SciQLopColorMapInterface*
@@ -301,19 +315,19 @@ public:
 
     void set_selected(bool selected) noexcept;
 
-    virtual QList<SciQLopPlottableInterface*> plottables() const noexcept
+    inline virtual QList<SciQLopPlottableInterface*> plottables() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return {};
     }
 
-    virtual QList<QColor> color_palette() const noexcept
+    inline virtual QList<QColor> color_palette() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return {};
     }
 
-    virtual void set_color_palette(const QList<QColor>& colors) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_color_palette(const QList<QColor>& colors) noexcept { WARN_ABSTRACT_METHOD; }
 
 
 #ifndef BINDINGS_H
@@ -342,19 +356,19 @@ protected:
 
     inline void freeze_axis(SciQLopPlotAxisInterface* axis) noexcept { m_frozen_axes.append(axis); }
 
-    virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept
+    inline virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return {};
     }
 
-    virtual SciQLopPlotAxisInterface* axis_at(const QPointF& pos) const noexcept
+    inline virtual SciQLopPlotAxisInterface* axis_at(const QPointF& pos) const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return nullptr;
     }
 
-    virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void keyPressEvent(QKeyEvent* event) override
     {

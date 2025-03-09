@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlotRange.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <QObject>
 #include <QPointer>
 class QCPAxis;
@@ -33,7 +34,13 @@ class SciQLopPlotAxisInterface : public QObject
 protected:
     bool _is_time_axis = false;
 public:
-    SciQLopPlotAxisInterface(QObject* parent = nullptr) : QObject(parent) { }
+    SciQLopPlotAxisInterface(QObject* parent = nullptr, const QString& name = "") : QObject(parent)
+    {
+        if (!name.isEmpty())
+            setObjectName(name);
+        else
+            setObjectName("Axis");
+    }
     virtual ~SciQLopPlotAxisInterface() = default;
 
     inline virtual void set_range(const SciQLopPlotRange&) noexcept { }
@@ -45,6 +52,7 @@ public:
     inline virtual void set_log(bool log) noexcept { }
     inline virtual void set_label(const QString& label) noexcept { }
     inline virtual void set_tick_labels_visible(bool visible) noexcept { }
+    inline virtual void set_selected(bool selected) noexcept { Q_UNUSED(selected); }
 
     inline virtual SciQLopPlotRange range() const noexcept
     {
@@ -74,6 +82,7 @@ public:
     Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
+    Q_SIGNAL void selection_changed(bool selected);
 #endif
 };
 
@@ -97,7 +106,7 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     QPointer<QCPAxis> m_axis;
 
 public:
-    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false);
+    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false, const QString &name="Axis");
     virtual ~SciQLopPlotAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
@@ -105,6 +114,7 @@ public:
     void set_log(bool log) noexcept override;
     void set_label(const QString& label) noexcept override;
     void set_tick_labels_visible(bool visible) noexcept override;
+    void set_selected(bool selected) noexcept override;
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
     bool log() const noexcept override;
@@ -124,19 +134,23 @@ class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
 {
     Q_OBJECT
     QPointer<QCPColorScale> m_axis;
+    ColorGradient m_color_gradient;
 
 public:
-    explicit SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent = nullptr);
+    explicit SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent = nullptr, const QString &name="ColorScale");
     virtual ~SciQLopPlotColorScaleAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
     void set_log(bool log) noexcept override;
     void set_label(const QString& label) noexcept override;
+    void set_color_gradient(const ColorGradient gradient) noexcept;
+
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
     bool log() const noexcept override;
     QString label() const noexcept override;
+    ColorGradient color_gradient() const noexcept;
     Qt::Orientation orientation() const noexcept override;
     Qt::Axis axis() const noexcept override;
     Qt::AnchorPoint anchor() const noexcept override;
@@ -147,4 +161,8 @@ public:
 
     QCPAxis* qcp_axis() const noexcept override;
     QCPColorScale* qcp_colorscale() const noexcept;
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void color_gradient_changed(ColorGradient gradient);
+#endif
 };
