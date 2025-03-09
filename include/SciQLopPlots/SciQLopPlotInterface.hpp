@@ -30,6 +30,7 @@
 #include "SciQLopPlots/unique_names_factory.hpp"
 #include <QFrame>
 #include <QPointF>
+#include <QShortcut>
 #include <QUuid>
 #include <qcustomplot.h>
 
@@ -96,6 +97,46 @@ public:
             setObjectName(name);
         else
             setObjectName(UniqueNamesFactory::unique_name("Plot"));
+
+        auto auto_scale = new QShortcut(QKeySequence(Qt::Key_M), this);
+        auto_scale->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(auto_scale, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
+                [this]
+                {
+                    QList<SciQLopPlotAxisInterface*> axes;
+                    QList<SciQLopPlotAxisInterface*> axes_to_rescale;
+                    if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
+                        axes.append(ax);
+                    else
+                        axes = selected_axes();
+                    if (axes.isEmpty())
+                        axes_to_rescale = m_axes_to_rescale;
+                    else
+                        axes_to_rescale = axes;
+
+                    for (auto ax : m_frozen_axes)
+                        axes_to_rescale.removeAll(ax);
+                    rescale_axes(axes_to_rescale);
+                });
+
+        auto toggle_log = new QShortcut(QKeySequence(Qt::Key_L), this);
+        toggle_log->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(toggle_log, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
+                [this]
+                {
+                    QList<SciQLopPlotAxisInterface*> axes;
+                    if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
+                        axes.append(ax);
+                    else
+                        axes = selected_axes();
+                    for (auto ax : axes)
+                        ax->set_log(not ax->log());
+                });
+
+        auto toggle_visibility = new QShortcut(QKeySequence(Qt::Key_H), this);
+        toggle_visibility->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(toggle_visibility, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
+                &SciQLopPlotInterface::toggle_selected_objects_visibility);
     }
 
     virtual ~SciQLopPlotInterface() = default;
@@ -327,7 +368,10 @@ public:
         return {};
     }
 
-    inline virtual void set_color_palette(const QList<QColor>& colors) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_color_palette(const QList<QColor>& colors) noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+    }
 
 
 #ifndef BINDINGS_H
@@ -369,43 +413,4 @@ protected:
     }
 
     inline virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
-
-    inline virtual void keyPressEvent(QKeyEvent* event) override
-    {
-        QList<SciQLopPlotAxisInterface*> axes;
-        QList<SciQLopPlotAxisInterface*> axes_to_rescale;
-        if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
-            axes.append(ax);
-        else
-            axes = selected_axes();
-        if (axes.isEmpty())
-            axes_to_rescale = m_axes_to_rescale;
-        else
-            axes_to_rescale = axes;
-
-        for (auto ax : m_frozen_axes)
-            axes_to_rescale.removeAll(ax);
-
-        switch (event->key())
-        {
-            case Qt::Key_M:
-                rescale_axes(axes_to_rescale);
-                event->accept();
-                replot();
-                break;
-            case Qt::Key_L:
-                for (auto ax : axes)
-                    ax->set_log(not ax->log());
-                event->accept();
-                replot();
-                break;
-            case Qt::Key_H:
-                toggle_selected_objects_visibility();
-                break;
-            default:
-                break;
-        }
-        if (!event->isAccepted())
-            QWidget::keyPressEvent(event);
-    }
 };
