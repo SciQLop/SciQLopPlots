@@ -51,3 +51,14 @@ void PlotsTreeView::keyPressEvent(QKeyEvent* event)
         QTreeView::keyPressEvent(event);
     }
 }
+
+void PlotsTreeView::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() != Qt::RightButton)
+    {
+        auto index = indexAt(event->pos());
+        if (!index.isValid())
+            clearSelection();
+    }
+    QTreeView::mousePressEvent(event);
+}
