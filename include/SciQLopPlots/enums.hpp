@@ -133,6 +133,8 @@ inline QString GraphMarkerShapeToUTF8(GraphMarkerShape shape)
         return "";
     case GraphMarkerShape::Circle:
         return "○";
+    case GraphMarkerShape::Dot:
+        return ".";
     case GraphMarkerShape::Square:
         return "□";
     case GraphMarkerShape::Triangle:
