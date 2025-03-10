@@ -99,10 +99,10 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
         else:
             modules_libs = [importlib.import_module(f'PySide{pyside_ver}.{module}').__file__ for module in modules]
         print(f"modules_libs: {modules_libs}", file=sys.stderr)
-        print(" ".join(make_link_flags(main_lib + modules_libs)))
+        print(";".join(make_link_flags(main_lib + modules_libs)))
 
     if args.includes:
         modules_incs = [f"-I{PySide_inc}{os.path.sep}{module}" for module in modules]
-        print(" ".join([f"-I{PySide_inc} -I{shiboken_includes}"]+ modules_incs))
+        print(";".join([f"-I{PySide_inc};-I{shiboken_includes}"]+ modules_incs))
     
     
