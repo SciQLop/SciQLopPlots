@@ -1,6 +1,6 @@
 from SciQLopPlots import (SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan,
                          SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel,
-                         InspectorView, SciQLopPixmapItem,
+                         InspectorView, SciQLopPixmapItem, SciQLopElipseItem,
                          Coordinates)
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush, QPixmap
@@ -92,6 +92,7 @@ class SimpleCurve(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
         self.pix = SciQLopPixmapItem(self.plot, QPixmap("://icons/SciQLop.png"), QRectF(-1, -1, 2, 2), True, Coordinates.Data)
+        self.ellipse = SciQLopElipseItem(self.plot, QRectF(-1, -1, 2, 2), QPen(Qt.red), QBrush(Qt.green), True, Coordinates.Data)
         self.curve = add_curve(self.plot)
 
 class TimeSerieGraph(QWidget):
