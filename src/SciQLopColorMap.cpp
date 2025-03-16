@@ -74,7 +74,7 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
 
     this->colorMap()->updateLegendIcon();
-    this->colorMap()->setLayer(parent->layer("background"));
+    this->colorMap()->setLayer("background");
 
     if (auto legend_item = _legend_item(); legend_item)
     {
@@ -156,22 +156,13 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
                                                  SciQLopPlotAxis* yAxis,
                                                  SciQLopPlotColorScaleAxis* zAxis,
                                                  GetDataPyCallable&& callable, const QString& name)
-        : SciQLopColorMap(parent, xAxis, yAxis, zAxis, name)
+        : SciQLopColorMap { parent, xAxis, yAxis, zAxis, name }
+        , SciQLopFunctionGraph(std::move(callable), this, 3)
 {
-    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this,
             &SciQLopColorMapFunction::_set_data);
     connect(this, &SciQLopColorMap::range_changed, m_pipeline,
             &SimplePyCallablePipeline::set_range);
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
-}
-
-void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
-{
-    m_pipeline->set_data(x, y, z);
-}
-
-void SciQLopColorMapFunction::set_data(PyBuffer x, PyBuffer y)
-{
-    m_pipeline->set_data(x, y);
+    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });*/
 }

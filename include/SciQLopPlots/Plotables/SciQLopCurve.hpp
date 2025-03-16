@@ -22,9 +22,9 @@
 #pragma once
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
-#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopLineGraph.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
 class QThread;
@@ -40,7 +40,7 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     Q_OBJECT
 
-    //inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
+    // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
 
@@ -77,7 +77,8 @@ public:
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                           const QStringList& labels);
 
-    explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis *keyAxis, SciQLopPlotAxis* valueAxis);
+    explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
+                          SciQLopPlotAxis* valueAxis);
 
     virtual ~SciQLopCurve() override;
 
@@ -93,22 +94,16 @@ public:
     virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
 
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
-
 };
 
-class SciQLopCurveFunction : public SciQLopCurve
+class SciQLopCurveFunction : public SciQLopCurve, public SciQLopFunctionGraph
 {
     Q_OBJECT
-    SimplePyCallablePipeline* m_pipeline;
-
-    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopCurve::set_data(x, y); }
 
 public:
-    explicit SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
-                                  GetDataPyCallable&& callable, const QStringList& labels);
+    explicit SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                  SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
+                                  const QStringList& labels);
 
     virtual ~SciQLopCurveFunction() override = default;
-
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 };

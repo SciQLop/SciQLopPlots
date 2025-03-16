@@ -121,10 +121,10 @@ private:
     ::DataOrder _dataOrder = DataOrder::RowMajor;
 };
 
-class SciQLopColorMapFunction : public SciQLopColorMap
+
+class SciQLopColorMapFunction :public SciQLopColorMap, public SciQLopFunctionGraph
 {
     Q_OBJECT
-    SimplePyCallablePipeline* m_pipeline;
 
     inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     {
@@ -137,7 +137,4 @@ public:
                                      GetDataPyCallable&& callable, const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
-
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
 };

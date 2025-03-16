@@ -70,6 +70,13 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axi
             [this](const QCPRange& newRange) { this->_resampler->resample(newRange); });
 }
 
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
+        : SQPQCPAbstractPlottableWrapper("Line", parent)
+        , _keyAxis { nullptr }
+        , _valueAxis { nullptr }
+{
+}
+
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
 {
     clear_plottables();
@@ -142,22 +149,13 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
                                                    SciQLopPlotAxis* value_axis,
                                                    GetDataPyCallable&& callable,
                                                    const QStringList& labels)
-        : SciQLopLineGraph(parent, key_axis, value_axis, labels)
+        : SciQLopLineGraph { parent, key_axis, value_axis, labels }
+        , SciQLopFunctionGraph(std::move(callable),this, 2)
 {
-    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
             &SciQLopLineGraphFunction::_set_data);
     connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);
+            &SimplePyCallablePipeline::set_range);*/
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
-}
-
-void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y)
-{
-    m_pipeline->set_data(x, y);
-}
-
-void SciQLopLineGraphFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
-{
-    m_pipeline->set_data(x, y, z);
 }

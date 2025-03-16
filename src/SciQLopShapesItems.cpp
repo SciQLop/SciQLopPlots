@@ -21,9 +21,9 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Items/SciQLopShapesItems.hpp"
 
-ElipseItem::~ElipseItem() { }
+EllipseItem::~EllipseItem() { }
 
-void ElipseItem::move(double dx, double dy)
+void EllipseItem::move(double dx, double dy)
 {
     this->topLeft->setPixelPosition(
         { this->topLeft->pixelPosition().x() + dx, this->topLeft->pixelPosition().y() + dy });

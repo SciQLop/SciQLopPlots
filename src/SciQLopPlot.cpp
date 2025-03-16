@@ -685,31 +685,17 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
 
 void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with)
 {
-    if (sync_with != nullptr)
+    if (SciQLopFunctionGraph* graph
+        = dynamic_cast<SciQLopFunctionGraph*>(plottable))
     {
-        if (auto axis = qobject_cast<SciQLopPlotAxisInterface*>(sync_with); axis != nullptr)
+        if (sync_with != nullptr)
         {
-            connect(axis, &SciQLopPlotAxisInterface::range_changed, plottable,
-                    &SciQLopGraphInterface::set_range);
+            graph->observe(sync_with);
         }
-        if (auto graph = qobject_cast<SciQLopGraphInterface*>(sync_with); graph != nullptr)
+        else
         {
-            connect(graph, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                    plottable, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data),
-                    Qt::QueuedConnection);
-
-            connect(
-                graph,
-                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                plottable,
-                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data),
-                Qt::QueuedConnection);
+            graph->observe(this->x_axis());
         }
-    }
-    else
-    {
-        connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, plottable,
-                &SQPQCPAbstractPlottableWrapper::set_range);
     }
 }
 

@@ -124,12 +124,12 @@ class MMS(SciQLopMultiPlotPanel):
                   plot_type=PlotType.TimeSeries,
                   y_log_scale=True,
                   z_log_scale=True)
-        _, graph = self.plot(mms1_fgm_b_gse_srvy_l2,
+        _, self.graph = self.plot(mms1_fgm_b_gse_srvy_l2,
                              labels=['Bx GSE', 'By GSE', 'Bz GSE', 'Bt'],
                              colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue, QColorConstants.Black],
                              plot_type=PlotType.TimeSeries)
         self._fft = Spectrum(2**9)
-        p,g=self.plot(self._fft, index=1, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=graph)
+        p,g=self.plot(self._fft, index=1, labels=['Spectrum'], colors=[QColorConstants.Red], plot_type=PlotType.BasicXY, sync_with=self.graph)
         p.x_axis().set_log(True)
         p.x_axis().set_range(0.1, 2)
         p.y_axis().set_log(True)

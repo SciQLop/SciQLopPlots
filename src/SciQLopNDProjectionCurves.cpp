@@ -43,18 +43,14 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
                                                                      QList<SciQLopPlot*>& plots,
                                                                      GetDataPyCallable&& callable,
                                                                      const QStringList& labels)
-        : SciQLopNDProjectionCurves(parent, plots, labels)
+        : SciQLopNDProjectionCurves { parent, plots, labels }
+        , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
-    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_nd, this,
             &SciQLopNDProjectionCurvesFunction::_set_data);
     connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);
-}
-
-void SciQLopNDProjectionCurvesFunction::set_data(const QList<PyBuffer>& data)
-{
-    m_pipeline->set_data(data);
+            &SimplePyCallablePipeline::set_range);*/
 }
 
 void SciQLopNDProjectionCurves::set_selected(bool selected) noexcept

@@ -1,6 +1,6 @@
 from SciQLopPlots import (SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan,
                          SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel,
-                         InspectorView, SciQLopPixmapItem, SciQLopElipseItem,
+                         InspectorView, SciQLopPixmapItem, SciQLopEllipseItem,
                          Coordinates)
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
 from PySide6.QtGui import QPen, QColorConstants, QColor, QBrush, QPixmap
@@ -92,7 +92,7 @@ class SimpleCurve(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.plot)
         self.pix = SciQLopPixmapItem(self.plot, QPixmap("://icons/SciQLop.png"), QRectF(-1, -1, 2, 2), True, Coordinates.Data)
-        self.ellipse = SciQLopElipseItem(self.plot, QRectF(-1, -1, 2, 2), QPen(Qt.red), QBrush(Qt.green), True, Coordinates.Data)
+        self.ellipse = SciQLopEllipseItem(self.plot, QRectF(-1, -1, 2, 2), QPen(Qt.red), QBrush(Qt.green), True, Coordinates.Data)
         self.curve = add_curve(self.plot)
 
 class TimeSerieGraph(QWidget):
@@ -190,8 +190,8 @@ def fft(x, y, fft_size=2**12):
 class TsAndFFT(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        _,graph = self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
-        plot, _ = self.plot(fft,index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=graph)
+        _, self.graph = self.plot(make_data,labels=["X","Y","Z"], colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green], plot_type=PlotType.TimeSeries)
+        plot, _ = self.plot(fft,index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=self.graph)
         plot.x_axis().set_log(True)
         plot.x_axis().set_range(0.01, 1)
         plot.y_axis().set_log(True)

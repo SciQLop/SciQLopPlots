@@ -177,6 +177,9 @@ public:
             result.emplace_back(std::move(a));
         return result;
     }
+
+    inline void set_callable(GetDataPyCallable&& callable) { m_callable = std::move(callable); }
+    inline GetDataPyCallable callable() const { return m_callable; }
 };
 
 
@@ -191,12 +194,13 @@ public:
 
     virtual ~SimplePyCallablePipeline() = default;
 
-    inline Q_SLOT void set_range(const SciQLopPlotRange& range) { m_worker->set_range(range); }
-    inline Q_SLOT void set_data(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
-    inline Q_SLOT void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
-    inline Q_SLOT void set_data(QList<PyBuffer> values) { m_worker->set_data(values); }
+    inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
+    inline Q_SLOT void call(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
+    inline Q_SLOT void call(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
+    inline Q_SLOT void call(QList<PyBuffer> values) { m_worker->set_data(values); }
 
-
+    inline void set_callable(GetDataPyCallable&& callable) { m_callable_wrapper->set_callable(std::move(callable)); }
+    inline GetDataPyCallable callable() const { return m_callable_wrapper->callable(); }
 
 #ifndef BINDINGS_H
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);

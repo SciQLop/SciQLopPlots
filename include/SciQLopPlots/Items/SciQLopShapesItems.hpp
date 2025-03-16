@@ -29,7 +29,7 @@
 #include <QRgb>
 #include <qcustomplot.h>
 
-class ElipseItem : public SciQLopPlotItem<QCPItemEllipse>, public SciQlopItemWithToolTip
+class EllipseItem : public SciQLopPlotItem<QCPItemEllipse>, public SciQlopItemWithToolTip
 {
     Q_OBJECT
 
@@ -38,7 +38,7 @@ public:
     Q_SIGNAL void moved(double new_x, double new_y);
 #endif // !BINDINGS_H
 
-    inline ElipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, bool movable = false,
+    inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, bool movable = false,
                       Coordinates coordinates = Coordinates::Pixels)
             : SciQLopPlotItem<QCPItemEllipse> { plot }
     {
@@ -57,60 +57,73 @@ public:
         this->bottomRight->setCoords(boundingRectangle.bottomRight());
     }
 
-    inline ElipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
+    inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
                       const QBrush& brush, bool movable = false,
                       Coordinates coordinates = Coordinates::Pixels)
-            : ElipseItem { plot, boundingRectangle, movable, coordinates }
+            : EllipseItem { plot, boundingRectangle, movable, coordinates }
     {
         this->setPen(pen);
         this->setBrush(brush);
     }
 
-    virtual ~ElipseItem();
+    virtual ~EllipseItem();
 
     virtual void move(double dx, double dy) override;
+
+    inline QRectF boundingRectangle() const noexcept { return QRectF(topLeft->coords(), bottomRight->coords()); }
+    inline QPointF position() const noexcept { return boundingRectangle().center(); }
+
+    inline void setPos(const QPointF& pos) noexcept
+    {
+        QRectF rect = boundingRectangle();
+        rect.moveCenter(pos);
+        topLeft->setCoords(rect.topLeft());
+        bottomRight->setCoords(rect.bottomRight());
+        replot();
+    }
+
 };
 
 /*!
  * \brief The SciQLopPixmapItem class
  */
-class SciQLopElipseItem : public QObject
+class SciQLopEllipseItem : public QObject
 {
     Q_OBJECT
 
-    QPointer<ElipseItem> m_item;
+    QPointer<EllipseItem> m_item;
 
 public:
     /*!
-     * \brief SciQLopElipseItem
+     * \brief SciQLopEllipseItem
      * \param plot The plot to which the item will be added
      * \param boundingRectangle The rectangle that contains the elipse
      * \param movable If the elipse can be moved by the user
      * \param coordinates The coordinates system in which the rectangle is defined (Pixels or Data)
      */
-    SciQLopElipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, bool movable = false,
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, bool movable = false,
                       Coordinates coordinates = Coordinates::Pixels)
     {
-        m_item = new ElipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates);
+        m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates);
     }
 
-    SciQLopElipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
                       const QBrush& brush, bool movable = false,
                       Coordinates coordinates = Coordinates::Pixels)
     {
         m_item
-            = new ElipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable, coordinates);
+            = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable, coordinates);
     }
 
-    SciQLopElipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
                       qreal lineWidth, const QColor& fillColor, bool movable = false,
                       Coordinates coordinates = Coordinates::Pixels)
     {
-        m_item = new ElipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
+        m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
                                 QBrush(fillColor), movable, coordinates);
     }
 
-    ~SciQLopElipseItem() = default;
+    ~SciQLopEllipseItem() = default;
 
     QPen pen() const noexcept { return m_item->pen(); }
 
@@ -119,4 +132,9 @@ public:
     inline void setPen(const QPen& pen) noexcept { m_item->setPen(pen); }
 
     inline void setBrush(const QBrush& brush) noexcept { m_item->setBrush(brush); }
+
+    inline QPointF position() const noexcept { return m_item->position(); }
+    inline void setPos(const QPointF& pos) noexcept { m_item->setPos(pos); }
+    inline void setPos(double x, double y) noexcept { m_item->setPos(QPointF(x, y)); }
+    inline QRectF boundingRectangle() const noexcept { return m_item->boundingRectangle(); }
 };

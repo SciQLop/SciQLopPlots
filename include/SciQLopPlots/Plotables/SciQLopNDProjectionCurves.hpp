@@ -50,11 +50,9 @@ public:
     virtual  bool selected() const noexcept override;
 };
 
-
-class SciQLopNDProjectionCurvesFunction : public SciQLopNDProjectionCurves
+class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, public SciQLopFunctionGraph
 {
     Q_OBJECT
-    SimplePyCallablePipeline* m_pipeline;
 
     inline Q_SLOT void _set_data(QList<PyBuffer> data)
     {
@@ -67,6 +65,5 @@ public:
 
     virtual ~SciQLopNDProjectionCurvesFunction() override = default;
 
-    Q_SLOT virtual void set_data(const QList<PyBuffer>& data) override;
 
 };

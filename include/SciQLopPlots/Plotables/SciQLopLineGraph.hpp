@@ -23,9 +23,8 @@
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
-#include "SciQLopPlots/SciQLopPlotAxis.hpp"
-#include "../DataProducer/DataProducer.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <qcustomplot.h>
 struct LineGraphResampler;
 class QThread;
@@ -41,7 +40,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     Q_OBJECT
 
-    //inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
+    // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _setGraphData(QList<QVector<QCPGraphData>> data);
 
@@ -70,8 +69,11 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
 public:
     Q_ENUMS(FractionStyle)
-    explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis *key_axis, SciQLopPlotAxis *value_axis,
+    explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                              SciQLopPlotAxis* value_axis,
                               const QStringList& labels = QStringList());
+
+    SciQLopLineGraph(QCustomPlot* parent);
 
     virtual ~SciQLopLineGraph() override;
 
@@ -92,19 +94,15 @@ private:
     void create_graphs(const QStringList& labels);
 };
 
-class SciQLopLineGraphFunction : public SciQLopLineGraph
+class SciQLopLineGraphFunction : public SciQLopLineGraph,
+                                 public SciQLopFunctionGraph
 {
     Q_OBJECT
-    SimplePyCallablePipeline* m_pipeline;
-
-    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y) { SciQLopLineGraph::set_data(x, y); }
 
 public:
-    explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
-                                      GetDataPyCallable&& callable, const QStringList& labels);
+    explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                      SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
+                                      const QStringList& labels);
 
     virtual ~SciQLopLineGraphFunction() override = default;
-
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
 };

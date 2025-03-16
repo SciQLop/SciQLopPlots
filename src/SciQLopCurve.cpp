@@ -64,8 +64,8 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
             Qt::QueuedConnection);
 }
 
-SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
-                           const QStringList& labels)
+SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
+                           SciQLopPlotAxis* valueAxis, const QStringList& labels)
         : SQPQCPAbstractPlottableWrapper("Curve", parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
@@ -74,7 +74,8 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLo
     this->create_graphs(labels);
 }
 
-SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis *valueAxis)
+SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
+                           SciQLopPlotAxis* valueAxis)
         : SQPQCPAbstractPlottableWrapper("Curve", parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
@@ -99,7 +100,7 @@ QList<PyBuffer> SciQLopCurve::data() const noexcept
     return _resampler->get_data();
 }
 
-void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
+void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
@@ -112,7 +113,7 @@ void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface *axis) noexcept
     }
 }
 
-void SciQLopCurve::set_y_axis(SciQLopPlotAxisInterface *axis) noexcept
+void SciQLopCurve::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
@@ -136,25 +137,16 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
     _resampler->set_line_count(plottable_count());
 }
 
-SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis *key_axis,
-                                           SciQLopPlotAxis *value_axis, GetDataPyCallable&& callable,
-                                           const QStringList& labels)
-        : SciQLopCurve(parent, key_axis, value_axis, labels)
+SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                           SciQLopPlotAxis* value_axis,
+                                           GetDataPyCallable&& callable, const QStringList& labels)
+        : SciQLopCurve { parent, key_axis, value_axis, labels }
+        , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
+    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
     connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
             &SciQLopCurveFunction::_set_data);
     connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);
+            &SimplePyCallablePipeline::set_range);*/
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
-}
-
-void SciQLopCurveFunction::set_data(PyBuffer x, PyBuffer y)
-{
-    m_pipeline->set_data(x, y);
-}
-
-void SciQLopCurveFunction::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
-{
-    m_pipeline->set_data(x, y, z);
 }

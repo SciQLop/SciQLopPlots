@@ -23,7 +23,7 @@
 
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include <qcustomplot.h>
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 
 template <typename T>
 inline void _set_selected(T* plottable, bool selected)
