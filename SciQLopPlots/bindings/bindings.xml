@@ -24,7 +24,7 @@
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr"/>
 
     <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
-    <primitive-type name="PyBuffer" target-lang-api-name="PyObject">
+    <primitive-type name="PyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
         <conversion-rule>
             <target-to-native>
                 <add-conversion type="Py_None">
@@ -46,7 +46,7 @@
             </native-to-target>
         </conversion-rule>
     </primitive-type>
-    <value-type name="GetDataPyCallable" allow-thread="yes">
+    <primitive-type name="GetDataPyCallable" target-lang-api-name="PyObject"  allow-thread="yes">
         <conversion-rule>
             <target-to-native>
                 <add-conversion type="Py_None">
@@ -58,12 +58,16 @@
                 </add-conversion>
             </target-to-native>
             <native-to-target>
-                return %in.py_object();
+                auto obj = %in.py_object();
+                if(obj == nullptr)
+                {
+                    Py_RETURN_NONE;
+                }
+                Py_INCREF(obj);
+                return obj;
             </native-to-target>
         </conversion-rule>
-        <modify-function signature="GetDataPyCallable(PyObject*)" remove="all" />
-        <modify-function signature="py_object()" remove="all" />
-    </value-type>
+    </primitive-type>
 
     <value-type name="SciQLopPlotRange">
         <extra-includes>
