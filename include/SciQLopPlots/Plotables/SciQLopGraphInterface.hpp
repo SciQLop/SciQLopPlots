@@ -233,7 +233,6 @@ public:
     }
 };
 
-
 class SciQLopFunctionGraph
 {
 protected:
@@ -242,17 +241,19 @@ protected:
     QList<QMetaObject::Connection> m_observer_connections;
 
     template <typename... Args>
-    void connect(Args&&... args) //#SciQLop-check-ignore-connect
+    void connect(Args&&... args) // #SciQLop-check-ignore-connect
     {
-        m_observer_connections.append(QObject::connect(std::forward<Args>(args)...)); //#SciQLop-check-ignore-connect
+        m_observer_connections.append(
+            QObject::connect(std::forward<Args>(args)...)); // #SciQLop-check-ignore-connect
     }
 
-    SciQLopPlottableInterface* as_graph= nullptr;
+    SciQLopPlottableInterface* as_graph = nullptr;
 
 public:
     SciQLopFunctionGraph() { }
 
-    SciQLopFunctionGraph(GetDataPyCallable&& callable, SciQLopPlottableInterface* as_graph,int N = 2);
+    SciQLopFunctionGraph(GetDataPyCallable&& callable, SciQLopPlottableInterface* as_graph,
+                         int N = 2);
 
     virtual ~SciQLopFunctionGraph() = default;
 
@@ -261,34 +262,26 @@ public:
         m_pipeline->set_callable(std::move(callable));
     }
 
-    inline virtual GetDataPyCallable callable() const noexcept
-    {
-        return m_pipeline->callable();
-    }
+    inline virtual GetDataPyCallable callable() const noexcept { return m_pipeline->callable(); }
 
     virtual void observe(QObject* observable);
 
-    inline virtual void observe(QObject* observable, const char* signal)  { }
+    inline virtual void observe(QObject* observable, const char* signal) { }
 
     inline virtual void observe(QObject* observable, const QString& signal)
     {
         observe(observable, signal.toStdString().c_str());
     }
 
-    inline virtual void call(const SciQLopPlotRange& range) noexcept
-    {
-        m_pipeline->call(range);
-    }
+    inline virtual void call(const SciQLopPlotRange& range) noexcept { m_pipeline->call(range); }
 
-    inline virtual void call(PyBuffer x, PyBuffer y) noexcept  { m_pipeline->call(x, y); }
+    inline virtual void call(PyBuffer x, PyBuffer y) noexcept { m_pipeline->call(x, y); }
 
     inline virtual void call(PyBuffer x, PyBuffer y, PyBuffer z) noexcept
     {
         m_pipeline->call(x, y, z);
     }
 
-    inline virtual void call(const QList<PyBuffer>& values) noexcept
-    {
-        m_pipeline->call(values);
-    }
+    inline virtual void call(const QList<PyBuffer>& values) noexcept { m_pipeline->call(values); }
+
 };
