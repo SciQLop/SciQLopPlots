@@ -22,12 +22,12 @@
 
 #include "SciQLopPlots/Items/SciQLopTextItem.hpp"
 
-TextItem::~TextItem()
+impl::TextItem::~TextItem()
 {
 
 }
 
-void TextItem::move(double dx, double dy)
+void impl::TextItem::move(double dx, double dy)
 {
     QCPItemText::position->setPixelPosition({QCPItemText::position->pixelPosition().x() + dx,
                                              QCPItemText::position->pixelPosition().y() + dy});

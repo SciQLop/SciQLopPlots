@@ -252,9 +252,6 @@
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes"/>
 
-    <object-type name="SciQlopItemWithToolTip">
-    </object-type>
-
     <object-type name="SciQLopLineGraph" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
@@ -277,10 +274,14 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
 
-    <object-type name="SciQLopVerticalSpan" parent-management="yes">
-    </object-type>
-    <object-type name="SciQLopPixmapItem" parent-management="yes">
-    </object-type>
+    <object-type name="SciQLopItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopMovableItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopLineItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopBoundingRectItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopPolygonItemInterface" parent-management="yes"/>
+
+    <object-type name="SciQLopVerticalSpan" parent-management="yes"/>
+    <object-type name="SciQLopPixmapItem" parent-management="yes"/>
     <object-type name="SciQLopStraightLine" parent-management="yes"/>
     <object-type name="SciQLopVerticalLine" parent-management="yes"/>
     <object-type name="SciQLopHorizontalLine" parent-management="yes"/>

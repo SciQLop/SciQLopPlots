@@ -24,7 +24,7 @@
 #include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
 
 
-void VerticalSpanBorder::move(double dx, double dy)
+void impl::VerticalSpanBorder::move(double dx, double dy)
 {
     this->point1->setPixelPosition(
         { this->point1->pixelPosition().x() + dx, this->point1->pixelPosition().y() });
@@ -36,7 +36,7 @@ void VerticalSpanBorder::move(double dx, double dy)
     emit moved(this->point1->coords().x());
 }
 
-void VerticalSpan::border1_selection_changed(bool select)
+void impl::VerticalSpan::border1_selection_changed(bool select)
 {
     if (_border1 == _lower_border())
     {
@@ -48,7 +48,7 @@ void VerticalSpan::border1_selection_changed(bool select)
     }
 }
 
-void VerticalSpan::border2_selection_changed(bool select)
+void impl::VerticalSpan::border2_selection_changed(bool select)
 {
     if (_border2 == _lower_border())
     {
@@ -60,11 +60,11 @@ void VerticalSpan::border2_selection_changed(bool select)
     }
 }
 
-VerticalSpan::VerticalSpan(
+impl::VerticalSpan::VerticalSpan(
     QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot, bool immediate_replot)
-        : SciQLopPlotItem { plot }
-        , _border1 { new VerticalSpanBorder { plot, horizontal_range.sorted().start(), true } }
-        , _border2 { new VerticalSpanBorder {
+        : impl::SciQLopPlotItem<QCPItemRect>{ plot }
+        , _border1 { new impl::VerticalSpanBorder { plot, horizontal_range.sorted().start(), true } }
+        , _border2 { new impl::VerticalSpanBorder {
               plot, horizontal_range.sorted().stop(), do_not_replot } }
 {
     this->setLayer(Constants::LayersNames::Spans);
@@ -73,7 +73,7 @@ VerticalSpan::VerticalSpan(
     this->setSelectable(true);
     this->setMovable(true);
     this->setVisible(true);
-    connect(this->_border1, &VerticalSpanBorder::moved, this,
+    connect(this->_border1, &impl::VerticalSpanBorder::moved, this,
         [this](double x)
         {
             this->set_left_pos(this->_lower_border()->position());
@@ -82,7 +82,7 @@ VerticalSpan::VerticalSpan(
             emit this->range_changed(this->range());
         });
 
-    connect(this->_border2, &VerticalSpanBorder::moved, this,
+    connect(this->_border2, &impl::VerticalSpanBorder::moved, this,
         [this](double x)
         {
             this->set_left_pos(this->_lower_border()->position());
@@ -91,10 +91,10 @@ VerticalSpan::VerticalSpan(
             emit this->range_changed(this->range());
         });
 
-    connect(this->_border1, &VerticalSpanBorder::selectionChanged, this,
-        &VerticalSpan::border1_selection_changed);
-    connect(this->_border2, &VerticalSpanBorder::selectionChanged, this,
-        &VerticalSpan::border2_selection_changed);
+    connect(this->_border1, &impl::VerticalSpanBorder::selectionChanged, this,
+        &impl::VerticalSpan::border1_selection_changed);
+    connect(this->_border2, &impl::VerticalSpanBorder::selectionChanged, this,
+        &impl::VerticalSpan::border2_selection_changed);
     auto sorted = horizontal_range.sorted();
     this->set_left_pos(sorted.start());
     this->set_right_pos(sorted.stop());
@@ -102,7 +102,7 @@ VerticalSpan::VerticalSpan(
         this->replot(immediate_replot);
 }
 
-void VerticalSpan::keyPressEvent(QKeyEvent* event)
+void impl::VerticalSpan::keyPressEvent(QKeyEvent* event)
 {
     if (this->selected())
     {
@@ -113,7 +113,7 @@ void VerticalSpan::keyPressEvent(QKeyEvent* event)
     }
 }
 
-void VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
+void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
 {
     auto sorted = horizontal_range.sorted();
     if (this->range() != sorted)
@@ -125,7 +125,7 @@ void VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     }
 }
 
-void VerticalSpan::move(double dx, double dy)
+void impl::VerticalSpan::move(double dx, double dy)
 {
     if (dx != 0.)
     {
@@ -137,7 +137,7 @@ void VerticalSpan::move(double dx, double dy)
     }
 }
 
-double VerticalSpan::selectTest(const QPointF& pos, bool onlySelectable, QVariant* details) const
+double impl::VerticalSpan::selectTest(const QPointF& pos, bool onlySelectable, QVariant* details) const
 {
     auto left = std::min(this->left->pixelPosition().x(), this->right->pixelPosition().x());
     auto right = std::max(this->left->pixelPosition().x(), this->right->pixelPosition().x());
@@ -167,7 +167,7 @@ double VerticalSpan::selectTest(const QPointF& pos, bool onlySelectable, QVarian
     }
 }
 
-void VerticalSpan::select_lower_border(bool selected)
+void impl::VerticalSpan::select_lower_border(bool selected)
 {
     if (!_border1.isNull() && !_border2.isNull())
     {
@@ -180,7 +180,7 @@ void VerticalSpan::select_lower_border(bool selected)
     }
 }
 
-void VerticalSpan::select_upper_border(bool selected)
+void impl::VerticalSpan::select_upper_border(bool selected)
 {
     if (!_border1.isNull() && !_border2.isNull())
     {
@@ -194,23 +194,23 @@ void VerticalSpan::select_upper_border(bool selected)
 }
 SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
     QColor color, bool read_only, bool visible, const QString& tool_tip)
-        : _impl { new VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
+        : _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
 {
     set_color(color);
     set_read_only(read_only);
     set_visible(visible);
     set_tool_tip(tool_tip);
-    connect(this->_impl.data(), &VerticalSpan::range_changed, this,
+    connect(this->_impl.data(), &impl::VerticalSpan::range_changed, this,
         &SciQLopVerticalSpan::range_changed);
 
-    connect(this->_impl.data(), &VerticalSpan::selectionChanged, this,
+    connect(this->_impl.data(), &impl::VerticalSpan::selectionChanged, this,
         &SciQLopVerticalSpan::selectionChanged);
 
-    connect(this->_impl.data(), &VerticalSpan::lower_border_selection_changed, this,
+    connect(this->_impl.data(), &impl::VerticalSpan::lower_border_selection_changed, this,
         &SciQLopVerticalSpan::lower_border_selection_changed);
-    connect(this->_impl.data(), &VerticalSpan::upper_border_selection_changed, this,
+    connect(this->_impl.data(), &impl::VerticalSpan::upper_border_selection_changed, this,
         &SciQLopVerticalSpan::upper_border_selection_changed);
 
-    connect(this->_impl.data(), &VerticalSpan::delete_requested, this,
+    connect(this->_impl.data(), &impl::VerticalSpan::delete_requested, this,
         &SciQLopVerticalSpan::delete_requested);
 }

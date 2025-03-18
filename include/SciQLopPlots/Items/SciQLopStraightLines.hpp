@@ -25,7 +25,7 @@
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
 
-class StraightLine : public SciQLopPlotItem<QCPItemStraightLine>, public SciQlopItemWithToolTip
+class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public impl::SciQlopItemWithToolTip
 {
     Q_OBJECT
 
@@ -40,7 +40,7 @@ public:
     inline StraightLine(QCustomPlot* plot, const double position, const bool movable = false,
                         Coordinates coordinates = Coordinates::Data,
                         Qt::Orientation orientation = Qt::Orientation::Vertical)
-            : SciQLopPlotItem<QCPItemStraightLine> { plot }
+            : impl::SciQLopPlotItem<QCPItemStraightLine> { plot }
             , m_orientation { orientation }
             , m_coordinates { coordinates }
     {

@@ -29,7 +29,9 @@
 #include <QRgb>
 #include <qcustomplot.h>
 
-class PixmapItem :public SciQLopPlotItem<QCPItemPixmap>, public SciQlopItemWithToolTip
+namespace impl
+{
+class PixmapItem : public impl::SciQLopPlotItem<QCPItemPixmap>, public impl::SciQlopItemWithToolTip
 {
     Q_OBJECT
 
@@ -38,8 +40,9 @@ public:
     Q_SIGNAL void moved(double new_x, double new_y);
 #endif // !BINDINGS_H
 
-    inline PixmapItem(QCustomPlot* plot, const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
-        : SciQLopPlotItem<QCPItemPixmap> { plot }
+    inline PixmapItem(QCustomPlot* plot, const QPixmap& pixmap, const QRectF& rect,
+                      bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+            : impl::SciQLopPlotItem<QCPItemPixmap> { plot }
     {
         this->setPixmap(pixmap);
         this->topLeft->setCoords(rect.topLeft());
@@ -56,21 +59,23 @@ public:
             this->bottomRight->setType(QCPItemPosition::ptAbsolute);
         }
     }
+
     virtual ~PixmapItem() { }
 
     virtual void move(double dx, double dy) override;
-
 };
+} // namespace impl
 
 /*!
  * \brief The SciQLopPixmapItem class
  */
-class SciQLopPixmapItem : public QObject
+class SciQLopPixmapItem : public SciQLopBoundingRectItemInterface
 {
     Q_OBJECT
 
-    QPointer<PixmapItem> m_item;
-    public:
+    QPointer<impl::PixmapItem> m_item;
+
+public:
     /*!
      * \brief SciQLopPixmapItem
      * \param plot The plot to which the item will be added
@@ -79,9 +84,13 @@ class SciQLopPixmapItem : public QObject
      * \param movable If the pixmap can be moved by the user
      * \param coordinates The coordinates system in which the rectangle is defined (Pixels or Data)
      */
-    SciQLopPixmapItem(SciQLopPlot* plot, const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+    SciQLopPixmapItem(SciQLopPlot* plot, const QPixmap& pixmap, const QRectF& rect,
+                      bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+            : SciQLopBoundingRectItemInterface(plot)
     {
-        m_item = new PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
+        if (plot == nullptr)
+            throw std::invalid_argument("plot cannot be nullptr");
+        else
+            m_item = new impl::PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
     }
 };
-

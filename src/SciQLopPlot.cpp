@@ -329,7 +329,7 @@ void SciQLopPlot::keyPressEvent(QKeyEvent* event)
     std::for_each(items.begin(), items.end(),
                   [event](auto item)
                   {
-                      if (auto sciItem = dynamic_cast<SciQLopItemWithKeyInteraction*>(item);
+                      if (auto sciItem = dynamic_cast<impl::SciQLopItemWithKeyInteraction*>(item);
                           sciItem != nullptr)
                       {
                           sciItem->keyPressEvent(event);
@@ -412,7 +412,7 @@ bool SciQLopPlot::_update_tracer(const QPointF& pos)
 bool SciQLopPlot::_update_mouse_cursor(QMouseEvent* event)
 {
     const auto item = itemAt(event->pos(), false);
-    if (auto sciItem = dynamic_cast<SciQLopPlotItemBase*>(item); sciItem != nullptr)
+    if (auto sciItem = dynamic_cast<impl::SciQLopPlotItemBase*>(item); sciItem != nullptr)
     {
         this->setCursor(sciItem->cursor(event));
         return true;
@@ -428,7 +428,7 @@ bool SciQLopPlot::_handle_tool_tip(QEvent* event)
         auto itm = itemAt(helpEvent->pos(), false);
         if (itm)
         {
-            if (auto itm_with_tt = dynamic_cast<SciQlopItemWithToolTip*>(itm); itm_with_tt)
+            if (auto itm_with_tt = dynamic_cast<impl::SciQlopItemWithToolTip*>(itm); itm_with_tt)
             {
                 QToolTip::showText(helpEvent->globalPos(), itm_with_tt->tooltip());
                 return true;

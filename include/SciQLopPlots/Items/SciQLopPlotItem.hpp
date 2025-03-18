@@ -20,9 +20,13 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <QTimer>
 #include <qcustomplot.h>
 
+namespace impl
+{
 class SciQLopPlotItemBase
 {
 public:
@@ -43,11 +47,15 @@ protected:
 
 public:
     SciQLopPlotItem(QCustomPlot* plot) : QCPAbstractItem_T { plot } { }
+
     virtual ~SciQLopPlotItem() { }
+
     inline bool movable() const noexcept { return this->_movable; }
+
     inline virtual void setMovable(bool movable) noexcept { this->_movable = movable; }
 
     virtual void move(double dx, double dy) = 0;
+
     inline virtual void replot(bool immediate = false)
     {
         if (immediate)
@@ -58,11 +66,11 @@ public:
             {
                 _queued_replot = true;
                 QTimer::singleShot(0,
-                    [this]()
-                    {
-                        this->layer()->replot();
-                        _queued_replot = false;
-                    });
+                                   [this]()
+                                   {
+                                       this->layer()->replot();
+                                       _queued_replot = false;
+                                   });
             }
         }
     }
@@ -72,21 +80,22 @@ public:
         this->_last_position = event->pos();
         event->accept();
     }
+
     inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
     {
         if (_movable and event->buttons() == Qt::LeftButton)
         {
             move(event->position().x() - this->_last_position.x(),
-                event->position().y() - this->_last_position.y());
+                 event->position().y() - this->_last_position.y());
         }
         this->_last_position = event->position();
         event->accept();
     }
+
     inline void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) override { }
 
     virtual QCursor cursor(QMouseEvent* event) const noexcept override { return Qt::ArrowCursor; }
 };
-
 
 class SciQLopItemWithKeyInteraction
 {
@@ -100,7 +109,165 @@ class SciQlopItemWithToolTip
 
 public:
     inline SciQlopItemWithToolTip() = default;
+
     inline SciQlopItemWithToolTip(const QString& tooltip) : _tooltip { tooltip } { }
+
     inline QString tooltip() const noexcept { return _tooltip; }
+
     inline void setToolTip(const QString& tooltip) noexcept { _tooltip = tooltip; }
+};
+
+} // namespace impl
+
+class SciQLopItemInterface : public QObject
+{
+    Q_OBJECT
+
+public:
+    SciQLopItemInterface(QObject* parent = nullptr) : QObject { parent } { }
+
+    inline virtual ~SciQLopItemInterface() = default;
+
+    inline virtual void set_visible(bool visible) { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual bool visible() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual Coordinates coordinates() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return Coordinates::Data;
+    }
+
+    inline virtual void set_coordinates(Coordinates coordinates) { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual QString tool_tip() const noexcept { return ""; }
+    inline virtual void set_tool_tip(const QString& toolTip) noexcept { WARN_ABSTRACT_METHOD; }
+
+protected:
+    inline virtual void replot() { WARN_ABSTRACT_METHOD; }
+
+    inline virtual impl::SciQLopPlotItemBase* impl()
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+};
+
+class SciQLopMovableItemInterface : public SciQLopItemInterface
+{
+    Q_OBJECT
+
+public:
+    SciQLopMovableItemInterface(QObject* parent = nullptr) : SciQLopItemInterface { parent } { }
+
+    inline virtual ~SciQLopMovableItemInterface() = default;
+
+    inline virtual void move(double dx, double dy) noexcept { WARN_ABSTRACT_METHOD; }
+
+    inline virtual void set_movable(bool movable) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual QPointF position() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    inline virtual void set_position(const QPointF& pos) noexcept { WARN_ABSTRACT_METHOD; }
+
+    inline virtual void set_position(double x, double y) noexcept
+    {
+        set_position(QPointF { x, y });
+    }
+};
+
+class SciQLopLineItemInterface : public SciQLopItemInterface
+{
+    Q_OBJECT
+
+public:
+    SciQLopLineItemInterface(QObject* parent = nullptr) : SciQLopItemInterface { parent } { }
+
+    inline virtual ~SciQLopLineItemInterface() = default;
+
+    inline virtual void set_color(const QColor& color) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual QColor color() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    inline virtual void set_line_width(double width) { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual double line_width() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+};
+
+class SciQLopBoundingRectItemInterface : public SciQLopMovableItemInterface
+{
+    Q_OBJECT
+
+public:
+    SciQLopBoundingRectItemInterface(QObject* parent = nullptr)
+            : SciQLopMovableItemInterface { parent }
+    {
+    }
+
+    inline virtual ~SciQLopBoundingRectItemInterface() = default;
+
+    inline virtual QRectF bounding_rectangle() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+};
+
+class SciQLopPolygonItemInterface : public SciQLopMovableItemInterface
+{
+    Q_OBJECT
+
+public:
+    SciQLopPolygonItemInterface(QObject* parent = nullptr) : SciQLopMovableItemInterface { parent }
+    {
+    }
+
+    inline virtual ~SciQLopPolygonItemInterface() = default;
+
+    inline virtual void set_brush(const QBrush& brush) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual QBrush brush() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    inline virtual void set_fill_color(const QColor& color) noexcept
+    {
+        QBrush brush = this->brush();
+        brush.setColor(color);
+        this->set_brush(brush);
+    }
+
+    [[nodiscard]] inline virtual QColor fill_color() const noexcept { return brush().color(); }
+
+    inline virtual void set_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual QPen pen() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    inline virtual QRectF bounding_rectangle() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
 };

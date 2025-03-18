@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,13 +19,30 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Items/SciQLopPixmapItem.hpp"
+#pragma once
 
-void impl::PixmapItem::move(double dx, double dy)
+/*Apply a function to a QPointer if it is not null and return the result or a default value
+*/
+inline auto qptr_apply_or(auto&& ptr, auto&& func) -> decltype(func(ptr))
 {
-    this->topLeft->setPixelPosition({ this->topLeft->pixelPosition().x() + dx, this->topLeft->pixelPosition().y() + dy });
-    this->bottomRight->setPixelPosition({ this->bottomRight->pixelPosition().x() + dx, this->bottomRight->pixelPosition().y() + dy });
-    this->replot();
-    emit moved(this->topLeft->coords().x(), this->topLeft->coords().y());
+    if (!ptr.isNull()) [[likely]]
+        return func(ptr);
+    else [[unlikely]]
+        return decltype(func(ptr)) {};
+}
+
+inline auto qptr_apply_or(auto&& ptr, auto&& func, auto&& default_value) -> decltype(func(ptr))
+{
+    if (!ptr.isNull()) [[likely]]
+        return func(ptr);
+    else [[unlikely]]
+        return default_value;
+}
+
+/* Apply a function to a QPointer if it is not null */
+inline auto qptr_apply(auto&& ptr, auto&& func) -> void
+{
+    if (!ptr.isNull()) [[likely]]
+        func(ptr);
 }
 

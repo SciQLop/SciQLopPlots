@@ -24,13 +24,14 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
-#include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopPlots/helpers.hpp"
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
 #include <qcustomplot.h>
 
-
+namespace impl
+{
 class TextItem : public SciQLopPlotItem<QCPItemText>
 {
     Q_OBJECT
@@ -41,8 +42,7 @@ public:
 #endif // !BINDINGS_H
 
     inline TextItem(QCustomPlot* plot, const QString& text, const QPointF& position,
-                     bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels)
+                    bool movable = false, Coordinates coordinates = Coordinates::Pixels)
             : SciQLopPlotItem<QCPItemText> { plot }
     {
         this->setMovable(movable);
@@ -58,13 +58,9 @@ public:
         QCPItemText::setText(text);
     }
 
-
-
     virtual ~TextItem();
 
     virtual void move(double dx, double dy) override;
-
-
 
     inline QPointF position() const noexcept { return QCPItemText::position->coords(); }
 
@@ -74,46 +70,43 @@ public:
         replot();
     }
 };
+}
 
-
-class SciQLopTextItem : public QObject
+class SciQLopTextItem : public SciQLopBoundingRectItemInterface
 {
     Q_OBJECT
 
-    QPointer<TextItem> m_item;
+    QPointer<impl::TextItem> m_item;
 
 public:
-
     SciQLopTextItem(SciQLopPlot* plot, const QString& text, const QPointF& position,
-                    bool movable = false,
-                    Coordinates coordinates = Coordinates::Pixels)
+                    bool movable = false, Coordinates coordinates = Coordinates::Pixels)
     {
-        if(plot==nullptr)
+        if (plot == nullptr)
             throw std::runtime_error("Plot is null");
         else
-            m_item = new TextItem(plot->qcp_plot(), text, position, movable, coordinates);
+            m_item = new impl::TextItem(plot->qcp_plot(), text, position, movable, coordinates);
     }
 
     virtual ~SciQLopTextItem() { }
 
-    void set_position(const QPointF& pos)
+    virtual inline void set_position(const QPointF& pos) noexcept override
     {
-        m_item->setPosition(pos);
+        qptr_apply(m_item, [&pos](auto& item) { item->setPosition(pos); });
     }
 
-    QPointF position() const
+    [[nodiscard]] virtual inline QPointF position() const noexcept override
     {
-        return m_item->position();
+        return qptr_apply_or(m_item, [](auto& item) { return item->position(); });
     }
 
     void set_text(const QString& text)
     {
-        m_item->setText(text);
+        qptr_apply(m_item, [&text](auto& item) { item->setText(text); });
     }
 
     QString text() const
     {
-        return m_item->text();
+        return qptr_apply_or(m_item, [](auto& item) { return item->text(); });
     }
-
 };
