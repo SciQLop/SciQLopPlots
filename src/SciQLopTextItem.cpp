@@ -19,22 +19,18 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Items/SciQLopShapesItems.hpp"
 
-EllipseItem::~EllipseItem() { }
+#include "SciQLopPlots/Items/SciQLopTextItem.hpp"
 
-void EllipseItem::move(double dx, double dy)
+TextItem::~TextItem()
 {
-    this->topLeft->setPixelPosition(
-        { this->topLeft->pixelPosition().x() + dx, this->topLeft->pixelPosition().y() + dy });
-    this->bottomRight->setPixelPosition({ this->bottomRight->pixelPosition().x() + dx,
-                                          this->bottomRight->pixelPosition().y() + dy });
-    this->replot();
-    Q_EMIT moved(this->topLeft->coords().x(), this->topLeft->coords().y());
+
 }
 
-void CurvedLineItem::move(double dx, double dy)
+void TextItem::move(double dx, double dy)
 {
-    Q_UNUSED(dx);
-    Q_UNUSED(dy);
+    QCPItemText::position->setPixelPosition({QCPItemText::position->pixelPosition().x() + dx,
+                                             QCPItemText::position->pixelPosition().y() + dy});
+    this->replot();
+    Q_EMIT moved(QCPItemText::position->key(), QCPItemText::position->value());
 }

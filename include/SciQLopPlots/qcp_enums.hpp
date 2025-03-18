@@ -171,6 +171,7 @@ inline ColorGradient from_qcp(QCPColorGradient::GradientPreset gradient)
     }
 }
 
+
 inline QCPColorGradient::GradientPreset to_qcp(ColorGradient gradient)
 {
     switch (gradient)
@@ -201,5 +202,62 @@ inline QCPColorGradient::GradientPreset to_qcp(ColorGradient gradient)
             return QCPColorGradient::gpHues;
         default:
             return QCPColorGradient::gpJet;
+    }
+}
+
+
+inline LineTermination from_qcp(QCPLineEnding::EndingStyle termination)
+{
+    switch (termination)
+    {
+        case QCPLineEnding::esNone:
+            return LineTermination::NoneTermination;
+        case QCPLineEnding::esFlatArrow:
+            return LineTermination::Arrow;
+        case QCPLineEnding::esSpikeArrow:
+            return LineTermination::SPikeArrow;
+        case QCPLineEnding::esLineArrow:
+            return LineTermination::LineArrow;
+        case QCPLineEnding::esBar:
+            return LineTermination::Bar;
+        case QCPLineEnding::esDisc:
+            return LineTermination::Circle;
+        case QCPLineEnding::esDiamond:
+            return LineTermination::Diamond;
+        case QCPLineEnding::esSquare:
+            return LineTermination::Square;
+        case QCPLineEnding::esHalfBar:
+            return LineTermination::HalfBar;
+        case QCPLineEnding::esSkewedBar:
+            return LineTermination::SkewedBar;
+        default:
+            return LineTermination::NoneTermination;
+    }
+}
+
+inline QCPLineEnding::EndingStyle to_qcp(LineTermination termination)
+{
+    switch (termination)
+    {
+        case LineTermination::Arrow:
+            return QCPLineEnding::esFlatArrow;
+        case LineTermination::SPikeArrow:
+            return QCPLineEnding::esSpikeArrow;
+        case LineTermination::LineArrow:
+            return QCPLineEnding::esLineArrow;
+        case LineTermination::Bar:
+            return QCPLineEnding::esBar;
+        case LineTermination::Circle:
+            return QCPLineEnding::esDisc;
+        case LineTermination::Diamond:
+            return QCPLineEnding::esDiamond;
+        case LineTermination::Square:
+            return QCPLineEnding::esSquare;
+        case LineTermination::HalfBar:
+            return QCPLineEnding::esHalfBar;
+        case LineTermination::SkewedBar:
+            return QCPLineEnding::esSkewedBar;
+        default:
+            return QCPLineEnding::esNone;
     }
 }

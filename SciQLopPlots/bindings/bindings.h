@@ -22,6 +22,7 @@
 #include <SciQLopPlots/Items/SciQLopVerticalSpan.hpp>
 #include <SciQLopPlots/Items/SciQLopPixmapItem.hpp>
 #include <SciQLopPlots/Items/SciQLopShapesItems.hpp>
+#include <SciQLopPlots/Items/SciQLopTextItem.hpp>
 #include <SciQLopPlots/Items/SciQLopStraightLines.hpp>
 #include <SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp>
 #include <SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp>

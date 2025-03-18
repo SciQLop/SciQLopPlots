@@ -192,3 +192,19 @@ enum class ColorGradient
 };
 ADD_ENUM(ColorGradient)
 Q_DECLARE_METATYPE(ColorGradient);
+
+enum class LineTermination
+{
+    NoneTermination,
+    Arrow,
+    SPikeArrow,
+    LineArrow,
+    Circle,
+    Square,
+    Diamond,
+    Bar,
+    HalfBar,
+    SkewedBar
+};
+ADD_ENUM(LineTermination)
+Q_DECLARE_METATYPE(LineTermination);

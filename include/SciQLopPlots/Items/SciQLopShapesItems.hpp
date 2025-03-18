@@ -24,6 +24,7 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/qcp_enums.hpp"
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
@@ -39,7 +40,7 @@ public:
 #endif // !BINDINGS_H
 
     inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, bool movable = false,
-                      Coordinates coordinates = Coordinates::Pixels)
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
             : SciQLopPlotItem<QCPItemEllipse> { plot }
     {
         this->setMovable(movable);
@@ -55,11 +56,12 @@ public:
         }
         this->topLeft->setCoords(boundingRectangle.topLeft());
         this->bottomRight->setCoords(boundingRectangle.bottomRight());
+        this->setToolTip(toolTip);
     }
 
     inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
-                      const QBrush& brush, bool movable = false,
-                      Coordinates coordinates = Coordinates::Pixels)
+                       const QBrush& brush, bool movable = false,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
             : EllipseItem { plot, boundingRectangle, movable, coordinates }
     {
         this->setPen(pen);
@@ -70,10 +72,14 @@ public:
 
     virtual void move(double dx, double dy) override;
 
-    inline QRectF boundingRectangle() const noexcept { return QRectF(topLeft->coords(), bottomRight->coords()); }
+    inline QRectF boundingRectangle() const noexcept
+    {
+        return QRectF(topLeft->coords(), bottomRight->coords());
+    }
+
     inline QPointF position() const noexcept { return boundingRectangle().center(); }
 
-    inline void setPos(const QPointF& pos) noexcept
+    inline void setPosition(const QPointF& pos) noexcept
     {
         QRectF rect = boundingRectangle();
         rect.moveCenter(pos);
@@ -81,8 +87,63 @@ public:
         bottomRight->setCoords(rect.bottomRight());
         replot();
     }
+};
+
+
+class CurvedLineItem : public SciQLopPlotItem<QCPItemCurve>, public SciQlopItemWithToolTip
+{
+    Q_OBJECT
+
+public:
+    inline CurvedLineItem(QCustomPlot* plot, const QPointF& start, const QPointF& stop,
+                          LineTermination startTerminator = LineTermination::NoneTermination,
+                          LineTermination stopTerminator = LineTermination::Arrow,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+            : SciQLopPlotItem<QCPItemCurve> { plot }
+    {
+        this->setMovable(false);
+        if (coordinates == Coordinates::Data)
+        {
+            this->start->setType(QCPItemPosition::ptPlotCoords);
+            this->end->setType(QCPItemPosition::ptPlotCoords);
+        }
+        else
+        {
+            this->start->setType(QCPItemPosition::ptAbsolute);
+            this->end->setType(QCPItemPosition::ptAbsolute);
+        }
+        this->start->setCoords(start);
+        this->end->setCoords(stop);
+        // from QCP doc : The head corresponds to the end position. ¯\_(ツ)_/¯
+        this->setTail(to_qcp(startTerminator));
+        this->setHead(to_qcp(stopTerminator));
+        this->setToolTip(toolTip);
+    }
+
+    virtual ~CurvedLineItem() = default;
+
+    virtual void move(double dx, double dy) override;
+
+    [[nodiscard]] inline QPointF startPos() const noexcept { return start->coords(); }
+    [[nodiscard]] inline QPointF stopPos() const noexcept { return end->coords(); }
+
+    inline void setStartPos(const QPointF& pos) noexcept { start->setCoords(pos); }
+    inline void setStopPos(const QPointF& pos) noexcept { end->setCoords(pos); }
+
+    [[nodiscard]] inline LineTermination startTermination() const noexcept { return from_qcp(tail().style()); }
+    [[nodiscard]] inline LineTermination stopTermination() const noexcept { return from_qcp(head().style()); }
+
+    inline void setStartTermination(LineTermination termination) noexcept { setTail(to_qcp(termination)); }
+    inline void setStopTermination(LineTermination termination) noexcept { setHead(to_qcp(termination)); }
+
+    [[nodiscard]] inline QPointF startDirPos() const noexcept { return startDir->coords(); }
+    [[nodiscard]] inline QPointF stopDirPos() const noexcept { return endDir->coords(); }
+
+    inline void setStartDirPos(const QPointF& pos) noexcept { startDir->setCoords(pos); }
+    inline void setStopDirPos(const QPointF& pos) noexcept { endDir->setCoords(pos); }
 
 };
+
 
 /*!
  * \brief The SciQLopPixmapItem class
@@ -102,39 +163,103 @@ public:
      * \param coordinates The coordinates system in which the rectangle is defined (Pixels or Data)
      */
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, bool movable = false,
-                      Coordinates coordinates = Coordinates::Pixels)
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
     {
-        m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates);
+        if (plot == nullptr)
+            throw std::invalid_argument("plot is nullptr");
+        else
+            m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates,
+                                     toolTip);
     }
 
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
-                      const QBrush& brush, bool movable = false,
-                      Coordinates coordinates = Coordinates::Pixels)
+                       const QBrush& brush, bool movable = false,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
     {
-        m_item
-            = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable, coordinates);
+        if (plot == nullptr)
+            throw std::invalid_argument("plot is nullptr");
+        else
+            m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable,
+                                     coordinates, toolTip);
     }
 
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
-                      qreal lineWidth, const QColor& fillColor, bool movable = false,
-                      Coordinates coordinates = Coordinates::Pixels)
+                       qreal lineWidth, const QColor& fillColor, bool movable = false,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
     {
-        m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
-                                QBrush(fillColor), movable, coordinates);
+        if (plot == nullptr)
+            throw std::invalid_argument("plot is nullptr");
+        else
+            m_item
+                = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
+                                  QBrush(fillColor), movable, coordinates, toolTip);
     }
 
     ~SciQLopEllipseItem() = default;
 
-    QPen pen() const noexcept { return m_item->pen(); }
+    [[nodiscard]] QPen pen() const noexcept { return m_item->pen(); }
 
-    QBrush brush() const noexcept { return m_item->brush(); }
+    [[nodiscard]] QBrush brush() const noexcept { return m_item->brush(); }
 
-    inline void setPen(const QPen& pen) noexcept { m_item->setPen(pen); }
+    inline void set_pen(const QPen& pen) noexcept { m_item->setPen(pen); }
 
-    inline void setBrush(const QBrush& brush) noexcept { m_item->setBrush(brush); }
+    inline void set_brush(const QBrush& brush) noexcept { m_item->setBrush(brush); }
 
-    inline QPointF position() const noexcept { return m_item->position(); }
-    inline void setPos(const QPointF& pos) noexcept { m_item->setPos(pos); }
-    inline void setPos(double x, double y) noexcept { m_item->setPos(QPointF(x, y)); }
-    inline QRectF boundingRectangle() const noexcept { return m_item->boundingRectangle(); }
+    [[nodiscard]] inline QPointF position() const noexcept { return m_item->position(); }
+
+    inline void set_position(const QPointF& pos) noexcept { m_item->setPosition(pos); }
+
+    inline void set_position(double x, double y) noexcept { m_item->setPosition(QPointF(x, y)); }
+
+    [[nodiscard]] inline QRectF bounding_rectangle() const noexcept
+    {
+        return m_item->boundingRectangle();
+    }
+
+    [[nodiscard]] inline QString tool_tip() const noexcept { return m_item->tooltip(); }
+
+    inline void set_tool_tip(const QString& toolTip) noexcept { m_item->setToolTip(toolTip); }
+};
+
+
+class SciQLopCurvedLineItem : public QObject
+{
+    Q_OBJECT
+
+    QPointer<CurvedLineItem> m_item;
+
+public:
+
+    SciQLopCurvedLineItem(SciQLopPlot* plot, const QPointF& start, const QPointF& stop,
+                          LineTermination startTerminator = LineTermination::NoneTermination,
+                          LineTermination stopTerminator = LineTermination::Arrow,
+                          Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+    {
+        if (plot == nullptr)
+            throw std::invalid_argument("plot is nullptr");
+        else
+            m_item = new CurvedLineItem(plot->qcp_plot(), start, stop, startTerminator,
+                                        stopTerminator, coordinates, toolTip);
+    }
+
+    ~SciQLopCurvedLineItem() = default;
+
+    [[nodiscard]] inline QPointF start_position() const noexcept { return m_item->startPos(); }
+    [[nodiscard]] inline QPointF stop_position() const noexcept { return m_item->stopPos(); }
+
+    inline void set_start_position(const QPointF& pos) noexcept { m_item->setStartPos(pos); }
+    inline void set_stop_position(const QPointF& pos) noexcept { m_item->setStopPos(pos); }
+
+    [[nodiscard]] inline LineTermination start_termination() const noexcept { return m_item->startTermination(); }
+    [[nodiscard]] inline LineTermination stop_termination() const noexcept { return m_item->stopTermination(); }
+
+    inline void set_start_termination(LineTermination termination) noexcept { m_item->setStartTermination(termination); }
+    inline void set_stop_termination(LineTermination termination) noexcept { m_item->setStopTermination(termination); }
+
+    [[nodiscard]] inline QPointF start_dir_position() const noexcept { return m_item->startDirPos(); }
+    [[nodiscard]] inline QPointF stop_dir_position() const noexcept { return m_item->stopDirPos(); }
+
+    inline void set_start_dir_position(const QPointF& pos) noexcept { m_item->setStartDirPos(pos); }
+    inline void set_stop_dir_position(const QPointF& pos) noexcept { m_item->setStopDirPos(pos); }
+
 };
