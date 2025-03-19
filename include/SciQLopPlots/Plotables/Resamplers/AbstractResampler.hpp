@@ -138,7 +138,7 @@ public:
             QMutexLocker locker(&_next_data_mutex);
             _next_data
                 = data_t { std::move(x), std::move(y), std::move(maybe_z)..., data_x_range, true };
-            static_cast<U*>(this)->resample(data_x_range);
+            _resample();
         }
     }
 
