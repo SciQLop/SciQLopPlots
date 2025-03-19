@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/MultiPlots/AxisSynchronizer.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
 void _set_axis_range(const SciQLopPlotRange& range, const QPointer<SciQLopPlotInterface>& plot,
                      AxisType m_sync_axis)
@@ -31,8 +32,8 @@ void _set_axis_range(const SciQLopPlotRange& range, const QPointer<SciQLopPlotIn
 
 void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
-    SciQLopPlotCollectionBehavior::_update_plots(
-        plots,
+    SciQLopPlotCollectionBehavior::_update_collection(
+        _plots, plots,
         [this](SciQLopPlotInterface* plot)
         {
             if (auto axis = plot->axis(this->m_sync_axis))
@@ -47,9 +48,27 @@ void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>
         });
 }
 
+
 void AxisSynchronizer::plotAdded(SciQLopPlotInterface* plot)
 {
     _set_axis_range(_last_range, plot, m_sync_axis);
+}
+
+void AxisSynchronizer::panelAdded(SciQLopPlotPanelInterface* panel)
+{
+    if (this->m_sync_axis == AxisType::TimeAxis)
+    {
+        panel->set_time_axis_range(_last_range);
+        connect(panel, &SciQLopPlotPanelInterface::time_range_changed, this,
+                &AxisSynchronizer::set_axis_range);
+    }
+}
+
+void AxisSynchronizer::panelRemoved(SciQLopPlotPanelInterface* panel)
+{
+    if (this->m_sync_axis == AxisType::TimeAxis)
+        disconnect(panel, &SciQLopPlotPanelInterface::time_range_changed, this,
+                   &AxisSynchronizer::set_axis_range);
 }
 
 void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)

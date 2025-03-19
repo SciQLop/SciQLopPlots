@@ -73,6 +73,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/SciQLopPlotAxis.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp',
+    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp',
     project_source_root + '/include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp',

@@ -20,9 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 #include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
@@ -34,9 +34,10 @@ class SciQLopPlotContainer;
 class SciQLopPlot;
 class PlaceHolderManager;
 
-class SciQLopMultiPlotPanel : public QScrollArea, public SciQLopPlotCollectionInterface
+class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
 {
     Q_OBJECT
+
     SciQLopPlotContainer* _container = nullptr;
     std::map<QString, PlotDragNDropCallback*> _accepted_mime_types;
     PlotDragNDropCallback* _current_callback = nullptr;
@@ -102,7 +103,9 @@ protected:
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
-              ::GraphType graph_type = ::GraphType::Line, ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1) Q_DECL_OVERRIDE;
+              ::GraphType graph_type = ::GraphType::Line,
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              int index = -1) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
@@ -112,7 +115,9 @@ protected:
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(),::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1) Q_DECL_OVERRIDE;
+              QList<QColor> colors = QList<QColor>(),
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              int index = -1) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -132,11 +137,25 @@ public:
     Q_PROPERTY(bool empty READ empty FINAL);
 
     SciQLopMultiPlotPanel(QWidget* parent = nullptr, bool synchronize_x = true,
-                          bool synchronize_time = false);
+                          bool synchronize_time = false,
+                          Qt::Orientation orientation = Qt::Vertical);
 
     virtual void replot(bool immediate = false) Q_DECL_OVERRIDE;
 
     inline QUuid uuid() const { return _uuid; }
+
+    virtual void add_panel(SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
+
+    virtual void insert_panel(int index, SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
+
+    virtual void remove_panel(SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
+
+    virtual void move_panel(int from, int to) Q_DECL_OVERRIDE;
+
+    virtual inline void move_panel(SciQLopPlotPanelInterface* panel, int to)Q_DECL_OVERRIDE
+    {
+        WARN_ABSTRACT_METHOD
+    }
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
@@ -200,20 +219,6 @@ public:
     virtual QList<QColor> color_palette() const noexcept override;
 
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
-
-
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
-    Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
-    Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
-    Q_SIGNAL void plot_moved(SciQLopPlotInterface* plot, int to);
-    Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
-    Q_SIGNAL void selectionChanged(bool selected);
-    Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;

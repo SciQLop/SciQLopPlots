@@ -84,7 +84,8 @@ VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent
 
 void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
-    SciQLopPlotCollectionBehavior::_update_plots(
+    SciQLopPlotCollectionBehavior::_update_collection(
+        _plots,
         plots,
         [this](SciQLopPlotInterface* plot)
         {

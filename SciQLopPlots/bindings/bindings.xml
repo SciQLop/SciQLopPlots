@@ -455,13 +455,19 @@
             </modify-argument>
         </modify-function>
     </object-type>
+
+    <object-type name="SciQLopPlotPanelInterface" parent-management="yes"/>
+
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
-        <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool)">
+        <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool,Qt::Orientation)">
             <modify-argument index="2">
                 <rename to="synchronize_x"/>
             </modify-argument>
             <modify-argument index="3">
                 <rename to="synchronize_time"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="orientation"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="add_plot(SciQLopPlotInterface*)">

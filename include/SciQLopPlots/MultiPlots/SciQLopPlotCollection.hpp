@@ -35,6 +35,8 @@
 
 Q_DECLARE_METATYPE(QList<SciQLopPlotInterface*>)
 
+class SciQLopPlotPanelInterface;
+
 class SciQLopPlotCollectionBehavior : public QObject
 {
     Q_OBJECT
@@ -42,29 +44,29 @@ class SciQLopPlotCollectionBehavior : public QObject
 protected:
     QList<QPointer<SciQLopPlotInterface>> _plots;
 
-    void _update_plots(const auto& plots, auto&& connect, auto&& disconnect)
+    void _update_collection(auto & collection, const auto& items, auto&& connect, auto&& disconnect)
     {
-        for (auto& plot : plots)
+        for (auto& item : items)
         {
-            if (!plot.isNull())
+            if (!item.isNull())
             {
-                if (!_plots.contains(plot))
+                if (!collection.contains(item))
                 {
-                    connect(plot); // #SciQLop-check-ignore-connect
+                    connect(item); // #SciQLop-check-ignore-connect
                 }
             }
         }
-        for (auto& plot : _plots)
+        for (auto& item : collection)
         {
-            if (!plot.isNull())
+            if (!item.isNull())
             {
-                if (!plots.contains(plot))
+                if (!items.contains(item))
                 {
-                    disconnect(plot);
+                    disconnect(item);
                 }
             }
         }
-        _plots = plots;
+        collection = items;
     }
 
 public:
@@ -76,6 +78,10 @@ public:
     }
 
     inline virtual Q_SLOT void plotAdded(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
+    inline virtual Q_SLOT void plotRemoved(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
+    inline  virtual Q_SLOT  void panelAdded(SciQLopPlotPanelInterface* panel) {WARN_ABSTRACT_METHOD;}
+    inline  virtual Q_SLOT  void panelRemoved(SciQLopPlotPanelInterface* panel) {WARN_ABSTRACT_METHOD;}
+
 };
 
 class SciQLopPlotCollectionInterface
@@ -140,13 +146,10 @@ public:
     inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void add_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
-
     inline virtual void insert_plot(int index, SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
-
     inline virtual void remove_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void move_plot(int from, int to) { WARN_ABSTRACT_METHOD; }
-
     inline virtual void move_plot(SciQLopPlotInterface* plot, int to) { WARN_ABSTRACT_METHOD; }
 
     inline virtual void clear() { WARN_ABSTRACT_METHOD; }

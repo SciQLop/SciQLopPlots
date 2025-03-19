@@ -41,24 +41,31 @@
 #include <QKeyEvent>
 
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x,
-                                             bool synchronize_time)
-        : QScrollArea { nullptr }, _uuid { QUuid::createUuid() }
+                                             bool synchronize_time, Qt::Orientation orientation)
+        : SciQLopPlotPanelInterface { parent }, _uuid { QUuid::createUuid() }
 {
-    _container = new SciQLopPlotContainer(this);
-    _place_holder_manager = new PlaceHolderManager(this);
+    _container = new SciQLopPlotContainer(this, orientation);
     connect(_container, &SciQLopPlotContainer::plot_list_changed, this,
             &SciQLopMultiPlotPanel::plot_list_changed);
-    connect(_container, &SciQLopPlotContainer::plot_added, this, &SciQLopMultiPlotPanel::plot_added);
+    connect(_container, &SciQLopPlotContainer::plot_added, this,
+            &SciQLopMultiPlotPanel::plot_added);
     connect(_container, &SciQLopPlotContainer::plot_removed, this,
             &SciQLopMultiPlotPanel::plot_removed);
     connect(_container, &SciQLopPlotContainer::plot_inserted, this,
             &SciQLopMultiPlotPanel::plot_inserted);
-    connect(_container, &SciQLopPlotContainer::plot_moved, this, &SciQLopMultiPlotPanel::plot_moved);
+    connect(_container, &SciQLopPlotContainer::plot_moved, this,
+            &SciQLopMultiPlotPanel::plot_moved);
 
     setWidget(_container);
     this->setWidgetResizable(true);
 
-    ::register_behavior<VPlotsAlign>(_container);
+    // Vertical layout is the default layout where plots are aligned vertically
+    // and drag&drop is enabled
+    if (orientation == Qt::Vertical)
+    {
+        ::register_behavior<VPlotsAlign>(_container);
+        _place_holder_manager = new PlaceHolderManager(this);
+    }
     if (synchronize_x)
         ::register_behavior<XAxisSynchronizer>(_container);
     if (synchronize_time)
@@ -77,6 +84,26 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
 void SciQLopMultiPlotPanel::replot(bool immediate)
 {
     _container->replot(immediate);
+}
+
+void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface *panel)
+{
+    _container->addWidget(panel);
+}
+
+void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface *panel)
+{
+    _container->insertWidget(index, panel);
+}
+
+void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface *panel)
+{
+    _container->removeWidget(panel, true);
+}
+
+void SciQLopMultiPlotPanel::move_panel(int from, int to)
+{
+
 }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)

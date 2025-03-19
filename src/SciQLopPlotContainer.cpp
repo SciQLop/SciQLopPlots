@@ -23,10 +23,15 @@
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
-SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent) : QSplitter(Qt::Vertical, parent)
+SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent, Qt::Orientation orientation)
+        : QSplitter(orientation, parent)
 {
-    this->setLayout(new QVBoxLayout(this));
+    if (orientation == Qt::Vertical)
+        this->setLayout(new QVBoxLayout(this));
+    else
+        this->setLayout(new QHBoxLayout(this));
     this->setContentsMargins(0, 0, 0, 0);
     this->layout()->setContentsMargins(0, 0, 0, 0);
     this->layout()->setSpacing(0);
@@ -39,7 +44,7 @@ SciQLopPlotContainer::~SciQLopPlotContainer() { }
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
     QSplitter::insertWidget(index, widget);
-    if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
+    if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget))
     {
         if (plot->color_palette().empty())
             plot->set_color_palette(_color_palette);
@@ -49,6 +54,11 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
         connect(
             plot, &SciQLopPlotInterface::destroyed, this, [this, plot]() { remove_plot(plot); },
             Qt::QueuedConnection);
+    }
+    else if(auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(widget))
+    {
+        emit panel_added(panel);
+        emit panel_inserted(panel, index);
     }
 }
 
@@ -132,6 +142,14 @@ SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
             &SciQLopPlotCollectionBehavior::updatePlotList);
     connect(this, &SciQLopPlotContainer::plot_added, behavior,
             &SciQLopPlotCollectionBehavior::plotAdded);
+    connect(this, &SciQLopPlotContainer::plot_removed, behavior,
+            &SciQLopPlotCollectionBehavior::plotRemoved);
+
+    connect(this, &SciQLopPlotContainer::panel_added, behavior,
+            &SciQLopPlotCollectionBehavior::panelAdded);
+    connect(this, &SciQLopPlotContainer::panel_removed, behavior,
+            &SciQLopPlotCollectionBehavior::panelRemoved);
+
     return behavior;
 }
 

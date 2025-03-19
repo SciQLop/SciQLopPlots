@@ -25,6 +25,7 @@
 #include "SciQLopPlotCollection.hpp"
 
 class SciQLopPlotInterface;
+class SciQLopPlotPanelInterface;
 
 class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInterface
 {
@@ -47,7 +48,7 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
 public:
     Q_PROPERTY(bool empty READ empty FINAL);
 
-    SciQLopPlotContainer(QWidget* parent = nullptr);
+    SciQLopPlotContainer(QWidget* parent = nullptr, Qt::Orientation orientation = Qt::Vertical);
     virtual ~SciQLopPlotContainer();
 
     void insertWidget(int index, QWidget* widget);
@@ -184,5 +185,10 @@ signals:
     Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_moved(SciQLopPlotInterface* plot, int to);
     Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
+
+    Q_SIGNAL void panel_added(SciQLopPlotPanelInterface* panel);
+    Q_SIGNAL void panel_removed(SciQLopPlotPanelInterface* panel);
+    Q_SIGNAL void panel_moved(SciQLopPlotPanelInterface* panel, int to);
+    Q_SIGNAL void panel_inserted(SciQLopPlotPanelInterface* panel, int at);
 
 };

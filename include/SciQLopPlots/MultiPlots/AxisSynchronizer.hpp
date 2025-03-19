@@ -23,6 +23,8 @@
 
 #include "SciQLopPlotCollection.hpp"
 
+class SciQLopPlotPanelInterface;
+
 class AxisSynchronizer : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
@@ -30,6 +32,7 @@ class AxisSynchronizer : public SciQLopPlotCollectionBehavior
 protected:
     SciQLopPlotRange _last_range;
     AxisType m_sync_axis = AxisType::XAxis;
+
 
 public:
     AxisSynchronizer(AxisType axis, QObject* parent = nullptr)
@@ -39,6 +42,8 @@ public:
 
     Q_SLOT virtual void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
     Q_SLOT virtual void plotAdded(SciQLopPlotInterface* plot) override;
+    Q_SLOT virtual void panelAdded(SciQLopPlotPanelInterface* panel) override;
+    Q_SLOT virtual void panelRemoved(SciQLopPlotPanelInterface* panel) override;
     Q_SLOT virtual void set_axis_range(const SciQLopPlotRange& range);
 
 #ifdef BINDINGS_H
