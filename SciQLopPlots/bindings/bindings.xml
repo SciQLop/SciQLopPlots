@@ -125,6 +125,8 @@
             </inject-code>
         </add-function>
     </value-type>
+
+    <object-type name="SciQLopGraphComponentInterface" parent-management="yes"/>
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
     <object-type name="SciQLopPlottableInterface" parent-management="yes"/>
     <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
