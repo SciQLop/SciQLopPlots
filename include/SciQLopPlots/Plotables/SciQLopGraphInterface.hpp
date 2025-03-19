@@ -30,6 +30,7 @@
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 
 #include <QColor>
+#include <QObjectBindableProperty>
 #include <QList>
 #include <QObject>
 #include <QWidget>
@@ -46,6 +47,7 @@ protected:
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
+    Q_PROPERTY(QList<PyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
 
     SciQLopPlottableInterface(QObject* parent = nullptr) : QObject(parent) { }
 
@@ -75,8 +77,12 @@ public:
 
     virtual QList<PyBuffer> data() const noexcept
     {
-        WARN_ABSTRACT_METHOD;
-        return QList<PyBuffer>();
+        return m_data;
+    }
+
+    virtual QBindable<QList<PyBuffer>> bindable_data() const noexcept
+    {
+        return QBindable<QList<PyBuffer>>(&m_data);
     }
 
     virtual void set_selected(bool selected) noexcept { WARN_ABSTRACT_METHOD; }
@@ -135,7 +141,10 @@ public:
         return qobject_cast<QWidget*>(parent())->size();
     }
 
-#ifndef BINDINGS_H
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void name_changed(const QString& name);
@@ -146,7 +155,9 @@ public:
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
     Q_SIGNAL void request_rescale();
-#endif
+
+    protected:
+    Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<PyBuffer>, m_data, QOverload<const QList<PyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };
 
 class SciQLopGraphInterface : public SciQLopPlottableInterface
