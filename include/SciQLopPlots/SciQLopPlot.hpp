@@ -53,7 +53,10 @@ class SciQLopPlot : public QCustomPlot
     SciQLopColorMap* m_color_map = nullptr;
 
 public:
-#ifndef BINDINGS_H
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void scroll_factor_changed(double factor);
     Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
@@ -62,7 +65,8 @@ public:
     Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void plotables_list_changed();
     Q_SIGNAL void resized(QSize size);
-#endif
+
+public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
 
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;

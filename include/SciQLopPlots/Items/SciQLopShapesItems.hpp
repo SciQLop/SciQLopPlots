@@ -39,9 +39,6 @@ class EllipseItem : public impl::SciQLopPlotItem<QCPItemEllipse>,
     Q_OBJECT
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_x, double new_y);
-#endif // !BINDINGS_H
 
     inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, bool movable = false,
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
@@ -91,6 +88,13 @@ public:
         bottomRight->setCoords(rect.bottomRight());
         replot();
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void moved(double new_x, double new_y);
+
 };
 
 class CurvedLineItem : public impl::SciQLopPlotItem<QCPItemCurve>,

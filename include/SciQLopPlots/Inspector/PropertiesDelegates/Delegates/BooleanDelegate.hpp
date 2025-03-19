@@ -37,8 +37,10 @@ public:
     void set_value(const bool value);
     bool value() const;
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void value_changed(bool value);
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void value_changed(bool value);
 
 };

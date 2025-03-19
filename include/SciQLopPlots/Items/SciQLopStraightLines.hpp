@@ -33,9 +33,6 @@ class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public i
     Coordinates m_coordinates;
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_position);
-#endif // !BINDINGS_H
 
     inline StraightLine(QCustomPlot* plot, const double position, const bool movable = false,
                         Coordinates coordinates = Coordinates::Data,
@@ -78,6 +75,12 @@ public:
 
     void set_line_width(double width);
     [[nodiscard]] double line_width() const;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void moved(double new_position);
 };
 
 /*!

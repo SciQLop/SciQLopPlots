@@ -38,7 +38,11 @@ public:
     void setGradient(ColorGradient gradient);
     ColorGradient gradient() const;
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void gradientChanged(ColorGradient gradient);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void gradientChanged(ColorGradient gradient);
+
 };

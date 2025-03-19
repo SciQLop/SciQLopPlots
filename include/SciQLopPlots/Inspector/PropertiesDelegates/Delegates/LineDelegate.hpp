@@ -42,11 +42,15 @@ public:
     LineDelegate(QPen pen, GraphLineStyle style,GraphMarkerShape marker_shape, QWidget* parent = nullptr);
     virtual ~LineDelegate() = default;
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void colorChanged(const QColor& color);
     Q_SIGNAL void widthChanged(int width);
     Q_SIGNAL void styleChanged(GraphLineStyle style);
     Q_SIGNAL void penChanged(const QPen& pen);
     Q_SIGNAL void markerShapeChanged(GraphMarkerShape shape);
-#endif
+
 };

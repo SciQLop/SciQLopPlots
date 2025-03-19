@@ -40,8 +40,11 @@ public:
 
     void set_visible(bool visible);
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void visibility_changed(bool value);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void visibility_changed(bool value);
 
 };

@@ -48,11 +48,6 @@ protected:
     virtual void removeObject(SciQLopPlotInterface* plot) override;
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void selection_changed(bool);
-    Q_SIGNAL void delete_requested();
-#endif
 
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
         QColor color = QColor(100, 100, 100)
@@ -141,9 +136,14 @@ public:
 
     [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
 
-
     inline void show() { set_visible(true); }
-
-
     inline void hide() { set_visible(false); }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
+    Q_SIGNAL void selection_changed(bool);
+    Q_SIGNAL void delete_requested();
 };

@@ -41,9 +41,13 @@ public:
     void setColor(const QColor& color);
     QColor color() const;
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void colorChanged(const QColor& color);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void colorChanged(const QColor& color);
+
 
 protected:
     Q_SLOT void pick_color();

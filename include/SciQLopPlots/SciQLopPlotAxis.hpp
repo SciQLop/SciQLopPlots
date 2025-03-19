@@ -76,14 +76,18 @@ public:
     void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
     void decouple_range_from(SciQLopPlotAxisInterface* other) noexcept;
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
     Q_SIGNAL void selection_changed(bool selected);
-#endif
+
 };
 
 
@@ -162,7 +166,11 @@ public:
     QCPAxis* qcp_axis() const noexcept override;
     QCPColorScale* qcp_colorscale() const noexcept;
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void color_gradient_changed(ColorGradient gradient);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void color_gradient_changed(ColorGradient gradient);
+
 };

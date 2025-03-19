@@ -39,7 +39,11 @@ public:
 
     void setMarkerShape(GraphMarkerShape shape);
     GraphMarkerShape markerShape() const;
-#ifndef BINDINGS_H
-    Q_SIGNAL void markerShapeChanged(GraphMarkerShape shape);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void markerShapeChanged(GraphMarkerShape shape);
+
 };

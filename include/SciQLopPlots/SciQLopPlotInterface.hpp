@@ -374,7 +374,11 @@ public:
     }
 
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void scroll_factor_changed(double factor);
     Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
@@ -385,7 +389,6 @@ public:
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();
-#endif
 
 protected:
     inline virtual QList<SciQLopPlotAxisInterface*> axes_to_rescale() const noexcept

@@ -85,11 +85,14 @@ public:
     virtual QList<PyBuffer> get_data(QList<PyBuffer> values);
 
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
     Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
-#endif
 
 protected:
     void set_range(SciQLopPlotRange new_range) noexcept;
@@ -202,9 +205,12 @@ public:
     inline void set_callable(GetDataPyCallable&& callable) { m_callable_wrapper->set_callable(std::move(callable)); }
     inline GetDataPyCallable callable() const { return m_callable_wrapper->callable(); }
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
     Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
-#endif
 };

@@ -202,7 +202,11 @@ public:
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
 
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
     Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
@@ -210,7 +214,6 @@ public:
     Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
     Q_SIGNAL void selectionChanged(bool selected);
     Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
-#endif // BINDINGS_H
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;

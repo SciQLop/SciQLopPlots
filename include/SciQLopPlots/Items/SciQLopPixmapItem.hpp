@@ -36,9 +36,6 @@ class PixmapItem : public impl::SciQLopPlotItem<QCPItemPixmap>, public impl::Sci
     Q_OBJECT
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_x, double new_y);
-#endif // !BINDINGS_H
 
     inline PixmapItem(QCustomPlot* plot, const QPixmap& pixmap, const QRectF& rect,
                       bool movable = false, Coordinates coordinates = Coordinates::Pixels)
@@ -63,6 +60,12 @@ public:
     virtual ~PixmapItem() { }
 
     virtual void move(double dx, double dy) override;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void moved(double new_x, double new_y);
 };
 } // namespace impl
 

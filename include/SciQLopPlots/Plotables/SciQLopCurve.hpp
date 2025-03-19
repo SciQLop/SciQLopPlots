@@ -46,10 +46,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     void _setCurveData(QList<QVector<QCPCurveData>> data);
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void _setCurveDataSig(QList<QVector<QCPCurveData>> data);
-#endif // !BINDINGS_H
-
     void clear_curves(bool curve_already_removed = false);
     void clear_resampler();
     void create_resampler(const QStringList& labels);
@@ -94,6 +90,13 @@ public:
     virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
 
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
+
+private:
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void _setCurveDataSig(QList<QVector<QCPCurveData>> data);
 };
 
 class SciQLopCurveFunction : public SciQLopCurve, public SciQLopFunctionGraph

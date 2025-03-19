@@ -58,8 +58,12 @@ public:
 
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
     Q_SIGNAL void top_level_nodes_list_changed();
-#endif // !BINDINGS_H
+
 };

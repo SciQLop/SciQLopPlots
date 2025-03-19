@@ -56,8 +56,12 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void visibility_changed(bool value);
     Q_SIGNAL void position_changed(const QPointF& value);
-#endif
+
 };

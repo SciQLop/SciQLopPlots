@@ -137,7 +137,10 @@ public:
     }
 
 
-#ifndef BINDINGS_H
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void plottable_created(QCPAbstractPlottable*);
-#endif // BINDINGS_H
+
 };

@@ -39,9 +39,8 @@ class VerticalSpanBorder : public impl::SciQLopPlotItem<QCPItemStraightLine>,
     Q_OBJECT
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_position);
-#endif
+
+
     inline VerticalSpanBorder(QCustomPlot* plot, double x, bool do_not_replot = false)
             : impl::SciQLopPlotItem<QCPItemStraightLine> { plot }
     {
@@ -92,6 +91,13 @@ public:
             return Qt::SizeHorCursor;
         return Qt::ArrowCursor;
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void moved(double new_position);
+
 };
 
 class VerticalSpan : public impl::SciQLopPlotItem<QCPItemRect>,
@@ -173,12 +179,6 @@ class VerticalSpan : public impl::SciQLopPlotItem<QCPItemRect>,
     void border2_selection_changed(bool select);
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void lower_border_selection_changed(bool);
-    Q_SIGNAL void upper_border_selection_changed(bool);
-    Q_SIGNAL void delete_requested();
-#endif
 
     VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot = false,
                  bool immediate_replot = false);
@@ -293,10 +293,19 @@ public:
         }
         SciQLopPlotItem::replot(immediate);
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
+    Q_SIGNAL void lower_border_selection_changed(bool);
+    Q_SIGNAL void upper_border_selection_changed(bool);
+    Q_SIGNAL void delete_requested();
+
 };
 
 } // namespace impl
-
 
 /*! \brief Vertical span that can be added to a plot
  *
@@ -319,16 +328,14 @@ protected:
         qptr_apply(_impl, [&selected](auto& item) { item->select_upper_border(selected); });
     }
 
-#ifndef BINDINGS_H
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
-#endif
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void selectionChanged(bool);
-    Q_SIGNAL void delete_requested();
-#endif
     /*! \brief SciQLopVerticalSpan
      *
      * \param plot The plot where the vertical span will be added
@@ -448,4 +455,11 @@ public:
     {
         qptr_apply(_impl, [](auto& item) { item->replot(); });
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void selectionChanged(bool);
+    Q_SIGNAL void delete_requested();
 };

@@ -36,7 +36,11 @@ public:
     InspectorView(QWidget* parent = nullptr);
     virtual ~InspectorView() = default;
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void objects_selected(const QList<QObject*>& objects);
+
 };

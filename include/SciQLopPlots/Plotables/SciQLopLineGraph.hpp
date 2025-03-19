@@ -44,9 +44,6 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     void _setGraphData(QList<QVector<QCPGraphData>> data);
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void _setGraphDataSig(QList<QVector<QCPGraphData>> data);
-#endif // !BINDINGS
 
     void clear_graphs(bool graph_already_removed = false);
     void clear_resampler();
@@ -91,6 +88,12 @@ public:
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
 private:
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void _setGraphDataSig(QList<QVector<QCPGraphData>> data);
     void create_graphs(const QStringList& labels);
 };
 

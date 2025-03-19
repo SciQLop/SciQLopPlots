@@ -114,11 +114,13 @@ public:
         return false;
     }
 
-#ifndef BINDINGS_H
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void replot();
     Q_SIGNAL void selection_changed(bool selected);
-#endif
 };

@@ -174,11 +174,15 @@ public:
         _color_palette = palette;
     }
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
     Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_moved(SciQLopPlotInterface* plot, int to);
     Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
-#endif // BINDINGS_H
+
 };

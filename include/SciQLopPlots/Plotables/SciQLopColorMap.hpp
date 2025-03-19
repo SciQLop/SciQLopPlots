@@ -113,9 +113,12 @@ public:
     virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return _colorScaleAxis; }
 
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void auto_scale_y_changed(bool);
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
 #endif
+    Q_SIGNAL void auto_scale_y_changed(bool);
 
 private:
     ::DataOrder _dataOrder = DataOrder::RowMajor;

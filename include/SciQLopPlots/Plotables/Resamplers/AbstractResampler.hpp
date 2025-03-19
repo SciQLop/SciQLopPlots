@@ -197,12 +197,15 @@ protected:
 
     Q_SLOT void _async_resample();
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void _resample_sig();
-#endif
-
     virtual void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
         = 0;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void _resample_sig();
+
 
 public:
     AbstractResampler1d(SciQLopPlottableInterface* parent, std::size_t line_cnt);

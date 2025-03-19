@@ -97,10 +97,14 @@ public:
 
     Qt::ItemFlags flags();
 
-#ifndef BINDINGS_H
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
     Q_SIGNAL void nameChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenChanged(PlotsModelNode* node);
     Q_SIGNAL void childrenDestroyed(PlotsModelNode* parent, int row);
     Q_SIGNAL void selectionChanged(PlotsModelNode* node, bool selected);
-#endif
+
 };

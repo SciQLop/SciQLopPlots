@@ -279,10 +279,6 @@ class SciQLopRangeItemInterface : public SciQLopMovableItemInterface
 
 public:
 
-#ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-#endif
-
     SciQLopRangeItemInterface(QObject* parent = nullptr) : SciQLopMovableItemInterface { parent } { }
 
     inline virtual ~SciQLopRangeItemInterface() = default;
@@ -294,4 +290,10 @@ public:
         WARN_ABSTRACT_METHOD;
         return {};
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
 };

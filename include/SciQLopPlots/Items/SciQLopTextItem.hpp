@@ -37,9 +37,8 @@ class TextItem : public SciQLopPlotItem<QCPItemText>
     Q_OBJECT
 
 public:
-#ifndef BINDINGS_H
-    Q_SIGNAL void moved(double new_x, double new_y);
-#endif // !BINDINGS_H
+
+
 
     inline TextItem(QCustomPlot* plot, const QString& text, const QPointF& position,
                     bool movable = false, Coordinates coordinates = Coordinates::Pixels)
@@ -69,6 +68,12 @@ public:
         QCPItemText::position->setCoords(pos);
         replot();
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void moved(double new_x, double new_y);
 };
 }
 
