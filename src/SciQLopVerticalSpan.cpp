@@ -194,7 +194,8 @@ void impl::VerticalSpan::select_upper_border(bool selected)
 }
 SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
     QColor color, bool read_only, bool visible, const QString& tool_tip)
-        : _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
+        :SciQLopRangeItemInterface { plot },
+        _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
 {
     set_color(color);
     set_read_only(read_only);

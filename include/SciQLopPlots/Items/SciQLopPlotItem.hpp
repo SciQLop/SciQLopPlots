@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QTimer>
 #include <qcustomplot.h>
@@ -266,6 +267,29 @@ public:
     }
 
     inline virtual QRectF bounding_rectangle() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+};
+
+class SciQLopRangeItemInterface : public SciQLopMovableItemInterface
+{
+    Q_OBJECT
+
+public:
+
+#ifndef BINDINGS_H
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
+#endif
+
+    SciQLopRangeItemInterface(QObject* parent = nullptr) : SciQLopMovableItemInterface { parent } { }
+
+    inline virtual ~SciQLopRangeItemInterface() = default;
+
+    inline virtual void set_range(const SciQLopPlotRange& range) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual SciQLopPlotRange range() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return {};

@@ -279,6 +279,7 @@
     <object-type name="SciQLopLineItemInterface" parent-management="yes"/>
     <object-type name="SciQLopBoundingRectItemInterface" parent-management="yes"/>
     <object-type name="SciQLopPolygonItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopRangeItemInterface" parent-management="yes"/>
 
     <object-type name="SciQLopVerticalSpan" parent-management="yes"/>
     <object-type name="SciQLopPixmapItem" parent-management="yes"/>

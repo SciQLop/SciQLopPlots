@@ -301,7 +301,7 @@ public:
 /*! \brief Vertical span that can be added to a plot
  *
  */
-class SciQLopVerticalSpan : public QObject
+class SciQLopVerticalSpan : public SciQLopRangeItemInterface
 {
     Q_OBJECT
     QPointer<impl::VerticalSpan> _impl;
@@ -326,7 +326,6 @@ protected:
 
 public:
 #ifndef BINDINGS_H
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
     Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 #endif
@@ -366,7 +365,7 @@ public:
      *
      * \param movable
      */
-    inline void set_visible(bool visible)
+    inline void set_visible(bool visible) noexcept override
     {
         qptr_apply(_impl, [&visible](auto& item) { item->set_visible(visible); });
     }
@@ -375,17 +374,17 @@ public:
      *
      * \param movable
      */
-    inline bool visible() const noexcept
+    inline bool visible() const noexcept override
     {
         return qptr_apply_or(_impl, [](auto& item) { return item->visible(); });
     }
 
-    inline void set_range(const SciQLopPlotRange horizontal_range)
+    inline void set_range(const SciQLopPlotRange& horizontal_range) noexcept override
     {
         qptr_apply(_impl, [&horizontal_range](auto& item) { item->set_range(horizontal_range); });
     }
 
-    [[nodiscard]] inline SciQLopPlotRange range() const noexcept
+    [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
     {
         return qptr_apply_or(_impl, [](auto& item) { return item->range(); });
     }
@@ -430,7 +429,7 @@ public:
         return qptr_apply_or(_impl, [](auto& item) { return !item->movable(); });
     }
 
-    inline void set_tool_tip(const QString& tool_tip)
+    inline void set_tool_tip(const QString& tool_tip) noexcept override
     {
         qptr_apply(_impl,
                    [&tool_tip](auto& item)
@@ -440,12 +439,12 @@ public:
                    });
     }
 
-    [[nodiscard]] inline QString tool_tip() const noexcept
+    [[nodiscard]] inline QString tool_tip() const noexcept override
     {
         return qptr_apply_or(_impl, [](auto& item) { return item->tooltip(); });
     }
 
-    inline void replot()
+    inline void replot() override
     {
         qptr_apply(_impl, [](auto& item) { item->replot(); });
     }
