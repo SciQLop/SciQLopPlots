@@ -159,10 +159,5 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
         : SciQLopColorMap { parent, xAxis, yAxis, zAxis, name }
         , SciQLopFunctionGraph(std::move(callable), this, 3)
 {
-    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
-    connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this,
-            &SciQLopColorMapFunction::_set_data);
-    connect(this, &SciQLopColorMap::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });*/
+    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }

@@ -152,10 +152,5 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
         : SciQLopLineGraph { parent, key_axis, value_axis, labels }
         , SciQLopFunctionGraph(std::move(callable),this, 2)
 {
-    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
-    connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this,
-            &SciQLopLineGraphFunction::_set_data);
-    connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);*/
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }
