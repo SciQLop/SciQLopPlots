@@ -14,7 +14,6 @@ extra_files=files(
     'Docker/Dockerfile',
     'Docker/build.sh',
     'README.md', 'COPYING',
-    'tests/sanity/signal_and_slots.sh',
     'tests/manual-tests/common.py',
     'resources/resources.qrc',
     'resources/README.md'
