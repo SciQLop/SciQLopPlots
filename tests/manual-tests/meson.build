@@ -9,6 +9,7 @@ examples = [
     {'name':'Products', 'source': meson.current_source_dir()+'/Products/main.py'},
     {'name': 'Projections', 'source': meson.current_source_dir()+'/Projections/main.py'},
     {'name': 'DrawingAPI', 'source': meson.current_source_dir()+'/DrawingAPI/main.py'},
+    {'name': 'StressModel', 'source': meson.current_source_dir()+'/StressModel/main.py'},
 ]
 
 foreach example:examples
