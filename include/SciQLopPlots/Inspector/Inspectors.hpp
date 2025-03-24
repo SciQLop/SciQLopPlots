@@ -59,9 +59,6 @@ public:
 
     inline static InspectorBase* inspector(const QString& typeName)
     {
-        DEBUG_MESSAGE("Looking for inspector for type : " << typeName.toStdString());
-        DEBUG_MESSAGE(
-            "Available inspectors : " << instance().m_inspectors.keys().join(", ").toStdString());
         return instance().m_inspectors.value(typeName, nullptr);
     }
 

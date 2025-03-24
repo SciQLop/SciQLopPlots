@@ -32,9 +32,5 @@ InspectorBase* Inspectors::inspector(const QObject* obj)
         _inspector = inspector(metaObject->className());
         metaObject = metaObject->superClass();
     } while (_inspector == nullptr && metaObject != nullptr);
-    if (_inspector)
-    {
-        DEBUG_MESSAGE("Inspector found:" << _inspector->metaObject()->className());
-    }
     return _inspector;
 }
