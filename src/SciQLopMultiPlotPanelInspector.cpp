@@ -30,9 +30,9 @@ QList<QObject*> SciQLopMultiPlotPanelInspector::children(QObject* obj)
     QList<QObject*> children;
     if (auto panel = _panel(obj); panel)
     {
-        for (auto plot : panel->plots())
+        for (auto w : panel->child_widgets())
         {
-            children.append(plot);
+            children.append(w);
         }
     }
     return children;
@@ -53,9 +53,12 @@ QObject* SciQLopMultiPlotPanelInspector::child(const QString& name, QObject* obj
 
 void SciQLopMultiPlotPanelInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
+    auto panel = _panel(obj);
     InspectorBase::connect_node(node, obj);
-    connect(_panel(obj), &SciQLopMultiPlotPanel::plot_list_changed, node,
-        &PlotsModelNode::update_children);
+    connect(panel, &SciQLopMultiPlotPanel::plot_added, node,&PlotsModelNode::childrenChanged);
+    connect(panel, &SciQLopMultiPlotPanel::plot_removed, node,&PlotsModelNode::childrenChanged);
+    connect(panel, &SciQLopMultiPlotPanel::panel_added, node, &PlotsModelNode::childrenChanged);
+    connect(panel, &SciQLopMultiPlotPanel::panel_removed, node, &PlotsModelNode::childrenChanged);
 }
 
 void SciQLopMultiPlotPanelInspector::set_selected(QObject* obj, bool selected)

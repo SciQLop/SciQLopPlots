@@ -52,6 +52,7 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
             plot->removePlottable(m_plottable.data());
         }
     }
+    set_selected(false);
 }
 
 void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept

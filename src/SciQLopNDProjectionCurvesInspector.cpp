@@ -25,17 +25,17 @@
 
 REGISTER_INSPECTOR(SciQLopNDProjectionCurvesInspector)
 
-QList<QObject *> SciQLopNDProjectionCurvesInspector::children(QObject *obj)
+QList<QObject*> SciQLopNDProjectionCurvesInspector::children(QObject* obj)
 {
     return {};
 }
 
-QObject *SciQLopNDProjectionCurvesInspector::child(const QString &name, QObject *obj)
+QObject* SciQLopNDProjectionCurvesInspector::child(const QString& name, QObject* obj)
 {
     return nullptr;
 }
 
-void SciQLopNDProjectionCurvesInspector::connect_node(PlotsModelNode *node, QObject * const obj)
+void SciQLopNDProjectionCurvesInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
     InspectorBase::connect_node(node, obj);
     if (auto graph = _graph(obj); graph)
@@ -43,11 +43,11 @@ void SciQLopNDProjectionCurvesInspector::connect_node(PlotsModelNode *node, QObj
         connect(graph, &SciQLopGraphInterface::selection_changed, node,
                 &PlotsModelNode::set_selected);
         connect(graph, &SciQLopGraphInterface::component_list_changed, node,
-                &PlotsModelNode::update_children);
+                &PlotsModelNode::childrenChanged);
     }
 }
 
-void SciQLopNDProjectionCurvesInspector::set_selected(QObject *obj, bool selected)
+void SciQLopNDProjectionCurvesInspector::set_selected(QObject* obj, bool selected)
 {
     if (auto graph = _graph(obj); graph != nullptr && graph->selected() != selected)
     {
@@ -55,7 +55,7 @@ void SciQLopNDProjectionCurvesInspector::set_selected(QObject *obj, bool selecte
     }
 }
 
-bool SciQLopNDProjectionCurvesInspector::selected(const QObject *obj)
+bool SciQLopNDProjectionCurvesInspector::selected(const QObject* obj)
 {
     if (auto graph = _graph(obj); graph)
     {

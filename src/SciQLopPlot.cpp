@@ -589,7 +589,13 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
     this->minimize_margins();
 }
 
-SciQLopPlot::~SciQLopPlot() { }
+SciQLopPlot::~SciQLopPlot()
+{
+    while(plottables().size() > 0)
+    {
+        delete plottable(0);
+    }
+}
 
 void SciQLopPlot::set_scroll_factor(double factor) noexcept
 {

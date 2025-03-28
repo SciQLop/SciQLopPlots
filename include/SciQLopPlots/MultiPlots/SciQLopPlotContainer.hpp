@@ -122,6 +122,8 @@ public:
         return plots;
     }
 
+    virtual QList<QWidget*> child_widgets() const Q_DECL_OVERRIDE;
+
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
         return plots().contains(plot);

@@ -20,9 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
-#include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
 
 #include <QGridLayout>
 #include <QScrollArea>
@@ -140,19 +140,18 @@ public:
                           bool synchronize_time = false,
                           Qt::Orientation orientation = Qt::Vertical);
 
+    ~SciQLopMultiPlotPanel() override;
+
     virtual void replot(bool immediate = false) Q_DECL_OVERRIDE;
 
     inline QUuid uuid() const { return _uuid; }
 
-    virtual void add_panel(SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
-
-    virtual void insert_panel(int index, SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
-
-    virtual void remove_panel(SciQLopPlotPanelInterface* panel)Q_DECL_OVERRIDE;
-
+    virtual void add_panel(SciQLopPlotPanelInterface* panel) Q_DECL_OVERRIDE;
+    virtual void insert_panel(int index, SciQLopPlotPanelInterface* panel) Q_DECL_OVERRIDE;
+    virtual void remove_panel(SciQLopPlotPanelInterface* panel) Q_DECL_OVERRIDE;
     virtual void move_panel(int from, int to) Q_DECL_OVERRIDE;
 
-    virtual inline void move_panel(SciQLopPlotPanelInterface* panel, int to)Q_DECL_OVERRIDE
+    virtual inline void move_panel(SciQLopPlotPanelInterface* panel, int to) Q_DECL_OVERRIDE
     {
         WARN_ABSTRACT_METHOD
     }
@@ -161,6 +160,8 @@ public:
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
+
+    virtual QList<QWidget*> child_widgets() const Q_DECL_OVERRIDE;
 
     virtual void insert_plot(int index, SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     virtual void move_plot(int from, int to) Q_DECL_OVERRIDE;
@@ -226,4 +227,12 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+
+public:
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void panel_added(SciQLopPlotPanelInterface* panel);
+    Q_SIGNAL void panel_removed(SciQLopPlotPanelInterface* panel);
 };

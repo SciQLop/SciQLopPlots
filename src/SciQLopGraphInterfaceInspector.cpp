@@ -55,7 +55,7 @@ void SciQLopGraphInterfaceInspector::connect_node(PlotsModelNode* node, QObject*
         connect(graph, &SciQLopGraphInterface::selection_changed, node,
                 &PlotsModelNode::set_selected);
         connect(graph, &SciQLopGraphInterface::component_list_changed, node,
-                &PlotsModelNode::update_children);
+                &PlotsModelNode::childrenChanged);
     }
 }
 

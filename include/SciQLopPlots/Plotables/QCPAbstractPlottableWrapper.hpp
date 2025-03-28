@@ -66,7 +66,12 @@ public:
 
     virtual ~SQPQCPAbstractPlottableWrapper() { clear_plottables(); }
 
-    inline void clear_plottables() { m_components.clear(); }
+    inline void clear_plottables()
+    {
+        for (auto component : m_components)
+            delete component;
+        m_components.clear();
+    }
 
     const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept
     {

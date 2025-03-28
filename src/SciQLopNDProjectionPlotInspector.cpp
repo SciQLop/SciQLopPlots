@@ -25,10 +25,9 @@
 
 REGISTER_INSPECTOR(SciQLopNDProjectionPlotInspector)
 
-
-QList<QObject *> SciQLopNDProjectionPlotInspector::children(QObject *obj)
+QList<QObject*> SciQLopNDProjectionPlotInspector::children(QObject* obj)
 {
-    QList<QObject *> children;
+    QList<QObject*> children;
     if (auto plot = _plot(obj); plot)
     {
         for (auto c : plot->plottables())
@@ -39,7 +38,7 @@ QList<QObject *> SciQLopNDProjectionPlotInspector::children(QObject *obj)
     return children;
 }
 
-QObject *SciQLopNDProjectionPlotInspector::child(const QString &name, QObject *obj)
+QObject* SciQLopNDProjectionPlotInspector::child(const QString& name, QObject* obj)
 {
     if (auto plot = _plot(obj); plot)
     {
@@ -48,16 +47,16 @@ QObject *SciQLopNDProjectionPlotInspector::child(const QString &name, QObject *o
     return nullptr;
 }
 
-void SciQLopNDProjectionPlotInspector::connect_node(PlotsModelNode *node, QObject * const obj)
+void SciQLopNDProjectionPlotInspector::connect_node(PlotsModelNode* node, QObject* const obj)
 {
     InspectorBase::connect_node(node, obj);
     if (auto plot = _plot(obj); plot)
     {
-        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::update_children);
+        connect(plot, &SciQLopPlot::graph_list_changed, node, &PlotsModelNode::childrenChanged);
     }
 }
 
-void SciQLopNDProjectionPlotInspector::set_selected(QObject *obj, bool selected)
+void SciQLopNDProjectionPlotInspector::set_selected(QObject* obj, bool selected)
 {
     if (auto plot = _plot(obj); plot)
     {

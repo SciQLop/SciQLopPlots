@@ -34,13 +34,12 @@ class PlotsModelNode : public QObject
     InspectorBase* m_inspector;
     QList<PlotsModelNode*> m_children;
 
-    void _child_destroyed(PlotsModelNode* child);
     PlotsModelNode* _root_node();
     bool _deletable = true;
 
 public:
     PlotsModelNode(QObject* obj, QObject* parent = nullptr);
-    ~PlotsModelNode() = default;
+    ~PlotsModelNode();
 
     PlotsModelNode* insert_child(QObject* obj, int row = -1);
 
@@ -60,13 +59,12 @@ public:
 
     inline int children_count() { return m_children.size(); }
 
-    bool remove_child(int row);
+    bool remove_child(int row, bool destroy = true);
 
     QIcon icon();
     QString tooltip();
 
     Q_SLOT void setName(const QString& name);
-    Q_SLOT void update_children();
 
     inline bool holds(QObject* obj)
     {
@@ -91,9 +89,9 @@ public:
 
     inline bool deletable() { return _deletable; }
 
-    void destroy();
-
     inline QObject* object() { return m_obj; }
+
+    inline InspectorBase* inspector() { return m_inspector; }
 
     Qt::ItemFlags flags();
 
@@ -102,9 +100,9 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void nameChanged(PlotsModelNode* node);
-    Q_SIGNAL void childrenChanged(PlotsModelNode* node);
+    Q_SIGNAL void nameChanged();
+    Q_SIGNAL void childrenChanged();
     Q_SIGNAL void childrenDestroyed(PlotsModelNode* parent, int row);
-    Q_SIGNAL void selectionChanged(PlotsModelNode* node, bool selected);
-
+    Q_SIGNAL void selectionChanged(bool selected);
+    Q_SIGNAL void objectDestroyed();
 };

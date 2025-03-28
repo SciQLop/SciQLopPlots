@@ -78,7 +78,13 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
     this->setAcceptDrops(true);
     setObjectName(UniqueNamesFactory::unique_name("Panel"));
 
-    PlotsModel::instance()->addTopLevelNode(this);
+    if (qobject_cast<SciQLopPlotPanelInterface*>(parent) == nullptr)
+        PlotsModel::instance()->addTopLevelNode(this);
+}
+
+SciQLopMultiPlotPanel::~SciQLopMultiPlotPanel()
+{
+
 }
 
 void SciQLopMultiPlotPanel::replot(bool immediate)
@@ -86,25 +92,25 @@ void SciQLopMultiPlotPanel::replot(bool immediate)
     _container->replot(immediate);
 }
 
-void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface *panel)
+void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface* panel)
 {
     _container->addWidget(panel);
+    Q_EMIT panel_added(panel);
 }
 
-void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface *panel)
+void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface* panel)
 {
     _container->insertWidget(index, panel);
+    Q_EMIT panel_added(panel);
 }
 
-void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface *panel)
+void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface* panel)
 {
     _container->removeWidget(panel, true);
+    Q_EMIT panel_removed(panel);
 }
 
-void SciQLopMultiPlotPanel::move_panel(int from, int to)
-{
-
-}
+void SciQLopMultiPlotPanel::move_panel(int from, int to) { }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
 {
@@ -124,6 +130,11 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
 QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
 {
     return _container->plots();
+}
+
+QList<QWidget *> SciQLopMultiPlotPanel::child_widgets() const
+{
+    return _container->child_widgets();
 }
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)

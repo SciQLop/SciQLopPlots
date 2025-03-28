@@ -30,7 +30,7 @@
 class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 {
     Q_OBJECT
-    QList<SciQLopVerticalSpan*> _spans;
+    QList<QPointer<SciQLopVerticalSpan>> _spans;
     SciQLopPlotRange _horizontal_range;
     bool _selected = false;
     bool _lower_border_selected = false;
@@ -66,7 +66,10 @@ public:
     {
         for (auto span : _spans)
         {
-            delete span;
+            if (span)
+            {
+                delete span.data();
+            }
         }
     }
 

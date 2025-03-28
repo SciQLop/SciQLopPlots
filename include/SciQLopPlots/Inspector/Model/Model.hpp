@@ -24,17 +24,18 @@
 #include <QAbstractItemModel>
 #include <QObject>
 
+
 class PlotsModel : public QAbstractItemModel
 {
     Q_OBJECT
     PlotsModelNode* m_rootNode;
 
-    Q_SLOT void node_changed(PlotsModelNode* node);
-    Q_SLOT void node_selection_changed(PlotsModelNode* node, bool selected);
-    Q_SLOT void children_destroyed(PlotsModelNode* parent, int index);
+    Q_SLOT void node_changed();
+    Q_SLOT void node_selection_changed(bool selected);
     QModelIndex make_index(PlotsModelNode* node);
 
-
+    void addNode(PlotsModelNode*parent, QObject* obj);
+    Q_SLOT void updateNodeChildren();
 public:
     PlotsModel(QObject* parent = nullptr);
     ~PlotsModel() = default;
@@ -48,6 +49,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+    bool removeRow(int row, const QModelIndex& parent = QModelIndex());
 
     void set_selected(const QList<QModelIndex>& indexes, bool selected);
 

@@ -16,6 +16,7 @@ from SciQLopPlots import (SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPa
                          SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel,
                          InspectorView, SciQLopPixmapItem, SciQLopEllipseItem,
                          Coordinates)
+import random
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -59,7 +60,15 @@ class StackedPlots(SciQLopMultiPlotPanel):
             self.graphs.append(add_graph(plot, time_axis=True))
 
         x_range = self.plot_at(0).x_axis().range()
-
+        self._sub_panel = SciQLopMultiPlotPanel(self,
+                                               synchronize_x=False,
+                                               synchronize_time=True,
+                                               orientation=Qt.Orientation.Horizontal)
+        self.add_panel(self._sub_panel)
+        for _ in range(2):
+            plot = make_plot(None, time_axis=True)
+            self._sub_panel.add_plot(plot)
+            self.graphs.append(add_graph(plot, time_axis=True))
         self._verticalSpan = MultiPlotsVerticalSpan(self, x_range/10, QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="Vertical Span")
         self.setAttribute(Qt.WA_DeleteOnClose)
 
@@ -76,10 +85,8 @@ def remove_plot_panel(main_window):
 
 
 def random_add_or_remove_panels(main_window):
-    if np.random.rand() < 0.5:
-        create_plot_panel(main_window)
-    else:
-        remove_plot_panel(main_window)
+    random.choices([create_plot_panel, remove_plot_panel],
+                   weights=[10, main_window.tabs.count()])[0](main_window)
 
 
 if __name__ == '__main__':
@@ -89,7 +96,12 @@ if __name__ == '__main__':
     w = MainWindow()
     w._timer = QTimer(w)
     w._timer.timeout.connect(lambda: random_add_or_remove_panels(w))
-    w._timer.setInterval(10)
+    w._timer.setInterval(100)
     w._timer.start()
+    create_plot_panel(w)
+    w.add_to_kernel_namespace("create_plot_panel", lambda: create_plot_panel(w))
+    w.add_to_kernel_namespace("remove_plot_panel", lambda index: w.tabs.widget(index).close())
+    w.add_to_kernel_namespace("stop_timer", w._timer.stop)
+    w.add_to_kernel_namespace("start_timer",  w._timer.start)
     w.show()
     app.exec()

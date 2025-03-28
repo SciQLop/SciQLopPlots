@@ -141,6 +141,12 @@ public:
         return {};
     }
 
+    inline virtual QList<QWidget*> child_widgets() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
     virtual inline std::size_t plot_count() const { return plots().size(); }
 
     inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }

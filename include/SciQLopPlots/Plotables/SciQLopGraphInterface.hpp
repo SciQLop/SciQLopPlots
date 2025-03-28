@@ -168,7 +168,7 @@ public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
 
     SciQLopGraphInterface(const QString& prefix = "Graph", QObject* parent = nullptr);
-    virtual ~SciQLopGraphInterface() = default;
+    virtual ~SciQLopGraphInterface() Q_DECL_OVERRIDE = default;
 
     virtual void set_labels(const QStringList& labels) { WARN_ABSTRACT_METHOD; }
 

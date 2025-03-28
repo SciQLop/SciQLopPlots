@@ -30,6 +30,7 @@ SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix, QObject* par
     setObjectName(UniqueNamesFactory::unique_name(prefix));
 }
 
+
 void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
 {
     if (m_range != range)

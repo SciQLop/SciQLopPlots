@@ -132,6 +132,16 @@ void SciQLopPlotContainer::clear()
     emit plot_list_changed({});
 }
 
+QList<QWidget *> SciQLopPlotContainer::child_widgets() const
+{
+    QList<QWidget*> widgets;
+    for (int i = 0; i < count(); i++)
+    {
+        widgets.append(widget(i));
+    }
+    return widgets;
+}
+
 SciQLopPlotCollectionBehavior*
 SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
