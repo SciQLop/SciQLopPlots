@@ -470,7 +470,22 @@
                 <rename to="orientation"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="add_panel(SciQLopPlotPanelInterface*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="insert_panel(int, SciQLopPlotPanelInterface*)">
+          <modify-argument index="2">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
         <modify-function signature="add_plot(SciQLopPlotInterface*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="insert_plot(int, SciQLopPlotInterface*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
