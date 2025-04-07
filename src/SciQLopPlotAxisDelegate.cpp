@@ -44,7 +44,7 @@ void SciQLopPlotAxisDelegate::addWidgetWithLabel(QWidget *widget, const QString 
     auto label_widget = new QLabel(label);
     layout->addWidget(label_widget);
     layout->addWidget(widget);
-    m_layout->addLayout(layout);
+    m_layout->addRow(layout);
 }
 
 SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* object, QWidget* parent)

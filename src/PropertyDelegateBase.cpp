@@ -24,7 +24,7 @@
 PropertyDelegateBase::PropertyDelegateBase(QObject *object, QWidget *parent)
         : QWidget(parent), m_object { object }
 {
-    m_layout = new QVBoxLayout();
+    m_layout = new QFormLayout();
     setLayout(m_layout);
     m_title = new QLabel();
     m_layout->addWidget(m_title);

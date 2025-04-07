@@ -23,7 +23,7 @@
 #include <QLabel>
 #include <QObject>
 #include <QPointer>
-#include <QVBoxLayout>
+#include <QFormLayout>
 #include <QWidget>
 #include <fmt/format.h>
 
@@ -32,7 +32,7 @@ class PropertyDelegateBase : public QWidget
     Q_OBJECT
 
 protected:
-    QVBoxLayout* m_layout;
+    QFormLayout* m_layout;
     QLabel* m_title;
 
 protected:
