@@ -32,6 +32,8 @@ public:
     Q_PROPERTY(bool value READ value WRITE set_value NOTIFY value_changed)
 
     BooleanDelegate(bool value, QWidget* parent = nullptr);
+    BooleanDelegate(const QString& text, bool value, QWidget* parent = nullptr);
+
     virtual ~BooleanDelegate() = default;
 
     void set_value(const bool value);

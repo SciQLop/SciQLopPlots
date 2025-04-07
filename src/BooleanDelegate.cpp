@@ -21,7 +21,11 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 
-BooleanDelegate::BooleanDelegate(bool value, QWidget* parent) : QCheckBox(parent)
+BooleanDelegate::BooleanDelegate(bool value, QWidget* parent) : BooleanDelegate("", value, parent)
+{
+}
+
+BooleanDelegate::BooleanDelegate(const QString &text, bool value, QWidget *parent): QCheckBox(text, parent)
 {
     setChecked(value);
     connect(this, &QCheckBox::checkStateChanged, this,
