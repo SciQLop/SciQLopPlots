@@ -373,6 +373,13 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
+    inline virtual void set_auto_scale(bool auto_scale) noexcept { WARN_ABSTRACT_METHOD; }
+
+    inline virtual bool auto_scale() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
 
 
 #ifdef BINDINGS_H
@@ -387,6 +394,7 @@ signals:
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void auto_scale_changed(bool auto_scale);
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();
 

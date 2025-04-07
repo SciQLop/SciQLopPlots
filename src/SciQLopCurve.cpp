@@ -36,6 +36,7 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
             curve->data()->set(data[i], true);
     }
     Q_EMIT this->replot();
+    Q_EMIT data_changed();
 }
 
 void SciQLopCurve::clear_curves(bool curve_already_removed)

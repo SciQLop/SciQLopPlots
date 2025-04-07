@@ -42,6 +42,7 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
             Q_EMIT request_rescale();
         }
     }
+    Q_EMIT data_changed();
 }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

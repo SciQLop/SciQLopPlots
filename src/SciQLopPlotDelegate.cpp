@@ -21,8 +21,9 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
@@ -38,9 +39,13 @@ SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
 {
     auto legend = object->legend();
     auto legend_delegate = new LegendDelegate(legend->is_visible(), this);
-    m_layout->addWidget(legend_delegate);
+    m_layout->addRow(legend_delegate);
     connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
             &SciQLopPlotLegendInterface::set_visible);
     connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
             &LegendDelegate::set_visible);
+    auto auto_scale = new BooleanDelegate(object->auto_scale());
+    m_layout->addRow("Auto scale", auto_scale);
+    connect(auto_scale, &BooleanDelegate::value_changed, object, &SciQLopPlot::set_auto_scale);
+    connect(object, &SciQLopPlot::auto_scale_changed, auto_scale, &BooleanDelegate::set_value);
 }

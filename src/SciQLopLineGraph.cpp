@@ -52,6 +52,7 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
         _got_first_data = true;
         Q_EMIT request_rescale();
     }
+    Q_EMIT data_changed();
 }
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,

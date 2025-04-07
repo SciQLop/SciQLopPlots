@@ -545,7 +545,8 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         }
         if (std::size(labels) == std::size(plottable->components()))
             plottable->set_labels(labels);
-
+        connect(plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
+                [this]() { if (this->m_auto_scale) this->rescale_axes(); }, Qt::QueuedConnection);
         connect(
             plottable, &SciQLopGraphInterface::request_rescale, this,
             [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
@@ -686,6 +687,8 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
         connect(
             cmap, &SciQLopGraphInterface::request_rescale, this, [this]() { this->rescale_axes(); },
             Qt::QueuedConnection);
+        connect(cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed), this,
+                [this]() { if (this->m_auto_scale) this->rescale_axes(); }, Qt::QueuedConnection);
     }
 }
 

@@ -149,6 +149,7 @@ signals:
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void replot();
+    Q_SIGNAL void data_changed();
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void data_changed(const QList<PyBuffer>& values);

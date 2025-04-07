@@ -52,6 +52,7 @@ class SciQLopPlot : public QCustomPlot
     QList<SciQLopPlottableInterface*> m_plottables;
     SciQLopColorMap* m_color_map = nullptr;
 
+
 public:
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -156,7 +157,6 @@ public:
 
     void replot(QCustomPlot::RefreshPriority priority = rpQueuedReplot);
 
-
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -220,6 +220,7 @@ protected:
     QList<QColor> m_color_palette;
     SciQLopPlotLegend* m_legend = nullptr;
     int m_color_palette_index = 0;
+    bool m_auto_scale = false;
 
 
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
@@ -352,6 +353,13 @@ public:
     {
         m_color_palette = palette;
     }
+
+    inline virtual void set_auto_scale(bool auto_scale) noexcept override
+    {
+        m_auto_scale = auto_scale;
+        Q_EMIT auto_scale_changed(auto_scale);
+    }
+    inline virtual bool auto_scale() const noexcept override { return m_auto_scale; }
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)
