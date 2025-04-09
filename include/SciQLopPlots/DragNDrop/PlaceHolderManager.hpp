@@ -68,20 +68,20 @@ class PlaceHolderManager : public QObject
     PlaceHolder* _place_holder = nullptr;
     QWidget* _parent = nullptr;
 
-    PlaceHolderLocation _compute_location(const QPointF& pos) const
+    inline PlaceHolderLocation _compute_location(const QPointF& pos) const
     {
         if (auto index = _interface()->index(pos); index != -1)
         {
             auto plot = _interface()->plot_at(index);
             auto plot_top = plot->geometry().top();
             auto plot_bottom = plot->geometry().bottom();
-            auto upper_30_percent = plot_top + 0.3 * plot->geometry().height();
-            auto lower_30_percent = plot_bottom - 0.3 * plot->geometry().height();
-            if (pos.y() < upper_30_percent)
+            auto upper_zome = plot_top + 0.2 * plot->geometry().height();
+            auto lower_zone = plot_bottom - 0.2 * plot->geometry().height();
+            if (pos.y() < upper_zome)
             {
                 return PlaceHolderLocation::Top;
             }
-            if (pos.y() > lower_30_percent)
+            if (pos.y() > lower_zone)
             {
                 return PlaceHolderLocation::Bottom;
             }
@@ -89,7 +89,7 @@ class PlaceHolderManager : public QObject
         return PlaceHolderLocation::None;
     }
 
-    SciQLopPlotInterface* _plot_at(const QPointF& pos) const
+    inline SciQLopPlotInterface* _plot_at(const QPointF& pos) const
     {
         if (auto index = _interface()->index(pos); index != -1)
         {
@@ -122,7 +122,7 @@ class PlaceHolderManager : public QObject
         switch (location)
         {
             case PlaceHolderLocation::Top:
-                return _create_place_holder(std::max(0, _interface()->index(pos) - 1));
+                return _create_place_holder(std::max(0, _interface()->index(pos)));
             case PlaceHolderLocation::Bottom:
                 return _create_place_holder(_interface()->index(pos) + 1);
             default:
