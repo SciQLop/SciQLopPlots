@@ -75,7 +75,7 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
     if (m_linked_axes != linked)
     {
         m_linked_axes = linked;
-        for (auto i = 0UL; i < m_plots.size(); i++)
+        for (decltype(m_plots.size()) i = 0; i < m_plots.size(); i++)
         {
             auto plot = m_plots[i];
             if (i > 0)

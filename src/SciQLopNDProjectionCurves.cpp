@@ -72,7 +72,7 @@ bool SciQLopNDProjectionCurves::selected() const noexcept
 
 void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
 {
-    const std::size_t curves_count = m_curves.size();
+    const auto curves_count = m_curves.size();
 
     if (data.size() == curves_count + 1)
     {
@@ -81,7 +81,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
         // Y(x)
         // Z(y)
         // Z(x)
-        for (std::size_t i = 0UL; i < curves_count; ++i)
+        for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
             m_curves[i]->set_data(data_without_time[i % (curves_count - 1)],
                                   data_without_time[std::min((i + 1), curves_count - 1)]);
@@ -89,7 +89,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
     }
     else if (data.size() == 2 * curves_count)
     {
-        for (int i = 0; i < curves_count; ++i)
+        for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
             m_curves[i]->set_data(data[2 * i], data[2 * i + 1]);
         }
