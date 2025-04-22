@@ -112,6 +112,15 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     Q_EMIT data_changed(x, y, z);
 }
 
+QList<PyBuffer> SciQLopColorMap::data() const noexcept
+{
+    if (this->_cmap)
+    {
+        return this->_resampler->get_data();
+    }
+    return {};
+}
+
 void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
 {
     _auto_scale_y = auto_scale_y;

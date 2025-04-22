@@ -75,6 +75,7 @@ public:
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
+    virtual QList<PyBuffer> data() const noexcept override;
 
     inline QCPColorMap* colorMap() const { return _cmap; }
 
