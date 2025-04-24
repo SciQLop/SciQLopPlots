@@ -7,7 +7,8 @@ on:
   pull_request:
 
 env:
-  PYSIDE_VERSION: 6.8.2
+  PYSIDE_VERSION: 6.8.2.1
+  QT_VERSION: 6.8.2
   #PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
 
 jobs:
@@ -20,8 +21,8 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y libgl-dev
           pip install aqtinstall
-          aqt install-qt -O "$GITHUB_WORKSPACE"/Qt linux desktop ${{ env.PYSIDE_VERSION }}
-          PATH="$GITHUB_WORKSPACE"/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/bin:$PATH" LD_LIBRARY_PATH="$GITHUB_WORKSPACE"/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH" pipx run build --sdist
+          aqt install-qt -O "$GITHUB_WORKSPACE"/Qt linux desktop ${{ env.QT_VERSION }}
+          PATH="$GITHUB_WORKSPACE"/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH" LD_LIBRARY_PATH="$GITHUB_WORKSPACE"/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH" pipx run build --sdist
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,19 +57,20 @@ jobs:
         uses: pypa/cibuildwheel@v2.22.0
         env:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
+          QT_VERSION: ${{ env.QT_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
           CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.PYSIDE_VERSION }}\\msvc2022_64\\bin;$PATH"
           CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='11.0' PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.PYSIDE_VERSION }}/macos/bin:$PATH
           CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.PYSIDE_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
             pip install "aqtinstall"
-            && aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.PYSIDE_VERSION }} win64_msvc2022_64
+            && aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64
           CIBW_BEFORE_BUILD_MACOS: >
             pip install "aqtinstall"
-            && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.PYSIDE_VERSION }}
+            && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }}
           CIBW_BEFORE_BUILD_LINUX: >
             dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 clang /usr/bin/llvm-config
-            && pip install "aqtinstall" && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" linux desktop ${{ env.PYSIDE_VERSION }}
+            && pip install "aqtinstall" && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" linux desktop ${{ env.QT_VERSION }}
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.8 --exclude libshiboken6.abi3.so.6.8 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.8 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat manylinux_2_28_x86_64 {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:

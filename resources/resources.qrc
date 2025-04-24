@@ -58,5 +58,6 @@
         <file>LineStyles/StepCenter.png</file>
         <file>LineStyles/NoLine.png</file>
         <file>LineStyles/Line.png</file>
+        <file>icons/theme/collab.png</file>
     </qresource>
 </RCC>
