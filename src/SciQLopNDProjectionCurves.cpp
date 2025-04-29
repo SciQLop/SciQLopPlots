@@ -23,8 +23,8 @@
 
 SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
                                                      QList<SciQLopPlot*>& plots,
-                                                     const QStringList& labels)
-        : SciQLopGraphInterface("Projection", parent)
+                                                     const QStringList& labels, QVariantMap metaData)
+        : SciQLopGraphInterface("Projection",metaData, parent)
 {
     if (plots.size() != labels.size())
     {
@@ -42,8 +42,8 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
 SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent,
                                                                      QList<SciQLopPlot*>& plots,
                                                                      GetDataPyCallable&& callable,
-                                                                     const QStringList& labels)
-        : SciQLopNDProjectionCurves { parent, plots, labels }
+                                                                     const QStringList& labels, QVariantMap metaData)
+        : SciQLopNDProjectionCurves { parent, plots, labels, metaData }
         , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
     /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);

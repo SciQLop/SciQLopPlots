@@ -44,12 +44,14 @@ class SciQLopPlottableInterface : public QObject
 
 protected:
     SciQLopPlotRange m_range;
+    QVariantMap m_metaData;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
     Q_PROPERTY(QList<PyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
 
-    SciQLopPlottableInterface(QObject* parent = nullptr) : QObject(parent) { }
+    SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr)
+            : QObject(parent),m_metaData{std::move(metaData)} { }
 
     virtual ~SciQLopPlottableInterface() = default;
 
@@ -68,6 +70,10 @@ public:
     }
 
     virtual QString name() const noexcept { return this->objectName(); }
+
+    inline QVariantMap& meta_data(){return this->m_metaData;}
+    inline const QVariantMap& meta_data() const {return this->m_metaData;}
+    inline void set_meta_data(const QVariantMap& metaData) { this->m_metaData = metaData; }
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) { WARN_ABSTRACT_METHOD; };
 
@@ -168,7 +174,7 @@ class SciQLopGraphInterface : public SciQLopPlottableInterface
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
 
-    SciQLopGraphInterface(const QString& prefix = "Graph", QObject* parent = nullptr);
+    SciQLopGraphInterface(const QString& prefix = "Graph",QVariantMap metaData={}, QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() Q_DECL_OVERRIDE = default;
 
     virtual void set_labels(const QStringList& labels) { WARN_ABSTRACT_METHOD; }
@@ -217,7 +223,7 @@ class SciQLopColorMapInterface : public SciQLopPlottableInterface
     Q_OBJECT
 
 public:
-    SciQLopColorMapInterface(QObject* parent = nullptr);
+    SciQLopColorMapInterface(QVariantMap metaData={}, QObject* parent = nullptr);
     virtual ~SciQLopColorMapInterface() = default;
 
     inline virtual ColorGradient gradient() const noexcept

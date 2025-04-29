@@ -59,8 +59,8 @@ protected:
     void _register_component(SciQLopGraphComponent* component);
 
 public:
-    SQPQCPAbstractPlottableWrapper(const QString& prefix, QCustomPlot* parent)
-            : SciQLopGraphInterface(prefix, parent)
+    SQPQCPAbstractPlottableWrapper(const QString& prefix, QVariantMap metaData, QCustomPlot* parent)
+            : SciQLopGraphInterface(prefix, metaData, parent)
     {
     }
 

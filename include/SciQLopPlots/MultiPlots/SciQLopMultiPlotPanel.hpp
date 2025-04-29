@@ -105,32 +105,32 @@ protected:
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
               ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              int index = -1) Q_DECL_OVERRIDE;
+              int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
-              int index = -1) Q_DECL_OVERRIDE;
+              int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              int index = -1) Q_DECL_OVERRIDE;
+              int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1) Q_DECL_OVERRIDE;
+              int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
               bool y_log_scale = false, bool z_log_scale = false,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1) Q_DECL_OVERRIDE;
+              int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);

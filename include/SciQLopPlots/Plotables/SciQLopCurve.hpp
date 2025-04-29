@@ -71,10 +71,10 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
-                          const QStringList& labels);
+                          const QStringList& labels, QVariantMap metaData={});
 
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                          SciQLopPlotAxis* valueAxis);
+                          SciQLopPlotAxis* valueAxis, QVariantMap metaData={});
 
     virtual ~SciQLopCurve() override;
 
@@ -106,7 +106,7 @@ class SciQLopCurveFunction : public SciQLopCurve, public SciQLopFunctionGraph
 public:
     explicit SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                   SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
-                                  const QStringList& labels);
+                                  const QStringList& labels,QVariantMap metaData={});
 
     virtual ~SciQLopCurveFunction() override = default;
 };

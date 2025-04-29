@@ -66,8 +66,8 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
 }
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                           SciQLopPlotAxis* valueAxis, const QStringList& labels)
-        : SQPQCPAbstractPlottableWrapper("Curve", parent)
+                           SciQLopPlotAxis* valueAxis, const QStringList& labels, QVariantMap metaData)
+        : SQPQCPAbstractPlottableWrapper("Curve",metaData, parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
@@ -76,8 +76,8 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
 }
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                           SciQLopPlotAxis* valueAxis)
-        : SQPQCPAbstractPlottableWrapper("Curve", parent)
+                           SciQLopPlotAxis* valueAxis, QVariantMap metaData)
+        : SQPQCPAbstractPlottableWrapper("Curve", metaData, parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
@@ -140,8 +140,8 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
 
 SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                            SciQLopPlotAxis* value_axis,
-                                           GetDataPyCallable&& callable, const QStringList& labels)
-        : SciQLopCurve { parent, key_axis, value_axis, labels }
+                                           GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metaData)
+        : SciQLopCurve { parent, key_axis, value_axis, labels,metaData }
         , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });

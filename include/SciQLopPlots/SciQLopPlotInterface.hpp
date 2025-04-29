@@ -49,7 +49,7 @@ protected:
     inline virtual SciQLopGraphInterface*
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
         throw std::runtime_error("Not implemented");
     }
@@ -57,7 +57,7 @@ protected:
     inline virtual SciQLopGraphInterface*
     plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
         throw std::runtime_error("Not implemented");
     }
@@ -66,7 +66,7 @@ protected:
                                                        const PyBuffer& z,
                                                        QString name = QStringLiteral("ColorMap"),
                                                        bool y_log_scale = false,
-                                                       bool z_log_scale = false)
+                                                       bool z_log_scale = false, QVariantMap metaData={})
     {
         throw std::runtime_error("Not implemented");
     }
@@ -75,14 +75,14 @@ protected:
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              QObject* sync_with = nullptr)
+              QObject* sync_with = nullptr, QVariantMap metaData={})
     {
         throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
-              bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr)
+              bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
         throw std::runtime_error("Not implemented");
     }
@@ -272,7 +272,7 @@ public:
     inline virtual SciQLopGraphInterface*
     line(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(),
-         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
         return plot_impl(x, y, labels, colors, ::GraphType::Line, marker);
     }
@@ -280,66 +280,66 @@ public:
     inline virtual SciQLopGraphInterface*
     scatter(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
             QList<QColor> colors = QList<QColor>(),
-            ::GraphMarkerShape marker = ::GraphMarkerShape::Cross)
+            ::GraphMarkerShape marker = ::GraphMarkerShape::Cross, QVariantMap metaData={})
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::Scatter, marker);
+        return plot_impl(x, y, labels, colors, ::GraphType::Scatter, marker, metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     parametric_curve(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
-                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve, marker);
+        return plot_impl(x, y, labels, colors, ::GraphType::ParametricCurve, marker, metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     parametric_curve(const QList<PyBuffer>& values, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
-                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
+                     ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
-        return plot_impl(values, labels, colors, ::GraphType::ParametricCurve, marker);
+        return plot_impl(values, labels, colors, ::GraphType::ParametricCurve, marker,metaData);
     }
 
     inline virtual SciQLopColorMapInterface* colormap(const PyBuffer& x, const PyBuffer& y,
                                                       const PyBuffer& z,
                                                       QString name = QStringLiteral("ColorMap"),
                                                       bool y_log_scale = false,
-                                                      bool z_log_scale = false)
+                                                      bool z_log_scale = false, QVariantMap metaData={})
     {
-        return plot_impl(x, y, z, name, y_log_scale, z_log_scale);
+        return plot_impl(x, y, z, name, y_log_scale, z_log_scale,metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     line(GetDataPyCallable callable, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(),
-         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QObject* sync_with = nullptr)
+         ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        return plot_impl(callable, labels, colors, ::GraphType::Line, marker, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::Line, marker, sync_with,metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     scatter(GetDataPyCallable callable, QStringList labels = QStringList(),
             QList<QColor> colors = QList<QColor>(),
-            GraphMarkerShape marker = ::GraphMarkerShape::Cross, QObject* sync_with = nullptr)
+            GraphMarkerShape marker = ::GraphMarkerShape::Cross, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        return plot_impl(callable, labels, colors, ::GraphType::Scatter, marker, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::Scatter, marker, sync_with,metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     parametric_curve(GetDataPyCallable callable, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
                      ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-                     QObject* sync_with = nullptr)
+                     QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, marker, sync_with);
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, marker, sync_with,metaData);
     }
 
     inline virtual SciQLopColorMapInterface*
     colormap(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
-             bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr)
+             bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with);
+        return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with,metaData);
     }
 
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)

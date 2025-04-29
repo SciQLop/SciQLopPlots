@@ -244,24 +244,24 @@ protected:
     virtual SciQLopGraphInterface*
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker) override;
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
                                                 const PyBuffer& z,
                                                 QString name = QStringLiteral("ColorMap"),
                                                 bool y_log_scale = false,
-                                                bool z_log_scale = false) override;
+                                                bool z_log_scale = false,QVariantMap metaData={}) override;
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              QObject* sync_with = nullptr) override;
+              QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
                                                 QString name = QStringLiteral("ColorMap"),
                                                 bool y_log_scale = false, bool z_log_scale = false,
-                                                QObject* sync_with = nullptr) override;
+                                                QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual void toggle_selected_objects_visibility() noexcept override;
 

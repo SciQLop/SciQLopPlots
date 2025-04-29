@@ -42,7 +42,7 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 
 
 public:
-    explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels);
+    explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
     virtual ~SciQLopNDProjectionCurves() override = default;
 
     Q_SLOT virtual void set_data(const QList<PyBuffer>& data) override;
@@ -61,7 +61,7 @@ class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, publi
 
 public:
     explicit SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots,
-                                  GetDataPyCallable&& callable, const QStringList& labels);
+                                  GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metaData={});
 
     virtual ~SciQLopNDProjectionCurvesFunction() override = default;
 

@@ -56,8 +56,8 @@ void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
 }
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
-                                   SciQLopPlotAxis* value_axis, const QStringList& labels)
-        : SQPQCPAbstractPlottableWrapper("Line", parent)
+                                   SciQLopPlotAxis* value_axis, const QStringList& labels, QVariantMap metaData)
+        : SQPQCPAbstractPlottableWrapper("Line", metaData, parent)
         , _keyAxis { key_axis }
         , _valueAxis { value_axis }
 {
@@ -72,7 +72,7 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axi
 }
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
-        : SQPQCPAbstractPlottableWrapper("Line", parent)
+        : SQPQCPAbstractPlottableWrapper("Line",{}, parent)
         , _keyAxis { nullptr }
         , _valueAxis { nullptr }
 {
@@ -149,8 +149,8 @@ void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                                    SciQLopPlotAxis* value_axis,
                                                    GetDataPyCallable&& callable,
-                                                   const QStringList& labels)
-        : SciQLopLineGraph { parent, key_axis, value_axis, labels }
+                                                   const QStringList& labels, QVariantMap metaData)
+        : SciQLopLineGraph { parent, key_axis, value_axis, labels ,metaData}
         , SciQLopFunctionGraph(std::move(callable),this, 2)
 {
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });

@@ -25,10 +25,10 @@
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable callable,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type, GraphMarkerShape marker, QObject* sync_with)
+                                                          GraphType graph_type, GraphMarkerShape marker, QObject* sync_with, QVariantMap metaData)
 {
     SciQLopGraphInterface* graph
-        = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels);
+        = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels,metaData);
 
     connect(this, &SciQLopPlot::time_axis_range_changed, graph,
             &SciQLopNDProjectionCurvesFunction::set_range);
@@ -38,9 +38,9 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<PyBuffer>& data,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type,GraphMarkerShape marker)
+                                                          GraphType graph_type, GraphMarkerShape marker, QVariantMap metaData)
 {
-    SciQLopGraphInterface* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels);
+    SciQLopGraphInterface* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels,metaData);
     graph->set_data(data);
     Q_EMIT graph_list_changed();
     return graph;

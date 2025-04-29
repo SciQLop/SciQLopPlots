@@ -71,7 +71,7 @@ class SciQLopColorMap : public SciQLopColorMapInterface
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,
-                             SciQLopPlotColorScaleAxis* zAxis, const QString& name);
+                             SciQLopPlotColorScaleAxis* zAxis, const QString& name,QVariantMap metaData={});
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;

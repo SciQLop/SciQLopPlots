@@ -68,7 +68,7 @@ public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
-                              const QStringList& labels = QStringList());
+                              const QStringList& labels = QStringList(),QVariantMap metaData={});
 
     SciQLopLineGraph(QCustomPlot* parent);
 
@@ -105,7 +105,7 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph,
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                       SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
-                                      const QStringList& labels);
+                                      const QStringList& labels,QVariantMap metaData={});
 
     virtual ~SciQLopLineGraphFunction() override = default;
 };

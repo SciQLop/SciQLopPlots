@@ -47,8 +47,8 @@ void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                  SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
-                                 const QString& name)
-        : SciQLopColorMapInterface(parent)
+                                 const QString& name, QVariantMap metaData)
+        : SciQLopColorMapInterface(metaData, parent)
         , _icon_update_timer { new QTimer(this) }
         , _keyAxis { xAxis }
         , _valueAxis { yAxis }

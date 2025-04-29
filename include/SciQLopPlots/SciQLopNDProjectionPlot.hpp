@@ -40,13 +40,13 @@ protected:
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              QObject* sync_with = nullptr) override;
+              QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopGraphInterface*
     plot_impl(const QList<PyBuffer>& data, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::GraphType graph_type = ::GraphType::ParametricCurve,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker) override;
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,QVariantMap metaData={}) override;
 
 
 public:

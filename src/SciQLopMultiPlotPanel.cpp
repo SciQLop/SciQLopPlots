@@ -286,17 +286,17 @@ void SciQLopMultiPlotPanel::set_color_palette(const QList<QColor>& palette) noex
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels,
                                  QList<QColor> colors, PlotType plot_type, GraphType graph_type,
-                                 GraphMarkerShape marker, int index)
+                                 GraphMarkerShape marker, int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, x, y, labels,
-                                                             colors, marker);
+                                                             colors, marker, metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, x, y,
-                                                                       labels, colors, marker);
+                                                                       labels, colors, marker, metaData);
             break;
         default:
             break;
@@ -307,17 +307,17 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringLi
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
                                  QString name, bool y_log_scale, bool z_log_scale,
-                                 PlotType plot_type, int index)
+                                 PlotType plot_type, int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopColorMapInterface>(index, GraphType::ColorMap, x, y, z,
-                                                                name, y_log_scale, z_log_scale);
+                                                                name, y_log_scale, z_log_scale,metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale);
+                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale,metaData);
             break;
         default:
             break;
@@ -327,7 +327,7 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyB
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labels,
-                                 QList<QColor> colors, GraphMarkerShape marker, int index)
+                                 QList<QColor> colors, GraphMarkerShape marker, int index, QVariantMap metaData)
 {
     auto* plot = new SciQLopNDProjectionPlot();
     if (index == -1)
@@ -335,26 +335,26 @@ SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labe
     else
         insert_plot(index, plot);
 
-    return { plot, plot->parametric_curve(values, labels, colors) };
+    return { plot, plot->parametric_curve(values, labels, colors,marker, metaData) };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
     GetDataPyCallable callable, QStringList labels, QList<QColor> colors, GraphType graph_type,
-    GraphMarkerShape marker, PlotType plot_type, QObject* sync_with, int index)
+    GraphMarkerShape marker, PlotType plot_type, QObject* sync_with, int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, callable, labels,
-                                                             colors, marker, sync_with);
+                                                             colors, marker, sync_with, metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(
-                index, graph_type, callable, labels, colors, marker, sync_with);
+                index, graph_type, callable, labels, colors, marker, sync_with, metaData);
             break;
         case ::PlotType::Projections:
             return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
-                index, graph_type, callable, labels, colors, marker, sync_with);
+                index, graph_type, callable, labels, colors, marker, sync_with, metaData);
         default:
             break;
     }
@@ -364,17 +364,17 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool y_log_scale,
                                  bool z_log_scale, PlotType plot_type, QObject* sync_with,
-                                 int index)
+                                 int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with);
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
             break;
         default:
             break;

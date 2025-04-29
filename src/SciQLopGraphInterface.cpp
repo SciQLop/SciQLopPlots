@@ -23,8 +23,8 @@
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 
-SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix, QObject* parent)
-        : SciQLopPlottableInterface(parent)
+SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)
+        : SciQLopPlottableInterface(metaData, parent)
 {
     connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
     setObjectName(UniqueNamesFactory::unique_name(prefix));
@@ -40,8 +40,8 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
     }
 }
 
-SciQLopColorMapInterface::SciQLopColorMapInterface(QObject* parent)
-        : SciQLopPlottableInterface(parent)
+SciQLopColorMapInterface::SciQLopColorMapInterface(QVariantMap metaData, QObject* parent)
+        : SciQLopPlottableInterface(metaData, parent)
 {
     setObjectName(UniqueNamesFactory::unique_name("ColorMap"));
 }
