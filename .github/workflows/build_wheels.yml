@@ -82,7 +82,7 @@ jobs:
             dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 clang /usr/bin/llvm-config
             && pip install "aqtinstall" && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }}
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-            auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.8 --exclude libshiboken6.abi3.so.6.8 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.8 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
+            auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.9 --exclude libshiboken6.abi3.so.6.9 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.9 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64
