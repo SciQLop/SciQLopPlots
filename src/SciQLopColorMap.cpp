@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp"
+#include "SciQLopPlots/constants.hpp"
 #include <cpp_utils/containers/algorithms.hpp>
 
 void SciQLopColorMap::_cmap_got_destroyed()
@@ -55,6 +56,7 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
         , _colorScaleAxis { zAxis }
 {
     this->_cmap = new QCPColorMap(this->_keyAxis->qcp_axis(), this->_valueAxis->qcp_axis());
+    this->_cmap->setLayer(Constants::LayersNames::ColorMap);
     connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
     SciQLopColorMap::set_name(name);
@@ -75,7 +77,6 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
             &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
 
     this->colorMap()->updateLegendIcon();
-    this->colorMap()->setLayer("background");
 
     if (auto legend_item = _legend_item(); legend_item)
     {

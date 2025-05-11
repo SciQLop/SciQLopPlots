@@ -55,6 +55,12 @@ public:
 
     virtual ~SciQLopPlottableInterface() = default;
 
+    inline virtual QString layer() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return QString();
+    }
+
     virtual void set_range(const SciQLopPlotRange& range);
 
     virtual void set_visible(bool visible) noexcept { WARN_ABSTRACT_METHOD; }

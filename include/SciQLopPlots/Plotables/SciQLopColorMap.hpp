@@ -74,6 +74,13 @@ public:
                              SciQLopPlotColorScaleAxis* zAxis, const QString& name,QVariantMap metaData={});
     virtual ~SciQLopColorMap() override;
 
+    inline virtual QString layer() const noexcept override
+    {
+        if (_cmap)
+            return _cmap->layer()->name();
+        return QString();
+    }
+
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
     virtual QList<PyBuffer> data() const noexcept override;
 

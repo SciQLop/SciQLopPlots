@@ -28,12 +28,13 @@ namespace LayersNames
 {
     const auto Background = "background";
     const auto Grid = "grid";
+    const auto ColorMap = "colormap";
     const auto Main = "main";
+    const auto Spans = "Spans";
+    const auto SpansBorders = "SpansBorders";
     const auto Axes = "axes";
     const auto Legend = "legend";
     const auto Overlay = "overlay";
-    const auto Spans = "Spans";
-    const auto SpansBorders = "SpansBorders";
 }
 
 }

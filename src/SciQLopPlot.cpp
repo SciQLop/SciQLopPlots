@@ -37,6 +37,7 @@ namespace _impl
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
+    using namespace Constants;
     setAttribute(Qt::WA_OpaquePaintEvent);
     this->m_replot_timer = new QTimer(this);
     this->m_replot_timer->setSingleShot(true);
@@ -44,7 +45,6 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     connect(this->m_replot_timer, &QTimer::timeout, this,
             [this]() { QCustomPlot::replot(rpQueuedReplot); });
     connect(this, &QCustomPlot::afterReplot, this, [this]() { m_replot_pending = false; });
-    using namespace Constants;
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
@@ -52,6 +52,10 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
                    QCustomPlot::limAbove);
     this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::SpansBorders)->setVisible(true);
+    this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main),
+                   QCustomPlot::limBelow);
+    this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
+    this->layer(LayersNames::ColorMap)->setVisible(true);
     this->setFocusPolicy(Qt::StrongFocus);
     this->grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren);
     this->grabGesture(Qt::PanGesture, Qt::DontStartGestureOnChildren);
@@ -114,7 +118,9 @@ SciQLopPlot::~SciQLopPlot()
 
 QCPColorMap* SciQLopPlot::addColorMap()
 {
+    using namespace Constants;
     auto cm = new QCPColorMap(this->xAxis, this->yAxis2);
+    cm->setLayer(LayersNames::ColorMap);
     return cm;
 }
 
