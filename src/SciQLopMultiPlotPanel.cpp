@@ -73,7 +73,11 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
         auto b = ::register_behavior<TimeAxisSynchronizer>(_container);
         _default_plot_type = PlotType::TimeSeries;
         connect(b, &TimeAxisSynchronizer::range_changed, this,
-                &SciQLopMultiPlotPanel::time_range_changed);
+                [this](const SciQLopPlotRange& range)
+                {
+                    this->_container->set_time_axis_range(range);
+                    emit this->time_range_changed(range);
+                });
     }
     this->setAcceptDrops(true);
     setObjectName(UniqueNamesFactory::unique_name("Panel"));
