@@ -5,7 +5,7 @@ cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
-QCustomPlot_dep = dependency('qcustomplot')
+NeoQCP_dep = dependency('NeoQCP')
 magic_enum_dep = dependency('magic_enum', static:true)
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
@@ -256,7 +256,7 @@ endif
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, QCustomPlot_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
