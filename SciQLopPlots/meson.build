@@ -5,7 +5,8 @@ cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
-NeoQCP_dep = dependency('NeoQCP')
+NeoQCP_dep = dependency('NeoQCP', default_options: [f'tracy_enable={meson.get_option("tracy_enable")}',
+                                                    f'with_opengl={meson.get_option("with_opengl")}'])
 magic_enum_dep = dependency('magic_enum', static:true)
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
