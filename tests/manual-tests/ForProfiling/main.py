@@ -1,3 +1,4 @@
+import SciQLopPlots
 from SciQLopPlots import SciQLopPlot, MultiPlotsVerticalSpan,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
                          SciQLopTimeSeriesPlot, GraphType, PlotType, AxisType, SciQLopPlotRange, PlotsModel, InspectorView
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget, QTreeView
@@ -14,6 +15,8 @@ from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
 os.environ['QT_API'] = 'PySide6'
+
+print("Using SciQLopPlots lib from:", SciQLopPlots.__file__)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from common import MainWindow
@@ -61,7 +64,7 @@ class RealTime(SciQLopMultiPlotPanel):
                 self._index += 5
                 self._index %= (len(self._base)-self._size)
                 self.update_signal.emit(self._x, self._base[self._index:self._index+self._size])
-                self.msleep(1)
+                self.msleep(10)
 
     class Spectrogram:
         def __init__(self, size, fft_size, roll=True):
@@ -111,6 +114,7 @@ if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     w = MainWindow()
+    w.ipython_widget.close()
     w.add_tab(RealTime(w), "RealTime")
-    w.show()
+    w.showFullScreen()
     app.exec()
