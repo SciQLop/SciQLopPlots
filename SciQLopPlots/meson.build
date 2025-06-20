@@ -6,7 +6,8 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
-                                                    'with_opengl=@0@'.format(get_option('with_opengl'))])
+                                                    'with_opengl=@0@'.format(get_option('with_opengl'))
+                                                    ])
 magic_enum_dep = dependency('magic_enum', static:true)
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
@@ -147,7 +148,7 @@ headers = moc_headers + \
          project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp']
 
-includes = include_directories(['../include', '../qcustomplot-source'])
+includes = include_directories(['../include'])
 
 moc_files = qtmod.compile_moc(
                             headers : moc_headers,
