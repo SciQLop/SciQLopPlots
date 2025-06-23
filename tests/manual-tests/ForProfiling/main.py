@@ -64,7 +64,7 @@ class RealTime(SciQLopMultiPlotPanel):
                 self._index += 5
                 self._index %= (len(self._base)-self._size)
                 self.update_signal.emit(self._x, self._base[self._index:self._index+self._size])
-                self.msleep(10)
+                self.msleep(1)
 
     class Spectrogram:
         def __init__(self, size, fft_size, roll=True):
@@ -92,17 +92,18 @@ class RealTime(SciQLopMultiPlotPanel):
     def _update_data(self, x, y):
         self._graph.set_data(x, y)
 
-    def __init__(self, parent):
+    def __init__(self, parent, with_spectro=True):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
         (self._plot,self._graph) = self.plot(np.arange(10)*1., np.arange(10)*1.,labels=["Audio"], colors=[QColorConstants.Blue])
-        size = 2**10
+        size = 2**14
         plot, self._fft_graph = self.plot(lambda x,y:fft(x,y,size),index=0,labels=["FFT"], colors=[QColorConstants.Red], sync_with=self._graph)
         plot.x_axis().set_log(True)
         plot.x_axis().set_range(0.01, 1)
         plot.y_axis().set_log(True)
         plot.y_axis().set_range(1., 1e-4)
-        self._spec = RealTime.Spectrogram(500,size)
-        plot, _ = self.plot(self._spec, name="Spectrogram",graph_type=GraphType.ColorMap, plot_type=PlotType.BasicXY, sync_with=self._fft_graph,y_log_scale=False,z_log_scale=True)
+        if with_spectro:
+            self._spec = RealTime.Spectrogram(500,size)
+            plot, _ = self.plot(self._spec, name="Spectrogram",graph_type=GraphType.ColorMap, plot_type=PlotType.BasicXY, sync_with=self._fft_graph,y_log_scale=False,z_log_scale=True)
         self._data_producer = RealTime.DataProducer(size=size)
 
         self._data_producer.update_signal.connect(self._update_data, Qt.QueuedConnection)
@@ -115,6 +116,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     w = MainWindow()
     w.ipython_widget.close()
-    w.add_tab(RealTime(w), "RealTime")
+    w.add_tab(RealTime(w, with_spectro=False), "RealTime")
     w.showFullScreen()
     app.exec()
