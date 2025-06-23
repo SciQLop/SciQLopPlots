@@ -52,8 +52,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
                    QCustomPlot::limAbove);
     this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::SpansBorders)->setVisible(true);
-    this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main),
-                   QCustomPlot::limBelow);
+    this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
     this->setFocusPolicy(Qt::StrongFocus);
@@ -302,7 +301,7 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
     // Qt converts two finger scroll to wheel events, use manhattanLength to
     // ingore the direction of the scroll
     const auto wheelSteps = _signed_length(event->angleDelta()) / 120.0;
-    foreach (QCPLayerable* candidate, layerableListAt(pos, false))
+    for (auto candidate : layerableListAt(pos, false))
     {
         if (auto axis = qobject_cast<QCPAxis*>(candidate); axis != nullptr)
         {
@@ -551,8 +550,14 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         }
         if (std::size(labels) == std::size(plottable->components()))
             plottable->set_labels(labels);
-        connect(plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
-                [this]() { if (this->m_auto_scale) this->rescale_axes(); }, Qt::QueuedConnection);
+        connect(
+            plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
+            [this]()
+            {
+                if (this->m_auto_scale)
+                    this->rescale_axes();
+            },
+            Qt::QueuedConnection);
         connect(
             plottable, &SciQLopGraphInterface::request_rescale, this,
             [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
@@ -598,7 +603,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 
 SciQLopPlot::~SciQLopPlot()
 {
-    while(plottables().size() > 0)
+    while (plottables().size() > 0)
     {
         delete plottable(0);
     }
@@ -638,7 +643,8 @@ void SciQLopPlot::replot(bool immediate)
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
                                               QStringList labels, QList<QColor> colors,
-                                              GraphType graph_type, GraphMarkerShape marker,QVariantMap metaData)
+                                              GraphType graph_type, GraphMarkerShape marker,
+                                              QVariantMap metaData)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -694,15 +700,20 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
         connect(
             cmap, &SciQLopGraphInterface::request_rescale, this, [this]() { this->rescale_axes(); },
             Qt::QueuedConnection);
-        connect(cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed), this,
-                [this]() { if (this->m_auto_scale) this->rescale_axes(); }, Qt::QueuedConnection);
+        connect(
+            cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed), this,
+            [this]()
+            {
+                if (this->m_auto_scale)
+                    this->rescale_axes();
+            },
+            Qt::QueuedConnection);
     }
 }
 
 void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with)
 {
-    if (SciQLopFunctionGraph* graph
-        = dynamic_cast<SciQLopFunctionGraph*>(plottable))
+    if (SciQLopFunctionGraph* graph = dynamic_cast<SciQLopFunctionGraph*>(plottable))
     {
         if (sync_with != nullptr)
         {
@@ -717,18 +728,20 @@ void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, Q
 
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
                                               QList<QColor> colors, GraphType graph_type,
-                                              GraphMarkerShape marker, QObject* sync_with, QVariantMap metaData)
+                                              GraphMarkerShape marker, QObject* sync_with,
+                                              QVariantMap metaData)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable
-                = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels, metaData);
+            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels,
+                                                                        metaData);
             break;
         case GraphType::ParametricCurve:
-            plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels, metaData);
+            plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,
+                                                                    metaData);
             break;
         default:
             break;
