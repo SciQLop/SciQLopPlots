@@ -31,7 +31,6 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <utility>
 
-
 namespace _impl
 {
 
@@ -42,10 +41,18 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     setAttribute(Qt::WA_OpaquePaintEvent);
     this->m_replot_timer = new QTimer(this);
     this->m_replot_timer->setSingleShot(true);
+    this->m_replot_timer->setTimerType(Qt::PreciseTimer);
     this->m_replot_timer->setInterval(5);
+    this->connect(this, &QCustomPlot::beforeReplot, this, [this]() { m_replot_timer->start(); });
     connect(this->m_replot_timer, &QTimer::timeout, this,
-            [this]() { QCustomPlot::replot(rpQueuedReplot); });
-    connect(this, &QCustomPlot::afterReplot, this, [this]() { m_replot_pending = false; });
+            [this]()
+            {
+                if (m_replot_pending)
+                {
+                    m_replot_pending = false;
+                    QCustomPlot::replot(rpQueuedReplot);
+                }
+            });
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
@@ -206,10 +213,13 @@ void SciQLopPlot::replot(RefreshPriority priority)
     }
     else
     {
-        if (!m_replot_timer->isActive() && !m_replot_pending)
+        if (!m_replot_pending && m_replot_timer->isActive())
         {
             m_replot_pending = true;
-            m_replot_timer->start();
+        }
+        else
+        {
+            QCustomPlot::replot(rpQueuedReplot);
         }
     }
 }
