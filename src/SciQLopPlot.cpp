@@ -42,7 +42,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     setAttribute(Qt::WA_OpaquePaintEvent);
     this->m_replot_timer = new QTimer(this);
     this->m_replot_timer->setSingleShot(true);
-    this->m_replot_timer->setInterval(10);
+    this->m_replot_timer->setInterval(5);
     connect(this->m_replot_timer, &QTimer::timeout, this,
             [this]() { QCustomPlot::replot(rpQueuedReplot); });
     connect(this, &QCustomPlot::afterReplot, this, [this]() { m_replot_pending = false; });
