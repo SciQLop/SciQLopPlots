@@ -31,6 +31,7 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <utility>
 
+
 namespace _impl
 {
 
@@ -300,6 +301,7 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
     const auto pos = event->position();
     // Qt converts two finger scroll to wheel events, use manhattanLength to
     // ingore the direction of the scroll
+    const auto inside_axis_rect = this->axisRect()->rect().contains(pos.toPoint());
     const auto wheelSteps = _signed_length(event->angleDelta()) / 120.0;
     for (auto candidate : layerableListAt(pos, false))
     {
@@ -318,7 +320,7 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
                 this->_wheel_zoom(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
             else if (event->modifiers().testFlag(Qt::ShiftModifier))
                 this->_wheel_zoom(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
-            else
+            else if (inside_axis_rect)
                 this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps);
             this->replot(rpQueuedReplot);
             event->accept();
