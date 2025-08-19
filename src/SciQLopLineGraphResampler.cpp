@@ -49,7 +49,7 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
             {
                 if ((std::size(view) > max_x_size) && !plot_info.x_is_log)
                 {
-                    data.emplace_back(::resample(view, line_index, max_x_size));
+                    data.emplace_back(::resample(view, line_index, max_x_size, this->_resampling_context));
                 }
                 else
                 {

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "PythonInterface.hpp"
+#include "SciQLopPlots/Profiling.hpp"
 
 #include <assert.h>
 #include <cmath>
@@ -54,6 +55,7 @@ public:
 
     explicit XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)
     {
+        PROFILE_HERE_N("XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)");
         std::size_t start_index = std::distance(
             x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
         std::size_t stop_index

@@ -18,7 +18,8 @@ from numba import jit, prange
 os.environ['QT_API'] = 'PySide6'
 os.environ['QT_QPA_PLATFORM'] = 'xcb'
 
-print("Using SciQLopPlots lib from:", SciQLopPlots.__file__)
+print(f"Using SciQLopPlots lib from: {SciQLopPlots.__file__}, {SciQLopPlots.SciQLopPlotsBindings.__file__}")
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from common import MainWindow
@@ -35,7 +36,7 @@ def compute_data(size):
 def generate_data(size=int(1e9)):
     """Generate a large array of random data."""
     # Simulate a large dataset
-    time_vector = np.arange(size)
+    time_vector = np.arange(size, dtype=np.float64)
     return time_vector, compute_data(size)
 
 class GigaPoints(SciQLopMultiPlotPanel):
