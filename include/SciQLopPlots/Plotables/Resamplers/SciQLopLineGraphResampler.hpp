@@ -159,6 +159,13 @@ struct ResamplingContextLevel
     double source_min_x;
     double source_max_x;
 
+    inline void reset()
+    {
+        data.reset();
+        source_min_x = std::numeric_limits<double>::quiet_NaN();
+        source_max_x = std::numeric_limits<double>::quiet_NaN();
+    }
+
     inline bool contains(const double xmin, const double xmax) const
     {
         return data.has_value() && !data->isEmpty() &&

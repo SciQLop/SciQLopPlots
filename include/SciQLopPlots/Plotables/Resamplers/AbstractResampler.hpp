@@ -110,6 +110,7 @@ protected:
             {
                 static_cast<U*>(this)->_resample_impl(_data, _plot_info);
             }
+            _data.new_data = false;
         }
     }
 

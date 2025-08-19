@@ -41,6 +41,10 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
     const auto max_x_size = static_cast<std::size_t>(plot_info.plot_size.width() * 4);
     if (data.x.data() && data.x.flat_size() && max_x_size)
     {
+        if(data.new_data)
+        {
+            _resampling_context.reset();
+        }
         const auto view = make_view(data, plot_info);
         if (std::size(view))
         {
