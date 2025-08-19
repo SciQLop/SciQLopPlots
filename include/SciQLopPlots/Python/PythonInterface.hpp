@@ -41,6 +41,83 @@ extern "C"
 #endif
 }
 
+struct ArrayView1DIterator
+{
+    double* ptr= nullptr;
+    const std::size_t offset = 1;
+
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = double;
+    using difference_type = std::ptrdiff_t;
+    using pointer = double*;
+    using reference = double&;
+    using const_pointer = const double*;
+    using const_reference = const double&;
+
+    ArrayView1DIterator() = default;
+
+    ArrayView1DIterator(double* ptr, std::size_t offset = 1) : ptr(ptr), offset(offset) {}
+
+    inline double operator*() const { return *ptr; }
+    inline ArrayView1DIterator& operator++()
+    {
+        ptr += offset;
+        return *this;
+    }
+    inline ArrayView1DIterator operator++(int)
+    {
+        ArrayView1DIterator tmp = *this;
+        ++(*this);
+        return tmp;
+    }
+    inline bool operator==(const ArrayView1DIterator& other) const { return ptr == other.ptr; }
+    inline bool operator!=(const ArrayView1DIterator& other) const { return ptr != other.ptr; }
+    inline bool operator<(const ArrayView1DIterator& other) const { return ptr < other.ptr; }
+    inline bool operator>(const ArrayView1DIterator& other) const { return ptr > other.ptr; }
+    inline bool operator<=(const ArrayView1DIterator& other) const { return ptr <= other.ptr; }
+    inline bool operator>=(const ArrayView1DIterator& other) const { return ptr >= other.ptr; }
+    inline double operator[](std::size_t index) const { return *(ptr + index * offset); }
+    inline ArrayView1DIterator operator+(std::size_t index) const
+    {
+        return ArrayView1DIterator(ptr + index * offset, offset);
+    }
+    inline ArrayView1DIterator operator-(std::size_t index) const
+    {
+        return ArrayView1DIterator(ptr - index * offset, offset);
+    }
+
+    inline std::ptrdiff_t operator-(const ArrayView1DIterator& other) const
+    {
+        return (ptr - other.ptr) / offset;
+    }
+    inline ArrayView1DIterator& operator+=(std::size_t index)
+    {
+        ptr += index * offset;
+        return *this;
+    }
+    inline ArrayView1DIterator& operator-=(std::size_t index)
+    {
+        ptr -= index * offset;
+        return *this;
+    }
+    inline ArrayView1DIterator& operator=(const ArrayView1DIterator& other)
+    {
+        ptr = other.ptr;
+        return *this;
+    }
+    inline ArrayView1DIterator& operator=(double* other_ptr)
+    {
+        ptr = other_ptr;
+        return *this;
+    }
+    inline ArrayView1DIterator& operator=(double value)
+    {
+        *ptr = value;
+        return *this;
+    }
+    inline double* base() const { return ptr; }
+};
+
 struct ArrayViewBase
 {
     virtual ~ArrayViewBase() = default;
@@ -50,6 +127,8 @@ struct ArrayViewBase
         = 0;
     virtual std::size_t flat_size() const noexcept = 0;
     virtual std::size_t size(int index = 0) const noexcept = 0;
+
+    virtual ArrayView1DIterator row_iterator(std::size_t start_row = 0, std::size_t column_index = 0) const = 0;
 };
 
 struct ArrayView1D : public ArrayViewBase
@@ -82,6 +161,13 @@ public:
     inline std::size_t flat_size() const noexcept override { return _size; }
 
     inline std::size_t size(int index = 0) const noexcept override { return _size; }
+
+    inline ArrayView1DIterator row_iterator(std::size_t start_row = 0,
+                                            std::size_t column_index = 0) const override
+    {
+        assert(column_index == 0);
+        return ArrayView1DIterator(ptr + start + start_row, 1);
+    }
 };
 
 template <bool row_major = true>
@@ -135,6 +221,20 @@ public:
         if (index == 0)
             return stop - start;
         return n_cols;
+    }
+
+    inline ArrayView1DIterator row_iterator(std::size_t start_row = 0,
+                                            std::size_t column_index = 0) const override
+    {
+        assert(column_index < n_cols);
+        if constexpr (row_major)
+        {
+            return ArrayView1DIterator(ptr + (start_row + start) * n_cols + column_index, n_cols);
+        }
+        else
+        {
+            return ArrayView1DIterator(ptr + start + column_index * n_rows + start_row, n_rows);
+        }
     }
 };
 

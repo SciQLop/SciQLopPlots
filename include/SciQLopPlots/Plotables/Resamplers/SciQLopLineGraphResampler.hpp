@@ -30,6 +30,7 @@
 static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t column_index,
                                              std::size_t dest_size)
 {
+    PROFILE_HERE_N("QVector<QCPGraphData> resample");
     if (dest_size & 1)
         dest_size++;
     const auto view_size = std::size(view);
@@ -45,12 +46,12 @@ static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t col
         data[0].value = std::nan("");
         data[1].key = key + dx / 2.;
         data[1].value = std::nan("");
+        auto x_view_it = view.x_row_iterator(0);
+        auto y_view_it = view.y_row_iterator(0, column_index);
         for (auto view_index = 0UL; view_index < view_size; view_index++)
         {
-            // @todo: A possible optimization would be to use a kind of iterator
-            // that polymorphic view is not cheap
-            auto x = view.x(view_index);
-            auto y = view.y(view_index, column_index);
+            auto x = *x_view_it;
+            auto y = *y_view_it;
             while (x > next_x && dest_index < dest_size - 4)
             {
                 dest_index += 2;
@@ -71,6 +72,8 @@ static inline QVector<QCPGraphData> resample(const XYView& view, std::size_t col
                 if (!(data[dest_index + 1].value > y))
                     data[dest_index + 1].value = y;
             }
+            x_view_it++;
+            y_view_it++;
         }
         if (dest_index < dest_size - 1)
         {

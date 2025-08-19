@@ -37,7 +37,7 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
     PROFILE_HERE_N("LineGraphResampler::_resample_impl");
     PROFILE_PASS_VALUE(data.x.flat_size());
     // 4x the plot width is a reasonable maximum size for the data,
-    // with anti-aliasing we have to provide a little points than pixels
+    // with anti-aliasing we have to provide a little more points than pixels
     const auto max_x_size = static_cast<std::size_t>(plot_info.plot_size.width() * 4);
     if (data.x.data() && data.x.flat_size() && max_x_size)
     {

@@ -67,6 +67,16 @@ public:
     inline double y(std::size_t i, std::size_t j) const { return (*_y)[{ i, j }]; }
 
     inline std::size_t size() const { return std::size(*_x); }
+
+    inline auto x_row_iterator(std::size_t start_row = 0) const
+    {
+        return _x->row_iterator(start_row, 0);
+    }
+
+    inline auto y_row_iterator(std::size_t start_row = 0, std::size_t column_index = 0) const
+    {
+        return _y->row_iterator(start_row, column_index);
+    }
 };
 
 struct XYZView

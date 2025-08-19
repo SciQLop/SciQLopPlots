@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QRecursiveMutex>
 #include <QVector>
+#include <SciQLopPlots/Profiling.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Python/PythonInterface.hpp>
 #include <SciQLopPlots/Python/Views.hpp>
@@ -58,6 +59,7 @@ struct ResamplerData1d
 
 inline XYView make_view(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
 {
+    PROFILE_HERE_N("XYView make_view");
     return XYView(data.x, data.y, plot_info.plot_range.lower, plot_info.plot_range.upper);
 }
 
@@ -72,6 +74,7 @@ struct ResamplerData2d
 
 inline XYZView make_view(const ResamplerData2d& data, const ResamplerPlotInfo& plot_info)
 {
+    PROFILE_HERE_N("XYZView make_view");
     return XYZView(data.x, data.y, data.z, plot_info.plot_range.lower, plot_info.plot_range.upper);
 }
 

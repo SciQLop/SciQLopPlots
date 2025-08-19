@@ -15,6 +15,7 @@ from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 
 os.environ['QT_API'] = 'PySide6'
+os.environ['QT_QPA_PLATFORM'] = 'xcb'
 
 print("Using SciQLopPlots lib from:", SciQLopPlots.__file__)
 
