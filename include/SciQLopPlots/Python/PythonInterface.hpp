@@ -41,9 +41,11 @@ extern "C"
 #endif
 }
 
+struct _PyBuffer_impl;
+
 struct ArrayView1DIterator
 {
-    double* ptr= nullptr;
+    double* ptr = nullptr;
     const std::size_t offset = 1;
 
     using iterator_category = std::random_access_iterator_tag;
@@ -54,33 +56,44 @@ struct ArrayView1DIterator
     using const_pointer = const double*;
     using const_reference = const double&;
 
-    ArrayView1DIterator() = default;
+    ArrayView1DIterator() = delete;
 
-    ArrayView1DIterator(double* ptr, std::size_t offset = 1) : ptr(ptr), offset(offset) {}
+    ArrayView1DIterator(double* ptr, std::size_t offset = 1) : ptr(ptr), offset(offset) { }
 
     inline double operator*() const { return *ptr; }
+
     inline ArrayView1DIterator& operator++()
     {
         ptr += offset;
         return *this;
     }
+
     inline ArrayView1DIterator operator++(int)
     {
         ArrayView1DIterator tmp = *this;
         ++(*this);
         return tmp;
     }
+
     inline bool operator==(const ArrayView1DIterator& other) const { return ptr == other.ptr; }
+
     inline bool operator!=(const ArrayView1DIterator& other) const { return ptr != other.ptr; }
+
     inline bool operator<(const ArrayView1DIterator& other) const { return ptr < other.ptr; }
+
     inline bool operator>(const ArrayView1DIterator& other) const { return ptr > other.ptr; }
+
     inline bool operator<=(const ArrayView1DIterator& other) const { return ptr <= other.ptr; }
+
     inline bool operator>=(const ArrayView1DIterator& other) const { return ptr >= other.ptr; }
+
     inline double operator[](std::size_t index) const { return *(ptr + index * offset); }
+
     inline ArrayView1DIterator operator+(std::size_t index) const
     {
         return ArrayView1DIterator(ptr + index * offset, offset);
     }
+
     inline ArrayView1DIterator operator-(std::size_t index) const
     {
         return ArrayView1DIterator(ptr - index * offset, offset);
@@ -90,31 +103,37 @@ struct ArrayView1DIterator
     {
         return (ptr - other.ptr) / offset;
     }
+
     inline ArrayView1DIterator& operator+=(std::size_t index)
     {
         ptr += index * offset;
         return *this;
     }
+
     inline ArrayView1DIterator& operator-=(std::size_t index)
     {
         ptr -= index * offset;
         return *this;
     }
+
     inline ArrayView1DIterator& operator=(const ArrayView1DIterator& other)
     {
         ptr = other.ptr;
         return *this;
     }
+
     inline ArrayView1DIterator& operator=(double* other_ptr)
     {
         ptr = other_ptr;
         return *this;
     }
+
     inline ArrayView1DIterator& operator=(double value)
     {
         *ptr = value;
         return *this;
     }
+
     inline double* base() const { return ptr; }
 };
 
@@ -128,7 +147,9 @@ struct ArrayViewBase
     virtual std::size_t flat_size() const noexcept = 0;
     virtual std::size_t size(int index = 0) const noexcept = 0;
 
-    virtual ArrayView1DIterator row_iterator(std::size_t start_row = 0, std::size_t column_index = 0) const = 0;
+    virtual ArrayView1DIterator row_iterator(std::size_t start_row = 0,
+                                             std::size_t column_index = 0) const
+        = 0;
 };
 
 struct ArrayView1D : public ArrayViewBase
@@ -138,10 +159,12 @@ private:
     std::size_t start; // first row
     std::size_t stop; // last row
     std::size_t _size;
+    std::shared_ptr<_PyBuffer_impl> _owner;
 
 public:
-    ArrayView1D(double* ptr, std::size_t start, std::size_t stop)
-            : ptr(ptr), start(start), stop(stop), _size(stop - start)
+    ArrayView1D(double* ptr, std::size_t start, std::size_t stop,
+                std::shared_ptr<_PyBuffer_impl> owner)
+            : ptr(ptr), start(start), stop(stop), _size(stop - start), _owner(owner)
     {
     }
 
@@ -155,7 +178,7 @@ public:
     {
         if (last_row == 0)
             last_row = stop - start;
-        return std::make_unique<ArrayView1D>(ptr, first_row + start, last_row + start);
+        return std::make_unique<ArrayView1D>(ptr, first_row + start, last_row + start, _owner);
     }
 
     inline std::size_t flat_size() const noexcept override { return _size; }
@@ -180,16 +203,18 @@ private:
     std::size_t start; // first row
     std::size_t stop; // last row
     std::size_t _flat_size;
+    std::shared_ptr<_PyBuffer_impl> _owner;
 
 public:
     ArrayView2D(double* ptr, std::size_t n_rows, std::size_t n_cols, std::size_t start,
-                std::size_t stop)
+                std::size_t stop, std::shared_ptr<_PyBuffer_impl> owner)
             : ptr(ptr)
             , n_rows(n_rows)
             , n_cols(std::max(n_cols, std::size_t { 1UL }))
             , start(start)
             , stop(stop)
             , _flat_size((stop - start) * n_cols)
+            , _owner(owner)
     {
     }
 
@@ -211,7 +236,7 @@ public:
         if (last_row == 0)
             last_row = n_rows;
         return std::make_unique<ArrayView2D<row_major>>(ptr, n_rows, n_cols, first_row + start,
-                                                        last_row + start);
+                                                        last_row + start, _owner);
     }
 
     inline std::size_t flat_size() const noexcept override { return _flat_size; }
@@ -233,13 +258,10 @@ public:
         }
         else
         {
-            return ArrayView1DIterator(ptr + start + column_index * n_rows + start_row, n_rows);
+            return ArrayView1DIterator(ptr + start + column_index * n_rows + start_row, 1);
         }
     }
 };
-
-
-struct _PyBuffer_impl;
 
 struct PyBuffer
 {
@@ -312,13 +334,13 @@ public:
         if (is_valid())
         {
             if (ndim() == 1)
-                return std::make_unique<ArrayView1D>(data(), first_row, last_row);
+                return std::make_unique<ArrayView1D>(data(), first_row, last_row, _impl);
             if (row_major())
                 return std::make_unique<ArrayView2D<true>>(
-                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row);
+                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row, _impl);
             else
                 return std::make_unique<ArrayView2D<false>>(
-                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row);
+                    data(), shape()[0], ndim() == 1 ? 0 : shape()[1], first_row, last_row, _impl);
         }
         return nullptr;
     }

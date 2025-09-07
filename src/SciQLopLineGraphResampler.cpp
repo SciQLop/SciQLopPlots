@@ -41,23 +41,24 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
     const auto max_x_size = static_cast<std::size_t>(plot_info.plot_size.width() * 4);
     if (data.x.data() && data.x.flat_size() && max_x_size)
     {
-        if(data.new_data)
+        if (data.new_data)
         {
             _resampling_context.reset();
         }
         const auto view = make_view(data, plot_info);
         if (std::size(view))
         {
-            QList<QVector<QCPGraphData>> data;
+            QList<QVector<QCPGraphData>> data(line_count());
             for (auto line_index = 0UL; line_index < line_count(); line_index++)
             {
                 if ((std::size(view) > max_x_size) && !plot_info.x_is_log)
                 {
-                    data.emplace_back(::resample(view, line_index, max_x_size, this->_resampling_context));
+                    data[line_index]
+                        = ::resample(view, line_index, max_x_size, this->_resampling_context);
                 }
                 else
                 {
-                    data.emplace_back(::copy_data(view, line_index));
+                    data[line_index] = ::copy_data(view, line_index);
                 }
             }
             Q_EMIT setGraphData(data);
