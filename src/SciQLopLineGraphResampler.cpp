@@ -43,7 +43,10 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
     {
         if (data.new_data)
         {
-            _resampling_context.reset();
+            if(std::size(this->_resampling_context) != line_count())
+                this->_resampling_context.resize(line_count());
+            for (auto& ctx : this->_resampling_context)
+                ctx.reset();
         }
         const auto view = make_view(data, plot_info);
         if (std::size(view))
@@ -54,7 +57,7 @@ void LineGraphResampler::_resample_impl(const ResamplerData1d& data,
                 if ((std::size(view) > max_x_size) && !plot_info.x_is_log)
                 {
                     data[line_index]
-                        = ::resample(view, line_index, max_x_size, this->_resampling_context);
+                        = ::resample(view, line_index, max_x_size, this->_resampling_context[line_index]);
                 }
                 else
                 {

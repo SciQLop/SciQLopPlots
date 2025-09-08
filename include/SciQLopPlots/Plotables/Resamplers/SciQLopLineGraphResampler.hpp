@@ -283,7 +283,7 @@ struct LineGraphResampler : public AbstractResampler1d
 {
     Q_OBJECT
 
-    ResamplingContextLevel _resampling_context;
+    QList<ResamplingContextLevel> _resampling_context;
 
     void _resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info) override;
 
