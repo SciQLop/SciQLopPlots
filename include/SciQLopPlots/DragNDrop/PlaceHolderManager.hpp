@@ -70,13 +70,12 @@ class PlaceHolderManager : public QObject
 
     inline PlaceHolderLocation _compute_location(const QPointF& pos) const
     {
-        if (auto index = _interface()->index(pos); index != -1)
+        if (auto widget = _interface()->widget_at(pos))
         {
-            auto plot = _interface()->plot_at(index);
-            auto plot_top = plot->geometry().top();
-            auto plot_bottom = plot->geometry().bottom();
-            auto upper_zome = plot_top + 0.2 * plot->geometry().height();
-            auto lower_zone = plot_bottom - 0.2 * plot->geometry().height();
+            auto widget_top = widget->geometry().top();
+            auto widget_bottom = widget->geometry().bottom();
+            auto upper_zome = widget_top + 0.15 * widget->geometry().height();
+            auto lower_zone = widget_bottom - 0.15 * widget->geometry().height();
             if (pos.y() < upper_zome)
             {
                 return PlaceHolderLocation::Top;
@@ -91,17 +90,13 @@ class PlaceHolderManager : public QObject
 
     inline SciQLopPlotInterface* _plot_at(const QPointF& pos) const
     {
-        if (auto index = _interface()->index(pos); index != -1)
-        {
-            return _interface()->plot_at(index);
-        }
-        return nullptr;
+        return qobject_cast<SciQLopPlotInterface*>(_interface()->widget_at(pos));
     }
 
     inline PlaceHolder* _create_place_holder(int index)
     {
         auto place_holder = new PlaceHolder();
-        place_holder->setMinimumHeight(0.9 * _parent->height() / (1 + _interface()->size()));
+        place_holder->setMinimumHeight(0.9 * _interface()->content_height() / (1 + _interface()->size()));
         _interface()->insert_plot(index, place_holder);
         return place_holder;
     }
@@ -179,6 +174,6 @@ public:
             return { DropLocation::NewPlot, index };
         }
         return { DropLocation::ExistingPlot,
-            _interface()->index_from_global_position(QCursor::pos()) };
+                 _interface()->index_from_global_position(QCursor::pos()) };
     }
 };

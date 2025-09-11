@@ -55,7 +55,7 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
             plot, &SciQLopPlotInterface::destroyed, this, [this, plot]() { remove_plot(plot); },
             Qt::QueuedConnection);
     }
-    else if(auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(widget))
+    else if (auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(widget))
     {
         emit panel_added(panel);
         emit panel_inserted(panel, index);
@@ -132,7 +132,7 @@ void SciQLopPlotContainer::clear()
     emit plot_list_changed({});
 }
 
-QList<QWidget *> SciQLopPlotContainer::child_widgets() const
+QList<QWidget*> SciQLopPlotContainer::child_widgets() const
 {
     QList<QWidget*> widgets;
     for (int i = 0; i < count(); i++)
@@ -140,6 +140,18 @@ QList<QWidget *> SciQLopPlotContainer::child_widgets() const
         widgets.append(widget(i));
     }
     return widgets;
+}
+
+std::size_t SciQLopPlotContainer::content_height() const
+{
+    return this->height()
+        - (this->layout()->contentsMargins().top() + this->layout()->contentsMargins().bottom());
+}
+
+std::size_t SciQLopPlotContainer::content_width() const
+{
+    return this->width()
+        - (this->layout()->contentsMargins().left() + this->layout()->contentsMargins().right());
 }
 
 SciQLopPlotCollectionBehavior*

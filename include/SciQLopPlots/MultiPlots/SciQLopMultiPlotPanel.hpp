@@ -159,6 +159,7 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
+    QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
 
     virtual QList<QWidget*> child_widgets() const Q_DECL_OVERRIDE;
@@ -178,6 +179,9 @@ public:
 
     bool empty() const Q_DECL_OVERRIDE;
     std::size_t size() const Q_DECL_OVERRIDE;
+
+    std::size_t content_height() const Q_DECL_OVERRIDE;
+    std::size_t content_width() const Q_DECL_OVERRIDE;
 
     void addWidget(QWidget* widget);
     void removeWidget(QWidget* widget);

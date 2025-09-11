@@ -45,6 +45,7 @@ class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInter
     SciQLopPlotRange _time_axis_range { std::nan(""), std::nan(""), true };
     SciQLopPlotRange _x_axis_range;
 
+
 public:
     Q_PROPERTY(bool empty READ empty FINAL);
 
@@ -71,16 +72,14 @@ public:
 
     inline int index(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
-        return plots().indexOf(plot);
+        return indexOf(plot);
     }
 
     inline virtual int index(const QPointF& pos) const Q_DECL_OVERRIDE
     {
-        const auto _plots = plots();
-        for (decltype(_plots.size()) i = 0; i < _plots.size(); i++)
+        for(int i=0, cnt=count(); i<cnt; i++)
         {
-            auto plot = _plots[i];
-            if (plot->geometry().contains(pos.toPoint()))
+            if (widget(i)->geometry().contains(pos.toPoint()))
                 return i;
         }
         return -1;
@@ -88,10 +87,25 @@ public:
 
     virtual void clear() Q_DECL_OVERRIDE;
 
+    inline virtual QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE
+    {
+        for(int i=0, cnt=count(); i<cnt; i++)
+        {
+            if (widget(i)->geometry().contains(pos.toPoint()))
+                return widget(i);
+        }
+        return nullptr;
+    }
+
     inline virtual SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE
     {
-        if ((index >= 0) && (index < count()))
-            return plots().at(index);
+        for (int i = 0, cnt = count(), idx = -1; i < cnt; i++)
+        {
+            if (qobject_cast<SciQLopPlotInterface*>(widget(i)))
+                idx++;
+            if (idx == index)
+                return qobject_cast<SciQLopPlotInterface*>(widget(i));
+        }
         return nullptr;
     }
 
@@ -126,12 +140,18 @@ public:
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
-        return plots().contains(plot);
+        for(int i=0, cnt=count(); i<cnt; i++)
+            if (widget(i) == plot)
+                return true;
+        return false;
     }
 
     inline virtual bool empty() const Q_DECL_OVERRIDE { return count() == 0; }
 
     virtual std::size_t size() const Q_DECL_OVERRIDE { return count(); }
+
+    virtual std::size_t content_height() const Q_DECL_OVERRIDE;
+    virtual std::size_t content_width() const Q_DECL_OVERRIDE;
 
     inline void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE
     {

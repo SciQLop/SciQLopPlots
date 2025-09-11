@@ -131,6 +131,11 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
     return _container->plot_at(index);
 }
 
+QWidget *SciQLopMultiPlotPanel::widget_at(const QPointF &pos) const
+{
+    return _container->widget_at(pos);
+}
+
 QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
 {
     return _container->plots();
@@ -194,6 +199,16 @@ bool SciQLopMultiPlotPanel::empty() const
 std::size_t SciQLopMultiPlotPanel::size() const
 {
     return _container->size();
+}
+
+std::size_t SciQLopMultiPlotPanel::content_height() const
+{
+    return _container->content_height();
+}
+
+std::size_t SciQLopMultiPlotPanel::content_width() const
+{
+    return _container->content_width();
 }
 
 void SciQLopMultiPlotPanel::addWidget(QWidget* widget)

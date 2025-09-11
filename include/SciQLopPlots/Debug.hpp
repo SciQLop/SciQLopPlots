@@ -27,6 +27,7 @@
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \
         std::cout << "Abstract method called:" << __PRETTY_FUNCTION__ << std::endl;                \
+        std::cout << "From concrete class:" << typeid(*this).name() << std::endl;                  \
     }
 
 #define DEBUG_MESSAGE(message)                                                                     \
@@ -34,9 +35,9 @@
         std::cout << message << std::endl;                                                         \
     }
 
-#define WARN_UNSUPPORTED_FUNCTIONALITY                                                                 \
+#define WARN_UNSUPPORTED_FUNCTIONALITY                                                             \
     {                                                                                              \
-        std::cout << "Unsupported functionality:" << __PRETTY_FUNCTION__ << std::endl;            \
+        std::cout << "Unsupported functionality:" << __PRETTY_FUNCTION__ << std::endl;             \
     }
 
 #else

@@ -184,6 +184,12 @@ public:
         return nullptr;
     }
 
+    inline virtual QWidget* widget_at(const QPointF& pos) const
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
     inline virtual bool contains(SciQLopPlotInterface* plot) const
     {
         WARN_ABSTRACT_METHOD;
@@ -197,6 +203,18 @@ public:
     }
 
     inline virtual std::size_t size() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return 0;
+    }
+
+    inline virtual std::size_t content_height() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return 0;
+    }
+
+    inline virtual std::size_t content_width() const
     {
         WARN_ABSTRACT_METHOD;
         return 0;
