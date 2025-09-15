@@ -1,4 +1,4 @@
-project('SciQLopPlots', 'cpp',default_options : ['cpp_std=c++20', 'buildtype=release'], license: 'GPL3', version: '0.16.1')
+project('SciQLopPlots', 'cpp',default_options : ['cpp_std=c++20', 'buildtype=release'], license: 'GPL3', version: '0.17.0')
 add_project_arguments(
             '-DCATCH_CONFIG_NO_POSIX_SIGNALS', # workaround for this https://github.com/catchorg/Catch2/issues/2192
             language: 'cpp',
