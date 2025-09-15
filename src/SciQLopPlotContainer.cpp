@@ -103,9 +103,9 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
             plot->deleteLater();
         if (empty())
             setProperty("empty", true);
-        emit plot_list_changed(plots());
         emit plot_removed(plot);
     }
+    emit plot_list_changed(plots());
 }
 
 void SciQLopPlotContainer::removeWidget(QWidget* widget, bool destroy)

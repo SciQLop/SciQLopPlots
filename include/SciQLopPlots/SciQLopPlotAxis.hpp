@@ -21,18 +21,20 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlotRange.hpp"
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QObject>
 #include <QPointer>
 class QCPAxis;
 class QCPColorScale;
 
-
 class SciQLopPlotAxisInterface : public QObject
 {
     Q_OBJECT
+
 protected:
     bool _is_time_axis = false;
+
 public:
     SciQLopPlotAxisInterface(QObject* parent = nullptr, const QString& name = "") : QObject(parent)
     {
@@ -41,36 +43,104 @@ public:
         else
             setObjectName("Axis");
     }
+
     virtual ~SciQLopPlotAxisInterface() = default;
 
-    inline virtual void set_range(const SciQLopPlotRange&) noexcept { }
+    inline virtual void set_range(const SciQLopPlotRange&) noexcept { WARN_ABSTRACT_METHOD; }
+
     inline void set_range(double start, double stop) noexcept
     {
         set_range(SciQLopPlotRange(start, stop));
     }
-    inline virtual void set_visible(bool visible) noexcept { }
-    inline virtual void set_log(bool log) noexcept { }
-    inline virtual void set_label(const QString& label) noexcept { }
-    inline virtual void set_tick_labels_visible(bool visible) noexcept { }
-    inline virtual void set_selected(bool selected) noexcept { Q_UNUSED(selected); }
+
+    inline virtual void set_visible(bool visible) noexcept
+    {
+        Q_UNUSED(visible);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_log(bool log) noexcept
+    {
+        Q_UNUSED(log);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_label(const QString& label) noexcept
+    {
+        Q_UNUSED(label);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_tick_labels_visible(bool visible) noexcept
+    {
+        Q_UNUSED(visible);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual void set_selected(bool selected) noexcept
+    {
+        Q_UNUSED(selected);
+        WARN_ABSTRACT_METHOD;
+    }
 
     inline virtual SciQLopPlotRange range() const noexcept
     {
+        WARN_ABSTRACT_METHOD;
         return SciQLopPlotRange(std::nan(""), std::nan(""));
     }
-    inline virtual bool visible() const noexcept { return false; }
-    inline virtual bool log() const noexcept { return false; }
-    inline virtual QString label() const noexcept { return QString(); }
-    inline virtual bool tick_labels_visible() const noexcept { return false; }
-    inline virtual Qt::Orientation orientation() const noexcept { return Qt::Horizontal; }
-    inline virtual Qt::Axis axis() const noexcept { return Qt::XAxis; }
-    inline virtual Qt::AnchorPoint anchor() const noexcept { return Qt::AnchorBottom; }
 
-    inline virtual bool selected() const noexcept { return false; }
+    inline virtual bool visible() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
 
-    inline virtual void rescale() noexcept { }
+    inline virtual bool log() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual QString label() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return QString();
+    }
+
+    inline virtual bool tick_labels_visible() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual Qt::Orientation orientation() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return Qt::Horizontal;
+    }
+
+    inline virtual Qt::Axis axis() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return Qt::XAxis;
+    }
+
+    inline virtual Qt::AnchorPoint anchor() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return Qt::AnchorBottom;
+    }
+
+    inline virtual bool selected() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual void rescale() noexcept { WARN_ABSTRACT_METHOD; }
 
     inline bool is_time_axis() const noexcept { return _is_time_axis; }
+
     inline void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
 
     void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
@@ -87,9 +157,7 @@ signals:
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
     Q_SIGNAL void selection_changed(bool selected);
-
 };
-
 
 class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
 {
@@ -98,9 +166,11 @@ class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
 
 public:
     explicit SciQLopPlotDummyAxis(QObject* parent = nullptr) : SciQLopPlotAxisInterface(parent) { }
+
     virtual ~SciQLopPlotDummyAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
+
     inline SciQLopPlotRange range() const noexcept override { return m_range; }
 };
 
@@ -110,7 +180,8 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     QPointer<QCPAxis> m_axis;
 
 public:
-    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false, const QString &name="Axis");
+    explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false,
+                             const QString& name = "Axis");
     virtual ~SciQLopPlotAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
@@ -141,7 +212,8 @@ class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
     ColorGradient m_color_gradient;
 
 public:
-    explicit SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent = nullptr, const QString &name="ColorScale");
+    explicit SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent = nullptr,
+                                       const QString& name = "ColorScale");
     virtual ~SciQLopPlotColorScaleAxis() = default;
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
@@ -172,5 +244,4 @@ public:
 signals:
 #endif
     Q_SIGNAL void color_gradient_changed(ColorGradient gradient);
-
 };
