@@ -22,7 +22,7 @@
     <enum-type name="Coordinates"/>
     <enum-type name="LineTermination"/>
 
-    <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr"/>
+    <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
 
     <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
     <primitive-type name="PyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
@@ -563,7 +563,7 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="MultiPlotsVerticalSpan" parent-management="yes">
-        <modify-function signature="MultiPlotsVerticalSpan(SciQLopMultiPlotPanel*,SciQLopPlotRange,QColor,bool,bool,QString)">
+        <modify-function signature="MultiPlotsVerticalSpan(SciQLopMultiPlotPanel*,SciQLopPlotRange,QColor,bool,bool,QString,QString)">
             <modify-argument index="3">
                 <rename to="color"/>
             </modify-argument>
@@ -576,14 +576,34 @@
             <modify-argument index="6">
                 <rename to="tool_tip"/>
             </modify-argument>
+            <modify-argument index="7">
+                <rename to="id"/>
+            </modify-argument>
         </modify-function>
-        <modify-function signature="range()" rename="_range"/>
+        <modify-function signature="range() const" rename="_range"/>
         <property name="range" type="SciQLopPlotRange" get="range" set="set_range" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="get_color" set="set_color" generate-getsetdef="yes"/>
         <property name="visible" type="bool" get="is_visible" set="set_visible" generate-getsetdef="yes"/>
         <property name="selected" type="bool" get="is_selected" set="set_selected" generate-getsetdef="yes"/>
         <property name="tooltip" type="QString" get="get_tool_tip" set="set_tool_tip" generate-getsetdef="yes"/>
         <property name="read_only" type="bool" get="is_read_only" set="set_read_only" generate-getsetdef="yes"/>
+        <property name="id" type="QString" get="get_id" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="MultiPlotsVSpanCollection" parent-management="yes">
+        <modify-function signature="create_span(SciQLopPlotRange,QColor,bool,QString,QString)">
+          <modify-argument index="2">
+              <rename to="color"/>
+          </modify-argument>
+          <modify-argument index="3">
+              <rename to="read_only"/>
+          </modify-argument>
+          <modify-argument index="4">
+              <rename to="tool_tip"/>
+          </modify-argument>
+          <modify-argument index="5">
+              <rename to="id"/>
+          </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopMultiPlotObject" parent-management="yes">
     </object-type>

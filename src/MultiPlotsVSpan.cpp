@@ -113,3 +113,86 @@ void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
         Q_EMIT range_changed(horizontal_range);
     }
 }
+
+SciQLopMultiPlotPanel* MultiPlotsVSpanCollection::panel()
+{
+    return dynamic_cast<SciQLopMultiPlotPanel*>(parent());
+}
+
+void MultiPlotsVSpanCollection::updateVisibleSpans(const SciQLopPlotRange& horizontal_range)
+{
+    for (auto& span : _spans)
+    {
+        if (span)
+        {
+            if (horizontal_range.intersects(span->range()))
+            {
+                span->show();
+            }
+            else
+            {
+                span->hide();
+            }
+        }
+    }
+}
+
+void MultiPlotsVSpanCollection::delete_span(const QString &id)
+{
+    auto vspan = span(id);
+    if (vspan)
+    {
+        delete_span(vspan);
+    }
+}
+
+QPointer<MultiPlotsVerticalSpan>
+MultiPlotsVSpanCollection::create_span(SciQLopPlotRange horizontal_range, QColor color,
+                                        bool read_only, const QString tool_tip, const QString id)
+{
+    auto p = panel();
+    MultiPlotsVerticalSpan* vspan = new MultiPlotsVerticalSpan(
+        p, horizontal_range, color, read_only, horizontal_range.intersects(p->time_axis_range()),
+        tool_tip, id);
+    _spans.append(vspan);
+    connect(vspan, &MultiPlotsVerticalSpan::destroyed, this,
+            [this, vspan]() { _spans.removeAll(vspan); });
+    return vspan;
+}
+
+void MultiPlotsVSpanCollection::delete_span(QPointer<MultiPlotsVerticalSpan> vspan)
+{
+    _spans.removeAll(vspan);
+    delete vspan;
+}
+
+QList<QPointer<MultiPlotsVerticalSpan>> MultiPlotsVSpanCollection::spans() const
+{
+    return _spans;
+}
+
+QList<QPointer<MultiPlotsVerticalSpan>>
+MultiPlotsVSpanCollection::spans_in_range(SciQLopPlotRange horizontal_range) const
+{
+    QList<QPointer<MultiPlotsVerticalSpan>> result;
+    for (const auto& span : _spans)
+    {
+        if (span && horizontal_range.intersects(span->range()))
+        {
+            result.append(span);
+        }
+    }
+    return result;
+}
+
+QPointer<MultiPlotsVerticalSpan> MultiPlotsVSpanCollection::span(const QString& id) const
+{
+    for (auto& span : _spans)
+    {
+        if (span && span->get_id() == id)
+        {
+            return span;
+        }
+    }
+    return nullptr;
+}

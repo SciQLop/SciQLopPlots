@@ -39,6 +39,7 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
     bool _read_only = false;
     QColor _color;
     QString _tool_tip;
+    QString _id;
 
     void select_lower_border(bool selected);
     void select_upper_border(bool selected);
@@ -48,10 +49,9 @@ protected:
     virtual void removeObject(SciQLopPlotInterface* plot) override;
 
 public:
-
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
-        QColor color = QColor(100, 100, 100)
-            , bool read_only = false, bool visible = true, const QString tool_tip = "")
+                           QColor color = QColor(100, 100, 100), bool read_only = false,
+                           bool visible = true, const QString tool_tip = "", QString id = "")
             : SciQLopMultiPlotObject(panel)
     {
         _horizontal_range = horizontal_range;
@@ -59,6 +59,14 @@ public:
         _visible = visible;
         _read_only = read_only;
         _tool_tip = tool_tip;
+        if (id == "")
+        {
+            _id = QUuid::createUuid().toString();
+        }
+        else
+        {
+            _id = id;
+        }
         updatePlotList(panel->plots());
     }
 
@@ -73,6 +81,7 @@ public:
         }
     }
 
+    [[nodiscard]] inline QString get_id() const { return _id; }
 
     void set_selected(bool selected);
 
@@ -124,7 +133,6 @@ public:
 
     [[nodiscard]] inline QString get_tool_tip() const noexcept { return _tool_tip; }
 
-
     inline void set_read_only(bool read_only)
     {
         if (_read_only != read_only)
@@ -140,6 +148,7 @@ public:
     [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
 
     inline void show() { set_visible(true); }
+
     inline void hide() { set_visible(false); }
 
 #ifdef BINDINGS_H
@@ -149,4 +158,36 @@ signals:
     Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
     Q_SIGNAL void selection_changed(bool);
     Q_SIGNAL void delete_requested();
+};
+
+class MultiPlotsVSpanCollection : public SciQLopMultiPlotObject
+{
+    Q_OBJECT
+    QList<QPointer<MultiPlotsVerticalSpan>> _spans;
+    SciQLopMultiPlotPanel* panel();
+
+    void updateVisibleSpans(const SciQLopPlotRange& horizontal_range);
+
+public:
+    MultiPlotsVSpanCollection(SciQLopMultiPlotPanel* panel) : SciQLopMultiPlotObject(panel)
+    {
+        updatePlotList(panel->plots());
+        connect(panel, &SciQLopMultiPlotPanel::time_range_changed, this,
+                &MultiPlotsVSpanCollection::updateVisibleSpans);
+    }
+
+    virtual ~MultiPlotsVSpanCollection() override { }
+
+    QPointer<MultiPlotsVerticalSpan>
+    create_span(SciQLopPlotRange horizontal_range, QColor color = QColor(100, 100, 100),
+                 bool read_only = false, const QString tool_tip = "", const QString id = "");
+
+    void delete_span(QPointer<MultiPlotsVerticalSpan> vspan);
+    void delete_span(const QString& id);
+
+    QList<QPointer<MultiPlotsVerticalSpan>> spans() const;
+
+    QList<QPointer<MultiPlotsVerticalSpan>> spans_in_range(SciQLopPlotRange horizontal_range) const;
+
+    QPointer<MultiPlotsVerticalSpan> span(const QString& id) const;
 };
