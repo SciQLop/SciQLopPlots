@@ -10,4 +10,4 @@ ENV PATH="/opt/python/${PYTHON_VERSION}/bin:${PATH}"
 RUN pip install --upgrade pip setuptools meson ninja meson-python wheel numpy shiboken6==${QT_VERSION} \
     pyside6==${QT_VERSION} shiboken6_generator==${QT_VERSION} aqtinstall &&\
     aqt install-qt -O "/opt/Qt" linux desktop ${QT_VERSION} && \
-    dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 clang /usr/bin/llvm-config
+    dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 clang /usr/bin/llvm-config clangd
