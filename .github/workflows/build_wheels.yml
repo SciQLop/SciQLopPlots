@@ -47,24 +47,24 @@ jobs:
           - os: windows-latest
             arch: x86_64
             qt_host: windows
-          - os: macos-13  # Intel
+          - os: macos-15-intel  # Intel
             arch: x86_64
             qt_host: mac
-          - os: macos-14 # Apple Silicon
+          - os: macos-15 # Apple Silicon
             arch: arm64
             qt_host: mac
     steps:
+      - uses: actions/checkout@v5
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
         with:
           arch: amd64
-      - uses: actions/checkout@v4
       - name: Forward GITHUB_WORKSPACE env var
         shell: bash
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.23.3
+        uses: pypa/cibuildwheel@v3.2.1
         env:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           QT_VERSION: ${{ env.QT_VERSION }}
