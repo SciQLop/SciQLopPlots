@@ -39,10 +39,12 @@ jobs:
             arch: x86_64
             qt_host: linux
             platform: manylinux_2_34_x86_64
+            qt_dir: gcc_64
           - os: ubuntu-24.04-arm
             arch: aarch64
             qt_host: linux_arm64
             platform: manylinux_2_39_aarch64
+            qt_dir: gcc_arm64
           - os: windows-latest
             arch: x86_64
             qt_host: windows
@@ -70,7 +72,7 @@ jobs:
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
           CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin;$PATH"
           CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='13.3' PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/macos/bin:$PATH
-          CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH
+          CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
             pip install "aqtinstall"
             && aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64
@@ -78,8 +80,9 @@ jobs:
             pip install "aqtinstall"
             && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }}
           CIBW_BEFORE_BUILD_LINUX: >
-            dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 llvm15-devel  clang15.x86_64
-            && alternatives --install /usr/bin/llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64
+            dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 llvm15-devel  clang15
+            && alternatives --install /usr/bin/llvm-config llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64 100
+            && alternatives --set llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64
             && pip install "aqtinstall" && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }}
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.10 --exclude libshiboken6.abi3.so.6.10 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.10 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
