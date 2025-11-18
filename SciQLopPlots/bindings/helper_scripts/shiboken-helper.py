@@ -90,7 +90,7 @@ if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
     if args.libs:
         main_lib = [find_lib(f'(lib)?shiboken{pyside_ver}.*{ext_sufix}', [f'{shiboken_mod_path}', '/usr/lib64/'])]   
         print(f"main_lib: {main_lib}", file=sys.stderr)
-        main_lib += [find_lib(f'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
+        main_lib += [find_lib(fr'(lib)?[Pp]y[sS]ide{pyside_ver}\..*{ext_sufix}.*', [f'{PySide_mod_path}', '/usr/lib64/'])]
         print(f"main_lib: {main_lib}", file=sys.stderr)
         if platform.system().lower() == 'windows':
             main_lib += [find_lib('python3.lib', [f'{os.path.dirname(sys.executable)}{os.path.sep}libs'])]
