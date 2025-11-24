@@ -65,7 +65,7 @@ jobs:
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@henryiii/fix/simpleraction
         env:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           QT_VERSION: ${{ env.QT_VERSION }}
