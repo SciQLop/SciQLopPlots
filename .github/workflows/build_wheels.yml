@@ -16,7 +16,7 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build sdist
         run: |
           sudo apt update && sudo apt install -y libgl-dev
@@ -55,7 +55,7 @@ jobs:
             arch: arm64
             qt_host: mac
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
         with:
