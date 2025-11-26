@@ -7,7 +7,7 @@ requires = [
     "meson",
     "shiboken6==6.10.0",
     "pyside6==6.10.0",
-    "shiboken6_generator==6.10.0"
+    "shiboken6_generator==6.10.1"
 ]
 build-backend = 'mesonpy'
 
