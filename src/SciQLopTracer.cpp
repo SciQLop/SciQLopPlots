@@ -288,6 +288,8 @@ double SciQLopTracer::selectTest(const QPointF& pos, bool onlySelectable, QVaria
         return -1;
 
     QPointF center(position->pixelPosition());
+    if (center.x() < 0 || center.y() < 0)
+        return -1;
     double w = m_Size / 2.0;
     QRect clip = clipRect();
     switch (m_Style)
@@ -365,38 +367,41 @@ void SciQLopTracer::draw(QCPPainter* painter)
     QPointF center(position->pixelPosition());
     double w = m_Size / 2.0;
     QRect clip = clipRect();
-    switch (m_Style)
+    if (w>0 && center.x()>=0 && center.y()>=0)
     {
-        case TracerStyle::tsNone:
-            return;
-        case TracerStyle::tsPlus:
+        switch (m_Style)
         {
-            if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
+            case TracerStyle::tsNone:
+                return;
+            case TracerStyle::tsPlus:
             {
-                painter->drawLine(QLineF(center + QPointF(-w, 0), center + QPointF(w, 0)));
-                painter->drawLine(QLineF(center + QPointF(0, -w), center + QPointF(0, w)));
+                if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
+                {
+                    painter->drawLine(QLineF(center + QPointF(-w, 0), center + QPointF(w, 0)));
+                    painter->drawLine(QLineF(center + QPointF(0, -w), center + QPointF(0, w)));
+                }
+                break;
             }
-            break;
-        }
-        case TracerStyle::tsCrosshair:
-        {
-            if (center.y() > clip.top() && center.y() < clip.bottom())
-                painter->drawLine(QLineF(clip.left(), center.y(), clip.right(), center.y()));
-            if (center.x() > clip.left() && center.x() < clip.right())
-                painter->drawLine(QLineF(center.x(), clip.top(), center.x(), clip.bottom()));
-            break;
-        }
-        case TracerStyle::tsCircle:
-        {
-            if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
-                painter->drawEllipse(center, w, w);
-            break;
-        }
-        case TracerStyle::tsSquare:
-        {
-            if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
-                painter->drawRect(QRectF(center - QPointF(w, w), center + QPointF(w, w)));
-            break;
+            case TracerStyle::tsCrosshair:
+            {
+                if (center.y() > clip.top() && center.y() < clip.bottom())
+                    painter->drawLine(QLineF(clip.left(), center.y(), clip.right(), center.y()));
+                if (center.x() > clip.left() && center.x() < clip.right())
+                    painter->drawLine(QLineF(center.x(), clip.top(), center.x(), clip.bottom()));
+                break;
+            }
+            case TracerStyle::tsCircle:
+            {
+                if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
+                    painter->drawEllipse(center, w, w);
+                break;
+            }
+            case TracerStyle::tsSquare:
+            {
+                if (clip.intersects(QRectF(center - QPointF(w, w), center + QPointF(w, w)).toRect()))
+                    painter->drawRect(QRectF(center - QPointF(w, w), center + QPointF(w, w)));
+                break;
+            }
         }
     }
 }
