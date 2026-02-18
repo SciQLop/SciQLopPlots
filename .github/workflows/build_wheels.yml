@@ -89,7 +89,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_39_aarch64
-          CIBW_SKIP: "*-win32 *i686 *38-* *39-* pp* *musllinux* *314*"
+          CIBW_SKIP: "*-win32 *i686 *38-* *39-* pp* *musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
 
