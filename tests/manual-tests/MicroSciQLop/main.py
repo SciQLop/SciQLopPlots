@@ -118,6 +118,7 @@ class Spectrum:
 class MMS(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
         self.plot(lambda start, stop: speasy_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
                   name="mms1_dis_energyspectr_omni_fast",
                   graph_type=GraphType.ColorMap,
@@ -135,11 +136,12 @@ class MMS(SciQLopMultiPlotPanel):
         p.y_axis().set_log(True)
         p.y_axis().set_range(1., 1e-4)
         self._g = g
-        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
+
 
 class MMS_Spectro_Only(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
         self.plot(lambda start, stop: speasy_spectro('cda/MMS1_FPI_FAST_L2_DIS-MOMS/mms1_dis_energyspectr_omni_fast', start, stop),
                   name="mms1_dis_energyspectr_omni_fast",
                   graph_type=GraphType.ColorMap,
@@ -152,21 +154,21 @@ class MMS_Spectro_Only(SciQLopMultiPlotPanel):
                   plot_type=PlotType.TimeSeries,
                   y_log_scale=True,
                   z_log_scale=True)
-        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
 
 class MMS_edp_hmfe(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.set_time_axis_range(datetime(2023,10,20,7,0,0,0,timezone.utc), datetime(2023,10,20,9,0,0,0,timezone.utc))
         _, graph = self.plot(mms1_edp_hmfe_dsl_brst_l2,
                              labels=['Ex', 'Ey', 'Ez'],
                              colors=[QColorConstants.Red, QColorConstants.Green, QColorConstants.Blue],
                              plot_type=PlotType.TimeSeries)
 
-        self.set_time_axis_range(datetime(2023,10,20,7,0,0,0,timezone.utc), datetime(2023,10,20,9,0,0,0,timezone.utc))
 
 class Maven_swia_spectra_diff_en_fluxes(SciQLopMultiPlotPanel):
     def __init__(self,parent):
         SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
+        self.set_time_axis_range(datetime(2022,2,13,0,0,0,0,timezone.utc), datetime(2022,2,14,0,0,0,0,timezone.utc))
         self.plot(lambda start, stop: speasy_spectro('cda/MVN_SWI_L2_ONBOARDSVYSPEC/spectra_diff_en_fluxes', start, stop, True),
                   name="spectra_diff_en_fluxes",
                   graph_type=GraphType.ColorMap,
@@ -174,7 +176,6 @@ class Maven_swia_spectra_diff_en_fluxes(SciQLopMultiPlotPanel):
                   y_log_scale=True,
                   z_log_scale=True)
 
-        self.set_time_axis_range(datetime(2022,2,13,0,0,0,0,timezone.utc), datetime(2022,2,14,0,0,0,0,timezone.utc))
 
 if __name__ == '__main__':
     from speasy.core.cache import _cache

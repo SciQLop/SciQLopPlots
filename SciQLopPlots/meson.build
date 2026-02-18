@@ -1,5 +1,5 @@
 qtmod = import(qt_sdk)
-qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSupport', 'OpenGL'], method:'qmake')
+qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSupport', 'OpenGL'])
 
 cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=false'])
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
@@ -233,7 +233,6 @@ sources = moc_files \
             '../src/ProductsNode.cpp',
             '../src/ProductsView.cpp',
             '../src/icons.cpp'
-           # '../qcustomplot-source/qcustomplot.cpp'
         ]
 
 cpp_args = []
