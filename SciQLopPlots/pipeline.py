@@ -38,28 +38,32 @@ def _make_dispatch(source_prop, transform, target_prop):
     call_style = _detect_call_style(transform) if transform else None
 
     def slot(*args):
-        value = args[0] if len(args) == 1 else args
+        try:
+            value = args[0] if len(args) == 1 else args
 
-        if transform is None:
-            result = value
-        else:
-            if call_style == "event":
-                event = Event(
-                    source=source_prop.qobject,
-                    value=value,
-                    property_name=source_prop.property_name,
-                )
-                result = transform(event)
-            elif call_style == "positional":
-                result = transform(*args)
+            if transform is None:
+                result = value
             else:
-                result = transform()
+                if call_style == "event":
+                    event = Event(
+                        source=source_prop.qobject,
+                        value=value,
+                        property_name=source_prop.property_name,
+                    )
+                    result = transform(event)
+                elif call_style == "positional":
+                    result = transform(*args)
+                else:
+                    result = transform()
 
-        if result is None and transform is not None:
-            return
+            if result is None and transform is not None:
+                return
 
-        if target_prop is not None:
-            target_prop.value = result
+            if target_prop is not None:
+                target_prop.value = result
+        except RuntimeError:
+            # Source or target QObject may have been destroyed
+            pass
 
     return slot
 
@@ -88,20 +92,6 @@ class Pipeline:
         self._slot = _make_dispatch(self._source_prop, self._transform, self._target_prop)
         signal.connect(self._slot)
         self._connected = True
-
-        try:
-            self._source_prop.qobject.destroyed.connect(self._on_destroyed)
-        except (AttributeError, RuntimeError):
-            pass
-
-        if self._target_prop is not None:
-            try:
-                self._target_prop.qobject.destroyed.connect(self._on_destroyed)
-            except (AttributeError, RuntimeError):
-                pass
-
-    def _on_destroyed(self, *args):
-        self.disconnect()
 
     def disconnect(self):
         if self._connected and self._slot is not None:
