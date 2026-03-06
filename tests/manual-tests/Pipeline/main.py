@@ -54,10 +54,9 @@ panel = SciQLopMultiPlotPanel()
 panel.setWindowTitle("Pipeline API Test")
 
 # --- Plot 1: signal with two frequencies ---
-graph1 = panel.plot(make_data, labels=["signal"])
+plot1, graph1 = panel.plot(make_data, labels=["signal"])
 
 # Add a vertical span on plot 1
-plot1 = panel.plot_at(0)
 span = SciQLopVerticalSpan(
     plot1, SciQLopPlotRange(2.0, 4.0),
     QColor(100, 100, 200, 80), read_only=False,
@@ -73,7 +72,7 @@ span.on.range >> (lambda event: print(f"Span moved to: {event.value.start():.1f}
 # --- Plot 2: FFT of plot 1's data ---
 x_init = np.linspace(0, 10, 512)
 y_init = np.zeros(len(np.fft.rfftfreq(len(x_init))))
-fft_graph = panel.plot(np.fft.rfftfreq(len(x_init), d=0.01), y_init, labels=["FFT magnitude"])
+_, fft_graph = panel.plot(np.fft.rfftfreq(len(x_init), d=0.01), y_init, labels=["FFT magnitude"])
 
 # Data pipeline: when graph1 data changes, compute FFT and show in graph2
 graph1.on.data >> compute_fft >> fft_graph.on.data
