@@ -1,9 +1,4 @@
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'SciQLopPlots'))
-
 from properties import ObservableProperty, OnNamespace, register_property, _property_registry
 from pipeline import Pipeline, PartialPipeline, build_pipeline_step, _detect_call_style
 
