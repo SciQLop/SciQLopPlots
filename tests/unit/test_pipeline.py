@@ -214,6 +214,36 @@ def test_range_pipeline_not_auto_threaded():
     assert not pipe._auto_threaded
 
 
+# --- No-args signal fetches value from getter ---
+
+def test_no_args_signal_fetches_from_getter():
+    """When signal fires with no args (like data_changed()), value comes from getter."""
+    src = FakeQObject()
+    tgt = FakeQObject()
+    src._data = [1, 2, 3]
+    results = []
+
+    def capture(event):
+        results.append(event.value)
+        return event.value
+
+    OnNamespace(src).data >> capture >> OnNamespace(tgt).data
+    src.data_changed.emit()  # no args
+    assert results == [[1, 2, 3]]
+    assert tgt._data == [1, 2, 3]
+
+
+def test_no_args_direct_binding_fetches_from_getter():
+    """Direct binding with no-args signal."""
+    src = FakeQObject()
+    tgt = FakeQObject()
+    src._data = [10, 20]
+
+    OnNamespace(src).data >> OnNamespace(tgt).data
+    src.data_changed.emit()  # no args
+    assert tgt._data == [10, 20]
+
+
 # --- Cannot observe write-only property ---
 
 def test_cannot_observe_write_only():

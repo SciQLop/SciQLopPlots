@@ -39,7 +39,13 @@ def _make_dispatch(source_prop, transform, target_prop):
 
     def slot(*args):
         try:
-            value = args[0] if len(args) == 1 else args
+            # If signal fired with no args (e.g. data_changed()), fetch from getter
+            if len(args) == 0:
+                value = source_prop.value
+            elif len(args) == 1:
+                value = args[0]
+            else:
+                value = args
 
             if transform is None:
                 result = value
