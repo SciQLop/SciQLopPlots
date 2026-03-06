@@ -4,7 +4,7 @@ import weakref
 _property_registry = {}
 
 
-def register_property(cls, property_name, signal_name, getter_name, setter_name, property_type):
+def register_property(cls, property_name, signal_name, getter_name, setter_name, property_type, signal_args=None):
     """Register an observable property for a class.
 
     Args:
@@ -14,6 +14,7 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         getter_name: Method name to get current value (e.g. "range"), or None.
         setter_name: Method name to set value (e.g. "set_range"), or None for read-only.
         property_type: One of "data", "range", "string" - determines threading strategy.
+        signal_args: Tuple of types to select a specific signal overload, or None for default.
     """
     if cls not in _property_registry:
         _property_registry[cls] = {}
@@ -22,6 +23,7 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         "getter_name": getter_name,
         "setter_name": setter_name,
         "property_type": property_type,
+        "signal_args": signal_args,
     }
 
 
@@ -36,7 +38,7 @@ def _lookup_property_spec(obj, property_name):
 class ObservableProperty:
     """A reference to a specific observable property on a specific QObject instance."""
     __slots__ = ("_qobject_ref", "property_name", "property_type",
-                 "_signal_name", "_getter_name", "_setter_name")
+                 "_signal_name", "_getter_name", "_setter_name", "_signal_args")
 
     def __init__(self, qobject, property_name, spec):
         self._qobject_ref = weakref.ref(qobject) if hasattr(qobject, '__weakref__') else lambda: qobject
@@ -45,6 +47,7 @@ class ObservableProperty:
         self._signal_name = spec["signal_name"]
         self._getter_name = spec["getter_name"]
         self._setter_name = spec["setter_name"]
+        self._signal_args = spec.get("signal_args")
 
     @property
     def qobject(self):
@@ -57,7 +60,10 @@ class ObservableProperty:
     def signal(self):
         if self._signal_name is None:
             return None
-        return getattr(self.qobject, self._signal_name)
+        sig = getattr(self.qobject, self._signal_name)
+        if self._signal_args is not None:
+            sig = sig[self._signal_args]
+        return sig
 
     @property
     def value(self):
@@ -69,7 +75,10 @@ class ObservableProperty:
     def value(self, val):
         if self._setter_name is None:
             raise AttributeError(f"Property '{self.property_name}' is not writable")
-        getattr(self.qobject, self._setter_name)(val)
+        if isinstance(val, (list, tuple)):
+            getattr(self.qobject, self._setter_name)(*val)
+        else:
+            getattr(self.qobject, self._setter_name)(val)
 
     def __rshift__(self, other):
         # Defer import to avoid circular dependency

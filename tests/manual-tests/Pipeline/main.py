@@ -50,7 +50,7 @@ def compute_fft(event):
 
 app = QApplication(sys.argv)
 
-panel = SciQLopMultiPlotPanel()
+panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
 panel.setWindowTitle("Pipeline API Test")
 
 # --- Plot 1: signal with two frequencies ---

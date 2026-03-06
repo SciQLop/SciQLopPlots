@@ -82,6 +82,7 @@ register_property(
     getter_name="data",
     setter_name="set_data",
     property_type="data",
+    signal_args=(),
 )
 
 register_property(

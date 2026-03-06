@@ -42,8 +42,8 @@ class FakeQObject:
     def data(self):
         return self._data
 
-    def set_data(self, val):
-        self._data = val
+    def set_data(self, *args):
+        self._data = list(args) if len(args) > 1 else args[0]
 
 
 def setup_module():
