@@ -71,3 +71,47 @@ SciQLopTimeSeriesPlot = _patch_sciqlop_plot(SciQLopTimeSeriesPlot)
 SciQLopMultiPlotPanel = _patch_sciqlop_plot(SciQLopMultiPlotPanel)
 SciQLopNDProjectionPlot = _patch_sciqlop_plot(SciQLopNDProjectionPlot)
 
+# --- Reactive pipeline API ---
+from .properties import register_property, OnDescriptor
+from .pipeline import Pipeline, PartialPipeline
+from .event import Event
+
+register_property(
+    SciQLopGraphInterface, "data",
+    signal_name="data_changed",
+    getter_name="data",
+    setter_name="set_data",
+    property_type="data",
+)
+
+register_property(
+    SciQLopPlotsBindings.SciQLopPlotAxisInterface, "range",
+    signal_name="range_changed",
+    getter_name="range",
+    setter_name="set_range",
+    property_type="range",
+)
+
+register_property(
+    SciQLopPlotsBindings.SciQLopVerticalSpan, "range",
+    signal_name="range_changed",
+    getter_name="range",
+    setter_name="set_range",
+    property_type="range",
+)
+
+register_property(
+    SciQLopPlotsBindings.SciQLopVerticalSpan, "tooltip",
+    signal_name=None,
+    getter_name="tool_tip",
+    setter_name="set_tool_tip",
+    property_type="string",
+)
+
+for _cls in (
+    SciQLopGraphInterface,
+    SciQLopPlotsBindings.SciQLopPlotAxisInterface,
+    SciQLopPlotsBindings.SciQLopVerticalSpan,
+):
+    _cls.on = OnDescriptor()
+
