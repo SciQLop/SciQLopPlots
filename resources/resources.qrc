@@ -59,5 +59,9 @@
         <file>LineStyles/NoLine.png</file>
         <file>LineStyles/Line.png</file>
         <file>icons/theme/collab.png</file>
+        <file>icons/theme/settings.png</file>
+        <file>icons/theme/home.png</file>
+        <file>icons/theme/tree.png</file>
+        <file>icons/theme/view_list.png</file>
     </qresource>
 </RCC>
