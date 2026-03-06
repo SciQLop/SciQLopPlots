@@ -73,7 +73,10 @@ class ObservableProperty:
 
     def __rshift__(self, other):
         # Defer import to avoid circular dependency
-        from .pipeline import build_pipeline_step
+        try:
+            from .pipeline import build_pipeline_step
+        except ImportError:
+            from pipeline import build_pipeline_step
         return build_pipeline_step(self, other)
 
 
