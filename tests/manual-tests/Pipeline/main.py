@@ -9,7 +9,7 @@ import sys
 import os
 import numpy as np
 
-os.environ['QT_QPA_PLATFORM'] = os.environ.get('QT_QPA_PLATFORM', 'offscreen')
+#os.environ['QT_QPA_PLATFORM'] = os.environ.get('QT_QPA_PLATFORM', 'offscreen')
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
@@ -29,7 +29,7 @@ def make_data(lower, upper):
 
 def compute_stats(event):
     r = event.value
-    return f"Range: [{r.start:.1f}, {r.stop:.1f}], Size: {r.stop - r.start:.1f}"
+    return f"Range: [{r.start():.1f}, {r.stop():.1f}], Size: {r.stop() - r.start():.1f}"
 
 
 app = QApplication(sys.argv)
@@ -52,10 +52,10 @@ span = SciQLopVerticalSpan(
 span.on.range >> compute_stats >> span.on.tooltip
 
 # Terminal sink: log range changes
-span.on.range >> (lambda event: print(f"Span moved to: {event.value.start:.1f} - {event.value.stop:.1f}"))
+span.on.range >> (lambda event: print(f"Span moved to: {event.value.start():.1f} - {event.value.stop():.1f}"))
 
 panel.show()
 panel.resize(800, 600)
 
-QTimer.singleShot(1000, app.quit)
+#QTimer.singleShot(1000, app.quit)
 sys.exit(app.exec())
