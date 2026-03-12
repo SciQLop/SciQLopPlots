@@ -6,7 +6,6 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
-                                                    'with_opengl=@0@'.format(get_option('with_opengl'))
                                                     ])
 magic_enum_dep = dependency('magic_enum', static:true)
 
