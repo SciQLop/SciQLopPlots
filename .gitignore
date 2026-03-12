@@ -16,3 +16,4 @@ subprojects/**/*
 *.user
 *.user*
 .cache/*
+.idea/

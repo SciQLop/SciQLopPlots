@@ -32,6 +32,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = ['numpy', 'pyside6==6.10.2', 'shiboken6==6.10.2']
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-qt", "pytest-timeout", "numpy"]
 dynamic = [
   'version',
 ]

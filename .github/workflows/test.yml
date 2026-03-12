@@ -1,9 +1,42 @@
 name: Tests
 
-on: [ push , pull_request ]
+on: [push, pull_request]
 
 jobs:
-  build:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: pip install pytest numpy
+
+      - name: Run unit tests
+        working-directory: tests/unit
+        run: PYTHONPATH=../../SciQLopPlots pytest -v
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libegl1 libgl1-mesa-glx
+
+      - name: Install package
+        run: pip install ".[test]"
+
+      - name: Run integration tests
+        run: xvfb-run --auto-servernum pytest tests/integration/ -v --timeout=60
