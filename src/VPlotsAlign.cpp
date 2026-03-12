@@ -23,15 +23,6 @@
 
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 
-class UnProtectedQCPAxisRect : public QCPAxisRect
-{
-public:
-    inline int calculateAutoMargin(QCP::MarginSide side)
-    {
-        return QCPAxisRect::calculateAutoMargin(side);
-    }
-};
-
 void VPlotsAlign::_recompute_margins()
 {
     std::size_t max_left_margin = 0UL;
@@ -40,13 +31,11 @@ void VPlotsAlign::_recompute_margins()
     {
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
-
-            auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
+            auto ar = p->qcp_plot()->axisRect();
             std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
             std::size_t cmw = 0UL;
             if (p->has_colormap())
             {
-
                 cmw = p->color_scale()->outerRect().width();
                 cmw += ar->calculateAutoMargin(QCP::MarginSide::msRight);
             }
@@ -58,7 +47,7 @@ void VPlotsAlign::_recompute_margins()
     {
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
-            auto ar = reinterpret_cast<UnProtectedQCPAxisRect*>(p->qcp_plot()->axisRect());
+            auto ar = p->qcp_plot()->axisRect();
             std::size_t new_right_margin = p->width() - max_right_pos;
             if (p->has_colormap())
             {
@@ -70,7 +59,7 @@ void VPlotsAlign::_recompute_margins()
             }
             auto new_margins
                 = QMargins(max_left_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop),
-                           new_right_margin, ar->calculateAutoMargin(QCP::MarginSide::msTop));
+                           new_right_margin, ar->calculateAutoMargin(QCP::MarginSide::msBottom));
             if (ar->minimumMargins() != new_margins)
             {
                 ar->setMinimumMargins(new_margins);

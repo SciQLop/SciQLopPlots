@@ -6,7 +6,6 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
-                                                    'with_opengl=@0@'.format(get_option('with_opengl'))
                                                     ])
 magic_enum_dep = dependency('magic_enum', static:true)
 
@@ -94,13 +93,12 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopLineGraph.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopHorizontalSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopRectangularSpan.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopPlotItem.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopTracer.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/QCPItemRichText.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopPixmapItem.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopStraightLines.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopShapesItems.hpp',
@@ -185,16 +183,15 @@ sources = moc_files \
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
+            '../src/SciQLopHorizontalSpan.cpp',
+            '../src/SciQLopRectangularSpan.cpp',
             '../src/SciQLopLineGraph.cpp',
             '../src/SciQLopCurve.cpp',
             '../src/SciQLopNDProjectionCurves.cpp',
             '../src/SciQLopColorMap.cpp',
             '../src/AbstractResampler.cpp',
-            '../src/SciQLopLineGraphResampler.cpp',
             '../src/SciQLopCurveResampler.cpp',
-            '../src/SciQLopColorMapResampler.cpp',
             '../src/SciQLopTracer.cpp',
-            '../src/QCPItemRichText.cpp',
             '../src/SciQLopStraightLines.cpp',
             '../src/DataProducer.cpp',
             '../src/Model.cpp',

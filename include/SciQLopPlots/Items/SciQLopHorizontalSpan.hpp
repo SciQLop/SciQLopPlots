@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,28 +21,28 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "../MultiPlots/SciQLopMultiPlotObject.hpp"
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/helpers.hpp"
 #include <QBrush>
 #include <QColor>
-#include <QRgb>
 #include <qcustomplot.h>
+
+class SciQLopPlot;
 
 namespace impl
 {
 
-class VerticalSpan : public QCPItemVSpan, public impl::SciQlopItemWithToolTip
+class HorizontalSpan : public QCPItemHSpan, public impl::SciQlopItemWithToolTip
 {
     Q_OBJECT
 
 public:
-    VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
-                 bool do_not_replot = false, bool immediate_replot = false);
+    HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertical_range,
+                   bool do_not_replot = false, bool immediate_replot = false);
 
     void set_visible(bool visible);
-    void set_range(const SciQLopPlotRange horizontal_range);
+    void set_range(const SciQLopPlotRange vertical_range);
     [[nodiscard]] SciQLopPlotRange range() const noexcept;
 
     void set_color(const QColor& color);
@@ -71,7 +71,7 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_range);
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
     Q_SIGNAL void delete_requested();
@@ -79,15 +79,10 @@ signals:
 
 } // namespace impl
 
-/*! \brief Vertical span that can be added to a plot
- *
- */
-class SciQLopVerticalSpan : public SciQLopRangeItemInterface
+class SciQLopHorizontalSpan : public SciQLopRangeItemInterface
 {
     Q_OBJECT
-    QPointer<impl::VerticalSpan> _impl;
-
-    friend class MultiPlotsVerticalSpan;
+    QPointer<impl::HorizontalSpan> _impl;
 
 protected:
     inline void select_lower_border(bool selected)
@@ -108,20 +103,11 @@ signals:
     Q_SIGNAL void upper_border_selection_changed(bool);
 
 public:
-    /*! \brief SciQLopVerticalSpan
-     *
-     * \param plot The plot where the vertical span will be added
-     * \param horizontal_range The range of the span
-     * \param color The color of the span
-     * \param read_only If the span is read only
-     * \param visible If the span is visible
-     * \param tool_tip The tool tip of the span
-     */
-    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
-                        QColor color = QColor(100, 100, 100, 100), bool read_only = false,
-                        bool visible = true, const QString& tool_tip = "");
+    SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
+                          QColor color = QColor(100, 100, 100, 100), bool read_only = false,
+                          bool visible = true, const QString& tool_tip = "");
 
-    virtual ~SciQLopVerticalSpan() override
+    virtual ~SciQLopHorizontalSpan() override
     {
         qptr_apply(_impl,
                    [this](auto& item)
@@ -140,27 +126,19 @@ public:
         return qptr_apply_or(_impl, [](auto& item) { return item->parentPlot(); }, nullptr);
     }
 
-    /*! \brief Set the span as movable
-     *
-     * \param movable
-     */
     inline void set_visible(bool visible) noexcept override
     {
         qptr_apply(_impl, [&visible](auto& item) { item->set_visible(visible); });
     }
 
-    /*! \brief Set the span as movable
-     *
-     * \param movable
-     */
     inline bool visible() const noexcept override
     {
         return qptr_apply_or(_impl, [](auto& item) { return item->visible(); });
     }
 
-    inline void set_range(const SciQLopPlotRange& horizontal_range) noexcept override
+    inline void set_range(const SciQLopPlotRange& vertical_range) noexcept override
     {
-        qptr_apply(_impl, [&horizontal_range](auto& item) { item->set_range(horizontal_range); });
+        qptr_apply(_impl, [&vertical_range](auto& item) { item->set_range(vertical_range); });
     }
 
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
@@ -232,7 +210,7 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
+    Q_SIGNAL void range_changed(SciQLopPlotRange new_range);
     Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 };

@@ -1,6 +1,6 @@
 [wrap-git]
-url = https://github.com/SciQLop/NeoQCP.git
-revision = HEAD
+url = https://github.com/jeandet/NeoQCP.git
+revision = qrhi-migration
 depth = 1
 
 [provide]

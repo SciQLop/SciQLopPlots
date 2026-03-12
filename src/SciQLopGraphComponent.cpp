@@ -42,8 +42,21 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
     }
 }
 
+SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int componentIndex,
+                                             QObject* parent)
+        : SciQLopGraphComponentInterface(parent)
+        , m_plottable(multiGraph)
+        , m_componentIndex(componentIndex)
+{
+}
+
 SciQLopGraphComponent::~SciQLopGraphComponent()
 {
+    if (m_componentIndex >= 0)
+    {
+        set_selected(false);
+        return;
+    }
     if (m_plottable)
     {
         if (QCustomPlot* plot = dynamic_cast<QCustomPlot*>(m_plottable->parentPlot());
@@ -59,6 +72,20 @@ void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept
 {
     if (m_plottable)
     {
+        if (m_componentIndex >= 0)
+        {
+            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+            if (mg)
+            {
+                mg->component(m_componentIndex).pen = pen;
+                QPen selPen = pen;
+                selPen.setColor(Qt::darkGray);
+                selPen.setWidthF(pen.widthF() + 3);
+                mg->component(m_componentIndex).selectedPen = selPen;
+            }
+            emit replot();
+            return;
+        }
         m_plottable->setPen(pen);
         QPen selectionPen = pen;
         selectionPen.setColor(Qt::darkGray);
@@ -72,6 +99,14 @@ void SciQLopGraphComponent::set_line_width(const qreal width) noexcept
 {
     if (m_plottable)
     {
+        if (m_componentIndex >= 0)
+        {
+            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+            if (mg)
+                mg->component(m_componentIndex).pen.setWidthF(width);
+            emit replot();
+            return;
+        }
         auto pen = m_plottable->pen();
         pen.setWidthF(width);
         m_plottable->setPen(pen);
@@ -83,6 +118,15 @@ void SciQLopGraphComponent::set_visible(bool visible) noexcept
 {
     if (m_plottable)
     {
+        if (m_componentIndex >= 0)
+        {
+            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+            if (mg)
+                mg->component(m_componentIndex).visible = visible;
+            emit visible_changed(visible);
+            emit replot();
+            return;
+        }
         m_plottable->setVisible(visible);
         emit visible_changed(visible);
         emit replot();
@@ -92,10 +136,23 @@ void SciQLopGraphComponent::set_visible(bool visible) noexcept
 void SciQLopGraphComponent::set_name(const QString& name) noexcept
 {
     this->setObjectName(name);
-    if (m_plottable && m_plottable->name() != name)
+    if (m_plottable)
     {
-        m_plottable->setName(name);
-        emit name_changed(name);
+        if (m_componentIndex >= 0)
+        {
+            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+            if (mg && mg->component(m_componentIndex).name != name)
+            {
+                mg->component(m_componentIndex).name = name;
+                emit name_changed(name);
+            }
+            return;
+        }
+        if (m_plottable->name() != name)
+        {
+            m_plottable->setName(name);
+            emit name_changed(name);
+        }
     }
 }
 
@@ -106,20 +163,33 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
         if (m_selected != selected)
         {
             m_selected = selected;
-            std::visit(visitor { [selected](auto any)
-                                 {
-                                     if (selected)
+            if (m_componentIndex >= 0)
+            {
+                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+                if (mg)
+                {
+                    if (selected)
+                        mg->setComponentSelection(
+                            m_componentIndex,
+                            QCPDataSelection(QCPDataRange(0, mg->dataCount())));
+                    else
+                        mg->setComponentSelection(m_componentIndex, QCPDataSelection());
+                }
+            }
+            else
+            {
+                std::visit(visitor { [selected](auto any)
                                      {
-                                         any->setSelection(
-                                             QCPDataSelection(any->data()->dataRange()));
-                                     }
-                                     else
-                                     {
-                                         any->setSelection(QCPDataSelection());
-                                     }
-                                 },
-                                 [](std::monostate) {} },
-                       to_variant());
+                                         if (selected)
+                                             any->setSelection(
+                                                 QCPDataSelection(any->data()->dataRange()));
+                                         else
+                                             any->setSelection(QCPDataSelection());
+                                     },
+                                     [](MultiGraphRef) {},
+                                     [](std::monostate) {} },
+                           to_variant());
+            }
             emit selection_changed(selected);
             emit replot();
         }
@@ -135,6 +205,13 @@ QColor SciQLopGraphComponent::color() const noexcept
 {
     if (m_plottable)
     {
+        if (m_componentIndex >= 0)
+        {
+            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+            if (mg)
+                return mg->component(m_componentIndex).pen.color();
+            return QColor();
+        }
         return m_plottable->pen().color();
     }
     return QColor();

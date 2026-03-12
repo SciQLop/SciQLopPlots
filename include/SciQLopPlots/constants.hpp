@@ -31,7 +31,6 @@ namespace LayersNames
     const auto ColorMap = "colormap";
     const auto Main = "main";
     const auto Spans = "Spans";
-    const auto SpansBorders = "SpansBorders";
     const auto Axes = "axes";
     const auto Legend = "legend";
     const auto Overlay = "overlay";
