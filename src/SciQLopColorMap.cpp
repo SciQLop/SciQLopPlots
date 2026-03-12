@@ -20,63 +20,30 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
-
-#include "SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp"
 #include "SciQLopPlots/constants.hpp"
-#include <cpp_utils/containers/algorithms.hpp>
 
 void SciQLopColorMap::_cmap_got_destroyed()
 {
-    this->_cmap = nullptr;
-}
-
-void SciQLopColorMap::_setGraphData(QCPColorMapData* data)
-{
-    if (this->_cmap)
-    {
-        this->_cmap->setData(data, false);
-        Q_EMIT this->replot();
-        this->_icon_update_timer->start();
-        if (!_got_first_data && data->keySize() > 0)
-        {
-            _got_first_data = true;
-            Q_EMIT request_rescale();
-        }
-    }
-    Q_EMIT data_changed();
+    _cmap = nullptr;
 }
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                  SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                  const QString& name, QVariantMap metaData)
-        : SciQLopColorMapInterface(metaData, parent)
-        , _icon_update_timer { new QTimer(this) }
-        , _keyAxis { xAxis }
-        , _valueAxis { yAxis }
-        , _colorScaleAxis { zAxis }
+    : SciQLopColorMapInterface(metaData, parent)
+    , _icon_update_timer{new QTimer(this)}
+    , _keyAxis{xAxis}
+    , _valueAxis{yAxis}
+    , _colorScaleAxis{zAxis}
 {
-    this->_cmap = new QCPColorMap(this->_keyAxis->qcp_axis(), this->_valueAxis->qcp_axis());
-    this->_cmap->setLayer(Constants::LayersNames::ColorMap);
-    connect(this->_cmap, &QCPColorMap::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
+    _cmap = new QCPColorMap2(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
+    _cmap->setLayer(Constants::LayersNames::ColorMap);
+    connect(_cmap, &QCPColorMap2::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
     SciQLopColorMap::set_name(name);
 
-    this->_resampler = new ColormapResampler(this, _valueAxis->log());
-    this->_resampler_thread = new QThread();
-    this->_resampler->moveToThread(this->_resampler_thread);
-    this->_resampler_thread->start(QThread::LowPriority);
-    this->_icon_update_timer->setInterval(1000);
-    this->_icon_update_timer->setSingleShot(true);
-    connect(
-        this->_icon_update_timer, &QTimer::timeout, this->_cmap,
-        [this]() { this->_cmap->updateLegendIcon(); }, Qt::QueuedConnection);
-    connect(
-        this->_valueAxis, &SciQLopPlotAxis::log_changed, this->_resampler,
-        [this](bool log) { this->_resampler->set_y_scale_log(log); }, Qt::DirectConnection);
-    connect(this->_resampler, &ColormapResampler::setGraphData, this,
-            &SciQLopColorMap::_setGraphData, Qt::QueuedConnection);
-
-    this->colorMap()->updateLegendIcon();
+    _icon_update_timer->setInterval(1000);
+    _icon_update_timer->setSingleShot(true);
 
     if (auto legend_item = _legend_item(); legend_item)
     {
@@ -87,38 +54,63 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
 
 SciQLopColorMap::~SciQLopColorMap()
 {
-    if (this->_cmap)
-        this->_plot()->removePlottable(this->colorMap());
-
-    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
-    this->_resampler_thread->quit();
-    this->_resampler_thread->wait();
-    delete this->_resampler_thread;
-    this->_resampler = nullptr;
-    this->_resampler_thread = nullptr;
-
-    if (auto legend_item = _legend_item(); legend_item)
-    {
-        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-                &SciQLopColorMap::set_selected);
-    }
+    if (_cmap)
+        _plot()->removePlottable(_cmap);
 }
 
 void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
-    if (this->_cmap)
+    if (!_cmap || !x.is_valid() || !y.is_valid() || !z.is_valid())
+        return;
+
+    if (x.format_code() != 'd')
+        throw std::runtime_error("Keys (x) must be float64");
+
+    const auto* x_ptr = static_cast<const double*>(x.raw_data());
+    const int nx = static_cast<int>(x.flat_size());
+
+    dispatch_dtype(y.format_code(), [&](auto y_tag) {
+        dispatch_dtype(z.format_code(), [&](auto z_tag) {
+            using Y = typename decltype(y_tag)::type;
+            using Z = typename decltype(z_tag)::type;
+            const auto* y_ptr = static_cast<const Y*>(y.raw_data());
+            const auto* z_ptr = static_cast<const Z*>(z.raw_data());
+            const int ny = static_cast<int>(y.flat_size());
+            const int nz = static_cast<int>(z.flat_size());
+
+            auto source = std::make_shared<QCPSoADataSource2D<
+                std::span<const double>, std::span<const Y>, std::span<const Z>>>(
+                std::span<const double>(x_ptr, nx),
+                std::span<const Y>(y_ptr, ny),
+                std::span<const Z>(z_ptr, nz));
+
+            _dataHolder = std::make_shared<DataSourceWithBuffers>(
+                DataSourceWithBuffers{x, y, z, source});
+            _cmap->setDataSource(source);
+        });
+    });
+
+    if (!_got_first_data && nx > 0)
     {
-        this->_resampler->setData(x, y, z);
+        _got_first_data = true;
+        Q_EMIT request_rescale();
     }
+
+    if (_auto_scale_y && _dataHolder && _dataHolder->source)
+    {
+        bool found = false;
+        auto yRange = _dataHolder->source->yRange(found);
+        if (found)
+            _valueAxis->qcp_axis()->setRange(yRange);
+    }
+
     Q_EMIT data_changed(x, y, z);
 }
 
 QList<PyBuffer> SciQLopColorMap::data() const noexcept
 {
-    if (this->_cmap)
-    {
-        return this->_resampler->get_data();
-    }
+    if (_dataHolder)
+        return {_dataHolder->x, _dataHolder->y, _dataHolder->z};
     return {};
 }
 
@@ -149,8 +141,9 @@ void SciQLopColorMap::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
-        this->_keyAxis = qcp_axis;
-        this->_cmap->setKeyAxis(this->_keyAxis->qcp_axis());
+        _keyAxis = qcp_axis;
+        if (_cmap)
+            _cmap->setKeyAxis(qcp_axis->qcp_axis());
     }
 }
 
@@ -158,8 +151,9 @@ void SciQLopColorMap::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
-        this->_valueAxis = qcp_axis;
-        this->_cmap->setValueAxis(this->_valueAxis->qcp_axis());
+        _valueAxis = qcp_axis;
+        if (_cmap)
+            _cmap->setValueAxis(qcp_axis->qcp_axis());
     }
 }
 
@@ -167,8 +161,8 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
                                                  SciQLopPlotAxis* yAxis,
                                                  SciQLopPlotColorScaleAxis* zAxis,
                                                  GetDataPyCallable&& callable, const QString& name)
-        : SciQLopColorMap { parent, xAxis, yAxis, zAxis, name }
-        , SciQLopFunctionGraph(std::move(callable), this, 3)
+    : SciQLopColorMap{parent, xAxis, yAxis, zAxis, name}
+    , SciQLopFunctionGraph(std::move(callable), this, 3)
 {
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
