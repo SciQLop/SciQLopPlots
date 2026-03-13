@@ -635,6 +635,18 @@
     <object-type name="PropertyDelegateBase" parent-management="yes"/>
     <object-type name="PropertiesPanel" parent-management="yes"/>
 
+    <value-type name="MatchResult"/>
+    <object-type name="SubsequenceMatcher"/>
+
+    <enum-type name="QueryTokenKind"/>
+    <value-type name="QueryToken"/>
+    <value-type name="QueryFilter"/>
+    <value-type name="Query"/>
+    <object-type name="QueryParser"/>
+
+    <object-type name="ProductsTreeFilterModel" parent-management="yes"/>
+    <object-type name="ProductsFlatFilterModel" parent-management="yes"/>
+
     <object-type name="ProductsView" parent-management="yes"/>
     <object-type name="ProductsModel" parent-management="yes">
         <modify-function signature="add_node(QStringList, ProductsModelNode*)">

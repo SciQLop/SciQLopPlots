@@ -20,39 +20,24 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <QObject>
-#include <QWidget>
+#include "SciQLopPlots/Products/QueryParser.hpp"
+#include <QSet>
+#include <QSyntaxHighlighter>
+#include <QTextCharFormat>
 
-class QueryLineEdit;
-class QTreeView;
-class QListView;
-class QStackedWidget;
-class QToolButton;
-class QLabel;
-class QTimer;
-class ProductsTreeFilterModel;
-class ProductsFlatFilterModel;
-struct Query;
-
-class ProductsView : public QWidget
+class QueryHighlighter : public QSyntaxHighlighter
 {
     Q_OBJECT
-    QueryLineEdit* m_query_line_edit;
-    QTreeView* m_tree_view;
-    QListView* m_list_view;
-    QStackedWidget* m_stack;
-    QToolButton* m_view_toggle;
-    QLabel* m_result_count;
-    ProductsTreeFilterModel* m_tree_filter;
-    ProductsFlatFilterModel* m_flat_filter;
-    QTimer* m_completion_refresh_timer;
-
-    Q_SLOT void on_query_changed(const Query& query);
-    void toggle_view();
-    void update_result_count();
-    void refresh_completions();
+    QTextCharFormat m_field_name_format;
+    QTextCharFormat m_invalid_field_name_format;
+    QTextCharFormat m_field_value_format;
+    QTextCharFormat m_free_text_format;
+    QSet<QString> m_known_fields;
 
 public:
-    ProductsView(QWidget* parent = nullptr);
-    virtual ~ProductsView() = default;
+    QueryHighlighter(QTextDocument* parent = nullptr);
+    void set_known_fields(const QSet<QString>& fields);
+
+protected:
+    void highlightBlock(const QString& text) override;
 };

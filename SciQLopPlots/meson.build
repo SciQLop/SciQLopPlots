@@ -130,6 +130,10 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsTreeFilterModel.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/QueryHighlighter.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/QueryLineEdit.hpp',
     project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
 ]
 
@@ -137,7 +141,9 @@ moc_sources = []
 headers = moc_headers + \
          [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
          project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
-         project_source_root+'/include/SciQLopPlots/constants.hpp']
+         project_source_root+'/include/SciQLopPlots/constants.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp']
 
 includes = include_directories(['../include'])
 
@@ -215,6 +221,11 @@ sources = moc_files \
             '../src/ColorGradientDelegate.cpp',
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
+            '../src/QueryParser.cpp',
+            '../src/ProductsTreeFilterModel.cpp',
+            '../src/ProductsFlatFilterModel.cpp',
+            '../src/QueryHighlighter.cpp',
+            '../src/QueryLineEdit.cpp',
             '../src/ProductsView.cpp',
             '../src/icons.cpp'
         ]
