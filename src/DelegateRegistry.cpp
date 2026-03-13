@@ -19,45 +19,29 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
-#include <QIcon>
-#include <QList>
-#include <QObject>
+#include "SciQLopPlots/Inspector/Model/DelegateRegistry.hpp"
 
-class SciQLopMultiPlotPanelInspector : public InspectorBase
+DelegateRegistry& DelegateRegistry::instance()
 {
-    Q_OBJECT
+    static DelegateRegistry inst;
+    return inst;
+}
 
-    inline SciQLopMultiPlotPanel* _panel(QObject* obj)
+void DelegateRegistry::register_type(
+    const QString& type_name, std::function<QWidget*(QObject*, QWidget*)> factory)
+{
+    m_factories[type_name] = std::move(factory);
+}
+
+QWidget* DelegateRegistry::create_delegate(QObject* obj, QWidget* parent) const
+{
+    auto metaObject = obj->metaObject();
+    while (metaObject != nullptr)
     {
-        return qobject_cast<SciQLopMultiPlotPanel*>(obj);
+        auto it = m_factories.find(metaObject->className());
+        if (it != m_factories.end())
+            return it.value()(obj, parent);
+        metaObject = metaObject->superClass();
     }
-
-public:
-    using compatible_type = SciQLopMultiPlotPanel;
-
-    SciQLopMultiPlotPanelInspector() : InspectorBase() { }
-
-    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
-
-    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
-
-    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
-    {
-        Q_UNUSED(obj);
-        return QIcon();
-    }
-
-    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
-    {
-        Q_UNUSED(obj);
-        return QString();
-    }
-
-    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
-
-    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
-};
+    return nullptr;
+}

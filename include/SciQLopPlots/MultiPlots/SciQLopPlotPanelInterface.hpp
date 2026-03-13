@@ -39,6 +39,20 @@ public:
     SciQLopPlotPanelInterface(QWidget* parent = nullptr):QScrollArea{parent}{}
     virtual ~SciQLopPlotPanelInterface() {}
 
+    void request_delete()
+    {
+        hide();
+        if (receivers(SIGNAL(delete_me())) > 0)
+        {
+            emit delete_me();
+        }
+        else
+        {
+            setParent(nullptr);
+            deleteLater();
+        }
+    }
+
     virtual inline void add_panel(SciQLopPlotPanelInterface* panel) { WARN_ABSTRACT_METHOD }
 
     virtual inline void insert_panel(int index, SciQLopPlotPanelInterface* panel)
@@ -69,4 +83,5 @@ public:
     Q_SIGNAL void plot_inserted(SciQLopPlotInterface* plot, int at);
     Q_SIGNAL void selectionChanged(bool selected);
     Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void delete_me();
 };

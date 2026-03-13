@@ -17,7 +17,8 @@ foreach example:examples
     test('examples_'+example['name'],
         python3,
         args: [example['source']],
-        env: ['PYTHONPATH='+meson.project_build_root()]
+        env: ['PYTHONPATH='+meson.project_build_root()],
+        suite: 'manual',
     )
 endforeach
 

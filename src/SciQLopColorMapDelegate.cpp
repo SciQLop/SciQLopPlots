@@ -22,10 +22,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
-
-REGISTER_DELEGATE(SciQLopColorMapDelegate);
 
 SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
 {

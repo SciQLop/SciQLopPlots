@@ -24,10 +24,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
-
-REGISTER_DELEGATE(SciQLopPlotDelegate);
 
 SciQLopPlot* SciQLopPlotDelegate::plot() const
 {
