@@ -35,8 +35,6 @@ PlotsModelNode::~PlotsModelNode()
     {
         auto child = m_children.takeFirst();
         child->disconnect_all();
-        if (auto obj = child->object(); obj && child->deletable())
-            obj->deleteLater();
         delete child;
     }
 }

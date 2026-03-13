@@ -21,8 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
-#include <QPushButton>
-#include <QVBoxLayout>
+#include <QLineEdit>
 
 SciQLopMultiPlotPanel* SciQLopMultiPlotPanelDelegate::panel() const
 {
@@ -33,4 +32,14 @@ SciQLopMultiPlotPanelDelegate::SciQLopMultiPlotPanelDelegate(SciQLopMultiPlotPan
                                                              QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
+    auto name_edit = new QLineEdit(object->objectName(), this);
+    m_layout->addRow("Name", name_edit);
+    connect(name_edit, &QLineEdit::editingFinished, object,
+            [name_edit, object]() { object->setObjectName(name_edit->text()); });
+    connect(object, &QObject::objectNameChanged, name_edit,
+            [name_edit](const QString& name)
+            {
+                if (name_edit->text() != name)
+                    name_edit->setText(name);
+            });
 }

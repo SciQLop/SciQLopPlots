@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 #include <QMimeData>
 #include <QPointer>
 #include <qapplicationstatic.h>
@@ -120,7 +121,12 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
         emit node_removed(obj);
         delete child;
         if (should_delete_obj)
-            obj->deleteLater();
+        {
+            if (auto panel = qobject_cast<SciQLopPlotPanelInterface*>(obj))
+                panel->request_delete();
+            else
+                obj->deleteLater();
+        }
     }
     endRemoveRows();
     return true;
@@ -148,8 +154,17 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
                 if (!guardedNode || !guardedParent)
                     return;
                 int r = guardedParent->child_row(guardedNode);
-                if (r >= 0)
-                    removeRows(r, 1, make_index(guardedParent));
+                if (r < 0)
+                    return;
+                // Object is already being destroyed — detach the node
+                // without scheduling deleteLater on the dying object
+                beginRemoveRows(make_index(guardedParent), r, r);
+                guardedNode->disconnect_all();
+                QObject* obj = guardedNode->object();
+                guardedParent->remove_child(r);
+                emit node_removed(obj);
+                delete guardedNode.data();
+                endRemoveRows();
             }));
 
     node->add_connection(
