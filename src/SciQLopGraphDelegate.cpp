@@ -20,10 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-
-REGISTER_DELEGATE(SciQLopGraphDelegate);
 
 SciQLopGraphInterface* SciQLopGraphDelegate::graph() const
 {

@@ -24,32 +24,30 @@
 #include <QAbstractItemModel>
 #include <QObject>
 
-
 class PlotsModel : public QAbstractItemModel
 {
     Q_OBJECT
     PlotsModelNode* m_rootNode;
 
-    Q_SLOT void node_changed();
-    Q_SLOT void node_selection_changed(bool selected);
-    QModelIndex make_index(PlotsModelNode* node);
+    QModelIndex make_index(PlotsModelNode* node) const;
 
-    void addNode(PlotsModelNode*parent, QObject* obj);
-    Q_SLOT void updateNodeChildren();
 public:
     PlotsModel(QObject* parent = nullptr);
     ~PlotsModel() = default;
 
     QModelIndex index(int row, int column,
-                      const QModelIndex& parent = QModelIndex()) const override;
+        const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex parent(const QModelIndex& index) const override;
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
-    bool removeRow(int row, const QModelIndex& parent = QModelIndex());
+    bool removeRows(int row, int count,
+        const QModelIndex& parent = QModelIndex()) override;
+
+    void addNode(PlotsModelNode* parent, QObject* obj);
+    void removeChildByObject(PlotsModelNode* parent, QObject* obj);
 
     void set_selected(const QList<QModelIndex>& indexes, bool selected);
 
@@ -60,12 +58,11 @@ public:
 
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
     Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
     Q_SIGNAL void top_level_nodes_list_changed();
-
+    Q_SIGNAL void node_removed(QObject* obj);
 };

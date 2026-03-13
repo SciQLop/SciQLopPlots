@@ -20,162 +20,220 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 #include <QMimeData>
+#include <QPointer>
 #include <qapplicationstatic.h>
-
-void PlotsModel::node_changed()
-{
-    auto node = static_cast<PlotsModelNode*>(sender());
-    if (node != nullptr)
-    {
-        auto index = make_index(node);
-        if (index.isValid())
-            emit dataChanged(index, index);
-    }
-}
-
-void PlotsModel::node_selection_changed(bool selected)
-{
-    auto node = static_cast<PlotsModelNode*>(sender());
-    if (node != nullptr)
-    {
-        auto index = make_index(node);
-        if (index.isValid())
-            emit item_selection_changed(index, selected);
-    }
-}
 
 PlotsModel::PlotsModel(QObject* parent) : QAbstractItemModel(parent)
 {
-    m_rootNode = new PlotsModelNode(this);
-    m_rootNode->setName(QStringLiteral("Root Node"));
-    connect(m_rootNode, &PlotsModelNode::childrenChanged, this, &PlotsModel::updateNodeChildren);
+    m_rootNode = new PlotsModelNode(nullptr, nullptr, this);
+    m_rootNode->setObjectName(QStringLiteral("Root Node"));
 }
 
 QModelIndex PlotsModel::index(int row, int column, const QModelIndex& parent) const
 {
-    if (hasIndex(row, column, parent))
-    {
-        PlotsModelNode* parentNode;
-        if (!parent.isValid())
-            parentNode = m_rootNode;
-        else
-            parentNode = static_cast<PlotsModelNode*>(parent.internalPointer());
-        PlotsModelNode* childNode = parentNode->child(row);
-        if (childNode)
-            return createIndex(row, column, childNode);
-    }
-    return QModelIndex();
+    if (!hasIndex(row, column, parent))
+        return {};
+    auto parentNode = parent.isValid()
+        ? static_cast<PlotsModelNode*>(parent.internalPointer())
+        : m_rootNode;
+    if (auto child = parentNode->child(row))
+        return createIndex(row, column, child);
+    return {};
 }
 
 QModelIndex PlotsModel::parent(const QModelIndex& index) const
 {
-    if (index.isValid())
-    {
-        PlotsModelNode* childNode = static_cast<PlotsModelNode*>(index.internalPointer());
-        PlotsModelNode* parentNode = childNode->parent_node();
-        // if (parentNode != m_rootNode)
-        {
-            if (parentNode != nullptr)
-            {
-                PlotsModelNode* grandparentNode = parentNode->parent_node();
-                if (grandparentNode != nullptr)
-                    return createIndex(grandparentNode->child_row(parentNode), 0, parentNode);
-                return createIndex(0, 0, parentNode);
-            }
-        }
-    }
-    return QModelIndex();
+    if (!index.isValid())
+        return {};
+    auto child = static_cast<PlotsModelNode*>(index.internalPointer());
+    auto parentNode = child->parent_node();
+    if (!parentNode || parentNode == m_rootNode)
+        return {};
+    auto grandparent = parentNode->parent_node();
+    int row = grandparent ? grandparent->child_row(parentNode) : 0;
+    return createIndex(row, 0, parentNode);
 }
 
 int PlotsModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.column() > 0)
         return 0;
-    PlotsModelNode* parentNode;
-    if (!parent.isValid())
-        parentNode = m_rootNode;
-    else
-        parentNode = static_cast<PlotsModelNode*>(parent.internalPointer());
+    auto parentNode = parent.isValid()
+        ? static_cast<PlotsModelNode*>(parent.internalPointer())
+        : m_rootNode;
     return parentNode->children_count();
 }
 
-int PlotsModel::columnCount(const QModelIndex& parent) const
+int PlotsModel::columnCount(const QModelIndex&) const
 {
     return 1;
 }
 
 QVariant PlotsModel::data(const QModelIndex& index, int role) const
 {
-    if (index.isValid())
+    if (!index.isValid())
+        return {};
+    auto node = static_cast<PlotsModelNode*>(index.internalPointer());
+    switch (role)
     {
-        PlotsModelNode* node = static_cast<PlotsModelNode*>(index.internalPointer());
-        switch (role)
-        {
-            case Qt::DisplayRole:
-                return node->name();
-            case Qt::UserRole:
-                return node->name();
-            case Qt::DecorationRole:
-                return node->icon();
-            case Qt::ToolTipRole:
-                return node->tooltip();
-            default:
-                break;
-        }
+        case Qt::DisplayRole:
+        case Qt::UserRole:
+            return node->name();
+        case Qt::DecorationRole:
+            return node->icon();
+        case Qt::ToolTipRole:
+            return node->tooltip();
+        default:
+            return {};
     }
-    return QVariant();
 }
 
 Qt::ItemFlags PlotsModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid())
         return Qt::ItemIsEnabled;
-    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()); node != nullptr)
+    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()))
         return node->flags();
     return QAbstractItemModel::flags(index);
 }
 
 bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    bool result = true;
-    auto ptr = parent.internalPointer();
-    if (auto node = static_cast<PlotsModelNode*>(parent.internalPointer()); node != nullptr)
+    auto parentNode = parent.isValid()
+        ? static_cast<PlotsModelNode*>(parent.internalPointer())
+        : m_rootNode;
+    if (!parentNode || row < 0 || row + count > parentNode->children_count())
+        return false;
+
+    QList<QPointer<QObject>> deferred_deletes;
+
+    beginRemoveRows(parent, row, row + count - 1);
+    for (int i = row + count - 1; i >= row; --i)
     {
-        beginRemoveRows(parent, row, row + count - 1);
-        for (int index = row + count - 1; index >= row; --index)
-        {
-            auto child = node->child(index);
-            if (child != nullptr && child->deletable())
-                node->remove_child(index);
-            else
-                result = false;
-        }
-        endRemoveRows();
+        auto child = parentNode->child(i);
+        if (!child)
+            continue;
+        child->disconnect_all();
+        QObject* obj = child->object();
+        if (obj && child->deletable())
+            deferred_deletes.append(obj);
+        parentNode->remove_child(i);
+        emit node_removed(obj);
+        delete child;
     }
-    return result;
+    endRemoveRows();
+
+    for (auto& obj : deferred_deletes)
+    {
+        if (!obj)
+            continue;
+        if (auto panel = qobject_cast<SciQLopPlotPanelInterface*>(obj.data()))
+            panel->request_delete();
+        else
+            obj->deleteLater();
+    }
+
+    return true;
 }
 
-bool PlotsModel::removeRow(int row, const QModelIndex& parent)
+void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
 {
-    return removeRows(row, 1, parent);
+    if (!obj)
+        return;
+    auto desc = TypeRegistry::instance().descriptor(obj);
+    auto parentIndex = make_index(parent);
+    int row = parent->children_count();
+
+    beginInsertRows(parentIndex, row, row);
+    auto node = parent->insert_child(obj, desc);
+    endInsertRows();
+
+    QPointer<PlotsModelNode> guardedNode = node;
+    QPointer<PlotsModelNode> guardedParent = parent;
+
+    node->add_connection(
+        connect(obj, &QObject::destroyed, this,
+            [this, guardedNode, guardedParent]()
+            {
+                if (!guardedNode || !guardedParent)
+                    return;
+                int r = guardedParent->child_row(guardedNode);
+                if (r < 0)
+                    return;
+                // Object is already being destroyed — detach the node
+                // without scheduling deleteLater on the dying object
+                beginRemoveRows(make_index(guardedParent), r, r);
+                guardedNode->disconnect_all();
+                QObject* obj = guardedNode->object();
+                guardedParent->remove_child(r);
+                emit node_removed(obj);
+                delete guardedNode.data();
+                endRemoveRows();
+            }));
+
+    node->add_connection(
+        connect(obj, &QObject::objectNameChanged, this,
+            [this, guardedNode](const QString& name)
+            {
+                if (!guardedNode)
+                    return;
+                guardedNode->setName(name);
+                auto idx = make_index(guardedNode);
+                if (idx.isValid())
+                    emit dataChanged(idx, idx);
+            }));
+
+    if (desc && desc->connect_children)
+    {
+        auto add_child = [this, guardedNode](QObject* child)
+        {
+            if (guardedNode)
+                addNode(guardedNode, child);
+        };
+        auto remove_child = [this, guardedNode](QObject* child)
+        {
+            if (guardedNode)
+                removeChildByObject(guardedNode, child);
+        };
+        node->add_connections(desc->connect_children(obj, add_child, remove_child));
+    }
+
+    if (desc && desc->children)
+    {
+        for (auto child : desc->children(obj))
+            addNode(node, child);
+    }
+}
+
+void PlotsModel::removeChildByObject(PlotsModelNode* parent, QObject* obj)
+{
+    if (!parent || !obj)
+        return;
+    int row = parent->child_row_by_object(obj);
+    if (row >= 0)
+        removeRows(row, 1, make_index(parent));
 }
 
 void PlotsModel::set_selected(const QList<QModelIndex>& indexes, bool selected)
 {
-    for (auto index : indexes)
+    for (const auto& index : indexes)
     {
         auto node = static_cast<PlotsModelNode*>(index.internalPointer());
-        if (node != nullptr)
-            node->set_selected(selected);
+        if (node && node->descriptor() && node->descriptor()->set_selected && node->object())
+        {
+            node->descriptor()->set_selected(node->object(), selected);
+            emit item_selection_changed(index, selected);
+        }
     }
 }
 
 void PlotsModel::addTopLevelNode(QObject* obj)
 {
     addNode(m_rootNode, obj);
-    Q_EMIT top_level_nodes_list_changed();
+    emit top_level_nodes_list_changed();
 }
 
 Q_APPLICATION_STATIC(PlotsModel, _plots_model);
@@ -187,76 +245,23 @@ PlotsModel* PlotsModel::instance()
 
 QObject* PlotsModel::object(const QModelIndex& index)
 {
-    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()); node != nullptr)
+    if (auto node = static_cast<PlotsModelNode*>(index.internalPointer()))
         return node->object();
     return nullptr;
 }
 
-QMimeData* PlotsModel::mimeData(const QModelIndexList& indexes) const
+QMimeData* PlotsModel::mimeData(const QModelIndexList&) const
 {
-    auto mimeData = new QMimeData();
-    return mimeData;
+    return new QMimeData();
 }
 
-QModelIndex PlotsModel::make_index(PlotsModelNode* node)
+QModelIndex PlotsModel::make_index(PlotsModelNode* node) const
 {
-    if (node == nullptr)
-        return QModelIndex();
-    if (auto parent_node = node->parent_node())
-        return createIndex(parent_node->child_row(node), 0, node);
-    if (node != m_rootNode)
-        return createIndex(m_rootNode->child_row(node), 0, node);
-    else
-        return createIndex(0, 0, node);
-}
-
-void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
-{
-    beginInsertRows(make_index(parent), parent->children_count(), parent->children_count());
-    auto node = parent->insert_child(obj);
-    auto inspector = node->inspector();
-    if (inspector != nullptr)
-    {
-        for (auto child_obj : inspector->children(obj))
-        {
-            addNode(node, child_obj);
-        }
-    }
-    endInsertRows();
-    connect(node, &PlotsModelNode::childrenChanged, this, &PlotsModel::updateNodeChildren);
-    connect(node, &PlotsModelNode::objectDestroyed, this,
-            [this, node, parent]() { removeRows(parent->child_row(node), 1, make_index(parent)); });
-    connect(node, &PlotsModelNode::selectionChanged, this, &PlotsModel::node_selection_changed);
-    connect(node, &PlotsModelNode::nameChanged, this, &PlotsModel::node_changed);
-}
-
-void PlotsModel::updateNodeChildren()
-{
-    PlotsModelNode* node = qobject_cast<PlotsModelNode*>(sender());
-    if (node != m_rootNode)
-    {
-        auto inspector = node->inspector();
-        if (inspector != nullptr)
-        {
-            const auto new_children = inspector->children(node->object());
-            for (auto child : node->children_nodes())
-            {
-                if (!new_children.contains(child->object()))
-                    removeRows(node->child_row(child), 1, make_index(node));
-            }
-            for (auto child : new_children)
-            {
-                if (!node->contains(child))
-                    addNode(node, child);
-            }
-        }
-    }
-    else
-    {
-        for (auto child : m_rootNode->children_nodes())
-        {
-            if (!child->object())
-                removeRows(m_rootNode->child_row(child), 1, make_index(m_rootNode));
-        }
-    }
+    if (!node || node == m_rootNode)
+        return {};
+    auto parentNode = node->parent_node();
+    int row = parentNode ? parentNode->child_row(node) : m_rootNode->child_row(node);
+    if (row < 0)
+        return {};
+    return createIndex(row, 0, node);
 }

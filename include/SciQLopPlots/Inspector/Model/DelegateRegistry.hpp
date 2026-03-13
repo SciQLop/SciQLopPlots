@@ -19,18 +19,32 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/Debug.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
+#pragma once
+#include <QMap>
+#include <QObject>
+#include <QWidget>
+#include <functional>
 
-InspectorBase* Inspectors::inspector(const QObject* obj)
+class DelegateRegistry
 {
-    auto metaObject = obj->metaObject();
-    InspectorBase* _inspector = nullptr;
-    do
+    QMap<QString, std::function<QWidget*(QObject*, QWidget*)>> m_factories;
+    DelegateRegistry() = default;
+
+public:
+    static DelegateRegistry& instance();
+
+    template <typename DelegateType>
+    void register_type()
     {
-        _inspector = inspector(metaObject->className());
-        metaObject = metaObject->superClass();
-    } while (_inspector == nullptr && metaObject != nullptr);
-    return _inspector;
-}
+        m_factories[DelegateType::compatible_type::staticMetaObject.className()]
+            = [](QObject* obj, QWidget* parent) -> QWidget* {
+            return new DelegateType(
+                qobject_cast<typename DelegateType::compatible_type*>(obj), parent);
+        };
+    }
+
+    void register_type(const QString& type_name,
+        std::function<QWidget*(QObject*, QWidget*)> factory);
+
+    QWidget* create_delegate(QObject* obj, QWidget* parent = nullptr) const;
+};
