@@ -21,16 +21,18 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include <QPointer>
 #include <QWidget>
-class PropertyDelegateBase;
 
 class PropertiesView : public QWidget
 {
     Q_OBJECT
-    PropertyDelegateBase* m_delegateWidget = nullptr;
+    QWidget* m_delegateWidget = nullptr;
+    QPointer<QObject> m_currentObject;
 
 public:
     Q_SLOT void set_current_objects(const QList<QObject*>& objects);
+    Q_SLOT void on_node_removed(QObject* obj);
     PropertiesView(QWidget* parent = nullptr);
     virtual ~PropertiesView() = default;
 };

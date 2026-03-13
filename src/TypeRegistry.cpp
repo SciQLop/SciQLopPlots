@@ -19,43 +19,28 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/SciQLopPlot.hpp"
-#include <QIcon>
-#include <QList>
-#include <QObject>
+#include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
 
-class SciQLopPlotInspector : public InspectorBase
+TypeRegistry& TypeRegistry::instance()
 {
-    Q_OBJECT
-    inline SciQLopPlot* _plot(QObject* obj) { return qobject_cast<SciQLopPlot*>(obj); }
+    static TypeRegistry inst;
+    return inst;
+}
 
-public:
-    using compatible_type = SciQLopPlot;
+void TypeRegistry::register_type(const QString& type_name, TypeDescriptor desc)
+{
+    m_descriptors[type_name] = std::move(desc);
+}
 
-    SciQLopPlotInspector() : InspectorBase() { }
-
-    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
-
-    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
-
-    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
+const TypeDescriptor* TypeRegistry::descriptor(const QObject* obj) const
+{
+    auto metaObject = obj->metaObject();
+    while (metaObject != nullptr)
     {
-        Q_UNUSED(obj);
-        return QIcon();
+        auto it = m_descriptors.find(metaObject->className());
+        if (it != m_descriptors.end())
+            return &it.value();
+        metaObject = metaObject->superClass();
     }
-
-    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
-    {
-        Q_UNUSED(obj);
-        return QString();
-    }
-
-    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
-
-    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
-
-    virtual Qt::ItemFlags flags() Q_DECL_OVERRIDE;
-};
+    return nullptr;
+}

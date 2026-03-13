@@ -20,7 +20,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"

@@ -20,12 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include <QPushButton>
 #include <QVBoxLayout>
-
-REGISTER_DELEGATE(SciQLopMultiPlotPanelDelegate);
 
 SciQLopMultiPlotPanel* SciQLopMultiPlotPanelDelegate::panel() const
 {

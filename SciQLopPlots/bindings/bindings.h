@@ -11,8 +11,8 @@
 #include "_QCustomPlot.hpp"
 #include <SciQLopPlots/DataProducer/DataProducer.hpp>
 #include <SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp>
-#include <SciQLopPlots/Inspector/InspectorBase.hpp>
-#include <SciQLopPlots/Inspector/Inspectors.hpp>
+#include <SciQLopPlots/Inspector/Model/DelegateRegistry.hpp>
+#include <SciQLopPlots/Inspector/Model/TypeDescriptor.hpp>
 #include <SciQLopPlots/Inspector/Model/Model.hpp>
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
 #include <SciQLopPlots/Inspector/PropertyDelegateBase.hpp>

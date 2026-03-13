@@ -20,7 +20,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"

@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2025, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,40 +20,45 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
-#include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include <QIcon>
 #include <QList>
+#include <QMap>
+#include <QMetaObject>
 #include <QObject>
+#include <functional>
 
-class SciQLopNDProjectionPlotInspector : public InspectorBase
+struct TypeDescriptor
 {
-    Q_OBJECT
-    inline SciQLopNDProjectionPlot* _plot(QObject* obj) { return qobject_cast<SciQLopNDProjectionPlot*>(obj); }
+    std::function<QList<QObject*>(QObject*)> children;
+
+    std::function<QList<QMetaObject::Connection>(QObject* obj,
+        std::function<void(QObject*)> add_child,
+        std::function<void(QObject*)> remove_child)>
+        connect_children;
+
+    std::function<QIcon(const QObject*)> icon = {};
+    std::function<QString(const QObject*)> tooltip = {};
+    std::function<void(QObject*, bool)> set_selected = {};
+
+    bool deletable = true;
+    Qt::ItemFlags flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+};
+
+class TypeRegistry
+{
+    QMap<QString, TypeDescriptor> m_descriptors;
+    TypeRegistry() = default;
 
 public:
-    using compatible_type = SciQLopNDProjectionPlot;
+    static TypeRegistry& instance();
 
-    SciQLopNDProjectionPlotInspector() : InspectorBase() { }
-
-    virtual QList<QObject*> children(QObject* obj) Q_DECL_OVERRIDE;
-
-    virtual QObject* child(const QString& name, QObject* obj) Q_DECL_OVERRIDE;
-
-    inline virtual QIcon icon(const QObject* const obj) Q_DECL_OVERRIDE
+    template <typename T>
+    void register_type(TypeDescriptor desc)
     {
-        Q_UNUSED(obj);
-        return QIcon();
+        m_descriptors[T::staticMetaObject.className()] = std::move(desc);
     }
 
-    inline virtual QString tooltip(const QObject* const obj) Q_DECL_OVERRIDE
-    {
-        Q_UNUSED(obj);
-        return QString();
-    }
+    void register_type(const QString& type_name, TypeDescriptor desc);
 
-    virtual void connect_node(PlotsModelNode* node, QObject* const obj) Q_DECL_OVERRIDE;
-
-    virtual void set_selected(QObject* obj, bool selected) Q_DECL_OVERRIDE;
+    const TypeDescriptor* descriptor(const QObject* obj) const;
 };
