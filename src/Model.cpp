@@ -108,6 +108,8 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
     if (!parentNode || row < 0 || row + count > parentNode->children_count())
         return false;
 
+    QList<QPointer<QObject>> deferred_deletes;
+
     beginRemoveRows(parent, row, row + count - 1);
     for (int i = row + count - 1; i >= row; --i)
     {
@@ -116,19 +118,24 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
             continue;
         child->disconnect_all();
         QObject* obj = child->object();
-        bool should_delete_obj = obj && child->deletable();
+        if (obj && child->deletable())
+            deferred_deletes.append(obj);
         parentNode->remove_child(i);
         emit node_removed(obj);
         delete child;
-        if (should_delete_obj)
-        {
-            if (auto panel = qobject_cast<SciQLopPlotPanelInterface*>(obj))
-                panel->request_delete();
-            else
-                obj->deleteLater();
-        }
     }
     endRemoveRows();
+
+    for (auto& obj : deferred_deletes)
+    {
+        if (!obj)
+            continue;
+        if (auto panel = qobject_cast<SciQLopPlotPanelInterface*>(obj.data()))
+            panel->request_delete();
+        else
+            obj->deleteLater();
+    }
+
     return true;
 }
 
