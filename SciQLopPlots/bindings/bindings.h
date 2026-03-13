@@ -49,6 +49,10 @@
 #include <SciQLopPlots/Products/ProductsModel.hpp>
 #include <SciQLopPlots/Products/ProductsNode.hpp>
 #include <SciQLopPlots/Products/ProductsView.hpp>
+#include <SciQLopPlots/Products/SubsequenceMatcher.hpp>
+#include <SciQLopPlots/Products/QueryParser.hpp>
+#include <SciQLopPlots/Products/ProductsTreeFilterModel.hpp>
+#include <SciQLopPlots/Products/ProductsFlatFilterModel.hpp>
 
 #include <SciQLopPlots/Icons/icons.hpp>
 

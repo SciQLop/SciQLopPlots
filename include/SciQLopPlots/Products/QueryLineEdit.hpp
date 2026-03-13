@@ -20,39 +20,49 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <QObject>
-#include <QWidget>
+#include "SciQLopPlots/Products/QueryParser.hpp"
+#include <QMap>
+#include <QSet>
+#include <QTextEdit>
 
-class QueryLineEdit;
-class QTreeView;
+class QueryHighlighter;
 class QListView;
-class QStackedWidget;
-class QToolButton;
-class QLabel;
+class QStringListModel;
 class QTimer;
-class ProductsTreeFilterModel;
-class ProductsFlatFilterModel;
-struct Query;
 
-class ProductsView : public QWidget
+class QueryLineEdit : public QTextEdit
 {
     Q_OBJECT
-    QueryLineEdit* m_query_line_edit;
-    QTreeView* m_tree_view;
-    QListView* m_list_view;
-    QStackedWidget* m_stack;
-    QToolButton* m_view_toggle;
-    QLabel* m_result_count;
-    ProductsTreeFilterModel* m_tree_filter;
-    ProductsFlatFilterModel* m_flat_filter;
-    QTimer* m_completion_refresh_timer;
+    QueryHighlighter* m_highlighter;
+    QListView* m_popup;
+    QStringListModel* m_completion_model;
+    QTimer* m_debounce_timer;
 
-    Q_SLOT void on_query_changed(const Query& query);
-    void toggle_view();
-    void update_result_count();
-    void refresh_completions();
+    QStringList m_field_names;
+    QMap<QString, QStringList> m_field_values;
+    QStringList m_product_names;
 
 public:
-    ProductsView(QWidget* parent = nullptr);
-    virtual ~ProductsView() = default;
+    QueryLineEdit(QWidget* parent = nullptr);
+
+    void set_completions(const QStringList& field_names,
+                         const QMap<QString, QStringList>& field_values,
+                         const QStringList& product_names);
+
+    void set_known_fields(const QSet<QString>& fields);
+
+    Q_SIGNAL void queryChanged(const Query& query);
+
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+
+private:
+    void on_text_changed();
+    void update_completions();
+    void accept_completion();
+    void show_all_keywords();
+    void show_popup(const QStringList& items);
+    void hide_popup();
+    QString current_word() const;
 };
