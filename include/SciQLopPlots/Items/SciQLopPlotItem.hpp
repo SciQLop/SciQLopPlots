@@ -60,16 +60,20 @@ public:
     inline virtual void replot(bool immediate = false)
     {
         if (immediate)
-            this->layer()->replot();
+        {
+            if (auto* l = this->layer())
+                l->replot();
+        }
         else
         {
             if (not _queued_replot)
             {
                 _queued_replot = true;
-                QTimer::singleShot(0,
+                QTimer::singleShot(0, this,
                                    [this]()
                                    {
-                                       this->layer()->replot();
+                                       if (auto* l = this->layer())
+                                           l->replot();
                                        _queued_replot = false;
                                    });
             }
