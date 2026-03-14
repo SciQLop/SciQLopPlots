@@ -330,6 +330,7 @@ public:
     void* raw_data() const;
     std::size_t item_size() const;
 
+    // Only valid for double buffers (format_code() == 'd'); used by the curve path only
     inline std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
                                                std::size_t last_row = 0) const
     {
