@@ -72,7 +72,7 @@ QMimeData* ProductsFlatFilterModel::mimeData(const QModelIndexList& indexes) con
         if (!index.isValid() || index.row() >= m_results.size())
             continue;
         auto p = m_results[index.row()].node->path();
-        data.append(p.join("/").toUtf8());
+        data.append(p.join("//").toUtf8());
         data.append("\n");
     }
     mime->setData(ProductsModel::mime_type(), data);
