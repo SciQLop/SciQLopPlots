@@ -115,6 +115,7 @@ public:
 
     virtual bool visible() const noexcept override;
     virtual QStringList labels() const noexcept override;
+    virtual QList<QColor> colors() const noexcept override;
 
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;

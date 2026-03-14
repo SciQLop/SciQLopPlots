@@ -92,6 +92,16 @@ QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
     return labels;
 }
 
+QList<QColor> SQPQCPAbstractPlottableWrapper::colors() const noexcept
+{
+    QList<QColor> colors;
+    for (const auto& plottable : m_components)
+    {
+        colors.append(plottable->color());
+    }
+    return colors;
+}
+
 void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
 {
     bool changed = false;
