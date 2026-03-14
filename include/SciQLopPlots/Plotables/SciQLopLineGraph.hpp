@@ -32,6 +32,7 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 {
     QCPMultiGraph* _multiGraph = nullptr;
     PyBuffer _x, _y;
+    QStringList _pendingLabels;
 
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;

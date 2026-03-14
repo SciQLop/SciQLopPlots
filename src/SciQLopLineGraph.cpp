@@ -28,14 +28,8 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
         clear_graphs();
 
     _multiGraph = new QCPMultiGraph(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
-    _multiGraph->setComponentNames(labels);
-
-    for (int i = 0; i < _multiGraph->componentCount(); ++i)
-    {
-        auto component = new SciQLopGraphComponent(_multiGraph, i, this);
-        component->set_name(labels.value(i));
-        _register_component(component);
-    }
+    if (!labels.isEmpty())
+        _pendingLabels = labels;
 }
 
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
@@ -57,8 +51,7 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axi
     , _keyAxis{key_axis}
     , _valueAxis{value_axis}
 {
-    if (!labels.isEmpty())
-        create_graphs(labels);
+    create_graphs(labels);
 }
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
@@ -126,6 +119,22 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
             }
         }
     });
+
+    // After viewData/setData, syncComponentCount has run — create wrappers if needed
+    const int nComponents = _multiGraph->componentCount();
+    if (static_cast<int>(plottable_count()) < nComponents)
+    {
+        if (!_pendingLabels.isEmpty())
+            _multiGraph->setComponentNames(_pendingLabels);
+        for (int i = static_cast<int>(plottable_count()); i < nComponents; ++i)
+        {
+            auto component = new SciQLopGraphComponent(_multiGraph, i, this);
+            if (i < _pendingLabels.size())
+                component->set_name(_pendingLabels.value(i));
+            _register_component(component);
+        }
+        _pendingLabels.clear();
+    }
 
     Q_EMIT this->replot();
     if (!_got_first_data && n > 0)
