@@ -23,12 +23,18 @@
 
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include <qcustomplot.h>
+#include <plottables/plottable-multigraph.h>
 #include "SciQLopPlots/qcp_enums.hpp"
 
 
+struct MultiGraphRef {
+    QCPMultiGraph* graph = nullptr;
+    int componentIndex = -1;
+};
+
 class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 {
-    using graph_or_curve = std::variant<QCPGraph*, QCPCurve*, std::monostate>;
+    using graph_or_curve_or_multi = std::variant<QCPGraph*, QCPCurve*, MultiGraphRef, std::monostate>;
 
     template <class... Ts>
     struct visitor : Ts...
@@ -40,6 +46,7 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 
     Q_OBJECT
     QPointer<QCPAbstractPlottable> m_plottable;
+    int m_componentIndex = -1;
 
     inline QCustomPlot* _plot() const
     {
@@ -48,8 +55,11 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
         return nullptr;
     }
 
-    inline graph_or_curve to_variant() const
+    inline graph_or_curve_or_multi to_variant() const
     {
+        if (m_componentIndex >= 0)
+            return MultiGraphRef { qobject_cast<QCPMultiGraph*>(m_plottable.data()),
+                                   m_componentIndex };
         if (auto graph = qobject_cast<QCPGraph*>(m_plottable); graph != nullptr)
             return graph;
         else if (auto curve = qobject_cast<QCPCurve*>(m_plottable); curve != nullptr)
@@ -71,6 +81,8 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 
 public:
     SciQLopGraphComponent(QCPAbstractPlottable* plottable, QObject* parent = nullptr);
+    SciQLopGraphComponent(QCPMultiGraph* multiGraph, int componentIndex,
+                          QObject* parent = nullptr);
     ~SciQLopGraphComponent();
 
     inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
@@ -100,6 +112,12 @@ public:
                                      else
                                          any->setLineStyle(QCPCurve::lsLine);
                                  },
+                                 [style](MultiGraphRef ref)
+                                 {
+                                     ref.graph->setLineStyle(
+                                         static_cast<QCPMultiGraph::LineStyle>(
+                                             static_cast<int>(to_qcp(style))));
+                                 },
                                  [](std::monostate) {} },
                        to_variant());
         }
@@ -109,11 +127,22 @@ public:
     {
         if (m_plottable)
         {
-            std::visit(visitor { [marker](auto any)
+            std::visit(visitor { [marker](QCPGraph* any)
                                  {
                                      auto scatterStyle = any->scatterStyle();
                                      scatterStyle.setShape(to_qcp(marker));
                                      any->setScatterStyle(scatterStyle);
+                                 },
+                                 [marker](QCPCurve* any)
+                                 {
+                                     auto scatterStyle = any->scatterStyle();
+                                     scatterStyle.setShape(to_qcp(marker));
+                                     any->setScatterStyle(scatterStyle);
+                                 },
+                                 [marker](MultiGraphRef ref)
+                                 {
+                                     ref.graph->component(ref.componentIndex)
+                                         .scatterStyle.setShape(to_qcp(marker));
                                  },
                                  [](std::monostate) {} },
                        to_variant());
@@ -124,11 +153,22 @@ public:
     {
         if (m_plottable)
         {
-            std::visit(visitor { [pen](auto any)
+            std::visit(visitor { [pen](QCPGraph* any)
                                  {
                                      auto scatterStyle = any->scatterStyle();
                                      scatterStyle.setPen(pen);
                                      any->setScatterStyle(scatterStyle);
+                                 },
+                                 [pen](QCPCurve* any)
+                                 {
+                                     auto scatterStyle = any->scatterStyle();
+                                     scatterStyle.setPen(pen);
+                                     any->setScatterStyle(scatterStyle);
+                                 },
+                                 [pen](MultiGraphRef ref)
+                                 {
+                                     ref.graph->component(ref.componentIndex)
+                                         .scatterStyle.setPen(pen);
                                  },
                                  [](std::monostate) {} },
                        to_variant());
@@ -146,7 +186,16 @@ public:
     inline virtual QPen pen() const noexcept override
     {
         if (m_plottable)
+        {
+            if (m_componentIndex >= 0)
+            {
+                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+                if (mg)
+                    return mg->component(m_componentIndex).pen;
+                return QPen();
+            }
             return m_plottable->pen();
+        }
         return QPen();
     }
 
@@ -164,6 +213,11 @@ public:
                                                 return GraphLineStyle::NoLine;
                                             return GraphLineStyle::Line;
                                         },
+                                        [](MultiGraphRef ref)
+                                        {
+                                            return from_qcp(static_cast<QCPGraph::LineStyle>(
+                                                static_cast<int>(ref.graph->lineStyle())));
+                                        },
                                         [](std::monostate) { return GraphLineStyle::NoLine; } },
                               to_variant());
         }
@@ -175,8 +229,15 @@ public:
         if (m_plottable)
         {
             return std::visit(
-                visitor { [](auto any)
+                visitor { [](QCPGraph* any)
                           { return from_qcp(any->scatterStyle().shape()); },
+                          [](QCPCurve* any)
+                          { return from_qcp(any->scatterStyle().shape()); },
+                          [](MultiGraphRef ref)
+                          {
+                              return from_qcp(
+                                  ref.graph->component(ref.componentIndex).scatterStyle.shape());
+                          },
                           [](std::monostate) { return GraphMarkerShape::NoMarker; } },
                 to_variant());
         }
@@ -187,7 +248,13 @@ public:
     {
         if (m_plottable)
         {
-            return std::visit(visitor { [](auto any) { return any->scatterStyle().pen(); },
+            return std::visit(visitor { [](QCPGraph* any) { return any->scatterStyle().pen(); },
+                                        [](QCPCurve* any) { return any->scatterStyle().pen(); },
+                                        [](MultiGraphRef ref)
+                                        {
+                                            return ref.graph->component(ref.componentIndex)
+                                                .scatterStyle.pen();
+                                        },
                                         [](std::monostate) { return QPen(); } },
                               to_variant());
         }
@@ -197,14 +264,32 @@ public:
     inline virtual qreal line_width() const noexcept override
     {
         if (m_plottable)
+        {
+            if (m_componentIndex >= 0)
+            {
+                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+                if (mg)
+                    return mg->component(m_componentIndex).pen.widthF();
+                return 0;
+            }
             return m_plottable->pen().widthF();
+        }
         return 0;
     }
 
     inline virtual bool visible() const noexcept override
     {
         if (m_plottable)
+        {
+            if (m_componentIndex >= 0)
+            {
+                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+                if (mg)
+                    return mg->component(m_componentIndex).visible;
+                return false;
+            }
             return m_plottable->visible();
+        }
         return false;
     }
 
