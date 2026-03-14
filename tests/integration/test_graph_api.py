@@ -108,7 +108,7 @@ class TestGraphProperties:
     def test_graph_name(self, plot, sample_data):
         x, y = sample_data
         g = plot.line(x, y)
-        assert g.name() != ""
+        assert g.name != ""
 
 
 class TestPlottableAccess:

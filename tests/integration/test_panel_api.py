@@ -154,7 +154,7 @@ class TestMultiPlotsVerticalSpan:
         span = MultiPlotsVerticalSpan(
             panel, SciQLopPlotRange(2.0, 5.0),
         )
-        r = span.range()
+        r = span.range
         assert abs(r.start() - 2.0) < 1e-9
         assert abs(r.stop() - 5.0) < 1e-9
 
@@ -165,7 +165,7 @@ class TestMultiPlotsVerticalSpan:
             panel, SciQLopPlotRange(0.0, 1.0),
         )
         span.set_range(SciQLopPlotRange(3.0, 7.0))
-        r = span.range()
+        r = span.range
         assert abs(r.start() - 3.0) < 1e-9
 
     def test_visibility(self, panel, sample_data):

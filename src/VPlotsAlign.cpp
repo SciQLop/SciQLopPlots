@@ -23,6 +23,8 @@
 
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 
+#include <QEvent>
+
 void VPlotsAlign::_recompute_margins()
 {
     std::size_t max_left_margin = 0UL;
@@ -32,6 +34,9 @@ void VPlotsAlign::_recompute_margins()
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
             auto ar = p->qcp_plot()->axisRect();
+            if (p->width() <= 0 || p->height() <= 0
+                || ar->rect().width() <= 0 || ar->rect().height() <= 0)
+                return;
             std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
             std::size_t cmw = 0UL;
             if (p->has_colormap())
@@ -86,13 +91,14 @@ void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& pl
                         [this](SciQLopPlotRange) { _recompute_margins(); });
                 connect(p, &SciQLopPlot::z_axis_range_changed, this,
                         [this](SciQLopPlotRange) { _recompute_margins(); });
+                p->installEventFilter(this);
             }
         },
         [this](SciQLopPlotInterface* plot)
         {
             if (auto p = qobject_cast<SciQLopPlot*>(plot))
             {
-
+                p->removeEventFilter(this);
                 this->disconnect(p);
             }
         });
@@ -100,4 +106,11 @@ void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& pl
     {
         _recompute_margins();
     }
+}
+
+bool VPlotsAlign::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::Resize)
+        _recompute_margins();
+    return false;
 }
