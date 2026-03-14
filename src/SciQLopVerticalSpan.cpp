@@ -118,8 +118,13 @@ void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     auto sorted = horizontal_range.sorted();
     if (this->range() != sorted)
     {
-        this->set_left_pos(sorted.start());
-        this->set_right_pos(sorted.stop());
+        if (!_border1.isNull() && !_border2.isNull())
+        {
+            _border1->set_position(sorted.start());
+            _border2->set_position(sorted.stop());
+            this->topLeft->setCoords({ sorted.start(), 0. });
+            this->bottomRight->setCoords({ sorted.stop(), 1. });
+        }
         this->replot();
         emit range_changed(sorted);
     }

@@ -143,6 +143,7 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
         Q_EMIT request_rescale();
     }
     Q_EMIT data_changed(x, y);
+    Q_EMIT data_changed();
 }
 
 QList<PyBuffer> SciQLopLineGraph::data() const noexcept
