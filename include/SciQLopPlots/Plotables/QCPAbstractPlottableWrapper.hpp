@@ -77,7 +77,11 @@ public:
     {
         QList<QCPAbstractPlottable*> plottables;
         for (auto component : m_components)
-            plottables.append(component->plottable());
+        {
+            auto p = component->plottable();
+            if (p && !plottables.contains(p))
+                plottables.append(p);
+        }
         return plottables;
     }
 
