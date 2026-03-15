@@ -41,7 +41,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libegl1 libgl1 libgl-dev ccache
+          sudo apt-get install -y xvfb libegl1 libgl1 libgl-dev ccache libclang-dev llvm-dev
 
       - name: Cache Qt
         uses: actions/cache@v4
