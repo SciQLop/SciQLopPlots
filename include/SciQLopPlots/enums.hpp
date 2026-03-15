@@ -208,3 +208,31 @@ enum class LineTermination
 };
 ADD_ENUM(LineTermination)
 Q_DECLARE_METATYPE(LineTermination);
+
+enum class OverlayLevel
+{
+    Info,
+    Warning,
+    Error
+};
+ADD_ENUM(OverlayLevel)
+Q_DECLARE_METATYPE(OverlayLevel);
+
+enum class OverlaySizeMode
+{
+    Compact,
+    FitContent,
+    FullWidget
+};
+ADD_ENUM(OverlaySizeMode)
+Q_DECLARE_METATYPE(OverlaySizeMode);
+
+enum class OverlayPosition
+{
+    Top,
+    Bottom,
+    Left,
+    Right
+};
+ADD_ENUM(OverlayPosition)
+Q_DECLARE_METATYPE(OverlayPosition);

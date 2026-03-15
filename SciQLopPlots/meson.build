@@ -91,7 +91,9 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopLineGraph.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopHistogram2D.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
@@ -132,6 +134,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp',
     project_source_root + '/include/SciQLopPlots/Products/QueryHighlighter.hpp',
     project_source_root + '/include/SciQLopPlots/Products/QueryLineEdit.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopOverlay.hpp',
     project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
 ]
 
@@ -186,9 +189,11 @@ sources = moc_files \
             '../src/SciQLopHorizontalSpan.cpp',
             '../src/SciQLopRectangularSpan.cpp',
             '../src/SciQLopLineGraph.cpp',
+            '../src/SciQLopSingleLineGraph.cpp',
             '../src/SciQLopCurve.cpp',
             '../src/SciQLopNDProjectionCurves.cpp',
             '../src/SciQLopColorMap.cpp',
+            '../src/SciQLopHistogram2D.cpp',
             '../src/AbstractResampler.cpp',
             '../src/SciQLopCurveResampler.cpp',
             '../src/SciQLopTracer.cpp',
