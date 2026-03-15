@@ -20,117 +20,144 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
-#include "SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp"
-#include <iostream>
+#include <vector>
 
 void SciQLopLineGraph::create_graphs(const QStringList& labels)
 {
-    if (plottable_count())
+    if (_multiGraph)
         clear_graphs();
-    for (const auto& label : labels)
-    {
-        this->newComponent<QCPGraph>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(), label);
-    }
-    _resampler->set_line_count(plottable_count());
-}
 
-void SciQLopLineGraph::_setGraphData(QList<QVector<QCPGraphData>> data)
-{
-    bool not_empty = false;
-    for (std::size_t i = 0; i < plottable_count(); i++)
-    {
-        auto graph = line(i);
-        if (graph)
-        {
-            graph->data()->set(data[i], true);
-            not_empty = !data[i].isEmpty();
-        }
-    }
-    Q_EMIT this->replot();
-    if (!_got_first_data && not_empty)
-    {
-        _got_first_data = true;
-        Q_EMIT request_rescale();
-    }
-    Q_EMIT data_changed();
-}
-
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
-                                   SciQLopPlotAxis* value_axis, const QStringList& labels, QVariantMap metaData)
-        : SQPQCPAbstractPlottableWrapper("Line", metaData, parent)
-        , _keyAxis { key_axis }
-        , _valueAxis { value_axis }
-{
-    create_resampler(labels);
+    _multiGraph = new QCPMultiGraph(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     if (!labels.isEmpty())
-    {
-        this->create_graphs(labels);
-    }
-    connect(key_axis->qcp_axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged),
-            this->_resampler,
-            [this](const QCPRange& newRange) { this->_resampler->resample(newRange); });
-}
-
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
-        : SQPQCPAbstractPlottableWrapper("Line",{}, parent)
-        , _keyAxis { nullptr }
-        , _valueAxis { nullptr }
-{
+        _pendingLabels = labels;
 }
 
 void SciQLopLineGraph::clear_graphs(bool graph_already_removed)
 {
     clear_plottables();
+    if (_multiGraph && !graph_already_removed)
+    {
+        auto plot = _multiGraph->parentPlot();
+        if (plot)
+            plot->removePlottable(_multiGraph);
+    }
+    _multiGraph = nullptr;
 }
 
-void SciQLopLineGraph::clear_resampler()
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                   SciQLopPlotAxis* value_axis, const QStringList& labels,
+                                   QVariantMap metaData)
+    : SQPQCPAbstractPlottableWrapper("Line", metaData, parent)
+    , _keyAxis{key_axis}
+    , _valueAxis{value_axis}
 {
-    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
-    disconnect(this->_resampler, &LineGraphResampler::setGraphData, this,
-               &SciQLopLineGraph::_setGraphData);
-    this->_resampler_thread->quit();
-    this->_resampler_thread->wait();
-    delete this->_resampler_thread;
-    this->_resampler = nullptr;
-    this->_resampler_thread = nullptr;
+    create_graphs(labels);
 }
 
-void SciQLopLineGraph::create_resampler(const QStringList& labels)
+SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
+    : SQPQCPAbstractPlottableWrapper("Line", {}, parent)
+    , _keyAxis{nullptr}
+    , _valueAxis{nullptr}
 {
-    this->_resampler = new LineGraphResampler(this, std::size(labels));
-    this->_resampler_thread = new QThread();
-    this->_resampler->moveToThread(this->_resampler_thread);
-    this->_resampler_thread->start(QThread::LowPriority);
-    connect(this->_resampler, &LineGraphResampler::setGraphData, this,
-            &SciQLopLineGraph::_setGraphData, Qt::QueuedConnection);
 }
 
 SciQLopLineGraph::~SciQLopLineGraph()
 {
     clear_graphs();
-    clear_resampler();
 }
 
 void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
 {
-    this->_resampler->setData(x, y);
+    if (!_multiGraph || !x.is_valid() || !y.is_valid())
+        return;
+
+    if (x.format_code() != 'd')
+        throw std::runtime_error("Keys (x) must be float64");
+
+    _x = x;
+    _y = y;
+
+    const auto* keys = static_cast<const double*>(x.raw_data());
+    const int n = static_cast<int>(x.flat_size());
+
+    dispatch_dtype(y.format_code(), [&](auto tag) {
+        using V = typename decltype(tag)::type;
+        const auto* values = static_cast<const V*>(y.raw_data());
+
+        if (y.ndim() == 1)
+        {
+            std::vector<std::span<const V>> columns{std::span<const V>(values, n)};
+            _multiGraph->viewData<double, V>(std::span<const double>(keys, n), std::move(columns));
+        }
+        else
+        {
+            const auto n_cols = y.size(1);
+            if (y.row_major())
+            {
+                std::vector<std::vector<V>> owned_columns(n_cols);
+                for (std::size_t col = 0; col < n_cols; ++col)
+                {
+                    owned_columns[col].resize(n);
+                    for (int row = 0; row < n; ++row)
+                        owned_columns[col][row] = values[row * n_cols + col];
+                }
+                std::vector<double> owned_keys(keys, keys + n);
+                std::vector<std::vector<V>> cols_move;
+                cols_move.reserve(n_cols);
+                for (auto& col : owned_columns)
+                    cols_move.push_back(std::move(col));
+                _multiGraph->setData(std::move(owned_keys), std::move(cols_move));
+            }
+            else
+            {
+                std::vector<std::span<const V>> columns;
+                columns.reserve(n_cols);
+                for (std::size_t col = 0; col < n_cols; ++col)
+                    columns.emplace_back(values + col * n, n);
+                _multiGraph->viewData<double, V>(
+                    std::span<const double>(keys, n), std::move(columns));
+            }
+        }
+    });
+
+    // After viewData/setData, syncComponentCount has run — create wrappers if needed
+    const int nComponents = _multiGraph->componentCount();
+    if (static_cast<int>(plottable_count()) < nComponents)
+    {
+        if (!_pendingLabels.isEmpty())
+            _multiGraph->setComponentNames(_pendingLabels);
+        for (int i = static_cast<int>(plottable_count()); i < nComponents; ++i)
+        {
+            auto component = new SciQLopGraphComponent(_multiGraph, i, this);
+            if (i < _pendingLabels.size())
+                component->set_name(_pendingLabels.value(i));
+            _register_component(component);
+        }
+        _pendingLabels.clear();
+    }
+
+    Q_EMIT this->replot();
+    if (!_got_first_data && n > 0)
+    {
+        _got_first_data = true;
+        Q_EMIT request_rescale();
+    }
     Q_EMIT data_changed(x, y);
+    Q_EMIT data_changed();
 }
 
 QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 {
-    return _resampler->get_data();
+    return {_x, _y};
 }
 
 void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
-        this->_keyAxis = qcp_axis;
-        for (auto plottable : m_components)
-        {
-            qobject_cast<QCPGraph*>(plottable->plottable())->setKeyAxis(qcp_axis->qcp_axis());
-        }
+        _keyAxis = qcp_axis;
+        if (_multiGraph)
+            _multiGraph->setKeyAxis(qcp_axis->qcp_axis());
     }
 }
 
@@ -138,11 +165,9 @@ void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
     {
-        this->_valueAxis = qcp_axis;
-        for (auto plottable : m_components)
-        {
-            qobject_cast<QCPGraph*>(plottable->plottable())->setValueAxis(qcp_axis->qcp_axis());
-        }
+        _valueAxis = qcp_axis;
+        if (_multiGraph)
+            _multiGraph->setValueAxis(qcp_axis->qcp_axis());
     }
 }
 
@@ -150,8 +175,8 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
                                                    SciQLopPlotAxis* value_axis,
                                                    GetDataPyCallable&& callable,
                                                    const QStringList& labels, QVariantMap metaData)
-        : SciQLopLineGraph { parent, key_axis, value_axis, labels ,metaData}
-        , SciQLopFunctionGraph(std::move(callable),this, 2)
+    : SciQLopLineGraph{parent, key_axis, value_axis, labels, metaData}
+    , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }

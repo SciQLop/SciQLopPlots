@@ -326,6 +326,11 @@ public:
 
     bool row_major() const;
 
+    char format_code() const;
+    void* raw_data() const;
+    std::size_t item_size() const;
+
+    // Only valid for double buffers (format_code() == 'd'); used by the curve path only
     inline std::unique_ptr<ArrayViewBase> view(std::size_t first_row = 0,
                                                std::size_t last_row = 0) const
     {
@@ -351,24 +356,9 @@ public:
 namespace std
 {
 
-inline auto size(const PyBuffer& v)
-{
-    return v.flat_size();
-}
-
 inline auto size(const ArrayViewBase& v)
 {
     return v.flat_size();
-}
-
-inline auto cbegin(const PyBuffer& v)
-{
-    return v.cbegin();
-}
-
-inline auto cend(const PyBuffer& v)
-{
-    return v.cend();
 }
 
 }

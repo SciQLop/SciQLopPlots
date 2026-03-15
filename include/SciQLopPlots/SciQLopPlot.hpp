@@ -20,12 +20,12 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
@@ -217,7 +217,11 @@ class SciQLopPlot : public SciQLopPlotInterface
 protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
-    QList<QColor> m_color_palette;
+    QList<QColor> m_color_palette = {
+        QColor(31, 119, 180),  QColor(255, 127, 14),  QColor(44, 160, 44),   QColor(214, 39, 40),
+        QColor(148, 103, 189), QColor(140, 86, 75),   QColor(227, 119, 194), QColor(127, 127, 127),
+        QColor(188, 189, 34),  QColor(23, 190, 207),
+    };
     SciQLopPlotLegend* m_legend = nullptr;
     int m_color_palette_index = 0;
     bool m_auto_scale = false;

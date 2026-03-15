@@ -20,7 +20,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -56,10 +55,6 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
-    this->addLayer(LayersNames::SpansBorders, this->layer(LayersNames::Spans),
-                   QCustomPlot::limAbove);
-    this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
-    this->layer(LayersNames::SpansBorders)->setVisible(true);
     this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
@@ -342,18 +337,9 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
 
 void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
-    auto items = selectedItems();
-    std::for_each(items.begin(), items.end(),
-                  [event](auto item)
-                  {
-                      if (auto sciItem = dynamic_cast<impl::SciQLopItemWithKeyInteraction*>(item);
-                          sciItem != nullptr)
-                      {
-                          sciItem->keyPressEvent(event);
-                      }
-                  });
     if (event->key() == Qt::Key_Escape)
     {
+        auto items = selectedItems();
         for (auto item : items)
         {
             item->setSelected(false);
@@ -501,7 +487,6 @@ void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
         m_color_scale->setVisible(true);
         plotLayout()->addElement(0, 1, m_color_scale);
         cmap->colorMap()->setColorScale(m_color_scale);
-        cmap->colorMap()->setInterpolate(false);
     }
 }
 
@@ -663,7 +648,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
+            if (y.ndim() <= 1 || y.size(1) == 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraph>(labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);
@@ -748,8 +736,12 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels,
-                                                                        metaData);
+            if (labels.size() <= 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraphFunction>(
+                    std::move(callable), labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
+                    std::move(callable), labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,

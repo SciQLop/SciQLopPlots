@@ -22,10 +22,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
-
-REGISTER_DELEGATE(SciQLopGraphComponentDelegate);
 
 SciQLopGraphComponentInterface* SciQLopGraphComponentDelegate::component() const
 {

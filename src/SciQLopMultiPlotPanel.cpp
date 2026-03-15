@@ -26,7 +26,6 @@
 
 #include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
 
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"

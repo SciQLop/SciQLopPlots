@@ -23,22 +23,34 @@
 #include <QObject>
 #include <QWidget>
 
-class QLineEdit;
+class QueryLineEdit;
 class QTreeView;
-class QCompleter;
-class QSortFilterProxyModel;
+class QListView;
+class QStackedWidget;
+class QToolButton;
+class QLabel;
 class QTimer;
+class ProductsTreeFilterModel;
+class ProductsFlatFilterModel;
+struct Query;
 
 class ProductsView : public QWidget
 {
     Q_OBJECT
+    QueryLineEdit* m_query_line_edit;
     QTreeView* m_tree_view;
-    QLineEdit* m_search_line_edit;
-    QCompleter* m_completer;
-    QSortFilterProxyModel* m_proxy_model;
-    QTimer* m_search_timer;
+    QListView* m_list_view;
+    QStackedWidget* m_stack;
+    QToolButton* m_view_toggle;
+    QLabel* m_result_count;
+    ProductsTreeFilterModel* m_tree_filter;
+    ProductsFlatFilterModel* m_flat_filter;
+    QTimer* m_completion_refresh_timer;
 
-    Q_SLOT void update_filter();
+    Q_SLOT void on_query_changed(const Query& query);
+    void toggle_view();
+    void update_result_count();
+    void refresh_completions();
 
 public:
     ProductsView(QWidget* parent = nullptr);

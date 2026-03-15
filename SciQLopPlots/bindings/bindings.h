@@ -11,8 +11,8 @@
 #include "_QCustomPlot.hpp"
 #include <SciQLopPlots/DataProducer/DataProducer.hpp>
 #include <SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp>
-#include <SciQLopPlots/Inspector/InspectorBase.hpp>
-#include <SciQLopPlots/Inspector/Inspectors.hpp>
+#include <SciQLopPlots/Inspector/Model/DelegateRegistry.hpp>
+#include <SciQLopPlots/Inspector/Model/TypeDescriptor.hpp>
 #include <SciQLopPlots/Inspector/Model/Model.hpp>
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
 #include <SciQLopPlots/Inspector/PropertyDelegateBase.hpp>
@@ -36,6 +36,7 @@
 #include <SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
+#include <SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <SciQLopPlots/SciQLopPlotInterface.hpp>
@@ -49,6 +50,10 @@
 #include <SciQLopPlots/Products/ProductsModel.hpp>
 #include <SciQLopPlots/Products/ProductsNode.hpp>
 #include <SciQLopPlots/Products/ProductsView.hpp>
+#include <SciQLopPlots/Products/SubsequenceMatcher.hpp>
+#include <SciQLopPlots/Products/QueryParser.hpp>
+#include <SciQLopPlots/Products/ProductsTreeFilterModel.hpp>
+#include <SciQLopPlots/Products/ProductsFlatFilterModel.hpp>
 
 #include <SciQLopPlots/Icons/icons.hpp>
 

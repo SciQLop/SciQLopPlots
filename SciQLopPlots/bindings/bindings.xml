@@ -287,6 +287,9 @@
     <object-type name="SciQLopLineGraph" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="SciQLopSingleLineGraph" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
@@ -297,6 +300,9 @@
     <object-type name="SciQLopFunctionGraph" parent-management="no"/>
 
     <object-type name="SciQLopLineGraphFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopSingleLineGraphFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopCurveFunction" parent-management="yes">
@@ -546,7 +552,7 @@
           </modify-argument>
         </modify-function>
         <modify-function signature="insert_plot(int, SciQLopPlotInterface*)">
-          <modify-argument index="1">
+          <modify-argument index="2">
             <parent index="this" action="add"/>
           </modify-argument>
         </modify-function>
@@ -626,14 +632,26 @@
     <object-type name="SciQLopPlotLegend" parent-management="yes"/>
     <object-type name="SciQLopPlotLegendInterface" parent-management="yes"/>
 
-    <object-type name="InspectorBase" parent-management="yes"/>
-    <object-type name="Inspectors" parent-management="yes"/>
+    <object-type name="TypeRegistry"/>
+    <object-type name="DelegateRegistry"/>
     <object-type name="PlotsModelNode" parent-management="yes"/>
     <object-type name="PlotsModel" parent-management="yes"/>
     <object-type name="PlotsTreeView" parent-management="yes"/>
     <object-type name="InspectorView" parent-management="yes"/>
     <object-type name="PropertyDelegateBase" parent-management="yes"/>
     <object-type name="PropertiesPanel" parent-management="yes"/>
+
+    <value-type name="MatchResult"/>
+    <object-type name="SubsequenceMatcher"/>
+
+    <enum-type name="QueryTokenKind"/>
+    <value-type name="QueryToken"/>
+    <value-type name="QueryFilter"/>
+    <value-type name="Query"/>
+    <object-type name="QueryParser"/>
+
+    <object-type name="ProductsTreeFilterModel" parent-management="yes"/>
+    <object-type name="ProductsFlatFilterModel" parent-management="yes"/>
 
     <object-type name="ProductsView" parent-management="yes"/>
     <object-type name="ProductsModel" parent-management="yes">

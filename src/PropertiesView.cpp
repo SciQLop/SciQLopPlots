@@ -20,8 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/View/PropertiesView.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
-#include "SciQLopPlots/Inspector/PropertyDelegates.hpp"
+#include "SciQLopPlots/Inspector/Model/DelegateRegistry.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include <QVBoxLayout>
 
 void PropertiesView::set_current_objects(const QList<QObject*>& objects)
@@ -30,20 +30,34 @@ void PropertiesView::set_current_objects(const QList<QObject*>& objects)
     {
         delete m_delegateWidget;
         m_delegateWidget = nullptr;
+        m_currentObject = nullptr;
     }
     if (!objects.isEmpty())
     {
         auto first = objects.first();
-        auto delegate = PropertyDelegates::delegate(first, this);
+        auto delegate = DelegateRegistry::instance().create_delegate(first, this);
         if (delegate)
         {
             m_delegateWidget = delegate;
+            m_currentObject = first;
             this->layout()->addWidget(m_delegateWidget);
         }
     }
 }
 
-PropertiesView::PropertiesView(QWidget* parent)
+void PropertiesView::on_node_removed(QObject* obj)
+{
+    if (m_delegateWidget && m_currentObject == obj)
+    {
+        delete m_delegateWidget;
+        m_delegateWidget = nullptr;
+        m_currentObject = nullptr;
+    }
+}
+
+PropertiesView::PropertiesView(QWidget* parent) : QWidget(parent)
 {
     this->setLayout(new QVBoxLayout(this));
+    connect(PlotsModel::instance(), &PlotsModel::node_removed, this,
+        &PropertiesView::on_node_removed);
 }

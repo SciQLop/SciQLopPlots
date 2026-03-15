@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+#include <string_view>
 
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
@@ -217,8 +218,10 @@ struct _PyBuffer_impl : PyObjectWrapper
         }
         if (!this->is_valid)
             throw std::runtime_error("Failed to get buffer from object");
-        if (this->buffer.format == nullptr || this->buffer.format[0] != 'd')
-            throw std::runtime_error("Buffer must be double type");
+        static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
+        if (this->buffer.format == nullptr
+            || numeric_formats.find(this->buffer.format[0]) == std::string_view::npos)
+            throw std::runtime_error("Buffer must be a numeric type");
         this->is_row_major = PyBuffer_IsContiguous(&this->buffer, 'C') == 1;
         if (this->buffer.ndim > 0)
         {
@@ -323,6 +326,9 @@ double* PyBuffer::data() const
 {
     if (is_valid())
     {
+        if (_impl->buffer.format[0] != 'd')
+            throw std::runtime_error(
+                "PyBuffer::data() called on non-double buffer; use raw_data() + format_code()");
         return reinterpret_cast<double*>(this->_impl->buffer.buf);
     }
     return nullptr;
@@ -335,6 +341,27 @@ bool PyBuffer::row_major() const
         return this->_impl->is_row_major;
     }
     return false;
+}
+
+char PyBuffer::format_code() const
+{
+    if (is_valid() && _impl->buffer.format)
+        return _impl->buffer.format[0];
+    return '\0';
+}
+
+void* PyBuffer::raw_data() const
+{
+    if (is_valid())
+        return _impl->buffer.buf;
+    return nullptr;
+}
+
+std::size_t PyBuffer::item_size() const
+{
+    if (is_valid())
+        return _impl->buffer.itemsize;
+    return 0;
 }
 
 PyObject* PyBuffer::py_object() const

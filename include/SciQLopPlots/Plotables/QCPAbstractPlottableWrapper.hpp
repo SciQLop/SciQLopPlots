@@ -77,7 +77,11 @@ public:
     {
         QList<QCPAbstractPlottable*> plottables;
         for (auto component : m_components)
-            plottables.append(component->plottable());
+        {
+            auto p = component->plottable();
+            if (p && !plottables.contains(p))
+                plottables.append(p);
+        }
         return plottables;
     }
 
@@ -111,6 +115,7 @@ public:
 
     virtual bool visible() const noexcept override;
     virtual QStringList labels() const noexcept override;
+    virtual QList<QColor> colors() const noexcept override;
 
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;

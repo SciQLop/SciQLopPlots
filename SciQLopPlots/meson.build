@@ -6,7 +6,6 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
 NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
-                                                    'with_opengl=@0@'.format(get_option('with_opengl'))
                                                     ])
 magic_enum_dep = dependency('magic_enum', static:true)
 
@@ -92,15 +91,15 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopLineGraph.hpp',
+    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopLineGraphResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopColorMapResampler.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopHorizontalSpan.hpp',
+    project_source_root + '/include/SciQLopPlots/Items/SciQLopRectangularSpan.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopPlotItem.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopTracer.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/QCPItemRichText.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopPixmapItem.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopStraightLines.hpp',
     project_source_root + '/include/SciQLopPlots/Items/SciQLopShapesItems.hpp',
@@ -108,22 +107,11 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/DataProducer/DataProducer.hpp',
     project_source_root + '/include/SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp',
     project_source_root + '/include/SciQLopPlots/DragNDrop/PlaceHolderManager.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/InspectorBase.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Model/Model.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/Model/Node.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopMultiPlotPanelInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopPlotInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopNDProjectionPlotInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopNDProjectionCurvesInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphInterfaceInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopGraphComponentInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopColorMapInspector.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Inspectors/SciQLopPlotAxisInspector.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/TreeView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/InspectorView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegateBase.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegates.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
@@ -141,6 +129,10 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
     project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsTreeFilterModel.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/QueryHighlighter.hpp',
+    project_source_root + '/include/SciQLopPlots/Products/QueryLineEdit.hpp',
     project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
 ]
 
@@ -148,7 +140,9 @@ moc_sources = []
 headers = moc_headers + \
          [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
          project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
-         project_source_root+'/include/SciQLopPlots/constants.hpp']
+         project_source_root+'/include/SciQLopPlots/constants.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp']
 
 includes = include_directories(['../include'])
 
@@ -190,30 +184,23 @@ sources = moc_files \
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
             '../src/SciQLopVerticalSpan.cpp',
+            '../src/SciQLopHorizontalSpan.cpp',
+            '../src/SciQLopRectangularSpan.cpp',
             '../src/SciQLopLineGraph.cpp',
+            '../src/SciQLopSingleLineGraph.cpp',
             '../src/SciQLopCurve.cpp',
             '../src/SciQLopNDProjectionCurves.cpp',
             '../src/SciQLopColorMap.cpp',
             '../src/AbstractResampler.cpp',
-            '../src/SciQLopLineGraphResampler.cpp',
             '../src/SciQLopCurveResampler.cpp',
-            '../src/SciQLopColorMapResampler.cpp',
             '../src/SciQLopTracer.cpp',
-            '../src/QCPItemRichText.cpp',
             '../src/SciQLopStraightLines.cpp',
             '../src/DataProducer.cpp',
-            '../src/InspectorBase.cpp',
-            '../src/Inspectors.cpp',
             '../src/Model.cpp',
             '../src/Node.cpp',
-            '../src/SciQLopMultiPlotPanelInspector.cpp',
-            '../src/SciQLopPlotInspector.cpp',
-            '../src/SciQLopNDProjectionPlotInspector.cpp',
-            '../src/SciQLopNDProjectionCurvesInspector.cpp',
-            '../src/SciQLopGraphInterfaceInspector.cpp',
-            '../src/SciQLopGraphComponentInspector.cpp',
-            '../src/SciQLopColorMapInspector.cpp',
-            '../src/SciQLopPlotAxisInspector.cpp',
+            '../src/TypeRegistry.cpp',
+            '../src/DelegateRegistry.cpp',
+            '../src/Registrations.cpp',
             '../src/TreeView.cpp',
             '../src/InspectorView.cpp',
             '../src/PropertyDelegateBase.cpp',
@@ -233,6 +220,11 @@ sources = moc_files \
             '../src/ColorGradientDelegate.cpp',
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
+            '../src/QueryParser.cpp',
+            '../src/ProductsTreeFilterModel.cpp',
+            '../src/ProductsFlatFilterModel.cpp',
+            '../src/QueryHighlighter.cpp',
+            '../src/QueryLineEdit.cpp',
             '../src/ProductsView.cpp',
             '../src/icons.cpp'
         ]

@@ -20,16 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <SciQLopPlots/Items/QCPItemRichText.hpp>
 #include <qcustomplot.h>
-
-enum class PlotableType
-{
-    Graph,
-    Curve,
-    ColorMap,
-    None
-};
 
 enum class PlotQuadrant
 {
@@ -40,48 +31,12 @@ enum class PlotQuadrant
     None
 };
 
-class QCPAbstractPlottableDataLocator
-{
-    QCPAbstractPlottable* m_plottable = nullptr;
-    PlotableType m_plotableType = PlotableType::None;
-    double m_key = std::nan("");
-    double m_value = std::nan("");
-    double m_data = std::nan("");
-    PlotQuadrant m_quadrant = PlotQuadrant::None;
-
-public:
-    virtual ~QCPAbstractPlottableDataLocator() = default;
-
-    inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
-    void set_plottable(QCPAbstractPlottable* plottable) noexcept;
-
-
-    void setPosition(const QPointF& pos);
-
-
-    inline double key() const noexcept { return m_key; }
-    inline double value() const noexcept { return m_value; }
-    inline double data() const noexcept
-    {
-        return m_data;
-    } // color map value at (key; value) position
-
-    inline PlotableType plotable_type() const noexcept { return m_plotableType; }
-    inline PlotQuadrant quadrant() const noexcept { return m_quadrant; }
-
-    static std::tuple<double, double, double> locate_data_graph(
-        const QPointF& pos, QCPGraph* graph);
-    static std::tuple<double, double, double> locate_data_curve(
-        const QPointF& pos, QCPCurve* curve);
-    static std::tuple<double, double, double> locate_data_colormap(
-        const QPointF& pos, QCPColorMap* colormap);
-};
-
 class SciQLopTracer : public QCPAbstractItem
 {
     Q_OBJECT
 
-    QCPAbstractPlottableDataLocator m_locator;
+    QCPDataLocator m_locator;
+    PlotQuadrant m_quadrant = PlotQuadrant::None;
     QPen m_Pen, m_SelectedPen;
     QBrush m_Brush, m_SelectedBrush;
     double m_Size;
@@ -120,7 +75,7 @@ public:
     {
         return m_locator.data();
     }
-    inline PlotQuadrant quadrant() const { return m_locator.quadrant(); }
+    inline PlotQuadrant quadrant() const { return m_quadrant; }
     QCPAbstractPlottable* plotable() const { return m_locator.plottable(); }
 
     inline void setPen(const QPen& pen) { m_Pen = pen; }

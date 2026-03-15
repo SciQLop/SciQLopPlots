@@ -22,7 +22,6 @@
 #pragma once
 
 #include "../MultiPlots/SciQLopMultiPlotObject.hpp"
-#include "../constants.hpp"
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/helpers.hpp"
@@ -33,265 +32,39 @@
 
 namespace impl
 {
-class VerticalSpanBorder : public impl::SciQLopPlotItem<QCPItemStraightLine>,
-                           public impl::SciQlopItemWithToolTip
+
+class VerticalSpan : public QCPItemVSpan, public impl::SciQlopItemWithToolTip
 {
     Q_OBJECT
 
 public:
+    VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
+                 bool do_not_replot = false, bool immediate_replot = false);
 
-
-    inline VerticalSpanBorder(QCustomPlot* plot, double x, bool do_not_replot = false)
-            : impl::SciQLopPlotItem<QCPItemStraightLine> { plot }
-    {
-
-        this->point1->setTypeX(QCPItemPosition::ptPlotCoords);
-        this->point1->setTypeY(QCPItemPosition::ptAxisRectRatio);
-        this->point2->setTypeX(QCPItemPosition::ptPlotCoords);
-        this->point2->setTypeY(QCPItemPosition::ptAxisRectRatio);
-        this->setPen(QPen { QBrush { QColor(0, 255, 255, 255), Qt::SolidPattern }, 3 });
-        this->setSelectable(true);
-        this->setMovable(true);
-        this->setLayer(Constants::LayersNames::SpansBorders);
-        this->set_position(x);
-        if (!do_not_replot)
-            this->replot();
-    }
-
-    ~VerticalSpanBorder() = default;
-
-    inline void set_color(const QColor& color)
-    {
-        this->setPen(QPen { QBrush { color, Qt::SolidPattern }, 3 });
-    }
-
-    double position()
-    {
-        if (this->point1->coords().x() == this->point2->coords().x())
-            return this->point1->coords().x();
-        else
-            return std::nan("");
-    }
-
-    inline void set_position(double x)
-    {
-        if (this->position() != x)
-        {
-            this->point1->setCoords(x, 0);
-            this->point2->setCoords(x, 1);
-            this->replot();
-        }
-    }
-
-    void move(double dx, double dy) override;
-
-    inline QCursor cursor(QMouseEvent*) const noexcept override
-    {
-        if (movable())
-            return Qt::SizeHorCursor;
-        return Qt::ArrowCursor;
-    }
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void moved(double new_position);
-
-};
-
-class VerticalSpan : public impl::SciQLopPlotItem<QCPItemRect>,
-                     public impl::SciQlopItemWithToolTip,
-                     public impl::SciQLopItemWithKeyInteraction
-{
-    Q_OBJECT
-    inline void set_auto_extend_vertically()
-    {
-        this->topLeft->setTypeX(QCPItemPosition::ptPlotCoords);
-        this->bottomRight->setTypeX(QCPItemPosition::ptPlotCoords);
-
-        this->topLeft->setTypeY(QCPItemPosition::ptAxisRectRatio);
-        this->bottomRight->setTypeY(QCPItemPosition::ptAxisRectRatio);
-    }
-
-    bool _lower_border_selected = false;
-    bool _upper_border_selected = false;
-
-    QPointer<VerticalSpanBorder> _border1;
-    QPointer<VerticalSpanBorder> _border2;
-
-    inline VerticalSpanBorder* _lower_border() const
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            if (this->_border1->position() <= this->_border2->position())
-            {
-                return this->_border1.data();
-            }
-            return this->_border2.data();
-        }
-        return nullptr;
-    }
-
-    inline VerticalSpanBorder* _upper_border() const
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            if (this->_border2->position() >= this->_border1->position())
-            {
-                return this->_border2.data();
-            }
-            return this->_border1.data();
-        }
-        return nullptr;
-    }
-
-    inline void set_left_pos(double pos)
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            this->topLeft->setCoords({ pos, 0. });
-            this->_lower_border()->set_position(pos);
-            if (_lower_border_selected == true and _lower_border()->selected() == false)
-            {
-                _upper_border()->setSelected(false);
-                _lower_border()->setSelected(true);
-            }
-        }
-    }
-
-    inline void set_right_pos(double pos)
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            this->bottomRight->setCoords({ pos, 1. });
-            _upper_border()->set_position(pos);
-            if (_upper_border_selected == true and _upper_border()->selected() == false)
-            {
-                _lower_border()->setSelected(false);
-                _upper_border()->setSelected(true);
-            }
-        }
-    }
-
-    void border1_selection_changed(bool select);
-
-    void border2_selection_changed(bool select);
-
-public:
-
-    VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range, bool do_not_replot = false,
-                 bool immediate_replot = false);
-
-    inline void setMovable(bool movable) noexcept final
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            SciQLopPlotItem::setMovable(movable);
-            this->_border1->setMovable(movable);
-            this->_border2->setMovable(movable);
-        }
-    }
-
-    ~VerticalSpan()
-    {
-        if (parentPlot()->hasItem(this->_border1))
-        {
-            parentPlot()->removeItem(this->_border1);
-            parentPlot()->replot(QCustomPlot::rpQueuedReplot);
-        }
-        if (parentPlot()->hasItem(this->_border2))
-        {
-            parentPlot()->removeItem(this->_border2);
-            parentPlot()->replot(QCustomPlot::rpQueuedReplot);
-        }
-    }
-
-    inline QCursor cursor(QMouseEvent*) const noexcept override
-    {
-        if (movable())
-            return Qt::SizeAllCursor;
-        return Qt::ArrowCursor;
-    }
-
-    void keyPressEvent(QKeyEvent* event) override;
-
-    inline void set_visible(bool visible)
-    {
-        this->setVisible(visible);
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            this->_border1->setVisible(visible);
-            this->_border2->setVisible(visible);
-        }
-    }
-
+    void set_visible(bool visible);
     void set_range(const SciQLopPlotRange horizontal_range);
+    [[nodiscard]] SciQLopPlotRange range() const noexcept;
 
-    [[nodiscard]] inline SciQLopPlotRange range() const noexcept
-    {
-        return SciQLopPlotRange { this->_lower_border()->position(),
-                                  this->_upper_border()->position() };
-    }
+    void set_color(const QColor& color);
+    [[nodiscard]] QColor color() const noexcept;
 
-    void move(double dx, double dy) override;
+    void set_borders_color(const QColor& color);
+    [[nodiscard]] QColor borders_color() const noexcept;
 
-    double selectTest(const QPointF& pos, bool onlySelectable,
-                      QVariant* details = nullptr) const override;
-
-    inline void set_borders_tool_tip(const QString& tool_tip)
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            this->_border1->setToolTip(tool_tip);
-            this->_border2->setToolTip(tool_tip);
-        }
-    }
-
-    inline void set_borders_color(const QColor& color)
-    {
-        if (!_border1.isNull() && !_border2.isNull())
-        {
-            this->_border1->set_color(color);
-            this->_border2->set_color(color);
-        }
-    }
-
-    [[nodiscard]] inline QColor borders_color() const noexcept
-    {
-        if (!_border1.isNull())
-        {
-            return this->_border1->pen().color();
-        }
-        return {};
-    }
+    void set_borders_tool_tip(const QString& tool_tip);
 
     void select_lower_border(bool selected);
-
     void select_upper_border(bool selected);
 
-    inline void set_color(const QColor& color)
+    inline void replot(bool immediate = false)
     {
-        this->setBrush(QBrush { color, Qt::SolidPattern });
-        this->setSelectedBrush(QBrush {
-            QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha()),
-            Qt::SolidPattern });
-        this->setPen(QPen { Qt::NoPen });
-        this->setSelectedPen(QPen { Qt::NoPen });
-    }
-
-    [[nodiscard]] inline QColor color() const noexcept { return this->brush().color(); }
-
-    inline void replot(bool immediate = false) final
-    {
-        // Only replot immediately the second border, the first border will be reploted with the
-        // second.
-        if (!_border1.isNull() && !_border2.isNull())
+        if (immediate)
         {
-            this->_border1->replot(false);
-            this->_border2->replot(immediate);
+            if (auto* l = this->layer())
+                l->replot();
         }
-        SciQLopPlotItem::replot(immediate);
+        else
+            parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 
 #ifdef BINDINGS_H
@@ -302,7 +75,6 @@ signals:
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
     Q_SIGNAL void delete_requested();
-
 };
 
 } // namespace impl

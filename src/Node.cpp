@@ -20,124 +20,125 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/Model/Node.hpp"
-#include "SciQLopPlots/Inspector/InspectorBase.hpp"
-#include "SciQLopPlots/Inspector/Inspectors.hpp"
+#include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
 
-
-PlotsModelNode* PlotsModelNode::_root_node()
+PlotsModelNode::PlotsModelNode(QObject* obj, const TypeDescriptor* desc, QObject* parent)
+    : QObject(parent), m_obj(obj), m_descriptor(desc)
 {
-    PlotsModelNode* node = this;
-    while (node->parent_node() != nullptr)
-        node = node->parent_node();
-    return node;
-}
-
-PlotsModelNode::PlotsModelNode(QObject* obj, QObject* parent) : QObject(parent), m_obj(obj)
-{
-    if (obj != nullptr)
-    {
+    if (obj)
         setObjectName(obj->objectName());
-        connect(this, &PlotsModelNode::objectNameChanged, this, &PlotsModelNode::nameChanged);
-        connect(obj, &QObject::destroyed, this, &PlotsModelNode::objectDestroyed);
-        m_inspector = Inspectors::inspector(obj);
-        if (m_inspector != nullptr)
-        {
-            set_deletable(m_inspector->deletable(obj));
-            m_inspector->connect_node(this, obj);
-        }
-    }
 }
 
 PlotsModelNode::~PlotsModelNode()
 {
     while (!m_children.isEmpty())
     {
-        delete m_children.takeFirst();
+        auto child = m_children.takeFirst();
+        child->disconnect_all();
+        delete child;
     }
-    if (m_obj)
-        m_obj->deleteLater();
 }
 
-PlotsModelNode* PlotsModelNode::insert_child(QObject* obj, int row)
+void PlotsModelNode::setName(const QString& name)
 {
-    PlotsModelNode* node = new PlotsModelNode(obj, this);
-    if (row == -1)
+    if (objectName() != name)
+        setObjectName(name);
+    if (m_obj && m_obj->objectName() != name)
+        m_obj->setObjectName(name);
+}
+
+PlotsModelNode* PlotsModelNode::child(int row) const
+{
+    return m_children.value(row, nullptr);
+}
+
+int PlotsModelNode::child_row(PlotsModelNode* child) const
+{
+    return m_children.indexOf(child);
+}
+
+int PlotsModelNode::child_row_by_object(QObject* obj) const
+{
+    for (int i = 0; i < m_children.size(); ++i)
+    {
+        if (m_children[i]->object() == obj)
+            return i;
+    }
+    return -1;
+}
+
+int PlotsModelNode::children_count() const
+{
+    return m_children.size();
+}
+
+QList<PlotsModelNode*> PlotsModelNode::children_nodes() const
+{
+    return m_children;
+}
+
+PlotsModelNode* PlotsModelNode::parent_node() const
+{
+    return qobject_cast<PlotsModelNode*>(parent());
+}
+
+PlotsModelNode* PlotsModelNode::insert_child(
+    QObject* obj, const TypeDescriptor* desc, int row)
+{
+    auto node = new PlotsModelNode(obj, desc, this);
+    if (row < 0 || row >= m_children.size())
         m_children.append(node);
     else
         m_children.insert(row, node);
     return node;
 }
 
-PlotsModelNode* PlotsModelNode::child_node(const QString& name)
-{
-    for (auto child : m_children)
-    {
-        if (child->name() == name)
-            return child;
-    }
-    return nullptr;
-}
-
-int PlotsModelNode::child_row(QObject* obj)
-{
-    for (int i = 0; i < children_count(); i++)
-    {
-        if (m_children[i]->holds(obj))
-            return i;
-    }
-    return -1;
-}
-
-bool PlotsModelNode::remove_child(int row, bool destroy)
+bool PlotsModelNode::remove_child(int row)
 {
     if (row < 0 || row >= m_children.size())
         return false;
-    auto child = m_children.at(row);
     m_children.removeAt(row);
-    if (destroy)
-    {
-        delete child;
-        emit childrenDestroyed(this, row);
-    }
     return true;
 }
 
-QIcon PlotsModelNode::icon()
+void PlotsModelNode::add_connections(const QList<QMetaObject::Connection>& conns)
 {
-    if (m_inspector == nullptr || m_obj == nullptr)
-        return QIcon();
-    return m_inspector->icon(m_obj);
+    m_connections.append(conns);
 }
 
-QString PlotsModelNode::tooltip()
+void PlotsModelNode::add_connection(QMetaObject::Connection conn)
 {
-    if (m_inspector == nullptr || m_obj == nullptr)
-        return QString();
-    return m_inspector->tooltip(m_obj);
+    m_connections.append(std::move(conn));
 }
 
-void PlotsModelNode::setName(const QString& name)
+void PlotsModelNode::disconnect_all()
 {
-    if (objectName() != name)
-    {
-        setObjectName(name);
-    }
-    if (m_obj && m_obj->objectName() != name)
-        m_obj->setObjectName(name);
+    for (auto& conn : m_connections)
+        QObject::disconnect(conn);
+    m_connections.clear();
 }
 
-void PlotsModelNode::set_selected(bool selected)
+bool PlotsModelNode::deletable() const
 {
-    if (m_inspector && m_obj)
-    {
-        m_inspector->set_selected(m_obj.data(), selected);
-        emit selectionChanged(selected);
-    }
+    return m_descriptor ? m_descriptor->deletable : true;
 }
 
-Qt::ItemFlags PlotsModelNode::flags()
+Qt::ItemFlags PlotsModelNode::flags() const
 {
-    if (m_inspector)
-        return m_inspector->flags();
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    return m_descriptor ? m_descriptor->flags
+                        : (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+}
+
+QIcon PlotsModelNode::icon() const
+{
+    if (m_descriptor && m_descriptor->icon && m_obj)
+        return m_descriptor->icon(m_obj);
+    return {};
+}
+
+QString PlotsModelNode::tooltip() const
+{
+    if (m_descriptor && m_descriptor->tooltip && m_obj)
+        return m_descriptor->tooltip(m_obj);
+    return {};
 }

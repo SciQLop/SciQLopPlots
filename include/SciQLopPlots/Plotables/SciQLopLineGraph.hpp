@@ -22,17 +22,17 @@
 #pragma once
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
-
+#include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
-#include <qcustomplot.h>
-struct LineGraphResampler;
-class QThread;
+#include <plottables/plottable-multigraph.h>
+#include <span>
 
 class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 {
-    LineGraphResampler* _resampler = nullptr;
-    QThread* _resampler_thread = nullptr;
+    QCPMultiGraph* _multiGraph = nullptr;
+    PyBuffer _x, _y;
+    QStringList _pendingLabels;
 
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
@@ -40,35 +40,13 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     Q_OBJECT
 
-    // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
-
-    void _setGraphData(QList<QVector<QCPGraphData>> data);
-
-
     void clear_graphs(bool graph_already_removed = false);
-    void clear_resampler();
-    void create_resampler(const QStringList& labels);
-
-    inline const QList<QCPGraph*> lines() const noexcept
-    {
-        QList<QCPGraph*> graphs;
-        for (auto plottable : m_components)
-            graphs.append(qobject_cast<QCPGraph*>(plottable->plottable()));
-        return graphs;
-    }
-
-    inline QCPGraph* line(std::size_t index) const
-    {
-        if (index < plottable_count())
-            return qobject_cast<QCPGraph*>(m_components[index]->plottable());
-        return nullptr;
-    }
 
 public:
     Q_ENUMS(FractionStyle)
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
-                              const QStringList& labels = QStringList(),QVariantMap metaData={});
+                              const QStringList& labels = QStringList(), QVariantMap metaData = {});
 
     SciQLopLineGraph(QCustomPlot* parent);
 
@@ -77,23 +55,17 @@ public:
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
 
-    inline std::size_t line_count() const noexcept { return plottable_count(); }
+    inline std::size_t line_count() const noexcept
+    {
+        return _multiGraph ? _multiGraph->componentCount() : 0;
+    }
 
     virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-
     virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
 
     virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
-
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
-private:
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void _setGraphDataSig(QList<QVector<QCPGraphData>> data);
     void create_graphs(const QStringList& labels);
 };
 
@@ -105,7 +77,7 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph,
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                       SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
-                                      const QStringList& labels,QVariantMap metaData={});
+                                      const QStringList& labels, QVariantMap metaData = {});
 
     virtual ~SciQLopLineGraphFunction() override = default;
 };

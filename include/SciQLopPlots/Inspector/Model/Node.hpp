@@ -21,88 +21,53 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <QIcon>
+#include <QList>
+#include <QMetaObject>
 #include <QObject>
 #include <QPointer>
-#include <QUuid>
 
-class InspectorBase;
+struct TypeDescriptor;
 
 class PlotsModelNode : public QObject
 {
     Q_OBJECT
     QPointer<QObject> m_obj;
-    InspectorBase* m_inspector;
+    const TypeDescriptor* m_descriptor;
     QList<PlotsModelNode*> m_children;
-
-    PlotsModelNode* _root_node();
-    bool _deletable = true;
+    QList<QMetaObject::Connection> m_connections;
 
 public:
-    PlotsModelNode(QObject* obj, QObject* parent = nullptr);
+    PlotsModelNode(QObject* obj, const TypeDescriptor* desc, QObject* parent = nullptr);
     ~PlotsModelNode();
 
-    PlotsModelNode* insert_child(QObject* obj, int row = -1);
+    inline QString name() const { return objectName(); }
+    void setName(const QString& name);
 
-    inline QString name() { return objectName(); }
+    PlotsModelNode* child(int row) const;
+    int child_row(PlotsModelNode* child) const;
+    int child_row_by_object(QObject* obj) const;
+    int children_count() const;
+    QList<PlotsModelNode*> children_nodes() const;
+    PlotsModelNode* parent_node() const;
 
-    PlotsModelNode* child_node(const QString& name);
+    PlotsModelNode* insert_child(QObject* obj, const TypeDescriptor* desc, int row = -1);
+    bool remove_child(int row);
 
-    inline QList<PlotsModelNode*> children_nodes() { return m_children; }
+    void add_connections(const QList<QMetaObject::Connection>& conns);
+    void add_connection(QMetaObject::Connection conn);
+    void disconnect_all();
 
-    PlotsModelNode* parent_node() { return qobject_cast<PlotsModelNode*>(parent()); }
+    inline QObject* object() const { return m_obj; }
+    inline const TypeDescriptor* descriptor() const { return m_descriptor; }
 
-    inline PlotsModelNode* child(int row) { return m_children.value(row, nullptr); }
-
-    inline int child_row(PlotsModelNode* child) { return m_children.indexOf(child); }
-
-    int child_row(QObject* obj);
-
-    inline int children_count() { return m_children.size(); }
-
-    bool remove_child(int row, bool destroy = true);
-
-    QIcon icon();
-    QString tooltip();
-
-    Q_SLOT void setName(const QString& name);
-
-    inline bool holds(QObject* obj)
-    {
-        if (m_obj)
-            return m_obj == obj && m_obj->objectName() == obj->objectName();
-        return false;
-    }
-
-    inline bool contains(QObject* obj)
-    {
-        for (auto child : m_children)
-        {
-            if (child->holds(obj))
-                return true;
-        }
-        return false;
-    }
-
-    void set_selected(bool selected);
-
-    inline void set_deletable(bool deletable) { _deletable = deletable; }
-
-    inline bool deletable() { return _deletable; }
-
-    inline QObject* object() { return m_obj; }
-
-    inline InspectorBase* inspector() { return m_inspector; }
-
-    Qt::ItemFlags flags();
-
+    bool deletable() const;
+    Qt::ItemFlags flags() const;
+    QIcon icon() const;
+    QString tooltip() const;
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
     Q_SIGNAL void nameChanged();
-    Q_SIGNAL void childrenChanged();
-    Q_SIGNAL void childrenDestroyed(PlotsModelNode* parent, int row);
-    Q_SIGNAL void selectionChanged(bool selected);
-    Q_SIGNAL void objectDestroyed();
 };
