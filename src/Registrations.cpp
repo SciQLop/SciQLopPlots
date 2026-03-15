@@ -29,6 +29,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 // Delegate widgets
@@ -93,7 +94,18 @@ void register_all_types()
                 c.append(p);
             return c;
         },
-        .connect_children = nullptr,
+        .connect_children = [](QObject* obj, auto add, auto /*remove*/)
+                -> QList<QMetaObject::Connection> {
+            auto plot = qobject_cast<SciQLopPlot*>(obj);
+            if (!plot) return {};
+            return {
+                QObject::connect(plot, &SciQLopPlot::graph_list_changed, plot,
+                    [plot, add]() {
+                        for (auto p : plot->plottables())
+                            add(p);
+                    }),
+            };
+        },
         .set_selected = [](QObject* obj, bool s) {
             if (auto p = qobject_cast<SciQLopPlot*>(obj))
                 p->set_selected(s);
@@ -119,7 +131,6 @@ void register_all_types()
         },
     });
 
-    // component_list_changed has no args — same limitation
     // SciQLopNDProjectionCurves inherits this via metaObject chain lookup
     types.register_type<SciQLopGraphInterface>({
         .children = [](QObject* obj) -> QList<QObject*> {
@@ -130,7 +141,18 @@ void register_all_types()
                 c.append(comp);
             return c;
         },
-        .connect_children = nullptr,
+        .connect_children = [](QObject* obj, auto add, auto /*remove*/)
+                -> QList<QMetaObject::Connection> {
+            auto graph = qobject_cast<SciQLopGraphInterface*>(obj);
+            if (!graph) return {};
+            return {
+                QObject::connect(graph, &SciQLopGraphInterface::component_list_changed, graph,
+                    [graph, add]() {
+                        for (auto comp : graph->components())
+                            add(comp);
+                    }),
+            };
+        },
         .set_selected = [](QObject* obj, bool s) {
             if (auto g = qobject_cast<SciQLopGraphInterface*>(obj);
                 g && g->selected() != s)
@@ -154,6 +176,15 @@ void register_all_types()
         .set_selected = [](QObject* obj, bool s) {
             if (auto cm = qobject_cast<SciQLopColorMap*>(obj))
                 cm->set_selected(s);
+        },
+    });
+
+    types.register_type<SciQLopHistogram2D>({
+        .children = [](QObject*) -> QList<QObject*> { return {}; },
+        .connect_children = nullptr,
+        .set_selected = [](QObject* obj, bool s) {
+            if (auto h = qobject_cast<SciQLopHistogram2D*>(obj))
+                h->set_selected(s);
         },
     });
 

@@ -32,10 +32,13 @@
 #include <SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp>
 #include <SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp>
 #include <SciQLopPlots/Plotables/SciQLopColorMap.hpp>
+#include <SciQLopPlots/Plotables/SciQLopHistogram2D.hpp>
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
+#include <SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp>
+#include <SciQLopPlots/SciQLopOverlay.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <SciQLopPlots/SciQLopPlotInterface.hpp>

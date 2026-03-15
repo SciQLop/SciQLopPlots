@@ -162,6 +162,16 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
     return nullptr;
 }
 
+SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins)
+{
+    auto hist = new SciQLopHistogram2D(
+        this, this->m_axes[0], this->m_axes[1],
+        reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, key_bins, value_bins);
+    _ensure_colorscale_is_visible(hist);
+    _register_plottable_wrapper(hist);
+    return hist;
+}
+
 SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable,
                                                     const QString& name, bool y_log_scale,
                                                     bool z_log_scale)
@@ -490,6 +500,16 @@ void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
     }
 }
 
+void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopHistogram2D* hist)
+{
+    if (!m_color_scale->visible())
+    {
+        m_color_scale->setVisible(true);
+        plotLayout()->addElement(0, 1, m_color_scale);
+        hist->histogram()->setColorScale(m_color_scale);
+    }
+}
+
 QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const
 {
     for (auto plottable : mPlottables)
@@ -606,6 +626,23 @@ SciQLopPlot::~SciQLopPlot()
     }
 }
 
+SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins)
+{
+    auto hist = m_impl->add_histogram2d(name, key_bins, value_bins);
+    if (hist)
+    {
+        _configure_color_map(hist, false, false);
+    }
+    return hist;
+}
+
+SciQLopOverlay* SciQLopPlot::overlay()
+{
+    if (!m_overlay)
+        m_overlay = new SciQLopOverlay(m_impl->overlay(), this);
+    return m_overlay;
+}
+
 void SciQLopPlot::set_scroll_factor(double factor) noexcept
 {
     m_impl->set_scroll_factor(factor);
@@ -648,7 +685,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
+            if (y.ndim() <= 1 || y.size(1) == 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraph>(labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);
@@ -670,6 +710,8 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuff
                                                  bool z_log_scale, QVariantMap metaData)
 {
     auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
+    if (!cm)
+        return nullptr;
     cm->set_meta_data(metaData);
     cm->set_data(std::move(x), std::move(y), std::move(z));
     _configure_color_map(cm, y_log_scale, z_log_scale);
@@ -733,8 +775,12 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels,
-                                                                        metaData);
+            if (labels.size() <= 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraphFunction>(
+                    std::move(callable), labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
+                    std::move(callable), labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,

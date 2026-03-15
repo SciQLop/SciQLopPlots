@@ -9,6 +9,7 @@ from SciQLopPlots import (
     SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
     SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
     PlotType, GraphType, Coordinates,
+    OverlayLevel, OverlaySizeMode, OverlayPosition,
 )
 
 
@@ -49,6 +50,15 @@ def uniform_colormap(nx=200, ny=200):
     xx, yy = np.meshgrid(x, y, indexing="ij")
     z = np.cos(np.sqrt((xx + 2) ** 2 + yy ** 2))
     return x, y, z
+
+
+def bimodal_scatter(n=100_000):
+    rng = np.random.default_rng(42)
+    x1 = rng.normal(-2, 1.0, n // 2)
+    y1 = rng.normal(1, 0.6, n // 2)
+    x2 = rng.normal(2, 0.8, n // 2)
+    y2 = rng.normal(-1, 1.2, n // 2)
+    return np.concatenate([x1, x2]), np.concatenate([y1, y2])
 
 
 # ── Tab builders ─────────────────────────────────────────────────────────────
@@ -121,6 +131,39 @@ def create_spans_tab():
     return panel
 
 
+def create_histogram2d_tab():
+    plot = SciQLopPlot()
+    x, y = bimodal_scatter(100_000)
+    hist = plot.add_histogram2d("Density", 80, 80)
+    hist.set_data(x, y)
+    plot.x_axis().set_range(float(x.min()), float(x.max()))
+    plot.y_axis().set_range(float(y.min()), float(y.max()))
+    return plot
+
+
+def create_overlay_tab():
+    plot = SciQLopPlot()
+    x, y = butterfly_curve()
+    plot.x_axis().set_range(min(x), max(x))
+    plot.y_axis().set_range(min(y), max(y))
+    plot.plot(
+        x, y,
+        labels=["butterfly"],
+        colors=[QColorConstants.DarkCyan],
+        graph_type=GraphType.ParametricCurve,
+    )
+    ov = plot.overlay()
+    ov.show_message(
+        "Overlay demo — Info level",
+        OverlayLevel.Info,
+        OverlaySizeMode.FitContent,
+        OverlayPosition.Top,
+    )
+    ov.set_collapsible(True)
+    ov.set_opacity(0.9)
+    return plot
+
+
 def create_stacked_tab():
     panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
     for _ in range(4):
@@ -185,8 +228,10 @@ window.resize(1000, 700)
 tabs = QTabWidget()
 tabs.addTab(create_line_tab(), "Line Graph")
 tabs.addTab(create_colormap_tab(), "Colormap")
+tabs.addTab(create_histogram2d_tab(), "Histogram 2D")
 tabs.addTab(create_curve_tab(), "Parametric Curve")
 tabs.addTab(create_spans_tab(), "Vertical Spans")
+tabs.addTab(create_overlay_tab(), "Overlay")
 tabs.addTab(create_stacked_tab(), "Stacked Plots")
 tabs.addTab(create_pipeline_tab(), "Pipeline (FFT)")
 

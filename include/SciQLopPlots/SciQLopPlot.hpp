@@ -23,12 +23,15 @@
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopTracer.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotLegend.hpp"
+#include "SciQLopPlots/SciQLopOverlay.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QPointF>
 #include <optional>
@@ -87,6 +90,9 @@ public:
                                    bool z_log_scale = false);
     SciQLopColorMapFunction* add_color_map(GetDataPyCallable&& callable, const QString& name,
                                            bool y_log_scale = false, bool z_log_scale = false);
+
+    SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
+                                        int value_bins = 100);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
 
@@ -191,6 +197,7 @@ protected:
     SciQLopGraphInterface* plottable_wrapper(QCPAbstractPlottable* plottable);
 
     void _ensure_colorscale_is_visible(SciQLopColorMap* cmap);
+    void _ensure_colorscale_is_visible(SciQLopHistogram2D* hist);
 
     QCPAbstractPlottable* plottable(const QString& name) const;
 
@@ -216,6 +223,7 @@ class SciQLopPlot : public SciQLopPlotInterface
 protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
+    SciQLopOverlay* m_overlay = nullptr;
     QList<QColor> m_color_palette = {
         QColor(31, 119, 180),  QColor(255, 127, 14),  QColor(44, 160, 44),   QColor(214, 39, 40),
         QColor(148, 103, 189), QColor(140, 86, 75),   QColor(227, 119, 194), QColor(127, 127, 127),
@@ -301,6 +309,11 @@ public:
     void enable_cursor(bool enable = true) noexcept override;
 
     void minimize_margins() override;
+
+    SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
+                                        int value_bins = 100);
+
+    SciQLopOverlay* overlay();
 
     inline bool has_colormap() { return m_impl->has_colormap(); }
 
