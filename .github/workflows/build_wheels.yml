@@ -17,12 +17,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Cache Qt
+        id: cache-qt-sdist
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: qt-linux-${{ env.QT_VERSION }}
       - name: Build sdist
         run: |
-          sudo apt update && sudo apt install -y libgl-dev
+          sudo apt update && sudo apt install -y libgl-dev ccache
           pip install aqtinstall
-          aqt install-qt -O "$GITHUB_WORKSPACE"/Qt linux desktop ${{ env.QT_VERSION }} -m qtshadertools
-          PATH="$GITHUB_WORKSPACE"/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH" LD_LIBRARY_PATH="$GITHUB_WORKSPACE"/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH" pipx run build --sdist
+          [ -d "$GITHUB_WORKSPACE/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "$GITHUB_WORKSPACE/Qt" linux desktop ${{ env.QT_VERSION }} -m qtshadertools
+          export CC="ccache gcc" CXX="ccache g++"
+          PATH="$GITHUB_WORKSPACE/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH" LD_LIBRARY_PATH="$GITHUB_WORKSPACE/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH" pipx run build --sdist
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -60,6 +67,23 @@ jobs:
         if: runner.os == 'Windows'
         with:
           arch: amd64
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: qt-${{ matrix.qt_host }}-${{ matrix.arch }}-${{ env.QT_VERSION }}
+      - name: Install ccache (host)
+        if: runner.os != 'Linux'
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}
+      - name: Cache ccache (Linux container)
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}-
       - name: Forward GITHUB_WORKSPACE env var
         shell: bash
         run: |
@@ -71,19 +95,19 @@ jobs:
           QT_VERSION: ${{ env.QT_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
           CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin;$PATH"
-          CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='13.3' PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/macos/bin:$PATH
-          CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
+          CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='13.3' PATH=/usr/lib/ccache:${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/macos/bin:$PATH
+          CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} CC="ccache gcc" CXX="ccache g++" CCACHE_DIR=${{ env.GITHUB_WORKSPACE }}/.ccache PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
             pip install "aqtinstall"
-            && aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64 -m qtshadertools
+            && if not exist "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}" aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64 -m qtshadertools
           CIBW_BEFORE_BUILD_MACOS: >
             pip install "aqtinstall"
-            && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }} -m qtshadertools
+            && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }} -m qtshadertools
           CIBW_BEFORE_BUILD_LINUX: >
-            dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 llvm15-devel  clang15
+            dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 llvm15-devel clang15 ccache
             && alternatives --install /usr/bin/llvm-config llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64 100
             && alternatives --set llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64
-            && pip install "aqtinstall" && aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }} -m qtshadertools
+            && pip install "aqtinstall" && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }} -m qtshadertools
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.10 --exclude libshiboken6.abi3.so.6.10 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.10 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:

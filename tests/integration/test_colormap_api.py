@@ -16,9 +16,9 @@ class TestColormapCreation:
         cmap = plot.colormap(x, y, z)
         assert cmap is not None
 
-    def test_colormap_with_labels(self, plot, sample_colormap_data):
+    def test_colormap_with_name(self, plot, sample_colormap_data):
         x, y, z = sample_colormap_data
-        cmap = plot.colormap(x, y, z, labels=["heat"])
+        cmap = plot.colormap(x, y, z, name="heat")
         assert cmap is not None
 
     def test_callable_colormap(self, plot):
