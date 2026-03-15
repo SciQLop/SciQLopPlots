@@ -648,7 +648,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
+            if (y.ndim() <= 1 || y.size(1) == 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraph>(labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);
@@ -733,8 +736,12 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(std::move(callable), labels,
-                                                                        metaData);
+            if (labels.size() <= 1)
+                plottable = m_impl->add_plottable<SciQLopSingleLineGraphFunction>(
+                    std::move(callable), labels, metaData);
+            else
+                plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
+                    std::move(callable), labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,

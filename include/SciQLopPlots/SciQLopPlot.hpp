@@ -25,6 +25,7 @@
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"

@@ -287,6 +287,9 @@
     <object-type name="SciQLopLineGraph" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="SciQLopSingleLineGraph" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
@@ -297,6 +300,9 @@
     <object-type name="SciQLopFunctionGraph" parent-management="no"/>
 
     <object-type name="SciQLopLineGraphFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopSingleLineGraphFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopCurveFunction" parent-management="yes">
