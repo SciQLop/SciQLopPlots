@@ -69,6 +69,8 @@ jobs:
           pip install ".[test]"
 
       - name: Run integration tests
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: |
           export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
-          xvfb-run --auto-servernum pytest tests/integration/ -v --timeout=60
+          pytest tests/integration/ -v --timeout=60
