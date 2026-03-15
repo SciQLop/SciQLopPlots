@@ -16,7 +16,7 @@ from SciQLopPlots import (
 )
 
 __HERE__ = os.path.dirname(__file__)
-PRODUCTS_JSON = os.path.join(__HERE__, "..", "Products", "products.json")
+PRODUCTS_JSON = os.path.join(__HERE__, "products.json")
 
 
 def filter_metadata(json_node):
