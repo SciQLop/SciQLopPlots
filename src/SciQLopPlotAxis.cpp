@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
+#include <plottables/plottable-colormap2.h>
 
 SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_axis,
                                  const QString& name)
@@ -361,8 +362,20 @@ void SciQLopPlotColorScaleAxis::rescale() noexcept
 {
     if (!m_axis.isNull())
     {
+        // QCPColorScale::rescaleDataRange only finds QCPColorMap, not QCPColorMap2.
+        // Rescale QCPColorMap2 instances directly.
+        auto* plot = m_axis->parentPlot();
+        for (int i = 0; i < plot->plottableCount(); ++i)
+        {
+            if (auto* cm2 = qobject_cast<QCPColorMap2*>(plot->plottable(i));
+                cm2 && cm2->colorScale() == m_axis.data())
+            {
+                cm2->rescaleDataRange(true);
+            }
+        }
+        // Also try the legacy path for any QCPColorMap instances
         m_axis->rescaleDataRange(true);
-        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        plot->replot(QCustomPlot::rpQueuedReplot);
     }
 }
 
