@@ -38,7 +38,7 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-qt", "pytest-timeout", "hypothesis", "numpy"]
+test = ["pytest", "pytest-qt", "pytest-timeout", "hypothesis", "python-dateutil", "numpy"]
 
 [project.urls]
 homepage = "https://github.com/SciQLop/SciQLopPlots"
