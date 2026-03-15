@@ -2,6 +2,9 @@ name: Tests
 
 on: [push, pull_request]
 
+env:
+  QT_VERSION: 6.10.2
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -40,6 +43,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libegl1 libgl1 libgl-dev ccache
 
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: qt-linux-${{ env.QT_VERSION }}
+
+      - name: Install Qt
+        run: |
+          pip install aqtinstall
+          [ -d "Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O Qt linux desktop ${{ env.QT_VERSION }} -m qtshadertools
+
       - name: Cache ccache
         uses: actions/cache@v4
         with:
@@ -50,7 +64,11 @@ jobs:
       - name: Install package
         run: |
           export CC="ccache gcc" CXX="ccache g++"
+          export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
+          export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
           pip install ".[test]"
 
       - name: Run integration tests
-        run: xvfb-run --auto-servernum pytest tests/integration/ -v --timeout=60
+        run: |
+          export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
+          xvfb-run --auto-servernum pytest tests/integration/ -v --timeout=60
