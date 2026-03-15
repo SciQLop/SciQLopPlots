@@ -10,7 +10,6 @@ import sys
 import numpy as np
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QColorConstants
-from PySide6.QtCore import Qt
 
 from SciQLopPlots import (
     SciQLopMultiPlotPanel, SciQLopVerticalSpan, SciQLopPlotRange, PlotType,
