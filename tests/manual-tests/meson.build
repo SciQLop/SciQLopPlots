@@ -1,33 +1,30 @@
 examples = [
-    {'name':'SciQLopGraph', 'source': meson.current_source_dir()+'/SciQLopGraph/main.py'},
-    {'name':'SciQLopColorMap', 'source': meson.current_source_dir()+'/SciQLopColorMap/main.py'},
-    {'name':'StackedGraphs', 'source': meson.current_source_dir()+'/StackedGraphs/main.py'},
-    {'name':'SciQLopVerticalSpan', 'source': meson.current_source_dir()+'/SciQLopVerticalSpan/main.py'},
-    {'name':'All', 'source': meson.current_source_dir()+'/All/main.py'},
-    {'name':'MicroSciQLop', 'source': meson.current_source_dir()+'/MicroSciQLop/main.py'},
-    {'name':'DragNDrop', 'source': meson.current_source_dir()+'/DragNDrop/main.py'},
-    {'name':'Products', 'source': meson.current_source_dir()+'/Products/main.py'},
-    {'name': 'Projections', 'source': meson.current_source_dir()+'/Projections/main.py'},
-    {'name': 'DrawingAPI', 'source': meson.current_source_dir()+'/DrawingAPI/main.py'},
-    {'name': 'StressModel', 'source': meson.current_source_dir()+'/StressModel/main.py'},
-    {'name': 'Pipeline', 'source': meson.current_source_dir()+'/Pipeline/main.py'},
+    {'name': 'LineGraph', 'source': meson.current_source_dir() + '/basics/line_graph.py'},
+    {'name': 'Colormap', 'source': meson.current_source_dir() + '/basics/colormap.py'},
+    {'name': 'VerticalSpans', 'source': meson.current_source_dir() + '/basics/vertical_spans.py'},
+    {'name': 'ParametricCurve', 'source': meson.current_source_dir() + '/basics/parametric_curve.py'},
+    {'name': 'Pipeline', 'source': meson.current_source_dir() + '/advanced/pipeline.py'},
+    {'name': 'StackedPlots', 'source': meson.current_source_dir() + '/advanced/stacked_plots.py'},
+    {'name': 'DragNDrop', 'source': meson.current_source_dir() + '/advanced/drag_and_drop.py'},
+    {'name': 'Products', 'source': meson.current_source_dir() + '/advanced/products.py'},
+    {'name': 'StressModel', 'source': meson.current_source_dir() + '/stress/stress_model.py'},
 ]
 
-foreach example:examples
-    test('examples_'+example['name'],
+foreach example : examples
+    test('examples_' + example['name'],
         python3,
         args: [example['source']],
-        env: ['PYTHONPATH='+meson.project_build_root()],
+        env: ['PYTHONPATH=' + meson.project_build_root()],
         suite: 'manual',
     )
 endforeach
 
 sources = []
-foreach example:examples
+foreach example : examples
     sources += example['source']
 endforeach
 
 if target_machine.system() != 'windows'
-    library('SimplePlot_fake',[],
-            extra_files:sources)
+    library('SimplePlot_fake', [],
+            extra_files: sources)
 endif
