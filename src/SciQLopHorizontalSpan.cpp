@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2023, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,19 +21,19 @@
 ----------------------------------------------------------------------------*/
 #include <SciQLopPlots/SciQLopPlot.hpp>
 
-#include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
+#include "SciQLopPlots/Items/SciQLopHorizontalSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
 
-impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
-                                  bool do_not_replot, bool immediate_replot)
-    : QCPItemVSpan(plot)
+impl::HorizontalSpan::HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertical_range,
+                                      bool do_not_replot, bool immediate_replot)
+    : QCPItemHSpan(plot)
 {
     setLayer(Constants::LayersNames::Spans);
     setSelectable(true);
     setMovable(true);
-    setRange(QCPRange(horizontal_range.first, horizontal_range.second));
+    setRange(QCPRange(vertical_range.first, vertical_range.second));
 
-    connect(this, &QCPItemVSpan::rangeChanged, this,
+    connect(this, &QCPItemHSpan::rangeChanged, this,
             [this](const QCPRange& r) {
                 emit range_changed(SciQLopPlotRange(r.lower, r.upper));
             });
@@ -45,24 +45,24 @@ impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_
         replot(immediate_replot);
 }
 
-void impl::VerticalSpan::set_visible(bool visible) { setVisible(visible); }
+void impl::HorizontalSpan::set_visible(bool visible) { setVisible(visible); }
 
-void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
+void impl::HorizontalSpan::set_range(const SciQLopPlotRange vertical_range)
 {
-    auto sorted = horizontal_range.sorted();
+    auto sorted = vertical_range.sorted();
     if (range() == sorted)
         return;
     setRange(QCPRange(sorted.first, sorted.second));
     replot();
 }
 
-SciQLopPlotRange impl::VerticalSpan::range() const noexcept
+SciQLopPlotRange impl::HorizontalSpan::range() const noexcept
 {
-    auto r = QCPItemVSpan::range();
+    auto r = QCPItemHSpan::range();
     return SciQLopPlotRange(r.lower, r.upper);
 }
 
-void impl::VerticalSpan::set_color(const QColor& color)
+void impl::HorizontalSpan::set_color(const QColor& color)
 {
     setBrush(QBrush(color, Qt::SolidPattern));
     setSelectedBrush(QBrush(
@@ -72,39 +72,39 @@ void impl::VerticalSpan::set_color(const QColor& color)
     setSelectedPen(QPen(Qt::NoPen));
 }
 
-QColor impl::VerticalSpan::color() const noexcept { return brush().color(); }
+QColor impl::HorizontalSpan::color() const noexcept { return brush().color(); }
 
-void impl::VerticalSpan::set_borders_color(const QColor& color)
+void impl::HorizontalSpan::set_borders_color(const QColor& color)
 {
     setBorderPen(QPen(QBrush(color, Qt::SolidPattern), 3));
 }
 
-QColor impl::VerticalSpan::borders_color() const noexcept
+QColor impl::HorizontalSpan::borders_color() const noexcept
 {
     return borderPen().color();
 }
 
-void impl::VerticalSpan::set_borders_tool_tip(const QString& tool_tip)
+void impl::HorizontalSpan::set_borders_tool_tip(const QString& tool_tip)
 {
     SciQlopItemWithToolTip::setToolTip(tool_tip);
 }
 
-void impl::VerticalSpan::select_lower_border(bool selected)
+void impl::HorizontalSpan::select_lower_border(bool selected)
 {
     setSelected(selected);
     emit lower_border_selection_changed(selected);
 }
 
-void impl::VerticalSpan::select_upper_border(bool selected)
+void impl::HorizontalSpan::select_upper_border(bool selected)
 {
     setSelected(selected);
     emit upper_border_selection_changed(selected);
 }
 
-SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
+SciQLopHorizontalSpan::SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
     QColor color, bool read_only, bool visible, const QString& tool_tip)
         : SciQLopRangeItemInterface { plot }
-        , _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
+        , _impl { new impl::HorizontalSpan { plot->qcp_plot(), vertical_range, true } }
 {
     set_color(color);
     set_read_only(read_only);
@@ -112,16 +112,16 @@ SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange hor
     set_tool_tip(tool_tip);
     _impl->set_borders_color(color.lighter());
 
-    connect(_impl.data(), &impl::VerticalSpan::range_changed, this,
-        &SciQLopVerticalSpan::range_changed);
+    connect(_impl.data(), &impl::HorizontalSpan::range_changed, this,
+        &SciQLopHorizontalSpan::range_changed);
     connect(_impl.data(), &QCPAbstractItem::selectionChanged, this,
-        &SciQLopVerticalSpan::selectionChanged);
-    connect(_impl.data(), &impl::VerticalSpan::lower_border_selection_changed, this,
-        &SciQLopVerticalSpan::lower_border_selection_changed);
-    connect(_impl.data(), &impl::VerticalSpan::upper_border_selection_changed, this,
-        &SciQLopVerticalSpan::upper_border_selection_changed);
-    connect(_impl.data(), &impl::VerticalSpan::delete_requested, this,
-        &SciQLopVerticalSpan::delete_requested);
+        &SciQLopHorizontalSpan::selectionChanged);
+    connect(_impl.data(), &impl::HorizontalSpan::lower_border_selection_changed, this,
+        &SciQLopHorizontalSpan::lower_border_selection_changed);
+    connect(_impl.data(), &impl::HorizontalSpan::upper_border_selection_changed, this,
+        &SciQLopHorizontalSpan::upper_border_selection_changed);
+    connect(_impl.data(), &impl::HorizontalSpan::delete_requested, this,
+        &SciQLopHorizontalSpan::delete_requested);
 
     _impl->replot();
 }

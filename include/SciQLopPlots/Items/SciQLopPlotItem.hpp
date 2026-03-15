@@ -102,12 +102,6 @@ public:
     virtual QCursor cursor(QMouseEvent* event) const noexcept override { return Qt::ArrowCursor; }
 };
 
-class SciQLopItemWithKeyInteraction
-{
-public:
-    virtual void keyPressEvent(QKeyEvent* event) = 0;
-};
-
 class SciQlopItemWithToolTip
 {
     QString _tooltip;

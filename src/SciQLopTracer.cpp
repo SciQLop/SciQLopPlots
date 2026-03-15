@@ -58,99 +58,6 @@ std::string _render_value(const double value, const QCPAxis* const axis)
     return _render_value(value);
 }
 
-std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
-                                                              const QCPGraph* graph)
-{
-    QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
-    QVariant details;
-    if (graph->selectTest(pos, false, &details))
-    {
-        QCPDataSelection dataPoints = details.value<QCPDataSelection>();
-        if (dataPoints.dataPointCount() > 0)
-        {
-            it = graph->data()->at(dataPoints.dataRange().begin());
-            return std::make_tuple(it->key, it->value);
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
-                                                              const QCPCurve* curve)
-{
-    auto it = curve->data()->constEnd();
-    QVariant details;
-    if (curve->selectTest(pos, false, &details))
-    {
-        QCPDataSelection dataPoints = details.value<QCPDataSelection>();
-        if (dataPoints.dataPointCount() > 0)
-        {
-            it = curve->data()->at(dataPoints.dataRange().begin());
-            return std::make_tuple(it->key, it->value);
-        }
-    }
-    return std::nullopt;
-}
-
-double _discretize(const double value, const double lower, const double upper, const int count)
-{
-    const auto q = (upper - lower) / count;
-    return (floor((value - lower) / q) + 0.5) * q + lower;
-}
-
-double _nearest_axis_value(const double value, const QCPRange& range,
-                           const QCPAxis::ScaleType scale_type, const int count)
-{
-    if (scale_type == QCPAxis::stLinear)
-    {
-        return _discretize(value, range.lower, range.upper, count);
-    }
-    else // log scale
-    {
-        return std::pow(10.,
-                        _discretize(log10(value), log10(range.lower), log10(range.upper), count));
-    }
-}
-
-int _log_scale_index(const double value, const QCPRange& range, const int count)
-{
-    return static_cast<int>(count * (log10(value) - log10(range.lower))
-                            / (log10(range.upper) - log10(range.lower)));
-}
-
-std::optional<std::tuple<double, double, double>> _nearest_data_point(const QPointF& pos,
-                                                                      const QCPColorMap* colormap)
-{
-
-    const auto key = _nearest_axis_value(
-        colormap->keyAxis()->pixelToCoord(pos.x()), colormap->data()->keyRange(),
-        colormap->keyAxis()->scaleType(), colormap->data()->keySize());
-    const auto value = _nearest_axis_value(
-        colormap->valueAxis()->pixelToCoord(pos.y()), colormap->data()->valueRange(),
-        colormap->valueAxis()->scaleType(), colormap->data()->valueSize());
-
-    int keyIndex, valueIndex;
-    if (colormap->keyAxis()->scaleType() == QCPAxis::stLogarithmic)
-    {
-        keyIndex = _log_scale_index(key, colormap->data()->keyRange(), colormap->data()->keySize());
-    }
-    else
-    {
-        colormap->data()->coordToCell(key, value, &keyIndex, nullptr);
-    }
-    if (colormap->valueAxis()->scaleType() == QCPAxis::stLogarithmic)
-    {
-        valueIndex = _log_scale_index(value, colormap->data()->valueRange(),
-                                      colormap->data()->valueSize());
-    }
-    else
-    {
-        colormap->data()->coordToCell(key, value, nullptr, &valueIndex);
-    }
-    const auto data = colormap->data()->cell(keyIndex, valueIndex);
-    return std::make_tuple(key, value, data);
-}
-
 PlotQuadrant _quadrant(const QPointF& pos, const QCPAxisRect* axisRect)
 {
     const auto rect = axisRect->rect();
@@ -220,13 +127,13 @@ void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
     auto keyAxis = m_tracer->plotable()->keyAxis();
     auto valueAxis = m_tracer->plotable()->valueAxis();
     if (!std::isnan(m_data))
-        m_tooltip->setHtml(fmt::format(
+        m_tooltip->setHtml(QString::fromStdString(fmt::format(
             "x: <b>{}</b><br>y: <b>{}</b><br>z: <b>{}</b>", _impl::_render_value(m_x, keyAxis),
-            _impl::_render_value(m_y, valueAxis), _impl::_render_value(m_data)));
+            _impl::_render_value(m_y, valueAxis), _impl::_render_value(m_data))));
     else
-        m_tooltip->setHtml(fmt::format("x: <b>{}</b><br>y: <b>{}</b>",
+        m_tooltip->setHtml(QString::fromStdString(fmt::format("x: <b>{}</b><br>y: <b>{}</b>",
                                        _impl::_render_value(m_x, keyAxis),
-                                       _impl::_render_value(m_y, valueAxis)));
+                                       _impl::_render_value(m_y, valueAxis))));
     if (replot)
         this->replot();
 }
@@ -256,29 +163,31 @@ SciQLopTracer::SciQLopTracer(QCustomPlot* parentPlot)
 
 void SciQLopTracer::setPlotable(QCPAbstractPlottable* plottable)
 {
-    m_locator.set_plottable(plottable);
+    m_locator.setPlottable(plottable);
     if (plottable)
     {
         position->setAxes(plottable->keyAxis(), plottable->valueAxis());
-    }
-    switch (m_locator.plotable_type())
-    {
-        case PlotableType::Graph:
-            setPen(dynamic_cast<QCPGraph*>(plottable)->pen());
-            break;
-        case PlotableType::Curve:
-            setPen(dynamic_cast<QCPCurve*>(plottable)->pen());
-            break;
-        default:
+        if (auto* graph = dynamic_cast<QCPGraph*>(plottable))
+            setPen(graph->pen());
+        else if (auto* curve = dynamic_cast<QCPCurve*>(plottable))
+            setPen(curve->pen());
+        else
             setPen(QPen(Qt::black));
-            break;
+    }
+    else
+    {
+        setPen(QPen(Qt::black));
     }
 }
 
 void SciQLopTracer::updatePosition(const QPointF& pos)
 {
-    m_locator.setPosition(pos);
-    position->setCoords(m_locator.key(), m_locator.value());
+    if (m_locator.locate(pos))
+    {
+        position->setCoords(m_locator.key(), m_locator.value());
+        if (auto* plottable = m_locator.plottable())
+            m_quadrant = _impl::_quadrant(pos, plottable->valueAxis()->axisRect());
+    }
 }
 
 double SciQLopTracer::selectTest(const QPointF& pos, bool onlySelectable, QVariant* details) const
@@ -406,75 +315,3 @@ void SciQLopTracer::draw(QCPPainter* painter)
     }
 }
 
-void QCPAbstractPlottableDataLocator::set_plottable(QCPAbstractPlottable* plottable) noexcept
-{
-    m_plottable = plottable;
-    if (plottable == nullptr)
-        m_plotableType = PlotableType::None;
-    else if (qobject_cast<QCPGraph*>(plottable))
-        m_plotableType = PlotableType::Graph;
-    else if (qobject_cast<QCPCurve*>(plottable))
-        m_plotableType = PlotableType::Curve;
-    else if (qobject_cast<QCPColorMap*>(plottable))
-        m_plotableType = PlotableType::ColorMap;
-    else
-        m_plotableType = PlotableType::None;
-    m_key = std::nan("");
-    m_value = std::nan("");
-    m_data = std::nan("");
-}
-
-void QCPAbstractPlottableDataLocator::setPosition(const QPointF& pos)
-{
-    switch (m_plotableType)
-    {
-        case PlotableType::Graph:
-            std::tie(m_key, m_value, m_data)
-                = locate_data_graph(pos, dynamic_cast<QCPGraph*>(m_plottable));
-            m_quadrant = _impl::_quadrant(
-                pos, dynamic_cast<QCPGraph*>(m_plottable)->valueAxis()->axisRect());
-            break;
-        case PlotableType::Curve:
-            std::tie(m_key, m_value, m_data)
-                = locate_data_curve(pos, dynamic_cast<QCPCurve*>(m_plottable));
-            m_quadrant = _impl::_quadrant(
-                pos, dynamic_cast<QCPCurve*>(m_plottable)->valueAxis()->axisRect());
-            break;
-        case PlotableType::ColorMap:
-            std::tie(m_key, m_value, m_data)
-                = locate_data_colormap(pos, dynamic_cast<QCPColorMap*>(m_plottable));
-            m_quadrant = _impl::_quadrant(
-                pos, dynamic_cast<QCPColorMap*>(m_plottable)->valueAxis()->axisRect());
-            break;
-        case PlotableType::None:
-            break;
-        default:
-            break;
-    }
-}
-
-std::tuple<double, double, double>
-QCPAbstractPlottableDataLocator::locate_data_graph(const QPointF& pos, QCPGraph* graph)
-{
-    if (auto data = _impl::_nearest_data_point(pos, graph); data.has_value())
-    {
-        return std::make_tuple(std::get<0>(data.value()), std::get<1>(data.value()), std::nan(""));
-    }
-    return std::make_tuple(std::nan(""), std::nan(""), std::nan(""));
-}
-
-std::tuple<double, double, double>
-QCPAbstractPlottableDataLocator::locate_data_curve(const QPointF& pos, QCPCurve* curve)
-{
-    if (auto data = _impl::_nearest_data_point(pos, curve); data.has_value())
-    {
-        return std::make_tuple(std::get<0>(data.value()), std::get<1>(data.value()), std::nan(""));
-    }
-    return std::make_tuple(std::nan(""), std::nan(""), std::nan(""));
-}
-
-std::tuple<double, double, double>
-QCPAbstractPlottableDataLocator::locate_data_colormap(const QPointF& pos, QCPColorMap* colormap)
-{
-    return *_impl::_nearest_data_point(pos, colormap);
-}

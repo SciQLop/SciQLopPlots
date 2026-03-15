@@ -55,10 +55,6 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
-    this->addLayer(LayersNames::SpansBorders, this->layer(LayersNames::Spans),
-                   QCustomPlot::limAbove);
-    this->layer(LayersNames::SpansBorders)->setMode(QCPLayer::lmBuffered);
-    this->layer(LayersNames::SpansBorders)->setVisible(true);
     this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
@@ -341,18 +337,9 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
 
 void SciQLopPlot::keyPressEvent(QKeyEvent* event)
 {
-    auto items = selectedItems();
-    std::for_each(items.begin(), items.end(),
-                  [event](auto item)
-                  {
-                      if (auto sciItem = dynamic_cast<impl::SciQLopItemWithKeyInteraction*>(item);
-                          sciItem != nullptr)
-                      {
-                          sciItem->keyPressEvent(event);
-                      }
-                  });
     if (event->key() == Qt::Key_Escape)
     {
+        auto items = selectedItems();
         for (auto item : items)
         {
             item->setSelected(false);
