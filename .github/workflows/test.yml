@@ -2,16 +2,23 @@ name: Tests
 
 on: [push, pull_request]
 
+env:
+  QT_VERSION: 6.10.2
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
+          cache: pip
 
       - name: Install test dependencies
         run: pip install pytest numpy
@@ -23,20 +30,48 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libegl1 libgl1-mesa-glx
+          sudo apt-get install -y xvfb libegl1 libgl1 libgl-dev ccache libclang-dev llvm-dev
+
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: qt-linux-${{ env.QT_VERSION }}
+
+      - name: Install Qt
+        run: |
+          pip install aqtinstall
+          [ -d "Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O Qt linux desktop ${{ env.QT_VERSION }} -m qtshadertools
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-integration-${{ hashFiles('src/**', 'include/**', 'meson.build') }}
+          restore-keys: ccache-integration-
+          save-always: true
 
       - name: Install package
-        run: pip install ".[test]"
+        run: |
+          export CC="ccache gcc" CXX="ccache g++"
+          export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
+          export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
+          pip install ".[test]"
 
       - name: Run integration tests
-        run: xvfb-run --auto-servernum pytest tests/integration/ -v --timeout=60
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
+          pytest tests/integration/ -v --timeout=60
