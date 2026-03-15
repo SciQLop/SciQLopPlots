@@ -48,6 +48,13 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
         , m_plottable(multiGraph)
         , m_componentIndex(componentIndex)
 {
+    connect(multiGraph, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
+            [this, multiGraph]() {
+                bool componentSelected =
+                    !multiGraph->componentSelection(m_componentIndex).isEmpty();
+                if (m_selected != componentSelected)
+                    set_selected(componentSelected);
+            });
 }
 
 SciQLopGraphComponent::~SciQLopGraphComponent()
