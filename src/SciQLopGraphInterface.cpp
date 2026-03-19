@@ -93,6 +93,8 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
                 QOverload<const QList<PyBuffer>&>::of(&SciQLopGraphInterface::set_data));
             break;
     }
+    m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,
+                     this->as_graph, [graph = this->as_graph]() { graph->set_busy(false); });
     QObject::connect(this->as_graph, &SciQLopGraphInterface::range_changed, m_pipeline,
                      QOverload<const SciQLopPlotRange&>::of(&SimplePyCallablePipeline::call));
 }

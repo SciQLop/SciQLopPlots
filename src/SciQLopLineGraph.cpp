@@ -28,6 +28,8 @@ void SciQLopLineGraph::create_graphs(const QStringList& labels)
         clear_graphs();
 
     _multiGraph = new QCPMultiGraph(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
+    connect(_multiGraph, &QCPAbstractPlottable::busyChanged,
+            this, &SciQLopPlottableInterface::busy_changed);
     if (!labels.isEmpty())
         _pendingLabels = labels;
 }

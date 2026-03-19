@@ -59,6 +59,10 @@ void DataProviderInterface::_threaded_update()
     {
         m_mutex.unlock();
     }
+
+    QMutexLocker lock(&m_mutex);
+    if (!m_has_pending_change)
+        Q_EMIT pipeline_idle();
 }
 
 void DataProviderInterface::_notify_new_data(const QList<PyBuffer> &data)
@@ -210,4 +214,6 @@ SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable,
         &SimplePyCallablePipeline::new_data_3d);
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_nd, this,
         &SimplePyCallablePipeline::new_data_nd);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::pipeline_idle, this,
+        &SimplePyCallablePipeline::pipeline_idle);
 }

@@ -35,6 +35,7 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
         if (curve)
             curve->data()->set(data[i], true);
     }
+    set_busy(false);
     Q_EMIT this->replot();
     Q_EMIT data_changed();
 }
@@ -92,6 +93,7 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
 {
+    set_busy(true);
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);
 }
@@ -135,6 +137,12 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
     {
         this->newComponent<QCPCurve>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(), label);
     }
+    if (!m_components.isEmpty())
+    {
+        if (auto p = m_components.first()->plottable())
+            connect(p, &QCPAbstractPlottable::busyChanged,
+                    this, &SciQLopPlottableInterface::busy_changed);
+    }
     _resampler->set_line_count(plottable_count());
 }
 
@@ -144,5 +152,7 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis*
         : SciQLopCurve { parent, key_axis, value_axis, labels,metaData }
         , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
+    // Curve manages busy via its own resampler (_setCurveData clears it)
+    QObject::disconnect(m_idle_connection);
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }

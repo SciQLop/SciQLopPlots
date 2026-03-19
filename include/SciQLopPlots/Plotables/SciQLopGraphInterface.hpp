@@ -49,6 +49,7 @@ protected:
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
     Q_PROPERTY(QList<PyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
+    Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
     SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr)
             : QObject(parent),m_metaData{std::move(metaData)} { }
@@ -104,6 +105,9 @@ public:
         WARN_ABSTRACT_METHOD;
         return false;
     }
+
+    virtual bool busy() const noexcept { return false; }
+    virtual void set_busy(bool busy) noexcept { Q_UNUSED(busy); }
 
     inline virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
     {
@@ -166,6 +170,7 @@ signals:
     Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void data_changed(const QList<PyBuffer>& values);
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void busy_changed(bool busy);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
     Q_SIGNAL void request_rescale();
 
@@ -272,6 +277,7 @@ protected:
     }
 
     SciQLopPlottableInterface* as_graph = nullptr;
+    QMetaObject::Connection m_idle_connection;
 
 public:
     SciQLopFunctionGraph() { }
@@ -297,15 +303,28 @@ public:
         observe(observable, signal.toStdString().c_str());
     }
 
-    inline virtual void call(const SciQLopPlotRange& range) noexcept { m_pipeline->call(range); }
+    inline virtual void call(const SciQLopPlotRange& range) noexcept
+    {
+        as_graph->set_busy(true);
+        m_pipeline->call(range);
+    }
 
-    inline virtual void call(PyBuffer x, PyBuffer y) noexcept { m_pipeline->call(x, y); }
+    inline virtual void call(PyBuffer x, PyBuffer y) noexcept
+    {
+        as_graph->set_busy(true);
+        m_pipeline->call(x, y);
+    }
 
     inline virtual void call(PyBuffer x, PyBuffer y, PyBuffer z) noexcept
     {
+        as_graph->set_busy(true);
         m_pipeline->call(x, y, z);
     }
 
-    inline virtual void call(const QList<PyBuffer>& values) noexcept { m_pipeline->call(values); }
+    inline virtual void call(const QList<PyBuffer>& values) noexcept
+    {
+        as_graph->set_busy(true);
+        m_pipeline->call(values);
+    }
 
 };

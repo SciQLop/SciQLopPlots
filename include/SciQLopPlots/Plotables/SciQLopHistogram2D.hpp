@@ -105,6 +105,17 @@ public:
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;
 
+    virtual bool busy() const noexcept override
+    {
+        return _hist ? _hist->busy() : false;
+    }
+
+    virtual void set_busy(bool busy) noexcept override
+    {
+        if (_hist)
+            _hist->setBusy(busy);
+    }
+
     inline virtual void set_name(const QString& name) noexcept override
     {
         this->setObjectName(name);

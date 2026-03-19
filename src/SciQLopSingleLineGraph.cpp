@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include <datasource/soa-datasource.h>
 
 void SciQLopSingleLineGraph::create_graph(const QStringList& labels)
 {
@@ -35,6 +36,8 @@ void SciQLopSingleLineGraph::create_graph(const QStringList& labels)
     if (!labels.isEmpty())
         component->set_name(labels.first());
     _register_component(component);
+    connect(_graph, &QCPAbstractPlottable::busyChanged,
+            this, &SciQLopPlottableInterface::busy_changed);
 }
 
 void SciQLopSingleLineGraph::clear_graph(bool graph_already_removed)
@@ -72,17 +75,22 @@ void SciQLopSingleLineGraph::set_data(PyBuffer x, PyBuffer y)
     if (x.format_code() != 'd')
         throw std::runtime_error("Keys (x) must be float64");
 
-    _x = x;
-    _y = y;
-
     const auto* keys = static_cast<const double*>(x.raw_data());
     const int n = static_cast<int>(x.flat_size());
 
     dispatch_dtype(y.format_code(), [&](auto tag) {
         using V = typename decltype(tag)::type;
         const auto* values = static_cast<const V*>(y.raw_data());
-        _graph->viewData(
+
+        auto source = std::make_shared<QCPSoADataSource<
+            std::span<const double>, std::span<const V>>>(
             std::span<const double>(keys, n), std::span<const V>(values, n));
+
+        _dataHolder = std::make_shared<DataHolder>(DataHolder{x, y, source});
+        // Aliasing shared_ptr: points to source but co-owns _dataHolder,
+        // so PyBuffers stay alive as long as the async pipeline holds a reference.
+        auto aliased = std::shared_ptr<QCPAbstractDataSource>(_dataHolder, source.get());
+        _graph->setDataSource(std::move(aliased));
     });
 
     Q_EMIT this->replot();
@@ -97,7 +105,9 @@ void SciQLopSingleLineGraph::set_data(PyBuffer x, PyBuffer y)
 
 QList<PyBuffer> SciQLopSingleLineGraph::data() const noexcept
 {
-    return {_x, _y};
+    if (_dataHolder)
+        return {_dataHolder->x, _dataHolder->y};
+    return {};
 }
 
 void SciQLopSingleLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

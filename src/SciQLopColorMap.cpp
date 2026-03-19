@@ -39,6 +39,8 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
     _cmap = new QCPColorMap2(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _cmap->setLayer(Constants::LayersNames::ColorMap);
     connect(_cmap, &QCPColorMap2::destroyed, this, &SciQLopColorMap::_cmap_got_destroyed);
+    connect(_cmap, &QCPAbstractPlottable::busyChanged,
+            this, &SciQLopPlottableInterface::busy_changed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
     SciQLopColorMap::set_name(name);
 
@@ -86,7 +88,10 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 
             _dataHolder = std::make_shared<DataSourceWithBuffers>(
                 DataSourceWithBuffers{x, y, z, source});
-            _cmap->setDataSource(source);
+            // Aliasing shared_ptr: points to source but co-owns _dataHolder,
+            // so PyBuffers stay alive as long as the async pipeline holds a reference.
+            auto aliased = std::shared_ptr<QCPAbstractDataSource2D>(_dataHolder, source.get());
+            _cmap->setDataSource(std::move(aliased));
         });
     });
 

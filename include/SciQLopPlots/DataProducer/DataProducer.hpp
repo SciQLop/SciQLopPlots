@@ -93,6 +93,7 @@ signals:
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
     Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
+    Q_SIGNAL void pipeline_idle();
 
 protected:
     void set_range(SciQLopPlotRange new_range) noexcept;
@@ -213,4 +214,5 @@ signals:
     Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
     Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
     Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
+    Q_SIGNAL void pipeline_idle();
 };
