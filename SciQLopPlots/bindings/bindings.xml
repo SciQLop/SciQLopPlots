@@ -277,6 +277,33 @@
             </modify-argument>
         </modify-function>
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_pdf(const QString&amp;,int,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_png(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_jpg(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_bmp(const QString&amp;,int,int,double)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
@@ -530,7 +557,35 @@
         </modify-function>
     </object-type>
 
-    <object-type name="SciQLopPlotPanelInterface" parent-management="yes"/>
+    <object-type name="SciQLopPlotPanelInterface" parent-management="yes">
+        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_pdf(const QString&amp;,int,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_png(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_jpg(const QString&amp;,int,int,double,int)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+            <modify-argument index="5"><rename to="quality"/></modify-argument>
+        </modify-function>
+        <modify-function signature="save_bmp(const QString&amp;,int,int,double)">
+            <modify-argument index="2"><rename to="width"/></modify-argument>
+            <modify-argument index="3"><rename to="height"/></modify-argument>
+            <modify-argument index="4"><rename to="scale"/></modify-argument>
+        </modify-function>
+    </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
         <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool,Qt::Orientation)">

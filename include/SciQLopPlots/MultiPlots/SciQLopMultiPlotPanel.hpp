@@ -225,6 +225,16 @@ public:
 
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
 
+    bool save(const QString& filename, int width = 0, int height = 0,
+              double scale = 1.0, int quality = -1) override;
+    bool save_pdf(const QString& filename, int width = 0, int height = 0) override;
+    bool save_png(const QString& filename, int width = 0, int height = 0,
+                  double scale = 1.0, int quality = -1) override;
+    bool save_jpg(const QString& filename, int width = 0, int height = 0,
+                  double scale = 1.0, int quality = -1) override;
+    bool save_bmp(const QString& filename, int width = 0, int height = 0,
+                  double scale = 1.0) override;
+
 protected:
     void keyPressEvent(QKeyEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;

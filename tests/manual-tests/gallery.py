@@ -1,7 +1,7 @@
 """SciQLopPlots Gallery — tabbed showcase of all major features."""
 import sys
 import numpy as np
-from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QPushButton, QFileDialog
 from PySide6.QtGui import QColor, QColorConstants, QPen, QBrush
 from PySide6.QtCore import Qt, QRectF
 
@@ -217,6 +217,26 @@ def create_pipeline_tab():
     return panel
 
 
+# ── Export helper ─────────────────────────────────────────────────────────────
+
+def with_export_button(plot_widget):
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+    btn = QPushButton("Export...")
+    btn.clicked.connect(lambda: _do_export(plot_widget))
+    layout.addWidget(btn)
+    layout.addWidget(plot_widget, stretch=1)
+    return container
+
+def _do_export(widget):
+    path, _ = QFileDialog.getSaveFileName(
+        widget, "Export Plot",
+        "", "PDF (*.pdf);;PNG (*.png);;JPEG (*.jpg);;BMP (*.bmp)")
+    if path:
+        widget.save(path)
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 app = QApplication(sys.argv)
@@ -226,14 +246,14 @@ window.setWindowTitle("SciQLopPlots Gallery")
 window.resize(1000, 700)
 
 tabs = QTabWidget()
-tabs.addTab(create_line_tab(), "Line Graph")
-tabs.addTab(create_colormap_tab(), "Colormap")
-tabs.addTab(create_histogram2d_tab(), "Histogram 2D")
-tabs.addTab(create_curve_tab(), "Parametric Curve")
-tabs.addTab(create_spans_tab(), "Vertical Spans")
-tabs.addTab(create_overlay_tab(), "Overlay")
-tabs.addTab(create_stacked_tab(), "Stacked Plots")
-tabs.addTab(create_pipeline_tab(), "Pipeline (FFT)")
+tabs.addTab(with_export_button(create_line_tab()), "Line Graph")
+tabs.addTab(with_export_button(create_colormap_tab()), "Colormap")
+tabs.addTab(with_export_button(create_histogram2d_tab()), "Histogram 2D")
+tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
+tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")
+tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
+tabs.addTab(with_export_button(create_stacked_tab()), "Stacked Plots")
+tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
 
 window.setCentralWidget(tabs)
 window.show()

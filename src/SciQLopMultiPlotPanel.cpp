@@ -37,7 +37,10 @@
 
 #include <cpp_utils/containers/algorithms.hpp>
 
+#include <QFileInfo>
 #include <QKeyEvent>
+#include <QPainter>
+#include <QPdfWriter>
 
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x,
                                              bool synchronize_time, Qt::Orientation orientation)
@@ -470,4 +473,108 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
             _current_callback->call(drop_plot, event->mimeData());
         _current_callback = nullptr;
     }
+}
+
+bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int height)
+{
+    auto plot_list = _container->plots();
+    if (plot_list.isEmpty())
+        return false;
+
+    const int totalW = (width > 0) ? width : _container->width();
+    const int totalH = (height > 0) ? height : _container->height();
+
+    QPdfWriter writer(filename);
+    writer.setPageSize(QPageSize(QSizeF(totalW, totalH), QPageSize::Point));
+    writer.setPageMargins(QMarginsF(0, 0, 0, 0));
+    writer.setResolution(72);
+
+    QCPPainter painter;
+    painter.begin(&writer);
+    if (!painter.isActive())
+        return false;
+
+    painter.setMode(QCPPainter::pmVectorized);
+    painter.setMode(QCPPainter::pmNoCaching);
+
+    int yOffset = 0;
+    for (auto& plotPtr : plot_list)
+    {
+        if (plotPtr.isNull())
+            continue;
+        auto* sciPlot = qobject_cast<SciQLopPlot*>(plotPtr.data());
+        if (!sciPlot)
+            continue;
+
+        auto* qcpPlot = sciPlot->qcp_plot();
+        if (!qcpPlot)
+            continue;
+
+        const int plotH = static_cast<int>(
+            static_cast<double>(plotPtr->height()) / _container->height() * totalH);
+        const int plotW = totalW;
+
+        painter.save();
+        painter.translate(0, yOffset);
+        qcpPlot->toPainter(&painter, plotW, plotH);
+        painter.restore();
+        yOffset += plotH;
+    }
+
+    painter.end();
+    return true;
+}
+
+static bool _save_panel_raster(QWidget* container, const QString& filename,
+                               const char* format, int width, int height,
+                               double scale, int quality)
+{
+    if (!container)
+        return false;
+
+    const auto fullSize = container->sizeHint().expandedTo(container->size());
+    int targetW = (width > 0) ? width : static_cast<int>(fullSize.width() * scale);
+    int targetH = (height > 0) ? height : static_cast<int>(fullSize.height() * scale);
+
+    QPixmap pixmap(targetW, targetH);
+    pixmap.fill(Qt::transparent);
+    container->render(&pixmap, QPoint(), QRegion(), QWidget::DrawChildren);
+
+    if (pixmap.isNull())
+        return false;
+
+    return pixmap.save(filename, format, quality);
+}
+
+bool SciQLopMultiPlotPanel::save_png(const QString& filename, int width, int height,
+                                     double scale, int quality)
+{
+    return _save_panel_raster(_container, filename, "PNG", width, height, scale, quality);
+}
+
+bool SciQLopMultiPlotPanel::save_jpg(const QString& filename, int width, int height,
+                                     double scale, int quality)
+{
+    return _save_panel_raster(_container, filename, "JPG", width, height, scale, quality);
+}
+
+bool SciQLopMultiPlotPanel::save_bmp(const QString& filename, int width, int height,
+                                     double scale)
+{
+    return _save_panel_raster(_container, filename, "BMP", width, height, scale, -1);
+}
+
+bool SciQLopMultiPlotPanel::save(const QString& filename, int width, int height,
+                                 double scale, int quality)
+{
+    auto ext = QFileInfo(filename).suffix().toLower();
+    if (ext == "pdf")
+        return save_pdf(filename, width, height);
+    if (ext == "png")
+        return save_png(filename, width, height, scale, quality);
+    if (ext == "jpg" || ext == "jpeg")
+        return save_jpg(filename, width, height, scale, quality);
+    if (ext == "bmp")
+        return save_bmp(filename, width, height, scale);
+    return false;
 }
