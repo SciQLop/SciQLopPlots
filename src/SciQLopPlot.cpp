@@ -25,6 +25,7 @@
 #include "SciQLopPlots/constants.hpp"
 
 #include <QGestureRecognizer>
+#include <QFileInfo>
 #include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
@@ -834,4 +835,42 @@ SciQLopPlottableInterface* SciQLopPlot::plottable(const QString& name)
 QList<SciQLopPlottableInterface*> SciQLopPlot::plottables() const noexcept
 {
     return m_impl->sqp_plottables();
+}
+
+bool SciQLopPlot::save_pdf(const QString& filename, int width, int height)
+{
+    return m_impl->savePdf(filename, width, height);
+}
+
+bool SciQLopPlot::save_png(const QString& filename, int width, int height,
+                           double scale, int quality)
+{
+    return m_impl->savePng(filename, width, height, scale, quality);
+}
+
+bool SciQLopPlot::save_jpg(const QString& filename, int width, int height,
+                           double scale, int quality)
+{
+    return m_impl->saveJpg(filename, width, height, scale, quality);
+}
+
+bool SciQLopPlot::save_bmp(const QString& filename, int width, int height,
+                           double scale)
+{
+    return m_impl->saveBmp(filename, width, height, scale);
+}
+
+bool SciQLopPlot::save(const QString& filename, int width, int height,
+                       double scale, int quality)
+{
+    auto ext = QFileInfo(filename).suffix().toLower();
+    if (ext == "pdf")
+        return save_pdf(filename, width, height);
+    if (ext == "png")
+        return save_png(filename, width, height, scale, quality);
+    if (ext == "jpg" || ext == "jpeg")
+        return save_jpg(filename, width, height, scale, quality);
+    if (ext == "bmp")
+        return save_bmp(filename, width, height, scale);
+    return false;
 }

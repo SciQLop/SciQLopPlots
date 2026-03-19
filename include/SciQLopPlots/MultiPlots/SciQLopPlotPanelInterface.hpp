@@ -72,6 +72,40 @@ public:
         WARN_ABSTRACT_METHOD
     }
 
+    virtual bool save(const QString& filename, int width = 0, int height = 0,
+                      double scale = 1.0, int quality = -1)
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    virtual bool save_pdf(const QString& filename, int width = 0, int height = 0)
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    virtual bool save_png(const QString& filename, int width = 0, int height = 0,
+                          double scale = 1.0, int quality = -1)
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    virtual bool save_jpg(const QString& filename, int width = 0, int height = 0,
+                          double scale = 1.0, int quality = -1)
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    virtual bool save_bmp(const QString& filename, int width = 0, int height = 0,
+                          double scale = 1.0)
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
     signals:
