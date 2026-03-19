@@ -41,6 +41,8 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
     _hist->setLayer(Constants::LayersNames::ColorMap);
     _hist->setBins(key_bins, value_bins);
     connect(_hist, &QCPHistogram2D::destroyed, this, &SciQLopHistogram2D::_hist_got_destroyed);
+    connect(_hist, &QCPAbstractPlottable::busyChanged,
+            this, &SciQLopPlottableInterface::busy_changed);
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);
     SciQLopHistogram2D::set_name(name);
 

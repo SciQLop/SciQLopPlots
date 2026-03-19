@@ -217,6 +217,42 @@ def create_pipeline_tab():
     return panel
 
 
+def create_busy_indicator_tab():
+    import time
+
+    panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+
+    def slow_signal(start, stop):
+        time.sleep(1.5)
+        x = np.arange(start, stop, dtype=np.float64)
+        y = np.column_stack([
+            np.cos(x / 6) * np.cos(x) * 100,
+            np.cos(x / 60) * np.cos(x / 6) * 1300,
+        ])
+        return x, y
+
+    plot, graph = panel.plot(
+        slow_signal,
+        labels=["slow X", "slow Y"],
+        colors=[QColorConstants.Red, QColorConstants.Blue],
+        plot_type=PlotType.TimeSeries,
+    )
+
+    def fast_signal(start, stop):
+        x = np.arange(start, stop, dtype=np.float64)
+        y = np.sin(x / 100) * np.cos(x / 10)
+        return x, y
+
+    panel.plot(
+        fast_signal,
+        labels=["fast"],
+        colors=[QColorConstants.DarkGreen],
+        plot_type=PlotType.TimeSeries,
+    )
+
+    return panel
+
+
 # ── Export helper ─────────────────────────────────────────────────────────────
 
 def with_export_button(plot_widget):
@@ -254,6 +290,7 @@ tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")
 tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
 tabs.addTab(with_export_button(create_stacked_tab()), "Stacked Plots")
 tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
+tabs.addTab(with_export_button(create_busy_indicator_tab()), "Busy Indicator")
 
 window.setCentralWidget(tabs)
 window.show()

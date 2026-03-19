@@ -120,6 +120,27 @@ public:
     virtual void set_selected(bool selected) noexcept override;
     virtual bool selected() const noexcept override;
 
+    virtual bool busy() const noexcept override
+    {
+        for (auto component : m_components)
+        {
+            auto p = component->plottable();
+            if (p && p->busy())
+                return true;
+        }
+        return false;
+    }
+
+    virtual void set_busy(bool busy) noexcept override
+    {
+        for (auto component : m_components)
+        {
+            auto p = component->plottable();
+            if (p)
+                p->setBusy(busy);
+        }
+    }
+
     virtual SciQLopGraphComponentInterface* component(const QString& name) const noexcept override
     {
         for (auto component : m_components)
