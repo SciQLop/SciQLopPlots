@@ -1,44 +1,105 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![CPP17](https://img.shields.io/badge/Language-C++17-blue.svg)]()
+[![C++20](https://img.shields.io/badge/Language-C++20-blue.svg)]()
 [![PyPi](https://img.shields.io/pypi/v/sciqlopplots.svg)](https://pypi.python.org/pypi/sciqlopplots)
-[![Coverage](https://codecov.io/gh/SciQLop/CDFpp/coverage.svg?branch=main)](https://codecov.io/gh/SciQLop/SciQLopPlots/branch/main)
+[![Coverage](https://codecov.io/gh/SciQLop/SciQLopPlots/coverage.svg?branch=main)](https://codecov.io/gh/SciQLop/SciQLopPlots/branch/main)
 
-# SciQLopPlots - A High-Performance Plotting Library for Scientific Data
+# SciQLopPlots
 
+A high-performance scientific plotting library built on C++20/Qt6 with Python bindings via Shiboken6 (PySide6). Designed for the [SciQLop](https://github.com/SciQLop/SciQLop) data analysis platform but usable standalone.
 
-SciQLopPlots is a powerful and efficient plotting library designed for the [SciQLop](https://github.com/SciQLop/SciQLop) scientific data analysis platform. It provides interactive visualization capabilities optimized for handling large-scale scientific datasets with seamless integration into SciQLop's ecosystem.
+## Features
 
+- **Async resampling** — render millions of points smoothly; data is downsampled in background threads via [NeoQCP](https://github.com/SciQLop/NeoQCP) pipelines
+- **Multiple plot types** — time series (line graphs), spectrograms (color maps), histograms, parametric curves
+- **Interactive** — pan, zoom, data-driven callbacks, vertical/horizontal spans, tracers
+- **Multi-plot panels** — synchronized axes, aligned margins, drag-and-drop from product trees
+- **Export** — PDF (vector), PNG, JPG, BMP for both individual plots and panels
+- **Busy indicator** — visual feedback when data is loading or being processed
+- **Cross-platform** — Linux, macOS, Windows
 
-## Key Features
-
-- **High-Performance Rendering**: Optimized for smooth interaction with large non uniform 1D, 2D datasets.
-- **Interactive Visualization**: Pan, zoom, and inspect data points in real time.
-- **Multiple Plot Types**: Supports time series, spectrograms, parametric curves.
-- **Customizable Styling**: Adjust colors, labels, axes, and plot layouts programmatically or via GUI.
-- **Cross-Platform**: Works on Windows, Linux, and macOS.
-
-## Installation 
-
-SciQLopPlots can be installed as a stadalone Python package with pip.
+## Quick start
 
 ```bash
-python -m pip install SciQLopPlots
+pip install SciQLopPlots
 ```
 
-# How to contribute
+```python
+import numpy as np
+from PySide6.QtWidgets import QApplication
+from SciQLopPlots import SciQLopPlot
 
-Just fork the repository, make your changes and submit a pull request. We will be happy to review and merge your
-changes.
-Reports of bugs and feature requests are also welcome. Do not forget to star the project if you like it!
+app = QApplication([])
+plot = SciQLopPlot()
 
-# Credits
+# Static data
+x = np.arange(0, 1000, dtype=np.float64)
+y = np.sin(x / 100) * np.cos(x / 10)
+plot.plot(x, y, labels=["signal"])
 
-The development of SciQLop is supported by the [CDPP](http://www.cdpp.eu/).<br />
-We acknowledge support from the federation [Plas@Par](https://www.plasapar.sorbonne-universite.fr)
+# Data callback (called on pan/zoom with visible range)
+def get_data(start, stop):
+    x = np.arange(start, stop, dtype=np.float64)
+    y = np.column_stack([np.sin(x / 100), np.cos(x / 100)])
+    return x, y
 
-# Thanks
+plot.plot(get_data, labels=["sin", "cos"])
 
-We would like to thank the developers of the following libraries that SciQLop depends on:
+plot.show()
+app.exec()
+```
 
-- [PySide6](https://doc.qt.io/qtforpython-6/index.html) for the GUI framework and Qt bindings.
-- [QCustomPlot](https://www.qcustomplot.com/) for providing the plotting library.
+### Reactive pipelines
+
+Connect plot properties with the `>>` operator to build live data pipelines:
+
+```python
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+graph = plot.plot(lambda start, stop: ..., labels=["signal"])
+
+# Axis range changes automatically feed a transform, which pushes data to the graph
+plot.x_axis.on.range >> get_data >> graph.on.data
+
+# Direct property forwarding (no transform)
+span.on.range >> plot.x_axis.on.range
+
+# Chain multiple steps
+source.on.range >> transform >> target.on.data
+```
+
+The pipeline handles signal connection, call-style detection (positional args vs `Event` object), and automatic disconnection when objects are destroyed.
+
+Run the gallery for a full feature showcase:
+
+```bash
+python tests/manual-tests/gallery.py
+```
+
+## Building from source
+
+Requires Qt6, PySide6 == 6.10.2, a C++20 compiler, and Meson.
+
+```bash
+# Development build
+meson setup build --buildtype=debug
+meson compile -C build
+
+# Install as editable Python package
+pip install -e . --no-build-isolation
+```
+
+## Contributing
+
+Fork the repository, make your changes and submit a pull request.
+Bug reports and feature requests are welcome.
+
+## Credits
+
+Development is supported by [CDPP](http://www.cdpp.eu/).
+We acknowledge support from [Plas@Par](https://www.plasapar.sorbonne-universite.fr).
+
+## Thanks
+
+- [PySide6](https://doc.qt.io/qtforpython-6/index.html) — Qt bindings and Shiboken6 binding generator
+- [NeoQCP](https://github.com/SciQLop/NeoQCP) — fork of [QCustomPlot](https://www.qcustomplot.com/) with async pipelines, multi-dtype support, and QRhi rendering
