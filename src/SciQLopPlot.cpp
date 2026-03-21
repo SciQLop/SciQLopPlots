@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -656,6 +657,24 @@ double SciQLopPlot::scroll_factor() const noexcept
 }
 
 void SciQLopPlot::enable_cursor(bool enable) noexcept { }
+
+void SciQLopPlot::set_theme(SciQLopTheme* theme)
+{
+    if (m_theme)
+        disconnect(m_theme, nullptr, this, nullptr);
+
+    m_theme = theme;
+
+    if (theme && theme->qcp_theme())
+    {
+        m_impl->setTheme(theme->qcp_theme());
+        connect(theme, &QObject::destroyed, this, [this]() { m_impl->setTheme(nullptr); });
+    }
+    else
+    {
+        m_impl->setTheme(nullptr);
+    }
+}
 
 void SciQLopPlot::minimize_margins()
 {
