@@ -620,14 +620,17 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
             double upper = std::max(anchorKey, currentKey);
             if (auto* vspan = qobject_cast<QCPItemVSpan*>(item))
                 vspan->setRange(QCPRange(lower, upper));
+            QSet<QCustomPlot*> to_replot;
             for (auto& preview : m_creation_state.preview_spans)
             {
                 if (preview)
                 {
                     preview->setRange(QCPRange(lower, upper));
-                    preview->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+                    to_replot.insert(preview->parentPlot());
                 }
             }
+            for (auto* p : to_replot)
+                p->replot(QCustomPlot::rpQueuedReplot);
         });
 
     auto& conns = m_per_plot_connections[qcp];
@@ -655,15 +658,18 @@ void SciQLopMultiPlotPanel::_uninstall_span_creator(SciQLopPlot* plot)
 
 void SciQLopMultiPlotPanel::_clear_preview_spans()
 {
+    QSet<QCustomPlot*> to_replot;
     for (auto& preview : m_creation_state.preview_spans)
     {
         if (preview)
         {
             auto* plot = preview->parentPlot();
             plot->removeItem(preview);
-            plot->replot(QCustomPlot::rpQueuedReplot);
+            to_replot.insert(plot);
         }
     }
+    for (auto* p : to_replot)
+        p->replot(QCustomPlot::rpQueuedReplot);
     m_creation_state.clear();
 }
 
