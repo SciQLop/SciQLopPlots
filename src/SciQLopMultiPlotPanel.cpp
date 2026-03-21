@@ -643,13 +643,12 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
     conns.append(connect(qcp, &QCustomPlot::itemCanceled, this,
         [this, qcp]() { _on_item_canceled(qcp); }));
 
-    qcp->setCreationModeEnabled(true);
+    qcp->setCreationModifier(m_span_creation_modifier);
 }
 
 void SciQLopMultiPlotPanel::_uninstall_span_creator(SciQLopPlot* plot)
 {
     auto* qcp = plot->qcp_plot();
-    qcp->setCreationModeEnabled(false);
     qcp->setItemCreator(nullptr);
     qcp->setItemPositioner(nullptr);
     if (auto it = m_per_plot_connections.find(qcp); it != m_per_plot_connections.end())
@@ -776,6 +775,19 @@ void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
         {
             if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
                 _uninstall_span_creator(sp);
+        }
+    }
+}
+
+void SciQLopMultiPlotPanel::set_span_creation_modifier(Qt::KeyboardModifier modifier)
+{
+    m_span_creation_modifier = modifier;
+    if (m_span_creation_enabled)
+    {
+        for (auto& p : plots())
+        {
+            if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
+                sp->qcp_plot()->setCreationModifier(modifier);
         }
     }
 }
