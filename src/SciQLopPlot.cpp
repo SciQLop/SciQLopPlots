@@ -499,6 +499,7 @@ void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
         m_color_scale->setVisible(true);
         plotLayout()->addElement(0, 1, m_color_scale);
         cmap->colorMap()->setColorScale(m_color_scale);
+        applyTheme();
     }
 }
 
@@ -509,6 +510,7 @@ void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopHistogram2D* hist)
         m_color_scale->setVisible(true);
         plotLayout()->addElement(0, 1, m_color_scale);
         hist->histogram()->setColorScale(m_color_scale);
+        applyTheme();
     }
 }
 
