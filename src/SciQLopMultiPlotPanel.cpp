@@ -484,7 +484,8 @@ bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int hei
     const int totalW = (width > 0) ? width : _container->width();
     const int totalH = (height > 0) ? height : _container->height();
 
-    if (totalW <= 0 || totalH <= 0)
+    const int containerH = _container->height();
+    if (totalW <= 0 || totalH <= 0 || containerH <= 0)
         return false;
 
     QPdfWriter writer(filename);
@@ -514,7 +515,7 @@ bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int hei
             continue;
 
         const int plotH = static_cast<int>(
-            static_cast<double>(plotPtr->height()) / _container->height() * totalH);
+            static_cast<double>(plotPtr->height()) / containerH * totalH);
         const int plotW = totalW;
 
         painter.save();

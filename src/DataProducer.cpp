@@ -60,8 +60,12 @@ void DataProviderInterface::_threaded_update()
         m_mutex.unlock();
     }
 
-    QMutexLocker lock(&m_mutex);
-    if (!m_has_pending_change)
+    bool idle = false;
+    {
+        QMutexLocker lock(&m_mutex);
+        idle = !m_has_pending_change;
+    }
+    if (idle)
         Q_EMIT pipeline_idle();
 }
 
