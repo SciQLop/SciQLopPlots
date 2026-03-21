@@ -1,5 +1,5 @@
 """Scripted story tests — human-readable workflows with automatic narrative on failure."""
-from tests.fuzzing.plot_actions import add_plot, remove_last_plot
+from tests.fuzzing.plot_actions import add_plot, remove_last_plot, remove_random_plot
 from tests.fuzzing.graph_actions import add_line_graph, add_colormap, set_graph_data
 from tests.fuzzing.item_actions import add_vertical_span
 

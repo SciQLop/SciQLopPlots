@@ -2,19 +2,19 @@ from __future__ import annotations
 
 
 def count_plots(panel) -> int:
-    return panel.size()
+    return len(panel.plots())
 
 
 def graph_count_on(panel, plot_index: int) -> int:
-    if plot_index >= panel.size():
+    plots = panel.plots()
+    if plot_index >= len(plots):
         return 0
-    plot = panel.plot_at(plot_index)
-    return len(plot.plottables())
+    return len(plots[plot_index].plottables())
 
 
 def axis_range(panel, plot_index: int) -> tuple[float, float] | None:
-    if plot_index >= panel.size():
+    plots = panel.plots()
+    if plot_index >= len(plots):
         return None
-    plot = panel.plot_at(plot_index)
-    r = plot.x_axis().range()
+    r = plots[plot_index].x_axis().range()
     return (r.start(), r.stop())
