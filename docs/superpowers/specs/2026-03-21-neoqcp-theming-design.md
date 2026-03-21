@@ -60,9 +60,10 @@ All property setters forward to `QCPTheme` and the reactive signal chain handles
 
 ### Ownership model
 
-- `SciQLopTheme` factory methods create objects with optional Qt parent ownership
-- When `set_theme()` is called on a panel, the panel reparents the `SciQLopTheme` to itself (prevents premature GC from Python side)
+- `SciQLopTheme` factory methods create objects with optional Qt parent ownership; callers choose an appropriate parent for deterministic lifetime
+- `set_theme()` does **not** transfer ownership or reparent the `SciQLopTheme`; it forwards the underlying `QCPTheme*` to NeoQCP and keeps a `QPointer` to the wrapper
 - `SciQLopPlot` and `SciQLopMultiPlotPanel` store `QPointer<SciQLopTheme>` to handle the case where a theme is destroyed externally — null pointer results in falling back to QCustomPlot's default owned theme
+- In Python, Shiboken's parent-transfer annotation on `SciQLopMultiPlotPanel.set_theme` manages lifetime; no annotation on `SciQLopPlotInterface.set_theme` to allow theme sharing across plots
 
 ### Per-plot override semantics
 

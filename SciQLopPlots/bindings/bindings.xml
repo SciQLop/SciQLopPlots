@@ -304,11 +304,6 @@
             <modify-argument index="3"><rename to="height"/></modify-argument>
             <modify-argument index="4"><rename to="scale"/></modify-argument>
         </modify-function>
-        <modify-function signature="set_theme(SciQLopTheme*)">
-            <modify-argument index="1">
-                <parent index="this" action="add"/>
-            </modify-argument>
-        </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
