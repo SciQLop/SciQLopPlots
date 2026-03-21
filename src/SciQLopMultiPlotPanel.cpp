@@ -484,6 +484,9 @@ bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int hei
     const int totalW = (width > 0) ? width : _container->width();
     const int totalH = (height > 0) ? height : _container->height();
 
+    if (totalW <= 0 || totalH <= 0)
+        return false;
+
     QPdfWriter writer(filename);
     writer.setPageSize(QPageSize(QSizeF(totalW, totalH), QPageSize::Point));
     writer.setPageMargins(QMarginsF(0, 0, 0, 0));

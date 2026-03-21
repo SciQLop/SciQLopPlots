@@ -36,7 +36,7 @@ void VPlotsAlign::_recompute_margins()
             auto ar = p->qcp_plot()->axisRect();
             if (p->width() <= 0 || p->height() <= 0
                 || ar->rect().width() <= 0 || ar->rect().height() <= 0)
-                return;
+                continue;
             std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
             std::size_t cmw = 0UL;
             if (p->has_colormap())

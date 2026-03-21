@@ -107,9 +107,10 @@ Query QueryParser::parse(const QString& input)
             QueryFilter filter;
             filter.field = field;
             filter.value = value;
-            if (field.compare("after", Qt::CaseInsensitive) == 0
-                || field.compare("before", Qt::CaseInsensitive) == 0)
+            if (field.compare("after", Qt::CaseInsensitive) == 0)
                 filter.parsed_date = parse_partial_date(value, false);
+            else if (field.compare("before", Qt::CaseInsensitive) == 0)
+                filter.parsed_date = parse_partial_date(value, true);
             result.filters.append(filter);
 
             QueryToken field_tok;
