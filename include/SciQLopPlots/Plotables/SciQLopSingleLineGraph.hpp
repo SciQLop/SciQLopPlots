@@ -25,11 +25,19 @@
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <plottables/plottable-graph2.h>
+#include <datasource/abstract-datasource.h>
+#include <memory>
 
 class SciQLopSingleLineGraph : public SQPQCPAbstractPlottableWrapper
 {
     QCPGraph2* _graph = nullptr;
-    PyBuffer _x, _y;
+
+    struct DataHolder
+    {
+        PyBuffer x, y;
+        std::shared_ptr<QCPAbstractDataSource> source;
+    };
+    std::shared_ptr<DataHolder> _dataHolder;
 
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
