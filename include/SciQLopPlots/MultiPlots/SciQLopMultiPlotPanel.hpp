@@ -52,13 +52,8 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
 
     struct SpanCreationState
     {
-        QCustomPlot* active_plot = nullptr;
         QList<QPointer<QCPItemVSpan>> preview_spans;
-        void clear()
-        {
-            active_plot = nullptr;
-            preview_spans.clear();
-        }
+        void clear() { preview_spans.clear(); }
     };
 
     bool m_span_creation_enabled = false;
