@@ -165,6 +165,13 @@ def create_overlay_tab():
 
 
 def create_stacked_tab():
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+
+    btn = QPushButton("Toggle Span Creation Mode (Shift+Click to draw)")
+    btn.setCheckable(True)
+
     panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
     for _ in range(4):
         panel.plot(
@@ -180,7 +187,14 @@ def create_stacked_tab():
         read_only=False, visible=True,
         tool_tip="Drag across all plots",
     )
-    return panel
+
+    btn.toggled.connect(panel.set_span_creation_enabled)
+    panel.span_created.connect(
+        lambda s: print(f"Span created: [{s.range.start():.1f}, {s.range.stop():.1f}]"))
+
+    layout.addWidget(btn)
+    layout.addWidget(panel, stretch=1)
+    return container
 
 
 def create_pipeline_tab():
@@ -288,7 +302,7 @@ tabs.addTab(with_export_button(create_histogram2d_tab()), "Histogram 2D")
 tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
 tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")
 tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
-tabs.addTab(with_export_button(create_stacked_tab()), "Stacked Plots")
+tabs.addTab(create_stacked_tab(), "Stacked Plots")
 tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
 tabs.addTab(with_export_button(create_busy_indicator_tab()), "Busy Indicator")
 
