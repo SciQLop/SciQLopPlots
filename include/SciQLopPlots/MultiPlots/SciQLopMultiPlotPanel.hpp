@@ -33,6 +33,10 @@
 class SciQLopPlotContainer;
 class SciQLopPlot;
 class PlaceHolderManager;
+class QCPItemVSpan;
+class QCPAbstractItem;
+class QCustomPlot;
+class MultiPlotsVerticalSpan;
 
 class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
 {
@@ -45,6 +49,28 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
     PlotType _default_plot_type = PlotType::BasicXY;
     QUuid _uuid;
     bool _selected = false;
+
+    struct SpanCreationState
+    {
+        QCustomPlot* active_plot = nullptr;
+        QList<QPointer<QCPItemVSpan>> preview_spans;
+        void clear()
+        {
+            active_plot = nullptr;
+            preview_spans.clear();
+        }
+    };
+
+    bool m_span_creation_enabled = false;
+    QColor m_span_creation_color = QColor(100, 100, 200, 80);
+    SpanCreationState m_creation_state;
+    QList<QMetaObject::Connection> m_creation_connections;
+
+    void _install_span_creator(SciQLopPlot* plot);
+    void _uninstall_span_creator(SciQLopPlot* plot);
+    void _on_item_created(QCustomPlot* qcp, QCPAbstractItem* item);
+    void _on_item_canceled(QCustomPlot* qcp);
+    void _clear_preview_spans();
 
 protected:
     template <typename T, GraphType graph_type, typename... Args>
@@ -235,6 +261,11 @@ public:
     bool save_bmp(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0) override;
 
+    void set_span_creation_enabled(bool enabled);
+    bool span_creation_enabled() const { return m_span_creation_enabled; }
+    void set_span_creation_color(const QColor& color) { m_span_creation_color = color; }
+    QColor span_creation_color() const { return m_span_creation_color; }
+
 protected:
     void keyPressEvent(QKeyEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -247,6 +278,8 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
+    Q_SIGNAL void span_created(MultiPlotsVerticalSpan* span);
+    Q_SIGNAL void span_creation_canceled();
     Q_SIGNAL void panel_added(SciQLopPlotPanelInterface* panel);
     Q_SIGNAL void panel_removed(SciQLopPlotPanelInterface* panel);
 };
