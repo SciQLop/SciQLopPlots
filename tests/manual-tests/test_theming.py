@@ -60,7 +60,7 @@ def main():
     win.resize(900, 600)
     win.show()
 
-    panel.set_x_range(SciQLopPlotRange(0, 500))
+    panel.set_x_axis_range(SciQLopPlotRange(0, 500))
 
     sys.exit(app.exec())
 
