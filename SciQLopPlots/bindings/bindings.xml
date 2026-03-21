@@ -310,9 +310,7 @@
 
     <object-type name="SciQLopOverlay" parent-management="yes"/>
 
-    <object-type name="SciQLopTheme" parent-management="yes">
-        <modify-function signature="qcp_theme()const" remove="all"/>
-    </object-type>
+    <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
     </object-type>
