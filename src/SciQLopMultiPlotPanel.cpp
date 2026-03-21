@@ -652,7 +652,11 @@ void SciQLopMultiPlotPanel::_clear_preview_spans()
     for (auto& preview : m_creation_state.preview_spans)
     {
         if (preview)
-            preview->parentPlot()->removeItem(preview);
+        {
+            auto* plot = preview->parentPlot();
+            plot->removeItem(preview);
+            plot->replot(QCustomPlot::rpQueuedReplot);
+        }
     }
     m_creation_state.clear();
 }
