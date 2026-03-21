@@ -708,8 +708,6 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
     }
 
     m_theme = theme;
-    if (theme)
-        theme->setParent(this);
 
     for (auto& p : plots())
     {
