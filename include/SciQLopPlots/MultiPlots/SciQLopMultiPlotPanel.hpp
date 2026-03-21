@@ -59,7 +59,8 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
     bool m_span_creation_enabled = false;
     QColor m_span_creation_color = QColor(100, 100, 200, 80);
     SpanCreationState m_creation_state;
-    QList<QMetaObject::Connection> m_creation_connections;
+    QList<QMetaObject::Connection> m_creation_connections;                // panel-level (plot_added/removed)
+    std::map<QCustomPlot*, QList<QMetaObject::Connection>> m_per_plot_connections;
 
     void _install_span_creator(SciQLopPlot* plot);
     void _uninstall_span_creator(SciQLopPlot* plot);
