@@ -595,7 +595,7 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
             vspan->setPen(QPen(m_span_creation_color.darker(120)));
             vspan->setBrush(QBrush(m_span_creation_color));
 
-            m_creation_state.preview_spans.clear();
+            _clear_preview_spans();
             for (auto& p : plots())
             {
                 auto* sp = dynamic_cast<SciQLopPlot*>(p.data());
@@ -711,7 +711,10 @@ void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
                 [this](SciQLopPlotInterface* plot)
                 {
                     if (auto* sp = dynamic_cast<SciQLopPlot*>(plot))
+                    {
+                        _clear_preview_spans();
                         _uninstall_span_creator(sp);
+                    }
                 }));
     }
     else
