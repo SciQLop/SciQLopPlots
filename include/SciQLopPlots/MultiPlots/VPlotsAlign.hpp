@@ -33,6 +33,8 @@ class VPlotsAlign : public SciQLopPlotCollectionBehavior
 public:
     VPlotsAlign(QObject* parent = nullptr);
     Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
+    Q_SLOT void plotAdded(SciQLopPlotInterface* plot) override { Q_UNUSED(plot); }
+    Q_SLOT void plotRemoved(SciQLopPlotInterface* plot) override { Q_UNUSED(plot); }
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
