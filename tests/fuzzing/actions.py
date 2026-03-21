@@ -29,6 +29,7 @@ class ActionMeta:
     bundles: dict[str, str] | None = None
     strategies: dict[str, Any] | None = None
     settle_timeout_ms: int = 50
+    weight: int = 1
 
 
 def ui_action(
@@ -41,6 +42,7 @@ def ui_action(
     bundles: dict[str, str] | None = None,
     strategies: dict[str, Any] | None = None,
     settle_timeout_ms: int = 50,
+    weight: int = 1,
 ):
     meta = ActionMeta(
         narrate=narrate,
@@ -51,6 +53,7 @@ def ui_action(
         bundles=bundles,
         strategies=strategies,
         settle_timeout_ms=settle_timeout_ms,
+        weight=weight,
     )
 
     def decorator(fn):
@@ -188,36 +191,42 @@ class ActionRegistry:
 
         for action_fn in registry.actions:
             meta: ActionMeta = action_fn._ui_meta
-            method_name = action_fn.__name__
 
-            rule_kwargs: dict[str, Any] = {}
-            if meta.target:
-                rule_kwargs["target"] = bundles_map[meta.target]
+            # weight > 1 creates multiple rules for the same action,
+            # increasing its selection probability in the fuzzer
+            for copy_idx in range(meta.weight):
+                suffix = f"_{copy_idx}" if copy_idx > 0 else ""
+                method_name = action_fn.__name__ + suffix
 
-            for param_name, bundle_name in (meta.bundles or {}).items():
-                rule_kwargs[param_name] = bundles_map[bundle_name]
-            for param_name, strategy in (meta.strategies or {}).items():
-                rule_kwargs[param_name] = strategy
+                rule_kwargs: dict[str, Any] = {}
+                if meta.target:
+                    rule_kwargs["target"] = bundles_map[meta.target]
 
-            def make_rule_method(fn, fn_meta):
-                def rule_method(self, **kwargs):
-                    return run_action(
-                        fn, self.__class__.panel,
-                        self._model, self._story, **kwargs,
-                    )
-                return rule_method
+                for param_name, bundle_name in (meta.bundles or {}).items():
+                    rule_kwargs[param_name] = bundles_map[bundle_name]
+                for param_name, strategy in (meta.strategies or {}).items():
+                    rule_kwargs[param_name] = strategy
 
-            method = make_rule_method(action_fn, meta)
-            method.__name__ = method_name
+                def make_rule_method(fn, fn_meta):
+                    def rule_method(self, **kwargs):
+                        result = run_action(
+                            fn, self.__class__.panel,
+                            self._model, self._story, **kwargs,
+                        )
+                        return result if fn_meta.target else None
+                    return rule_method
 
-            if meta.precondition:
-                user_precond = meta.precondition
-                method = precondition(
-                    lambda self, _p=user_precond: _p(self._model)
-                )(method)
+                method = make_rule_method(action_fn, meta)
+                method.__name__ = method_name
 
-            method = rule(**rule_kwargs)(method)
-            class_dict[method_name] = method
+                if meta.precondition:
+                    user_precond = meta.precondition
+                    method = precondition(
+                        lambda self, _p=user_precond: _p(self._model)
+                    )(method)
+
+                method = rule(**rule_kwargs)(method)
+                class_dict[method_name] = method
 
         sm_class = type(name, (RuleBasedStateMachine,), class_dict)
 

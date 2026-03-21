@@ -11,11 +11,11 @@ def fuzzing_reports_dir():
 
 
 @pytest.fixture(scope="module")
-def fuzzing_panel(qtbot):
+def fuzzing_panel(qapp):
     """Module-scoped panel for Hypothesis fuzzer (reused across examples)."""
     from SciQLopPlots import SciQLopMultiPlotPanel
     panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
-    qtbot.addWidget(panel)
+    panel.show()
     return panel
 
 
