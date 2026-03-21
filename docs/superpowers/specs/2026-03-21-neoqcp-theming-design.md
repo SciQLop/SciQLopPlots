@@ -133,8 +133,8 @@ Add a manual test script `tests/manual-tests/test_theming.py` that:
 | `include/SciQLopPlots/SciQLopPlot.hpp` | Modify — override `set_theme()` / `theme()` |
 | `src/SciQLopPlot.cpp` | Modify — implement theme methods |
 | `include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp` | Modify — add `set_theme()` / `theme()` + `QPointer<SciQLopTheme>` member |
-| `src/MultiPlots/SciQLopMultiPlotPanel.cpp` | Modify — implement theme propagation + `plot_added` connection |
+| `src/SciQLopMultiPlotPanel.cpp` | Modify — implement theme propagation + `plot_added` connection |
 | `SciQLopPlots/bindings/bindings.xml` | Modify — add `SciQLopTheme` object-type, theme methods on interfaces, parent transfer annotations |
 | `SciQLopPlots/bindings/bindings.h` | Modify — add `#include <SciQLopPlots/SciQLopTheme.hpp>` |
-| `src/meson.build` | Modify — add SciQLopTheme.cpp to sources |
+| `SciQLopPlots/meson.build` | Modify — add SciQLopTheme to moc_headers and sources |
 | `tests/manual-tests/test_theming.py` | Create — demo/test script |
