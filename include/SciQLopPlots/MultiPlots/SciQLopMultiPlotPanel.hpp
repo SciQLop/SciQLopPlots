@@ -61,6 +61,7 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
 
     bool m_span_creation_enabled = false;
     QColor m_span_creation_color = QColor(100, 100, 200, 80);
+    Qt::KeyboardModifier m_span_creation_modifier = Qt::ShiftModifier;
     SpanCreationState m_creation_state;
     QList<QMetaObject::Connection> m_creation_connections;                // panel-level (plot_added/removed)
     std::map<QCustomPlot*, QList<QMetaObject::Connection>> m_per_plot_connections;
@@ -266,6 +267,8 @@ public:
     bool span_creation_enabled() const { return m_span_creation_enabled; }
     void set_span_creation_color(const QColor& color) { m_span_creation_color = color; }
     QColor span_creation_color() const { return m_span_creation_color; }
+    void set_span_creation_modifier(Qt::KeyboardModifier modifier);
+    Qt::KeyboardModifier span_creation_modifier() const { return m_span_creation_modifier; }
 
     void set_theme(SciQLopTheme* theme);
     SciQLopTheme* theme() const { return m_theme; }
