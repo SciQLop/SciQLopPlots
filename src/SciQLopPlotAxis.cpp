@@ -65,15 +65,20 @@ void SciQLopPlotAxis::set_log(bool log) noexcept
 {
     if (!m_axis.isNull() && (m_axis->scaleType() == QCPAxis::stLogarithmic) != log)
     {
-        if (log)
         {
-            m_axis->setScaleType(QCPAxis::stLogarithmic);
-            m_axis->setTicker(QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-        }
-        else
-        {
-            m_axis->setScaleType(QCPAxis::stLinear);
-            m_axis->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
+            // Block signals during scale type + ticker change to prevent
+            // rangeChanged from triggering margin recomputation with stale tick vectors
+            const QSignalBlocker blocker(m_axis);
+            if (log)
+            {
+                m_axis->setScaleType(QCPAxis::stLogarithmic);
+                m_axis->setTicker(QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
+            }
+            else
+            {
+                m_axis->setScaleType(QCPAxis::stLinear);
+                m_axis->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
+            }
         }
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT log_changed(log);
@@ -208,11 +213,53 @@ bool SciQLopPlotAxis::selected() const noexcept
 
 void SciQLopPlotAxis::rescale() noexcept
 {
-    if (!m_axis.isNull())
+    if (m_axis.isNull())
+        return;
+
+    // For value axes, restrict rescale to the visible key range
+    // so Y auto-scale only fits data currently in view
+    QCPRange newRange;
+    bool haveRange = false;
+    QCP::SignDomain signDomain = QCP::sdBoth;
+    if (m_axis->scaleType() == QCPAxis::stLogarithmic)
+        signDomain = (m_axis->range().upper < 0 ? QCP::sdNegative : QCP::sdPositive);
+
+    for (auto* plottable : m_axis->plottables())
     {
-        m_axis->rescale(true);
-        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        if (!plottable->realVisibility())
+            continue;
+        bool found = false;
+        QCPRange plottableRange;
+        if (plottable->keyAxis() == m_axis)
+        {
+            plottableRange = plottable->getKeyRange(found, signDomain);
+        }
+        else
+        {
+            // Value axis: restrict to visible key range
+            auto keyRange = plottable->keyAxis()->range();
+            plottableRange = plottable->getValueRange(found, signDomain, keyRange);
+        }
+        if (found)
+        {
+            if (!haveRange)
+                newRange = plottableRange;
+            else
+                newRange.expand(plottableRange);
+            haveRange = true;
+        }
     }
+    if (haveRange)
+    {
+        if (!QCPRange::validRange(newRange))
+        {
+            double center = (newRange.lower + newRange.upper) * 0.5;
+            newRange.lower = center - m_axis->range().size() / 2.0;
+            newRange.upper = center + m_axis->range().size() / 2.0;
+        }
+        m_axis->setRange(newRange);
+    }
+    m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
 
 QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
@@ -263,16 +310,22 @@ void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
 {
     if (!m_axis.isNull() && (m_axis->dataScaleType() == QCPAxis::stLogarithmic) != log)
     {
-        if (log)
         {
-            m_axis->setDataScaleType(QCPAxis::stLogarithmic);
-            m_axis.data()->axis()->setTicker(
-                QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-        }
-        else
-        {
-            m_axis->setDataScaleType(QCPAxis::stLinear);
-            m_axis.data()->axis()->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
+            // Block signals during scale type + ticker change to prevent
+            // rangeChanged from triggering margin recomputation with stale tick vectors
+            const QSignalBlocker blocker(m_axis.data()->axis());
+            if (log)
+            {
+                m_axis->setDataScaleType(QCPAxis::stLogarithmic);
+                m_axis.data()->axis()->setTicker(
+                    QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
+            }
+            else
+            {
+                m_axis->setDataScaleType(QCPAxis::stLinear);
+                m_axis.data()->axis()->setTicker(
+                    QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
+            }
         }
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT log_changed(log);

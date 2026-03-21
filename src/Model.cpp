@@ -143,6 +143,8 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
 {
     if (!obj)
         return;
+    if (parent->child_row_by_object(obj) >= 0)
+        return;
     auto desc = TypeRegistry::instance().descriptor(obj);
     auto parentIndex = make_index(parent);
     int row = parent->children_count();

@@ -24,6 +24,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include <qcustomplot.h>
 #include <plottables/plottable-multigraph.h>
+#include <plottables/plottable-graph2.h>
 #include "SciQLopPlots/qcp_enums.hpp"
 
 
@@ -34,7 +35,7 @@ struct MultiGraphRef {
 
 class SciQLopGraphComponent : public SciQLopGraphComponentInterface
 {
-    using graph_or_curve_or_multi = std::variant<QCPGraph*, QCPCurve*, MultiGraphRef, std::monostate>;
+    using graph_or_curve_or_multi = std::variant<QCPGraph*, QCPGraph2*, QCPCurve*, MultiGraphRef, std::monostate>;
 
     template <class... Ts>
     struct visitor : Ts...
@@ -62,6 +63,8 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
                                    m_componentIndex };
         if (auto graph = qobject_cast<QCPGraph*>(m_plottable); graph != nullptr)
             return graph;
+        else if (auto graph2 = qobject_cast<QCPGraph2*>(m_plottable); graph2 != nullptr)
+            return graph2;
         else if (auto curve = qobject_cast<QCPCurve*>(m_plottable); curve != nullptr)
             return curve;
         return std::monostate();
@@ -105,6 +108,12 @@ public:
         {
             std::visit(visitor { [style](QCPGraph* any)
                                  { any->setLineStyle(to_qcp(style)); },
+                                 [style](QCPGraph2* any)
+                                 {
+                                     any->setLineStyle(
+                                         static_cast<QCPGraph2::LineStyle>(
+                                             static_cast<int>(to_qcp(style))));
+                                 },
                                  [style](QCPCurve* any)
                                  {
                                      if (style == GraphLineStyle::NoLine)
@@ -127,18 +136,15 @@ public:
     {
         if (m_plottable)
         {
-            std::visit(visitor { [marker](QCPGraph* any)
-                                 {
-                                     auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setShape(to_qcp(marker));
-                                     any->setScatterStyle(scatterStyle);
-                                 },
-                                 [marker](QCPCurve* any)
-                                 {
-                                     auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setShape(to_qcp(marker));
-                                     any->setScatterStyle(scatterStyle);
-                                 },
+            auto set_scatter = [marker](auto* any)
+            {
+                auto scatterStyle = any->scatterStyle();
+                scatterStyle.setShape(to_qcp(marker));
+                any->setScatterStyle(scatterStyle);
+            };
+            std::visit(visitor { [&](QCPGraph* any) { set_scatter(any); },
+                                 [&](QCPGraph2* any) { set_scatter(any); },
+                                 [&](QCPCurve* any) { set_scatter(any); },
                                  [marker](MultiGraphRef ref)
                                  {
                                      ref.graph->component(ref.componentIndex)
@@ -153,18 +159,15 @@ public:
     {
         if (m_plottable)
         {
-            std::visit(visitor { [pen](QCPGraph* any)
-                                 {
-                                     auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setPen(pen);
-                                     any->setScatterStyle(scatterStyle);
-                                 },
-                                 [pen](QCPCurve* any)
-                                 {
-                                     auto scatterStyle = any->scatterStyle();
-                                     scatterStyle.setPen(pen);
-                                     any->setScatterStyle(scatterStyle);
-                                 },
+            auto set_scatter_pen = [&pen](auto* any)
+            {
+                auto scatterStyle = any->scatterStyle();
+                scatterStyle.setPen(pen);
+                any->setScatterStyle(scatterStyle);
+            };
+            std::visit(visitor { [&](QCPGraph* any) { set_scatter_pen(any); },
+                                 [&](QCPGraph2* any) { set_scatter_pen(any); },
+                                 [&](QCPCurve* any) { set_scatter_pen(any); },
                                  [pen](MultiGraphRef ref)
                                  {
                                      ref.graph->component(ref.componentIndex)
@@ -207,6 +210,11 @@ public:
         {
             return std::visit(visitor { [](QCPGraph* any)
                                         { return from_qcp(any->lineStyle()); },
+                                        [](QCPGraph2* any)
+                                        {
+                                            return from_qcp(static_cast<QCPGraph::LineStyle>(
+                                                static_cast<int>(any->lineStyle())));
+                                        },
                                         [](QCPCurve* any)
                                         {
                                             if (any->lineStyle() == QCPCurve::lsNone)
@@ -228,11 +236,11 @@ public:
     {
         if (m_plottable)
         {
+            auto get_shape = [](auto* any) { return from_qcp(any->scatterStyle().shape()); };
             return std::visit(
-                visitor { [](QCPGraph* any)
-                          { return from_qcp(any->scatterStyle().shape()); },
-                          [](QCPCurve* any)
-                          { return from_qcp(any->scatterStyle().shape()); },
+                visitor { [&](QCPGraph* any) { return get_shape(any); },
+                          [&](QCPGraph2* any) { return get_shape(any); },
+                          [&](QCPCurve* any) { return get_shape(any); },
                           [](MultiGraphRef ref)
                           {
                               return from_qcp(
@@ -248,8 +256,10 @@ public:
     {
         if (m_plottable)
         {
-            return std::visit(visitor { [](QCPGraph* any) { return any->scatterStyle().pen(); },
-                                        [](QCPCurve* any) { return any->scatterStyle().pen(); },
+            auto get_pen = [](auto* any) { return any->scatterStyle().pen(); };
+            return std::visit(visitor { [&](QCPGraph* any) { return get_pen(any); },
+                                        [&](QCPGraph2* any) { return get_pen(any); },
+                                        [&](QCPCurve* any) { return get_pen(any); },
                                         [](MultiGraphRef ref)
                                         {
                                             return ref.graph->component(ref.componentIndex)
