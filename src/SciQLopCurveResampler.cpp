@@ -42,7 +42,7 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
         QList<QVector<QCPCurveData>> curve_data;
         for (auto line_index = 0UL; line_index < line_count(); line_index++)
         {
-            const auto count = std::size(data.x);
+            const auto count = data.x.flat_size();
             const auto start_y = data.y.data() + (line_index * data.x.flat_size());
             curve_data.emplace_back(curve_copy_data(data.x.data(), start_y, count, y_incr));
         }
