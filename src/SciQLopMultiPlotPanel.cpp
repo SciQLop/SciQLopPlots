@@ -711,8 +711,8 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 
     for (auto& p : plots())
     {
-        if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
-            sp->set_theme(theme);
+        if (p)
+            p->set_theme(theme);
     }
 
     if (theme)
@@ -720,11 +720,8 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
         m_theme_connection = connect(this, &SciQLopMultiPlotPanel::plot_added, this,
             [this](SciQLopPlotInterface* plot)
             {
-                if (m_theme)
-                {
-                    if (auto* sp = dynamic_cast<SciQLopPlot*>(plot))
-                        sp->set_theme(m_theme);
-                }
+                if (m_theme && plot)
+                    plot->set_theme(m_theme);
             });
     }
 }
