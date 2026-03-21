@@ -30,6 +30,7 @@
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
+#include "SciQLopPlots/constants.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
@@ -594,6 +595,7 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
             auto* vspan = new QCPItemVSpan(qcp);
             vspan->setPen(QPen(m_span_creation_color.darker(120)));
             vspan->setBrush(QBrush(m_span_creation_color));
+            vspan->setLayer(Constants::LayersNames::Spans);
 
             _clear_preview_spans();
             for (auto& p : plots())
@@ -607,6 +609,7 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
                 auto* preview = new QCPItemVSpan(other_qcp);
                 preview->setPen(QPen(m_span_creation_color.darker(120)));
                 preview->setBrush(QBrush(m_span_creation_color));
+                preview->setLayer(Constants::LayersNames::Spans);
                 m_creation_state.preview_spans.append(preview);
                 other_qcp->replot(QCustomPlot::rpQueuedReplot);
             }
