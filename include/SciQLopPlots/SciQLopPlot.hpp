@@ -32,6 +32,7 @@
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotLegend.hpp"
 #include "SciQLopPlots/SciQLopOverlay.hpp"
+#include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QPointF>
 #include <optional>
@@ -224,6 +225,7 @@ protected:
     SciQLopPlotDummyAxis* m_time_axis = nullptr;
     _impl::SciQLopPlot* m_impl = nullptr;
     SciQLopOverlay* m_overlay = nullptr;
+    QPointer<SciQLopTheme> m_theme;
     QList<QColor> m_color_palette = {
         QColor(31, 119, 180),  QColor(255, 127, 14),  QColor(44, 160, 44),   QColor(214, 39, 40),
         QColor(148, 103, 189), QColor(140, 86, 75),   QColor(227, 119, 194), QColor(127, 127, 127),
@@ -355,6 +357,9 @@ public:
     }
 
     inline virtual SciQLopPlotLegendInterface* legend() const noexcept override { return m_legend; }
+
+    void set_theme(SciQLopTheme* theme) override;
+    SciQLopTheme* theme() const override { return m_theme; }
 
     void replot(bool immediate = false) override;
 

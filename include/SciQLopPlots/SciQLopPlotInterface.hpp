@@ -34,6 +34,8 @@
 #include <QUuid>
 #include <qcustomplot.h>
 
+class SciQLopTheme;
+
 class SciQLopPlotInterface : public QFrame
 {
 
@@ -238,6 +240,18 @@ public:
     }
 
     inline virtual SciQLopPlotLegendInterface* legend() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline virtual void set_theme(SciQLopTheme* theme)
+    {
+        Q_UNUSED(theme);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual SciQLopTheme* theme() const
     {
         WARN_ABSTRACT_METHOD;
         return nullptr;
