@@ -39,6 +39,7 @@
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
 #include <SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp>
 #include <SciQLopPlots/SciQLopOverlay.hpp>
+#include <SciQLopPlots/SciQLopTheme.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <SciQLopPlots/SciQLopPlotInterface.hpp>
