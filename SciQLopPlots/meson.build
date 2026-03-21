@@ -135,6 +135,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Products/QueryHighlighter.hpp',
     project_source_root + '/include/SciQLopPlots/Products/QueryLineEdit.hpp',
     project_source_root + '/include/SciQLopPlots/SciQLopOverlay.hpp',
+    project_source_root + '/include/SciQLopPlots/SciQLopTheme.hpp',
     project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
 ]
 
@@ -168,6 +169,7 @@ sources = moc_files \
             '../src/SciQLopTimeSeriesPlot.cpp',
             '../src/SciQLopNDProjectionPlot.cpp',
             '../src/SciQLopPlotAxis.cpp',
+            '../src/SciQLopTheme.cpp',
             '../src/SciQLopPlotCollection.cpp',
             '../src/AxisSynchronizer.cpp',
             '../src/XAxisSynchronizer.cpp',
