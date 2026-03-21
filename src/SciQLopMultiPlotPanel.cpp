@@ -29,6 +29,7 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
+#include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
@@ -581,4 +582,138 @@ bool SciQLopMultiPlotPanel::save(const QString& filename, int width, int height,
     if (ext == "bmp")
         return save_bmp(filename, width, height, scale);
     return false;
+}
+
+void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
+{
+    auto* qcp = plot->qcp_plot();
+
+    qcp->setItemCreator(
+        [this, qcp](QCustomPlot*, QCPAxis*, QCPAxis*) -> QCPAbstractItem*
+        {
+            auto* vspan = new QCPItemVSpan(qcp);
+            vspan->setPen(QPen(m_span_creation_color.darker(120)));
+            vspan->setBrush(QBrush(m_span_creation_color));
+
+            m_creation_state.active_plot = qcp;
+            m_creation_state.preview_spans.clear();
+            for (auto& p : plots())
+            {
+                auto* sp = dynamic_cast<SciQLopPlot*>(p.data());
+                if (!sp)
+                    continue;
+                auto* other_qcp = sp->qcp_plot();
+                if (other_qcp == qcp)
+                    continue;
+                auto* preview = new QCPItemVSpan(other_qcp);
+                preview->setPen(QPen(m_span_creation_color.darker(120)));
+                preview->setBrush(QBrush(m_span_creation_color));
+                m_creation_state.preview_spans.append(preview);
+                other_qcp->replot(QCustomPlot::rpQueuedReplot);
+            }
+            return vspan;
+        });
+
+    qcp->setItemPositioner(
+        [this](QCPAbstractItem* item, double anchorKey, double, double currentKey, double)
+        {
+            double lower = std::min(anchorKey, currentKey);
+            double upper = std::max(anchorKey, currentKey);
+            if (auto* vspan = qobject_cast<QCPItemVSpan*>(item))
+                vspan->setRange(QCPRange(lower, upper));
+            for (auto& preview : m_creation_state.preview_spans)
+            {
+                if (preview)
+                {
+                    preview->setRange(QCPRange(lower, upper));
+                    preview->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+                }
+            }
+        });
+
+    m_creation_connections.append(connect(qcp, &QCustomPlot::itemCreated, this,
+        [this, qcp](QCPAbstractItem* item) { _on_item_created(qcp, item); }));
+    m_creation_connections.append(connect(qcp, &QCustomPlot::itemCanceled, this,
+        [this, qcp]() { _on_item_canceled(qcp); }));
+
+    qcp->setCreationModeEnabled(true);
+}
+
+void SciQLopMultiPlotPanel::_uninstall_span_creator(SciQLopPlot* plot)
+{
+    auto* qcp = plot->qcp_plot();
+    qcp->setCreationModeEnabled(false);
+    qcp->setItemCreator(nullptr);
+    qcp->setItemPositioner(nullptr);
+}
+
+void SciQLopMultiPlotPanel::_clear_preview_spans()
+{
+    for (auto& preview : m_creation_state.preview_spans)
+    {
+        if (preview)
+            preview->parentPlot()->removeItem(preview);
+    }
+    m_creation_state.clear();
+}
+
+void SciQLopMultiPlotPanel::_on_item_created(QCustomPlot* qcp, QCPAbstractItem* item)
+{
+    auto* vspan = qobject_cast<QCPItemVSpan*>(item);
+    if (!vspan)
+        return;
+
+    auto qcp_range = vspan->range();
+    SciQLopPlotRange range(qcp_range.lower, qcp_range.upper);
+
+    qcp->removeItem(vspan);
+    _clear_preview_spans();
+
+    auto* mpvspan
+        = new MultiPlotsVerticalSpan(this, range, m_span_creation_color, false, true, "");
+    Q_EMIT span_created(mpvspan);
+}
+
+void SciQLopMultiPlotPanel::_on_item_canceled(QCustomPlot*)
+{
+    _clear_preview_spans();
+    Q_EMIT span_creation_canceled();
+}
+
+void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
+{
+    if (m_span_creation_enabled == enabled)
+        return;
+    m_span_creation_enabled = enabled;
+
+    if (enabled)
+    {
+        for (auto& p : plots())
+        {
+            if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
+                _install_span_creator(sp);
+        }
+        m_creation_connections.append(
+            connect(this, &SciQLopMultiPlotPanel::plot_added, this,
+                [this](SciQLopPlotInterface* plot)
+                {
+                    if (m_span_creation_enabled)
+                    {
+                        if (auto* sp = dynamic_cast<SciQLopPlot*>(plot))
+                            _install_span_creator(sp);
+                    }
+                }));
+    }
+    else
+    {
+        _clear_preview_spans();
+        for (auto& conn : m_creation_connections)
+            disconnect(conn);
+        m_creation_connections.clear();
+        for (auto& p : plots())
+        {
+            if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
+                _uninstall_span_creator(sp);
+        }
+    }
 }
