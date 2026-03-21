@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/SciQLopTimeSeriesPlot.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 
@@ -697,6 +698,38 @@ void SciQLopMultiPlotPanel::_on_item_canceled(QCustomPlot*)
 {
     _clear_preview_spans();
     Q_EMIT span_creation_canceled();
+}
+
+void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
+{
+    if (m_theme_connection)
+    {
+        disconnect(m_theme_connection);
+        m_theme_connection = {};
+    }
+
+    m_theme = theme;
+    if (theme)
+        theme->setParent(this);
+
+    for (auto& p : plots())
+    {
+        if (auto* sp = dynamic_cast<SciQLopPlot*>(p.data()))
+            sp->set_theme(theme);
+    }
+
+    if (theme)
+    {
+        m_theme_connection = connect(this, &SciQLopMultiPlotPanel::plot_added, this,
+            [this](SciQLopPlotInterface* plot)
+            {
+                if (m_theme)
+                {
+                    if (auto* sp = dynamic_cast<SciQLopPlot*>(plot))
+                        sp->set_theme(m_theme);
+                }
+            });
+    }
 }
 
 void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)

@@ -25,10 +25,13 @@
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
 #include <QGridLayout>
+#include <QPointer>
 #include <QScrollArea>
 #include <QUuid>
 #include <QWidget>
 #include <map>
+
+class SciQLopTheme;
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
@@ -61,6 +64,8 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
     SpanCreationState m_creation_state;
     QList<QMetaObject::Connection> m_creation_connections;                // panel-level (plot_added/removed)
     std::map<QCustomPlot*, QList<QMetaObject::Connection>> m_per_plot_connections;
+    QPointer<SciQLopTheme> m_theme;
+    QMetaObject::Connection m_theme_connection;
 
     void _install_span_creator(SciQLopPlot* plot);
     void _uninstall_span_creator(SciQLopPlot* plot);
@@ -261,6 +266,9 @@ public:
     bool span_creation_enabled() const { return m_span_creation_enabled; }
     void set_span_creation_color(const QColor& color) { m_span_creation_color = color; }
     QColor span_creation_color() const { return m_span_creation_color; }
+
+    void set_theme(SciQLopTheme* theme);
+    SciQLopTheme* theme() const { return m_theme; }
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
