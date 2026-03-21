@@ -630,9 +630,10 @@ void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
             }
         });
 
-    m_creation_connections.append(connect(qcp, &QCustomPlot::itemCreated, this,
+    auto& conns = m_per_plot_connections[qcp];
+    conns.append(connect(qcp, &QCustomPlot::itemCreated, this,
         [this, qcp](QCPAbstractItem* item) { _on_item_created(qcp, item); }));
-    m_creation_connections.append(connect(qcp, &QCustomPlot::itemCanceled, this,
+    conns.append(connect(qcp, &QCustomPlot::itemCanceled, this,
         [this, qcp]() { _on_item_canceled(qcp); }));
 
     qcp->setCreationModeEnabled(true);
@@ -644,6 +645,12 @@ void SciQLopMultiPlotPanel::_uninstall_span_creator(SciQLopPlot* plot)
     qcp->setCreationModeEnabled(false);
     qcp->setItemCreator(nullptr);
     qcp->setItemPositioner(nullptr);
+    if (auto it = m_per_plot_connections.find(qcp); it != m_per_plot_connections.end())
+    {
+        for (auto& conn : it->second)
+            disconnect(conn);
+        m_per_plot_connections.erase(it);
+    }
 }
 
 void SciQLopMultiPlotPanel::_clear_preview_spans()
