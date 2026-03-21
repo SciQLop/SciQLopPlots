@@ -245,17 +245,8 @@ public:
         return nullptr;
     }
 
-    inline virtual void set_theme(SciQLopTheme* theme)
-    {
-        Q_UNUSED(theme);
-        WARN_ABSTRACT_METHOD;
-    }
-
-    inline virtual SciQLopTheme* theme() const
-    {
-        WARN_ABSTRACT_METHOD;
-        return nullptr;
-    }
+    inline virtual void set_theme(SciQLopTheme* theme) { Q_UNUSED(theme); }
+    inline virtual SciQLopTheme* theme() const { return nullptr; }
 
     inline virtual void set_scroll_factor(double factor) noexcept { WARN_ABSTRACT_METHOD; }
 

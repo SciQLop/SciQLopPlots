@@ -14,13 +14,15 @@ class SciQLopTheme : public QObject
     // Private constructor from existing QCPTheme
     explicit SciQLopTheme(QCPTheme* theme, QObject* parent = nullptr);
 
+    friend class SciQLopPlot;
+
+    QCPTheme* qcp_theme() const { return m_theme; }
+
 public:
     virtual ~SciQLopTheme() override = default;
 
     static SciQLopTheme* light(QObject* parent = nullptr);
     static SciQLopTheme* dark(QObject* parent = nullptr);
-
-    QCPTheme* qcp_theme() const { return m_theme; }
 
     QColor background() const;
     QColor foreground() const;
