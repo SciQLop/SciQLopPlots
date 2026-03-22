@@ -26,12 +26,24 @@
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <plottables/plottable-multigraph.h>
+#include <datasource/abstract-multi-datasource.h>
 #include <span>
+#include <memory>
 
 class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 {
     QCPMultiGraph* _multiGraph = nullptr;
-    PyBuffer _x, _y;
+
+    // Lifetime anchor: PyBuffers + data source share lifetime via shared_ptr.
+    // The aliased shared_ptr given to QCPMultiGraph ensures numpy memory stays
+    // alive as long as the async pipeline holds a reference to the source.
+    struct DataHolder
+    {
+        PyBuffer x, y;
+        std::shared_ptr<QCPAbstractMultiDataSource> source;
+    };
+    std::shared_ptr<DataHolder> _dataHolder;
+
     QStringList _pendingLabels;
 
     SciQLopPlotAxis* _keyAxis;

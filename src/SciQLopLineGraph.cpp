@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include <datasource/soa-multi-datasource.h>
 #include <vector>
 
 void SciQLopLineGraph::create_graphs(const QStringList& labels)
@@ -76,9 +77,6 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
     if (x.format_code() != 'd')
         throw std::runtime_error("Keys (x) must be float64");
 
-    _x = x;
-    _y = y;
-
     const auto* keys = static_cast<const double*>(x.raw_data());
     const int n = static_cast<int>(x.flat_size());
 
@@ -89,13 +87,21 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
         if (y.ndim() == 1)
         {
             std::vector<std::span<const V>> columns{std::span<const V>(values, n)};
-            _multiGraph->viewData<double, V>(std::span<const double>(keys, n), std::move(columns));
+            auto source = std::make_shared<
+                QCPSoAMultiDataSource<std::span<const double>, std::span<const V>>>(
+                std::span<const double>(keys, n), std::move(columns));
+            _dataHolder = std::make_shared<DataHolder>(DataHolder{x, y, source});
+            auto aliased
+                = std::shared_ptr<QCPAbstractMultiDataSource>(_dataHolder, source.get());
+            _multiGraph->setDataSource(std::move(aliased));
         }
         else
         {
             const auto n_cols = y.size(1);
             if (y.row_major())
             {
+                // Row-major: data must be transposed — copies are made,
+                // so the source owns its memory and no lifetime anchor is needed.
                 std::vector<std::vector<V>> owned_columns(n_cols);
                 for (std::size_t col = 0; col < n_cols; ++col)
                 {
@@ -109,15 +115,22 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
                 for (auto& col : owned_columns)
                     cols_move.push_back(std::move(col));
                 _multiGraph->setData(std::move(owned_keys), std::move(cols_move));
+                _dataHolder = std::make_shared<DataHolder>(DataHolder{x, y, nullptr});
             }
             else
             {
+                // Column-major: zero-copy spans — anchor PyBuffers via aliased shared_ptr.
                 std::vector<std::span<const V>> columns;
                 columns.reserve(n_cols);
                 for (std::size_t col = 0; col < n_cols; ++col)
                     columns.emplace_back(values + col * n, n);
-                _multiGraph->viewData<double, V>(
+                auto source = std::make_shared<
+                    QCPSoAMultiDataSource<std::span<const double>, std::span<const V>>>(
                     std::span<const double>(keys, n), std::move(columns));
+                _dataHolder = std::make_shared<DataHolder>(DataHolder{x, y, source});
+                auto aliased
+                    = std::shared_ptr<QCPAbstractMultiDataSource>(_dataHolder, source.get());
+                _multiGraph->setDataSource(std::move(aliased));
             }
         }
     });
@@ -150,7 +163,9 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
 
 QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 {
-    return {_x, _y};
+    if (_dataHolder)
+        return {_dataHolder->x, _dataHolder->y};
+    return {};
 }
 
 void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

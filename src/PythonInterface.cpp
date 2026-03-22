@@ -60,6 +60,11 @@ extern "C"
 #define SKIP_PYTHON_INTERFACE_CPP
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
+#include <QCoreApplication>
+#include <QThread>
+#include <mutex>
+#include <vector>
+
 struct PyAutoScopedGIL
 {
     PyGILState_STATE gstate;
@@ -68,6 +73,104 @@ struct PyAutoScopedGIL
 
     ~PyAutoScopedGIL() { PyGILState_Release(gstate); }
 };
+
+// ---------------------------------------------------------------------------
+// Deferred Python release queue
+//
+// When PyBuffer or PyObjectWrapper instances are destroyed on a non-main
+// thread (e.g. a QThreadPool worker running a NeoQCP async pipeline job),
+// acquiring the GIL can cause severe contention or deadlock with the
+// DataProvider worker thread (which holds the GIL while calling Python)
+// and the main thread (which processes Qt events).
+//
+// Instead of blocking on PyGILState_Ensure from arbitrary threads, we
+// queue the release operations and drain them on the main thread where
+// GIL acquisition is cheap (the main thread is typically the GIL holder
+// when processing Qt events from Python).
+// ---------------------------------------------------------------------------
+namespace
+{
+
+struct DeferredReleaseQueue
+{
+    std::mutex mutex;
+    std::vector<PyObject*> decrefs;
+    std::vector<Py_buffer> buffer_releases;
+    bool drain_scheduled = false;
+
+    static DeferredReleaseQueue& instance()
+    {
+        static DeferredReleaseQueue q;
+        return q;
+    }
+
+    void drain()
+    {
+        std::vector<PyObject*> local_decrefs;
+        std::vector<Py_buffer> local_buffers;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            local_decrefs.swap(decrefs);
+            local_buffers.swap(buffer_releases);
+            drain_scheduled = false;
+        }
+
+        if (local_decrefs.empty() && local_buffers.empty())
+            return;
+
+        auto gstate = PyGILState_Ensure();
+        // Release buffers before decrefs: a buffer may hold an internal
+        // reference to the object, so release it first.
+        for (auto& buf : local_buffers)
+            PyBuffer_Release(&buf);
+        for (auto* obj : local_decrefs)
+            Py_DECREF(obj);
+        PyGILState_Release(gstate);
+    }
+
+    void schedule_drain()
+    {
+        // Already scheduled — nothing to do.
+        // Access under mutex held by the caller.
+        if (drain_scheduled)
+            return;
+
+        auto* app = QCoreApplication::instance();
+        if (app)
+        {
+            drain_scheduled = true;
+            QMetaObject::invokeMethod(
+                app, [this]() { drain(); }, Qt::QueuedConnection);
+        }
+        else
+        {
+            // No running event loop (shutdown) — drain synchronously.
+            drain();
+        }
+    }
+
+    void defer_decref(PyObject* obj)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        decrefs.push_back(obj);
+        schedule_drain();
+    }
+
+    void defer_buffer_release(Py_buffer buf)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        buffer_releases.push_back(buf);
+        schedule_drain();
+    }
+};
+
+inline bool on_main_thread()
+{
+    auto* app = QCoreApplication::instance();
+    return app && QThread::currentThread() == app->thread();
+}
+
+} // anonymous namespace
 
 inline void _inc_ref(PyObject* obj)
 {
@@ -82,19 +185,27 @@ inline void _inc_ref(PyObject* obj)
 
 inline void _dec_ref(PyObject* obj)
 {
-    auto scoped_gil = PyAutoScopedGIL();
+    if (on_main_thread())
+    {
+        auto scoped_gil = PyAutoScopedGIL();
 #ifdef _TRACE_REF_COUNT
-    std::cout << "Dec ref: " << obj << " " << obj->ob_refcnt << std::endl;
-    if (obj->ob_refcnt == 1)
-    {
-        std::cout << "Dec ref, Last ref: " << obj << std::endl;
-    }
-    else if (obj->ob_refcnt > 100)
-    {
-        std::cout << "Dec ref, weird high refcount: " << obj << " " << obj->ob_refcnt << std::endl;
-    }
+        std::cout << "Dec ref: " << obj << " " << obj->ob_refcnt << std::endl;
+        if (obj->ob_refcnt == 1)
+        {
+            std::cout << "Dec ref, Last ref: " << obj << std::endl;
+        }
+        else if (obj->ob_refcnt > 100)
+        {
+            std::cout << "Dec ref, weird high refcount: " << obj << " " << obj->ob_refcnt
+                      << std::endl;
+        }
 #endif
-    Py_DECREF(obj);
+        Py_DECREF(obj);
+    }
+    else
+    {
+        DeferredReleaseQueue::instance().defer_decref(obj);
+    }
 }
 
 struct PyObjectWrapper
@@ -239,8 +350,15 @@ struct _PyBuffer_impl : PyObjectWrapper
     {
         if (this->is_valid)
         {
-            auto scoped_gil = PyAutoScopedGIL();
-            PyBuffer_Release(&this->buffer);
+            if (on_main_thread())
+            {
+                auto scoped_gil = PyAutoScopedGIL();
+                PyBuffer_Release(&this->buffer);
+            }
+            else
+            {
+                DeferredReleaseQueue::instance().defer_buffer_release(this->buffer);
+            }
             this->is_valid = false;
             this->buffer = { 0 };
         }
