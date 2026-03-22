@@ -128,12 +128,12 @@ struct DeferredReleaseQueue
         PyGILState_Release(gstate);
     }
 
-    void schedule_drain()
+    // Called with mutex held. Returns true if the caller must invoke
+    // drain() synchronously after releasing the mutex (no event loop).
+    bool schedule_drain_locked()
     {
-        // Already scheduled — nothing to do.
-        // Access under mutex held by the caller.
         if (drain_scheduled)
-            return;
+            return false;
 
         auto* app = QCoreApplication::instance();
         if (app)
@@ -141,26 +141,36 @@ struct DeferredReleaseQueue
             drain_scheduled = true;
             QMetaObject::invokeMethod(
                 app, [this]() { drain(); }, Qt::QueuedConnection);
+            return false;
         }
-        else
-        {
-            // No running event loop (shutdown) — drain synchronously.
-            drain();
-        }
+
+        // No running event loop (startup/shutdown) — caller must
+        // drain synchronously after releasing the mutex.
+        return true;
     }
 
     void defer_decref(PyObject* obj)
     {
-        std::lock_guard<std::mutex> lock(mutex);
-        decrefs.push_back(obj);
-        schedule_drain();
+        bool need_sync_drain = false;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            decrefs.push_back(obj);
+            need_sync_drain = schedule_drain_locked();
+        }
+        if (need_sync_drain)
+            drain();
     }
 
     void defer_buffer_release(Py_buffer buf)
     {
-        std::lock_guard<std::mutex> lock(mutex);
-        buffer_releases.push_back(buf);
-        schedule_drain();
+        bool need_sync_drain = false;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            buffer_releases.push_back(buf);
+            need_sync_drain = schedule_drain_locked();
+        }
+        if (need_sync_drain)
+            drain();
     }
 };
 
