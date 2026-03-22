@@ -158,13 +158,21 @@ moc_files = qtmod.compile_moc(
 
 resources_files = qtmod.compile_resources(sources : ['../resources/resources.qrc'])
 
+# PythonInterface.cpp uses #pragma push_macro("slots") to handle
+# Qt/Python macro conflicts — incompatible with unity builds.
+python_interface_lib = static_library('python_interface',
+        '../src/PythonInterface.cpp',
+        dependencies : [python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, fmt_dep, magic_enum_dep],
+        include_directories : includes,
+        override_options: ['unity=false'],
+)
+
 sources = moc_files \
         + resources_files \
         + sciqlopplots_bindings_src \
         + shiboken_generator_out \
         + [
             '../src/Profiling.cpp',
-            '../src/PythonInterface.cpp',
             '../src/SciQLopPlotInterface.cpp',
             '../src/SciQLopPlot.cpp',
             '../src/SciQLopPlotLegend.cpp',
@@ -259,6 +267,7 @@ endif
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
+        link_with: [python_interface_lib],
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
