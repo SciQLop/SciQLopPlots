@@ -266,7 +266,7 @@ endif
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
-        link_with: [bindings_lib],
+        link_whole: [bindings_lib],
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
