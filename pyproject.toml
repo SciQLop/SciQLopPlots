@@ -46,7 +46,7 @@ homepage = "https://github.com/SciQLop/SciQLopPlots"
 
 [tool.meson-python.args]
 install = ['--tags=runtime,python-runtime']
-setup = ['-Doptimization=3', '-Dcpp_std=c++20', '-Dbuildtype=release', '--vsenv']
+setup = ['-Doptimization=3', '-Dcpp_std=c++20', '-Dbuildtype=release', '--vsenv', '--unity=on']
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
