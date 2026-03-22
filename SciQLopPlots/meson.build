@@ -9,7 +9,7 @@ NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(ge
                                                     'unity=on',
                                                     'with_tests=false',
                                                     ])
-magic_enum_dep = dependency('magic_enum', static:true)
+magic_enum_dep = dependency('magic_enum', static:true, default_options: ['test=false'])
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
