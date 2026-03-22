@@ -164,7 +164,7 @@ python_interface_lib = static_library('python_interface',
         '../src/PythonInterface.cpp',
         dependencies : [python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, fmt_dep, magic_enum_dep],
         include_directories : includes,
-        override_options: ['unity=false'],
+        override_options: ['unity=off'],
 )
 
 sources = moc_files \
