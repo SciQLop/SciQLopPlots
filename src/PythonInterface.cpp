@@ -136,7 +136,7 @@ struct DeferredReleaseQueue
             return false;
 
         auto* app = QCoreApplication::instance();
-        if (app)
+        if (app && !QCoreApplication::closingDown())
         {
             drain_scheduled = true;
             QMetaObject::invokeMethod(
@@ -144,7 +144,7 @@ struct DeferredReleaseQueue
             return false;
         }
 
-        // No running event loop (startup/shutdown) — caller must
+        // No running event loop or app shutting down — caller must
         // drain synchronously after releasing the mutex.
         return true;
     }
