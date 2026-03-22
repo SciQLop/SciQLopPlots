@@ -100,8 +100,8 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
             const auto n_cols = y.size(1);
             if (y.row_major())
             {
-                // Row-major: data must be transposed — copies are made,
-                // so the source owns its memory and no lifetime anchor is needed.
+                // Row-major: data is copied (transposed), so QCP owns its memory.
+                // _dataHolder still populated for the data() accessor API.
                 std::vector<std::vector<V>> owned_columns(n_cols);
                 for (std::size_t col = 0; col < n_cols; ++col)
                 {
