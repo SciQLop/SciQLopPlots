@@ -158,10 +158,11 @@ moc_files = qtmod.compile_moc(
 
 resources_files = qtmod.compile_resources(sources : ['../resources/resources.qrc'])
 
-# PythonInterface.cpp uses #pragma push_macro("slots") to handle
-# Qt/Python macro conflicts — incompatible with unity builds.
-python_interface_lib = static_library('python_interface',
-        '../src/PythonInterface.cpp',
+# Shiboken-generated sources and PythonInterface.cpp must be compiled
+# without unity: PySide6 headers reference protected enums that error
+# when merged with other TUs, and PythonInterface.cpp has slots macro conflicts.
+bindings_lib = static_library('sciqlopplots_bindings_impl',
+        sciqlopplots_bindings_src + shiboken_generator_out + ['../src/PythonInterface.cpp'],
         dependencies : [python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, fmt_dep, magic_enum_dep],
         include_directories : includes,
         override_options: ['unity=off'],
@@ -169,8 +170,6 @@ python_interface_lib = static_library('python_interface',
 
 sources = moc_files \
         + resources_files \
-        + sciqlopplots_bindings_src \
-        + shiboken_generator_out \
         + [
             '../src/Profiling.cpp',
             '../src/SciQLopPlotInterface.cpp',
@@ -267,7 +266,7 @@ endif
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
-        link_with: [python_interface_lib],
+        link_with: [bindings_lib],
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
         install: true,
