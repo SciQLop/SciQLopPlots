@@ -72,11 +72,14 @@ jobs:
         with:
           path: Qt
           key: qt-${{ matrix.qt_host }}-${{ matrix.arch }}-${{ env.QT_VERSION }}
-      - name: Install ccache (host)
-        if: runner.os != 'Linux'
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}
+      - name: Install sccache (Windows)
+        if: runner.os == 'Windows'
+        uses: mozilla-actions/sccache-action@v0.0.7
       - name: Cache ccache (Linux container)
         if: runner.os == 'Linux'
         uses: actions/cache@v4
@@ -94,7 +97,7 @@ jobs:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           QT_VERSION: ${{ env.QT_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
-          CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin;$PATH"
+          CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin;$PATH" CC="sccache cl" CXX="sccache cl"
           CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='13.3' PATH=/usr/lib/ccache:${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/macos/bin:$PATH
           CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} CC="ccache gcc" CXX="ccache g++" CCACHE_DIR=${{ env.GITHUB_WORKSPACE }}/.ccache PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
