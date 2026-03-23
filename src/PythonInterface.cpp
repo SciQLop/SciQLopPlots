@@ -57,6 +57,12 @@ extern "C"
 #include <iostream>
 #endif
 
+#include <deque>
+#include <mutex>
+#include <variant>
+#include <functional>
+#include <QThread>
+
 #define SKIP_PYTHON_INTERFACE_CPP
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
@@ -69,32 +75,95 @@ struct PyAutoScopedGIL
     ~PyAutoScopedGIL() { PyGILState_Release(gstate); }
 };
 
+// ---------------------------------------------------------------------------
+// Deferred Python object release queue
+//
+// When a PyObject ref-decrement (or PyBuffer_Release) would need to acquire
+// the GIL on a thread that doesn't already hold it, we push the work to this
+// queue instead of blocking.  The queue is drained whenever any thread already
+// holds the GIL (in get_data(), _inc_ref, or init_buffer).
+// ---------------------------------------------------------------------------
+
+struct DeferredPyRelease
+{
+    // Either a PyObject* to Py_DECREF, or a Py_buffer to PyBuffer_Release
+    // plus an optional PyObject* to also DECREF (the owner).
+    enum class Kind { DecRef, BufferRelease };
+    Kind kind;
+    PyObject* obj = nullptr;       // for DecRef, or buffer owner
+    Py_buffer buffer = { 0 };      // for BufferRelease
+};
+
+static std::mutex s_deferred_mutex;
+static std::deque<DeferredPyRelease> s_deferred_queue;
+
+// Must be called while GIL is held
+static void _drain_deferred_queue()
+{
+    std::deque<DeferredPyRelease> local;
+    {
+        std::lock_guard<std::mutex> lk(s_deferred_mutex);
+        local.swap(s_deferred_queue);
+    }
+    for (auto& item : local)
+    {
+        if (item.kind == DeferredPyRelease::Kind::DecRef)
+        {
+            Py_DECREF(item.obj);
+        }
+        else // BufferRelease
+        {
+            PyBuffer_Release(&item.buffer);
+        }
+    }
+}
+
+static void _enqueue_decref(PyObject* obj)
+{
+    std::lock_guard<std::mutex> lk(s_deferred_mutex);
+    s_deferred_queue.push_back({ DeferredPyRelease::Kind::DecRef, obj, { 0 } });
+}
+
+static void _enqueue_buffer_release(Py_buffer buf)
+{
+    std::lock_guard<std::mutex> lk(s_deferred_mutex);
+    s_deferred_queue.push_back({ DeferredPyRelease::Kind::BufferRelease, nullptr, buf });
+}
+
+// Check if the current thread already holds the GIL.
+// Uses PyGILState_Check which returns 1 if GIL is held by current thread.
+static bool _current_thread_holds_gil()
+{
+    return PyGILState_Check() == 1;
+}
+
 inline void _inc_ref(PyObject* obj)
 {
-
 #ifdef _TRACE_REF_COUNT
     std::cout << "Inc ref " << obj << " " << obj->ob_refcnt << std::endl;
 #endif
     PyGILState_STATE state = PyGILState_Ensure();
+    _drain_deferred_queue();
     Py_INCREF(obj);
     PyGILState_Release(state);
 }
 
 inline void _dec_ref(PyObject* obj)
 {
-    auto scoped_gil = PyAutoScopedGIL();
+    if (_current_thread_holds_gil())
+    {
+        // Fast path: we already hold the GIL, do it directly
+        _drain_deferred_queue();
 #ifdef _TRACE_REF_COUNT
-    std::cout << "Dec ref: " << obj << " " << obj->ob_refcnt << std::endl;
-    if (obj->ob_refcnt == 1)
-    {
-        std::cout << "Dec ref, Last ref: " << obj << std::endl;
-    }
-    else if (obj->ob_refcnt > 100)
-    {
-        std::cout << "Dec ref, weird high refcount: " << obj << " " << obj->ob_refcnt << std::endl;
-    }
+        std::cout << "Dec ref: " << obj << " " << obj->ob_refcnt << std::endl;
 #endif
-    Py_DECREF(obj);
+        Py_DECREF(obj);
+    }
+    else
+    {
+        // Slow path would block: defer instead
+        _enqueue_decref(obj);
+    }
 }
 
 struct PyObjectWrapper
@@ -211,6 +280,7 @@ struct _PyBuffer_impl : PyObjectWrapper
         this->py_obj.set_obj(obj);
         {
             auto scoped_gil = PyAutoScopedGIL();
+            _drain_deferred_queue();
             this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
                                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS
                                                     | PyBUF_FORMAT)
@@ -239,8 +309,16 @@ struct _PyBuffer_impl : PyObjectWrapper
     {
         if (this->is_valid)
         {
-            auto scoped_gil = PyAutoScopedGIL();
-            PyBuffer_Release(&this->buffer);
+            if (_current_thread_holds_gil())
+            {
+                _drain_deferred_queue();
+                PyBuffer_Release(&this->buffer);
+            }
+            else
+            {
+                // Defer the buffer release to avoid blocking on GIL
+                _enqueue_buffer_release(this->buffer);
+            }
             this->is_valid = false;
             this->buffer = { 0 };
         }
@@ -402,6 +480,7 @@ struct _GetDataPyCallable_impl
     {
         this->_py_obj.set_obj(obj);
         auto scoped_gil = PyAutoScopedGIL();
+        _drain_deferred_queue();
         this->_is_valid = PyCallable_Check(obj);
     }
 
@@ -411,6 +490,7 @@ struct _GetDataPyCallable_impl
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
+            _drain_deferred_queue();
             auto args = PyTuple_New(2);
             PyTuple_SetItem(args, 0, PyFloat_FromDouble(lower));
             PyTuple_SetItem(args, 1, PyFloat_FromDouble(upper));
@@ -446,6 +526,7 @@ struct _GetDataPyCallable_impl
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
+            _drain_deferred_queue();
             auto args = PyTuple_New(2);
             Py_IncRef(x.py_object());
             Py_IncRef(y.py_object());
@@ -483,6 +564,7 @@ struct _GetDataPyCallable_impl
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
+            _drain_deferred_queue();
             auto args = PyTuple_New(2);
             Py_IncRef(x.py_object());
             Py_IncRef(y.py_object());
