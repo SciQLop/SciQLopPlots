@@ -34,6 +34,7 @@
 #include "SciQLopPlots/SciQLopOverlay.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include <QElapsedTimer>
 #include <QPointF>
 #include <optional>
 #include <qcustomplot.h>
@@ -51,6 +52,7 @@ class SciQLopPlot : public QCustomPlot
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
     bool m_replot_pending = false;
+    QElapsedTimer m_drag_throttle_timer;
 
     QList<SciQLopPlottableInterface*> m_plottables;
     SciQLopColorMap* m_color_map = nullptr;
