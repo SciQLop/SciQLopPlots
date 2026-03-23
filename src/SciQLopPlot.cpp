@@ -238,6 +238,20 @@ void SciQLopPlot::mousePressEvent(QMouseEvent* event)
 
 void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
+    if (event->buttons() != Qt::NoButton)
+    {
+        // Throttle drag events — Linux/Wayland can deliver 1000+ mouse
+        // events/sec which saturates the event loop with rangeChanged
+        // signal chains.  Cap at ~120 Hz to match macOS-like behavior.
+        if (m_drag_throttle_timer.isValid() && m_drag_throttle_timer.elapsed() < 8)
+        {
+            event->accept();
+            return;
+        }
+        m_drag_throttle_timer.start();
+        QCustomPlot::mouseMoveEvent(event);
+        return;
+    }
     QCustomPlot::mouseMoveEvent(event);
     _update_mouse_cursor(event);
     _update_tracer(event->pos());
