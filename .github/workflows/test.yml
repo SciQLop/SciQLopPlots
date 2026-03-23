@@ -44,7 +44,7 @@ jobs:
           sudo apt-get install -y xvfb libegl1 libgl1 libgl-dev ccache libclang-dev llvm-dev
 
       - name: Cache Qt
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Qt
           key: qt-linux-${{ env.QT_VERSION }}
@@ -55,7 +55,7 @@ jobs:
           [ -d "Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O Qt linux desktop ${{ env.QT_VERSION }} -m qtshadertools
 
       - name: Cache ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ccache
           key: ccache-integration-${{ hashFiles('src/**', 'include/**', 'meson.build') }}
