@@ -87,12 +87,13 @@ void StraightLine::set_line_width(double width)
 
 double StraightLine::line_width() const
 {
-    return this->pen().width();
+    return this->pen().widthF();
 }
 
 void SciQLopStraightLine::set_position(double pos)
 {
-    m_line->set_position(pos);
+    if (!m_line.isNull())
+        m_line->set_position(pos);
 }
 
 

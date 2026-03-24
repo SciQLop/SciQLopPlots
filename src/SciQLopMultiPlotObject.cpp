@@ -60,12 +60,15 @@ void SciQLopMultiPlotObject::updatePlotList(const QList<QPointer<SciQLopPlotInte
             addObject(plot);
         }
     }
+    QList<QPointer<SciQLopPlotInterface>> to_remove;
     for (auto& plot : m_plots)
     {
         if (!plots.contains(plot) && !plot.isNull())
-        {
-            m_plots.removeOne(plot);
-            removeObject(plot);
-        }
+            to_remove.append(plot);
+    }
+    for (auto& plot : to_remove)
+    {
+        m_plots.removeOne(plot);
+        removeObject(plot);
     }
 }

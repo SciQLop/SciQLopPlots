@@ -26,9 +26,11 @@ def _patch_sciqlop_plot(cls):
             res = None
             if graph_type == GraphType.ParametricCurve:
                 res = cls.parametric_curve(self, callback, **kwargs)
-            if graph_type == GraphType.Line:
+            elif graph_type == GraphType.Line:
                 res = cls.line(self, callback, **kwargs)
-            if graph_type == GraphType.ColorMap:
+            elif graph_type == GraphType.Scatter:
+                res = cls.scatter(self, callback, **kwargs)
+            elif graph_type == GraphType.ColorMap:
                 res = cls.colormap(self, callback, **kwargs)
             return res
         except Exception as e:
@@ -49,6 +51,8 @@ def _patch_sciqlop_plot(cls):
             if len(args) == 2:
                 if graph_type == GraphType.Line:
                     return cls.line(self, *args, **kwargs)
+                if graph_type == GraphType.Scatter:
+                    return cls.scatter(self, *args, **kwargs)
             if len(args) == 3:
                 return cls.colormap(self, *args, **kwargs)
 

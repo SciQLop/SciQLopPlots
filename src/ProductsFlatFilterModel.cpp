@@ -1,7 +1,9 @@
 #include "SciQLopPlots/Products/ProductsFlatFilterModel.hpp"
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/SubsequenceMatcher.hpp"
+#include <QDataStream>
 #include <QDateTime>
+#include <QIODevice>
 #include <algorithm>
 #include <magic_enum/magic_enum.hpp>
 
@@ -66,17 +68,19 @@ Qt::ItemFlags ProductsFlatFilterModel::flags(const QModelIndex& index) const
 QMimeData* ProductsFlatFilterModel::mimeData(const QModelIndexList& indexes) const
 {
     auto* mime = new QMimeData();
-    QByteArray data;
+    QByteArray encodedData;
+    QDataStream stream(&encodedData, QIODevice::WriteOnly);
+    QStringList textParts;
     for (const auto& index : indexes)
     {
         if (!index.isValid() || index.row() >= m_results.size())
             continue;
         auto p = m_results[index.row()].node->path();
-        data.append(p.join("//").toUtf8());
-        data.append("\n");
+        stream << p;
+        textParts.append(p.join("//"));
     }
-    mime->setData(ProductsModel::mime_type(), data);
-    mime->setText(QString::fromUtf8(data).trimmed());
+    mime->setData(ProductsModel::mime_type(), encodedData);
+    mime->setText(textParts.join("\n"));
     return mime;
 }
 

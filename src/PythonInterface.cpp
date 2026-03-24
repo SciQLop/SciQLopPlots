@@ -516,6 +516,11 @@ struct _GetDataPyCallable_impl
                 }
                 Py_DECREF(res);
             }
+            else
+            {
+                PyErr_Print();
+                PyErr_Clear();
+            }
         }
         return data;
     }
@@ -554,6 +559,11 @@ struct _GetDataPyCallable_impl
                 }
                 Py_DECREF(res);
             }
+            else
+            {
+                PyErr_Print();
+                PyErr_Clear();
+            }
         }
         return data;
     }
@@ -565,7 +575,7 @@ struct _GetDataPyCallable_impl
         {
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
-            auto args = PyTuple_New(2);
+            auto args = PyTuple_New(3);
             Py_IncRef(x.py_object());
             Py_IncRef(y.py_object());
             Py_IncRef(z.py_object());
@@ -593,6 +603,11 @@ struct _GetDataPyCallable_impl
                     }
                 }
                 Py_DECREF(res);
+            }
+            else
+            {
+                PyErr_Print();
+                PyErr_Clear();
             }
         }
         return data;

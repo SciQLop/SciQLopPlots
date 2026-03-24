@@ -192,13 +192,10 @@ protected:
     {
         SciQLopGraphInterface* plottable = new T(this, std::forward<Args>(args)...);
         _register_plottable_wrapper(plottable);
-        return reinterpret_cast<T*>(plottable);
+        return static_cast<T*>(plottable);
     }
 
     void _register_plottable_wrapper(SciQLopPlottableInterface* plottable);
-    void _register_plottable(QCPAbstractPlottable* plotable);
-
-    SciQLopGraphInterface* plottable_wrapper(QCPAbstractPlottable* plottable);
 
     void _ensure_colorscale_is_visible(SciQLopColorMap* cmap);
     void _ensure_colorscale_is_visible(SciQLopHistogram2D* hist);

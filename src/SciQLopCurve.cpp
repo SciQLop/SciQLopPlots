@@ -47,10 +47,10 @@ void SciQLopCurve::clear_curves(bool curve_already_removed)
 
 void SciQLopCurve::clear_resampler()
 {
-    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QThread::deleteLater);
     disconnect(this->_resampler, &CurveResampler::setGraphData, this, &SciQLopCurve::_setCurveData);
     this->_resampler_thread->quit();
     this->_resampler_thread->wait();
+    delete this->_resampler;
     delete this->_resampler_thread;
     this->_resampler = nullptr;
     this->_resampler_thread = nullptr;
