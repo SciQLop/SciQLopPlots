@@ -257,9 +257,13 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
         return;
     }
     QCustomPlot::mouseMoveEvent(event);
+    // Throttle hover updates — plottableAt + itemAt + selectTest + overlay
+    // replot are expensive at 1000+ Hz.  60 Hz is plenty for a tooltip.
+    if (m_hover_throttle_timer.isValid() && m_hover_throttle_timer.elapsed() < 16)
+        return;
+    m_hover_throttle_timer.start();
     _update_mouse_cursor(event);
     _update_tracer(event->pos());
-    QWidget::mouseMoveEvent(event);
 }
 
 void SciQLopPlot::enterEvent(QEnterEvent* event)
@@ -435,11 +439,9 @@ bool SciQLopPlot::_update_tracer(const QPointF& pos)
         m_tracer->update_position(pos);
         return true;
     }
-    else
-    {
+    if (m_tracer->visible())
         m_tracer->set_plotable(nullptr);
-        return false;
-    }
+    return false;
 }
 
 bool SciQLopPlot::_update_mouse_cursor(QMouseEvent* event)
