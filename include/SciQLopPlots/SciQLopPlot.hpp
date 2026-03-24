@@ -53,6 +53,7 @@ class SciQLopPlot : public QCustomPlot
     QList<SciQLopPlotAxis*> m_axes;
     bool m_replot_pending = false;
     QElapsedTimer m_drag_throttle_timer;
+    QElapsedTimer m_hover_throttle_timer;
     bool m_suppress_range_signals = false;
 
     QList<SciQLopPlottableInterface*> m_plottables;

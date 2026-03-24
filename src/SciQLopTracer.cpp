@@ -112,16 +112,21 @@ TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
 
 TracerWithToolTip::~TracerWithToolTip() { }
 
-void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
+void TracerWithToolTip::update_position(const QPointF& pos, bool do_replot)
 {
     if (m_tracer->plotable() == nullptr)
         return;
     if (!visible())
         set_visible(true);
     m_tracer->updatePosition(pos);
-    m_x = m_tracer->key();
-    m_y = m_tracer->value();
-    m_data = m_tracer->data();
+    const double new_x = m_tracer->key();
+    const double new_y = m_tracer->value();
+    const double new_data = m_tracer->data();
+    if (new_x == m_x && new_y == m_y && new_data == m_data)
+        return;
+    m_x = new_x;
+    m_y = new_y;
+    m_data = new_data;
     _impl::_update_tooltip_alignment(m_tooltip, m_tracer->quadrant());
     m_tooltip->position->setPixelPosition(m_tracer->position->pixelPosition());
     auto keyAxis = m_tracer->plotable()->keyAxis();
@@ -134,7 +139,7 @@ void TracerWithToolTip::update_position(const QPointF& pos, bool replot)
         m_tooltip->setHtml(QString::fromStdString(fmt::format("x: <b>{}</b><br>y: <b>{}</b>",
                                        _impl::_render_value(m_x, keyAxis),
                                        _impl::_render_value(m_y, valueAxis))));
-    if (replot)
+    if (do_replot)
         this->replot();
 }
 
