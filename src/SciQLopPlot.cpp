@@ -74,16 +74,16 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
     connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
     connect(this->xAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT x2_axis_range_changed({ range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT x2_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT y_axis_range_changed({ range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT y_axis_range_changed({ range.lower, range.upper }); });
     connect(this->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT y2_axis_range_changed({ range.lower, range.upper }); });
 
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
@@ -93,7 +93,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     connect(m_color_scale->axis(), QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT z_axis_range_changed({ range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT z_axis_range_changed({ range.lower, range.upper }); });
 
     this->m_axes.append(new SciQLopPlotAxis(this->xAxis, this, false, "X Axis"));
     this->m_axes.append(new SciQLopPlotAxis(this->yAxis, this, false, "Y Axis"));
@@ -240,16 +240,18 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
     if (event->buttons() != Qt::NoButton)
     {
-        // Throttle drag events — Linux/Wayland can deliver 1000+ mouse
-        // events/sec which saturates the event loop with rangeChanged
-        // signal chains.  Cap at ~120 Hz to match macOS-like behavior.
-        if (m_drag_throttle_timer.isValid() && m_drag_throttle_timer.elapsed() < 8)
-        {
-            event->accept();
-            return;
-        }
-        m_drag_throttle_timer.start();
+        // Every drag event goes to QCustomPlot so axes move smoothly and
+        // NeoQCP redraws from its L2 cache.  The expensive SciQLopPlots
+        // signal chain (AxisSynchronizer, data pipelines) is suppressed
+        // between throttle ticks (~120 Hz) to avoid saturating the event
+        // loop on Linux/Wayland (1000+ Hz raw mouse rate).
+        const bool throttled = m_drag_throttle_timer.isValid()
+            && m_drag_throttle_timer.elapsed() < 8;
+        if (!throttled)
+            m_drag_throttle_timer.start();
+        m_suppress_range_signals = throttled;
         QCustomPlot::mouseMoveEvent(event);
+        m_suppress_range_signals = false;
         return;
     }
     QCustomPlot::mouseMoveEvent(event);
