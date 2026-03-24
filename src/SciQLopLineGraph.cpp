@@ -96,19 +96,9 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
             const auto n_cols = y.size(1);
             if (y.row_major())
             {
-                std::vector<std::vector<V>> owned_columns(n_cols);
-                for (std::size_t col = 0; col < n_cols; ++col)
-                {
-                    owned_columns[col].resize(n);
-                    for (int row = 0; row < n; ++row)
-                        owned_columns[col][row] = values[row * n_cols + col];
-                }
-                std::vector<double> owned_keys(keys, keys + n);
-                std::vector<std::vector<V>> cols_move;
-                cols_move.reserve(n_cols);
-                for (auto& col : owned_columns)
-                    cols_move.push_back(std::move(col));
-                _multiGraph->setData(std::move(owned_keys), std::move(cols_move));
+                _multiGraph->viewRowMajorData<double, V>(
+                    std::span<const double>(keys, n),
+                    values, n, static_cast<int>(n_cols), static_cast<int>(n_cols));
             }
             else
             {

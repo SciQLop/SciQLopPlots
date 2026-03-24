@@ -148,12 +148,10 @@ void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 {
     m_mutex.lock();
     m_next_state = new_state;
-    if (!m_has_pending_change)
-    {
-        m_has_pending_change = true;
-        Q_EMIT _state_changed();
-    }
+    m_has_pending_change = true;
     m_mutex.unlock();
+    QMetaObject::invokeMethod(m_rate_limit_timer, qOverload<>(&QTimer::start),
+                              Qt::QueuedConnection);
 }
 
 void DataProviderInterface::set_data(_2D_data new_state) noexcept
