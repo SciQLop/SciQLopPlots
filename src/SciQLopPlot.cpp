@@ -130,6 +130,8 @@ QCPColorMap* SciQLopPlot::addColorMap()
 
 SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(int index)
 {
+    if (m_plottables.isEmpty())
+        return nullptr;
     if (index == -1 || index >= std::size(m_plottables))
         index = std::size(m_plottables) - 1;
     return m_plottables[index];
@@ -156,7 +158,7 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
     {
         m_color_map = new SciQLopColorMap(
             this, this->m_axes[0], this->m_axes[3],
-            reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name);
+            static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name);
         _ensure_colorscale_is_visible(m_color_map);
         _register_plottable_wrapper(m_color_map);
         return m_color_map;
@@ -168,7 +170,7 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
 {
     auto hist = new SciQLopHistogram2D(
         this, this->m_axes[0], this->m_axes[1],
-        reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, key_bins, value_bins);
+        static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, key_bins, value_bins);
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;
@@ -182,7 +184,7 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
     {
         m_color_map = new SciQLopColorMapFunction(
             this, this->m_axes[0], this->m_axes[3],
-            reinterpret_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable),
+            static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable),
             name);
         _ensure_colorscale_is_visible(m_color_map);
         _register_plottable_wrapper(m_color_map);
@@ -767,7 +769,7 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
             y_axis->set_visible(true);
         }
         {
-            if (auto z_axis = reinterpret_cast<SciQLopPlotColorScaleAxis*>(cmap->z_axis()))
+            if (auto z_axis = static_cast<SciQLopPlotColorScaleAxis*>(cmap->z_axis()))
             {
                 z_axis->set_log(z_log_scale);
                 z_axis->set_visible(true);

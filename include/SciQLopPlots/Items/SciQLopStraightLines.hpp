@@ -83,9 +83,6 @@ signals:
     Q_SIGNAL void moved(double new_position);
 };
 
-/*!
- * \brief The SciQLopPixmapItem class
- */
 class SciQLopStraightLine : public QObject
 {
     Q_OBJECT

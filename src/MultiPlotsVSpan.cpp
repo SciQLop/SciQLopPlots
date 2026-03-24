@@ -51,13 +51,9 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
 {
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
-        auto new_span = new SciQLopVerticalSpan(scp, _horizontal_range, true);
+        auto new_span
+            = new SciQLopVerticalSpan(scp, _horizontal_range, _color, _read_only, _visible, _tool_tip);
         new_span->set_selected(_selected);
-        new_span->set_range(_horizontal_range);
-        new_span->set_visible(_visible);
-        new_span->set_color(_color);
-        new_span->set_read_only(_read_only);
-        new_span->set_tool_tip(_tool_tip);
         QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
                          &MultiPlotsVerticalSpan::set_range);
         QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
@@ -76,7 +72,7 @@ void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
 {
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
-        for (decltype(std::size(_spans)) i = 0UL; i < std::size(_spans); ++i)
+        for (int i = _spans.size() - 1; i >= 0; --i)
         {
             if (_spans[i]->parentPlot() == scp->qcp_plot())
             {

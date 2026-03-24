@@ -63,13 +63,8 @@ ProductsModelNode::ProductsModelNode(const QString& name, const QString& provide
 
 void ProductsModelNode::add_child(ProductsModelNode* child)
 {
-    for (auto node : m_children)
-    {
-        if (node->name() == child->name())
-        {
-            m_children.removeOne(node);
-        }
-    }
+    m_children.removeIf(
+        [&child](ProductsModelNode* node) { return node->name() == child->name(); });
     m_children.append(child);
     child->setParent(this);
 }

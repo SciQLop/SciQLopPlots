@@ -279,7 +279,7 @@ public:
          QList<QColor> colors = QList<QColor>(),
          ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::Line, marker);
+        return plot_impl(x, y, labels, colors, ::GraphType::Line, marker, metaData);
     }
 
     inline virtual SciQLopGraphInterface*

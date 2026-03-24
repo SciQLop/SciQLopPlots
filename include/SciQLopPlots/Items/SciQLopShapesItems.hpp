@@ -268,7 +268,10 @@ public:
         return qptr_apply_or(m_item, [](auto&& item) { return item->boundingRectangle(); });
     }
 
-    [[nodiscard]] inline QString tool_tip() const noexcept override { return m_item->tooltip(); }
+    [[nodiscard]] inline QString tool_tip() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
+    }
 
     inline void set_tool_tip(const QString& toolTip) noexcept override
     {

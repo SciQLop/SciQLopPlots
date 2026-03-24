@@ -98,7 +98,12 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
 
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)
 {
-    return plottables().at(index);
+    auto all = plottables();
+    if (all.isEmpty())
+        return nullptr;
+    if (index < 0 || index >= all.size())
+        index = all.size() - 1;
+    return all.at(index);
 }
 
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(const QString& name)

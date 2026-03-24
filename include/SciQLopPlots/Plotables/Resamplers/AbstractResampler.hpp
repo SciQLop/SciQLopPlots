@@ -102,14 +102,12 @@ protected:
                 _data = _next_data;
                 _next_data.new_data = false;
             }
-            if constexpr (data2d)
+            ResamplerPlotInfo plot_info_copy;
             {
-                static_cast<U*>(this)->_resample_impl(_data, _plot_info);
+                QMutexLocker locker(&_plot_info_mutex);
+                plot_info_copy = _plot_info;
             }
-            else
-            {
-                static_cast<U*>(this)->_resample_impl(_data, _plot_info);
-            }
+            static_cast<U*>(this)->_resample_impl(_data, plot_info_copy);
             _data.new_data = false;
         }
     }
@@ -130,7 +128,11 @@ protected:
         return { std::nan(""), std::nan("") };
     }
 
-    void _resample() { static_cast<U*>(this)->resample(_plot_info.plot_range); }
+    void _resample()
+    {
+        QMutexLocker locker(&_plot_info_mutex);
+        static_cast<U*>(this)->resample(_plot_info.plot_range);
+    }
 
 public:
     inline void setData(PyBuffer x, PyBuffer y, auto... maybe_z)
@@ -157,15 +159,17 @@ public:
 
     inline void set_y_scale_log(bool log)
     {
-        QMutexLocker locker(&_plot_info_mutex);
-        _plot_info.y_is_log = log;
+        {
+            QMutexLocker locker(&_plot_info_mutex);
+            _plot_info.y_is_log = log;
+        }
         this->_resample();
     }
 
     inline QCPRange x_range()
     {
         QMutexLocker locker(&_data_mutex);
-        return this->_data._x_range;
+        return this->_data.x_range;
     }
 
     QList<PyBuffer> get_data()
@@ -184,8 +188,10 @@ public:
 
     void set_plot_size(QSize size)
     {
-        QMutexLocker locker(&_plot_info_mutex);
-        _plot_info.plot_size = size;
+        {
+            QMutexLocker locker(&_plot_info_mutex);
+            _plot_info.plot_size = size;
+        }
         this->_resample();
     }
 };
