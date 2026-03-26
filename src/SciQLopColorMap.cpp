@@ -71,6 +71,11 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(x.flat_size());
 
+    if (nx > 0)
+        m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);
+    else
+        m_data_range = SciQLopPlotRange();
+
     dispatch_dtype(y.format_code(), [&](auto y_tag) {
         dispatch_dtype(z.format_code(), [&](auto z_tag) {
             using Y = typename decltype(y_tag)::type;

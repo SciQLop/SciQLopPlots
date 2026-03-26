@@ -24,10 +24,12 @@
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
 #include "SciQLopPlotCollection.hpp"
+#include <QTimer>
 
 class VPlotsAlign : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
+    QTimer* m_debounce_timer = nullptr;
     void _recompute_margins();
 
 public:

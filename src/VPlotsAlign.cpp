@@ -74,7 +74,13 @@ void VPlotsAlign::_recompute_margins()
     }
 }
 
-VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent) { }
+VPlotsAlign::VPlotsAlign(QObject* parent) : SciQLopPlotCollectionBehavior(parent)
+{
+    m_debounce_timer = new QTimer(this);
+    m_debounce_timer->setSingleShot(true);
+    m_debounce_timer->setInterval(16);
+    connect(m_debounce_timer, &QTimer::timeout, this, &VPlotsAlign::_recompute_margins);
+}
 
 void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
 {
@@ -86,11 +92,11 @@ void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& pl
             if (auto p = qobject_cast<SciQLopPlot*>(plot))
             {
                 connect(p, &SciQLopPlot::y_axis_range_changed, this,
-                        [this](SciQLopPlotRange) { _recompute_margins(); });
+                        [this](SciQLopPlotRange) { m_debounce_timer->start(); });
                 connect(p, &SciQLopPlot::y2_axis_range_changed, this,
-                        [this](SciQLopPlotRange) { _recompute_margins(); });
+                        [this](SciQLopPlotRange) { m_debounce_timer->start(); });
                 connect(p, &SciQLopPlot::z_axis_range_changed, this,
-                        [this](SciQLopPlotRange) { _recompute_margins(); });
+                        [this](SciQLopPlotRange) { m_debounce_timer->start(); });
                 p->installEventFilter(this);
             }
         },
@@ -111,6 +117,6 @@ void VPlotsAlign::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& pl
 bool VPlotsAlign::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::Resize)
-        _recompute_margins();
+        m_debounce_timer->start();
     return false;
 }
