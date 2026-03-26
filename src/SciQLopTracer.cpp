@@ -107,6 +107,7 @@ TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
     m_tooltip->setTextAlignment(Qt::AlignLeft);
     m_tooltip->setLayer("overlay");
     m_tooltip->setVisible(false);
+    m_tracer->setLayer("overlay");
     m_tracer->setStyle(QCPItemTracer::TracerStyle::tsCircle);
 }
 

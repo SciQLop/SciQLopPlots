@@ -131,6 +131,7 @@ public:
         if (plotable == nullptr)
         {
             set_visible(false);
+            m_x = m_y = m_data = std::nan("");
             replot();
         }
     }
