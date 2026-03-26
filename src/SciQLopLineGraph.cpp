@@ -98,7 +98,7 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
             {
                 _multiGraph->viewRowMajorData<double, V>(
                     std::span<const double>(keys, n),
-                    values, n, static_cast<int>(n_cols), static_cast<int>(n_cols));
+                    values, static_cast<int>(n_cols), static_cast<int>(n_cols));
             }
             else
             {
