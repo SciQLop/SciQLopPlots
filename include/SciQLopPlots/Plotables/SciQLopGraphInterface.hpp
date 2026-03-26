@@ -44,6 +44,7 @@ class SciQLopPlottableInterface : public QObject
 
 protected:
     SciQLopPlotRange m_range;
+    SciQLopPlotRange m_data_range; // key range of currently loaded data
     QVariantMap m_metaData;
 
 public:
@@ -69,6 +70,8 @@ public:
     inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
 
     virtual SciQLopPlotRange range() const noexcept { return m_range; }
+
+    SciQLopPlotRange data_range() const noexcept { return m_data_range; }
 
     virtual bool visible() const noexcept
     {
@@ -305,6 +308,8 @@ public:
 
     inline virtual void call(const SciQLopPlotRange& range) noexcept
     {
+        if (as_graph->data_range().is_valid() && as_graph->data_range().contains(range))
+            return;
         as_graph->set_busy(true);
         m_pipeline->call(range);
     }

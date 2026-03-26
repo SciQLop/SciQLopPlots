@@ -82,6 +82,11 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
     const auto* keys = static_cast<const double*>(x.raw_data());
     const int n = static_cast<int>(x.flat_size());
 
+    if (n > 0)
+        m_data_range = SciQLopPlotRange(keys[0], keys[n - 1]);
+    else
+        m_data_range = SciQLopPlotRange();
+
     dispatch_dtype(y.format_code(), [&](auto tag) {
         using V = typename decltype(tag)::type;
         const auto* values = static_cast<const V*>(y.raw_data());
