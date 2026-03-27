@@ -24,11 +24,12 @@
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 
 #include <QEvent>
+#include <limits>
 
 void VPlotsAlign::_recompute_margins()
 {
-    std::size_t max_left_margin = 0UL;
-    std::size_t max_right_pos = 1000000000UL;
+    int max_left_margin = 0;
+    int max_right_pos = std::numeric_limits<int>::max();
     for (auto& _p : _plots)
     {
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
@@ -37,15 +38,15 @@ void VPlotsAlign::_recompute_margins()
             if (p->width() <= 0 || p->height() <= 0
                 || ar->rect().width() <= 0 || ar->rect().height() <= 0)
                 continue;
-            std::size_t left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
-            std::size_t cmw = 0UL;
+            int left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
+            int cmw = 0;
             if (p->has_colormap())
             {
                 cmw = p->color_scale()->outerRect().width();
                 cmw += ar->calculateAutoMargin(QCP::MarginSide::msRight);
             }
             max_left_margin = std::max(max_left_margin, left_margin);
-            max_right_pos = std::min(max_right_pos, p->width() - cmw);
+            max_right_pos = std::min(max_right_pos, std::max(0, p->width() - cmw));
         }
     }
     for (auto& _p : _plots)
@@ -53,10 +54,13 @@ void VPlotsAlign::_recompute_margins()
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
         {
             auto ar = p->qcp_plot()->axisRect();
-            std::size_t new_right_margin = p->width() - max_right_pos;
+            if (p->width() <= 0 || p->height() <= 0
+                || ar->rect().width() <= 0 || ar->rect().height() <= 0)
+                continue;
+            int new_right_margin = std::max(0, p->width() - max_right_pos);
             if (p->has_colormap())
             {
-                new_right_margin -= p->color_scale()->outerRect().width();
+                new_right_margin = std::max(0, new_right_margin - p->color_scale()->outerRect().width());
             }
             else
             {

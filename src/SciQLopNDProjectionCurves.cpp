@@ -35,7 +35,8 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
     {
         auto curve = qobject_cast<SciQLopCurve*>(
             plots[i]->parametric_curve(PyBuffer(), PyBuffer(), { labels[i] }));
-        m_curves.append(curve);
+        if (curve)
+            m_curves.append(curve);
     }
 }
 
@@ -74,13 +75,15 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
 {
     const auto curves_count = m_curves.size();
 
+    if (curves_count < 2)
+    {
+        DEBUG_MESSAGE("Need at least 2 curves for projection");
+        return;
+    }
+
     if (data.size() == curves_count + 1)
     {
         auto data_without_time = data.sliced(1);
-        // Expected sequence for 3 curves:
-        // Y(x)
-        // Z(y)
-        // Z(x)
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
             m_curves[i]->set_data(data_without_time[i % (curves_count - 1)],

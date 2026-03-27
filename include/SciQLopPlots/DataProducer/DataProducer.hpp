@@ -146,6 +146,7 @@ class SimplePyCallablePWrapper : public DataProviderInterface
 {
     Q_OBJECT
     GetDataPyCallable m_callable;
+    mutable QMutex m_callable_mutex;
 
 public:
     SimplePyCallablePWrapper(GetDataPyCallable&& callable, QObject* parent = nullptr)
@@ -157,7 +158,9 @@ public:
 
     inline virtual QList<PyBuffer> get_data(double lower, double upper) override
     {
-        auto r = m_callable.get_data(lower, upper);
+        GetDataPyCallable cb;
+        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
+        auto r = cb.get_data(lower, upper);
         QList<PyBuffer> result;
         for (auto& a : r)
             result.emplace_back(std::move(a));
@@ -166,7 +169,9 @@ public:
 
     inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y) override
     {
-        auto r = m_callable.get_data(x, y);
+        GetDataPyCallable cb;
+        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
+        auto r = cb.get_data(x, y);
         QList<PyBuffer> result;
         for (auto& a : r)
             result.emplace_back(std::move(a));
@@ -175,15 +180,26 @@ public:
 
     inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z) override
     {
-        auto r = m_callable.get_data(x, y, z);
+        GetDataPyCallable cb;
+        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
+        auto r = cb.get_data(x, y, z);
         QList<PyBuffer> result;
         for (auto& a : r)
             result.emplace_back(std::move(a));
         return result;
     }
 
-    inline void set_callable(GetDataPyCallable&& callable) { m_callable = std::move(callable); }
-    inline GetDataPyCallable callable() const { return m_callable; }
+    inline void set_callable(GetDataPyCallable&& callable)
+    {
+        QMutexLocker lock(&m_callable_mutex);
+        m_callable = std::move(callable);
+    }
+
+    inline GetDataPyCallable callable() const
+    {
+        QMutexLocker lock(&m_callable_mutex);
+        return m_callable;
+    }
 };
 
 
