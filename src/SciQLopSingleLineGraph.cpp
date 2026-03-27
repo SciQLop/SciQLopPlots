@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include <datasource/soa-datasource.h>
@@ -113,22 +114,12 @@ QList<PyBuffer> SciQLopSingleLineGraph::data() const noexcept
 
 void SciQLopSingleLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _keyAxis = qcp_axis;
-        if (_graph)
-            _graph->setKeyAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_keyAxis, axis, [this](auto* a) { if (_graph) _graph->setKeyAxis(a); });
 }
 
 void SciQLopSingleLineGraph::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _valueAxis = qcp_axis;
-        if (_graph)
-            _graph->setValueAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_valueAxis, axis, [this](auto* a) { if (_graph) _graph->setValueAxis(a); });
 }
 
 SciQLopSingleLineGraphFunction::SciQLopSingleLineGraphFunction(

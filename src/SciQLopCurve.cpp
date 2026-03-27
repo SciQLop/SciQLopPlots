@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 
@@ -105,28 +106,18 @@ QList<PyBuffer> SciQLopCurve::data() const noexcept
 
 void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        this->_keyAxis = qcp_axis;
-        for (auto plottable : m_components)
-        {
-            auto curve = qobject_cast<QCPCurve*>(plottable->plottable());
-            curve->setKeyAxis(qcp_axis->qcp_axis());
-        }
-    }
+    apply_axis(_keyAxis, axis, [this](auto* a) {
+        for (auto p : m_components)
+            qobject_cast<QCPCurve*>(p->plottable())->setKeyAxis(a);
+    });
 }
 
 void SciQLopCurve::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        this->_valueAxis = qcp_axis;
-        for (auto plottable : m_components)
-        {
-            auto curve = qobject_cast<QCPCurve*>(plottable->plottable());
-            curve->setValueAxis(qcp_axis->qcp_axis());
-        }
-    }
+    apply_axis(_valueAxis, axis, [this](auto* a) {
+        for (auto p : m_components)
+            qobject_cast<QCPCurve*>(p->plottable())->setValueAxis(a);
+    });
 }
 
 void SciQLopCurve::create_graphs(const QStringList& labels)

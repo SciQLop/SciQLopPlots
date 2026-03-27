@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
 #include <vector>
 
@@ -139,22 +140,12 @@ QList<PyBuffer> SciQLopLineGraph::data() const noexcept
 
 void SciQLopLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _keyAxis = qcp_axis;
-        if (_multiGraph)
-            _multiGraph->setKeyAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_keyAxis, axis, [this](auto* a) { if (_multiGraph) _multiGraph->setKeyAxis(a); });
 }
 
 void SciQLopLineGraph::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _valueAxis = qcp_axis;
-        if (_multiGraph)
-            _multiGraph->setValueAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_valueAxis, axis, [this](auto* a) { if (_multiGraph) _multiGraph->setValueAxis(a); });
 }
 
 SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
