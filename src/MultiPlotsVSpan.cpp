@@ -185,7 +185,7 @@ QPointer<MultiPlotsVerticalSpan> MultiPlotsVSpanCollection::span(const QString& 
 {
     for (auto& span : _spans)
     {
-        if (span && span->get_id() == id)
+        if (span && span->id() == id)
         {
             return span;
         }

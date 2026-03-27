@@ -81,11 +81,11 @@ public:
         }
     }
 
-    [[nodiscard]] inline QString get_id() const { return _id; }
+    [[nodiscard]] inline QString id() const { return _id; }
 
     void set_selected(bool selected);
 
-    [[nodiscard]] inline bool is_selected() const noexcept { return _selected; }
+    [[nodiscard]] inline bool selected() const noexcept { return _selected; }
 
     inline void set_color(const QColor& color)
     {
@@ -99,7 +99,7 @@ public:
         }
     }
 
-    inline QColor get_color() const { return _color; }
+    inline QColor color() const { return _color; }
 
     void set_range(const SciQLopPlotRange horizontal_range);
 
@@ -117,7 +117,7 @@ public:
         }
     }
 
-    [[nodiscard]] inline bool is_visible() const noexcept { return _visible; }
+    [[nodiscard]] inline bool visible() const noexcept { return _visible; }
 
     inline void set_tool_tip(const QString& tool_tip)
     {
@@ -131,7 +131,7 @@ public:
         }
     }
 
-    [[nodiscard]] inline QString get_tool_tip() const noexcept { return _tool_tip; }
+    [[nodiscard]] inline QString tool_tip() const noexcept { return _tool_tip; }
 
     inline void set_read_only(bool read_only)
     {
@@ -145,7 +145,7 @@ public:
         }
     }
 
-    [[nodiscard]] inline bool is_read_only() const noexcept { return _read_only; }
+    [[nodiscard]] inline bool read_only() const noexcept { return _read_only; }
 
     inline void show() { set_visible(true); }
 

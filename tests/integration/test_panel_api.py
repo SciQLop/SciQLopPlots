@@ -174,9 +174,9 @@ class TestMultiPlotsVerticalSpan:
         span = MultiPlotsVerticalSpan(
             panel, SciQLopPlotRange(0.0, 1.0),
         )
-        assert span.is_visible()
+        assert span.visible
         span.set_visible(False)
-        assert not span.is_visible()
+        assert not span.visible
 
     def test_color(self, panel, sample_data):
         x, y = sample_data
@@ -185,7 +185,7 @@ class TestMultiPlotsVerticalSpan:
         span = MultiPlotsVerticalSpan(
             panel, SciQLopPlotRange(0.0, 1.0), color,
         )
-        assert span.get_color().red() == 255
+        assert span.color.red() == 255
 
     def test_delete_no_crash(self, panel, sample_data):
         x, y = sample_data
