@@ -258,8 +258,6 @@ public:
 
     inline virtual void enable_cursor(bool enable = true) noexcept { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void enable_legend(bool show = true) noexcept { WARN_ABSTRACT_METHOD; }
-
     inline virtual void minimize_margins() { WARN_ABSTRACT_METHOD; }
 
     inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }

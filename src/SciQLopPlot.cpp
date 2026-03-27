@@ -25,9 +25,7 @@
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
 
-#include <QGestureRecognizer>
 #include <QFileInfo>
-#include <QSharedPointer>
 #include <algorithm>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <utility>

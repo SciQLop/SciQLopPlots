@@ -37,8 +37,6 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     bool _got_first_data = false;
     bool _selected = false;
 
-    QTimer* _icon_update_timer;
-
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
     SciQLopPlotColorScaleAxis* _colorScaleAxis;
@@ -70,7 +68,6 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     }
 
 public:
-    Q_ENUMS(FractionStyle)
     explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,
                              SciQLopPlotColorScaleAxis* zAxis, const QString& name,
                              QVariantMap metaData = {});

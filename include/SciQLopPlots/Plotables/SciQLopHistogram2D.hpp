@@ -37,8 +37,6 @@ class SciQLopHistogram2D : public SciQLopColorMapInterface
     bool _got_first_data = false;
     bool _selected = false;
 
-    QTimer* _icon_update_timer;
-
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
     SciQLopPlotColorScaleAxis* _colorScaleAxis;

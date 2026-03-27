@@ -56,13 +56,6 @@ SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axi
     create_graphs(labels);
 }
 
-SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent)
-    : SQPQCPAbstractPlottableWrapper("Line", {}, parent)
-    , _keyAxis{nullptr}
-    , _valueAxis{nullptr}
-{
-}
-
 SciQLopLineGraph::~SciQLopLineGraph()
 {
     clear_graphs();

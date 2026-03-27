@@ -2,7 +2,6 @@
 <typesystem package="SciQLopPlotsBindings">
     <system-include file-name="memory"/>
     <rejection class="std" function-name="^[a-z_]+$"/>
-    <system-include file-name="memory"/>
     <system-include file-name="shared_ptr.h"/>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
@@ -155,9 +154,6 @@
             </modify-argument>
             <modify-argument index="4">
                 <rename to="colors"/>
-            </modify-argument>
-            <modify-argument index="5">
-                <rename to="marker"/>
             </modify-argument>
             <modify-argument index="5">
                 <rename to="marker"/>

@@ -32,7 +32,6 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
                                        const QString& name, int key_bins, int value_bins,
                                        QVariantMap metaData)
     : SciQLopColorMapInterface(metaData, parent)
-    , _icon_update_timer { new QTimer(this) }
     , _keyAxis { xAxis }
     , _valueAxis { yAxis }
     , _colorScaleAxis { zAxis }
@@ -45,9 +44,6 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);
     SciQLopHistogram2D::set_name(name);
-
-    _icon_update_timer->setInterval(1000);
-    _icon_update_timer->setSingleShot(true);
 
     if (auto legend_item = _legend_item(); legend_item)
     {

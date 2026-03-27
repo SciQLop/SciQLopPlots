@@ -31,7 +31,6 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                  SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                  const QString& name, QVariantMap metaData)
     : SciQLopColorMapInterface(metaData, parent)
-    , _icon_update_timer{new QTimer(this)}
     , _keyAxis{xAxis}
     , _valueAxis{yAxis}
     , _colorScaleAxis{zAxis}
@@ -43,9 +42,6 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
     SciQLopColorMap::set_name(name);
-
-    _icon_update_timer->setInterval(1000);
-    _icon_update_timer->setSingleShot(true);
 
     if (auto legend_item = _legend_item(); legend_item)
     {

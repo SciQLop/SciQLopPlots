@@ -51,8 +51,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     void create_resampler(const QStringList& labels);
     void create_graphs(const QStringList& labels);
 
-    inline void create_curves(const QStringList& labels) { create_graphs(labels); }
-
     inline QCPCurve* line(std::size_t index) const
     {
         if (index < plottable_count())
@@ -69,7 +67,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     }
 
 public:
-    Q_ENUMS(FractionStyle)
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                           const QStringList& labels, QVariantMap metaData={});
 

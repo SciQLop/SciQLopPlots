@@ -43,12 +43,9 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
     void clear_graphs(bool graph_already_removed = false);
 
 public:
-    Q_ENUMS(FractionStyle)
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
                               const QStringList& labels = QStringList(), QVariantMap metaData = {});
-
-    SciQLopLineGraph(QCustomPlot* parent);
 
     virtual ~SciQLopLineGraph() override;
 

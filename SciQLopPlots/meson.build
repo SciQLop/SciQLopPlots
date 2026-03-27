@@ -245,10 +245,6 @@ sources = moc_files \
 
 cpp_args = []
 
-#if target_machine.system() != 'darwin'
-#    cpp_args += ['-DQCUSTOMPLOT_USE_OPENGL']
-#endif
-
 if get_option('trace_refcount') == true
     cpp_args += ['-D_TRACE_REF_COUNT']
 endif

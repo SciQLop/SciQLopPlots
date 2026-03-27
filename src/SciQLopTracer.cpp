@@ -25,11 +25,6 @@
 
 namespace _impl
 {
-int _microseconds(const double epoch)
-{
-    return static_cast<int>((epoch * 1e3 - static_cast<int64_t>(epoch * 1e3)) * 1e3);
-}
-
 int _nanoseconds(const double epoch)
 {
     return static_cast<int>((epoch - static_cast<int64_t>(epoch)) * 1e9);
