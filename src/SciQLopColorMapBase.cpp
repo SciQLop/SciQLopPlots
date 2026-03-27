@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
+#include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 
 SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                                          SciQLopPlotColorScaleAxis* colorScaleAxis,
@@ -31,8 +32,8 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
 {
 }
 
-// Derived destructors handle plottable removal before their QPointer is cleared.
-// The base destructor must NOT call plottable() (pure virtual in base context).
+// Derived destructors null their QPointer then remove the plottable,
+// preventing double-removal when the base destructor runs.
 SciQLopColorMapBase::~SciQLopColorMapBase() = default;
 
 void SciQLopColorMapBase::set_selected(bool selected) noexcept
@@ -54,20 +55,14 @@ bool SciQLopColorMapBase::selected() const noexcept
 
 void SciQLopColorMapBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _keyAxis = qcp_axis;
-        if (auto* p = plottable(); p)
-            p->setKeyAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_keyAxis, axis, [this](auto* a) {
+        if (auto* p = plottable(); p) p->setKeyAxis(a);
+    });
 }
 
 void SciQLopColorMapBase::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _valueAxis = qcp_axis;
-        if (auto* p = plottable(); p)
-            p->setValueAxis(qcp_axis->qcp_axis());
-    }
+    apply_axis(_valueAxis, axis, [this](auto* a) {
+        if (auto* p = plottable(); p) p->setValueAxis(a);
+    });
 }

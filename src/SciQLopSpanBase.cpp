@@ -84,7 +84,6 @@ void SciQLopSpanBase::set_read_only(bool read_only)
 {
     if (_item)
     {
-        // QCPAbstractSpanItem::setMovable via static_cast — all our items are span items
         if (auto* span = dynamic_cast<QCPAbstractSpanItem*>(_item.data()))
             span->setMovable(!read_only);
     }
