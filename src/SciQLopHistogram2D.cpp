@@ -31,10 +31,7 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
                                        SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                        const QString& name, int key_bins, int value_bins,
                                        QVariantMap metaData)
-    : SciQLopColorMapInterface(metaData, parent)
-    , _keyAxis { xAxis }
-    , _valueAxis { yAxis }
-    , _colorScaleAxis { zAxis }
+    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metaData), parent)
 {
     _hist = new QCPHistogram2D(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _hist->setLayer(Constants::LayersNames::ColorMap);
@@ -54,8 +51,14 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
 
 SciQLopHistogram2D::~SciQLopHistogram2D()
 {
+    // Clear QPointer before base destructor runs to prevent double-removal
     if (_hist)
-        _plot()->removePlottable(_hist);
+    {
+        auto plot = _plot();
+        auto hist = _hist.data();
+        _hist = nullptr;
+        (void)plot->removePlottable(hist);
+    }
 }
 
 void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
@@ -86,7 +89,6 @@ void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
     if (!_got_first_data && x.flat_size() > 0)
     {
         _got_first_data = true;
-        // Rescale after the async pipeline finishes binning
         connect(
             &_hist->pipeline(),
             &QCPHistogramPipeline::finished, this,
@@ -132,41 +134,4 @@ void SciQLopHistogram2D::set_normalization(int normalization)
 int SciQLopHistogram2D::normalization() const
 {
     return _hist ? static_cast<int>(_hist->normalization()) : 0;
-}
-
-void SciQLopHistogram2D::set_selected(bool selected) noexcept
-{
-    if (_selected != selected)
-    {
-        _selected = selected;
-        auto legend_item = _legend_item();
-        if (legend_item && legend_item->selected() != selected)
-            legend_item->setSelected(selected);
-        emit selection_changed(selected);
-    }
-}
-
-bool SciQLopHistogram2D::selected() const noexcept
-{
-    return _selected;
-}
-
-void SciQLopHistogram2D::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
-{
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _keyAxis = qcp_axis;
-        if (_hist)
-            _hist->setKeyAxis(qcp_axis->qcp_axis());
-    }
-}
-
-void SciQLopHistogram2D::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
-{
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _valueAxis = qcp_axis;
-        if (_hist)
-            _hist->setValueAxis(qcp_axis->qcp_axis());
-    }
 }

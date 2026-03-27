@@ -23,8 +23,8 @@
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
-#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopColorMapBase.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <plottables/plottable-colormap2.h>
@@ -32,20 +32,11 @@
 #include <memory>
 #include <span>
 
-class SciQLopColorMap : public SciQLopColorMapInterface
+class SciQLopColorMap : public SciQLopColorMapBase
 {
-    bool _got_first_data = false;
-    bool _selected = false;
-
-    SciQLopPlotAxis* _keyAxis;
-    SciQLopPlotAxis* _valueAxis;
-    SciQLopPlotColorScaleAxis* _colorScaleAxis;
     QPointer<QCPColorMap2> _cmap;
     bool _auto_scale_y = false;
 
-    // Lifetime wrapper: PyBuffers + data source share lifetime.
-    // The shared_ptr ensures numpy memory stays alive as long as
-    // QCPColorMap2's async resampler holds a reference to the source.
     struct DataSourceWithBuffers {
         PyBuffer x, y, z;
         std::shared_ptr<QCPAbstractDataSource2D> source;
@@ -53,18 +44,13 @@ class SciQLopColorMap : public SciQLopColorMapInterface
     std::shared_ptr<DataSourceWithBuffers> _dataHolder;
 
     Q_OBJECT
-    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _cmap_got_destroyed();
 
-    inline QCPPlottableLegendItem* _legend_item()
+protected:
+    virtual QCPAbstractPlottable* plottable() const override
     {
-        if (_cmap)
-        {
-            auto plot = _plot();
-            return plot->legend->itemWithPlottable(_cmap.data());
-        }
-        return nullptr;
+        return _cmap.data();
     }
 
 public:
@@ -73,13 +59,6 @@ public:
                              QVariantMap metaData = {});
     virtual ~SciQLopColorMap() override;
 
-    inline virtual QString layer() const noexcept override
-    {
-        if (_cmap)
-            return _cmap->layer()->name();
-        return QString();
-    }
-
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
     virtual QList<PyBuffer> data() const noexcept override;
 
@@ -87,16 +66,6 @@ public:
 
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }
-
-    inline virtual ColorGradient gradient() const noexcept override
-    {
-        return _colorScaleAxis->color_gradient();
-    }
-
-    inline virtual void set_gradient(ColorGradient gradient) noexcept override
-    {
-        _colorScaleAxis->set_color_gradient(gradient);
-    }
 
     inline virtual void set_y_log_scale(bool y_log_scale) noexcept override
     {
@@ -119,34 +88,6 @@ public:
     {
         return _colorScaleAxis ? _colorScaleAxis->log() : false;
     }
-
-    virtual void set_selected(bool selected) noexcept override;
-    virtual bool selected() const noexcept override;
-
-    virtual bool busy() const noexcept override
-    {
-        return _cmap ? _cmap->busy() : false;
-    }
-
-    virtual void set_busy(bool busy) noexcept override
-    {
-        if (_cmap)
-            _cmap->setBusy(busy);
-    }
-
-    inline virtual void set_name(const QString& name) noexcept override
-    {
-        this->setObjectName(name);
-        if (_cmap)
-            _cmap->setName(name);
-    }
-
-    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-
-    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
-    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
-    virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return _colorScaleAxis; }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL

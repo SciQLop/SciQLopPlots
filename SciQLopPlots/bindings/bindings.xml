@@ -133,6 +133,7 @@
     <object-type name="SciQLopPlottableInterface" parent-management="yes"/>
     <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapInterface" parent-management="yes" allow-thread="yes"/>
+    <object-type name="SciQLopColorMapBase" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
         <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">

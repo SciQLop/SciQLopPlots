@@ -30,10 +30,7 @@ void SciQLopColorMap::_cmap_got_destroyed()
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                  SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                  const QString& name, QVariantMap metaData)
-    : SciQLopColorMapInterface(metaData, parent)
-    , _keyAxis{xAxis}
-    , _valueAxis{yAxis}
-    , _colorScaleAxis{zAxis}
+    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metaData), parent)
 {
     _cmap = new QCPColorMap2(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _cmap->setLayer(Constants::LayersNames::ColorMap);
@@ -52,8 +49,14 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
 
 SciQLopColorMap::~SciQLopColorMap()
 {
+    // Clear QPointer before base destructor runs to prevent double-removal
     if (_cmap)
-        _plot()->removePlottable(_cmap);
+    {
+        auto plot = _plot();
+        auto cmap = _cmap.data();
+        _cmap = nullptr;
+        (void)plot->removePlottable(cmap);
+    }
 }
 
 void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
@@ -89,18 +92,12 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 
             _dataHolder = std::make_shared<DataSourceWithBuffers>(
                 DataSourceWithBuffers{x, y, z, source});
-            // Aliasing shared_ptr: points to source but co-owns _dataHolder,
-            // so PyBuffers stay alive as long as the async pipeline holds a reference.
             auto aliased = std::shared_ptr<QCPAbstractDataSource2D>(_dataHolder, source.get());
             _cmap->setDataSource(std::move(aliased));
         });
     });
 
-    if (!_got_first_data && nx > 0)
-    {
-        _got_first_data = true;
-        Q_EMIT request_rescale();
-    }
+    check_first_data(nx);
 
     if (_auto_scale_y && _dataHolder && _dataHolder->source)
     {
@@ -124,43 +121,6 @@ void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
 {
     _auto_scale_y = auto_scale_y;
     Q_EMIT auto_scale_y_changed(auto_scale_y);
-}
-
-void SciQLopColorMap::set_selected(bool selected) noexcept
-{
-    if (_selected != selected)
-    {
-        _selected = selected;
-        auto legend_item = _legend_item();
-        if (legend_item && legend_item->selected() != selected)
-            legend_item->setSelected(selected);
-        emit selection_changed(selected);
-    }
-}
-
-bool SciQLopColorMap::selected() const noexcept
-{
-    return _selected;
-}
-
-void SciQLopColorMap::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
-{
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _keyAxis = qcp_axis;
-        if (_cmap)
-            _cmap->setKeyAxis(qcp_axis->qcp_axis());
-    }
-}
-
-void SciQLopColorMap::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
-{
-    if (auto qcp_axis = dynamic_cast<SciQLopPlotAxis*>(axis))
-    {
-        _valueAxis = qcp_axis;
-        if (_cmap)
-            _cmap->setValueAxis(qcp_axis->qcp_axis());
-    }
 }
 
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

@@ -22,24 +22,17 @@
 #pragma once
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
-#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "SciQLopPlots/enums.hpp"
-#include "SciQLopGraphInterface.hpp"
+#include "SciQLopColorMapBase.hpp"
 #include <qcustomplot.h>
 #include <plottables/plottable-histogram2d.h>
 #include <datasource/soa-datasource.h>
 #include <memory>
 #include <span>
 
-class SciQLopHistogram2D : public SciQLopColorMapInterface
+class SciQLopHistogram2D : public SciQLopColorMapBase
 {
-    bool _got_first_data = false;
-    bool _selected = false;
-
-    SciQLopPlotAxis* _keyAxis;
-    SciQLopPlotAxis* _valueAxis;
-    SciQLopPlotColorScaleAxis* _colorScaleAxis;
     QPointer<QCPHistogram2D> _hist;
 
     struct DataSourceWithBuffers
@@ -50,18 +43,13 @@ class SciQLopHistogram2D : public SciQLopColorMapInterface
     std::shared_ptr<DataSourceWithBuffers> _dataHolder;
 
     Q_OBJECT
-    inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _hist_got_destroyed();
 
-    inline QCPPlottableLegendItem* _legend_item()
+protected:
+    virtual QCPAbstractPlottable* plottable() const override
     {
-        if (_hist)
-        {
-            auto plot = _plot();
-            return plot->legend->itemWithPlottable(_hist.data());
-        }
-        return nullptr;
+        return _hist.data();
     }
 
 public:
@@ -70,13 +58,6 @@ public:
                                 const QString& name, int key_bins = 100, int value_bins = 100,
                                 QVariantMap metaData = {});
     virtual ~SciQLopHistogram2D() override;
-
-    inline virtual QString layer() const noexcept override
-    {
-        if (_hist)
-            return _hist->layer()->name();
-        return QString();
-    }
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
     virtual QList<PyBuffer> data() const noexcept override;
@@ -89,42 +70,4 @@ public:
 
     void set_normalization(int normalization);
     int normalization() const;
-
-    inline virtual ColorGradient gradient() const noexcept override
-    {
-        return _colorScaleAxis->color_gradient();
-    }
-
-    inline virtual void set_gradient(ColorGradient gradient) noexcept override
-    {
-        _colorScaleAxis->set_color_gradient(gradient);
-    }
-
-    virtual void set_selected(bool selected) noexcept override;
-    virtual bool selected() const noexcept override;
-
-    virtual bool busy() const noexcept override
-    {
-        return _hist ? _hist->busy() : false;
-    }
-
-    virtual void set_busy(bool busy) noexcept override
-    {
-        if (_hist)
-            _hist->setBusy(busy);
-    }
-
-    inline virtual void set_name(const QString& name) noexcept override
-    {
-        this->setObjectName(name);
-        if (_hist)
-            _hist->setName(name);
-    }
-
-    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-
-    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
-    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
-    virtual SciQLopPlotAxisInterface* z_axis() const noexcept override { return _colorScaleAxis; }
 };
