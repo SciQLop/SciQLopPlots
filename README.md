@@ -10,12 +10,99 @@ A high-performance scientific plotting library built on C++20/Qt6 with Python bi
 ## Features
 
 - **Async resampling** — render millions of points smoothly; data is downsampled in background threads via [NeoQCP](https://github.com/SciQLop/NeoQCP) pipelines
-- **Multiple plot types** — time series (line graphs), spectrograms (color maps), histograms, parametric curves
-- **Interactive** — pan, zoom, data-driven callbacks, vertical/horizontal spans, tracers
+- **Multiple plot types** — time series (line graphs), spectrograms (color maps), 2D histograms, parametric curves, N-D projection curves
+- **Interactive** — pan, zoom, data-driven callbacks, vertical/horizontal/rectangular spans, tracers, straight lines, text, shapes, pixmaps
 - **Multi-plot panels** — synchronized axes, aligned margins, drag-and-drop from product trees
+- **Reactive pipelines** — connect plot properties with `>>` to build live data flows
 - **Export** — PDF (vector), PNG, JPG, BMP for both individual plots and panels
 - **Busy indicator** — visual feedback when data is loading or being processed
+- **Runtime inspector** — tree model/view for inspecting and editing plot properties
 - **Cross-platform** — Linux, macOS, Windows
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph Python["Python Layer"]
+        PY[SciQLopPlots package]
+        SB[Shiboken6 bindings]
+    end
+
+    subgraph Plots["Plot Hierarchy"]
+        PI[SciQLopPlotInterface<br/><i>QFrame</i>]
+        SP[SciQLopPlot]
+        TSP[SciQLopTimeSeriesPlot]
+        NDP[SciQLopNDProjectionPlot]
+    end
+
+    subgraph Plotables["Plotables"]
+        PTI[SciQLopPlottableInterface<br/><i>QObject</i>]
+        GI[SciQLopGraphInterface]
+        CMI[SciQLopColorMapInterface]
+        LG[SciQLopLineGraph]
+        SLG[SciQLopSingleLineGraph]
+        CRV[SciQLopCurve]
+        CMB[SciQLopColorMapBase]
+        CM[SciQLopColorMap]
+        H2D[SciQLopHistogram2D]
+    end
+
+    subgraph Items["Overlay Items"]
+        VS[VerticalSpan]
+        HS[HorizontalSpan]
+        RS[RectangularSpan]
+        TR[Tracer]
+        SL[StraightLine]
+    end
+
+    subgraph MultiPlot["Multi-Plot"]
+        PPI[SciQLopPlotPanelInterface]
+        MPP[SciQLopMultiPlotPanel]
+        AX[AxisSynchronizer]
+        VA[VPlotsAlign]
+    end
+
+    PY --> SB --> PI
+
+    PI --> SP
+    PI --> NDP
+    SP --> TSP
+
+    PTI --> GI
+    PTI --> CMI
+    GI --> LG
+    GI --> SLG
+    GI --> CRV
+    CMI --> CMB
+    CMB --> CM
+    CMB --> H2D
+
+    PPI --> MPP
+    MPP --> AX
+    MPP --> VA
+
+    SP -.->|contains| PTI
+    SP -.->|contains| Items
+    MPP -.->|contains| SP
+```
+
+### Data flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Plot as SciQLopPlot
+    participant Resampler as Resampler<br/>(worker thread)
+    participant NeoQCP as NeoQCP
+
+    User->>Plot: pan / zoom
+    Plot->>Resampler: new visible range
+    Resampler->>Resampler: downsample data
+    Resampler->>NeoQCP: resampled points
+    NeoQCP->>Plot: render
+```
+
+For callback-driven data, the plot invokes a Python callable with `(start, stop)` on range change, and the returned arrays flow through the same resampling pipeline.
 
 ## Quick start
 
@@ -68,8 +155,6 @@ span.on.range >> plot.x_axis.on.range
 source.on.range >> transform >> target.on.data
 ```
 
-The pipeline handles signal connection, call-style detection (positional args vs `Event` object), and automatic disconnection when objects are destroyed.
-
 Run the gallery for a full feature showcase:
 
 ```bash
@@ -88,6 +173,14 @@ meson compile -C build
 # Install as editable Python package
 pip install -e . --no-build-isolation
 ```
+
+### Build options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `trace_refcount` | bool | false | Enable reference count tracing |
+| `tracy_enable` | bool | false | Enable Tracy profiling |
+| `with_opengl` | bool | true | Enable OpenGL support |
 
 ## Contributing
 
