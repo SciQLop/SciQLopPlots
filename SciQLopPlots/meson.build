@@ -197,6 +197,8 @@ sources = moc_files \
             '../src/SciQLopGraphComponent.cpp',
             '../src/QCPAbstractPlottableWrapper.cpp',
             '../src/SciQLopPlotItem.cpp',
+            '../src/SpanBase.cpp',
+            '../src/SciQLopSpanBase.cpp',
             '../src/SciQLopVerticalSpan.cpp',
             '../src/SciQLopHorizontalSpan.cpp',
             '../src/SciQLopRectangularSpan.cpp',

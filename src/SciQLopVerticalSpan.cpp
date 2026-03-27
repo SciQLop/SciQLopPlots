@@ -26,7 +26,7 @@
 
 impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
                                   bool do_not_replot, bool immediate_replot)
-    : QCPItemVSpan(plot)
+    : QCPItemVSpan(plot), SpanBase(this)
 {
     setLayer(Constants::LayersNames::Spans);
     setSelectable(true);
@@ -45,8 +45,6 @@ impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_
         replot(immediate_replot);
 }
 
-void impl::VerticalSpan::set_visible(bool visible) { setVisible(visible); }
-
 void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
 {
     auto sorted = horizontal_range.sorted();
@@ -60,33 +58,6 @@ SciQLopPlotRange impl::VerticalSpan::range() const noexcept
 {
     auto r = QCPItemVSpan::range();
     return SciQLopPlotRange(r.lower, r.upper);
-}
-
-void impl::VerticalSpan::set_color(const QColor& color)
-{
-    setBrush(QBrush(color, Qt::SolidPattern));
-    setSelectedBrush(QBrush(
-        QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha()),
-        Qt::SolidPattern));
-    setPen(QPen(Qt::NoPen));
-    setSelectedPen(QPen(Qt::NoPen));
-}
-
-QColor impl::VerticalSpan::color() const noexcept { return brush().color(); }
-
-void impl::VerticalSpan::set_borders_color(const QColor& color)
-{
-    setBorderPen(QPen(QBrush(color, Qt::SolidPattern), 3));
-}
-
-QColor impl::VerticalSpan::borders_color() const noexcept
-{
-    return borderPen().color();
-}
-
-void impl::VerticalSpan::set_borders_tool_tip(const QString& tool_tip)
-{
-    SciQlopItemWithToolTip::setToolTip(tool_tip);
 }
 
 void impl::VerticalSpan::select_lower_border(bool selected)
@@ -105,6 +76,7 @@ SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange hor
     QColor color, bool read_only, bool visible, const QString& tool_tip)
         : SciQLopRangeItemInterface { plot }
         , _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, true } }
+        , _base { static_cast<impl::SpanBase*>(_impl.data()), _impl.data() }
 {
     set_color(color);
     set_read_only(read_only);

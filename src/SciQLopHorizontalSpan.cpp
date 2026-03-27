@@ -26,7 +26,7 @@
 
 impl::HorizontalSpan::HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertical_range,
                                       bool do_not_replot, bool immediate_replot)
-    : QCPItemHSpan(plot)
+    : QCPItemHSpan(plot), SpanBase(this)
 {
     setLayer(Constants::LayersNames::Spans);
     setSelectable(true);
@@ -45,8 +45,6 @@ impl::HorizontalSpan::HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertica
         replot(immediate_replot);
 }
 
-void impl::HorizontalSpan::set_visible(bool visible) { setVisible(visible); }
-
 void impl::HorizontalSpan::set_range(const SciQLopPlotRange vertical_range)
 {
     auto sorted = vertical_range.sorted();
@@ -60,33 +58,6 @@ SciQLopPlotRange impl::HorizontalSpan::range() const noexcept
 {
     auto r = QCPItemHSpan::range();
     return SciQLopPlotRange(r.lower, r.upper);
-}
-
-void impl::HorizontalSpan::set_color(const QColor& color)
-{
-    setBrush(QBrush(color, Qt::SolidPattern));
-    setSelectedBrush(QBrush(
-        QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha()),
-        Qt::SolidPattern));
-    setPen(QPen(Qt::NoPen));
-    setSelectedPen(QPen(Qt::NoPen));
-}
-
-QColor impl::HorizontalSpan::color() const noexcept { return brush().color(); }
-
-void impl::HorizontalSpan::set_borders_color(const QColor& color)
-{
-    setBorderPen(QPen(QBrush(color, Qt::SolidPattern), 3));
-}
-
-QColor impl::HorizontalSpan::borders_color() const noexcept
-{
-    return borderPen().color();
-}
-
-void impl::HorizontalSpan::set_borders_tool_tip(const QString& tool_tip)
-{
-    SciQlopItemWithToolTip::setToolTip(tool_tip);
 }
 
 void impl::HorizontalSpan::select_lower_border(bool selected)
@@ -105,6 +76,7 @@ SciQLopHorizontalSpan::SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange
     QColor color, bool read_only, bool visible, const QString& tool_tip)
         : SciQLopRangeItemInterface { plot }
         , _impl { new impl::HorizontalSpan { plot->qcp_plot(), vertical_range, true } }
+        , _base { static_cast<impl::SpanBase*>(_impl.data()), _impl.data() }
 {
     set_color(color);
     set_read_only(read_only);

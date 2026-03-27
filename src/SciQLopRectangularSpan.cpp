@@ -27,7 +27,7 @@
 impl::RectangularSpan::RectangularSpan(QCustomPlot* plot, SciQLopPlotRange key_range,
                                         SciQLopPlotRange value_range, bool do_not_replot,
                                         bool immediate_replot)
-    : QCPItemRSpan(plot)
+    : QCPItemRSpan(plot), SpanBase(this)
 {
     setLayer(Constants::LayersNames::Spans);
     setSelectable(true);
@@ -51,8 +51,6 @@ impl::RectangularSpan::RectangularSpan(QCustomPlot* plot, SciQLopPlotRange key_r
     if (!do_not_replot)
         replot(immediate_replot);
 }
-
-void impl::RectangularSpan::set_visible(bool visible) { setVisible(visible); }
 
 void impl::RectangularSpan::set_key_range(const SciQLopPlotRange range)
 {
@@ -84,38 +82,12 @@ SciQLopPlotRange impl::RectangularSpan::value_range() const noexcept
     return SciQLopPlotRange(r.lower, r.upper);
 }
 
-void impl::RectangularSpan::set_color(const QColor& color)
-{
-    setBrush(QBrush(color, Qt::SolidPattern));
-    setSelectedBrush(QBrush(
-        QColor(255 - color.red(), 255 - color.green(), 255 - color.blue(), color.alpha()),
-        Qt::SolidPattern));
-    setPen(QPen(Qt::NoPen));
-    setSelectedPen(QPen(Qt::NoPen));
-}
-
-QColor impl::RectangularSpan::color() const noexcept { return brush().color(); }
-
-void impl::RectangularSpan::set_borders_color(const QColor& color)
-{
-    setBorderPen(QPen(QBrush(color, Qt::SolidPattern), 3));
-}
-
-QColor impl::RectangularSpan::borders_color() const noexcept
-{
-    return borderPen().color();
-}
-
-void impl::RectangularSpan::set_borders_tool_tip(const QString& tool_tip)
-{
-    SciQlopItemWithToolTip::setToolTip(tool_tip);
-}
-
 SciQLopRectangularSpan::SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRange key_range,
     SciQLopPlotRange value_range, QColor color, bool read_only, bool visible,
     const QString& tool_tip)
         : SciQLopMovableItemInterface { plot }
         , _impl { new impl::RectangularSpan { plot->qcp_plot(), key_range, value_range, true } }
+        , _base { static_cast<impl::SpanBase*>(_impl.data()), _impl.data() }
 {
     set_color(color);
     set_read_only(read_only);
