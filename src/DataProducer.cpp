@@ -87,7 +87,8 @@ void DataProviderInterface::_notify_new_data(const QList<PyBuffer> &data)
 
 void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_range)
 {
-    if (new_range == std::get<SciQLopPlotRange>(m_current_state))
+    if (std::holds_alternative<SciQLopPlotRange>(m_current_state)
+        && new_range == std::get<SciQLopPlotRange>(m_current_state))
         return;
     auto r = get_data(new_range.start(), new_range.stop());
     m_current_state = new_range;
@@ -156,38 +157,50 @@ void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 
 void DataProviderInterface::set_data(_2D_data new_state) noexcept
 {
-    m_mutex.lock();
-    m_next_state = new_state;
-    if (!m_has_pending_change)
+    bool should_emit = false;
     {
-        m_has_pending_change = true;
-        Q_EMIT _state_changed();
+        QMutexLocker lock(&m_mutex);
+        m_next_state = new_state;
+        if (!m_has_pending_change)
+        {
+            m_has_pending_change = true;
+            should_emit = true;
+        }
     }
-    m_mutex.unlock();
+    if (should_emit)
+        Q_EMIT _state_changed();
 }
 
 void DataProviderInterface::set_data(_3D_data new_state) noexcept
 {
-    m_mutex.lock();
-    m_next_state = new_state;
-    if (!m_has_pending_change)
+    bool should_emit = false;
     {
-        m_has_pending_change = true;
-        Q_EMIT _state_changed();
+        QMutexLocker lock(&m_mutex);
+        m_next_state = new_state;
+        if (!m_has_pending_change)
+        {
+            m_has_pending_change = true;
+            should_emit = true;
+        }
     }
-    m_mutex.unlock();
+    if (should_emit)
+        Q_EMIT _state_changed();
 }
 
 void DataProviderInterface::set_data(_NDdata new_state) noexcept
 {
-    m_mutex.lock();
-    m_next_state = new_state;
-    if (!m_has_pending_change)
+    bool should_emit = false;
     {
-        m_has_pending_change = true;
-        Q_EMIT _state_changed();
+        QMutexLocker lock(&m_mutex);
+        m_next_state = new_state;
+        if (!m_has_pending_change)
+        {
+            m_has_pending_change = true;
+            should_emit = true;
+        }
     }
-    m_mutex.unlock();
+    if (should_emit)
+        Q_EMIT _state_changed();
 }
 
 DataProviderWorker::~DataProviderWorker()

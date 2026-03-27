@@ -57,9 +57,9 @@ public:
     {
         PROFILE_HERE_N("XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)");
         std::size_t start_index = std::distance(
-            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
+            x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_start));
         std::size_t stop_index
-            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
+            = std::distance(x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_stop));
         this->_x = x.view(start_index, stop_index);
         this->_y = y.view(start_index, stop_index);
     }
@@ -116,9 +116,9 @@ public:
                      double x_stop)
     {
         std::size_t start_index = std::distance(
-            x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_start));
+            x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_start));
         std::size_t stop_index
-            = std::distance(x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_stop));
+            = std::distance(x.data(), std::upper_bound(x.data(), x.data() + x.flat_size(), x_stop));
         _init_views(x, y, z, start_index, stop_index);
     }
 

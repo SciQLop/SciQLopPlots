@@ -95,6 +95,8 @@ private:
 protected:
     inline void _async_resample_callback()
     {
+        data_t data_copy;
+        ResamplerPlotInfo plot_info_copy;
         {
             QMutexLocker locker(&_data_mutex);
             {
@@ -102,14 +104,14 @@ protected:
                 _data = _next_data;
                 _next_data.new_data = false;
             }
-            ResamplerPlotInfo plot_info_copy;
             {
                 QMutexLocker locker(&_plot_info_mutex);
                 plot_info_copy = _plot_info;
             }
-            static_cast<U*>(this)->_resample_impl(_data, plot_info_copy);
+            data_copy = _data;
             _data.new_data = false;
         }
+        static_cast<U*>(this)->_resample_impl(data_copy, plot_info_copy);
     }
 
     inline void set_next_plot_range(const QCPRange new_range)
