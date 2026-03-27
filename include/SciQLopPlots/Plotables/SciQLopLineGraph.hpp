@@ -36,7 +36,6 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
-    bool _got_first_data = false;
 
     Q_OBJECT
 

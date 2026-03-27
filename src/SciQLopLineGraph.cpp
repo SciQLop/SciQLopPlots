@@ -127,11 +127,7 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
     }
 
     Q_EMIT this->replot();
-    if (!_got_first_data && n > 0)
-    {
-        _got_first_data = true;
-        Q_EMIT request_rescale();
-    }
+    check_first_data(n);
     Q_EMIT data_changed(x, y);
     Q_EMIT data_changed();
 }
