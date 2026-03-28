@@ -38,20 +38,6 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
     using namespace Constants;
     setAttribute(Qt::WA_OpaquePaintEvent);
-    this->m_replot_timer = new QTimer(this);
-    this->m_replot_timer->setSingleShot(true);
-    this->m_replot_timer->setTimerType(Qt::PreciseTimer);
-    this->m_replot_timer->setInterval(5);
-    this->connect(this, &QCustomPlot::beforeReplot, this, [this]() { m_replot_timer->start(); });
-    connect(this->m_replot_timer, &QTimer::timeout, this,
-            [this]()
-            {
-                if (m_replot_pending)
-                {
-                    m_replot_pending = false;
-                    QCustomPlot::replot(rpQueuedReplot);
-                }
-            });
     this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
@@ -214,21 +200,7 @@ QMargins SciQLopPlot::minimal_axis_margins()
 
 void SciQLopPlot::replot(RefreshPriority priority)
 {
-    if (priority == rpImmediateRefresh)
-    {
-        QCustomPlot::replot(rpImmediateRefresh);
-    }
-    else
-    {
-        if (!m_replot_pending && m_replot_timer->isActive())
-        {
-            m_replot_pending = true;
-        }
-        else if (!m_replot_timer->isActive())
-        {
-            QCustomPlot::replot(rpQueuedReplot);
-        }
-    }
+    QCustomPlot::replot(priority);
 }
 
 void SciQLopPlot::mousePressEvent(QMouseEvent* event)

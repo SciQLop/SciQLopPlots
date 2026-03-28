@@ -46,12 +46,10 @@ class SciQLopPlot : public QCustomPlot
 {
     Q_OBJECT
 
-    QTimer* m_replot_timer;
     double m_scroll_factor = 1.;
     TracerWithToolTip* m_tracer = nullptr;
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
-    bool m_replot_pending = false;
     QElapsedTimer m_hover_throttle_timer;
     bool m_suppress_range_signals = false;
 
@@ -164,7 +162,7 @@ public:
         return nullptr;
     }
 
-    void replot(QCustomPlot::RefreshPriority priority = rpQueuedReplot) override;
+    void replot(QCustomPlot::RefreshPriority priority = rpImmediateRefresh);
 
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
