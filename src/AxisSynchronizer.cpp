@@ -73,8 +73,9 @@ void AxisSynchronizer::panelRemoved(SciQLopPlotPanelInterface* panel)
 
 void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
 {
-    if (range == _last_range || range.is_valid() == false)
+    if (m_propagating || range == _last_range || range.is_valid() == false)
         return;
+    m_propagating = true;
     this->_last_range = range;
     for (auto plot : _plots)
     {
@@ -83,5 +84,6 @@ void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
             _set_axis_range(range, plot, m_sync_axis);
         }
     }
+    m_propagating = false;
     emit range_changed(range);
 }

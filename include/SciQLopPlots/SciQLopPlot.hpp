@@ -52,7 +52,6 @@ class SciQLopPlot : public QCustomPlot
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
     bool m_replot_pending = false;
-    QElapsedTimer m_drag_throttle_timer;
     QElapsedTimer m_hover_throttle_timer;
     bool m_suppress_range_signals = false;
 
@@ -165,7 +164,7 @@ public:
         return nullptr;
     }
 
-    void replot(QCustomPlot::RefreshPriority priority = rpQueuedReplot);
+    void replot(QCustomPlot::RefreshPriority priority = rpQueuedReplot) override;
 
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;

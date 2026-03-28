@@ -32,7 +32,7 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
     _is_time_axis = is_time_axis;
     connect(axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+            { if (!m_suppress_range_signals) Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
 
     connect(axis, &QCPAxis::selectionChanged, this,
             [this](const QCPAxis::SelectableParts& parts)
@@ -44,7 +44,8 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (!m_axis.isNull() && range.is_valid())
+    if (!m_axis.isNull() && range.is_valid()
+        && (m_axis->range().lower != range.start() || m_axis->range().upper != range.stop()))
     {
         m_axis->setRange(range.start(), range.stop());
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);

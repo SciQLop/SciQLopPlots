@@ -27,6 +27,7 @@
 #include <QPointer>
 class QCPAxis;
 class QCPColorScale;
+namespace _impl { class SciQLopPlot; }
 
 class SciQLopPlotAxisInterface : public QObject
 {
@@ -178,6 +179,8 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
 {
     Q_OBJECT
     QPointer<QCPAxis> m_axis;
+    bool m_suppress_range_signals = false;
+    friend class _impl::SciQLopPlot;
 
 public:
     explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false,

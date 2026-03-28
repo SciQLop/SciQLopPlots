@@ -32,6 +32,7 @@ class AxisSynchronizer : public SciQLopPlotCollectionBehavior
 protected:
     SciQLopPlotRange _last_range;
     AxisType m_sync_axis = AxisType::XAxis;
+    bool m_propagating = false;
 
 
 public:

@@ -224,7 +224,7 @@ void SciQLopPlot::replot(RefreshPriority priority)
         {
             m_replot_pending = true;
         }
-        else
+        else if (!m_replot_timer->isActive())
         {
             QCustomPlot::replot(rpQueuedReplot);
         }
@@ -240,18 +240,7 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
 {
     if (event->buttons() != Qt::NoButton)
     {
-        // Every drag event goes to QCustomPlot so axes move smoothly and
-        // NeoQCP redraws from its L2 cache.  The expensive SciQLopPlots
-        // signal chain (AxisSynchronizer, data pipelines) is suppressed
-        // between throttle ticks (~120 Hz) to avoid saturating the event
-        // loop on Linux/Wayland (1000+ Hz raw mouse rate).
-        const bool throttled = m_drag_throttle_timer.isValid()
-            && m_drag_throttle_timer.elapsed() < 8;
-        if (!throttled)
-            m_drag_throttle_timer.start();
-        m_suppress_range_signals = throttled;
         QCustomPlot::mouseMoveEvent(event);
-        m_suppress_range_signals = false;
         return;
     }
     QCustomPlot::mouseMoveEvent(event);
