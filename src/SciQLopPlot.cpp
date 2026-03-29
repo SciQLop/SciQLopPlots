@@ -297,34 +297,38 @@ inline double _signed_length(const QPoint& p)
 void SciQLopPlot::wheelEvent(QWheelEvent* event)
 {
     const auto pos = event->position();
-    // Qt converts two finger scroll to wheel events, use manhattanLength to
-    // ingore the direction of the scroll
-    const auto inside_axis_rect = this->axisRect()->rect().contains(pos.toPoint());
     const auto wheelSteps = _signed_length(event->angleDelta()) / 120.0;
-    for (auto candidate : layerableListAt(pos, false))
+    auto* ar = this->axisRect();
+
+    // Check axes directly — avoids layerableListAt() which triggers expensive
+    // selectTest() on every plottable (O(N) per data point in QCPGraph2).
+    for (auto axisType : { QCPAxis::atBottom, QCPAxis::atLeft, QCPAxis::atTop, QCPAxis::atRight })
     {
-        if (auto axis = qobject_cast<QCPAxis*>(candidate); axis != nullptr)
+        auto* ax = ar->axis(axisType);
+        if (ax && ax->selectTest(pos, false) >= 0)
         {
-            this->_wheel_zoom(axis, wheelSteps, pos);
+            this->_wheel_zoom(ax, wheelSteps, pos);
             event->accept();
             this->replot(rpQueuedReplot);
-            return;
-        }
-        else if (auto axisRect = qobject_cast<QCPAxisRect*>(candidate); axisRect != nullptr)
-        {
-            if (event->modifiers().testFlags(Qt::ShiftModifier | Qt::ControlModifier))
-                this->_wheel_pan(axisRect->axis(QCPAxis::atLeft), wheelSteps);
-            else if (event->modifiers().testFlag(Qt::ControlModifier))
-                this->_wheel_zoom(axisRect->axis(QCPAxis::atBottom), wheelSteps, pos);
-            else if (event->modifiers().testFlag(Qt::ShiftModifier))
-                this->_wheel_zoom(axisRect->axis(QCPAxis::atLeft), wheelSteps, pos);
-            else if (inside_axis_rect)
-                this->_wheel_pan(axisRect->axis(QCPAxis::atBottom), wheelSteps);
-            this->replot(rpQueuedReplot);
-            event->accept();
             return;
         }
     }
+
+    if (ar->rect().contains(pos.toPoint()))
+    {
+        if (event->modifiers().testFlags(Qt::ShiftModifier | Qt::ControlModifier))
+            this->_wheel_pan(ar->axis(QCPAxis::atLeft), wheelSteps);
+        else if (event->modifiers().testFlag(Qt::ControlModifier))
+            this->_wheel_zoom(ar->axis(QCPAxis::atBottom), wheelSteps, pos);
+        else if (event->modifiers().testFlag(Qt::ShiftModifier))
+            this->_wheel_zoom(ar->axis(QCPAxis::atLeft), wheelSteps, pos);
+        else
+            this->_wheel_pan(ar->axis(QCPAxis::atBottom), wheelSteps);
+        this->replot(rpQueuedReplot);
+        event->accept();
+        return;
+    }
+
     QCustomPlot::wheelEvent(event);
 }
 
