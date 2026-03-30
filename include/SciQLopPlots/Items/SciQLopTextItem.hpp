@@ -97,7 +97,7 @@ public:
 
     virtual inline void set_position(const QPointF& pos) noexcept override
     {
-        qptr_apply(m_item, [&pos](auto& item) { item->setPosition(pos); });
+        qptr_apply(m_item, [pos](auto& item) { item->setPosition(pos); });
     }
 
     [[nodiscard]] virtual inline QPointF position() const noexcept override
@@ -107,7 +107,7 @@ public:
 
     void set_text(const QString& text)
     {
-        qptr_apply(m_item, [&text](auto& item) { item->setText(text); });
+        qptr_apply(m_item, [text](auto& item) { item->setText(text); });
     }
 
     QString text() const

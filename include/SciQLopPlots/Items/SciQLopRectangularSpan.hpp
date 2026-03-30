@@ -87,7 +87,7 @@ public:
 
     inline void set_key_range(const SciQLopPlotRange& range) noexcept
     {
-        qptr_apply(_impl, [&range](auto& item) { item->set_key_range(range); });
+        qptr_apply(_impl, [range](auto& item) { item->set_key_range(range); });
     }
 
     [[nodiscard]] inline SciQLopPlotRange key_range() const noexcept
@@ -97,7 +97,7 @@ public:
 
     inline void set_value_range(const SciQLopPlotRange& range) noexcept
     {
-        qptr_apply(_impl, [&range](auto& item) { item->set_value_range(range); });
+        qptr_apply(_impl, [range](auto& item) { item->set_value_range(range); });
     }
 
     [[nodiscard]] inline SciQLopPlotRange value_range() const noexcept

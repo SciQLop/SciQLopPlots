@@ -22,28 +22,23 @@
 #pragma once
 #include <QObject>
 #include <QString>
+#include <array>
 #include <magic_enum/magic_enum.hpp>
+#include <type_traits>
 
 template <typename T>
-T from_string(const QString& str);
+    requires std::is_enum_v<T>
+inline QString to_string(T value)
+{
+    return QString::fromLatin1(magic_enum::enum_name(value));
+}
 
-#define ENUM_TO_STRING(enum_type)                                                                  \
-    inline QString to_string(enum_type value)                                                      \
-    {                                                                                              \
-        return QString::fromLatin1(magic_enum::enum_name(value));                                  \
-    }
-
-#define STRING_TO_ENUM(enum_type)                                                                  \
-    template <>                                                                                    \
-    inline enum_type from_string<enum_type>(const QString& str)                                    \
-    {                                                                                              \
-        return magic_enum::enum_cast<enum_type>(str.toStdString())                                 \
-            .value_or(static_cast<enum_type>(0));                                                  \
-    }
-
-#define ADD_ENUM(enum_type)                                                                        \
-    ENUM_TO_STRING(enum_type)                                                                      \
-    STRING_TO_ENUM(enum_type)
+template <typename T>
+    requires std::is_enum_v<T>
+inline T from_string(const QString& str)
+{
+    return magic_enum::enum_cast<T>(str.toStdString()).value_or(static_cast<T>(0));
+}
 
 
 enum class Coordinates
@@ -51,7 +46,6 @@ enum class Coordinates
     Pixels,
     Data
 };
-ADD_ENUM(Coordinates)
 Q_DECLARE_METATYPE(Coordinates);
 
 enum class ParameterType
@@ -62,7 +56,6 @@ enum class ParameterType
     Multicomponents,
     Spectrogram
 };
-ADD_ENUM(ParameterType)
 Q_DECLARE_METATYPE(ParameterType);
 
 enum class AxisType
@@ -73,7 +66,6 @@ enum class AxisType
     YAxis,
     ZAxis
 };
-ADD_ENUM(AxisType)
 Q_DECLARE_METATYPE(AxisType);
 
 enum class DataOrder
@@ -81,7 +73,6 @@ enum class DataOrder
     RowMajor,
     ColumnMajor
 };
-ADD_ENUM(DataOrder)
 Q_DECLARE_METATYPE(DataOrder);
 
 enum class GraphType
@@ -91,7 +82,6 @@ enum class GraphType
     Scatter,
     ColorMap
 };
-ADD_ENUM(GraphType)
 Q_DECLARE_METATYPE(GraphType);
 
 enum class PlotType
@@ -100,7 +90,6 @@ enum class PlotType
     TimeSeries,
     Projections,
 };
-ADD_ENUM(PlotType)
 Q_DECLARE_METATYPE(PlotType);
 
 enum class GraphMarkerShape
@@ -122,46 +111,31 @@ enum class GraphMarkerShape
     PlusCircle, // ⊕
     Custom
 };
-ADD_ENUM(GraphMarkerShape)
 Q_DECLARE_METATYPE(GraphMarkerShape);
+
+inline constexpr std::array marker_shape_glyphs = {
+    "",  // NoMarker
+    ".", // Dot
+    "○", // Circle
+    "□", // Square
+    "△", // Triangle
+    "◇", // Diamond
+    "*", // Star
+    "+", // Plus
+    "X", // Cross
+    "●", // FilledCircle
+    "▽", // InvertedTriangle
+    "☒", // CrossedSquare
+    "⊞", // PlusSquare
+    "☒", // CrossedCircle
+    "⊕", // PlusCircle
+    "",  // Custom
+};
+static_assert(marker_shape_glyphs.size() == magic_enum::enum_count<GraphMarkerShape>());
 
 inline QString GraphMarkerShapeToUTF8(GraphMarkerShape shape)
 {
-    switch (shape)
-    {
-    case GraphMarkerShape::NoMarker:
-        return "";
-    case GraphMarkerShape::Circle:
-        return "○";
-    case GraphMarkerShape::Dot:
-        return ".";
-    case GraphMarkerShape::Square:
-        return "□";
-    case GraphMarkerShape::Triangle:
-        return "△";
-    case GraphMarkerShape::Diamond:
-        return "◇";
-    case GraphMarkerShape::Star:
-        return "*";
-    case GraphMarkerShape::Plus:
-        return "+";
-    case GraphMarkerShape::Cross:
-        return "X";
-    case GraphMarkerShape::FilledCircle:
-        return "●";
-    case GraphMarkerShape::InvertedTriangle:
-        return "▽";
-    case GraphMarkerShape::CrossedSquare:
-        return "☒";
-    case GraphMarkerShape::PlusSquare:
-        return "⊞";
-    case GraphMarkerShape::CrossedCircle:
-        return "☒";
-    case GraphMarkerShape::PlusCircle:
-        return "⊕";
-    case GraphMarkerShape::Custom:
-        return "";
-    }
+    return QString::fromUtf8(marker_shape_glyphs[static_cast<int>(shape)]);
 }
 
 enum class GraphLineStyle
@@ -172,7 +146,6 @@ enum class GraphLineStyle
     StepRight,
     StepCenter
 };
-ADD_ENUM(GraphLineStyle)
 Q_DECLARE_METATYPE(GraphLineStyle);
 
 enum class ColorGradient
@@ -190,7 +163,6 @@ enum class ColorGradient
     Jet,
     Hues
 };
-ADD_ENUM(ColorGradient)
 Q_DECLARE_METATYPE(ColorGradient);
 
 enum class LineTermination
@@ -206,7 +178,6 @@ enum class LineTermination
     HalfBar,
     SkewedBar
 };
-ADD_ENUM(LineTermination)
 Q_DECLARE_METATYPE(LineTermination);
 
 enum class OverlayLevel
@@ -215,7 +186,6 @@ enum class OverlayLevel
     Warning,
     Error
 };
-ADD_ENUM(OverlayLevel)
 Q_DECLARE_METATYPE(OverlayLevel);
 
 enum class OverlaySizeMode
@@ -224,7 +194,6 @@ enum class OverlaySizeMode
     FitContent,
     FullWidget
 };
-ADD_ENUM(OverlaySizeMode)
 Q_DECLARE_METATYPE(OverlaySizeMode);
 
 enum class OverlayPosition
@@ -234,5 +203,4 @@ enum class OverlayPosition
     Left,
     Right
 };
-ADD_ENUM(OverlayPosition)
 Q_DECLARE_METATYPE(OverlayPosition);

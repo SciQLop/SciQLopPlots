@@ -245,12 +245,12 @@ public:
 
     inline virtual void set_pen(const QPen& pen) noexcept override
     {
-        qptr_apply(m_item, [&pen](auto&& item) { item->setPen(pen); });
+        qptr_apply(m_item, [pen](auto&& item) { item->setPen(pen); });
     }
 
     inline virtual void set_brush(const QBrush& brush) noexcept override
     {
-        qptr_apply(m_item, [&brush](auto&& item) { item->setBrush(brush); });
+        qptr_apply(m_item, [brush](auto&& item) { item->setBrush(brush); });
     }
 
     [[nodiscard]] inline QPointF position() const noexcept override
@@ -260,7 +260,7 @@ public:
 
     inline void set_position(const QPointF& pos) noexcept override
     {
-        qptr_apply(m_item, [&pos](auto&& item) { item->setPosition(pos); });
+        qptr_apply(m_item, [pos](auto&& item) { item->setPosition(pos); });
     }
 
     [[nodiscard]] inline QRectF bounding_rectangle() const noexcept override
@@ -275,7 +275,7 @@ public:
 
     inline void set_tool_tip(const QString& toolTip) noexcept override
     {
-        qptr_apply(m_item, [&toolTip](auto&& item) { item->setToolTip(toolTip); });
+        qptr_apply(m_item, [toolTip](auto&& item) { item->setToolTip(toolTip); });
     }
 };
 
@@ -314,7 +314,7 @@ public:
 
     inline void set_start_position(const QPointF& pos) noexcept
     {
-        qptr_apply(m_item, [&pos](auto&& item) { item->setStartPos(pos); });
+        qptr_apply(m_item, [pos](auto&& item) { item->setStartPos(pos); });
     }
 
     inline void set_stop_position(const QPointF& pos) noexcept { m_item->setStopPos(pos); }
@@ -331,12 +331,12 @@ public:
 
     inline void set_start_termination(LineTermination termination) noexcept
     {
-        qptr_apply(m_item, [&termination](auto&& item) { item->setStartTermination(termination); });
+        qptr_apply(m_item, [termination](auto&& item) { item->setStartTermination(termination); });
     }
 
     inline void set_stop_termination(LineTermination termination) noexcept
     {
-        qptr_apply(m_item, [&termination](auto&& item) { item->setStopTermination(termination); });
+        qptr_apply(m_item, [termination](auto&& item) { item->setStopTermination(termination); });
     }
 
     [[nodiscard]] inline QPointF start_dir_position() const noexcept
@@ -351,11 +351,11 @@ public:
 
     inline void set_start_dir_position(const QPointF& pos) noexcept
     {
-        qptr_apply(m_item, [&pos](auto&& item) { item->setStartDirPos(pos); });
+        qptr_apply(m_item, [pos](auto&& item) { item->setStartDirPos(pos); });
     }
 
     inline void set_stop_dir_position(const QPointF& pos) noexcept
     {
-        qptr_apply(m_item, [&pos](auto&& item) { item->setStopDirPos(pos); });
+        qptr_apply(m_item, [pos](auto&& item) { item->setStopDirPos(pos); });
     }
 };

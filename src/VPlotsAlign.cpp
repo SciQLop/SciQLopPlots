@@ -49,6 +49,7 @@ void VPlotsAlign::_recompute_margins()
             max_right_pos = std::min(max_right_pos, std::max(0, p->width() - cmw));
         }
     }
+    bool any_changed = false;
     for (auto& _p : _plots)
     {
         if (auto p = qobject_cast<SciQLopPlot*>(_p))
@@ -72,8 +73,16 @@ void VPlotsAlign::_recompute_margins()
             if (ar->minimumMargins() != new_margins)
             {
                 ar->setMinimumMargins(new_margins);
-                p->replot();
+                any_changed = true;
             }
+        }
+    }
+    if (any_changed)
+    {
+        for (auto& _p : _plots)
+        {
+            if (auto p = qobject_cast<SciQLopPlot*>(_p))
+                p->replot();
         }
     }
 }

@@ -402,7 +402,12 @@ bool SciQLopPlot::event(QEvent* event)
 
 void SciQLopPlot::resizeEvent(QResizeEvent* event)
 {
-    QCustomPlot::resizeEvent(event);
+    // QRhiWidget::initialize() already runs before resizeEvent on every resize,
+    // handling pipeline invalidation, viewport update, and an immediate replot.
+    // Calling QCustomPlot::resizeEvent would do a redundant second immediate
+    // replot — very expensive during continuous splitter drag.
+    setViewport(rect());
+    replot(rpQueuedReplot);
     Q_EMIT resized(event->size());
 }
 

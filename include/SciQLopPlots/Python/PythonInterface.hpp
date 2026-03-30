@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 #include <cmath>
 #include <cpp_utils/warnings.h>
 
@@ -75,17 +75,8 @@ struct ArrayView1DIterator
         return tmp;
     }
 
+    inline auto operator<=>(const ArrayView1DIterator& other) const { return ptr <=> other.ptr; }
     inline bool operator==(const ArrayView1DIterator& other) const { return ptr == other.ptr; }
-
-    inline bool operator!=(const ArrayView1DIterator& other) const { return ptr != other.ptr; }
-
-    inline bool operator<(const ArrayView1DIterator& other) const { return ptr < other.ptr; }
-
-    inline bool operator>(const ArrayView1DIterator& other) const { return ptr > other.ptr; }
-
-    inline bool operator<=(const ArrayView1DIterator& other) const { return ptr <= other.ptr; }
-
-    inline bool operator>=(const ArrayView1DIterator& other) const { return ptr >= other.ptr; }
 
     inline double operator[](std::size_t index) const { return *(ptr + index * offset); }
 

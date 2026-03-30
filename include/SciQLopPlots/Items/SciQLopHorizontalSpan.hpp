@@ -76,12 +76,12 @@ class SciQLopHorizontalSpan : public SciQLopRangeItemInterface
 protected:
     inline void select_lower_border(bool selected)
     {
-        qptr_apply(_impl, [&selected](auto& item) { item->select_lower_border(selected); });
+        qptr_apply(_impl, [selected](auto& item) { item->select_lower_border(selected); });
     }
 
     inline void select_upper_border(bool selected)
     {
-        qptr_apply(_impl, [&selected](auto& item) { item->select_upper_border(selected); });
+        qptr_apply(_impl, [selected](auto& item) { item->select_upper_border(selected); });
     }
 
 #ifdef BINDINGS_H
@@ -105,7 +105,7 @@ public:
 
     inline void set_range(const SciQLopPlotRange& vertical_range) noexcept override
     {
-        qptr_apply(_impl, [&vertical_range](auto& item) { item->set_range(vertical_range); });
+        qptr_apply(_impl, [vertical_range](auto& item) { item->set_range(vertical_range); });
     }
 
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
