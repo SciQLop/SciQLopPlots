@@ -329,6 +329,21 @@ void SciQLopPlot::wheelEvent(QWheelEvent* event)
         return;
     }
 
+    // Color scale: zoom directly instead of going through layerableListAt()
+    // which calls selectTest() on every plottable.
+    if (m_color_scale && m_color_scale->visible()
+        && m_color_scale->selectTest(pos, false) >= 0)
+    {
+        auto* colorAxis = m_color_scale->axis();
+        if (colorAxis)
+        {
+            this->_wheel_zoom(colorAxis, wheelSteps, pos);
+            this->replot(rpQueuedReplot);
+        }
+        event->accept();
+        return;
+    }
+
     QCustomPlot::wheelEvent(event);
 }
 
