@@ -24,15 +24,13 @@
 #include <QString>
 #include <qcustomplot.h>
 
-// Plain helper class (no Q_OBJECT) that holds shared wrapper logic for all span types.
-// Each SciQLopXxxSpan holds a SciQLopSpanBase member and delegates shared methods to it.
 class SciQLopSpanBase
 {
     impl::SpanBase* _impl_base;
-    QPointer<QCPAbstractItem> _item;
+    QPointer<QCPAbstractSpanItem> _span;
 
 public:
-    SciQLopSpanBase(impl::SpanBase* impl_base, QCPAbstractItem* item);
+    explicit SciQLopSpanBase(impl::SpanBase* impl_base);
     ~SciQLopSpanBase();
 
     void set_visible(bool visible);

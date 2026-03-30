@@ -18,19 +18,19 @@
 -------------------------------------------------------------------------------*/
 #include "SciQLopPlots/Items/SciQLopSpanBase.hpp"
 
-SciQLopSpanBase::SciQLopSpanBase(impl::SpanBase* impl_base, QCPAbstractItem* item)
-    : _impl_base { impl_base }, _item { item }
+SciQLopSpanBase::SciQLopSpanBase(impl::SpanBase* impl_base)
+    : _impl_base { impl_base }, _span { impl_base->span() }
 {
 }
 
 SciQLopSpanBase::~SciQLopSpanBase()
 {
-    if (_item)
+    if (_span)
     {
-        auto* plot = _item->parentPlot();
-        if (plot && plot->hasItem(_item.data()))
+        auto* plot = _span->parentPlot();
+        if (plot && plot->hasItem(_span.data()))
         {
-            plot->removeItem(_item.data());
+            (void)plot->removeItem(_span.data());
             plot->replot(QCustomPlot::rpQueuedReplot);
         }
     }
@@ -38,70 +38,62 @@ SciQLopSpanBase::~SciQLopSpanBase()
 
 void SciQLopSpanBase::set_visible(bool visible)
 {
-    if (_item)
+    if (_span)
         _impl_base->set_visible(visible);
 }
 
 bool SciQLopSpanBase::visible() const
 {
-    return _item ? _item->visible() : false;
+    return _span ? _span->visible() : false;
 }
 
 void SciQLopSpanBase::set_color(const QColor& color)
 {
-    if (_item)
+    if (_span)
         _impl_base->set_color(color);
 }
 
 QColor SciQLopSpanBase::color() const
 {
-    return _item ? _impl_base->color() : QColor {};
+    return _span ? _impl_base->color() : QColor {};
 }
 
 void SciQLopSpanBase::set_borders_color(const QColor& color)
 {
-    if (_item)
+    if (_span)
         _impl_base->set_borders_color(color);
 }
 
 QColor SciQLopSpanBase::borders_color() const
 {
-    return _item ? _impl_base->borders_color() : QColor {};
+    return _span ? _impl_base->borders_color() : QColor {};
 }
 
 void SciQLopSpanBase::set_selected(bool selected)
 {
-    if (_item)
-        _item->setSelected(selected);
+    if (_span)
+        _span->setSelected(selected);
 }
 
 bool SciQLopSpanBase::selected() const
 {
-    return _item ? _item->selected() : false;
+    return _span ? _span->selected() : false;
 }
 
 void SciQLopSpanBase::set_read_only(bool read_only)
 {
-    if (_item)
-    {
-        if (auto* span = dynamic_cast<QCPAbstractSpanItem*>(_item.data()))
-            span->setMovable(!read_only);
-    }
+    if (_span)
+        _span->setMovable(!read_only);
 }
 
 bool SciQLopSpanBase::read_only() const
 {
-    if (_item)
-    {
-        if (auto* span = dynamic_cast<QCPAbstractSpanItem*>(_item.data()))
-            return !span->movable();
-    }
-    return true;
+    return _span ? !_span->movable() : true;
 }
 
 void SciQLopSpanBase::set_tool_tip(const QString& tool_tip)
 {
-    if (_item)
+    if (_span)
     {
         _impl_base->setToolTip(tool_tip);
         _impl_base->set_borders_tool_tip(tool_tip);
@@ -110,16 +102,16 @@ void SciQLopSpanBase::set_tool_tip(const QString& tool_tip)
 
 QString SciQLopSpanBase::tool_tip() const
 {
-    return _item ? _impl_base->tooltip() : QString {};
+    return _span ? _impl_base->tooltip() : QString {};
 }
 
 void SciQLopSpanBase::replot()
 {
-    if (_item)
+    if (_span)
         _impl_base->replot();
 }
 
 QCustomPlot* SciQLopSpanBase::parentPlot() const
 {
-    return _item ? _item->parentPlot() : nullptr;
+    return _span ? _span->parentPlot() : nullptr;
 }

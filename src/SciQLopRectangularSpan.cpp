@@ -87,7 +87,7 @@ SciQLopRectangularSpan::SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRan
     const QString& tool_tip)
         : SciQLopMovableItemInterface { plot }
         , _impl { new impl::RectangularSpan { plot->qcp_plot(), key_range, value_range, true } }
-        , _base { static_cast<impl::SpanBase*>(_impl.data()), _impl.data() }
+        , _base { static_cast<impl::SpanBase*>(_impl.data()) }
 {
     set_color(color);
     set_read_only(read_only);

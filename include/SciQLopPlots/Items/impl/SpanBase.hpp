@@ -34,6 +34,8 @@ class SpanBase : public SciQlopItemWithToolTip
 public:
     explicit SpanBase(QCPAbstractSpanItem* span);
 
+    [[nodiscard]] QCPAbstractSpanItem* span() const noexcept { return _span; }
+
     void set_color(const QColor& color);
     [[nodiscard]] QColor color() const noexcept;
 
