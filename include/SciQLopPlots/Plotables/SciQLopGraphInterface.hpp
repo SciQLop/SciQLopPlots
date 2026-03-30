@@ -319,8 +319,6 @@ public:
 
     inline virtual void call(const SciQLopPlotRange& range) noexcept
     {
-        if (as_graph->data_range().is_valid() && as_graph->data_range().contains(range))
-            return;
         as_graph->set_busy(true);
         m_pipeline->call(range);
     }

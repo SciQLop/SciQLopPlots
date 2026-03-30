@@ -49,13 +49,13 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
 
 SciQLopColorMap::~SciQLopColorMap()
 {
-    // Clear QPointer before base destructor runs to prevent double-removal
     if (_cmap)
     {
-        auto plot = _plot();
-        auto cmap = _cmap.data();
+        auto* plot = _plot();
+        auto* cmap = _cmap.data();
         _cmap = nullptr;
-        (void)plot->removePlottable(cmap);
+        if (plot)
+            (void)plot->removePlottable(cmap);
     }
 }
 

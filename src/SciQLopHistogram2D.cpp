@@ -51,13 +51,13 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
 
 SciQLopHistogram2D::~SciQLopHistogram2D()
 {
-    // Clear QPointer before base destructor runs to prevent double-removal
     if (_hist)
     {
-        auto plot = _plot();
-        auto hist = _hist.data();
+        auto* plot = _plot();
+        auto* hist = _hist.data();
         _hist = nullptr;
-        (void)plot->removePlottable(hist);
+        if (plot)
+            (void)plot->removePlottable(hist);
     }
 }
 

@@ -115,7 +115,7 @@ DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
 {
     m_rate_limit_timer = new QTimer(this);
     m_rate_limit_timer->setSingleShot(true);
-    m_rate_limit_timer->setInterval(500);
+    m_rate_limit_timer->setInterval(20);
     connect(m_rate_limit_timer, &QTimer::timeout, this, &DataProviderInterface::_threaded_update);
     connect(this, &DataProviderInterface::_state_changed, this,
         &DataProviderInterface::_threaded_update, Qt::QueuedConnection);
