@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
+#include <datasource/row-major-multi-datasource.h>
+#include <datasource/soa-multi-datasource.h>
 #include <vector>
 
 void SciQLopLineGraph::create_graphs(const QStringList& labels)
@@ -81,6 +83,12 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
     else
         m_data_range = SciQLopPlotRange();
 
+    // Build the data source with a dataGuard that co-owns the PyBuffers,
+    // preventing use-after-free when the async pipeline thread reads while
+    // new data arrives and replaces _x/_y.
+    struct Buffers { PyBuffer x, y; };
+    auto guard = std::make_shared<Buffers>(Buffers{x, y});
+
     dispatch_dtype(y.format_code(), [&](auto tag) {
         using V = typename decltype(tag)::type;
         const auto* values = static_cast<const V*>(y.raw_data());
@@ -88,16 +96,20 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
         if (y.ndim() == 1)
         {
             std::vector<std::span<const V>> columns{std::span<const V>(values, n)};
-            _multiGraph->viewData<double, V>(std::span<const double>(keys, n), std::move(columns));
+            auto source = std::make_shared<
+                QCPSoAMultiDataSource<std::span<const double>, std::span<const V>>>(
+                std::span<const double>(keys, n), std::move(columns), guard);
+            _multiGraph->setDataSource(std::move(source));
         }
         else
         {
             const auto n_cols = y.size(1);
             if (y.row_major())
             {
-                _multiGraph->viewRowMajorData<double, V>(
+                auto source = std::make_shared<QCPRowMajorMultiDataSource<double, V>>(
                     std::span<const double>(keys, n),
-                    values, static_cast<int>(n_cols), static_cast<int>(n_cols));
+                    values, n, static_cast<int>(n_cols), static_cast<int>(n_cols), guard);
+                _multiGraph->setDataSource(std::move(source));
             }
             else
             {
@@ -105,11 +117,14 @@ void SciQLopLineGraph::set_data(PyBuffer x, PyBuffer y)
                 columns.reserve(n_cols);
                 for (std::size_t col = 0; col < n_cols; ++col)
                     columns.emplace_back(values + col * n, n);
-                _multiGraph->viewData<double, V>(
-                    std::span<const double>(keys, n), std::move(columns));
+                auto source = std::make_shared<
+                    QCPSoAMultiDataSource<std::span<const double>, std::span<const V>>>(
+                    std::span<const double>(keys, n), std::move(columns), guard);
+                _multiGraph->setDataSource(std::move(source));
             }
         }
     });
+    _dataHolder = std::move(guard);
 
     // After viewData/setData, syncComponentCount has run — create wrappers if needed
     const int nComponents = _multiGraph->componentCount();

@@ -32,6 +32,10 @@ class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
 {
     QCPMultiGraph* _multiGraph = nullptr;
     PyBuffer _x, _y;
+    // Prevents use-after-free: the pipeline thread reads from the data source
+    // which holds non-owning spans into PyBuffer memory.  This shared_ptr keeps
+    // the PyBuffers (and the data source) alive until the pipeline is done.
+    std::shared_ptr<void> _dataHolder;
     QStringList _pendingLabels;
 
     SciQLopPlotAxis* _keyAxis;
