@@ -174,6 +174,6 @@ public:
             return { DropLocation::NewPlot, index };
         }
         return { DropLocation::ExistingPlot,
-                 _interface()->index_from_global_position(QCursor::pos()) };
+                 _interface()->index(event->position()) };
     }
 };

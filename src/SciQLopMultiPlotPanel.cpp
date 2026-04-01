@@ -138,7 +138,7 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
 
 QWidget *SciQLopMultiPlotPanel::widget_at(const QPointF &pos) const
 {
-    return _container->widget_at(pos);
+    return _container->widget_at(_container->mapFromParent(pos));
 }
 
 QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
@@ -468,7 +468,8 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
         }
         else
         {
-            drop_plot = plot_at(drop_result.index);
+            drop_plot = qobject_cast<SciQLopPlotInterface*>(
+                widget_at(event->position()));
         }
 
         event->acceptProposedAction();
