@@ -61,12 +61,14 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
                     return;
                 SciQLopPlotRange requested { range.lower, range.upper, _is_time_axis };
                 auto clamped = clamp_range(requested);
-                if (clamped.start() != range.lower || clamped.stop() != range.upper)
+                if (clamped != requested)
                 {
-                    m_axis->setRange(clamped.start(), clamped.stop());
-                    Q_EMIT range_clamped(requested, clamped);
+                    if (m_last_valid_range.is_valid())
+                        m_axis->setRange(m_last_valid_range.start(), m_last_valid_range.stop());
+                    Q_EMIT range_clamped(requested, m_last_valid_range);
                     return;
                 }
+                m_last_valid_range = clamped;
                 Q_EMIT range_changed(clamped);
             });
 
@@ -83,13 +85,17 @@ void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
     if (!m_axis.isNull() && range.is_valid())
     {
         auto clamped = clamp_range(range);
+        if (clamped != range)
+        {
+            Q_EMIT range_clamped(range, m_last_valid_range);
+            return;
+        }
         if (m_axis->range().lower != clamped.start() || m_axis->range().upper != clamped.stop())
         {
+            m_last_valid_range = clamped;
             m_axis->setRange(clamped.start(), clamped.stop());
             m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         }
-        if (clamped != range)
-            Q_EMIT range_clamped(range, clamped);
     }
 }
 

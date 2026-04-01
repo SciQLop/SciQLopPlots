@@ -189,6 +189,7 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
 {
     Q_OBJECT
     QPointer<QCPAxis> m_axis;
+    SciQLopPlotRange m_last_valid_range;
     bool m_suppress_range_signals = false;
     friend class _impl::SciQLopPlot;
 
