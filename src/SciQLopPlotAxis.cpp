@@ -24,6 +24,30 @@
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
 #include <plottables/plottable-colormap2.h>
+#include <cmath>
+
+SciQLopPlotRange SciQLopPlotAxisInterface::clamp_range(const SciQLopPlotRange& range) const noexcept
+{
+    auto sz = range.size();
+    auto c = range.center();
+    if (sz > m_max_range_size)
+        return SciQLopPlotRange(c - m_max_range_size / 2.0, c + m_max_range_size / 2.0,
+                                _is_time_axis);
+    if (m_min_range_size > 0.0 && sz < m_min_range_size)
+        return SciQLopPlotRange(c - m_min_range_size / 2.0, c + m_min_range_size / 2.0,
+                                _is_time_axis);
+    return range;
+}
+
+void SciQLopPlotAxisInterface::set_max_range_size(double max_size) noexcept
+{
+    m_max_range_size = max_size > 0.0 ? max_size : std::numeric_limits<double>::infinity();
+}
+
+void SciQLopPlotAxisInterface::set_min_range_size(double min_size) noexcept
+{
+    m_min_range_size = min_size > 0.0 ? min_size : 0.0;
+}
 
 SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_axis,
                                  const QString& name)
@@ -32,7 +56,19 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
     _is_time_axis = is_time_axis;
     connect(axis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
-            { if (!m_suppress_range_signals) Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+            {
+                if (m_suppress_range_signals)
+                    return;
+                SciQLopPlotRange requested { range.lower, range.upper, _is_time_axis };
+                auto clamped = clamp_range(requested);
+                if (clamped.start() != range.lower || clamped.stop() != range.upper)
+                {
+                    m_axis->setRange(clamped.start(), clamped.stop());
+                    Q_EMIT range_clamped(requested, clamped);
+                    return;
+                }
+                Q_EMIT range_changed(clamped);
+            });
 
     connect(axis, &QCPAxis::selectionChanged, this,
             [this](const QCPAxis::SelectableParts& parts)
@@ -44,11 +80,16 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (!m_axis.isNull() && range.is_valid()
-        && (m_axis->range().lower != range.start() || m_axis->range().upper != range.stop()))
+    if (!m_axis.isNull() && range.is_valid())
     {
-        m_axis->setRange(range.start(), range.stop());
-        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        auto clamped = clamp_range(range);
+        if (m_axis->range().lower != clamped.start() || m_axis->range().upper != clamped.stop())
+        {
+            m_axis->setRange(clamped.start(), clamped.stop());
+            m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        }
+        if (clamped != range)
+            Q_EMIT range_clamped(range, clamped);
     }
 }
 
@@ -270,11 +311,14 @@ QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
 
 void SciQLopPlotDummyAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
-    if (m_range != range)
+    auto clamped = clamp_range(range);
+    if (m_range != clamped)
     {
-        m_range = range;
-        Q_EMIT this->range_changed(range);
+        m_range = clamped;
+        Q_EMIT this->range_changed(clamped);
     }
+    if (clamped != range)
+        Q_EMIT range_clamped(range, clamped);
 }
 
 SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObject* parent,
