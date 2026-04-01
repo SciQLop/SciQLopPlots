@@ -35,6 +35,10 @@ class SciQLopPlotAxisInterface : public QObject
 
 protected:
     bool _is_time_axis = false;
+    double m_max_range_size = std::numeric_limits<double>::infinity();
+    double m_min_range_size = 0.0;
+
+    SciQLopPlotRange clamp_range(const SciQLopPlotRange& range) const noexcept;
 
 public:
     SciQLopPlotAxisInterface(QObject* parent = nullptr, const QString& name = "") : QObject(parent)
@@ -53,6 +57,11 @@ public:
     {
         set_range(SciQLopPlotRange(start, stop));
     }
+
+    void set_max_range_size(double max_size) noexcept;
+    void set_min_range_size(double min_size) noexcept;
+    inline double max_range_size() const noexcept { return m_max_range_size; }
+    inline double min_range_size() const noexcept { return m_min_range_size; }
 
     inline virtual void set_visible(bool visible) noexcept
     {
@@ -153,6 +162,7 @@ public:
 signals:
 #endif
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void range_clamped(SciQLopPlotRange requested, SciQLopPlotRange clamped);
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
