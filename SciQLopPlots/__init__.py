@@ -11,7 +11,7 @@ import sys
 
 sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
 
-__version__ = '0.20.5'
+__version__ = '0.20.6'
 
 def _merge_kwargs(kwargs, **kwargs2):
     for k, v in kwargs2.items():
