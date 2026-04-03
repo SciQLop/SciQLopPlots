@@ -259,6 +259,7 @@ void SciQLopPlot::_pinch_zoom(QPinchGesture* gesture)
         if (gesture->scaleFactor() != 0.)
             axis->scaleRange(1. / gesture->scaleFactor(),
                              axis->pixelToCoord(gesture->centerPoint().x()));
+        this->replot(rpQueuedReplot);
     }
 }
 
