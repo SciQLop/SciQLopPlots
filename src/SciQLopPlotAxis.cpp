@@ -85,17 +85,14 @@ void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
     if (!m_axis.isNull() && range.is_valid())
     {
         auto clamped = clamp_range(range);
-        if (clamped != range)
-        {
-            Q_EMIT range_clamped(range, m_last_valid_range);
-            return;
-        }
         if (m_axis->range().lower != clamped.start() || m_axis->range().upper != clamped.stop())
         {
             m_last_valid_range = clamped;
             m_axis->setRange(clamped.start(), clamped.stop());
             m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         }
+        if (clamped != range)
+            Q_EMIT range_clamped(range, clamped);
     }
 }
 
