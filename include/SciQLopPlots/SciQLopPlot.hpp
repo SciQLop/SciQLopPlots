@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
-#include "SciQLopPlots/Items/SciQLopTracer.hpp"
+#include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
@@ -36,7 +36,6 @@
 #include "SciQLopPlots/enums.hpp"
 #include <QElapsedTimer>
 #include <QPointF>
-#include <optional>
 #include <qcustomplot.h>
 
 namespace _impl
@@ -47,7 +46,7 @@ class SciQLopPlot : public QCustomPlot
     Q_OBJECT
 
     double m_scroll_factor = 1.;
-    TracerWithToolTip* m_tracer = nullptr;
+    SciQLopCrosshair* m_crosshair = nullptr;
     QCPColorScale* m_color_scale = nullptr;
     QList<SciQLopPlotAxis*> m_axes;
     QElapsedTimer m_hover_throttle_timer;
@@ -70,6 +69,7 @@ signals:
     Q_SIGNAL void z_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void plotables_list_changed();
     Q_SIGNAL void resized(QSize size);
+    Q_SIGNAL void hover_x_changed(double key);
 
 public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
@@ -164,6 +164,12 @@ public:
 
     void replot(QCustomPlot::RefreshPriority priority = rpImmediateRefresh);
 
+    void set_crosshair_enabled(bool enabled);
+    bool crosshair_enabled() const;
+    void show_crosshair_at_key(double key);
+    void hide_crosshair();
+    SciQLopCrosshair* crosshair() const { return m_crosshair; }
+
 protected:
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -178,12 +184,8 @@ protected:
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
-    bool _update_tracer(const QPointF& pos);
     bool _update_mouse_cursor(QMouseEvent* event);
     bool _handle_tool_tip(QEvent* event);
-    QCPGraph* _nearest_graph(const QPointF& pos);
-    std::optional<std::tuple<double, double>> _nearest_data_point(const QPointF& pos,
-                                                                  QCPGraph* graph);
 
     template <typename T, typename... Args>
     T* _new_plottable_wrapper(Args&&... args)

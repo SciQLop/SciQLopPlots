@@ -26,10 +26,12 @@
 #include "SciQLopPlots/constants.hpp"
 #include <layoutelements/layoutelement-legend-group.h>
 #include <plottables/plottable-multigraph.h>
+#include <theme.h>
 
 #include <QFileInfo>
-#include <algorithm>
+#include <cmath>
 #include <cpp_utils/containers/algorithms.hpp>
+#include <limits>
 #include <utility>
 
 namespace _impl
@@ -50,7 +52,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren);
     this->grabGesture(Qt::PanGesture, Qt::DontStartGestureOnChildren);
 
-    this->m_tracer = new TracerWithToolTip(this);
+    m_crosshair = new SciQLopCrosshair(this);
     this->setMouseTracking(true);
     this->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables
                           | QCP::iSelectAxes | QCP::iSelectLegend | QCP::iSelectItems
@@ -103,7 +105,7 @@ SciQLopPlot::~SciQLopPlot()
         disconnect(plottable, nullptr, this, nullptr);
     }
     m_plottables.clear();
-    delete m_tracer;
+    delete m_crosshair;
 }
 
 QCPColorMap* SciQLopPlot::addColorMap()
@@ -224,7 +226,9 @@ void SciQLopPlot::mouseMoveEvent(QMouseEvent* event)
         return;
     m_hover_throttle_timer.start();
     _update_mouse_cursor(event);
-    _update_tracer(event->pos());
+    m_crosshair->update_at_pixel(event->pos());
+    if (!std::isnan(m_crosshair->current_key()))
+        emit hover_x_changed(m_crosshair->current_key());
 }
 
 void SciQLopPlot::enterEvent(QEnterEvent* event)
@@ -235,7 +239,8 @@ void SciQLopPlot::enterEvent(QEnterEvent* event)
 
 void SciQLopPlot::leaveEvent(QEvent* event)
 {
-    m_tracer->set_plotable(nullptr);
+    m_crosshair->hide();
+    emit hover_x_changed(std::numeric_limits<double>::quiet_NaN());
     event->accept();
     QCustomPlot::leaveEvent(event);
 }
@@ -414,20 +419,26 @@ void SciQLopPlot::resizeEvent(QResizeEvent* event)
     Q_EMIT resized(event->size());
 }
 
-bool SciQLopPlot::_update_tracer(const QPointF& pos)
+void SciQLopPlot::set_crosshair_enabled(bool enabled)
 {
-    auto plotable = plottableAt(pos, false);
+    m_crosshair->set_enabled(enabled);
+}
 
-    if (plotable != nullptr and plotable->visible()
-        && (!legend->visible() || -1. == legend->selectTest(pos, false)))
-    {
-        m_tracer->set_plotable(plotable);
-        m_tracer->update_position(pos);
-        return true;
-    }
-    if (m_tracer->visible())
-        m_tracer->set_plotable(nullptr);
-    return false;
+bool SciQLopPlot::crosshair_enabled() const
+{
+    return m_crosshair->enabled();
+}
+
+void SciQLopPlot::show_crosshair_at_key(double key)
+{
+    if (!m_crosshair->enabled())
+        return;
+    m_crosshair->update_at_key(key);
+}
+
+void SciQLopPlot::hide_crosshair()
+{
+    m_crosshair->hide();
 }
 
 bool SciQLopPlot::_update_mouse_cursor(QMouseEvent* event)
@@ -456,31 +467,8 @@ bool SciQLopPlot::_handle_tool_tip(QEvent* event)
             }
         }
     }
-    if (!m_tracer->visible())
-        QToolTip::hideText();
+    QToolTip::hideText();
     return true;
-}
-
-QCPGraph* SciQLopPlot::_nearest_graph(const QPointF& pos)
-{
-    return plottableAt<QCPGraph>(pos, false);
-}
-
-std::optional<std::tuple<double, double>> SciQLopPlot::_nearest_data_point(const QPointF& pos,
-                                                                           QCPGraph* graph)
-{
-    QCPGraphDataContainer::const_iterator it = graph->data()->constEnd();
-    QVariant details;
-    if (graph->selectTest(pos, false, &details))
-    {
-        QCPDataSelection dataPoints = details.value<QCPDataSelection>();
-        if (dataPoints.dataPointCount() > 0)
-        {
-            it = graph->data()->at(dataPoints.dataRange().begin());
-            return std::make_tuple(it->key, it->value);
-        }
-    }
-    return std::nullopt;
 }
 
 void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottable)
@@ -684,7 +672,10 @@ double SciQLopPlot::scroll_factor() const noexcept
     return m_impl->scroll_factor();
 }
 
-void SciQLopPlot::enable_cursor(bool enable) noexcept { }
+void SciQLopPlot::enable_cursor(bool enable) noexcept
+{
+    m_impl->set_crosshair_enabled(enable);
+}
 
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
 {
@@ -696,6 +687,12 @@ void SciQLopPlot::set_theme(SciQLopTheme* theme)
     if (theme && theme->qcp_theme())
     {
         m_impl->setTheme(theme->qcp_theme());
+        m_impl->crosshair()->apply_theme(theme->qcp_theme());
+        connect(theme->qcp_theme(), &QCPTheme::changed, this,
+                [this]() {
+                    if (m_theme && m_theme->qcp_theme())
+                        m_impl->crosshair()->apply_theme(m_theme->qcp_theme());
+                });
         connect(theme, &QObject::destroyed, this, [this]() { m_impl->setTheme(nullptr); });
     }
     else

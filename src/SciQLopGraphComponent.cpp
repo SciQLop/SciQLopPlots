@@ -230,6 +230,7 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
                 if (selected && gi->selectedComponent() != m_componentIndex)
                 {
                     gi->setExpanded(true);
+                    gi->setSelectedComponent(m_componentIndex);
                     gi->setSelected(true);
                     emit replot();
                 }

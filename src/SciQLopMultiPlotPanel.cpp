@@ -26,6 +26,7 @@
 #include "SciQLopPlots/unique_names_factory.hpp"
 
 #include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
+#include "SciQLopPlots/MultiPlots/CrosshairSynchronizer.hpp"
 
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
@@ -84,6 +85,10 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
                     emit this->time_range_changed(range);
                 });
     }
+    if (synchronize_x)
+        ::register_behavior<CrosshairSynchronizer>(_container, AxisType::XAxis);
+    else if (synchronize_time)
+        ::register_behavior<CrosshairSynchronizer>(_container, AxisType::TimeAxis);
     this->setAcceptDrops(true);
     setObjectName(UniqueNamesFactory::unique_name("Panel"));
 
