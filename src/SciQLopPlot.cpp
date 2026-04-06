@@ -24,6 +24,8 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include <layoutelements/layoutelement-legend-group.h>
+#include <plottables/plottable-multigraph.h>
 
 #include <QFileInfo>
 #include <algorithm>
@@ -544,6 +546,26 @@ void SciQLopPlot::_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendIte
         {
             item->setTextColor(Qt::gray);
             item->setSelectedTextColor(Qt::gray);
+        }
+        this->replot(rpQueuedReplot);
+    }
+    else if (auto* gi = dynamic_cast<QCPGroupLegendItem*>(item); gi != nullptr)
+    {
+        auto* mg = gi->multiGraph();
+        if (!mg)
+            return;
+        int comp = gi->selectedComponent();
+        if (comp >= 0 && comp < mg->componentCount())
+        {
+            mg->component(comp).visible = !mg->component(comp).visible;
+        }
+        else
+        {
+            bool anyVisible = false;
+            for (int i = 0; i < mg->componentCount(); ++i)
+                anyVisible |= mg->component(i).visible;
+            for (int i = 0; i < mg->componentCount(); ++i)
+                mg->component(i).visible = !anyVisible;
         }
         this->replot(rpQueuedReplot);
     }

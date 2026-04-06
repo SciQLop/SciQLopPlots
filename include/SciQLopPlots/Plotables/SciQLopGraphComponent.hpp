@@ -25,6 +25,7 @@
 #include <qcustomplot.h>
 #include <plottables/plottable-multigraph.h>
 #include <plottables/plottable-graph2.h>
+#include <layoutelements/layoutelement-legend-group.h>
 #include "SciQLopPlots/qcp_enums.hpp"
 
 
@@ -77,6 +78,21 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
             auto plot = _plot();
             return plot->legend->itemWithPlottable(m_plottable.data());
         }
+        return nullptr;
+    }
+
+    inline QCPGroupLegendItem* _group_legend_item()
+    {
+        auto plot = _plot();
+        if (!plot || !plot->legend)
+            return nullptr;
+        auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+        if (!mg)
+            return nullptr;
+        for (int i = 0; i < plot->legend->itemCount(); ++i)
+            if (auto* gi = qobject_cast<QCPGroupLegendItem*>(plot->legend->item(i)))
+                if (gi->multiGraph() == mg)
+                    return gi;
         return nullptr;
     }
 

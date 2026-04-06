@@ -55,6 +55,13 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
                 if (m_selected != componentSelected)
                     set_selected(componentSelected);
             });
+    if (auto* gi = _group_legend_item(); gi)
+    {
+        connect(gi, &QCPGroupLegendItem::componentClicked, this,
+                [this](int clickedComponent) {
+                    set_selected(clickedComponent == m_componentIndex);
+                });
+    }
 }
 
 SciQLopGraphComponent::~SciQLopGraphComponent()
@@ -216,7 +223,25 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
             emit selection_changed(selected);
             emit replot();
         }
-        if (auto legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
+        if (m_componentIndex >= 0)
+        {
+            if (auto* gi = _group_legend_item(); gi)
+            {
+                if (selected && gi->selectedComponent() != m_componentIndex)
+                {
+                    gi->setExpanded(true);
+                    gi->setSelected(true);
+                    emit replot();
+                }
+                else if (!selected && gi->selected()
+                         && gi->selectedComponent() == m_componentIndex)
+                {
+                    gi->setSelected(false);
+                    emit replot();
+                }
+            }
+        }
+        else if (auto legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
         {
             legend_item->setSelected(selected);
             emit replot();

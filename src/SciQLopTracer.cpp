@@ -104,6 +104,8 @@ TracerWithToolTip::TracerWithToolTip(QCustomPlot* parent)
     m_tooltip->setVisible(false);
     m_tracer->setLayer("overlay");
     m_tracer->setStyle(QCPItemTracer::TracerStyle::tsCircle);
+    m_tracer->setSelectable(false);
+    m_tooltip->setSelectable(false);
 }
 
 TracerWithToolTip::~TracerWithToolTip() { }
