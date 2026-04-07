@@ -27,7 +27,8 @@
 namespace sqp::dsp::simd
 {
 
-auto dispatched_dot_product = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(dot_product_t {});
+decltype(xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(dot_product_t {}))
+    dispatched_dot_product = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(dot_product_t {});
 auto dispatched_elementwise_mul = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(elementwise_mul_t {});
 auto dispatched_reduce_sum = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(reduce_sum_t {});
 auto dispatched_reduce_min_max = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(reduce_min_max_t {});

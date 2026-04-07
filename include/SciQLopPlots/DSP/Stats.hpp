@@ -214,7 +214,7 @@ namespace detail
             ++count;
         }
 
-        auto emit = [&](std::size_t i)
+        auto write_std = [&](std::size_t i)
         {
             if (count > 1)
             {
@@ -230,7 +230,7 @@ namespace detail
             }
         };
 
-        emit(0);
+        write_std(0);
 
         for (std::size_t i = 1; i < n_rows; ++i)
         {
@@ -280,7 +280,7 @@ namespace detail
                 }
             }
 
-            emit(i);
+            write_std(i);
         }
     }
 
