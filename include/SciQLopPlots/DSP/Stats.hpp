@@ -91,67 +91,196 @@ namespace detail
         return s;
     }
 
-    // Rolling mean over a single column using a simple moving average.
+    // O(n) rolling mean using a sliding sum.
+    // NaN handling: for floating point, NaN values are excluded from the window.
     template <typename T>
     void rolling_mean_column(
         const T* in, std::size_t n_rows, std::size_t n_cols, std::size_t col,
         std::size_t window, T* out)
     {
+        if (n_cols > 1)
+        {
+            std::vector<T> col_in(n_rows), col_out(n_rows);
+            for (std::size_t i = 0; i < n_rows; ++i)
+                col_in[i] = in[i * n_cols + col];
+
+            rolling_mean_column(col_in.data(), n_rows, 1, 0, window, col_out.data());
+
+            for (std::size_t i = 0; i < n_rows; ++i)
+                out[i * n_cols + col] = col_out[i];
+            return;
+        }
+
+        // Single-column (contiguous) path
         const auto half = window / 2;
 
-        for (std::size_t i = 0; i < n_rows; ++i)
+        double sum = 0.0;
+        std::size_t count = 0;
+        const auto init_hi = std::min(half + 1, n_rows);
+        for (std::size_t j = 0; j < init_hi; ++j)
         {
-            const auto lo = (i >= half) ? i - half : std::size_t { 0 };
-            const auto hi = std::min(i + half + 1, n_rows);
-            double sum = 0.0;
-            std::size_t count = 0;
-            for (std::size_t j = lo; j < hi; ++j)
+            const T val = in[j];
+            if constexpr (std::is_floating_point_v<T>)
             {
-                const T val = in[j * n_cols + col];
+                if (std::isnan(val))
+                    continue;
+            }
+            sum += static_cast<double>(val);
+            ++count;
+        }
+        out[0] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : T { 0 };
+
+        for (std::size_t i = 1; i < n_rows; ++i)
+        {
+            const auto new_hi = i + half;
+            if (new_hi < n_rows)
+            {
+                const T val = in[new_hi];
                 if constexpr (std::is_floating_point_v<T>)
                 {
-                    if (std::isnan(val))
-                        continue;
+                    if (!std::isnan(val))
+                    {
+                        sum += static_cast<double>(val);
+                        ++count;
+                    }
                 }
-                sum += static_cast<double>(val);
-                ++count;
+                else
+                {
+                    sum += static_cast<double>(val);
+                    ++count;
+                }
             }
-            out[i * n_cols + col] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count))
-                                                 : T { 0 };
+
+            if (i > half)
+            {
+                const auto old_lo = i - half - 1;
+                const T val = in[old_lo];
+                if constexpr (std::is_floating_point_v<T>)
+                {
+                    if (!std::isnan(val))
+                    {
+                        sum -= static_cast<double>(val);
+                        --count;
+                    }
+                }
+                else
+                {
+                    sum -= static_cast<double>(val);
+                    --count;
+                }
+            }
+
+            out[i] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : T { 0 };
         }
     }
 
-    // Rolling std dev over a single column using Welford per window.
+    // O(n) rolling std using sliding sum and sum-of-squares.
+    // std = sqrt((sum_sq/n - mean^2) * n/(n-1)) for sample std.
     template <typename T>
     void rolling_std_column(
         const T* in, std::size_t n_rows, std::size_t n_cols, std::size_t col,
         std::size_t window, T* out)
     {
+        if (n_cols > 1)
+        {
+            std::vector<T> col_in(n_rows), col_out(n_rows);
+            for (std::size_t i = 0; i < n_rows; ++i)
+                col_in[i] = in[i * n_cols + col];
+
+            rolling_std_column(col_in.data(), n_rows, 1, 0, window, col_out.data());
+
+            for (std::size_t i = 0; i < n_rows; ++i)
+                out[i * n_cols + col] = col_out[i];
+            return;
+        }
+
+        // Single-column (contiguous) path
         const auto half = window / 2;
 
-        for (std::size_t i = 0; i < n_rows; ++i)
+        double sum = 0.0, sum_sq = 0.0;
+        std::size_t count = 0;
+        const auto init_hi = std::min(half + 1, n_rows);
+        for (std::size_t j = 0; j < init_hi; ++j)
         {
-            const auto lo = (i >= half) ? i - half : std::size_t { 0 };
-            const auto hi = std::min(i + half + 1, n_rows);
-            double mean = 0.0, m2 = 0.0;
-            std::size_t count = 0;
-            for (std::size_t j = lo; j < hi; ++j)
+            const T val = in[j];
+            if constexpr (std::is_floating_point_v<T>)
             {
-                const T val = in[j * n_cols + col];
+                if (std::isnan(val))
+                    continue;
+            }
+            const double d = static_cast<double>(val);
+            sum += d;
+            sum_sq += d * d;
+            ++count;
+        }
+
+        auto emit = [&](std::size_t i)
+        {
+            if (count > 1)
+            {
+                const double mean = sum / static_cast<double>(count);
+                const double var
+                    = (sum_sq - static_cast<double>(count) * mean * mean)
+                    / static_cast<double>(count - 1);
+                out[i] = static_cast<T>(std::sqrt(std::max(0.0, var)));
+            }
+            else
+            {
+                out[i] = T { 0 };
+            }
+        };
+
+        emit(0);
+
+        for (std::size_t i = 1; i < n_rows; ++i)
+        {
+            const auto new_hi = i + half;
+            if (new_hi < n_rows)
+            {
+                const T val = in[new_hi];
                 if constexpr (std::is_floating_point_v<T>)
                 {
-                    if (std::isnan(val))
-                        continue;
+                    if (!std::isnan(val))
+                    {
+                        const double d = static_cast<double>(val);
+                        sum += d;
+                        sum_sq += d * d;
+                        ++count;
+                    }
                 }
-                ++count;
-                const double d = static_cast<double>(val);
-                const double delta = d - mean;
-                mean += delta / static_cast<double>(count);
-                m2 += delta * (d - mean);
+                else
+                {
+                    const double d = static_cast<double>(val);
+                    sum += d;
+                    sum_sq += d * d;
+                    ++count;
+                }
             }
-            out[i * n_cols + col]
-                = (count > 1) ? static_cast<T>(std::sqrt(m2 / static_cast<double>(count - 1)))
-                              : T { 0 };
+
+            if (i > half)
+            {
+                const auto old_lo = i - half - 1;
+                const T val = in[old_lo];
+                if constexpr (std::is_floating_point_v<T>)
+                {
+                    if (!std::isnan(val))
+                    {
+                        const double d = static_cast<double>(val);
+                        sum -= d;
+                        sum_sq -= d * d;
+                        --count;
+                    }
+                }
+                else
+                {
+                    const double d = static_cast<double>(val);
+                    sum -= d;
+                    sum_sq -= d * d;
+                    --count;
+                }
+            }
+
+            emit(i);
         }
     }
 

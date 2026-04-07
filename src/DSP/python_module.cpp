@@ -189,6 +189,83 @@ PyObject* timeseries_to_tuple(const sqp::dsp::TimeSeries<T>& ts)
     return tuple;
 }
 
+// Preallocate a numpy array and return a (PyObject*, T*) pair.
+// Caller owns the PyObject* reference.
+template <typename T>
+std::pair<PyObject*, T*> alloc_numpy_1d(npy_intp n)
+{
+    npy_intp dims[1] = { n };
+    auto* arr = PyArray_SimpleNew(1, dims, npy_typenum<T>());
+    if (!arr)
+        return { nullptr, nullptr };
+    return { arr, static_cast<T*>(PyArray_DATA(reinterpret_cast<PyArrayObject*>(arr))) };
+}
+
+template <typename T>
+std::pair<PyObject*, T*> alloc_numpy_2d(npy_intp rows, npy_intp cols)
+{
+    npy_intp dims[2] = { rows, cols };
+    auto* arr = PyArray_SimpleNew(2, dims, npy_typenum<T>());
+    if (!arr)
+        return { nullptr, nullptr };
+    return { arr, static_cast<T*>(PyArray_DATA(reinterpret_cast<PyArrayObject*>(arr))) };
+}
+
+// Return (x_ref, y_arr) tuple where x_ref is the input x array (borrowed+incref'd)
+// and y_arr is a newly allocated numpy array. Returns the y data pointer for C++ to write into.
+template <typename T>
+struct ZeroCopyOutput
+{
+    PyObject* x_ref = nullptr;  // borrowed ref to input x, incref'd
+    PyObject* y_obj = nullptr;  // new numpy array
+    T* y_ptr = nullptr;         // raw pointer into y_obj
+
+    bool alloc_like(XArray& x, YArray& y)
+    {
+        x_ref = reinterpret_cast<PyObject*>(x.arr);
+        Py_INCREF(x_ref);
+        if (y.ncols == 1)
+        {
+            auto [obj, ptr] = alloc_numpy_1d<T>(y.nrows);
+            y_obj = obj;
+            y_ptr = ptr;
+        }
+        else
+        {
+            auto [obj, ptr] = alloc_numpy_2d<T>(y.nrows, y.ncols);
+            y_obj = obj;
+            y_ptr = ptr;
+        }
+        return y_obj != nullptr;
+    }
+
+    bool alloc_reduced(XArray& x, npy_intp nrows)
+    {
+        x_ref = reinterpret_cast<PyObject*>(x.arr);
+        Py_INCREF(x_ref);
+        auto [obj, ptr] = alloc_numpy_1d<T>(nrows);
+        y_obj = obj;
+        y_ptr = ptr;
+        return y_obj != nullptr;
+    }
+
+    PyObject* to_tuple()
+    {
+        auto* t = PyTuple_Pack(2, x_ref, y_obj);
+        Py_DECREF(x_ref);
+        Py_DECREF(y_obj);
+        x_ref = nullptr;
+        y_obj = nullptr;
+        return t;
+    }
+
+    void cleanup()
+    {
+        Py_XDECREF(x_ref);
+        Py_XDECREF(y_obj);
+    }
+};
+
 // ── Dtype dispatch ───────────────────────────────────────────────────────────
 
 // Dispatch a generic lambda on the y array's dtype.
@@ -214,14 +291,28 @@ PyObject* dispatch(int dtype, F&& f)
 
 template <typename T>
 PyObject* apply_stage(
-    XArray& x, YArray& y, double gap_factor, const sqp::dsp::Stage<T>& stage)
+    XArray& x, YArray& y, double gap_factor, bool has_gaps, const sqp::dsp::Stage<T>& stage)
 {
     sqp::dsp::TimeSeries<T> ts;
     Py_BEGIN_ALLOW_THREADS
-    auto segments = sqp::dsp::split_segments<T>(
-        x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
-    auto results = stage(segments);
-    ts = sqp::dsp::detail::reassemble(results);
+    if (has_gaps)
+    {
+        auto segments = sqp::dsp::split_segments<T>(
+            x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
+        auto results = stage(segments);
+        ts = sqp::dsp::detail::reassemble(results);
+    }
+    else
+    {
+        std::vector<sqp::dsp::Segment<T>> segments { sqp::dsp::Segment<T> {
+            .x = x.span(),
+            .y = y.flat_span<T>(),
+            .n_cols = static_cast<std::size_t>(y.ncols),
+            .median_dt = sqp::dsp::detail::compute_median_dt(x.span()),
+        } };
+        auto results = stage(segments);
+        ts = std::move(results.front());
+    }
     Py_END_ALLOW_THREADS
     return timeseries_to_tuple(ts);
 }
@@ -346,11 +437,12 @@ PyObject* dsp_resample(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     double gap_factor = 3.0;
     double target_dt = 0.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "gap_factor", "target_dt", nullptr };
+    static const char* kwlist[] = { "x", "y", "gap_factor", "target_dt", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OO|dd", const_cast<char**>(kwlist), &x_obj, &y_obj, &gap_factor,
-            &target_dt))
+            args, kwargs, "OO|ddp", const_cast<char**>(kwlist), &x_obj, &y_obj, &gap_factor,
+            &target_dt, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -360,8 +452,73 @@ PyObject* dsp_resample(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps && x.nrows >= 2)
+        {
+            const double dt = (target_dt > 0.0)
+                ? target_dt
+                : sqp::dsp::detail::compute_median_dt(x.span());
+            if (dt <= 0.0)
+            {
+                // Degenerate: return input as-is (incref both)
+                Py_INCREF(reinterpret_cast<PyObject*>(x.arr));
+                Py_INCREF(reinterpret_cast<PyObject*>(y.arr));
+                return PyTuple_Pack(2,
+                    reinterpret_cast<PyObject*>(x.arr),
+                    reinterpret_cast<PyObject*>(y.arr));
+            }
+
+            const double x_start = x.data[0];
+            const double x_end = x.data[x.nrows - 1];
+            const auto n_out = static_cast<npy_intp>(
+                std::floor((x_end - x_start) / dt)) + 1;
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+
+            // Preallocate output numpy arrays
+            auto [x_out_obj, x_out_ptr] = alloc_numpy_1d<double>(n_out);
+            if (!x_out_obj)
+                return static_cast<PyObject*>(nullptr);
+
+            PyObject* y_out_obj;
+            T* y_out_ptr;
+            if (ncols == 1)
+            {
+                auto [obj, ptr] = alloc_numpy_1d<T>(n_out);
+                y_out_obj = obj;
+                y_out_ptr = ptr;
+            }
+            else
+            {
+                auto [obj, ptr] = alloc_numpy_2d<T>(n_out, static_cast<npy_intp>(ncols));
+                y_out_obj = obj;
+                y_out_ptr = ptr;
+            }
+            if (!y_out_obj)
+            {
+                Py_DECREF(x_out_obj);
+                return static_cast<PyObject*>(nullptr);
+            }
+
+            Py_BEGIN_ALLOW_THREADS
+            for (npy_intp i = 0; i < n_out; ++i)
+                x_out_ptr[i] = x_start + static_cast<double>(i) * dt;
+
+            for (std::size_t col = 0; col < ncols; ++col)
+            {
+                sqp::dsp::detail::interp_column(
+                    x.data, y.typed_data<T>(),
+                    static_cast<std::size_t>(x.nrows), ncols, col,
+                    x_out_ptr, y_out_ptr,
+                    static_cast<std::size_t>(n_out), ncols);
+            }
+            Py_END_ALLOW_THREADS
+
+            auto* tuple = PyTuple_Pack(2, x_out_obj, y_out_obj);
+            Py_DECREF(x_out_obj);
+            Py_DECREF(y_out_obj);
+            return tuple;
+        }
         auto stage = sqp::dsp::resample_uniform<T>(target_dt);
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
 
@@ -371,11 +528,12 @@ PyObject* dsp_fir_filter(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     PyObject* coeffs_obj = nullptr;
     double gap_factor = 3.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "coeffs", "gap_factor", nullptr };
+    static const char* kwlist[] = { "x", "y", "coeffs", "gap_factor", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OOO|d", const_cast<char**>(kwlist), &x_obj, &y_obj, &coeffs_obj,
-            &gap_factor))
+            args, kwargs, "OOO|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &coeffs_obj,
+            &gap_factor, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -391,9 +549,24 @@ PyObject* dsp_fir_filter(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::fir_apply_column(
+                    y.typed_data<T>(), nrows, ncols, col,
+                    coeffs.typed_data<T>(), static_cast<std::size_t>(coeffs.nrows), out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
         auto stage = sqp::dsp::fir_filter<T>(
             { coeffs.typed_data<T>(), static_cast<std::size_t>(coeffs.nrows) });
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
 
@@ -403,11 +576,12 @@ PyObject* dsp_iir_sos(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     PyObject* sos_obj = nullptr;
     double gap_factor = 3.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "sos", "gap_factor", nullptr };
+    static const char* kwlist[] = { "x", "y", "sos", "gap_factor", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OOO|d", const_cast<char**>(kwlist), &x_obj, &y_obj, &sos_obj,
-            &gap_factor))
+            args, kwargs, "OOO|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &sos_obj,
+            &gap_factor, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -429,10 +603,163 @@ PyObject* dsp_iir_sos(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::sos_apply_column(
+                    y.typed_data<T>(), nrows, ncols, col,
+                    sos.typed_data<T>(), static_cast<std::size_t>(sos.nrows), out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
         auto stage = sqp::dsp::iir_sos<T>(
             { sos.typed_data<T>(), static_cast<std::size_t>(sos.nrows * 6) },
             static_cast<std::size_t>(sos.nrows));
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
+    });
+}
+
+PyObject* dsp_filtfilt(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* x_obj = nullptr;
+    PyObject* y_obj = nullptr;
+    PyObject* coeffs_obj = nullptr;
+    double gap_factor = 3.0;
+    int has_gaps = 1;
+
+    static const char* kwlist[] = { "x", "y", "coeffs", "gap_factor", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwargs, "OOO|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &coeffs_obj,
+            &gap_factor, &has_gaps))
+        return nullptr;
+
+    XArray x;
+    YArray y, coeffs;
+    if (!x.parse(x_obj) || !y.parse(y_obj) || !coeffs.parse(coeffs_obj))
+        return nullptr;
+
+    if (y.dtype != coeffs.dtype)
+    {
+        PyErr_SetString(PyExc_TypeError, "y and coeffs must have the same dtype");
+        return nullptr;
+    }
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::filtfilt_column(
+                    y.typed_data<T>(), nrows, ncols, col,
+                    coeffs.typed_data<T>(), static_cast<std::size_t>(coeffs.nrows), out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
+        // Gap-aware: build segments, apply filtfilt per segment
+        auto coeffs_vec = std::vector<T>(
+            coeffs.typed_data<T>(), coeffs.typed_data<T>() + coeffs.nrows);
+        auto stage = [coeffs_vec](const std::vector<sqp::dsp::Segment<T>>& segments)
+            -> std::vector<sqp::dsp::TimeSeries<T>>
+        {
+            std::vector<sqp::dsp::TimeSeries<T>> results(segments.size());
+            sqp::dsp::parallel_for(segments.size(), [&](std::size_t i) {
+                const auto& seg = segments[i];
+                auto& r = results[i];
+                r.x.assign(seg.x.begin(), seg.x.end());
+                r.y.resize(seg.y.size());
+                r.n_cols = seg.n_cols;
+                for (std::size_t col = 0; col < seg.n_cols; ++col)
+                    sqp::dsp::detail::filtfilt_column(
+                        seg.y.data(), seg.x.size(), seg.n_cols, col,
+                        coeffs_vec.data(), coeffs_vec.size(), r.y.data());
+            });
+            return results;
+        };
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
+    });
+}
+
+PyObject* dsp_sosfiltfilt(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* x_obj = nullptr;
+    PyObject* y_obj = nullptr;
+    PyObject* sos_obj = nullptr;
+    double gap_factor = 3.0;
+    int has_gaps = 1;
+
+    static const char* kwlist[] = { "x", "y", "sos", "gap_factor", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwargs, "OOO|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &sos_obj,
+            &gap_factor, &has_gaps))
+        return nullptr;
+
+    XArray x;
+    YArray y, sos;
+    if (!x.parse(x_obj) || !y.parse(y_obj) || !sos.parse(sos_obj))
+        return nullptr;
+
+    if (y.dtype != sos.dtype)
+    {
+        PyErr_SetString(PyExc_TypeError, "y and sos must have the same dtype");
+        return nullptr;
+    }
+
+    if (sos.ncols != 6)
+    {
+        PyErr_SetString(PyExc_ValueError, "SOS matrix must have 6 columns [b0,b1,b2,a0,a1,a2]");
+        return nullptr;
+    }
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::sosfiltfilt_column(
+                    y.typed_data<T>(), nrows, ncols, col,
+                    sos.typed_data<T>(), static_cast<std::size_t>(sos.nrows), out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
+        auto sos_vec = std::vector<T>(
+            sos.typed_data<T>(), sos.typed_data<T>() + sos.nrows * 6);
+        auto n_sec = static_cast<std::size_t>(sos.nrows);
+        auto stage = [sos_vec, n_sec](const std::vector<sqp::dsp::Segment<T>>& segments)
+            -> std::vector<sqp::dsp::TimeSeries<T>>
+        {
+            std::vector<sqp::dsp::TimeSeries<T>> results(segments.size());
+            sqp::dsp::parallel_for(segments.size(), [&](std::size_t i) {
+                const auto& seg = segments[i];
+                auto& r = results[i];
+                r.x.assign(seg.x.begin(), seg.x.end());
+                r.y.resize(seg.y.size());
+                r.n_cols = seg.n_cols;
+                for (std::size_t col = 0; col < seg.n_cols; ++col)
+                    sqp::dsp::detail::sosfiltfilt_column(
+                        seg.y.data(), seg.x.size(), seg.n_cols, col,
+                        sos_vec.data(), n_sec, r.y.data());
+            });
+            return results;
+        };
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
 
@@ -442,10 +769,11 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     double gap_factor = 3.0;
     const char* window_str = "hann";
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "gap_factor", "window", nullptr };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|ds", const_cast<char**>(kwlist), &x_obj,
-            &y_obj, &gap_factor, &window_str))
+    static const char* kwlist[] = { "x", "y", "gap_factor", "window", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|dsp", const_cast<char**>(kwlist), &x_obj,
+            &y_obj, &gap_factor, &window_str, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -459,8 +787,23 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     {
         std::vector<sqp::dsp::FFTResult<T>> results;
         Py_BEGIN_ALLOW_THREADS
-        auto segments = sqp::dsp::split_segments<T>(
-            x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
+        std::vector<sqp::dsp::Segment<T>> segments;
+        if (has_gaps)
+        {
+            segments = sqp::dsp::split_segments<T>(
+                x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
+        }
+        else
+        {
+            // No gaps: skip expensive median_dt, use first dt as sample period
+            const double dt = (x.nrows >= 2) ? (x.data[1] - x.data[0]) : 1.0;
+            segments.push_back(sqp::dsp::Segment<T> {
+                .x = x.span(),
+                .y = y.flat_span<T>(),
+                .n_cols = static_cast<std::size_t>(y.ncols),
+                .median_dt = dt,
+            });
+        }
         results = sqp::dsp::fft(segments, win);
         Py_END_ALLOW_THREADS
 
@@ -510,10 +853,12 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     double gap_factor = 3.0;
     const char* window_str = "hann";
 
+    int has_gaps = 1;
+
     static const char* kwlist[]
-        = { "x", "y", "col", "window_size", "overlap", "gap_factor", "window", nullptr };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|nnnds", const_cast<char**>(kwlist),
-            &x_obj, &y_obj, &col, &window_size, &overlap, &gap_factor, &window_str))
+        = { "x", "y", "col", "window_size", "overlap", "gap_factor", "window", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|nnndsp", const_cast<char**>(kwlist),
+            &x_obj, &y_obj, &col, &window_size, &overlap, &gap_factor, &window_str, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -527,8 +872,22 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     {
         std::vector<sqp::dsp::SpectrogramResult<T>> results;
         Py_BEGIN_ALLOW_THREADS
-        auto segments = sqp::dsp::split_segments<T>(
-            x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
+        std::vector<sqp::dsp::Segment<T>> segments;
+        if (has_gaps)
+        {
+            segments = sqp::dsp::split_segments<T>(
+                x.span(), y.flat_span<T>(), static_cast<std::size_t>(y.ncols), gap_factor);
+        }
+        else
+        {
+            const double dt = (x.nrows >= 2) ? (x.data[1] - x.data[0]) : 1.0;
+            segments.push_back(sqp::dsp::Segment<T> {
+                .x = x.span(),
+                .y = y.flat_span<T>(),
+                .n_cols = static_cast<std::size_t>(y.ncols),
+                .median_dt = dt,
+            });
+        }
         results = sqp::dsp::spectrogram(segments, static_cast<std::size_t>(col),
             static_cast<std::size_t>(window_size), static_cast<std::size_t>(overlap), win);
         Py_END_ALLOW_THREADS
@@ -575,11 +934,12 @@ PyObject* dsp_rolling_mean(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     Py_ssize_t window = 51;
     double gap_factor = 3.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "window", "gap_factor", nullptr };
+    static const char* kwlist[] = { "x", "y", "window", "gap_factor", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OOn|d", const_cast<char**>(kwlist), &x_obj, &y_obj, &window,
-            &gap_factor))
+            args, kwargs, "OOn|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &window,
+            &gap_factor, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -589,8 +949,23 @@ PyObject* dsp_rolling_mean(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            const auto win = static_cast<std::size_t>(window);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::rolling_mean_column(
+                    y.typed_data<T>(), nrows, ncols, col, win, out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
         auto stage = sqp::dsp::rolling_mean<T>(static_cast<std::size_t>(window));
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
 
@@ -600,11 +975,12 @@ PyObject* dsp_rolling_std(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     Py_ssize_t window = 51;
     double gap_factor = 3.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "window", "gap_factor", nullptr };
+    static const char* kwlist[] = { "x", "y", "window", "gap_factor", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OOn|d", const_cast<char**>(kwlist), &x_obj, &y_obj, &window,
-            &gap_factor))
+            args, kwargs, "OOn|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &window,
+            &gap_factor, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -614,8 +990,23 @@ PyObject* dsp_rolling_std(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            const auto win = static_cast<std::size_t>(window);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::rolling_std_column(
+                    y.typed_data<T>(), nrows, ncols, col, win, out.y_ptr);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
         auto stage = sqp::dsp::rolling_std<T>(static_cast<std::size_t>(window));
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
 
@@ -625,11 +1016,12 @@ PyObject* dsp_reduce(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     const char* op_str = "sum";
     double gap_factor = 3.0;
+    int has_gaps = 1;
 
-    static const char* kwlist[] = { "x", "y", "op", "gap_factor", nullptr };
+    static const char* kwlist[] = { "x", "y", "op", "gap_factor", "has_gaps", nullptr };
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwargs, "OOs|d", const_cast<char**>(kwlist), &x_obj, &y_obj, &op_str,
-            &gap_factor))
+            args, kwargs, "OOs|dp", const_cast<char**>(kwlist), &x_obj, &y_obj, &op_str,
+            &gap_factor, &has_gaps))
         return nullptr;
 
     XArray x;
@@ -639,8 +1031,119 @@ PyObject* dsp_reduce(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_reduced(x, y.nrows))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            const auto op = parse_reduce_op(op_str);
+            Py_BEGIN_ALLOW_THREADS
+            for (std::size_t row = 0; row < nrows; ++row)
+                out.y_ptr[row] = sqp::dsp::detail::reduce_row(
+                    &y.typed_data<T>()[row * ncols], ncols, op);
+            Py_END_ALLOW_THREADS
+            return out.to_tuple();
+        }
         auto stage = sqp::dsp::reduce<T>(parse_reduce_op(op_str));
-        return apply_stage<T>(x, y, gap_factor, stage);
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
+    });
+}
+
+PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* x_obj = nullptr;
+    PyObject* y_obj = nullptr;
+    PyObject* shape_obj = nullptr;
+    PyObject* axes_obj = nullptr;
+    const char* op_str = "sum";
+    int has_gaps = 1;
+
+    static const char* kwlist[] = { "x", "y", "shape", "axes", "op", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwargs, "OOOO|sp", const_cast<char**>(kwlist), &x_obj, &y_obj, &shape_obj,
+            &axes_obj, &op_str, &has_gaps))
+        return nullptr;
+
+    XArray x;
+    YArray y;
+    if (!x.parse(x_obj) || !y.parse(y_obj))
+        return nullptr;
+
+    // Parse shape tuple
+    PyObject* shape_seq = PySequence_Fast(shape_obj, "shape must be a sequence");
+    if (!shape_seq)
+        return nullptr;
+    const auto ndim = static_cast<std::size_t>(PySequence_Fast_GET_SIZE(shape_seq));
+    std::vector<std::size_t> shape(ndim);
+    std::size_t prod = 1;
+    for (std::size_t i = 0; i < ndim; ++i)
+    {
+        shape[i] = static_cast<std::size_t>(PyLong_AsLong(PySequence_Fast_GET_ITEM(shape_seq, i)));
+        prod *= shape[i];
+    }
+    Py_DECREF(shape_seq);
+
+    if (static_cast<npy_intp>(prod) != y.ncols)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "prod(shape) = %zu does not match n_cols = %zd", prod, y.ncols);
+        return nullptr;
+    }
+
+    // Parse axes tuple
+    PyObject* axes_seq = PySequence_Fast(axes_obj, "axes must be a sequence");
+    if (!axes_seq)
+        return nullptr;
+    const auto n_axes = static_cast<std::size_t>(PySequence_Fast_GET_SIZE(axes_seq));
+    std::vector<std::size_t> axes(n_axes);
+    for (std::size_t i = 0; i < n_axes; ++i)
+        axes[i] = static_cast<std::size_t>(PyLong_AsLong(PySequence_Fast_GET_ITEM(axes_seq, i)));
+    Py_DECREF(axes_seq);
+
+    const auto op = parse_reduce_op(op_str);
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        sqp::dsp::detail::ReduceAxesSpec spec(shape.data(), ndim, axes.data(), n_axes);
+        const auto nrows = static_cast<std::size_t>(y.nrows);
+        const auto out_cols = static_cast<npy_intp>(spec.out_size);
+
+        PyObject* x_ref = reinterpret_cast<PyObject*>(x.arr);
+        Py_INCREF(x_ref);
+
+        PyObject* y_out_obj;
+        T* y_out_ptr;
+        if (out_cols == 1)
+        {
+            auto [obj, ptr] = alloc_numpy_1d<T>(y.nrows);
+            y_out_obj = obj;
+            y_out_ptr = ptr;
+        }
+        else
+        {
+            auto [obj, ptr] = alloc_numpy_2d<T>(y.nrows, out_cols);
+            y_out_obj = obj;
+            y_out_ptr = ptr;
+        }
+        if (!y_out_obj)
+        {
+            Py_DECREF(x_ref);
+            return static_cast<PyObject*>(nullptr);
+        }
+
+        Py_BEGIN_ALLOW_THREADS
+        sqp::dsp::parallel_for(nrows, [&](std::size_t row) {
+            sqp::dsp::detail::reduce_axes_row(
+                &y.typed_data<T>()[row * prod], spec, op, &y_out_ptr[row * spec.out_size]);
+        });
+        Py_END_ALLOW_THREADS
+
+        auto* tuple = PyTuple_Pack(2, x_ref, y_out_obj);
+        Py_DECREF(x_ref);
+        Py_DECREF(y_out_obj);
+        return tuple;
     });
 }
 
@@ -675,6 +1178,16 @@ PyMethodDef methods[] = {
      "IIR filter per segment. sos: (n_sections, 6) SOS matrix.\n"
      "SOS auto-converted to match y dtype."},
 
+    {"filtfilt", reinterpret_cast<PyCFunction>(dsp_filtfilt),
+     METH_VARARGS | METH_KEYWORDS,
+     "filtfilt(x, y, coeffs, gap_factor=3.0, has_gaps=True) -> (x_out, y_out)\n"
+     "Zero-phase FIR filter (forward-backward). Equivalent to scipy.signal.filtfilt."},
+
+    {"sosfiltfilt", reinterpret_cast<PyCFunction>(dsp_sosfiltfilt),
+     METH_VARARGS | METH_KEYWORDS,
+     "sosfiltfilt(x, y, sos, gap_factor=3.0, has_gaps=True) -> (x_out, y_out)\n"
+     "Zero-phase IIR filter (forward-backward SOS). Equivalent to scipy.signal.sosfiltfilt."},
+
     {"fft", reinterpret_cast<PyCFunction>(dsp_fft),
      METH_VARARGS | METH_KEYWORDS,
      "fft(x, y, gap_factor=3.0, window='hann') -> list[(freqs, magnitude)]\n"
@@ -700,6 +1213,14 @@ PyMethodDef methods[] = {
      METH_VARARGS | METH_KEYWORDS,
      "reduce(x, y, op, gap_factor=3.0) -> (x_out, y_out)\n"
      "Reduce columns to 1. Preserves y dtype."},
+
+    {"reduce_axes", reinterpret_cast<PyCFunction>(dsp_reduce_axes),
+     METH_VARARGS | METH_KEYWORDS,
+     "reduce_axes(x, y, shape, axes, op='sum', has_gaps=False) -> (x_out, y_out)\n"
+     "Reduce arbitrary axes within each row.\n"
+     "shape: tuple decomposing n_cols (e.g. (32, 16, 8) for energy x theta x phi).\n"
+     "axes: tuple of axes to reduce (e.g. (1, 2) to sum over angles).\n"
+     "Output has prod(kept_shape) columns."},
 
     {nullptr, nullptr, 0, nullptr},
 };

@@ -9,11 +9,14 @@ from ._sciqlop_dsp import (
     resample,
     fir_filter,
     iir_sos,
+    filtfilt,
+    sosfiltfilt,
     fft,
     spectrogram,
     rolling_mean,
     rolling_std,
     reduce,
+    reduce_axes,
 )
 
 __all__ = [
@@ -22,9 +25,12 @@ __all__ = [
     "resample",
     "fir_filter",
     "iir_sos",
+    "filtfilt",
+    "sosfiltfilt",
     "fft",
     "spectrogram",
     "rolling_mean",
     "rolling_std",
     "reduce",
+    "reduce_axes",
 ]
