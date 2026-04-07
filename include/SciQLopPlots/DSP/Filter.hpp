@@ -40,7 +40,7 @@ namespace detail
     template <typename T>
     void fir_apply_column(
         const T* in, std::size_t n_rows, std::size_t n_cols, std::size_t col,
-        const double* coeffs, std::size_t n_taps,
+        const T* coeffs, std::size_t n_taps,
         T* out)
     {
         const auto half = n_taps / 2;
@@ -55,20 +55,20 @@ namespace detail
         {
             for (std::size_t i = half; i + half < n_rows; ++i)
             {
-                double acc = 0.0;
+                T acc = T(0);
                 for (std::size_t k = 0; k < n_taps; ++k)
-                    acc += static_cast<double>(in[i - half + k]) * coeffs[k];
-                out[i] = static_cast<T>(acc);
+                    acc += in[i - half + k] * coeffs[k];
+                out[i] = acc;
             }
         }
         else
         {
             for (std::size_t i = half; i + half < n_rows; ++i)
             {
-                double acc = 0.0;
+                T acc = T(0);
                 for (std::size_t k = 0; k < n_taps; ++k)
-                    acc += static_cast<double>(in[(i - half + k) * n_cols + col]) * coeffs[k];
-                out[i * n_cols + col] = static_cast<T>(acc);
+                    acc += in[(i - half + k) * n_cols + col] * coeffs[k];
+                out[i * n_cols + col] = acc;
             }
         }
     }
@@ -79,7 +79,7 @@ namespace detail
     template <typename T>
     void sos_apply_column(
         const T* in, std::size_t n_rows, std::size_t n_cols, std::size_t col,
-        const double* sos, std::size_t n_sections, T* out)
+        const T* sos, std::size_t n_sections, T* out)
     {
         // Copy input to output, then filter in-place across sections
         for (std::size_t i = 0; i < n_rows; ++i)
@@ -87,29 +87,29 @@ namespace detail
 
         for (std::size_t s = 0; s < n_sections; ++s)
         {
-            const double b0 = sos[s * 6 + 0];
-            const double b1 = sos[s * 6 + 1];
-            const double b2 = sos[s * 6 + 2];
-            const double a0 = sos[s * 6 + 3];
-            const double a1 = sos[s * 6 + 4];
-            const double a2 = sos[s * 6 + 5];
+            const T b0 = sos[s * 6 + 0];
+            const T b1 = sos[s * 6 + 1];
+            const T b2 = sos[s * 6 + 2];
+            const T a0 = sos[s * 6 + 3];
+            const T a1 = sos[s * 6 + 4];
+            const T a2 = sos[s * 6 + 5];
 
             // Normalize by a0
-            const double inv_a0 = 1.0 / a0;
-            const double nb0 = b0 * inv_a0;
-            const double nb1 = b1 * inv_a0;
-            const double nb2 = b2 * inv_a0;
-            const double na1 = a1 * inv_a0;
-            const double na2 = a2 * inv_a0;
+            const T inv_a0 = T(1) / a0;
+            const T nb0 = b0 * inv_a0;
+            const T nb1 = b1 * inv_a0;
+            const T nb2 = b2 * inv_a0;
+            const T na1 = a1 * inv_a0;
+            const T na2 = a2 * inv_a0;
 
-            double z1 = 0.0, z2 = 0.0;
+            T z1 = T(0), z2 = T(0);
             for (std::size_t i = 0; i < n_rows; ++i)
             {
-                const double x = static_cast<double>(out[i * n_cols + col]);
-                const double y = nb0 * x + z1;
+                const T x = out[i * n_cols + col];
+                const T y = nb0 * x + z1;
                 z1 = nb1 * x - na1 * y + z2;
                 z2 = nb2 * x - na2 * y;
-                out[i * n_cols + col] = static_cast<T>(y);
+                out[i * n_cols + col] = y;
             }
         }
     }
@@ -119,10 +119,9 @@ namespace detail
 // Pipeline stage: FIR filter with user-provided coefficients.
 // coeffs: filter taps (designed externally, e.g. scipy.signal.firwin).
 template <typename T = double>
-auto fir_filter(std::span<const double> coeffs) -> Stage<T>
+auto fir_filter(std::span<const T> coeffs) -> Stage<T>
 {
-    // Copy coefficients so the stage is self-contained
-    auto coeffs_vec = std::vector<double>(coeffs.begin(), coeffs.end());
+    auto coeffs_vec = std::vector<T>(coeffs.begin(), coeffs.end());
 
     return [coeffs_vec](const std::vector<Segment<T>>& segments) -> std::vector<TimeSeries<T>>
     {
@@ -149,9 +148,9 @@ auto fir_filter(std::span<const double> coeffs) -> Stage<T>
 // sos: flat array of [b0,b1,b2,a0,a1,a2] × n_sections (standard scipy SOS format).
 // Designed externally, e.g. scipy.signal.butter(..., output='sos').
 template <typename T = double>
-auto iir_sos(std::span<const double> sos, std::size_t n_sections) -> Stage<T>
+auto iir_sos(std::span<const T> sos, std::size_t n_sections) -> Stage<T>
 {
-    auto sos_vec = std::vector<double>(sos.begin(), sos.end());
+    auto sos_vec = std::vector<T>(sos.begin(), sos.end());
 
     return [sos_vec, n_sections](
                const std::vector<Segment<T>>& segments) -> std::vector<TimeSeries<T>>
