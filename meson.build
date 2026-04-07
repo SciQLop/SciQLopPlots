@@ -25,6 +25,10 @@ else
     add_project_arguments('-DDEBUG', language : ['cpp'])
 endif
 
+cpp = meson.get_compiler('cpp')
+
+subdir('src/DSP')
+
 subdir('SciQLopPlots')
 
 subdir('tests')

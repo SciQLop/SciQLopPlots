@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/mreineck/pocketfft
+revision = HEAD
+depth = 1
+
+[provide]
+pocketfft = pocketfft_dep
