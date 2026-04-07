@@ -25,7 +25,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: tests/unit
-        run: PYTHONPATH=../../SciQLopPlots pytest -v
+        run: PYTHONPATH=../../SciQLopPlots pytest -v --ignore=test_dsp.py
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -68,6 +68,10 @@ jobs:
           export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
           export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
           pip install ".[test]"
+          pip install scipy
+
+      - name: Run DSP unit tests
+        run: pytest tests/unit/test_dsp.py -v
 
       - name: Run integration tests
         env:
