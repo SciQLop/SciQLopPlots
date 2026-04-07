@@ -1,10 +1,12 @@
 """Unit tests comparing C++ DSP functions against numpy/scipy reference implementations.
 
 All tests use contiguous data (no gaps) so we compare pure algorithm output.
+Requires scipy — skipped in CI environments where it's not installed.
 """
 import pytest
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal
+
 from scipy import signal as sp_signal
 
 from SciQLopPlots.dsp import (

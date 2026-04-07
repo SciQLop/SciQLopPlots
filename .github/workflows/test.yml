@@ -21,7 +21,7 @@ jobs:
           cache: pip
 
       - name: Install test dependencies
-        run: pip install pytest numpy
+        run: pip install pytest numpy scipy
 
       - name: Run unit tests
         working-directory: tests/unit
