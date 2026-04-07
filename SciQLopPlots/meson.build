@@ -51,7 +51,7 @@ shiboken_typesystem  = run_command(python3, shiboken_helper, '--qmake', qmake.fu
 sciqlopplots_bindings_src = []
 sciqlopplots_bindings_headers = files('bindings/bindings.h')
 
-sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py']
+sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py', 'dsp.py']
 foreach py_src:sciqlopplots_python_sources
   configure_file(input:py_src,output:py_src, copy:true)
 endforeach
@@ -267,7 +267,7 @@ endif
 
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
-        dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep] + optional_deps,
+        dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep, dsp_dep] + optional_deps,
         link_whole: [bindings_lib],
         cpp_args: cpp_args,
         subdir : 'SciQLopPlots',
@@ -279,6 +279,17 @@ sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
 )
 
 python3.install_sources(sciqlopplots_python_sources, pure: false, subdir: 'SciQLopPlots')
+
+# DSP Python extension module (no Qt/Shiboken dependency — pure computation)
+numpy_inc = run_command(python3, ['-c', 'import numpy; print(numpy.get_include())'], check: true).stdout().strip()
+
+sciqlop_dsp_ext = python3.extension_module('_sciqlop_dsp',
+    '../src/DSP/python_module.cpp',
+    include_directories: [includes, include_directories(numpy_inc)],
+    dependencies: [python3_dep, dsp_dep],
+    subdir: 'SciQLopPlots',
+    install: true,
+)
 
 summary(
     {

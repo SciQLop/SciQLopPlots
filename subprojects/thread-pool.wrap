@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/bshoshany/thread-pool
+revision = HEAD
+depth = 1
+patch_directory = thread-pool
+
+[provide]
+bshoshany-thread-pool = bshoshany_thread_pool_dep
