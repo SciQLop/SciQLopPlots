@@ -57,4 +57,8 @@ template double nan_reduce_sum_t::operator()<xsimd::SQP_DSP_ARCH>(
 template float nan_reduce_sum_t::operator()<xsimd::SQP_DSP_ARCH>(
     xsimd::SQP_DSP_ARCH, const float*, std::size_t);
 
+// adjacent_diff
+template void adjacent_diff_t::operator()<xsimd::SQP_DSP_ARCH>(
+    xsimd::SQP_DSP_ARCH, const double*, double*, std::size_t);
+
 } // namespace sqp::dsp::simd
