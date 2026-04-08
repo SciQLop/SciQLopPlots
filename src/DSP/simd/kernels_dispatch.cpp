@@ -34,4 +34,7 @@ auto dispatched_reduce_sum = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(reduce_sum
 auto dispatched_reduce_min_max = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(reduce_min_max_t {});
 auto dispatched_nan_reduce_sum = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(nan_reduce_sum_t {});
 
+decltype(xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(adjacent_diff_t {}))
+    dispatched_adjacent_diff = xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(adjacent_diff_t {});
+
 } // namespace sqp::dsp::simd

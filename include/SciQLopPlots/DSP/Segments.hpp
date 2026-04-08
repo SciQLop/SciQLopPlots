@@ -21,6 +21,10 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#ifndef SQP_DSP_NO_SIMD
+#include "SIMD/Primitives.hpp"
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -29,6 +33,14 @@
 
 namespace sqp::dsp
 {
+
+#ifndef SQP_DSP_NO_SIMD
+namespace simd
+{
+    extern decltype(xsimd::dispatch<SQP_DSP_XSIMD_ARCH_LIST>(adjacent_diff_t {}))
+        dispatched_adjacent_diff;
+} // namespace simd
+#endif
 
 template <typename T = double>
 struct Segment
@@ -41,39 +53,64 @@ struct Segment
 
 namespace detail
 {
+    inline void compute_diffs(const double* x, double* dts, std::size_t n)
+    {
+#ifndef SQP_DSP_NO_SIMD
+        simd::dispatched_adjacent_diff(x, dts, n);
+#else
+        for (std::size_t i = 0; i < n; ++i)
+            dts[i] = x[i + 1] - x[i];
+#endif
+    }
+
     inline double compute_median_dt(std::span<const double> x)
     {
         if (x.size() < 2)
             return 0.0;
 
-        std::vector<double> dts(x.size() - 1);
-        for (std::size_t i = 0; i < dts.size(); ++i)
-            dts[i] = x[i + 1] - x[i];
+        const auto n = x.size() - 1;
+        std::vector<double> dts(n);
+        compute_diffs(x.data(), dts.data(), n);
 
-        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(dts.size() / 2);
+        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(n / 2);
         std::nth_element(dts.begin(), mid, dts.end());
         return *mid;
+    }
+
+    // Compute diffs, median, and gap indices in a single pass over the diff array.
+    // Returns {gap_indices, median_dt}.
+    inline std::pair<std::vector<std::size_t>, double> find_gaps_and_median(
+        std::span<const double> x, double gap_factor)
+    {
+        if (x.size() < 2)
+            return { {}, 0.0 };
+
+        const auto n = x.size() - 1;
+        std::vector<double> dts(n);
+        compute_diffs(x.data(), dts.data(), n);
+
+        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(n / 2);
+        std::nth_element(dts.begin(), mid, dts.end());
+        const double median_dt = *mid;
+
+        if (median_dt <= 0.0)
+            return { {}, median_dt };
+
+        const double threshold = gap_factor * median_dt;
+        std::vector<std::size_t> gaps;
+        for (std::size_t i = 0; i < n; ++i)
+        {
+            if ((x[i + 1] - x[i]) > threshold)
+                gaps.push_back(i + 1);
+        }
+        return { std::move(gaps), median_dt };
     }
 
     // Find gap boundaries: indices where dt > gap_factor * median_dt
     inline std::vector<std::size_t> find_gap_indices(
         std::span<const double> x, double gap_factor)
     {
-        if (x.size() < 2)
-            return {};
-
-        const double median_dt = compute_median_dt(x);
-        if (median_dt <= 0.0)
-            return {};
-
-        const double threshold = gap_factor * median_dt;
-        std::vector<std::size_t> gaps;
-        for (std::size_t i = 0; i < x.size() - 1; ++i)
-        {
-            if ((x[i + 1] - x[i]) > threshold)
-                gaps.push_back(i + 1);
-        }
-        return gaps;
+        return find_gaps_and_median(x, gap_factor).first;
     }
 
 } // namespace detail
@@ -88,34 +125,32 @@ auto split_segments(
     if (x.empty())
         return {};
 
-    const auto gaps = detail::find_gap_indices(x, gap_factor);
+    const auto [gaps, global_median_dt] = detail::find_gaps_and_median(x, gap_factor);
 
     std::vector<Segment<T>> segments;
     segments.reserve(gaps.size() + 1);
 
-    std::size_t start = 0;
-    for (const auto gap_start : gaps)
-    {
-        const auto seg_x = x.subspan(start, gap_start - start);
-        const auto seg_y = y.subspan(start * n_cols, (gap_start - start) * n_cols);
-        segments.push_back(Segment<T> {
+    auto make_segment = [&](std::size_t begin, std::size_t end) {
+        const auto seg_x = x.subspan(begin, end - begin);
+        const auto seg_y = y.subspan(begin * n_cols, (end - begin) * n_cols);
+        // Within each segment timestamps are gap-free, so the global
+        // median_dt (computed before gap removal) is representative.
+        const double seg_median = global_median_dt;
+        return Segment<T> {
             .x = seg_x,
             .y = seg_y,
             .n_cols = n_cols,
-            .median_dt = detail::compute_median_dt(seg_x),
-        });
+            .median_dt = seg_median,
+        };
+    };
+
+    std::size_t start = 0;
+    for (const auto gap_start : gaps)
+    {
+        segments.push_back(make_segment(start, gap_start));
         start = gap_start;
     }
-
-    // Last segment
-    const auto seg_x = x.subspan(start);
-    const auto seg_y = y.subspan(start * n_cols);
-    segments.push_back(Segment<T> {
-        .x = seg_x,
-        .y = seg_y,
-        .n_cols = n_cols,
-        .median_dt = detail::compute_median_dt(seg_x),
-    });
+    segments.push_back(make_segment(start, x.size()));
 
     return segments;
 }

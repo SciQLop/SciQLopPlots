@@ -387,6 +387,30 @@ float nan_reduce_sum_t::operator()(Arch, const float* data, std::size_t n)
     return result;
 }
 
+// Adjacent difference: out[i] = data[i+1] - data[i], n = output length (input has n+1 elements).
+struct adjacent_diff_t
+{
+    template <class Arch>
+    void operator()(Arch, const double* data, double* out, std::size_t n);
+};
+
+template <class Arch>
+void adjacent_diff_t::operator()(Arch, const double* data, double* out, std::size_t n)
+{
+    using batch_t = xsimd::batch<double, Arch>;
+    constexpr auto simd_size = batch_t::size;
+    std::size_t i = 0;
+    for (; i + simd_size <= n; i += simd_size)
+    {
+        auto a = batch_t::load_unaligned(data + i);
+        auto b = batch_t::load_unaligned(data + i + 1);
+        (b - a).store_unaligned(out + i);
+    }
+    for (; i < n; ++i)
+        out[i] = data[i + 1] - data[i];
+}
+
+
 // ── Extern template declarations per arch ───────────────────────────────────
 
 #define SQP_DSP_EXTERN_PRIMITIVES(ARCH)                                                             \
@@ -405,7 +429,9 @@ float nan_reduce_sum_t::operator()(Arch, const float* data, std::size_t n)
     extern template std::pair<float, float> reduce_min_max_t::operator()<ARCH>(                      \
         ARCH, const float*, std::size_t);                                                            \
     extern template double nan_reduce_sum_t::operator()<ARCH>(ARCH, const double*, std::size_t);    \
-    extern template float nan_reduce_sum_t::operator()<ARCH>(ARCH, const float*, std::size_t);
+    extern template float nan_reduce_sum_t::operator()<ARCH>(ARCH, const float*, std::size_t);      \
+    extern template void adjacent_diff_t::operator()<ARCH>(ARCH, const double*, double*,            \
+                                                           std::size_t);
 
 #ifdef SQP_DSP_ENABLE_SSE2_ARCH
 SQP_DSP_EXTERN_PRIMITIVES(xsimd::sse2)
