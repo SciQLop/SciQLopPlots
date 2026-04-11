@@ -478,6 +478,8 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
             [this, plottable]()
             {
                 m_plottables.removeOne(plottable);
+                if (m_color_map == plottable)
+                    m_color_map = nullptr;
                 emit this->plotables_list_changed();
             });
     connect(plottable, &SciQLopGraphInterface::replot, this, [this]() { this->replot(); });

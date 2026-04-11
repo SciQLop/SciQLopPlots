@@ -355,6 +355,21 @@ public:
         throw std::runtime_error("Not implemented");
     }
 
+    virtual void remove_plottable(SciQLopPlottableInterface* plottable)
+    {
+        delete plottable;
+    }
+
+    virtual void remove_plottable(int index)
+    {
+        delete plottable(index);
+    }
+
+    virtual void remove_plottable(const QString& name)
+    {
+        delete plottable(name);
+    }
+
     inline bool selected() const noexcept { return m_selected; }
 
     void set_selected(bool selected) noexcept;
