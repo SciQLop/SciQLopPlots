@@ -35,7 +35,11 @@
                     %out = %OUTTYPE();
                 </add-conversion>
                 <add-conversion type="PyObject" check="PyObject_CheckBuffer(%in)">
-                    %out = %OUTTYPE(%in);
+                    try {
+                        %out = %OUTTYPE(%in);
+                    } catch (const std::exception&amp;) {
+                        %out = %OUTTYPE();
+                    }
                 </add-conversion>
             </target-to-native>
             <native-to-target>
@@ -737,6 +741,29 @@
     </object-type>
 
     <object-type name="Icons" parent-management="yes"/>
+
+    <add-function signature="validate_buffer(PyBuffer, std::string, int, char)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_buffer(%1, %2, %3, %4);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+        <modify-argument index="3">
+            <replace-default-expression with="-1"/>
+        </modify-argument>
+        <modify-argument index="4">
+            <replace-default-expression with="0"/>
+        </modify-argument>
+    </add-function>
 </typesystem>
 
 
