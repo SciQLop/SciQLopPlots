@@ -36,7 +36,7 @@ QVector<QCPCurveData> curve_copy_data(const double* x, const double* y, std::siz
 
 void CurveResampler::_resample_impl(const ResamplerData1d& data, const ResamplerPlotInfo& plot_info)
 {
-    if (data.x.data()  && data.x.flat_size() > 0 && data.new_data)
+    if (data.x.is_valid() && data.x.flat_size() > 0 && data.new_data)
     {
         const auto y_incr = 1UL;
         QList<QVector<QCPCurveData>> curve_data;

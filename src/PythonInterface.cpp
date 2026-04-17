@@ -402,14 +402,12 @@ std::size_t PyBuffer::size(std::size_t index) const
 
 double* PyBuffer::data() const
 {
-    if (is_valid())
-    {
-        if (_impl->buffer.format[0] != 'd')
-            throw std::runtime_error(
-                "PyBuffer::data() called on non-double buffer; use raw_data() + format_code()");
-        return reinterpret_cast<double*>(this->_impl->buffer.buf);
-    }
-    return nullptr;
+    if (!is_valid())
+        throw std::runtime_error("PyBuffer::data() called on invalid buffer");
+    if (_impl->buffer.format[0] != 'd')
+        throw std::runtime_error(
+            "PyBuffer::data() called on non-double buffer; use raw_data() + format_code()");
+    return reinterpret_cast<double*>(this->_impl->buffer.buf);
 }
 
 bool PyBuffer::row_major() const
