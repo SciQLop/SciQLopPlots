@@ -847,6 +847,9 @@
         <inject-code class="target" position="beginning">
             try {
                 sqp::validation::validate_xy(%1, %2);
+            } catch (const std::domain_error&amp; e) {
+                PyErr_SetString(PyExc_TypeError, e.what());
+                return nullptr;
             } catch (const std::invalid_argument&amp; e) {
                 PyErr_SetString(PyExc_ValueError, e.what());
                 return nullptr;
@@ -864,6 +867,9 @@
         <inject-code class="target" position="beginning">
             try {
                 sqp::validation::validate_xyz(%1, %2, %3);
+            } catch (const std::domain_error&amp; e) {
+                PyErr_SetString(PyExc_TypeError, e.what());
+                return nullptr;
             } catch (const std::invalid_argument&amp; e) {
                 PyErr_SetString(PyExc_ValueError, e.what());
                 return nullptr;
@@ -881,6 +887,9 @@
         <inject-code class="target" position="beginning">
             try {
                 sqp::validation::validate_nd_list(%1, %2);
+            } catch (const std::domain_error&amp; e) {
+                PyErr_SetString(PyExc_TypeError, e.what());
+                return nullptr;
             } catch (const std::invalid_argument&amp; e) {
                 PyErr_SetString(PyExc_ValueError, e.what());
                 return nullptr;
