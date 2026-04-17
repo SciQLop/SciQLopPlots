@@ -35,9 +35,13 @@
                     %out = %OUTTYPE();
                 </add-conversion>
                 <add-conversion type="PyObject" check="PyObject_CheckBuffer(%in)">
-                    try {
+                    try
+                    {
                         %out = %OUTTYPE(%in);
-                    } catch (const std::exception&amp;) {
+                    }
+                    catch (const std::runtime_error&amp; e)
+                    {
+                        qWarning() &lt;&lt; "[PyBuffer ctor] rejected buffer:" &lt;&lt; e.what();
                         %out = %OUTTYPE();
                     }
                 </add-conversion>
