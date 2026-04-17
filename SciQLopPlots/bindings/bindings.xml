@@ -785,6 +785,57 @@
             }
         </inject-code>
     </add-function>
+
+    <add-function signature="validate_same_length(PyBuffer, std::string, PyBuffer, std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_same_length(%1, %2, %3, %4);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="validate_xy(PyBuffer, PyBuffer)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_xy(%1, %2);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="validate_xyz(PyBuffer, PyBuffer, PyBuffer)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_xyz(%1, %2, %3);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+    </add-function>
 </typesystem>
 
 

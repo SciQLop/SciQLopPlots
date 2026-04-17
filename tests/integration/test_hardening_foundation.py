@@ -57,3 +57,70 @@ def test_validate_index_out_of_range_raises_indexerror():
 def test_validate_index_empty_container_always_raises():
     with pytest.raises(IndexError):
         sqp.validate_index(0, 0, "row")
+
+
+# ---------- validate_same_length ----------
+
+def test_validate_same_length_ok():
+    x = np.arange(10.0)
+    y = np.arange(10.0)
+    sqp.validate_same_length(x, "x", y, "y")
+
+
+def test_validate_same_length_mismatch_raises_valueerror():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    with pytest.raises(ValueError, match=r"length"):
+        sqp.validate_same_length(x, "x", y, "y")
+
+
+# ---------- validate_xy ----------
+
+def test_validate_xy_1d_ok():
+    x = np.arange(10.0)
+    y = np.arange(10.0)
+    sqp.validate_xy(x, y)
+
+
+def test_validate_xy_2d_y_ok():
+    x = np.arange(10.0)
+    y = np.random.rand(10, 3)
+    sqp.validate_xy(x, y)
+
+
+def test_validate_xy_x_not_1d_raises():
+    x = np.random.rand(10, 3)
+    y = np.arange(10.0)
+    with pytest.raises(ValueError, match=r"x"):
+        sqp.validate_xy(x, y)
+
+
+def test_validate_xy_shape_mismatch_raises():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    with pytest.raises(ValueError, match=r"length"):
+        sqp.validate_xy(x, y)
+
+
+def test_validate_xy_y_3d_raises():
+    x = np.arange(10.0)
+    y = np.random.rand(10, 3, 2)
+    with pytest.raises(ValueError, match=r"y"):
+        sqp.validate_xy(x, y)
+
+
+# ---------- validate_xyz ----------
+
+def test_validate_xyz_ok():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    z = np.random.rand(10, 5)
+    sqp.validate_xyz(x, y, z)
+
+
+def test_validate_xyz_z_wrong_shape_raises():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    z = np.random.rand(9, 5)  # wrong x dimension
+    with pytest.raises(ValueError, match=r"z"):
+        sqp.validate_xyz(x, y, z)

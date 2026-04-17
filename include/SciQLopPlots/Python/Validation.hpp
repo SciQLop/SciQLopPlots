@@ -64,4 +64,50 @@ inline void validate_index(long long i, long long size, std::string_view name)
     }
 }
 
+inline void validate_same_length(const PyBuffer& a, std::string_view name_a,
+                                 const PyBuffer& b, std::string_view name_b)
+{
+    if (a.size(0) != b.size(0))
+    {
+        std::ostringstream os;
+        os << "length mismatch: " << name_a << " has " << a.size(0)
+           << ", " << name_b << " has " << b.size(0);
+        throw std::invalid_argument(os.str());
+    }
+}
+
+inline void validate_xy(const PyBuffer& x, const PyBuffer& y)
+{
+    validate_buffer(x, "x", 1);
+    if (y.ndim() != 1 && y.ndim() != 2)
+    {
+        std::ostringstream os;
+        os << "y: ndim must be 1 or 2 (got " << y.ndim() << ")";
+        throw std::invalid_argument(os.str());
+    }
+    validate_buffer(y, "y");  // numeric check; ndim handled above
+    validate_same_length(x, "x", y, "y");
+}
+
+inline void validate_xyz(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z)
+{
+    validate_buffer(x, "x", 1);
+    validate_buffer(y, "y", 1);
+    validate_buffer(z, "z", 2);
+    if (z.size(0) != x.size(0))
+    {
+        std::ostringstream os;
+        os << "z: rows (" << z.size(0) << ") must match x length ("
+           << x.size(0) << ")";
+        throw std::invalid_argument(os.str());
+    }
+    if (z.size(1) != y.size(0))
+    {
+        std::ostringstream os;
+        os << "z: cols (" << z.size(1) << ") must match y length ("
+           << y.size(0) << ")";
+        throw std::invalid_argument(os.str());
+    }
+}
+
 } // namespace sqp::validation
