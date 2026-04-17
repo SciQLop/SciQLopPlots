@@ -53,13 +53,13 @@ inline void validate_index(long long i, long long size, std::string_view name)
     if (i < 0)
     {
         std::ostringstream os;
-        os << name << \": index is negative (\" << i << \")\";
+        os << name << ": index is negative (" << i << ")";
         throw std::out_of_range(os.str());
     }
     if (i >= size)
     {
         std::ostringstream os;
-        os << name << \": index \" << i << \" out of range (size \" << size << \")\";
+        os << name << ": index " << i << " out of range (size " << size << ")";
         throw std::out_of_range(os.str());
     }
 }
