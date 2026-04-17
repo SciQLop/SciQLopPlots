@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 
 template <typename F>
@@ -20,6 +21,15 @@ auto dispatch_dtype(char format_code, F&& func)
         case 'L': return func(std::type_identity<unsigned long> {});
         case 'q': return func(std::type_identity<long long> {});
         case 'Q': return func(std::type_identity<unsigned long long> {});
-        default: throw std::runtime_error("Unsupported numpy dtype");
+        default:
+        {
+            std::string msg = "Unsupported numpy dtype format code: '";
+            if (format_code == '\0')
+                msg += "\\0";
+            else
+                msg += format_code;
+            msg += "'";
+            throw std::invalid_argument(msg);
+        }
     }
 }
