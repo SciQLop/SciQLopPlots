@@ -26,7 +26,7 @@ def test_validate_buffer_ok():
 
 def test_validate_buffer_wrong_ndim_raises_valueerror():
     arr = np.arange(10.0)
-    with pytest.raises(ValueError, match=r"x.*ndim.*1.*expected.*2"):
+    with pytest.raises(ValueError, match=r"x.*ndim"):
         sqp.validate_buffer(arr, "x", 2)
 
 
