@@ -204,3 +204,12 @@ def test_matched_xyz_mismatch_raises():
     z = np.random.rand(9, 5)
     with pytest.raises(ValueError):
         sqp.MatchedXYZ.from_py(x, y, z)
+
+
+# ---------- dispatch_dtype error surface (via validate_buffer) ----------
+
+def test_validate_buffer_rejects_float16():
+    arr = np.arange(10, dtype=np.float16)
+    # Task 11 will pin exception taxonomy precisely (TypeError vs ValueError).
+    with pytest.raises((TypeError, ValueError)):
+        sqp.validate_buffer(arr, "x")
