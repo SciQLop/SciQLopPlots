@@ -110,4 +110,39 @@ inline void validate_xyz(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z
     }
 }
 
+inline void validate_nd_list(const QList<PyBuffer>& bufs, std::size_t expected_count)
+{
+    if (static_cast<std::size_t>(bufs.size()) != expected_count)
+    {
+        std::ostringstream os;
+        os << "buffer list: expected " << expected_count
+           << " elements, got " << bufs.size();
+        throw std::invalid_argument(os.str());
+    }
+    if (bufs.isEmpty())
+        return;
+    const auto ref_len = bufs.front().size(0);
+    for (qsizetype i = 0; i < bufs.size(); ++i)
+    {
+        validate_buffer(bufs[i], "buffers[" + std::to_string(i) + "]");
+        if (bufs[i].size(0) != ref_len)
+        {
+            std::ostringstream os;
+            os << "buffer list: length mismatch at index " << i
+               << " (got " << bufs[i].size(0) << ", expected " << ref_len << ")";
+            throw std::invalid_argument(os.str());
+        }
+    }
+}
+
+inline void validate_finite(double v, std::string_view name)
+{
+    if (!std::isfinite(v))
+    {
+        std::ostringstream os;
+        os << name << ": value must be finite (got " << v << ")";
+        throw std::invalid_argument(os.str());
+    }
+}
+
 } // namespace sqp::validation
