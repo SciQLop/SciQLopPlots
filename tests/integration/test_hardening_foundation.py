@@ -124,3 +124,39 @@ def test_validate_xyz_z_wrong_shape_raises():
     z = np.random.rand(9, 5)  # wrong x dimension
     with pytest.raises(ValueError, match=r"z"):
         sqp.validate_xyz(x, y, z)
+
+
+# ---------- validate_nd_list ----------
+
+def test_validate_nd_list_ok():
+    arrs = [np.arange(10.0), np.arange(10.0), np.arange(10.0)]
+    sqp.validate_nd_list(arrs, 3)
+
+
+def test_validate_nd_list_wrong_count_raises():
+    arrs = [np.arange(10.0), np.arange(10.0)]
+    with pytest.raises(ValueError, match=r"expected 3.*got 2"):
+        sqp.validate_nd_list(arrs, 3)
+
+
+def test_validate_nd_list_length_mismatch_raises():
+    arrs = [np.arange(10.0), np.arange(5.0), np.arange(10.0)]
+    with pytest.raises(ValueError, match=r"length"):
+        sqp.validate_nd_list(arrs, 3)
+
+
+# ---------- validate_finite ----------
+
+def test_validate_finite_ok():
+    sqp.validate_finite(1.0, "v")
+    sqp.validate_finite(-1e9, "v")
+
+
+def test_validate_finite_nan_raises():
+    with pytest.raises(ValueError, match=r"v.*finite"):
+        sqp.validate_finite(float("nan"), "v")
+
+
+def test_validate_finite_inf_raises():
+    with pytest.raises(ValueError, match=r"v.*finite"):
+        sqp.validate_finite(float("inf"), "v")

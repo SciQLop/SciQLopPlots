@@ -836,6 +836,39 @@
             }
         </inject-code>
     </add-function>
+
+    <add-function signature="validate_nd_list(QList&lt;PyBuffer&gt;, std::size_t)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_nd_list(%1, %2);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+    </add-function>
+    <add-function signature="validate_finite(double, std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try {
+                sqp::validation::validate_finite(%1, %2);
+            } catch (const std::invalid_argument&amp; e) {
+                PyErr_SetString(PyExc_ValueError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
+        </inject-code>
+    </add-function>
 </typesystem>
 
 
