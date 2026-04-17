@@ -768,6 +768,12 @@
             <replace-default-expression with="0"/>
         </modify-argument>
     </add-function>
+
+    <add-function signature="validate_index(long long, long long, std::string)" return-type="void">
+        <inject-code class="target" position="beginning">
+            sqp::validation::validate_index(%1, %2, %3);
+        </inject-code>
+    </add-function>
 </typesystem>
 
 
