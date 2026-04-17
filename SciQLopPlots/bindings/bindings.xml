@@ -787,6 +787,9 @@
         <inject-code class="target" position="beginning">
             try {
                 sqp::validation::validate_buffer(%1, %2, %3, %4);
+            } catch (const std::domain_error&amp; e) {
+                PyErr_SetString(PyExc_TypeError, e.what());
+                return nullptr;
             } catch (const std::invalid_argument&amp; e) {
                 PyErr_SetString(PyExc_ValueError, e.what());
                 return nullptr;

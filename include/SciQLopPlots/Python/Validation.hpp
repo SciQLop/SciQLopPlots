@@ -21,7 +21,7 @@ inline void validate_buffer(const PyBuffer& b,
     {
         std::ostringstream os;
         os << name << ": invalid or null buffer";
-        throw std::invalid_argument(os.str());
+        throw std::domain_error(os.str());
     }
 
     const char fmt = b.format_code();

@@ -7,15 +7,13 @@ import SciQLopPlots as sqp
 # ---------- validate_buffer ----------
 
 def test_validate_buffer_none_raises_typeerror():
-    # Task 11 will pin exception taxonomy precisely (TypeError vs ValueError).
-    with pytest.raises((TypeError, ValueError)):
+    with pytest.raises(TypeError):
         sqp.validate_buffer(None, "x")
 
 
 def test_validate_buffer_non_numeric_raises_typeerror():
     arr = np.array(["a", "b"], dtype=object)
-    # Task 11 will pin exception taxonomy precisely (TypeError vs ValueError).
-    with pytest.raises((TypeError, ValueError)):
+    with pytest.raises(TypeError):
         sqp.validate_buffer(arr, "x")
 
 
@@ -30,10 +28,9 @@ def test_validate_buffer_wrong_ndim_raises_valueerror():
         sqp.validate_buffer(arr, "x", 2)
 
 
-def test_validate_buffer_wrong_dtype_raises_typeerror():
+def test_validate_buffer_wrong_dtype_raises_valueerror():
     arr = np.arange(10, dtype=np.int32)
-    # Task 11 will pin exception taxonomy precisely (TypeError vs ValueError).
-    with pytest.raises((TypeError, ValueError), match=r"x.*dtype"):
+    with pytest.raises(ValueError, match=r"x.*dtype"):
         sqp.validate_buffer(arr, "x", -1, ord('d'))
 
 
@@ -210,6 +207,21 @@ def test_matched_xyz_mismatch_raises():
 
 def test_validate_buffer_rejects_float16():
     arr = np.arange(10, dtype=np.float16)
-    # Task 11 will pin exception taxonomy precisely (TypeError vs ValueError).
-    with pytest.raises((TypeError, ValueError)):
+    with pytest.raises(TypeError):
         sqp.validate_buffer(arr, "x")
+
+
+# ---------- Exception taxonomy (translation audit) ----------
+
+
+@pytest.mark.parametrize("call,exc_cls", [
+    (lambda: sqp.validate_buffer(None, "x"),                     TypeError),
+    (lambda: sqp.validate_buffer(np.arange(10.0), "x", 2),       ValueError),
+    (lambda: sqp.validate_index(-1, 10, "i"),                    IndexError),
+    (lambda: sqp.validate_index(10, 10, "i"),                    IndexError),
+    (lambda: sqp.validate_xy(np.arange(10.0), np.arange(5.0)),   ValueError),
+    (lambda: sqp.validate_finite(float("nan"), "v"),             ValueError),
+])
+def test_exception_taxonomy(call, exc_cls):
+    with pytest.raises(exc_cls):
+        call()
