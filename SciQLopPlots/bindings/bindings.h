@@ -7,6 +7,7 @@
 // #include <memory>
 
 #include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 
 #include "_QCustomPlot.hpp"
 #include <SciQLopPlots/DataProducer/DataProducer.hpp>

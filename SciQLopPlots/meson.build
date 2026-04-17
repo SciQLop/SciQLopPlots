@@ -147,6 +147,7 @@ moc_sources = []
 headers = moc_headers + \
          [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
          project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
+         project_source_root+'/include/SciQLopPlots/Python/Validation.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp',
          project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
          project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp']
