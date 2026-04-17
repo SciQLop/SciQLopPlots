@@ -160,3 +160,28 @@ def test_validate_finite_nan_raises():
 def test_validate_finite_inf_raises():
     with pytest.raises(ValueError, match=r"v.*finite"):
         sqp.validate_finite(float("inf"), "v")
+
+
+# ---------- MatchedXY ----------
+
+def test_matched_xy_1d_y():
+    x = np.arange(10.0)
+    y = np.arange(10.0)
+    m = sqp.MatchedXY.from_py(x, y)
+    assert m.rows() == 10
+    assert m.cols() == 1
+
+
+def test_matched_xy_2d_y():
+    x = np.arange(10.0)
+    y = np.random.rand(10, 4)
+    m = sqp.MatchedXY.from_py(x, y)
+    assert m.rows() == 10
+    assert m.cols() == 4
+
+
+def test_matched_xy_mismatch_raises():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    with pytest.raises(ValueError):
+        sqp.MatchedXY.from_py(x, y)
