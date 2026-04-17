@@ -770,8 +770,19 @@
     </add-function>
 
     <add-function signature="validate_index(long long, long long, std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
+        </extra-includes>
         <inject-code class="target" position="beginning">
-            sqp::validation::validate_index(%1, %2, %3);
+            try {
+                sqp::validation::validate_index(%1, %2, %3);
+            } catch (const std::out_of_range&amp; e) {
+                PyErr_SetString(PyExc_IndexError, e.what());
+                return nullptr;
+            } catch (const std::exception&amp; e) {
+                PyErr_SetString(PyExc_RuntimeError, e.what());
+                return nullptr;
+            }
         </inject-code>
     </add-function>
 </typesystem>
