@@ -53,6 +53,8 @@ public:
     void apply_theme(const QCPTheme* theme);
 
 private:
-    void update_vline_and_tooltip(double key, double value = std::numeric_limits<double>::quiet_NaN());
-    QString build_tooltip_html(double key, double value) const;
+    void update_vline_and_tooltip(double key, double value = std::numeric_limits<double>::quiet_NaN(),
+                                  const QPointF& pixelPos = QPointF(std::numeric_limits<double>::quiet_NaN(),
+                                                                    std::numeric_limits<double>::quiet_NaN()));
+    QString build_tooltip_html(double key, const QPointF& pixelPos) const;
 };

@@ -95,7 +95,7 @@ void SciQLopCrosshair::update_at_pixel(const QPointF& pos)
                                        : std::numeric_limits<double>::quiet_NaN();
     m_current_value = value;
 
-    update_vline_and_tooltip(key, value);
+    update_vline_and_tooltip(key, value, pos);
 
     if (m_plot->yAxis)
     {
@@ -117,7 +117,7 @@ void SciQLopCrosshair::update_at_key(double key)
     replot();
 }
 
-void SciQLopCrosshair::update_vline_and_tooltip(double key, double value)
+void SciQLopCrosshair::update_vline_and_tooltip(double key, double value, const QPointF& pixelPos)
 {
     m_current_key = key;
     m_current_value = value;
@@ -126,7 +126,7 @@ void SciQLopCrosshair::update_vline_and_tooltip(double key, double value)
     m_vline->point2->setCoords(key, 1);
     m_vline->setVisible(true);
 
-    const QString html = build_tooltip_html(key, value);
+    const QString html = build_tooltip_html(key, pixelPos);
     if (html.isEmpty())
     {
         m_tooltip->setVisible(false);
@@ -173,9 +173,10 @@ void SciQLopCrosshair::replot()
         m_vline->layer()->replot();
 }
 
-QString SciQLopCrosshair::build_tooltip_html(double key, double value) const
+QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos) const
 {
     QCPDataLocator locator;
+    const bool havePixel = !std::isnan(pixelPos.x()) && !std::isnan(pixelPos.y());
 
     QString header;
     if (auto datetime_ticker = m_plot->xAxis->ticker().dynamicCast<QCPAxisTickerDateTime>();
@@ -197,9 +198,16 @@ QString SciQLopCrosshair::build_tooltip_html(double key, double value) const
         if (!plottable->visible())
             continue;
 
+        auto* keyAxis = plottable->keyAxis();
+        auto* valueAxis = plottable->valueAxis();
+        const double plKey = (havePixel && keyAxis) ? keyAxis->pixelToCoord(pixelPos.x()) : key;
+        const double plValue = (havePixel && valueAxis)
+            ? valueAxis->pixelToCoord(pixelPos.y())
+            : std::numeric_limits<double>::quiet_NaN();
+
         if (auto* mg = qobject_cast<QCPMultiGraph*>(plottable))
         {
-            if (!locator.locateAtKey(mg, key, value))
+            if (!locator.locateAtKey(mg, plKey, plValue))
                 continue;
             const auto& vals = locator.componentValues();
             for (int c = 0; c < mg->componentCount(); ++c)
@@ -217,7 +225,7 @@ QString SciQLopCrosshair::build_tooltip_html(double key, double value) const
         }
         else
         {
-            if (!locator.locateAtKey(plottable, key, value))
+            if (!locator.locateAtKey(plottable, plKey, plValue))
                 continue;
             if (!std::isnan(locator.data()))
             {
