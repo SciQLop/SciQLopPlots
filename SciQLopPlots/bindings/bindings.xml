@@ -153,6 +153,23 @@
         </modify-function>
     </value-type>
 
+    <value-type name="MatchedXYZ">
+        <modify-function signature="from_py(PyBuffer,PyBuffer,PyBuffer)">
+            <inject-code class="target" position="beginning">
+                try {
+                    auto result = MatchedXYZ::from_py(%1, %2, %3);
+                    %PYARG_0 = %CONVERTTOPYTHON[MatchedXYZ](result);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
+    </value-type>
+
     <object-type name="SciQLopGraphComponentInterface" parent-management="yes"/>
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
     <object-type name="SciQLopPlottableInterface" parent-management="yes"/>

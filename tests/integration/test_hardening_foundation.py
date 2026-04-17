@@ -185,3 +185,22 @@ def test_matched_xy_mismatch_raises():
     y = np.arange(5.0)
     with pytest.raises(ValueError):
         sqp.MatchedXY.from_py(x, y)
+
+
+# ---------- MatchedXYZ ----------
+
+def test_matched_xyz_ok():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    z = np.random.rand(10, 5)
+    m = sqp.MatchedXYZ.from_py(x, y, z)
+    assert m.x_len() == 10
+    assert m.y_len() == 5
+
+
+def test_matched_xyz_mismatch_raises():
+    x = np.arange(10.0)
+    y = np.arange(5.0)
+    z = np.random.rand(9, 5)
+    with pytest.raises(ValueError):
+        sqp.MatchedXYZ.from_py(x, y, z)
