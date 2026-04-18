@@ -21,63 +21,35 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
-#include "SciQLopPlots/Python/DtypeDispatch.hpp"
-#include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <plottables/plottable-multigraph.h>
-#include <span>
 
-class SciQLopLineGraph : public SQPQCPAbstractPlottableWrapper
+class SciQLopLineGraph : public SciQLopMultiGraphBase
 {
-    QCPMultiGraph* _multiGraph = nullptr;
-    PyBuffer _x, _y;
-    // Prevents use-after-free: the pipeline thread reads from the data source
-    // which holds non-owning spans into PyBuffer memory.  This shared_ptr keeps
-    // the PyBuffers (and the data source) alive until the pipeline is done.
-    std::shared_ptr<void> _dataHolder;
-    QStringList _pendingLabels;
-
-    SciQLopPlotAxis* _keyAxis;
-    SciQLopPlotAxis* _valueAxis;
-
     Q_OBJECT
-
-    void clear_graphs(bool graph_already_removed = false);
+protected:
+    QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) override
+    {
+        return new QCPMultiGraph(keyAxis, valueAxis);
+    }
 
 public:
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
-                              const QStringList& labels = QStringList(), QVariantMap metaData = {});
-
-    virtual ~SciQLopLineGraph() override;
-
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
-    virtual QList<PyBuffer> data() const noexcept override;
-
-    inline std::size_t line_count() const noexcept
-    {
-        return _multiGraph ? _multiGraph->componentCount() : 0;
-    }
-
-    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
-
-    virtual SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
-    virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
-
-    void create_graphs(const QStringList& labels);
+                              const QStringList& labels = QStringList(),
+                              QVariantMap metaData = {});
+    ~SciQLopLineGraph() override = default;
 };
 
 class SciQLopLineGraphFunction : public SciQLopLineGraph,
                                  public SciQLopFunctionGraph
 {
     Q_OBJECT
-
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                       SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
                                       const QStringList& labels, QVariantMap metaData = {});
-
-    virtual ~SciQLopLineGraphFunction() override = default;
+    ~SciQLopLineGraphFunction() override = default;
 };
