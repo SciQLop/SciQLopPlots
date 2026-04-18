@@ -153,6 +153,8 @@ void SciQLopWaterfallDelegate::rebuild_offsets_editor()
                     auto* w = waterfall();
                     if (!w)
                         return;
+                    if (m_offsetsSpins.size() != static_cast<int>(w->line_count()))
+                        return;
                     QVector<double> v;
                     v.reserve(m_offsetsSpins.size());
                     for (auto* s : m_offsetsSpins)

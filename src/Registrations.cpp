@@ -30,7 +30,6 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
-#include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 // Delegate widgets
@@ -187,15 +186,6 @@ void register_all_types()
         .set_selected = [](QObject* obj, bool s) {
             if (auto h = qobject_cast<SciQLopHistogram2D*>(obj))
                 h->set_selected(s);
-        },
-    });
-
-    types.register_type<SciQLopWaterfallGraph>({
-        .children = [](QObject*) -> QList<QObject*> { return {}; },
-        .connect_children = nullptr,
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto wf = qobject_cast<SciQLopWaterfallGraph*>(obj))
-                wf->set_selected(s);
         },
     });
 

@@ -105,13 +105,13 @@ wf.set_data(x, y)
 
 ### `offsets` kwarg polymorphism
 
-Resolved in the C++ `waterfall(...)` / `add_waterfall(...)` entry points via `std::variant<std::monostate, double, QVector<double>>`:
+Resolved in Python, not C++. `SciQLopPlots.__init__._apply_waterfall_kwargs` inspects the kwarg and dispatches to the C++ setters after construction:
 
-- `std::monostate` → `setOffsetMode(Uniform) + setUniformSpacing(1.0)`.
-- `double` → `setOffsetMode(Uniform) + setUniformSpacing(v)`.
-- `QVector<double>` → `setOffsetMode(Custom) + setOffsets(v)` (length-validated against column count at `set_data` time; `ValueError` on mismatch).
+- `None` → `set_offset_mode(Uniform)` (keep default spacing).
+- `float`/`int` → `set_offset_mode(Uniform) + set_uniform_spacing(v)`.
+- sequence → `set_offset_mode(Custom) + set_offsets(list(v))` (length-validated against `line_count()`; `ValueError` on mismatch).
 
-Shiboken exposes the variant via overloaded bindings (same technique used elsewhere).
+The C++ `waterfall(...)` / `add_waterfall(...)` entry points take no offsets/normalize/gain kwargs; those knobs are applied from Python after the object is returned.
 
 ### Backward compatibility
 
@@ -308,7 +308,7 @@ SciQLopWaterfallGraph.on = OnDescriptor()
 
 `SciQLopCrosshair::build_tooltip_html` gains a `qobject_cast<SciQLopWaterfallGraph*>(pl)` branch that calls `raw_value_at` instead of the inherited transformed-Y path. All other plottable tooltip paths are untouched.
 
-Out-of-range keys return NaN; the crosshair formats NaN as `—` (existing behavior).
+Out-of-range keys are clamped to the nearest endpoint in `_x`, and `raw_value_at` returns the corresponding endpoint sample's raw amplitude (finite). NaN is reserved for genuinely undefined cases — invalid buffers, empty data, or out-of-range component index — where the crosshair formats NaN as `—` (existing behavior).
 
 ## Error handling
 

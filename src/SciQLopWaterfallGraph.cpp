@@ -29,6 +29,8 @@ SciQLopWaterfallGraph::SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxi
     : SciQLopMultiGraphBase("Waterfall", parent, key_axis, value_axis, labels, metaData)
 {
     create_graphs(labels);
+    if (auto* w = waterfall_graph())
+        w->setProperty("sqp_wrapper", QVariant::fromValue(static_cast<QObject*>(this)));
 }
 
 static QCPWaterfallGraph::OffsetMode to_qcp(WaterfallOffsetMode mode)
