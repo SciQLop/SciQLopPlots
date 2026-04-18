@@ -39,6 +39,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 
 namespace
@@ -214,6 +215,7 @@ void register_all_types()
     delegates.register_type<SciQLopGraphDelegate>();
     delegates.register_type<SciQLopGraphComponentDelegate>();
     delegates.register_type<SciQLopColorMapDelegate>();
+    delegates.register_type<SciQLopWaterfallDelegate>();
     delegates.register_type<SciQLopPlotAxisDelegate>();
 }
 
