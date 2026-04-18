@@ -83,3 +83,48 @@ class TestWaterfallKnobs:
         wf = plot.add_waterfall("w")
         wf.set_gain(-1.0)
         assert wf.gain() == -1.0
+
+
+class TestWaterfallRawValueAt:
+    def test_raw_value_at_row_major(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0", "c1", "c2"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.ascontiguousarray(np.column_stack([x, 2 * x, 3 * x]))  # row-major
+        wf.set_data(x, y)
+        # At key=0.5 (idx 5), component 1 should be 2*0.5 = 1.0
+        assert wf.raw_value_at(1, 0.5) == pytest.approx(1.0)
+
+    def test_raw_value_at_column_major(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0", "c1", "c2"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.asfortranarray(np.column_stack([x, 2 * x, 3 * x]))
+        wf.set_data(x, y)
+        assert wf.raw_value_at(2, 0.5) == pytest.approx(1.5)
+
+    def test_raw_value_at_normalize_still_returns_raw(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.sin(x * 3.14159).astype(np.float64)
+        wf.set_data(x, y)
+        wf.set_normalize(True)
+        wf.set_gain(100.0)
+        # Raw value is pre-normalize, pre-gain — should match raw sin.
+        assert wf.raw_value_at(0, 0.5) == pytest.approx(np.sin(0.5 * 3.14159))
+
+    def test_raw_value_at_out_of_range_is_finite(self, plot):
+        """Binary search clamps to array bounds, so out-of-range keys map to
+        nearest endpoint — a finite value."""
+        wf = plot.add_waterfall("w", labels=["c0"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.ones_like(x)
+        wf.set_data(x, y)
+        assert wf.raw_value_at(0, 999.0) == 1.0   # clamped to last
+        assert wf.raw_value_at(0, -999.0) == 1.0  # clamped to first
+
+    def test_raw_value_at_invalid_component_is_nan(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0", "c1"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.column_stack([x, 2 * x]).astype(np.float64)
+        wf.set_data(x, y)
+        import math
+        assert math.isnan(wf.raw_value_at(5, 0.5))  # component out of range

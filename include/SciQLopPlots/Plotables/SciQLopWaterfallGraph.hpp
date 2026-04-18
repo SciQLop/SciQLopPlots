@@ -58,6 +58,8 @@ public:
     bool normalize() const;
     double gain() const;
 
+    double raw_value_at(int component, double key) const;
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
