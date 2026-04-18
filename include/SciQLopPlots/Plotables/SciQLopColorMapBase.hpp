@@ -100,4 +100,42 @@ public:
     {
         _colorScaleAxis->set_color_gradient(gradient);
     }
+
+    inline virtual void set_visible(bool visible) noexcept override
+    {
+        if (auto* p = plottable(); p && p->visible() != visible)
+        {
+            p->setVisible(visible);
+            Q_EMIT visible_changed(visible);
+        }
+    }
+
+    inline virtual bool visible() const noexcept override
+    {
+        if (auto* p = plottable(); p)
+            return p->visible();
+        return false;
+    }
+
+    inline virtual void set_y_log_scale(bool y_log_scale) noexcept override
+    {
+        if (_valueAxis)
+            _valueAxis->set_log(y_log_scale);
+    }
+
+    inline virtual bool y_log_scale() const noexcept override
+    {
+        return _valueAxis ? _valueAxis->log() : false;
+    }
+
+    inline virtual void set_z_log_scale(bool z_log_scale) noexcept override
+    {
+        if (_colorScaleAxis)
+            _colorScaleAxis->set_log(z_log_scale);
+    }
+
+    inline virtual bool z_log_scale() const noexcept override
+    {
+        return _colorScaleAxis ? _colorScaleAxis->log() : false;
+    }
 };

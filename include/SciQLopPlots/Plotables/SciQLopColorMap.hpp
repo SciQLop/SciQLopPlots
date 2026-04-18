@@ -67,28 +67,6 @@ public:
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
-    inline virtual void set_y_log_scale(bool y_log_scale) noexcept override
-    {
-        if (_valueAxis)
-            _valueAxis->set_log(y_log_scale);
-    }
-
-    inline virtual bool y_log_scale() const noexcept override
-    {
-        return _valueAxis ? _valueAxis->log() : false;
-    }
-
-    inline virtual void set_z_log_scale(bool z_log_scale) noexcept override
-    {
-        if (_colorScaleAxis)
-            _colorScaleAxis->set_log(z_log_scale);
-    }
-
-    inline virtual bool z_log_scale() const noexcept override
-    {
-        return _colorScaleAxis ? _colorScaleAxis->log() : false;
-    }
-
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
