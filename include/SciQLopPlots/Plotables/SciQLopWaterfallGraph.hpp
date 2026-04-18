@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <plottables/plottable-waterfall.h>
@@ -69,4 +70,17 @@ signals:
     Q_SIGNAL void offsets_changed(QVector<double>);
     Q_SIGNAL void normalize_changed(bool);
     Q_SIGNAL void gain_changed(double);
+};
+
+class SciQLopWaterfallGraphFunction : public SciQLopWaterfallGraph,
+                                       public SciQLopFunctionGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopWaterfallGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                           SciQLopPlotAxis* value_axis,
+                                           GetDataPyCallable&& callable,
+                                           const QStringList& labels = QStringList(),
+                                           QVariantMap metaData = {});
+    ~SciQLopWaterfallGraphFunction() override = default;
 };
