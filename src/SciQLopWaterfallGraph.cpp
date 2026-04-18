@@ -28,3 +28,107 @@ SciQLopWaterfallGraph::SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxi
 {
     create_graphs(labels);
 }
+
+static QCPWaterfallGraph::OffsetMode to_qcp(WaterfallOffsetMode mode)
+{
+    return mode == WaterfallOffsetMode::Uniform
+               ? QCPWaterfallGraph::omUniform
+               : QCPWaterfallGraph::omCustom;
+}
+
+static WaterfallOffsetMode from_qcp(QCPWaterfallGraph::OffsetMode mode)
+{
+    return mode == QCPWaterfallGraph::omUniform
+               ? WaterfallOffsetMode::Uniform
+               : WaterfallOffsetMode::Custom;
+}
+
+void SciQLopWaterfallGraph::set_offset_mode(WaterfallOffsetMode mode)
+{
+    if (auto* w = waterfall_graph())
+    {
+        if (from_qcp(w->offsetMode()) == mode)
+            return;
+        w->setOffsetMode(to_qcp(mode));
+        Q_EMIT offset_mode_changed(mode);
+        Q_EMIT replot();
+    }
+}
+
+void SciQLopWaterfallGraph::set_uniform_spacing(double spacing)
+{
+    if (auto* w = waterfall_graph())
+    {
+        if (w->uniformSpacing() == spacing)
+            return;
+        w->setUniformSpacing(spacing);
+        Q_EMIT uniform_spacing_changed(spacing);
+        Q_EMIT replot();
+    }
+}
+
+void SciQLopWaterfallGraph::set_offsets(const QVector<double>& offsets)
+{
+    if (auto* w = waterfall_graph())
+    {
+        const auto n = static_cast<int>(line_count());
+        if (n > 0 && offsets.size() != n)
+            throw std::invalid_argument(
+                "offsets length must match number of traces");
+        if (w->offsets() == offsets)
+            return;
+        w->setOffsets(offsets);
+        Q_EMIT offsets_changed(offsets);
+        Q_EMIT replot();
+    }
+}
+
+void SciQLopWaterfallGraph::set_normalize(bool enabled)
+{
+    if (auto* w = waterfall_graph())
+    {
+        if (w->normalize() == enabled)
+            return;
+        w->setNormalize(enabled);
+        Q_EMIT normalize_changed(enabled);
+        Q_EMIT replot();
+    }
+}
+
+void SciQLopWaterfallGraph::set_gain(double gain)
+{
+    if (auto* w = waterfall_graph())
+    {
+        if (w->gain() == gain)
+            return;
+        w->setGain(gain);
+        Q_EMIT gain_changed(gain);
+        Q_EMIT replot();
+    }
+}
+
+WaterfallOffsetMode SciQLopWaterfallGraph::offset_mode() const
+{
+    return waterfall_graph() ? from_qcp(waterfall_graph()->offsetMode())
+                              : WaterfallOffsetMode::Uniform;
+}
+
+double SciQLopWaterfallGraph::uniform_spacing() const
+{
+    return waterfall_graph() ? waterfall_graph()->uniformSpacing() : 1.0;
+}
+
+QVector<double> SciQLopWaterfallGraph::offsets() const
+{
+    return waterfall_graph() ? waterfall_graph()->offsets() : QVector<double>{};
+}
+
+bool SciQLopWaterfallGraph::normalize() const
+{
+    return waterfall_graph() ? waterfall_graph()->normalize() : true;
+}
+
+double SciQLopWaterfallGraph::gain() const
+{
+    return waterfall_graph() ? waterfall_graph()->gain() : 1.0;
+}
