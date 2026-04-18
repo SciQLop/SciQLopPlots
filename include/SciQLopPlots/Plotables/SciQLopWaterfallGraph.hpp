@@ -45,4 +45,26 @@ public:
                                    const QStringList& labels = QStringList(),
                                    QVariantMap metaData = {});
     ~SciQLopWaterfallGraph() override = default;
+
+    Q_SLOT void set_offset_mode(WaterfallOffsetMode mode);
+    Q_SLOT void set_uniform_spacing(double spacing);
+    Q_SLOT void set_offsets(const QVector<double>& offsets);
+    Q_SLOT void set_normalize(bool enabled);
+    Q_SLOT void set_gain(double gain);
+
+    WaterfallOffsetMode offset_mode() const;
+    double uniform_spacing() const;
+    QVector<double> offsets() const;
+    bool normalize() const;
+    double gain() const;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void offset_mode_changed(WaterfallOffsetMode);
+    Q_SIGNAL void uniform_spacing_changed(double);
+    Q_SIGNAL void offsets_changed(QVector<double>);
+    Q_SIGNAL void normalize_changed(bool);
+    Q_SIGNAL void gain_changed(double);
 };
