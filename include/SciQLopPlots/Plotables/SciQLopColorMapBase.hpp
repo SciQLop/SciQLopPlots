@@ -107,6 +107,8 @@ public:
         {
             p->setVisible(visible);
             Q_EMIT visible_changed(visible);
+            if (auto* plot = _plot())
+                plot->replot(QCustomPlot::rpQueuedReplot);
         }
     }
 

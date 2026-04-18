@@ -176,14 +176,10 @@ void SciQLopCrosshair::replot()
 
 namespace
 {
-SciQLopWaterfallGraph* find_waterfall_wrapper(QCustomPlot* plot, QCPWaterfallGraph* raw)
+SciQLopWaterfallGraph* find_waterfall_wrapper(QCPWaterfallGraph* raw)
 {
-    for (auto* w : plot->findChildren<SciQLopWaterfallGraph*>())
-    {
-        if (w->waterfall_graph() == raw)
-            return w;
-    }
-    return nullptr;
+    return qobject_cast<SciQLopWaterfallGraph*>(
+        raw->property("sqp_wrapper").value<QObject*>());
 }
 }
 
@@ -228,7 +224,7 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
             auto* wfRaw = qobject_cast<QCPWaterfallGraph*>(mg);
             SciQLopWaterfallGraph* wfWrapper = nullptr;
             if (wfRaw)
-                wfWrapper = find_waterfall_wrapper(m_plot, wfRaw);
+                wfWrapper = find_waterfall_wrapper(wfRaw);
 
             for (int c = 0; c < mg->componentCount(); ++c)
             {
