@@ -101,6 +101,32 @@ class TestHistogram2DProperties:
         assert hist.name == "my_hist"
 
 
+class TestHistogram2DVisibility:
+    def test_set_visible_roundtrips(self, plot):
+        hist = plot.add_histogram2d("test")
+        assert hist.visible() is True
+        hist.set_visible(False)
+        assert hist.visible() is False
+        hist.set_visible(True)
+        assert hist.visible() is True
+
+
+class TestHistogram2DLogScale:
+    def test_set_z_log_scale_roundtrips(self, plot):
+        hist = plot.add_histogram2d("test")
+        hist.set_z_log_scale(True)
+        assert hist.z_log_scale() is True
+        hist.set_z_log_scale(False)
+        assert hist.z_log_scale() is False
+
+    def test_set_y_log_scale_roundtrips(self, plot):
+        hist = plot.add_histogram2d("test")
+        hist.set_y_log_scale(True)
+        assert hist.y_log_scale() is True
+        hist.set_y_log_scale(False)
+        assert hist.y_log_scale() is False
+
+
 class TestHistogram2DReplot:
     def test_replot_empty_no_crash(self, plot):
         plot.add_histogram2d("test")
