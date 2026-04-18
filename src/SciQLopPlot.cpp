@@ -656,6 +656,35 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
     return hist;
 }
 
+SciQLopWaterfallGraph* SciQLopPlot::add_waterfall(const QString& name, const QStringList& labels,
+                                                   const QList<QColor>& colors)
+{
+    auto* wf = m_impl->add_plottable<SciQLopWaterfallGraph>(labels);
+    if (wf)
+    {
+        wf->set_name(name);
+        if (!colors.isEmpty())
+            wf->set_colors(colors);
+    }
+    return wf;
+}
+
+SciQLopWaterfallGraphFunction* SciQLopPlot::add_waterfall(GetDataPyCallable callable,
+                                                          const QString& name,
+                                                          const QStringList& labels,
+                                                          const QList<QColor>& colors)
+{
+    auto* wf = m_impl->add_plottable<SciQLopWaterfallGraphFunction>(std::move(callable), labels);
+    if (wf)
+    {
+        wf->set_name(name);
+        if (!colors.isEmpty())
+            wf->set_colors(colors);
+        _connect_callable_sync(wf, nullptr);
+    }
+    return wf;
+}
+
 SciQLopOverlay* SciQLopPlot::overlay()
 {
     if (!m_overlay)
@@ -739,6 +768,9 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);
+            break;
+        case GraphType::Waterfall:
+            plottable = m_impl->add_plottable<SciQLopWaterfallGraph>(labels, metaData);
             break;
         default:
             throw std::runtime_error("Unsupported graph type");
@@ -832,6 +864,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,
                                                                     metaData);
+            break;
+        case GraphType::Waterfall:
+            plottable = m_impl->add_plottable<SciQLopWaterfallGraphFunction>(
+                std::move(callable), labels, metaData);
             break;
         default:
             break;

@@ -24,6 +24,7 @@
 #include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
@@ -314,6 +315,15 @@ public:
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
                                         int value_bins = 100);
+
+    SciQLopWaterfallGraph* add_waterfall(const QString& name,
+                                         const QStringList& labels = {},
+                                         const QList<QColor>& colors = {});
+
+    SciQLopWaterfallGraphFunction* add_waterfall(GetDataPyCallable callable,
+                                                  const QString& name,
+                                                  const QStringList& labels = {},
+                                                  const QList<QColor>& colors = {});
 
     SciQLopOverlay* overlay();
 
