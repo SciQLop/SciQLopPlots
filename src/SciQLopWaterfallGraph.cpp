@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
+#include <algorithm>
+#include <cmath>
 
 SciQLopWaterfallGraph::SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                              SciQLopPlotAxis* value_axis,
@@ -131,4 +133,46 @@ bool SciQLopWaterfallGraph::normalize() const
 double SciQLopWaterfallGraph::gain() const
 {
     return waterfall_graph() ? waterfall_graph()->gain() : 1.0;
+}
+
+double SciQLopWaterfallGraph::raw_value_at(int component, double key) const
+{
+    if (!_x.is_valid() || !_y.is_valid())
+        return std::nan("");
+
+    const auto* keys = static_cast<const double*>(_x.raw_data());
+    const int n = static_cast<int>(_x.flat_size());
+    if (n == 0 || component < 0)
+        return std::nan("");
+
+    auto it = std::lower_bound(keys, keys + n, key);
+    int idx;
+    if (it == keys + n) idx = n - 1;
+    else if (it == keys) idx = 0;
+    else
+    {
+        idx = static_cast<int>(it - keys);
+        if (idx > 0 && std::abs(*(it - 1) - key) < std::abs(*it - key))
+            idx = idx - 1;
+    }
+
+    double result = std::nan("");
+    dispatch_dtype(_y.format_code(), [&](auto tag) {
+        using V = typename decltype(tag)::type;
+        const auto* values = static_cast<const V*>(_y.raw_data());
+        if (_y.ndim() == 1)
+        {
+            if (component == 0) result = static_cast<double>(values[idx]);
+        }
+        else
+        {
+            const auto n_cols = static_cast<int>(_y.size(1));
+            if (component >= n_cols) return;
+            if (_y.row_major())
+                result = static_cast<double>(values[idx * n_cols + component]);
+            else
+                result = static_cast<double>(values[component * n + idx]);
+        }
+    });
+    return result;
 }
