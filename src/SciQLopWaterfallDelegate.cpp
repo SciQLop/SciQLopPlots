@@ -25,6 +25,7 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QScrollArea>
+#include <QSignalBlocker>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -114,10 +115,6 @@ SciQLopWaterfallDelegate::SciQLopWaterfallDelegate(SciQLopWaterfallGraph* object
 
 void SciQLopWaterfallDelegate::rebuild_offsets_editor()
 {
-    for (auto* s : m_offsetsSpins)
-        s->deleteLater();
-    m_offsetsSpins.clear();
-
     auto* w = waterfall();
     if (!w)
         return;
@@ -127,6 +124,22 @@ void SciQLopWaterfallDelegate::rebuild_offsets_editor()
     while (padded.size() < n)
         padded.append(0.0);
     padded.resize(n);
+
+    // Same-count fast path: update values in place. Preserves focus during
+    // streaming and breaks the widget→model→signal→widget rebuild cycle.
+    if (m_offsetsSpins.size() == n)
+    {
+        for (int i = 0; i < n; ++i)
+        {
+            QSignalBlocker blocker(m_offsetsSpins[i]);
+            m_offsetsSpins[i]->setValue(padded[i]);
+        }
+        return;
+    }
+
+    for (auto* s : m_offsetsSpins)
+        s->deleteLater();
+    m_offsetsSpins.clear();
 
     for (int i = 0; i < n; ++i)
     {
