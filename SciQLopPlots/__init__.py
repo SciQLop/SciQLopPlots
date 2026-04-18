@@ -106,6 +106,41 @@ register_property(
     signal_args=(),
 )
 
+from .SciQLopPlotsBindings import SciQLopWaterfallGraph
+
+register_property(
+    SciQLopWaterfallGraph, "offset_mode",
+    signal_name="offset_mode_changed",
+    getter_name="offset_mode", setter_name="set_offset_mode",
+    property_type="enum",
+)
+register_property(
+    SciQLopWaterfallGraph, "spacing",
+    signal_name="uniform_spacing_changed",
+    getter_name="uniform_spacing", setter_name="set_uniform_spacing",
+    property_type="float",
+)
+register_property(
+    SciQLopWaterfallGraph, "offsets",
+    signal_name="offsets_changed",
+    getter_name="offsets", setter_name="set_offsets",
+    property_type="array",
+)
+register_property(
+    SciQLopWaterfallGraph, "normalize",
+    signal_name="normalize_changed",
+    getter_name="normalize", setter_name="set_normalize",
+    property_type="bool",
+)
+register_property(
+    SciQLopWaterfallGraph, "gain",
+    signal_name="gain_changed",
+    getter_name="gain", setter_name="set_gain",
+    property_type="float",
+)
+
+SciQLopWaterfallGraph.on = OnDescriptor()
+
 register_property(
     SciQLopPlotsBindings.SciQLopPlotAxisInterface, "range",
     signal_name="range_changed",

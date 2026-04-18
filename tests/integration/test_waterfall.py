@@ -184,3 +184,29 @@ class TestWaterfallPlotDispatch:
 
         wf = plot.plot(cb, graph_type=GraphType.Waterfall, labels=["a", "b"])
         assert isinstance(wf, SciQLopWaterfallGraphFunction)
+
+
+class TestWaterfallReactive:
+    def test_on_gain_emits(self, plot):
+        wf = plot.add_waterfall("w")
+        received = []
+        wf.gain_changed.connect(lambda v: received.append(v))
+        wf.set_gain(2.5)
+        QApplication.processEvents()
+        assert received == [2.5]
+
+    def test_on_gain_pipeline(self, plot):
+        wf_src = plot.add_waterfall("src")
+        wf_dst = plot.add_waterfall("dst")
+        wf_src.on.gain >> wf_dst.on.gain
+        wf_src.set_gain(3.14)
+        QApplication.processEvents()
+        assert wf_dst.gain() == 3.14
+
+    def test_on_normalize_pipeline(self, plot):
+        wf_src = plot.add_waterfall("src")
+        wf_dst = plot.add_waterfall("dst")
+        wf_src.on.normalize >> wf_dst.on.normalize
+        wf_src.set_normalize(False)
+        QApplication.processEvents()
+        assert wf_dst.normalize() is False
