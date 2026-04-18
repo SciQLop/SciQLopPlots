@@ -141,6 +141,30 @@ def create_histogram2d_tab():
     return plot
 
 
+def create_waterfall_tab():
+    n_traces = 12
+    n_samples = 3000
+    t = np.linspace(0, 15, n_samples).astype(np.float64)
+    rng = np.random.default_rng(17)
+    distances = np.sort(rng.uniform(0, 80, n_traces))
+    y = np.zeros((n_samples, n_traces), dtype=np.float64)
+    for i in range(n_traces):
+        onset = distances[i] / 5.0
+        pulse = np.exp(-((t - onset) / 0.3) ** 2) * np.sin(2 * np.pi * 2 * (t - onset))
+        y[:, i] = pulse + 0.05 * rng.standard_normal(n_samples)
+
+    plot = SciQLopPlot()
+    plot.plot(
+        t, y,
+        graph_type=GraphType.Waterfall,
+        offsets=distances.tolist(),
+        normalize=False,
+        gain=3.0,
+        labels=[f"stn{i:02d}" for i in range(n_traces)],
+    )
+    return plot
+
+
 def create_overlay_tab():
     plot = SciQLopPlot()
     x, y = butterfly_curve()
@@ -299,6 +323,7 @@ tabs = QTabWidget()
 tabs.addTab(with_export_button(create_line_tab()), "Line Graph")
 tabs.addTab(with_export_button(create_colormap_tab()), "Colormap")
 tabs.addTab(with_export_button(create_histogram2d_tab()), "Histogram 2D")
+tabs.addTab(with_export_button(create_waterfall_tab()), "Waterfall")
 tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
 tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")
 tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
