@@ -80,9 +80,17 @@ enum class GraphType
     Line,
     ParametricCurve,
     Scatter,
-    ColorMap
+    ColorMap,
+    Waterfall
 };
 Q_DECLARE_METATYPE(GraphType);
+
+enum class WaterfallOffsetMode
+{
+    Uniform,
+    Custom
+};
+Q_DECLARE_METATYPE(WaterfallOffsetMode);
 
 enum class PlotType
 {
