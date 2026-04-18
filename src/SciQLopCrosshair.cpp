@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
+#include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
 #include <axis/axistickerdatetime.h>
 #include <theme.h>
 #include <data-locator.h>
@@ -173,6 +174,19 @@ void SciQLopCrosshair::replot()
         m_vline->layer()->replot();
 }
 
+namespace
+{
+SciQLopWaterfallGraph* find_waterfall_wrapper(QCustomPlot* plot, QCPWaterfallGraph* raw)
+{
+    for (auto* w : plot->findChildren<SciQLopWaterfallGraph*>())
+    {
+        if (w->waterfall_graph() == raw)
+            return w;
+    }
+    return nullptr;
+}
+}
+
 QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos) const
 {
     QCPDataLocator locator;
@@ -210,17 +224,34 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
             if (!locator.locateAtKey(mg, plKey, plValue))
                 continue;
             const auto& vals = locator.componentValues();
+
+            auto* wfRaw = qobject_cast<QCPWaterfallGraph*>(mg);
+            SciQLopWaterfallGraph* wfWrapper = nullptr;
+            if (wfRaw)
+                wfWrapper = find_waterfall_wrapper(m_plot, wfRaw);
+
             for (int c = 0; c < mg->componentCount(); ++c)
             {
                 const auto& comp = mg->component(c);
                 if (!comp.visible)
                     continue;
-                if (c >= vals.size() || std::isnan(vals[c]))
-                    continue;
+                double readout;
+                if (wfWrapper)
+                {
+                    readout = wfWrapper->raw_value_at(c, plKey);
+                    if (std::isnan(readout))
+                        continue;
+                }
+                else
+                {
+                    if (c >= vals.size() || std::isnan(vals[c]))
+                        continue;
+                    readout = vals[c];
+                }
                 const QString color = comp.pen.color().name();
                 lines += QString::fromStdString(
                     fmt::format("<span style='color:{};'>&#9632;</span> {}: <b>{:.6g}</b><br/>",
-                        color.toStdString(), comp.name.toStdString(), vals[c]));
+                        color.toStdString(), comp.name.toStdString(), readout));
             }
         }
         else

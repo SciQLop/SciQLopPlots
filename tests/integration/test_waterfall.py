@@ -210,3 +210,21 @@ class TestWaterfallReactive:
         wf_src.set_normalize(False)
         QApplication.processEvents()
         assert wf_dst.normalize() is False
+
+
+class TestWaterfallTooltip:
+    """The crosshair tooltip is driven by mouse events + HTML rendering. The
+    integration-level guarantee we test here is that `raw_value_at` (the
+    function the crosshair calls internally) returns the pre-transform buffer
+    value, not the post-normalize/gain/offset value that `vals[c]` would
+    carry."""
+
+    def test_raw_value_is_pre_transform(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0"])
+        x = np.linspace(0, 1, 11).astype(np.float64)
+        y = np.full_like(x, 2.0)
+        wf.set_data(x, y)
+        wf.set_normalize(True)
+        wf.set_gain(10.0)
+        wf.set_uniform_spacing(5.0)
+        assert wf.raw_value_at(0, 0.5) == pytest.approx(2.0)
