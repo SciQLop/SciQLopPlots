@@ -35,12 +35,12 @@ protected:
         return new QCPWaterfallGraph(keyAxis, valueAxis);
     }
 
+public:
     QCPWaterfallGraph* waterfall_graph() const noexcept
     {
         return static_cast<QCPWaterfallGraph*>(_multiGraph);
     }
 
-public:
     explicit SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                    SciQLopPlotAxis* value_axis,
                                    const QStringList& labels = QStringList(),
