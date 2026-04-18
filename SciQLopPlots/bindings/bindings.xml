@@ -11,6 +11,7 @@
     <primitive-type name="long"/>
     <rejection class="SciQLop*" function-name="plot" />
     <enum-type name="GraphType"/>
+    <enum-type name="WaterfallOffsetMode"/>
     <enum-type name="PlotType"/>
     <enum-type name="AxisType"/>
     <enum-type name="GraphMarkerShape"/>
@@ -176,6 +177,7 @@
     <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapBase" parent-management="yes" allow-thread="yes"/>
+    <object-type name="SciQLopMultiGraphBase" parent-management="yes"/>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
         <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">
@@ -358,6 +360,9 @@
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes"/>
 
     <object-type name="SciQLopLineGraph" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopWaterfallGraph" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopSingleLineGraph" parent-management="yes">
