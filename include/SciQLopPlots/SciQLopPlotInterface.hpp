@@ -345,6 +345,24 @@ public:
         return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with,metaData);
     }
 
+    inline virtual SciQLopGraphInterface*
+    waterfall(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(),
+              QVariantMap metaData = {})
+    {
+        return plot_impl(x, y, labels, colors, ::GraphType::Waterfall,
+                         ::GraphMarkerShape::NoMarker, metaData);
+    }
+
+    inline virtual SciQLopGraphInterface*
+    waterfall(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(),
+              QObject* sync_with = nullptr, QVariantMap metaData = {})
+    {
+        return plot_impl(callable, labels, colors, ::GraphType::Waterfall,
+                         ::GraphMarkerShape::NoMarker, sync_with, metaData);
+    }
+
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)
     {
         throw std::runtime_error("Not implemented");
