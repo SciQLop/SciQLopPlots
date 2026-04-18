@@ -394,6 +394,9 @@
     <object-type name="SciQLopColorMapFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="SciQLopWaterfallGraphFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
 
     <object-type name="SciQLopItemInterface" parent-management="yes"/>
     <object-type name="SciQLopMovableItemInterface" parent-management="yes"/>

@@ -135,6 +135,18 @@ double SciQLopWaterfallGraph::gain() const
     return waterfall_graph() ? waterfall_graph()->gain() : 1.0;
 }
 
+SciQLopWaterfallGraphFunction::SciQLopWaterfallGraphFunction(QCustomPlot* parent,
+                                                             SciQLopPlotAxis* key_axis,
+                                                             SciQLopPlotAxis* value_axis,
+                                                             GetDataPyCallable&& callable,
+                                                             const QStringList& labels,
+                                                             QVariantMap metaData)
+    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, metaData}
+    , SciQLopFunctionGraph(std::move(callable), this, 2)
+{
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+}
+
 double SciQLopWaterfallGraph::raw_value_at(int component, double key) const
 {
     if (!_x.is_valid() || !_y.is_valid())
