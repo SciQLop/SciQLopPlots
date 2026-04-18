@@ -128,3 +128,59 @@ class TestWaterfallRawValueAt:
         wf.set_data(x, y)
         import math
         assert math.isnan(wf.raw_value_at(5, 0.5))  # component out of range
+
+
+from SciQLopPlots import GraphType
+
+
+class TestWaterfallPlotDispatch:
+    def test_plot_graph_type_waterfall(self, plot):
+        x, y = _make_2d(cols=4)
+        wf = plot.plot(x, y, graph_type=GraphType.Waterfall, labels=["a", "b", "c", "d"])
+        assert isinstance(wf, SciQLopWaterfallGraph)
+        assert wf.line_count() == 4
+
+    def test_offsets_float_sets_uniform_mode(self, plot):
+        x, y = _make_2d(cols=3)
+        wf = plot.plot(x, y, graph_type=GraphType.Waterfall, offsets=2.5,
+                       labels=["a", "b", "c"])
+        assert wf.offset_mode() == WaterfallOffsetMode.Uniform
+        assert wf.uniform_spacing() == 2.5
+
+    def test_offsets_array_sets_custom_mode(self, plot):
+        x, y = _make_2d(cols=3)
+        wf = plot.plot(x, y, graph_type=GraphType.Waterfall,
+                       offsets=[0.0, 1.5, 4.0], labels=["a", "b", "c"])
+        assert wf.offset_mode() == WaterfallOffsetMode.Custom
+        assert list(wf.offsets()) == [0.0, 1.5, 4.0]
+
+    def test_offsets_none_default(self, plot):
+        x, y = _make_2d(cols=3)
+        wf = plot.plot(x, y, graph_type=GraphType.Waterfall, labels=["a", "b", "c"])
+        assert wf.offset_mode() == WaterfallOffsetMode.Uniform
+        assert wf.uniform_spacing() == 1.0
+
+    def test_offsets_array_wrong_len_raises(self, plot):
+        x, y = _make_2d(cols=3)
+        with pytest.raises(ValueError):
+            plot.plot(x, y, graph_type=GraphType.Waterfall,
+                      offsets=[0.0, 1.0], labels=["a", "b", "c"])
+
+    def test_normalize_gain_kwargs(self, plot):
+        x, y = _make_2d(cols=3)
+        wf = plot.plot(x, y, graph_type=GraphType.Waterfall,
+                       normalize=False, gain=3.0, labels=["a", "b", "c"])
+        assert wf.normalize() is False
+        assert wf.gain() == 3.0
+
+    def test_callable_variant(self, plot):
+        from SciQLopPlots import SciQLopWaterfallGraphFunction
+
+        def cb(start, stop):
+            n = 50
+            x = np.linspace(start, stop, n).astype(np.float64)
+            y = np.column_stack([np.sin(x), np.cos(x)]).astype(np.float64)
+            return x, y
+
+        wf = plot.plot(cb, graph_type=GraphType.Waterfall, labels=["a", "b"])
+        assert isinstance(wf, SciQLopWaterfallGraphFunction)
