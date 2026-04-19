@@ -132,6 +132,22 @@ protected:
         throw std::runtime_error("Not implemented");
     }
 
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QString name, int key_bins, int value_bins,
+              ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
+              QVariantMap metaData = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(GetDataPyCallable callable, QString name, int key_bins, int value_bins,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1, QVariantMap metaData = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
 public:
     virtual ~SciQLopPlotCollectionInterface() = default;
 
@@ -338,6 +354,25 @@ public:
     {
         return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
                          ::GraphMarkerShape::NoMarker, ::PlotType::Projections, sync_with, index,metaData);
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    histogram2d(const PyBuffer& x, const PyBuffer& y,
+                QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
+                int value_bins = 100, ::PlotType plot_type = ::PlotType::BasicXY,
+                int index = -1, QVariantMap metaData = {})
+    {
+        return plot_impl(x, y, name, key_bins, value_bins, plot_type, index, metaData);
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+                int key_bins = 100, int value_bins = 100,
+                ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+                int index = -1, QVariantMap metaData = {})
+    {
+        return plot_impl(callable, name, key_bins, value_bins, plot_type, sync_with, index,
+                         metaData);
     }
 };
 
