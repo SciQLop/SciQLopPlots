@@ -119,6 +119,7 @@ moc_headers = [
     project_source_root + '/include/SciQLopPlots/Inspector/View/TreeView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/InspectorView.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegateBase.hpp',
+    project_source_root + '/include/SciQLopPlots/Inspector/InspectorExtension.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
     project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',

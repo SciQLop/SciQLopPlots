@@ -30,4 +30,5 @@ SciQLopGraphInterface* SciQLopGraphDelegate::graph() const
 SciQLopGraphDelegate::SciQLopGraphDelegate(SciQLopGraphInterface* object, QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
+    append_inspector_extensions();
 }

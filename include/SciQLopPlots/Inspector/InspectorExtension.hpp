@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2026, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -16,25 +16,29 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
-
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
-#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#pragma once
+#include <QObject>
+#include <QString>
+#include <QWidget>
 
-SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
+class InspectorExtension : public QObject
 {
-    return as_type<SciQLopColorMap>(m_object);
-}
+    Q_OBJECT
 
-SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
-{
-    ColorGradientDelegate* gradient = new ColorGradientDelegate(colorMap()->gradient(), this);
-    m_layout->addWidget(gradient);
-    connect(gradient, &ColorGradientDelegate::gradientChanged, this,
-            [this](ColorGradient gradient) { colorMap()->set_gradient(gradient); });
-    append_inspector_extensions();
-}
+public:
+    explicit InspectorExtension(QObject* parent = nullptr) : QObject(parent) { }
+    virtual ~InspectorExtension() = default;
+
+    virtual QString section_title() const = 0;
+    virtual int priority() const { return 0; }
+    virtual QWidget* build_widget(QWidget* parent) = 0;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void invalidated();
+};
