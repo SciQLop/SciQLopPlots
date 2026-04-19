@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
@@ -70,4 +71,19 @@ public:
 
     void set_normalization(int normalization);
     int normalization() const;
+};
+
+
+class SciQLopHistogram2DFunction : public SciQLopHistogram2D, public SciQLopFunctionGraph
+{
+    Q_OBJECT
+
+public:
+    explicit SciQLopHistogram2DFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                        SciQLopPlotAxis* yAxis,
+                                        SciQLopPlotColorScaleAxis* zAxis,
+                                        GetDataPyCallable&& callable, const QString& name,
+                                        int key_bins = 100, int value_bins = 100);
+
+    virtual ~SciQLopHistogram2DFunction() override = default;
 };
