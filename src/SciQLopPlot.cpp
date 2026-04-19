@@ -164,6 +164,19 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
     return hist;
 }
 
+SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& callable,
+                                                          const QString& name, int key_bins,
+                                                          int value_bins)
+{
+    auto hist = new SciQLopHistogram2DFunction(
+        this, this->m_axes[0], this->m_axes[1],
+        static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable), name,
+        key_bins, value_bins);
+    _ensure_colorscale_is_visible(hist);
+    _register_plottable_wrapper(hist);
+    return hist;
+}
+
 SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable,
                                                     const QString& name, bool y_log_scale,
                                                     bool z_log_scale)
@@ -656,6 +669,19 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
     return hist;
 }
 
+SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& callable,
+                                                          const QString& name, int key_bins,
+                                                          int value_bins)
+{
+    auto hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins);
+    if (hist)
+    {
+        _configure_color_map(hist, false, false);
+        _connect_callable_sync(hist, nullptr);
+    }
+    return hist;
+}
+
 SciQLopWaterfallGraph* SciQLopPlot::add_waterfall(const QString& name, const QStringList& labels,
                                                    const QList<QColor>& colors)
 {
@@ -893,6 +919,34 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
         _connect_callable_sync(plotable, sync_with);
     }
     return plotable;
+}
+
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
+                                                  QString name, int key_bins, int value_bins,
+                                                  QVariantMap metaData)
+{
+    auto* hist = m_impl->add_histogram2d(name, key_bins, value_bins);
+    if (hist)
+    {
+        hist->set_meta_data(metaData);
+        _configure_color_map(hist, false, false);
+        hist->set_data(x, y);
+    }
+    return hist;
+}
+
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
+                                                  int key_bins, int value_bins,
+                                                  QObject* sync_with, QVariantMap metaData)
+{
+    auto* hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins);
+    if (hist)
+    {
+        hist->set_meta_data(metaData);
+        _configure_color_map(hist, false, false);
+        _connect_callable_sync(hist, sync_with);
+    }
+    return hist;
 }
 
 void SciQLopPlot::toggle_selected_objects_visibility() noexcept

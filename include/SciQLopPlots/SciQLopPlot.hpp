@@ -96,6 +96,9 @@ public:
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
                                         int value_bins = 100);
+    SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
+                                                 const QString& name, int key_bins = 100,
+                                                 int value_bins = 100);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
 
@@ -277,6 +280,16 @@ protected:
                                                 bool y_log_scale = false, bool z_log_scale = false,
                                                 QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
+    virtual SciQLopColorMapInterface*
+    plot_impl(const PyBuffer& x, const PyBuffer& y,
+              QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
+              int value_bins = 100, QVariantMap metaData = {}) override;
+
+    virtual SciQLopColorMapInterface*
+    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+              int key_bins = 100, int value_bins = 100, QObject* sync_with = nullptr,
+              QVariantMap metaData = {}) override;
+
     virtual void toggle_selected_objects_visibility() noexcept override;
 
 public:
@@ -315,6 +328,9 @@ public:
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
                                         int value_bins = 100);
+    SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
+                                                 const QString& name, int key_bins = 100,
+                                                 int value_bins = 100);
 
     SciQLopWaterfallGraph* add_waterfall(const QString& name,
                                          const QStringList& labels = {},
