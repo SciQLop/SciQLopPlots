@@ -39,10 +39,29 @@ def _apply_waterfall_kwargs(wf, offsets=None, normalize=True, gain=1.0):
     return wf
 
 
+_WATERFALL_KWARGS = ("offsets", "normalize", "gain")
+
+
+def _pop_waterfall_kwargs(kwargs):
+    return {k: kwargs.pop(k) for k in _WATERFALL_KWARGS if k in kwargs}
+
+
+def _reject_waterfall_kwargs(kwargs, graph_type):
+    stray = [k for k in _WATERFALL_KWARGS if k in kwargs]
+    if stray:
+        raise TypeError(
+            f"{', '.join(stray)} kwarg(s) only apply to GraphType.Waterfall, "
+            f"got graph_type={graph_type!r}")
+
+
 def _patch_sciqlop_plot(cls):
-    def plot_func(self, callback, graph_type=None,
-                  offsets=None, normalize=True, gain=1.0, **kwargs):
+    def plot_func(self, callback, graph_type=None, **kwargs):
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        if graph_type == GraphType.Waterfall:
+            wf_kwargs = _pop_waterfall_kwargs(kwargs)
+            wf = cls.waterfall(self, callback, **kwargs)
+            return _apply_waterfall_kwargs(wf, **wf_kwargs)
+        _reject_waterfall_kwargs(kwargs, graph_type)
         if graph_type == GraphType.ParametricCurve:
             return cls.parametric_curve(self, callback, **kwargs)
         elif graph_type == GraphType.Line:
@@ -51,34 +70,31 @@ def _patch_sciqlop_plot(cls):
             return cls.scatter(self, callback, **kwargs)
         elif graph_type == GraphType.ColorMap:
             return cls.colormap(self, callback, **kwargs)
-        elif graph_type == GraphType.Waterfall:
-            wf = cls.waterfall(self, callback, **kwargs)
-            return _apply_waterfall_kwargs(wf, offsets=offsets,
-                                           normalize=normalize, gain=gain)
         raise ValueError(f"unsupported graph_type {graph_type!r} for single-arg plot()")
 
-    def plot(self, *args, name=None, labels=None, colors=None, graph_type=None,
-             offsets=None, normalize=True, gain=1.0, **kwargs):
+    def plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
         graph_type = graph_type or GraphType.Line
         kwargs = _merge_kwargs(kwargs, name=name, labels=labels, colors=colors)
         if (graph_type == GraphType.ParametricCurve) and (len(args) in (1, 2, 4)) and not callable(args[0]):
+            _reject_waterfall_kwargs(kwargs, graph_type)
             return cls.parametric_curve(self, *args, **kwargs)
         if len(args) == 1:
-            return plot_func(self, *args, graph_type=graph_type,
-                             offsets=offsets, normalize=normalize, gain=gain, **kwargs)
+            return plot_func(self, *args, graph_type=graph_type, **kwargs)
         if len(args) == 2:
+            if graph_type == GraphType.Waterfall:
+                wf_kwargs = _pop_waterfall_kwargs(kwargs)
+                wf = cls.waterfall(self, *args, **kwargs)
+                return _apply_waterfall_kwargs(wf, **wf_kwargs)
+            _reject_waterfall_kwargs(kwargs, graph_type)
             if graph_type == GraphType.Line:
                 return cls.line(self, *args, **kwargs)
             if graph_type == GraphType.Scatter:
                 return cls.scatter(self, *args, **kwargs)
             if graph_type == GraphType.ColorMap:
                 return cls.colormap(self, *args, **kwargs)
-            if graph_type == GraphType.Waterfall:
-                wf = cls.waterfall(self, *args, **kwargs)
-                return _apply_waterfall_kwargs(wf, offsets=offsets,
-                                               normalize=normalize, gain=gain)
             raise ValueError(f"unsupported graph_type {graph_type!r} for 2-arg plot()")
         if len(args) == 3:
+            _reject_waterfall_kwargs(kwargs, graph_type)
             return cls.colormap(self, *args, **kwargs)
         raise ValueError(f"only 1, 2 or 3 arguments are supported, got {len(args)}")
 

@@ -185,6 +185,17 @@ class TestWaterfallPlotDispatch:
         wf = plot.plot(cb, graph_type=GraphType.Waterfall, labels=["a", "b"])
         assert isinstance(wf, SciQLopWaterfallGraphFunction)
 
+    @pytest.mark.parametrize("wf_kwarg", [
+        {"offsets": 1.0},
+        {"normalize": False},
+        {"gain": 2.0},
+    ])
+    @pytest.mark.parametrize("graph_type", [GraphType.Line, GraphType.Scatter])
+    def test_waterfall_kwargs_rejected_for_non_waterfall(self, plot, wf_kwarg, graph_type):
+        x, y = _make_2d(cols=2)
+        with pytest.raises(TypeError, match="only apply to GraphType.Waterfall"):
+            plot.plot(x, y, graph_type=graph_type, labels=["a", "b"], **wf_kwarg)
+
 
 class TestWaterfallReactive:
     def test_on_gain_emits(self, plot):
