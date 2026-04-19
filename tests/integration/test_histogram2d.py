@@ -3,7 +3,12 @@ import numpy as np
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from SciQLopPlots import SciQLopPlot, SciQLopHistogram2D
+from SciQLopPlots import (
+    SciQLopPlot,
+    SciQLopHistogram2D,
+    SciQLopMultiPlotPanel,
+    GraphType,
+)
 
 
 @pytest.fixture(scope="module")
@@ -144,3 +149,92 @@ class TestHistogram2DReplot:
         hist.set_data(rng.normal(0, 1, 5000), rng.normal(0, 1, 5000))
         hist.set_bins(20, 20)
         plot.replot(True)
+
+
+class TestHistogram2DCallable:
+    def test_callable_histogram2d_returns_interface(self, plot):
+        rng = np.random.default_rng(0)
+
+        def producer(start, stop):
+            return rng.normal(0, 1, 500), rng.normal(0, 1, 500)
+
+        hist = plot.histogram2d(producer, name="cb")
+        assert hist is not None
+
+    def test_callable_custom_bins(self, plot):
+        def producer(start, stop):
+            return np.arange(100.0), np.arange(100.0)
+
+        hist = plot.histogram2d(producer, name="cb", key_bins=25, value_bins=30)
+        assert hist.key_bins() == 25
+        assert hist.value_bins() == 30
+
+
+class TestHistogram2DPanel:
+    def test_panel_histogram2d_static(self, app):
+        panel = SciQLopMultiPlotPanel()
+        rng = np.random.default_rng(0)
+        x = rng.normal(0, 1, 300)
+        y = rng.normal(0, 1, 300)
+        p, hist = panel.histogram2d(x, y, name="static_panel")
+        assert p is not None
+        assert hist is not None
+        del panel
+
+    def test_panel_histogram2d_callable(self, app):
+        panel = SciQLopMultiPlotPanel()
+        rng = np.random.default_rng(0)
+
+        def producer(start, stop):
+            return rng.normal(0, 1, 300), rng.normal(0, 1, 300)
+
+        p, hist = panel.histogram2d(producer, name="cb_panel",
+                                     key_bins=40, value_bins=40)
+        assert p is not None
+        assert hist is not None
+        del panel
+
+
+class TestHistogram2DDispatcher:
+    def test_plot_dispatcher_static(self, plot):
+        rng = np.random.default_rng(0)
+        x = rng.normal(0, 1, 400)
+        y = rng.normal(0, 1, 400)
+        hist = plot.plot(x, y, graph_type=GraphType.Histogram2D,
+                         name="disp_static", key_bins=30, value_bins=30)
+        assert hist is not None
+        assert hist.key_bins() == 30
+
+    def test_plot_dispatcher_callable(self, plot):
+        rng = np.random.default_rng(0)
+
+        def producer(start, stop):
+            return rng.normal(0, 1, 400), rng.normal(0, 1, 400)
+
+        hist = plot.plot(producer, graph_type=GraphType.Histogram2D,
+                         name="disp_cb", key_bins=30, value_bins=30)
+        assert hist is not None
+        assert hist.key_bins() == 30
+
+    def test_panel_plot_dispatcher_static(self, app):
+        panel = SciQLopMultiPlotPanel()
+        rng = np.random.default_rng(0)
+        x = rng.normal(0, 1, 300)
+        y = rng.normal(0, 1, 300)
+        result = panel.plot(x, y, graph_type=GraphType.Histogram2D,
+                            name="panel_disp", key_bins=20, value_bins=20)
+        assert result is not None
+        del panel
+
+    def test_reject_histogram2d_kwargs_for_line(self, plot):
+        x = np.arange(10.0)
+        y = np.arange(10.0)
+        with pytest.raises(TypeError, match="Histogram2D"):
+            plot.plot(x, y, graph_type=GraphType.Line, key_bins=10)
+
+    def test_reject_waterfall_kwargs_for_histogram2d(self, plot):
+        rng = np.random.default_rng(0)
+        x = rng.normal(0, 1, 100)
+        y = rng.normal(0, 1, 100)
+        with pytest.raises(TypeError, match="Waterfall"):
+            plot.plot(x, y, graph_type=GraphType.Histogram2D, gain=2.0)
