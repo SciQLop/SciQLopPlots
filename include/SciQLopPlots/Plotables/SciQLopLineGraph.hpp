@@ -52,4 +52,6 @@ public:
                                       SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
                                       const QStringList& labels, QVariantMap metaData = {});
     ~SciQLopLineGraphFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

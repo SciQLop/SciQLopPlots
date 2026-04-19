@@ -93,4 +93,6 @@ public:
                                      GetDataPyCallable&& callable, const QString& name);
 
     virtual ~SciQLopColorMapFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

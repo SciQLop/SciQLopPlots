@@ -65,5 +65,5 @@ public:
 
     virtual ~SciQLopNDProjectionCurvesFunction() override = default;
 
-
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

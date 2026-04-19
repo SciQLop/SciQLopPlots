@@ -86,4 +86,6 @@ public:
                                         int key_bins = 100, int value_bins = 100);
 
     virtual ~SciQLopHistogram2DFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
