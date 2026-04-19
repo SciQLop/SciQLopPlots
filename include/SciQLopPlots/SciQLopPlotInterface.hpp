@@ -89,6 +89,22 @@ protected:
         throw std::runtime_error("Not implemented");
     }
 
+    inline virtual SciQLopColorMapInterface*
+    plot_impl(const PyBuffer& x, const PyBuffer& y,
+              QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
+              int value_bins = 100, QVariantMap metaData = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopColorMapInterface*
+    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+              int key_bins = 100, int value_bins = 100, QObject* sync_with = nullptr,
+              QVariantMap metaData = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed FINAL)
 
@@ -361,6 +377,22 @@ public:
     {
         return plot_impl(callable, labels, colors, ::GraphType::Waterfall,
                          ::GraphMarkerShape::NoMarker, sync_with, metaData);
+    }
+
+    inline virtual SciQLopColorMapInterface*
+    histogram2d(const PyBuffer& x, const PyBuffer& y,
+                QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
+                int value_bins = 100, QVariantMap metaData = {})
+    {
+        return plot_impl(x, y, name, key_bins, value_bins, metaData);
+    }
+
+    inline virtual SciQLopColorMapInterface*
+    histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+                int key_bins = 100, int value_bins = 100, QObject* sync_with = nullptr,
+                QVariantMap metaData = {})
+    {
+        return plot_impl(callable, name, key_bins, value_bins, sync_with, metaData);
     }
 
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)
