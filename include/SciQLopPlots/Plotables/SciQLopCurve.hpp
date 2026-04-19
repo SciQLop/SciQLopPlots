@@ -106,4 +106,6 @@ public:
                                   const QStringList& labels,QVariantMap metaData={});
 
     virtual ~SciQLopCurveFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

@@ -53,6 +53,7 @@ class DataProviderInterface : public QObject
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
     bool m_has_pending_change = false;
+    bool m_force_next_update = false;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void _state_changed();
@@ -83,6 +84,8 @@ public:
     virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y);
     virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
     virtual QList<PyBuffer> get_data(QList<PyBuffer> values);
+
+    void invalidate_cache();
 
 
 
@@ -221,6 +224,8 @@ public:
 
     inline void set_callable(GetDataPyCallable&& callable) { m_callable_wrapper->set_callable(std::move(callable)); }
     inline GetDataPyCallable callable() const { return m_callable_wrapper->callable(); }
+
+    inline void invalidate_cache() { m_callable_wrapper->invalidate_cache(); }
 
 
 #ifdef BINDINGS_H

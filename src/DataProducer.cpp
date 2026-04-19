@@ -87,12 +87,24 @@ void DataProviderInterface::_notify_new_data(const QList<PyBuffer> &data)
 
 void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_range)
 {
-    if (std::holds_alternative<SciQLopPlotRange>(m_current_state)
+    bool force;
+    {
+        QMutexLocker lock(&m_mutex);
+        force = m_force_next_update;
+        m_force_next_update = false;
+    }
+    if (!force && std::holds_alternative<SciQLopPlotRange>(m_current_state)
         && new_range == std::get<SciQLopPlotRange>(m_current_state))
         return;
     auto r = get_data(new_range.start(), new_range.stop());
     m_current_state = new_range;
     _notify_new_data(r);
+}
+
+void DataProviderInterface::invalidate_cache()
+{
+    QMutexLocker lock(&m_mutex);
+    m_force_next_update = true;
 }
 
 void DataProviderInterface::_data_based_update(const _2D_data& new_data)

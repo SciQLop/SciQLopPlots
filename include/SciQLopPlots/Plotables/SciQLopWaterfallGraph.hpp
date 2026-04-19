@@ -83,4 +83,6 @@ public:
                                            const QStringList& labels = QStringList(),
                                            QVariantMap metaData = {});
     ~SciQLopWaterfallGraphFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

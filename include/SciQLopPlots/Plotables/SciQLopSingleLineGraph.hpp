@@ -80,4 +80,6 @@ public:
                                             const QStringList& labels, QVariantMap metaData = {});
 
     virtual ~SciQLopSingleLineGraphFunction() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };

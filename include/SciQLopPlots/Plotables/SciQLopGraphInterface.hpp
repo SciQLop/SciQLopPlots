@@ -166,6 +166,8 @@ public:
     void remove_inspector_extension(InspectorExtension* extension);
     QList<InspectorExtension*> inspector_extensions() const;
 
+    virtual void invalidate_cache() noexcept { }
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
@@ -349,4 +351,5 @@ public:
         m_pipeline->call(values);
     }
 
+    inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
 };
