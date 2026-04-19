@@ -411,6 +411,48 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
     return { nullptr, nullptr };
 }
 
+QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QString name, int key_bins,
+                                 int value_bins, PlotType plot_type, int index,
+                                 QVariantMap metaData)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot_histogram2d<SciQLopPlot>(
+                index, x, y, name, key_bins, value_bins, metaData);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot_histogram2d<SciQLopTimeSeriesPlot>(
+                index, x, y, name, key_bins, value_bins, metaData);
+            break;
+        default:
+            break;
+    }
+    return { nullptr, nullptr };
+}
+
+QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int key_bins,
+                                 int value_bins, PlotType plot_type, QObject* sync_with,
+                                 int index, QVariantMap metaData)
+{
+    switch (plot_type)
+    {
+        case ::PlotType::BasicXY:
+            return _plot_histogram2d<SciQLopPlot>(
+                index, std::move(callable), name, key_bins, value_bins, sync_with, metaData);
+            break;
+        case ::PlotType::TimeSeries:
+            return _plot_histogram2d<SciQLopTimeSeriesPlot>(
+                index, std::move(callable), name, key_bins, value_bins, sync_with, metaData);
+            break;
+        default:
+            break;
+    }
+    return { nullptr, nullptr };
+}
+
 void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
 {
     switch (event->key())

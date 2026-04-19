@@ -97,6 +97,17 @@ protected:
         return nullptr;
     }
 
+    template <typename T, typename... Args>
+    QPair<T*, SciQLopColorMapInterface*> _plot_histogram2d(int index, Args&&... args)
+    {
+        auto* plot = new T();
+        if (index == -1)
+            add_plot(plot);
+        else
+            insert_plot(index, plot);
+        return { plot, plot->histogram2d(std::forward<Args>(args)...) };
+    }
+
     template <typename T, typename U, typename... Args>
     QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
@@ -159,6 +170,16 @@ protected:
               bool y_log_scale = false, bool z_log_scale = false,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
+
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(const PyBuffer& x, const PyBuffer& y, QString name, int key_bins, int value_bins,
+              ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
+              QVariantMap metaData = {}) Q_DECL_OVERRIDE;
+
+    virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
+    plot_impl(GetDataPyCallable callable, QString name, int key_bins, int value_bins,
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1, QVariantMap metaData = {}) Q_DECL_OVERRIDE;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE setSelected NOTIFY selectionChanged FINAL);
