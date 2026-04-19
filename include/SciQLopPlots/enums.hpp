@@ -81,7 +81,8 @@ enum class GraphType
     ParametricCurve,
     Scatter,
     ColorMap,
-    Waterfall
+    Waterfall,
+    Histogram2D
 };
 Q_DECLARE_METATYPE(GraphType);
 
