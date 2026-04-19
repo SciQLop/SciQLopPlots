@@ -848,6 +848,7 @@
     <object-type name="PlotsTreeView" parent-management="yes"/>
     <object-type name="InspectorView" parent-management="yes"/>
     <object-type name="PropertyDelegateBase" parent-management="yes"/>
+    <object-type name="InspectorExtension" parent-management="yes"/>
     <object-type name="PropertiesPanel" parent-management="yes"/>
 
     <value-type name="MatchResult"/>

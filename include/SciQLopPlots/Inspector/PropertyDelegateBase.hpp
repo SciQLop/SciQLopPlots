@@ -53,4 +53,10 @@ public:
     }
 
     virtual ~PropertyDelegateBase() = default;
+
+protected:
+    void append_inspector_extensions();
+
+private:
+    void rebuild_inspector_extensions();
 };

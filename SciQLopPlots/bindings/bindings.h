@@ -17,6 +17,7 @@
 #include <SciQLopPlots/Inspector/Model/TypeDescriptor.hpp>
 #include <SciQLopPlots/Inspector/Model/Model.hpp>
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
+#include <SciQLopPlots/Inspector/InspectorExtension.hpp>
 #include <SciQLopPlots/Inspector/PropertyDelegateBase.hpp>
 #include <SciQLopPlots/Inspector/View/InspectorView.hpp>
 #include <SciQLopPlots/Inspector/View/PropertiesPanel.hpp>

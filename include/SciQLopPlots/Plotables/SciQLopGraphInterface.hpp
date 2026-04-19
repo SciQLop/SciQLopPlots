@@ -33,10 +33,12 @@
 #include <QObjectBindableProperty>
 #include <QList>
 #include <QObject>
+#include <QPointer>
 #include <QWidget>
 #include <utility>
 
 class SciQLopPlotAxisInterface;
+class InspectorExtension;
 
 class SciQLopPlottableInterface : public QObject
 {
@@ -160,11 +162,16 @@ public:
         return qobject_cast<QWidget*>(parent())->size();
     }
 
+    void add_inspector_extension(InspectorExtension* extension);
+    void remove_inspector_extension(InspectorExtension* extension);
+    QList<InspectorExtension*> inspector_extensions() const;
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void inspector_extensions_changed();
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void replot();
@@ -179,6 +186,7 @@ signals:
 
     protected:
     bool _got_first_data = false;
+    QList<QPointer<InspectorExtension>> m_inspector_extensions;
 
     void check_first_data(std::size_t n)
     {

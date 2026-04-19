@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/Inspector/InspectorExtension.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 
@@ -38,6 +39,50 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
         m_range = range;
         Q_EMIT range_changed(range);
     }
+}
+
+void SciQLopPlottableInterface::add_inspector_extension(InspectorExtension* extension)
+{
+    if (!extension)
+        return;
+    for (const auto& p : m_inspector_extensions)
+        if (p.data() == extension)
+            return;
+    extension->setParent(this);
+    m_inspector_extensions.append(QPointer<InspectorExtension>(extension));
+    connect(extension, &QObject::destroyed, this,
+            [this]() { Q_EMIT inspector_extensions_changed(); });
+    Q_EMIT inspector_extensions_changed();
+}
+
+void SciQLopPlottableInterface::remove_inspector_extension(InspectorExtension* extension)
+{
+    bool removed = false;
+    for (int i = m_inspector_extensions.size() - 1; i >= 0; --i)
+    {
+        auto& p = m_inspector_extensions[i];
+        if (!p || p.data() == extension)
+        {
+            m_inspector_extensions.removeAt(i);
+            removed = true;
+        }
+    }
+    if (removed)
+    {
+        if (extension && extension->parent() == this)
+            extension->setParent(nullptr);
+        Q_EMIT inspector_extensions_changed();
+    }
+}
+
+QList<InspectorExtension*> SciQLopPlottableInterface::inspector_extensions() const
+{
+    QList<InspectorExtension*> out;
+    out.reserve(m_inspector_extensions.size());
+    for (const auto& p : m_inspector_extensions)
+        if (p)
+            out.append(p.data());
+    return out;
 }
 
 SciQLopColorMapInterface::SciQLopColorMapInterface(QVariantMap metaData, QObject* parent)

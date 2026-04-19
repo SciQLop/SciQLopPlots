@@ -111,6 +111,8 @@ SciQLopWaterfallDelegate::SciQLopWaterfallDelegate(SciQLopWaterfallGraph* object
             [this](double v) { m_gainSpin->setValue(v); });
     connect(object, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
             [this]() { rebuild_offsets_editor(); });
+
+    append_inspector_extensions();
 }
 
 void SciQLopWaterfallDelegate::rebuild_offsets_editor()
