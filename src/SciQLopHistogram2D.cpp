@@ -135,3 +135,15 @@ int SciQLopHistogram2D::normalization() const
 {
     return _hist ? static_cast<int>(_hist->normalization()) : 0;
 }
+
+SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                                       SciQLopPlotAxis* yAxis,
+                                                       SciQLopPlotColorScaleAxis* zAxis,
+                                                       GetDataPyCallable&& callable,
+                                                       const QString& name,
+                                                       int key_bins, int value_bins)
+    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, key_bins, value_bins}
+    , SciQLopFunctionGraph(std::move(callable), this, 2)
+{
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+}
