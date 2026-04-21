@@ -108,6 +108,7 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     }
 
     Q_EMIT data_changed(x, y, z);
+    Q_EMIT data_changed();
 }
 
 QList<PyBuffer> SciQLopColorMap::data() const noexcept

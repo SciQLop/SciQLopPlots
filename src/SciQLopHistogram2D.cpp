@@ -100,6 +100,7 @@ void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
     }
 
     Q_EMIT data_changed(x, y);
+    Q_EMIT data_changed();
 }
 
 QList<PyBuffer> SciQLopHistogram2D::data() const noexcept

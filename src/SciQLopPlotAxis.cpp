@@ -24,6 +24,7 @@
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
 #include <plottables/plottable-colormap2.h>
+#include <plottables/plottable-histogram2d.h>
 #include <cmath>
 
 SciQLopPlotRange SciQLopPlotAxisInterface::clamp_range(const SciQLopPlotRange& range) const noexcept
@@ -463,8 +464,7 @@ void SciQLopPlotColorScaleAxis::rescale() noexcept
 {
     if (!m_axis.isNull())
     {
-        // QCPColorScale::rescaleDataRange only finds QCPColorMap, not QCPColorMap2.
-        // Rescale QCPColorMap2 instances directly.
+        // QCPColorScale::rescaleDataRange only finds QCPColorMap, not QCPColorMap2/QCPHistogram2D.
         auto* plot = m_axis->parentPlot();
         for (int i = 0; i < plot->plottableCount(); ++i)
         {
@@ -472,6 +472,11 @@ void SciQLopPlotColorScaleAxis::rescale() noexcept
                 cm2 && cm2->colorScale() == m_axis.data())
             {
                 cm2->rescaleDataRange(true);
+            }
+            else if (auto* hist = qobject_cast<QCPHistogram2D*>(plot->plottable(i));
+                     hist && hist->colorScale() == m_axis.data())
+            {
+                hist->rescaleDataRange(true);
             }
         }
         // Also try the legacy path for any QCPColorMap instances
