@@ -190,3 +190,67 @@ class TestMultipleReplots:
         y_clean = np.sin(x / 10.0)
         graph.set_data(x, y_clean)
         _pump_and_replot(plot)
+
+
+class TestInfInScatterGraph:
+    """Inf/NaN values in scatter data must not crash drawShape."""
+
+    def test_inf_in_scatter_y(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y = np.sin(x / 10.0)
+        y[50] = np.inf
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_neg_inf_in_scatter_y(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y = np.sin(x / 10.0)
+        y[30] = -np.inf
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_nan_in_scatter_y(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y = np.sin(x / 10.0)
+        y[50] = np.nan
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_mixed_nonfinite_in_scatter(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y = np.sin(x / 10.0)
+        y[20] = np.nan
+        y[40] = np.inf
+        y[60] = -np.inf
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_all_inf_scatter(self, plot):
+        x = np.arange(10, dtype=np.float64)
+        y = np.full(10, np.inf)
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_cdf_fill_value_scatter(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y = np.sin(x / 10.0)
+        y[10:15] = -1e31
+        graph = plot.scatter(x, y)
+        _pump_and_replot(plot)
+        assert graph is not None
+
+    def test_scatter_data_update_to_inf(self, plot):
+        x = np.arange(100, dtype=np.float64)
+        y_clean = np.sin(x / 10.0)
+        graph = plot.scatter(x, y_clean)
+        _pump_and_replot(plot)
+
+        y_dirty = y_clean.copy()
+        y_dirty[50] = np.inf
+        graph.set_data(x, y_dirty)
+        _pump_and_replot(plot)
