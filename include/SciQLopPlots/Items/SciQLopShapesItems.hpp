@@ -277,6 +277,33 @@ public:
     {
         qptr_apply(m_item, [toolTip](auto&& item) { item->setToolTip(toolTip); });
     }
+
+    inline void set_color(const QColor& color) noexcept
+    {
+        auto p = pen();
+        p.setColor(color);
+        set_pen(p);
+    }
+
+    [[nodiscard]] inline QColor color() const noexcept { return pen().color(); }
+
+    inline void set_line_width(double width) noexcept
+    {
+        auto p = pen();
+        p.setWidthF(width);
+        set_pen(p);
+    }
+
+    [[nodiscard]] inline double line_width() const noexcept { return pen().widthF(); }
+
+    inline void set_line_style(Qt::PenStyle style) noexcept
+    {
+        auto p = pen();
+        p.setStyle(style);
+        set_pen(p);
+    }
+
+    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return pen().style(); }
 };
 
 class SciQLopCurvedLineItem : public SciQLopLineItemInterface
@@ -357,5 +384,41 @@ public:
     inline void set_stop_dir_position(const QPointF& pos) noexcept
     {
         qptr_apply(m_item, [pos](auto&& item) { item->setStopDirPos(pos); });
+    }
+
+    inline void set_color(const QColor& color) noexcept override
+    {
+        qptr_apply(m_item, [color](auto&& item) { item->setColor(color); });
+    }
+
+    [[nodiscard]] inline QColor color() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->color(); });
+    }
+
+    inline void set_line_width(double width) override
+    {
+        qptr_apply(m_item, [width](auto&& item) { item->setWidth(width); });
+    }
+
+    [[nodiscard]] inline double line_width() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->width(); });
+    }
+
+    inline void set_line_style(Qt::PenStyle style) noexcept
+    {
+        qptr_apply(m_item,
+                   [style](auto&& item)
+                   {
+                       auto p = item->pen();
+                       p.setStyle(style);
+                       item->setPen(p);
+                   });
+    }
+
+    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->pen().style(); });
     }
 };

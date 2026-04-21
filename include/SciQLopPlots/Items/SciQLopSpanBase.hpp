@@ -42,6 +42,12 @@ public:
     void set_borders_color(const QColor& color);
     [[nodiscard]] QColor borders_color() const;
 
+    void set_line_width(double width);
+    [[nodiscard]] double line_width() const;
+
+    void set_line_style(Qt::PenStyle style);
+    [[nodiscard]] Qt::PenStyle line_style() const;
+
     void set_selected(bool selected);
     [[nodiscard]] bool selected() const;
 

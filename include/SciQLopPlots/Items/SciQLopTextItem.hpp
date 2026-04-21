@@ -114,4 +114,40 @@ public:
     {
         return qptr_apply_or(m_item, [](auto& item) { return item->text(); });
     }
+
+    void set_color(const QColor& color)
+    {
+        qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
+    }
+
+    [[nodiscard]] QColor color() const
+    {
+        return qptr_apply_or(m_item, [](auto& item) { return item->color(); });
+    }
+
+    void set_font_size(double size)
+    {
+        qptr_apply(m_item,
+                   [size](auto& item)
+                   {
+                       auto f = item->font();
+                       f.setPointSizeF(size);
+                       item->setFont(f);
+                   });
+    }
+
+    [[nodiscard]] double font_size() const
+    {
+        return qptr_apply_or(m_item, [](auto& item) { return item->font().pointSizeF(); });
+    }
+
+    void set_font_color(const QColor& color)
+    {
+        qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
+    }
+
+    [[nodiscard]] QColor font_color() const
+    {
+        return qptr_apply_or(m_item, [](auto& item) { return item->color(); });
+    }
 };

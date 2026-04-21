@@ -42,6 +42,24 @@ void SpanBase::set_borders_color(const QColor& color)
 
 QColor SpanBase::borders_color() const noexcept { return _span->borderPen().color(); }
 
+void SpanBase::set_line_width(double width)
+{
+    auto pen = _span->borderPen();
+    pen.setWidthF(width);
+    _span->setBorderPen(pen);
+}
+
+double SpanBase::line_width() const noexcept { return _span->borderPen().widthF(); }
+
+void SpanBase::set_line_style(Qt::PenStyle style)
+{
+    auto pen = _span->borderPen();
+    pen.setStyle(style);
+    _span->setBorderPen(pen);
+}
+
+Qt::PenStyle SpanBase::line_style() const noexcept { return _span->borderPen().style(); }
+
 void SpanBase::set_visible(bool visible) { _span->setVisible(visible); }
 
 void SpanBase::set_borders_tool_tip(const QString& tool_tip)

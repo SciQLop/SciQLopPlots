@@ -42,6 +42,12 @@ public:
     void set_borders_color(const QColor& color);
     [[nodiscard]] QColor borders_color() const noexcept;
 
+    void set_line_width(double width);
+    [[nodiscard]] double line_width() const noexcept;
+
+    void set_line_style(Qt::PenStyle style);
+    [[nodiscard]] Qt::PenStyle line_style() const noexcept;
+
     void set_visible(bool visible);
 
     void set_borders_tool_tip(const QString& tool_tip);

@@ -76,6 +76,9 @@ public:
     void set_line_width(double width);
     [[nodiscard]] double line_width() const;
 
+    void set_line_style(Qt::PenStyle style);
+    [[nodiscard]] Qt::PenStyle line_style() const;
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
@@ -138,6 +141,19 @@ public:
         if (!m_line.isNull())
             return this->m_line->line_width();
         return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    inline void set_line_style(Qt::PenStyle style)
+    {
+        if (!m_line.isNull())
+            this->m_line->set_line_style(style);
+    }
+
+    [[nodiscard]] inline Qt::PenStyle line_style() const
+    {
+        if (!m_line.isNull())
+            return this->m_line->line_style();
+        return Qt::SolidLine;
     }
 };
 

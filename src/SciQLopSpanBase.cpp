@@ -69,6 +69,28 @@ QColor SciQLopSpanBase::borders_color() const
     return _span ? _impl_base->borders_color() : QColor {};
 }
 
+void SciQLopSpanBase::set_line_width(double width)
+{
+    if (_span)
+        _impl_base->set_line_width(width);
+}
+
+double SciQLopSpanBase::line_width() const
+{
+    return _span ? _impl_base->line_width() : 0.0;
+}
+
+void SciQLopSpanBase::set_line_style(Qt::PenStyle style)
+{
+    if (_span)
+        _impl_base->set_line_style(style);
+}
+
+Qt::PenStyle SciQLopSpanBase::line_style() const
+{
+    return _span ? _impl_base->line_style() : Qt::SolidLine;
+}
+
 void SciQLopSpanBase::set_selected(bool selected)
 {
     if (_span)

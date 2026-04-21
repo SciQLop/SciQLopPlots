@@ -111,6 +111,12 @@ public:
     inline void set_borders_color(const QColor& color) { _base.set_borders_color(color); }
     [[nodiscard]] inline QColor borders_color() const noexcept { return _base.borders_color(); }
 
+    inline void set_line_width(double width) { _base.set_line_width(width); }
+    [[nodiscard]] inline double line_width() const noexcept { return _base.line_width(); }
+
+    inline void set_line_style(Qt::PenStyle style) { _base.set_line_style(style); }
+    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
+
     inline void set_selected(bool selected) { _base.set_selected(selected); }
     [[nodiscard]] inline bool selected() const noexcept { return _base.selected(); }
 

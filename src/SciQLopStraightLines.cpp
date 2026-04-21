@@ -90,6 +90,18 @@ double StraightLine::line_width() const
     return this->pen().widthF();
 }
 
+void StraightLine::set_line_style(Qt::PenStyle style)
+{
+    auto pen = this->pen();
+    pen.setStyle(style);
+    this->setPen(pen);
+}
+
+Qt::PenStyle StraightLine::line_style() const
+{
+    return this->pen().style();
+}
+
 void SciQLopStraightLine::set_position(double pos)
 {
     if (!m_line.isNull())
