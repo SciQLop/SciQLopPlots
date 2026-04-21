@@ -4,7 +4,7 @@ requires = [
     "ninja",
     "numpy",
     "meson-python>=0.14.0",
-    "meson>=1.6,<1.11",
+    "meson>=1.6,<1.12",
     "shiboken6==6.10.2",
     "pyside6==6.10.2",
     "shiboken6_generator==6.10.2"
