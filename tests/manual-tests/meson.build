@@ -1,6 +1,7 @@
 examples = [
     {'name': 'LineGraph', 'source': meson.current_source_dir() + '/basics/line_graph.py'},
     {'name': 'Colormap', 'source': meson.current_source_dir() + '/basics/colormap.py'},
+    {'name': 'ContourColormap', 'source': meson.current_source_dir() + '/basics/contour_colormap.py'},
     {'name': 'Histogram2D', 'source': meson.current_source_dir() + '/basics/histogram2d.py'},
     {'name': 'VerticalSpans', 'source': meson.current_source_dir() + '/basics/vertical_spans.py'},
     {'name': 'ParametricCurve', 'source': meson.current_source_dir() + '/basics/parametric_curve.py'},

@@ -67,6 +67,77 @@ public:
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
+    inline void set_contour_levels(const QVector<double>& levels)
+    {
+        if (_cmap) _cmap->setContourLevels(levels);
+    }
+
+    inline QVector<double> contour_levels() const
+    {
+        if (_cmap) return _cmap->contourLevels();
+        return {};
+    }
+
+    inline void set_auto_contour_levels(int count)
+    {
+        if (_cmap) _cmap->setAutoContourLevels(count);
+    }
+
+    inline int auto_contour_level_count() const
+    {
+        return _cmap ? _cmap->autoContourLevelCount() : 0;
+    }
+
+    inline void set_contour_pen(const QPen& pen)
+    {
+        if (_cmap) _cmap->setContourPen(pen);
+    }
+
+    inline QPen contour_pen() const
+    {
+        return _cmap ? _cmap->contourPen() : QPen();
+    }
+
+    inline void set_contour_color(const QColor& color)
+    {
+        if (_cmap)
+        {
+            auto pen = _cmap->contourPen();
+            pen.setColor(color);
+            _cmap->setContourPen(pen);
+        }
+    }
+
+    inline QColor contour_color() const
+    {
+        return _cmap ? _cmap->contourPen().color() : QColor();
+    }
+
+    inline void set_contour_width(double width)
+    {
+        if (_cmap)
+        {
+            auto pen = _cmap->contourPen();
+            pen.setWidthF(width);
+            _cmap->setContourPen(pen);
+        }
+    }
+
+    inline double contour_width() const
+    {
+        return _cmap ? _cmap->contourPen().widthF() : 1.0;
+    }
+
+    inline void set_contour_labels_enabled(bool enabled)
+    {
+        if (_cmap) _cmap->setContourLabelEnabled(enabled);
+    }
+
+    inline bool contour_labels_enabled() const
+    {
+        return _cmap ? _cmap->contourLabelEnabled() : false;
+    }
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:

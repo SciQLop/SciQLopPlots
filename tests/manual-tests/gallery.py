@@ -81,6 +81,27 @@ def create_colormap_tab():
     return panel
 
 
+def create_contour_tab():
+    panel = SciQLopMultiPlotPanel(synchronize_x=True)
+
+    x = np.linspace(-4, 4, 200)
+    y = np.linspace(-4, 4, 150)
+    xx, yy = np.meshgrid(x, y, indexing="ij")
+    z = np.sin(xx) * np.cos(yy) + 0.3 * np.sin(2 * xx + yy)
+
+    _, cmap1 = panel.plot(x, y, z)
+    cmap1.set_contour_levels([-0.8, -0.4, 0.0, 0.4, 0.8])
+    cmap1.set_contour_color(QColor("white"))
+    cmap1.set_contour_width(1.5)
+
+    _, cmap2 = panel.plot(x, y, z)
+    cmap2.set_auto_contour_levels(10)
+    cmap2.set_contour_color(QColor("black"))
+    cmap2.set_contour_labels_enabled(True)
+
+    return panel
+
+
 def create_curve_tab():
     plot = SciQLopPlot()
     x, y = butterfly_curve()
@@ -322,6 +343,7 @@ window.resize(1000, 700)
 tabs = QTabWidget()
 tabs.addTab(with_export_button(create_line_tab()), "Line Graph")
 tabs.addTab(with_export_button(create_colormap_tab()), "Colormap")
+tabs.addTab(with_export_button(create_contour_tab()), "Contour Overlay")
 tabs.addTab(with_export_button(create_histogram2d_tab()), "Histogram 2D")
 tabs.addTab(with_export_button(create_waterfall_tab()), "Waterfall")
 tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
