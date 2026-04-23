@@ -102,3 +102,62 @@ class TestEqualAspectRatio:
         proj.set_equal_aspect_ratio(True)
         process_events()
         assert proj.equal_aspect_ratio() is True
+
+
+class TestReferenceLayers:
+    """add_reference_curve() adds static curves that don't respond to time changes."""
+
+    def test_add_single_reference_curve(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        theta = np.linspace(0, 2 * np.pi, 100, dtype=np.float64)
+        x = np.cos(theta)
+        y = np.sin(theta)
+        z = np.zeros_like(theta)
+
+        ref = proj.add_reference_curve([x, y, z], label="Unit circle")
+        process_events()
+        assert ref is not None
+
+    def test_reference_curve_survives_time_change(self, qtbot):
+        from SciQLopPlots import SciQLopPlotRange
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        theta = np.linspace(0, 2 * np.pi, 100, dtype=np.float64)
+        x = 5.0 * np.cos(theta)
+        y = 5.0 * np.sin(theta)
+        z = np.zeros_like(theta)
+
+        ref = proj.add_reference_curve([x, y, z], label="Orbit")
+        process_events()
+
+        proj.time_axis().set_range(SciQLopPlotRange(100.0, 200.0))
+        process_events()
+        assert ref is not None
+
+    def test_multiple_reference_curves(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        for r in [1.0, 2.0, 3.0]:
+            theta = np.linspace(0, 2 * np.pi, 50, dtype=np.float64)
+            x = r * np.cos(theta)
+            y = r * np.sin(theta)
+            z = np.zeros_like(theta)
+            ref = proj.add_reference_curve([x, y, z], label=f"r={r}")
+            assert ref is not None
+        process_events()
+
+    def test_reference_curve_with_two_projections(self, qtbot):
+        proj = SciQLopNDProjectionPlot(2)
+        qtbot.addWidget(proj)
+
+        theta = np.linspace(0, 2 * np.pi, 50, dtype=np.float64)
+        x = np.cos(theta)
+        y = np.sin(theta)
+
+        ref = proj.add_reference_curve([x, y], label="Circle")
+        process_events()
+        assert ref is not None
