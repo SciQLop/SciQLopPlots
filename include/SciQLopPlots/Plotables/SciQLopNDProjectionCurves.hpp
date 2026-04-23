@@ -33,6 +33,7 @@
 #include <qcustomplot.h>
 
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
+#include <optional>
 
 
 class SciQLopNDProjectionCurves : public SciQLopGraphInterface
@@ -49,9 +50,12 @@ public:
     virtual void set_selected(bool selected) noexcept override;
     virtual  bool selected() const noexcept override;
 
+    virtual void set_colors(const QList<QColor>& colors) override;
+
     void set_time_color_enabled(bool enabled);
     bool time_color_enabled() const;
     void set_time_color_gradient(const QColor& start, const QColor& end);
+    QList<std::optional<QPointF>> positions_at_time(double t) const;
 };
 
 class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, public SciQLopFunctionGraph
