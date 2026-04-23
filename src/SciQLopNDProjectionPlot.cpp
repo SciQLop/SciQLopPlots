@@ -70,6 +70,19 @@ SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, Q
             &SciQLopPlot::time_axis_range_changed);
 }
 
+void SciQLopNDProjectionPlot::set_axis_labels(const QStringList& dimension_names) noexcept
+{
+    const auto n = m_plots.size();
+    if (dimension_names.size() != n)
+        return;
+
+    for (int i = 0; i < n; ++i)
+    {
+        m_plots[i]->x_axis()->set_label(dimension_names[i % n]);
+        m_plots[i]->y_axis()->set_label(dimension_names[(i + 1) % n]);
+    }
+}
+
 void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
 {
     if (m_linked_axes != linked)
