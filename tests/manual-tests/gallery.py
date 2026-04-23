@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, QRectF
 from SciQLopPlots import (
     SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
     SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
+    SciQLopNDProjectionPlot,
     PlotType, GraphType, Coordinates,
     OverlayLevel, OverlaySizeMode, OverlayPosition,
 )
@@ -312,6 +313,38 @@ def create_busy_indicator_tab():
     return panel
 
 
+def create_projection_tab():
+    panel = SciQLopMultiPlotPanel(synchronize_x=False)
+
+    # Helix in 3D — clear structure across all three projections
+    t = np.linspace(0, 6 * np.pi, 2000, dtype=np.float64)
+    x = 10 * np.cos(t)
+    y = 10 * np.sin(t)
+    z = t
+
+    proj, _ = panel.plot(
+        [t, x, y, z],
+        labels=["helix"] * 3,
+        graph_type=GraphType.ParametricCurve,
+        plot_type=PlotType.Projections,
+    )
+
+    proj.set_axis_labels(["X", "Y", "Z"])
+    proj.set_equal_aspect_ratio(True)
+    proj.set_time_color_enabled(True)
+    proj.set_time_color_gradient(QColor("blue"), QColor("red"))
+    proj.set_linked_crosshairs(True)
+
+    # Reference circles at r=10
+    theta = np.linspace(0, 2 * np.pi, 200, dtype=np.float64)
+    cx = 10 * np.cos(theta)
+    cy = 10 * np.sin(theta)
+    cz = np.zeros_like(theta)
+    proj.add_reference_curve([cx, cy, cz], label="r=10", color=QColor(100, 100, 100))
+
+    return panel
+
+
 # ── Export helper ─────────────────────────────────────────────────────────────
 
 def with_export_button(plot_widget):
@@ -352,6 +385,7 @@ tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
 tabs.addTab(create_stacked_tab(), "Stacked Plots")
 tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
 tabs.addTab(with_export_button(create_busy_indicator_tab()), "Busy Indicator")
+tabs.addTab(create_projection_tab(), "Projections")
 
 window.setCentralWidget(tabs)
 window.show()
