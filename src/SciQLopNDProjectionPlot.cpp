@@ -144,6 +144,23 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     return graph;
 }
 
+void SciQLopNDProjectionPlot::set_time_color_enabled(bool enabled) noexcept
+{
+    m_time_color_enabled = enabled;
+    for (auto* p : plottables())
+        if (auto* proj = qobject_cast<SciQLopNDProjectionCurves*>(p))
+            proj->set_time_color_enabled(enabled);
+}
+
+void SciQLopNDProjectionPlot::set_time_color_gradient(const QColor& start, const QColor& end) noexcept
+{
+    m_time_color_start = start;
+    m_time_color_end = end;
+    for (auto* p : plottables())
+        if (auto* proj = qobject_cast<SciQLopNDProjectionCurves*>(p))
+            proj->set_time_color_gradient(start, end);
+}
+
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)
 {
     auto all = plottables();

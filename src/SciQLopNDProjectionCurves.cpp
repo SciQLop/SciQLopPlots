@@ -89,6 +89,11 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
             m_curves[i]->set_data(data_without_time[i % (curves_count - 1)],
                                   data_without_time[std::min((i + 1), curves_count - 1)]);
         }
+        const auto& time_buf = data[0];
+        QVector<double> times(time_buf.flat_size());
+        std::copy(time_buf.data(), time_buf.data() + time_buf.flat_size(), times.data());
+        for (auto* curve : std::as_const(m_curves))
+            curve->set_time_values(times);
     }
     else if (data.size() == 2 * curves_count)
     {
@@ -101,4 +106,21 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
     {
         DEBUG_MESSAGE("Invalid data size");
     }
+}
+
+void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_time_color_enabled(enabled);
+}
+
+bool SciQLopNDProjectionCurves::time_color_enabled() const
+{
+    return !m_curves.isEmpty() && m_curves.first()->time_color_enabled();
+}
+
+void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, const QColor& end)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_time_color_gradient(start, end);
 }

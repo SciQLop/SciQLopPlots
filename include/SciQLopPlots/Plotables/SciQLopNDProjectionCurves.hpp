@@ -48,6 +48,10 @@ public:
     Q_SLOT virtual void set_data(const QList<PyBuffer>& data) override;
     virtual void set_selected(bool selected) noexcept override;
     virtual  bool selected() const noexcept override;
+
+    void set_time_color_enabled(bool enabled);
+    bool time_color_enabled() const;
+    void set_time_color_gradient(const QColor& start, const QColor& end);
 };
 
 class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, public SciQLopFunctionGraph
