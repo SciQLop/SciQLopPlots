@@ -161,3 +161,53 @@ class TestReferenceLayers:
         ref = proj.add_reference_curve([x, y], label="Circle")
         process_events()
         assert ref is not None
+
+
+class TestTimeColorEncoding:
+    """set_time_color_enabled() colors curve segments by time."""
+
+    def test_enable_time_color(self, qtbot):
+        from PySide6.QtGui import QColor
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        t = np.linspace(0, 10, 200, dtype=np.float64)
+        x = np.cos(t).astype(np.float64)
+        y = np.sin(t).astype(np.float64)
+        z = (t * 0.5).astype(np.float64)
+
+        graph = proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
+        process_events()
+
+        proj.set_time_color_enabled(True)
+        process_events()
+        assert proj.time_color_enabled() is True
+
+    def test_disable_time_color(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_time_color_enabled(True)
+        proj.set_time_color_enabled(False)
+        assert proj.time_color_enabled() is False
+
+    def test_time_color_with_data_no_crash(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        t = np.linspace(0, 100, 500, dtype=np.float64)
+        x = 10 * np.cos(t * 0.1).astype(np.float64)
+        y = 10 * np.sin(t * 0.1).astype(np.float64)
+        z = (t * 0.01).astype(np.float64)
+
+        graph = proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
+        proj.set_time_color_enabled(True)
+        process_events()
+
+    def test_time_color_set_gradient_colors(self, qtbot):
+        from PySide6.QtGui import QColor
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_time_color_enabled(True)
+        proj.set_time_color_gradient(QColor("blue"), QColor("red"))
+        process_events()
+        assert proj.time_color_enabled() is True

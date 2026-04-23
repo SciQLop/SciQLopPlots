@@ -95,9 +95,9 @@ public:
         {
             component = new SciQLopGraphComponent(plot->addGraph(keyAxis, valueAxis), this);
         }
-        else if constexpr (std::is_same_v<T, QCPCurve>)
+        else if constexpr (std::is_base_of_v<QCPCurve, T>)
         {
-            component = new SciQLopGraphComponent(new QCPCurve(keyAxis, valueAxis), this);
+            component = new SciQLopGraphComponent(new T(keyAxis, valueAxis), this);
         }
         if (component)
         {

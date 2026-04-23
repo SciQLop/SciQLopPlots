@@ -80,6 +80,11 @@ public:
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
+    void set_time_color_enabled(bool enabled);
+    bool time_color_enabled() const;
+    void set_time_values(const QVector<double>& times);
+    void set_time_color_gradient(const QColor& start, const QColor& end);
+
     virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
 
     virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;

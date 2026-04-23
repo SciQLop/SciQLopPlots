@@ -36,6 +36,9 @@ protected:
     QList<SciQLopPlot*> m_plots;
     bool m_linked_axes = false;
     bool m_equal_aspect_ratio = false;
+    bool m_time_color_enabled = false;
+    QColor m_time_color_start { 0, 0, 255 };
+    QColor m_time_color_end { 255, 0, 0 };
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -89,6 +92,10 @@ public:
         const QList<PyBuffer>& dimensions,
         const QString& label = QString(),
         const QColor& color = QColor());
+
+    void set_time_color_enabled(bool enabled) noexcept;
+    bool time_color_enabled() const noexcept { return m_time_color_enabled; }
+    void set_time_color_gradient(const QColor& start, const QColor& end) noexcept;
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
