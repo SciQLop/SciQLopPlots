@@ -29,6 +29,7 @@
 #include <theme.h>
 
 #include <QFileInfo>
+#include <QSignalBlocker>
 #include <cmath>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <limits>
@@ -1009,4 +1010,57 @@ bool SciQLopPlot::save(const QString& filename, int width, int height,
     if (ext == "bmp")
         return save_bmp(filename, width, height, scale);
     return false;
+}
+
+void SciQLopPlot::set_equal_aspect_ratio(bool enabled) noexcept
+{
+    if (m_equal_aspect_ratio == enabled)
+        return;
+    m_equal_aspect_ratio = enabled;
+    if (enabled)
+    {
+        connect(m_impl->xAxis, qOverload<const QCPRange&>(&QCPAxis::rangeChanged),
+                this, &SciQLopPlot::_enforce_equal_aspect, Qt::UniqueConnection);
+        connect(m_impl->yAxis, qOverload<const QCPRange&>(&QCPAxis::rangeChanged),
+                this, &SciQLopPlot::_enforce_equal_aspect, Qt::UniqueConnection);
+        _enforce_equal_aspect();
+    }
+    else
+    {
+        disconnect(m_impl->xAxis, qOverload<const QCPRange&>(&QCPAxis::rangeChanged),
+                   this, &SciQLopPlot::_enforce_equal_aspect);
+        disconnect(m_impl->yAxis, qOverload<const QCPRange&>(&QCPAxis::rangeChanged),
+                   this, &SciQLopPlot::_enforce_equal_aspect);
+    }
+}
+
+void SciQLopPlot::_enforce_equal_aspect()
+{
+    if (!m_equal_aspect_ratio)
+        return;
+
+    auto rect = m_impl->axisRect();
+    const double pixel_ratio = static_cast<double>(rect->width()) / rect->height();
+    const auto x_range = m_impl->xAxis->range();
+    const auto y_range = m_impl->yAxis->range();
+    const double x_span = x_range.size();
+    const double y_span = y_range.size();
+    const double data_ratio = x_span / y_span;
+
+    QSignalBlocker bx(m_impl->xAxis);
+    QSignalBlocker by(m_impl->yAxis);
+
+    if (data_ratio > pixel_ratio)
+    {
+        double new_y_span = x_span / pixel_ratio;
+        double center = y_range.center();
+        m_impl->yAxis->setRange(center - new_y_span / 2, center + new_y_span / 2);
+    }
+    else
+    {
+        double new_x_span = y_span * pixel_ratio;
+        double center = x_range.center();
+        m_impl->xAxis->setRange(center - new_x_span / 2, center + new_x_span / 2);
+    }
+    m_impl->replot(QCustomPlot::rpQueuedReplot);
 }

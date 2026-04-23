@@ -35,6 +35,7 @@ protected:
     int m_color_palette_index = 0;
     QList<SciQLopPlot*> m_plots;
     bool m_linked_axes = false;
+    bool m_equal_aspect_ratio = false;
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -67,6 +68,9 @@ public:
     void set_linked_axes(bool linked) noexcept;
 
     inline bool linked_axes() const noexcept { return m_linked_axes; }
+
+    void set_equal_aspect_ratio(bool enabled) noexcept;
+    bool equal_aspect_ratio() const noexcept { return m_equal_aspect_ratio; }
 
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;
     virtual SciQLopPlottableInterface* plottable(const QString& name) override;

@@ -68,3 +68,37 @@ class TestAxisLabels:
         proj.subplot(1).x_axis().set_label("Custom X")
         process_events()
         assert proj.subplot(1).x_axis().label() == "Custom X"
+
+
+class TestEqualAspectRatio:
+    """set_equal_aspect_ratio() forces 1:1 scaling on subplots."""
+
+    def test_enable_equal_aspect(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_equal_aspect_ratio(True)
+        assert proj.equal_aspect_ratio() is True
+
+    def test_disable_equal_aspect(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_equal_aspect_ratio(True)
+        proj.set_equal_aspect_ratio(False)
+        assert proj.equal_aspect_ratio() is False
+
+    def test_equal_aspect_preserves_data(self, qtbot):
+        """Setting equal aspect after data shouldn't crash."""
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        t = np.linspace(0, 10, 50, dtype=np.float64)
+        x = np.cos(t).astype(np.float64)
+        y = np.sin(t).astype(np.float64)
+        z = (t * 0.1).astype(np.float64)
+
+        graph = proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
+        process_events()
+
+        proj.set_equal_aspect_ratio(True)
+        process_events()
+        assert proj.equal_aspect_ratio() is True
