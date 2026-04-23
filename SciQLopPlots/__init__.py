@@ -94,6 +94,9 @@ def _patch_sciqlop_plot(cls):
         if (graph_type == GraphType.ParametricCurve) and (len(args) in (1, 2, 4)) and not callable(args[0]):
             _reject_waterfall_kwargs(kwargs, graph_type)
             _reject_histogram2d_kwargs(kwargs, graph_type)
+            plot_type = kwargs.pop("plot_type", None)
+            if plot_type == PlotType.Projections:
+                return cls.projection(self, *args, **kwargs)
             return cls.parametric_curve(self, *args, **kwargs)
         if len(args) == 1:
             return plot_func(self, *args, graph_type=graph_type, **kwargs)
