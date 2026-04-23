@@ -144,6 +144,15 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     return graph;
 }
 
+void SciQLopNDProjectionPlot::set_linked_crosshairs(bool enabled) noexcept
+{
+    if (m_linked_crosshairs == enabled)
+        return;
+    m_linked_crosshairs = enabled;
+    for (auto* plot : m_plots)
+        plot->enable_cursor(enabled);
+}
+
 void SciQLopNDProjectionPlot::set_time_color_enabled(bool enabled) noexcept
 {
     m_time_color_enabled = enabled;
