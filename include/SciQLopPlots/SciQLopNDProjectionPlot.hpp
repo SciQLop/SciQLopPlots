@@ -53,6 +53,15 @@ public:
     SciQLopNDProjectionPlot(std::size_t projection_count = 3, QWidget* parent = nullptr);
     virtual ~SciQLopNDProjectionPlot() Q_DECL_OVERRIDE = default;
 
+    int subplot_count() const noexcept { return m_plots.size(); }
+
+    SciQLopPlot* subplot(int index) const noexcept
+    {
+        if (index < 0 || index >= m_plots.size())
+            return nullptr;
+        return m_plots[index];
+    }
+
     void set_linked_axes(bool linked) noexcept;
 
     inline bool linked_axes() const noexcept { return m_linked_axes; }
