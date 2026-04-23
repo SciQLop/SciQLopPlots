@@ -2,7 +2,7 @@ from SciQLopPlots import SciQLopPlot, \
                          MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
                          SciQLopTimeSeriesPlot, PlotType, AxisType, GraphType, SciQLopNDProjectionPlot
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
-from PySide6.QtGui import QColorConstants
+from PySide6.QtGui import QColorConstants, QColor
 from PySide6.QtCore import Qt
 import sys, os
 import numpy as np
@@ -61,15 +61,41 @@ def spc_pos_gse(spacecraft, start, stop):
         return None
 
 class MMS(SciQLopMultiPlotPanel):
-    def __init__(self,parent):
-        SciQLopMultiPlotPanel.__init__(self,parent, synchronize_x=False, synchronize_time=True)
-        proj,_ = self.plot(lambda start,stop: spc_pos_gse("mms1", start, stop), labels=['mms1']*3, graph_type=GraphType.ParametricCurve,
-                            plot_type=PlotType.Projections)
-        for i in range(2,4):
-            proj.plot(lambda start,stop: spc_pos_gse(f"mms{i+1}", start, stop), labels=[f'mms{i+1}']*3, graph_type=GraphType.ParametricCurve)
-        for i in range(4):
-            proj.plot(lambda start,stop: spc_pos_gse(f"c{i+1}", start, stop), labels=[f'c{i+1}']*3, graph_type=GraphType.ParametricCurve)
-        self.set_time_axis_range(datetime(2019,2,17,12,33,0,0,timezone.utc), datetime(2019,2,17,12,34,0,0,timezone.utc))
+    def __init__(self, parent):
+        SciQLopMultiPlotPanel.__init__(self, parent, synchronize_x=False, synchronize_time=True)
+
+        proj, _ = self.plot(
+            lambda start, stop: spc_pos_gse("mms1", start, stop),
+            labels=['mms1'] * 3,
+            graph_type=GraphType.ParametricCurve,
+            plot_type=PlotType.Projections,
+        )
+        for i in range(2, 4):
+            proj.plot(
+                lambda start, stop, sc=f"mms{i+1}": spc_pos_gse(sc, start, stop),
+                labels=[f'mms{i+1}'] * 3,
+                graph_type=GraphType.ParametricCurve,
+            )
+
+        # --- New features ---
+        proj.set_axis_labels(["X GSE [Re]", "Y GSE [Re]", "Z GSE [Re]"])
+        proj.set_equal_aspect_ratio(True)
+        proj.set_time_color_enabled(True)
+        proj.set_time_color_gradient(QColor("blue"), QColor("red"))
+        proj.set_linked_crosshairs(True)
+
+        # Simplified bow shock reference (Fairfield 1971)
+        theta = np.linspace(-np.pi / 2, np.pi / 2, 200, dtype=np.float64)
+        r_bs = 15.0 / (1 + 0.4 * np.cos(theta))
+        bs_x = r_bs * np.cos(theta)
+        bs_y = r_bs * np.sin(theta)
+        bs_z = np.zeros_like(theta)
+        proj.add_reference_curve([bs_x, bs_y, bs_z], label="Bow Shock", color=QColor("green"))
+
+        self.set_time_axis_range(
+            datetime(2019, 2, 17, 12, 33, 0, 0, timezone.utc),
+            datetime(2019, 2, 17, 12, 34, 0, 0, timezone.utc),
+        )
 
 
 
