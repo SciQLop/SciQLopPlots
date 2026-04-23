@@ -89,10 +89,11 @@ int ProductsTreeFilterModel::free_text_score(ProductsModelNode* node) const
     if (m_query.free_text_tokens.isEmpty())
         return 1;
 
+    QString full_text = node->path().join(' ') + ' ' + node->raw_text();
     int total = 0;
     for (const auto& token : m_query.free_text_tokens)
     {
-        int s = subsequence_score(token, node->raw_text());
+        int s = subsequence_score(token, full_text);
         if (s == 0)
             return 0;
         total += s;

@@ -183,3 +183,50 @@ class TestDateRangeFilters:
         names = [fm.data(fm.index(i, 0)) for i in range(fm.rowCount())]
         assert "EnergySpectrum" in names
         assert "MagneticField" not in names
+
+
+@pytest.fixture
+def deep_tree_model(qtbot):
+    """Tree: amda -> ACE -> MFI -> b_gse (leaf), mimicking real product paths."""
+    model = ProductsModel.instance()
+
+    amda = ProductsModelNode("amda")
+    ace = ProductsModelNode("ACE")
+    mfi = ProductsModelNode("MFI")
+    b_gse = ProductsModelNode(
+        "b_gse", "amda", {},
+        ProductsModelNodeType.PARAMETER, ParameterType.Vector)
+
+    mfi.add_child(b_gse)
+    ace.add_child(mfi)
+    amda.add_child(ace)
+    model.add_node([], amda)
+
+    yield model
+
+
+class TestPathScoring:
+    """Search tokens matching ancestor folder names must surface the leaf."""
+
+    def test_flat_ancestor_query_matches_leaf(self, qtbot, deep_tree_model):
+        fm = ProductsFlatFilterModel(deep_tree_model)
+        q = QueryParser.parse("amdaacemfi")
+        fm.set_query(q)
+        flush_events()
+        names = [fm.data(fm.index(i, 0)) for i in range(fm.rowCount())]
+        assert "b_gse" in names
+
+    def test_flat_mixed_path_and_leaf_query(self, qtbot, deep_tree_model):
+        fm = ProductsFlatFilterModel(deep_tree_model)
+        q = QueryParser.parse("mfi b_gse")
+        fm.set_query(q)
+        flush_events()
+        names = [fm.data(fm.index(i, 0)) for i in range(fm.rowCount())]
+        assert "b_gse" in names
+
+    def test_tree_ancestor_query_matches_leaf(self, qtbot, deep_tree_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(deep_tree_model)
+        q = QueryParser.parse("amdaacemfi")
+        fm.set_query(q)
+        assert fm.rowCount() > 0
