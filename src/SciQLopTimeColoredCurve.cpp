@@ -32,35 +32,60 @@ QColor SciQLopTimeColoredCurve::color_for_normalized(double f) const
         m_gradient_start.blue() + f * (m_gradient_end.blue() - m_gradient_start.blue()));
 }
 
-void SciQLopTimeColoredCurve::drawCurveLine(
-    QCPPainter* painter, const QVector<QPointF>& lines) const
+void SciQLopTimeColoredCurve::set_time_values(const QVector<double>& times)
 {
-    if (!m_time_color_enabled || m_time_values.size() < 2 || lines.size() < 2)
+    m_time_values = times;
+    if (!times.isEmpty())
     {
-        QCPCurve::drawCurveLine(painter, lines);
+        const auto [min_it, max_it] = std::minmax_element(times.begin(), times.end());
+        m_t_min = *min_it;
+        m_t_max = *max_it;
+    }
+}
+
+void SciQLopTimeColoredCurve::draw(QCPPainter* painter)
+{
+    const double t_range = m_t_max - m_t_min;
+    if (!m_time_color_enabled || m_time_values.isEmpty() || t_range <= 0.0)
+    {
+        QCPCurve::draw(painter);
         return;
     }
 
-    const auto [t_min_it, t_max_it]
-        = std::minmax_element(m_time_values.begin(), m_time_values.end());
-    const double t_min = *t_min_it;
-    const double t_max = *t_max_it;
-    const double t_range = t_max - t_min;
-
-    if (t_range <= 0.0)
-    {
-        QCPCurve::drawCurveLine(painter, lines);
+    if (mDataContainer->isEmpty())
         return;
-    }
 
-    QPen seg_pen = painter->pen();
-    const auto n = std::min(lines.size(), static_cast<qsizetype>(m_time_values.size()));
+    QCPAxis* keyAxis = mKeyAxis.data();
+    QCPAxis* valueAxis = mValueAxis.data();
+    if (!keyAxis || !valueAxis)
+        return;
 
-    for (qsizetype i = 1; i < n; ++i)
+    const QRectF clip_rect = keyAxis->axisRect()->rect().adjusted(-10, -10, 10, 10);
+    applyDefaultAntialiasingHint(painter);
+    QPen seg_pen = mPen;
+
+    const int n_times = m_time_values.size();
+
+    auto it = mDataContainer->constBegin();
+    auto end = mDataContainer->constEnd();
+
+    QPointF prev_px(keyAxis->coordToPixel(it->key), valueAxis->coordToPixel(it->value));
+    ++it;
+
+    for (; it != end; ++it)
     {
-        const double f = (m_time_values[i] - t_min) / t_range;
-        seg_pen.setColor(color_for_normalized(f));
-        painter->setPen(seg_pen);
-        painter->drawLine(lines[i - 1], lines[i]);
+        QPointF cur_px(keyAxis->coordToPixel(it->key), valueAxis->coordToPixel(it->value));
+        if (clip_rect.contains(prev_px) || clip_rect.contains(cur_px))
+        {
+            const int idx = static_cast<int>(it->t);
+            if (idx >= 0 && idx < n_times)
+            {
+                const double f = (m_time_values[idx] - m_t_min) / t_range;
+                seg_pen.setColor(color_for_normalized(f));
+            }
+            painter->setPen(seg_pen);
+            painter->drawLine(prev_px, cur_px);
+        }
+        prev_px = cur_px;
     }
 }

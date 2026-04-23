@@ -30,6 +30,8 @@ class SciQLopTimeColoredCurve : public QCPCurve
     QColor m_gradient_start { 0, 0, 255 };
     QColor m_gradient_end { 255, 0, 0 };
     QVector<double> m_time_values;
+    double m_t_min = 0.0;
+    double m_t_max = 1.0;
 
 public:
     using QCPCurve::QCPCurve;
@@ -37,7 +39,7 @@ public:
     void set_time_color_enabled(bool enabled) { m_time_color_enabled = enabled; }
     bool time_color_enabled() const { return m_time_color_enabled; }
 
-    void set_time_values(const QVector<double>& times) { m_time_values = times; }
+    void set_time_values(const QVector<double>& times);
     void set_gradient_colors(const QColor& start, const QColor& end)
     {
         m_gradient_start = start;
@@ -45,7 +47,7 @@ public:
     }
 
 protected:
-    void drawCurveLine(QCPPainter* painter, const QVector<QPointF>& lines) const override;
+    void draw(QCPPainter* painter) override;
 
 private:
     QColor color_for_normalized(double f) const;
