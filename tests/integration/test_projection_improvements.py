@@ -211,3 +211,33 @@ class TestTimeColorEncoding:
         proj.set_time_color_gradient(QColor("blue"), QColor("red"))
         process_events()
         assert proj.time_color_enabled() is True
+
+
+class TestLinkedCrosshairs:
+    """Crosshairs link across subplots when enabled."""
+
+    def test_enable_linked_crosshairs(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_linked_crosshairs(True)
+        assert proj.linked_crosshairs() is True
+
+    def test_disable_linked_crosshairs(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        proj.set_linked_crosshairs(True)
+        proj.set_linked_crosshairs(False)
+        assert proj.linked_crosshairs() is False
+
+    def test_linked_crosshairs_no_crash_with_data(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+
+        t = np.linspace(0, 10, 100, dtype=np.float64)
+        x = np.cos(t).astype(np.float64)
+        y = np.sin(t).astype(np.float64)
+        z = (t * 0.1).astype(np.float64)
+
+        proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
+        proj.set_linked_crosshairs(True)
+        process_events()

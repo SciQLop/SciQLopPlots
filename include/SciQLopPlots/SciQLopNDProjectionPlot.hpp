@@ -36,6 +36,7 @@ protected:
     QList<SciQLopPlot*> m_plots;
     bool m_linked_axes = false;
     bool m_equal_aspect_ratio = false;
+    bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
@@ -92,6 +93,9 @@ public:
         const QList<PyBuffer>& dimensions,
         const QString& label = QString(),
         const QColor& color = QColor());
+
+    void set_linked_crosshairs(bool enabled) noexcept;
+    bool linked_crosshairs() const noexcept { return m_linked_crosshairs; }
 
     void set_time_color_enabled(bool enabled) noexcept;
     bool time_color_enabled() const noexcept { return m_time_color_enabled; }
