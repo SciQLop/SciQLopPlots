@@ -38,8 +38,11 @@ protected:
     bool m_equal_aspect_ratio = false;
     bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
+    bool m_enforcing_aspect = false;
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
+
+    Q_SLOT void _enforce_equal_aspect();
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),

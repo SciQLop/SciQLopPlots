@@ -111,9 +111,45 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
 
 void SciQLopNDProjectionPlot::set_equal_aspect_ratio(bool enabled) noexcept
 {
+    if (m_equal_aspect_ratio == enabled)
+        return;
     m_equal_aspect_ratio = enabled;
+
     for (auto* plot : m_plots)
-        plot->set_equal_aspect_ratio(enabled);
+    {
+        if (enabled)
+        {
+            connect(plot, &SciQLopPlot::resized,
+                    this, &SciQLopNDProjectionPlot::_enforce_equal_aspect, Qt::UniqueConnection);
+        }
+        else
+        {
+            disconnect(plot, &SciQLopPlot::resized,
+                       this, &SciQLopNDProjectionPlot::_enforce_equal_aspect);
+            // Restore auto margins
+            plot->qcp_plot()->axisRect()->setAutoMargins(QCP::msAll);
+        }
+    }
+    if (enabled)
+        _enforce_equal_aspect();
+}
+
+void SciQLopNDProjectionPlot::_enforce_equal_aspect()
+{
+    if (!m_equal_aspect_ratio)
+        return;
+
+    for (auto* plot : m_plots)
+    {
+        auto* rect = plot->qcp_plot()->axisRect();
+        const auto outer = rect->outerRect();
+        const int side = std::min(outer.width(), outer.height());
+        const int pad_h = (outer.width() - side) / 2;
+        const int pad_v = (outer.height() - side) / 2;
+        rect->setAutoMargins(QCP::msNone);
+        rect->setMargins(QMargins(pad_h, pad_v, pad_h, pad_v));
+        plot->qcp_plot()->replot(QCustomPlot::rpQueuedReplot);
+    }
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
