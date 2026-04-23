@@ -116,6 +116,34 @@ void SciQLopNDProjectionPlot::set_equal_aspect_ratio(bool enabled) noexcept
         plot->set_equal_aspect_ratio(enabled);
 }
 
+SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
+    const QList<PyBuffer>& dimensions, const QString& label, const QColor& color)
+{
+    const auto n = m_plots.size();
+    if (dimensions.size() != n)
+        return nullptr;
+
+    QStringList labels;
+    for (int i = 0; i < n; ++i)
+        labels.append(label.isEmpty() ? QString("ref_%1").arg(i) : label);
+
+    auto* graph = new SciQLopNDProjectionCurves(this, m_plots, labels);
+
+    QList<PyBuffer> paired_data;
+    for (int i = 0; i < n; ++i)
+    {
+        paired_data.append(dimensions[i % n]);
+        paired_data.append(dimensions[(i + 1) % n]);
+    }
+    graph->set_data(paired_data);
+
+    if (color.isValid())
+        graph->set_colors(QList<QColor>(n, color));
+
+    Q_EMIT graph_list_changed();
+    return graph;
+}
+
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)
 {
     auto all = plottables();

@@ -85,6 +85,11 @@ public:
             plot->set_color_palette(palette);
     }
 
+    SciQLopGraphInterface* add_reference_curve(
+        const QList<PyBuffer>& dimensions,
+        const QString& label = QString(),
+        const QColor& color = QColor());
+
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
         return m_time_axis;
