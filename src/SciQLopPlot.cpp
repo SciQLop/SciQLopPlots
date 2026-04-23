@@ -645,6 +645,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
     connect(m_impl, &_impl::SciQLopPlot::plotables_list_changed, this,
             &SciQLopPlot::graph_list_changed);
 
+    connect(m_impl, &_impl::SciQLopPlot::hover_x_changed, this,
+            &SciQLopPlot::cursor_time_changed);
+
     set_axes_to_rescale(
         QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
     this->m_legend = new SciQLopPlotLegend(m_impl->legend, this);

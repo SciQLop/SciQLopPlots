@@ -86,14 +86,25 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
         auto data_without_time = data.sliced(1);
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
-            m_curves[i]->set_data(data_without_time[i % (curves_count - 1)],
-                                  data_without_time[std::min((i + 1), curves_count - 1)]);
+            m_curves[i]->set_data(data_without_time[i % curves_count],
+                                  data_without_time[(i + 1) % curves_count]);
         }
         const auto& time_buf = data[0];
         QVector<double> times(time_buf.flat_size());
         std::copy(time_buf.data(), time_buf.data() + time_buf.flat_size(), times.data());
         for (auto* curve : std::as_const(m_curves))
             curve->set_time_values(times);
+    }
+    else if (data.size() == 3 * curves_count)
+    {
+        for (decltype(data.size()) i = 0; i < curves_count; ++i)
+        {
+            m_curves[i]->set_data(data[3 * i], data[3 * i + 1]);
+            const auto& scalar_buf = data[3 * i + 2];
+            QVector<double> scalars(scalar_buf.flat_size());
+            std::copy(scalar_buf.data(), scalar_buf.data() + scalar_buf.flat_size(), scalars.data());
+            m_curves[i]->set_color_values(scalars);
+        }
     }
     else if (data.size() == 2 * curves_count)
     {
@@ -106,6 +117,12 @@ void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
     {
         DEBUG_MESSAGE("Invalid data size");
     }
+}
+
+void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
+{
+    for (int i = 0; i < m_curves.size() && i < colors.size(); ++i)
+        m_curves[i]->set_colors({ colors[i] });
 }
 
 void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)
@@ -123,4 +140,12 @@ void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, con
 {
     for (auto* curve : std::as_const(m_curves))
         curve->set_time_color_gradient(start, end);
+}
+
+QList<std::optional<QPointF>> SciQLopNDProjectionCurves::positions_at_time(double t) const
+{
+    QList<std::optional<QPointF>> result;
+    for (auto* curve : std::as_const(m_curves))
+        result.append(curve->position_at_time(t));
+    return result;
 }

@@ -499,6 +499,7 @@ signals:
     Q_SIGNAL void auto_scale_changed(bool auto_scale);
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();
+    Q_SIGNAL void cursor_time_changed(double time);
 
 protected:
     inline virtual QList<SciQLopPlotAxisInterface*> axes_to_rescale() const noexcept

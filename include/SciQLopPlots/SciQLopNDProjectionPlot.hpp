@@ -41,8 +41,10 @@ protected:
     bool m_enforcing_aspect = false;
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
+    QList<QCPItemEllipse*> m_time_markers;
 
     Q_SLOT void _enforce_equal_aspect();
+    void _ensure_marker_layer();
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -97,12 +99,20 @@ public:
         const QString& label = QString(),
         const QColor& color = QColor());
 
+    SciQLopGraphInterface* add_model_curve(
+        GetDataPyCallable callable,
+        const QString& label = QString(),
+        const QColor& color = QColor());
+
     void set_linked_crosshairs(bool enabled) noexcept;
     bool linked_crosshairs() const noexcept { return m_linked_crosshairs; }
 
     void set_time_color_enabled(bool enabled) noexcept;
     bool time_color_enabled() const noexcept { return m_time_color_enabled; }
     void set_time_color_gradient(const QColor& start, const QColor& end) noexcept;
+
+    Q_SLOT void set_time_marker(double t);
+    Q_SLOT void clear_time_marker();
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
