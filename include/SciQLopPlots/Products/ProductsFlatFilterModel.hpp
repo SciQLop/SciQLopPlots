@@ -41,7 +41,12 @@ class ProductsFlatFilterModel : public QAbstractListModel
     };
     QList<ScoredNode> m_results;
 
-    QList<ProductsModelNode*> m_pending_leaves;
+    struct LeafEntry
+    {
+        ProductsModelNode* node;
+        QString full_text;
+    };
+    QList<LeafEntry> m_pending_leaves;
     int m_batch_cursor = 0;
     int m_batch_generation = 0;
     QTimer* m_batch_timer;
@@ -62,8 +67,8 @@ public:
 
 private:
     void rebuild();
-    void collect_all_leaves(ProductsModelNode* node, QList<ProductsModelNode*>& out) const;
+    void collect_all_leaves(ProductsModelNode* node, QList<LeafEntry>& out) const;
     void process_batch();
     bool filters_match(ProductsModelNode* node) const;
-    int free_text_score(ProductsModelNode* node) const;
+    int free_text_score(const QString& text) const;
 };

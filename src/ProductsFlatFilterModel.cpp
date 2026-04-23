@@ -119,11 +119,11 @@ void ProductsFlatFilterModel::rebuild()
 }
 
 void ProductsFlatFilterModel::collect_all_leaves(ProductsModelNode* node,
-                                                  QList<ProductsModelNode*>& out) const
+                                                  QList<LeafEntry>& out) const
 {
     if (node->node_type() == ProductsModelNodeType::PARAMETER)
     {
-        out.append(node);
+        out.append({ node, node->path().join(' ') + ' ' + node->raw_text() });
         return;
     }
     for (auto* child : node->children_nodes())
@@ -141,10 +141,10 @@ void ProductsFlatFilterModel::process_batch()
         if (m_batch_generation != generation)
             return;
 
-        auto* node = m_pending_leaves[i];
+        auto& [node, full_text] = m_pending_leaves[i];
         if (!filters_match(node))
             continue;
-        int score = free_text_score(node);
+        int score = free_text_score(full_text);
         if (score > 0)
             batch_results.append({ node, score });
     }
@@ -217,7 +217,7 @@ bool ProductsFlatFilterModel::filters_match(ProductsModelNode* node) const
     return true;
 }
 
-int ProductsFlatFilterModel::free_text_score(ProductsModelNode* node) const
+int ProductsFlatFilterModel::free_text_score(const QString& text) const
 {
     if (m_query.free_text_tokens.isEmpty())
         return 1;
@@ -225,7 +225,7 @@ int ProductsFlatFilterModel::free_text_score(ProductsModelNode* node) const
     int total = 0;
     for (const auto& token : m_query.free_text_tokens)
     {
-        int s = subsequence_score(token, node->raw_text());
+        int s = subsequence_score(token, text);
         if (s == 0)
             return 0;
         total += s;

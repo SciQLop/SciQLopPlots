@@ -178,23 +178,20 @@ void QueryLineEdit::accept_completion()
         return;
 
     QString completion = m_completion_model->data(idx).toString();
-    QString word = current_word();
+    QString full_text = toPlainText();
+    int cursor_pos = textCursor().position();
+
+    int word_start = cursor_pos;
+    while (word_start > 0 && !full_text[word_start - 1].isSpace())
+        --word_start;
+
+    int colon_pos = full_text.lastIndexOf(':', cursor_pos - 1);
+    int replace_start
+        = (colon_pos > word_start) ? colon_pos + 1 : word_start;
 
     auto cursor = textCursor();
-    cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, word.length());
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, word.length());
-
-    QString full_text = toPlainText();
-    int cursor_pos = cursor.position() + word.length();
-    int colon_pos = full_text.lastIndexOf(':', cursor_pos - 1);
-    int space_pos = full_text.lastIndexOf(' ', cursor_pos - 1);
-
-    if (colon_pos > space_pos && colon_pos >= 0)
-    {
-        QString partial = full_text.mid(colon_pos + 1, cursor_pos - colon_pos - 1);
-        cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, partial.length());
-        cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, partial.length());
-    }
+    cursor.setPosition(replace_start);
+    cursor.setPosition(cursor_pos, QTextCursor::KeepAnchor);
 
     cursor.insertText(completion);
     if (!completion.endsWith(':'))
