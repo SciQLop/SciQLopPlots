@@ -109,6 +109,13 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
     }
 }
 
+void SciQLopNDProjectionPlot::set_equal_aspect_ratio(bool enabled) noexcept
+{
+    m_equal_aspect_ratio = enabled;
+    for (auto* plot : m_plots)
+        plot->set_equal_aspect_ratio(enabled);
+}
+
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)
 {
     auto all = plottables();

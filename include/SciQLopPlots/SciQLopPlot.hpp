@@ -238,6 +238,7 @@ protected:
     SciQLopPlotLegend* m_legend = nullptr;
     int m_color_palette_index = 0;
     bool m_auto_scale = false;
+    bool m_equal_aspect_ratio = false;
 
 
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
@@ -408,6 +409,9 @@ public:
     }
     inline virtual bool auto_scale() const noexcept override { return m_auto_scale; }
 
+    void set_equal_aspect_ratio(bool enabled) noexcept;
+    bool equal_aspect_ratio() const noexcept { return m_equal_aspect_ratio; }
+
     bool save(const QString& filename, int width = 0, int height = 0,
               double scale = 1.0, int quality = -1) override;
     bool save_pdf(const QString& filename, int width = 0, int height = 0) override;
@@ -417,6 +421,9 @@ public:
                   double scale = 1.0, int quality = -1) override;
     bool save_bmp(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0) override;
+
+private:
+    Q_SLOT void _enforce_equal_aspect();
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)
