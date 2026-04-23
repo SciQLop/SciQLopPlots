@@ -62,6 +62,8 @@ public:
         return m_plots[index];
     }
 
+    void set_axis_labels(const QStringList& dimension_names) noexcept;
+
     void set_linked_axes(bool linked) noexcept;
 
     inline bool linked_axes() const noexcept { return m_linked_axes; }
