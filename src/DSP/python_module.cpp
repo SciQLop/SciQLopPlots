@@ -32,6 +32,8 @@
 
 #include <SciQLopPlots/DSP/DSP.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <span>
@@ -266,6 +268,86 @@ struct ZeroCopyOutput
     }
 };
 
+// ── Validation helpers ───────────────────────────────────────────────────
+
+bool check_xy_sizes(XArray& x, YArray& y)
+{
+    if (x.nrows != y.nrows)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "x length (%zd) must match y row count (%zd)", x.nrows, y.nrows);
+        return false;
+    }
+    return true;
+}
+
+bool check_min_rows(XArray& x, Py_ssize_t min_rows, const char* func_name)
+{
+    if (x.nrows < min_rows)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "%s requires at least %zd samples, got %zd", func_name, min_rows, x.nrows);
+        return false;
+    }
+    return true;
+}
+
+bool check_gap_factor(double gap_factor)
+{
+    if (gap_factor <= 0.0)
+    {
+        PyErr_SetString(PyExc_ValueError, "gap_factor must be > 0");
+        return false;
+    }
+    return true;
+}
+
+bool check_window_size(Py_ssize_t window, Py_ssize_t nrows, const char* func_name)
+{
+    if (window <= 0)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "%s: window must be > 0, got %zd", func_name, window);
+        return false;
+    }
+    if (window > nrows)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "%s: window (%zd) must be <= number of rows (%zd)", func_name, window, nrows);
+        return false;
+    }
+    return true;
+}
+
+bool check_sos_a0(YArray& sos)
+{
+    // Check that no a0 coefficient is zero (would cause division by zero)
+    // sos is (n_sections, 6), a0 is at column index 3
+    for (Py_ssize_t s = 0; s < sos.nrows; ++s)
+    {
+        double a0 = 0.0;
+        switch (sos.dtype)
+        {
+            case NPY_DOUBLE:
+                a0 = static_cast<double>(sos.typed_data<double>()[s * 6 + 3]);
+                break;
+            case NPY_FLOAT:
+                a0 = static_cast<double>(sos.typed_data<float>()[s * 6 + 3]);
+                break;
+            case NPY_INT32:
+                a0 = static_cast<double>(sos.typed_data<int32_t>()[s * 6 + 3]);
+                break;
+        }
+        if (a0 == 0.0)
+        {
+            PyErr_Format(PyExc_ValueError,
+                "SOS section %zd has a0=0 (division by zero)", s);
+            return false;
+        }
+    }
+    return true;
+}
+
 // ── Dtype dispatch ───────────────────────────────────────────────────────────
 
 // Dispatch a generic lambda on the y array's dtype.
@@ -362,6 +444,8 @@ PyObject* dsp_split_segments(PyObject* /*self*/, PyObject* args, PyObject* kwarg
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     std::vector<std::size_t> gap_indices;
     Py_BEGIN_ALLOW_THREADS
@@ -418,6 +502,8 @@ PyObject* dsp_interpolate_nan(PyObject* /*self*/, PyObject* args, PyObject* kwar
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -449,6 +535,20 @@ PyObject* dsp_resample(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+
+    if (target_dt > 0.0 && x.nrows >= 2)
+    {
+        const double span = x.data[x.nrows - 1] - x.data[0];
+        const double n_out_f = std::floor(span / target_dt) + 1.0;
+        if (n_out_f > 100'000'000.0)
+        {
+            PyErr_SetString(PyExc_ValueError,
+                "resample: output would exceed 100M samples, target_dt is too small");
+            return nullptr;
+        }
+    }
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -469,8 +569,14 @@ PyObject* dsp_resample(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
             const double x_start = x.data[0];
             const double x_end = x.data[x.nrows - 1];
-            const auto n_out = static_cast<npy_intp>(
-                std::floor((x_end - x_start) / dt)) + 1;
+            const double n_out_f = std::floor((x_end - x_start) / dt) + 1.0;
+            if (n_out_f <= 0.0 || n_out_f > 100'000'000.0)
+            {
+                PyErr_SetString(PyExc_ValueError,
+                    "resample: output would exceed 100M samples, dt is too small");
+                return static_cast<PyObject*>(nullptr);
+            }
+            const auto n_out = static_cast<npy_intp>(n_out_f);
             const auto ncols = static_cast<std::size_t>(y.ncols);
 
             // Preallocate output numpy arrays
@@ -540,10 +646,17 @@ PyObject* dsp_fir_filter(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y, coeffs;
     if (!x.parse(x_obj) || !y.parse(y_obj) || !coeffs.parse(coeffs_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     if (y.dtype != coeffs.dtype)
     {
         PyErr_SetString(PyExc_TypeError, "y and coeffs must have the same dtype");
+        return nullptr;
+    }
+    if (coeffs.nrows < 1)
+    {
+        PyErr_SetString(PyExc_ValueError, "coeffs must have at least 1 tap");
         return nullptr;
     }
 
@@ -588,6 +701,8 @@ PyObject* dsp_iir_sos(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y, sos;
     if (!x.parse(x_obj) || !y.parse(y_obj) || !sos.parse(sos_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     if (y.dtype != sos.dtype)
     {
@@ -600,6 +715,8 @@ PyObject* dsp_iir_sos(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         PyErr_SetString(PyExc_ValueError, "SOS matrix must have 6 columns [b0,b1,b2,a0,a1,a2]");
         return nullptr;
     }
+    if (!check_sos_a0(sos))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -643,12 +760,21 @@ PyObject* dsp_filtfilt(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y, coeffs;
     if (!x.parse(x_obj) || !y.parse(y_obj) || !coeffs.parse(coeffs_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     if (y.dtype != coeffs.dtype)
     {
         PyErr_SetString(PyExc_TypeError, "y and coeffs must have the same dtype");
         return nullptr;
     }
+    if (coeffs.nrows < 1)
+    {
+        PyErr_SetString(PyExc_ValueError, "coeffs must have at least 1 tap");
+        return nullptr;
+    }
+    if (!check_min_rows(x, 2, "filtfilt"))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -709,6 +835,8 @@ PyObject* dsp_sosfiltfilt(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y, sos;
     if (!x.parse(x_obj) || !y.parse(y_obj) || !sos.parse(sos_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     if (y.dtype != sos.dtype)
     {
@@ -721,6 +849,10 @@ PyObject* dsp_sosfiltfilt(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         PyErr_SetString(PyExc_ValueError, "SOS matrix must have 6 columns [b0,b1,b2,a0,a1,a2]");
         return nullptr;
     }
+    if (!check_sos_a0(sos))
+        return nullptr;
+    if (!check_min_rows(x, 2, "sosfiltfilt"))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -779,6 +911,10 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     XArray x;
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
+        return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+    if (!check_min_rows(x, 2, "fft"))
         return nullptr;
 
     auto win = parse_window_type(window_str);
@@ -865,6 +1001,25 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+    if (col < 0 || col >= y.ncols)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "spectrogram: col (%zd) out of range [0, %zd)", col, y.ncols);
+        return nullptr;
+    }
+    if (window_size < 2)
+    {
+        PyErr_SetString(PyExc_ValueError, "spectrogram: window_size must be >= 2");
+        return nullptr;
+    }
+    if (overlap < 0 || overlap >= window_size)
+    {
+        PyErr_Format(PyExc_ValueError,
+            "spectrogram: overlap (%zd) must be in [0, window_size=%zd)", overlap, window_size);
+        return nullptr;
+    }
 
     auto win = parse_window_type(window_str);
 
@@ -946,6 +1101,10 @@ PyObject* dsp_rolling_mean(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+    if (!check_window_size(window, y.nrows, "rolling_mean"))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -986,6 +1145,10 @@ PyObject* dsp_rolling_std(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     XArray x;
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
+        return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+    if (!check_window_size(window, y.nrows, "rolling_std"))
         return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
@@ -1028,6 +1191,8 @@ PyObject* dsp_reduce(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
         return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -1069,6 +1234,8 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     XArray x;
     YArray y;
     if (!x.parse(x_obj) || !y.parse(y_obj))
+        return nullptr;
+    if (!check_xy_sizes(x, y))
         return nullptr;
 
     // Parse shape tuple

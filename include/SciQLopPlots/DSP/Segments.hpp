@@ -72,13 +72,17 @@ namespace detail
         std::vector<double> dts(n);
         compute_diffs(x.data(), dts.data(), n);
 
-        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(n / 2);
-        std::nth_element(dts.begin(), mid, dts.end());
+        // Remove NaN/Inf diffs before nth_element (NaN breaks comparison-based algorithms)
+        auto valid_end = std::remove_if(dts.begin(), dts.end(),
+            [](double v) { return !std::isfinite(v); });
+        if (valid_end == dts.begin())
+            return 0.0;
+        const auto valid_n = static_cast<std::size_t>(valid_end - dts.begin());
+        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(valid_n / 2);
+        std::nth_element(dts.begin(), mid, valid_end);
         return *mid;
     }
 
-    // Compute diffs, median, and gap indices in a single pass over the diff array.
-    // Returns {gap_indices, median_dt}.
     inline std::pair<std::vector<std::size_t>, double> find_gaps_and_median(
         std::span<const double> x, double gap_factor)
     {
@@ -89,8 +93,13 @@ namespace detail
         std::vector<double> dts(n);
         compute_diffs(x.data(), dts.data(), n);
 
-        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(n / 2);
-        std::nth_element(dts.begin(), mid, dts.end());
+        auto valid_end = std::remove_if(dts.begin(), dts.end(),
+            [](double v) { return !std::isfinite(v); });
+        if (valid_end == dts.begin())
+            return { {}, 0.0 };
+        const auto valid_n = static_cast<std::size_t>(valid_end - dts.begin());
+        auto mid = dts.begin() + static_cast<std::ptrdiff_t>(valid_n / 2);
+        std::nth_element(dts.begin(), mid, valid_end);
         const double median_dt = *mid;
 
         if (median_dt <= 0.0)

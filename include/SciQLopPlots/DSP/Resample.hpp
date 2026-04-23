@@ -101,7 +101,17 @@ namespace detail
 
         const double x_start = seg.x.front();
         const double x_end = seg.x.back();
-        const auto n_out = static_cast<std::size_t>(std::floor((x_end - x_start) / dt)) + 1;
+        const double n_out_f = std::floor((x_end - x_start) / dt) + 1.0;
+        constexpr double kMaxOut = 100'000'000.0;
+        if (n_out_f <= 0.0 || n_out_f > kMaxOut)
+        {
+            return TimeSeries<T> {
+                .x = std::vector<double>(seg.x.begin(), seg.x.end()),
+                .y = std::vector<T>(seg.y.begin(), seg.y.end()),
+                .n_cols = seg.n_cols,
+            };
+        }
+        const auto n_out = static_cast<std::size_t>(n_out_f);
 
         TimeSeries<T> out;
         out.n_cols = seg.n_cols;

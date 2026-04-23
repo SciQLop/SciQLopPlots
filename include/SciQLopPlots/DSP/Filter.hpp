@@ -155,6 +155,8 @@ namespace detail
             const T a1 = sos[s * 6 + 4];
             const T a2 = sos[s * 6 + 5];
 
+            if (a0 == T(0))
+                continue;
             const T inv_a0 = T(1) / a0;
             const T nb0 = b0 * inv_a0;
             const T nb1 = b1 * inv_a0;
@@ -241,6 +243,8 @@ namespace detail
 
         for (std::size_t s = 0; s < n_sections; ++s)
         {
+            if (sos[s * 6 + 3] == T(0))
+                continue;
             const T inv_a0 = T(1) / sos[s * 6 + 3];
             const T b0 = sos[s * 6 + 0] * inv_a0;
             const T b1 = sos[s * 6 + 1] * inv_a0;
@@ -248,7 +252,8 @@ namespace detail
             const T a1 = sos[s * 6 + 4] * inv_a0;
             const T a2 = sos[s * 6 + 5] * inv_a0;
 
-            const T K = (b0 + b1 + b2) / (T(1) + a1 + a2);
+            const T denom = T(1) + a1 + a2;
+            const T K = (denom != T(0)) ? (b0 + b1 + b2) / denom : T(1);
             zi[s] = {
                 ((b1 + b2) - (a1 + a2) * K) * scale,
                 (b2 - a2 * K) * scale,
@@ -271,6 +276,8 @@ namespace detail
 
         for (std::size_t s = 0; s < n_sections; ++s)
         {
+            if (sos[s * 6 + 3] == T(0))
+                continue;
             const T inv_a0 = T(1) / sos[s * 6 + 3];
             const T nb0 = sos[s * 6 + 0] * inv_a0;
             const T nb1 = sos[s * 6 + 1] * inv_a0;

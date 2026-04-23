@@ -586,3 +586,120 @@ class TestReduceAxes:
         t, y, _ = particle_dist
         with pytest.raises(ValueError):
             reduce_axes(t, y, (10, 10), (0,))  # 100 != actual n_cols
+
+
+# ── Input validation tests ───────────────────────────────────────────────────
+
+class TestInputValidation:
+    """Every DSP function must raise ValueError on bad inputs, never crash."""
+
+    def test_xy_size_mismatch_resample(self):
+        with pytest.raises(ValueError, match="x length.*must match"):
+            resample(np.arange(10.0), np.arange(5.0))
+
+    def test_xy_size_mismatch_fir(self):
+        with pytest.raises(ValueError, match="x length.*must match"):
+            fir_filter(np.arange(10.0), np.arange(5.0), np.ones(3))
+
+    def test_xy_size_mismatch_rolling(self):
+        with pytest.raises(ValueError, match="x length.*must match"):
+            rolling_mean(np.arange(10.0), np.arange(5.0), window=3)
+
+    def test_xy_size_mismatch_fft(self):
+        with pytest.raises(ValueError, match="x length.*must match"):
+            fft(np.arange(10.0), np.arange(5.0))
+
+    def test_xy_size_mismatch_reduce(self):
+        with pytest.raises(ValueError, match="x length.*must match"):
+            reduce(np.arange(10.0), np.arange(5.0), "sum")
+
+    def test_gap_factor_negative(self):
+        with pytest.raises(ValueError, match="gap_factor"):
+            split_segments(np.arange(10.0), np.arange(10.0), gap_factor=-1.0)
+
+    def test_gap_factor_zero(self):
+        with pytest.raises(ValueError, match="gap_factor"):
+            resample(np.arange(10.0), np.arange(10.0), gap_factor=0.0)
+
+    def test_sos_a0_zero_iir(self):
+        sos = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match="a0=0"):
+            iir_sos(np.arange(10.0), np.arange(10.0), sos)
+
+    def test_sos_a0_zero_sosfiltfilt(self):
+        sos = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match="a0=0"):
+            sosfiltfilt(np.arange(10.0), np.arange(10.0), sos)
+
+    def test_filtfilt_too_few_samples(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            filtfilt(np.array([1.0]), np.array([1.0]), np.ones(5))
+
+    def test_sosfiltfilt_too_few_samples(self):
+        sos = np.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])
+        with pytest.raises(ValueError, match="at least 2"):
+            sosfiltfilt(np.array([1.0]), np.array([1.0]), sos)
+
+    def test_fft_too_few_samples(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            fft(np.array([1.0]), np.array([1.0]))
+
+    def test_fir_empty_coeffs(self):
+        with pytest.raises(ValueError, match="at least 1 tap"):
+            fir_filter(np.arange(10.0), np.arange(10.0), np.array([], dtype=np.float64))
+
+    def test_rolling_mean_window_zero(self):
+        with pytest.raises(ValueError, match="window must be > 0"):
+            rolling_mean(np.arange(5.0), np.arange(5.0), window=0)
+
+    def test_rolling_mean_window_too_large(self):
+        with pytest.raises(ValueError, match="window.*must be <="):
+            rolling_mean(np.arange(5.0), np.arange(5.0), window=10)
+
+    def test_rolling_std_window_negative(self):
+        with pytest.raises(ValueError, match="window must be > 0"):
+            rolling_std(np.arange(5.0), np.arange(5.0), window=-1)
+
+    def test_spectrogram_col_out_of_range(self):
+        with pytest.raises(ValueError, match="col.*out of range"):
+            spectrogram(np.arange(100.0), np.arange(100.0), col=5)
+
+    def test_spectrogram_window_too_small(self):
+        with pytest.raises(ValueError, match="window_size"):
+            spectrogram(np.arange(100.0), np.arange(100.0), window_size=1)
+
+    def test_spectrogram_overlap_equals_window(self):
+        with pytest.raises(ValueError, match="overlap"):
+            spectrogram(np.arange(100.0), np.arange(100.0), window_size=10, overlap=10)
+
+    def test_resample_tiny_dt_overflow(self):
+        with pytest.raises(ValueError, match="100M"):
+            resample(np.array([0.0, 1e10]), np.array([1.0, 2.0]), target_dt=1e-10)
+
+
+class TestNaNRobustness:
+    """Edge cases with NaN/Inf that previously caused UB or crashes."""
+
+    def test_nan_timestamps_no_crash(self):
+        x = np.array([0.0, 1.0, np.nan, 3.0, 4.0])
+        y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        result = split_segments(x, y)
+        assert isinstance(result, list)
+
+    def test_inf_timestamps_no_crash(self):
+        x = np.array([0.0, 1.0, np.inf, 3.0, 4.0])
+        y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        result = split_segments(x, y)
+        assert isinstance(result, list)
+
+    def test_all_nan_timestamps_no_crash(self):
+        x = np.full(5, np.nan)
+        y = np.arange(5.0)
+        result = split_segments(x, y)
+        assert isinstance(result, list)
+
+    def test_interpolate_nan_all_nan(self):
+        x = np.arange(5.0)
+        y = np.full(5, np.nan)
+        out = interpolate_nan(x, y)
+        assert np.all(np.isnan(out))
