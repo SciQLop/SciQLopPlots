@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QRectF
 from SciQLopPlots import (
     SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
     SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
-    SciQLopNDProjectionPlot,
+    SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot,
     PlotType, GraphType, Coordinates,
     OverlayLevel, OverlaySizeMode, OverlayPosition,
 )
@@ -51,6 +51,34 @@ def uniform_colormap(nx=200, ny=200):
     xx, yy = np.meshgrid(x, y, indexing="ij")
     z = np.cos(np.sqrt((xx + 2) ** 2 + yy ** 2))
     return x, y, z
+
+
+def orbit_3d(start, stop):
+    n = max(int((stop - start) * 10), 200)
+    t = np.linspace(start, stop, n, dtype=np.float64)
+    phase = t * 2 * np.pi / (stop - start)
+    x = np.cos(phase) * (1 + 0.3 * np.sin(3 * phase))
+    y = np.sin(phase) * (1 + 0.3 * np.sin(3 * phase))
+    z = 0.5 * np.sin(2 * phase)
+    return t, x, y, z
+
+
+def orbit_components(start, stop):
+    t, x, y, z = orbit_3d(start, stop)
+    return t, np.column_stack([x, y, z])
+
+
+def boundary_model(start, stop):
+    """Fake magnetopause-like boundary: one closed contour per subplot (3*N)."""
+    theta = np.linspace(0, 2 * np.pi, 120, dtype=np.float64)
+    r_xy = 1.8 + 0.4 * np.cos(2 * theta)
+    r_yz = 1.5 + 0.3 * np.sin(3 * theta)
+    r_zx = 1.6 + 0.2 * np.cos(theta)
+    return [
+        r_xy * np.cos(theta), r_xy * np.sin(theta), np.abs(np.sin(theta)),
+        r_yz * np.cos(theta), r_yz * np.sin(theta), np.abs(np.cos(theta)),
+        r_zx * np.cos(theta), r_zx * np.sin(theta), theta / (2 * np.pi),
+    ]
 
 
 def bimodal_scatter(n=100_000):
@@ -277,6 +305,37 @@ def create_pipeline_tab():
     return panel
 
 
+def create_projection_tab():
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+
+    ts_panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+    ts_plot, _ = ts_panel.plot(
+        orbit_components,
+        labels=["X", "Y", "Z"],
+        colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.Green],
+        plot_type=PlotType.TimeSeries,
+    )
+
+    proj = SciQLopNDProjectionPlot(3)
+    proj.plot(orbit_3d, labels=["XY", "YZ", "ZX"], graph_type=GraphType.ParametricCurve)
+    proj.set_axis_labels(["X", "Y", "Z"])
+    proj.set_time_color_enabled(True)
+    proj.set_time_color_gradient(QColor(0, 0, 255), QColor(255, 0, 0))
+    proj.set_equal_aspect_ratio(True)
+    proj.set_linked_axes(True)
+
+    proj.add_model_curve(boundary_model, label="boundary", color=QColor(0, 180, 0))
+
+    ts_plot.cursor_time_changed.connect(proj.set_time_marker)
+    ts_plot.time_axis_range_changed.connect(proj.time_axis().set_range)
+
+    layout.addWidget(ts_panel, stretch=1)
+    layout.addWidget(proj, stretch=1)
+    return container
+
+
 def create_busy_indicator_tab():
     import time
 
@@ -309,38 +368,6 @@ def create_busy_indicator_tab():
         colors=[QColorConstants.DarkGreen],
         plot_type=PlotType.TimeSeries,
     )
-
-    return panel
-
-
-def create_projection_tab():
-    panel = SciQLopMultiPlotPanel(synchronize_x=False)
-
-    # Helix in 3D — clear structure across all three projections
-    t = np.linspace(0, 6 * np.pi, 2000, dtype=np.float64)
-    x = 10 * np.cos(t)
-    y = 10 * np.sin(t)
-    z = t
-
-    proj, _ = panel.plot(
-        [t, x, y, z],
-        labels=["helix"] * 3,
-        graph_type=GraphType.ParametricCurve,
-        plot_type=PlotType.Projections,
-    )
-
-    proj.set_axis_labels(["X", "Y", "Z"])
-    proj.set_equal_aspect_ratio(True)
-    proj.set_time_color_enabled(True)
-    proj.set_time_color_gradient(QColor("blue"), QColor("red"))
-    proj.set_linked_crosshairs(True)
-
-    # Reference circles at r=10
-    theta = np.linspace(0, 2 * np.pi, 200, dtype=np.float64)
-    cx = 10 * np.cos(theta)
-    cy = 10 * np.sin(theta)
-    cz = np.zeros_like(theta)
-    proj.add_reference_curve([cx, cy, cz], label="r=10", color=QColor(100, 100, 100))
 
     return panel
 
@@ -383,9 +410,9 @@ tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
 tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")
 tabs.addTab(with_export_button(create_overlay_tab()), "Overlay")
 tabs.addTab(create_stacked_tab(), "Stacked Plots")
+tabs.addTab(create_projection_tab(), "Projection + Cursor Sync")
 tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
 tabs.addTab(with_export_button(create_busy_indicator_tab()), "Busy Indicator")
-tabs.addTab(create_projection_tab(), "Projections")
 
 window.setCentralWidget(tabs)
 window.show()
