@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <qcustomplot.h>
+#include <optional>
 
 class SciQLopTimeColoredCurve : public QCPCurve
 {
@@ -30,8 +31,9 @@ class SciQLopTimeColoredCurve : public QCPCurve
     QColor m_gradient_start { 0, 0, 255 };
     QColor m_gradient_end { 255, 0, 0 };
     QVector<double> m_time_values;
-    double m_t_min = 0.0;
-    double m_t_max = 1.0;
+    QVector<double> m_color_values;
+    double m_c_min = 0.0;
+    double m_c_max = 1.0;
 
 public:
     using QCPCurve::QCPCurve;
@@ -40,6 +42,8 @@ public:
     bool time_color_enabled() const { return m_time_color_enabled; }
 
     void set_time_values(const QVector<double>& times);
+    void set_color_values(const QVector<double>& values);
+    std::optional<QPointF> position_at_time(double t) const;
     void set_gradient_colors(const QColor& start, const QColor& end)
     {
         m_gradient_start = start;
