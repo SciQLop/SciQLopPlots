@@ -160,11 +160,26 @@ void SciQLopCurve::set_time_values(const QVector<double>& times)
             tc->set_time_values(times);
 }
 
+void SciQLopCurve::set_color_values(const QVector<double>& values)
+{
+    for (auto comp : m_components)
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
+            tc->set_color_values(values);
+}
+
 void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& end)
 {
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_gradient_colors(start, end);
+}
+
+std::optional<QPointF> SciQLopCurve::position_at_time(double t) const
+{
+    if (!m_components.isEmpty())
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(m_components.first()->plottable()))
+            return tc->position_at_time(t);
+    return std::nullopt;
 }
 
 SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
