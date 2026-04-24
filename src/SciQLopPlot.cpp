@@ -591,13 +591,14 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
             for (auto& component : plottable->components())
             {
                 component->set_color(m_color_palette[m_color_palette_index]);
-                component->set_marker_shape(marker);
                 m_color_palette_index = (m_color_palette_index + 1) % std::size(m_color_palette);
-                if (graph_type == ::GraphType::Scatter)
-                {
-                    component->set_line_style(::GraphLineStyle::NoLine);
-                }
             }
+        }
+        for (auto& component : plottable->components())
+        {
+            component->set_marker_shape(marker);
+            if (graph_type == ::GraphType::Scatter)
+                component->set_line_style(::GraphLineStyle::NoLine);
         }
         if (std::size(labels) == std::size(plottable->components()))
             plottable->set_labels(labels);

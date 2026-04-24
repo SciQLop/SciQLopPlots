@@ -55,6 +55,7 @@ public:
     virtual ~SciQLopSingleLineGraph() override;
 
     Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
+    Q_SLOT virtual void set_color_data(PyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet) override;
     virtual QList<PyBuffer> data() const noexcept override;
 
     inline std::size_t line_count() const noexcept { return _graph ? 1 : 0; }

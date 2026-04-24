@@ -9,7 +9,7 @@ from SciQLopPlots import (
     SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
     SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
     SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot,
-    PlotType, GraphType, Coordinates,
+    PlotType, GraphType, GraphMarkerShape, ColorGradient, Coordinates,
     OverlayLevel, OverlaySizeMode, OverlayPosition,
 )
 
@@ -186,6 +186,37 @@ def create_histogram2d_tab():
     x, y = bimodal_scatter(100_000)
     hist = plot.add_histogram2d("Density", 80, 80)
     hist.set_data(x, y)
+    plot.x_axis().set_range(float(x.min()), float(x.max()))
+    plot.y_axis().set_range(float(y.min()), float(y.max()))
+    return plot
+
+
+def create_scatter_tab():
+    plot = SciQLopPlot()
+    x, y = bimodal_scatter(500_000)
+    plot.plot(
+        x, y,
+        labels=["density cloud"],
+        colors=[QColor(30, 100, 200, 180)],
+        graph_type=GraphType.Scatter,
+        marker=GraphMarkerShape.FilledCircle,
+    )
+    plot.x_axis().set_range(float(x.min()), float(x.max()))
+    plot.y_axis().set_range(float(y.min()), float(y.max()))
+    return plot
+
+
+def create_scatter_color_tab():
+    plot = SciQLopPlot()
+    x, y = bimodal_scatter(500_000)
+    r = np.sqrt(x**2 + y**2)
+    graph = plot.plot(
+        x, y,
+        labels=["radial distance"],
+        graph_type=GraphType.Scatter,
+        marker=GraphMarkerShape.FilledCircle,
+    )
+    graph.set_color_data(r, ColorGradient.Jet)
     plot.x_axis().set_range(float(x.min()), float(x.max()))
     plot.y_axis().set_range(float(y.min()), float(y.max()))
     return plot
@@ -405,6 +436,8 @@ tabs.addTab(with_export_button(create_line_tab()), "Line Graph")
 tabs.addTab(with_export_button(create_colormap_tab()), "Colormap")
 tabs.addTab(with_export_button(create_contour_tab()), "Contour Overlay")
 tabs.addTab(with_export_button(create_histogram2d_tab()), "Histogram 2D")
+tabs.addTab(with_export_button(create_scatter_tab()), "Scatter (500K)")
+tabs.addTab(with_export_button(create_scatter_color_tab()), "Scatter Color Axis")
 tabs.addTab(with_export_button(create_waterfall_tab()), "Waterfall")
 tabs.addTab(with_export_button(create_curve_tab()), "Parametric Curve")
 tabs.addTab(with_export_button(create_spans_tab()), "Vertical Spans")

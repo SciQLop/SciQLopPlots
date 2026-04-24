@@ -93,6 +93,11 @@ public:
 
     Q_SLOT virtual void set_data(const QList<PyBuffer>& values) { WARN_ABSTRACT_METHOD; }
 
+    Q_SLOT virtual void set_color_data(PyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
     virtual QList<PyBuffer> data() const noexcept
     {
         return m_data;

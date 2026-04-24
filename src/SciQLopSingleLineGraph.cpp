@@ -22,7 +22,11 @@
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include "SciQLopPlots/qcp_enums.hpp"
 #include <datasource/soa-datasource.h>
+#include <colorgradient.h>
+#include <cmath>
+#include <limits>
 
 void SciQLopSingleLineGraph::create_graph(const QStringList& labels)
 {
@@ -103,6 +107,47 @@ void SciQLopSingleLineGraph::set_data(PyBuffer x, PyBuffer y)
     check_first_data(n);
     Q_EMIT data_changed(x, y);
     Q_EMIT data_changed();
+}
+
+void SciQLopSingleLineGraph::set_color_data(PyBuffer values, ::ColorGradient gradient)
+{
+    if (!_graph || !values.is_valid())
+        return;
+
+    const int n = static_cast<int>(values.flat_size());
+    if (n == 0)
+        return;
+
+    std::vector<float> normalized(n);
+
+    dispatch_dtype(values.format_code(), [&](auto tag) {
+        using V = typename decltype(tag)::type;
+        const auto* src = static_cast<const V*>(values.raw_data());
+
+        V vmin = std::numeric_limits<V>::max();
+        V vmax = std::numeric_limits<V>::lowest();
+        for (int i = 0; i < n; ++i)
+        {
+            if (std::isfinite(static_cast<double>(src[i])))
+            {
+                if (src[i] < vmin) vmin = src[i];
+                if (src[i] > vmax) vmax = src[i];
+            }
+        }
+
+        const double range = (vmax > vmin) ? static_cast<double>(vmax - vmin) : 1.0;
+        for (int i = 0; i < n; ++i)
+        {
+            if (std::isfinite(static_cast<double>(src[i])))
+                normalized[i] = static_cast<float>((static_cast<double>(src[i]) - vmin) / range);
+            else
+                normalized[i] = 0.0f;
+        }
+    });
+
+    _graph->setScatterColorValues(std::move(normalized));
+    _graph->setScatterColorGradient(QCPColorGradient(to_qcp(gradient)));
+    Q_EMIT this->replot();
 }
 
 QList<PyBuffer> SciQLopSingleLineGraph::data() const noexcept
