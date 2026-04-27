@@ -79,7 +79,7 @@ jobs:
           key: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}
       - name: Install sccache (Windows)
         if: runner.os == 'Windows'
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.10
       - name: Cache ccache (Linux container)
         if: runner.os == 'Linux'
         uses: actions/cache@v5
