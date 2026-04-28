@@ -22,31 +22,41 @@
 
 #include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
 
-void StraightLine::move(double dx, double dy)
+void StraightLine::mouseMoveEvent(QMouseEvent* event, const QPointF& startPos)
 {
-    if (m_orientation == Qt::Orientation::Vertical)
+    if (!_movable || event->buttons() != Qt::LeftButton)
+        return;
+    if (m_coordinates == Coordinates::Pixels)
     {
-        auto newPx = this->point1->pixelPosition().x() + dx;
-        this->point1->setPixelPosition({newPx, this->point1->pixelPosition().y()});
-        this->point2->setPixelPosition({newPx, this->point2->pixelPosition().y()});
-        auto pos = _clamp(this->point1->key());
-        if (pos != this->point1->key())
-            set_position(pos);
+        if (m_orientation == Qt::Orientation::Vertical)
+            set_position(event->position().x());
         else
-            emit moved(pos);
+            set_position(event->position().y());
     }
     else
     {
-        auto newPx = this->point1->pixelPosition().y() + dy;
-        this->point1->setPixelPosition({this->point1->pixelPosition().x(), newPx});
-        this->point2->setPixelPosition({this->point2->pixelPosition().x(), newPx});
-        auto pos = _clamp(this->point1->value());
-        if (pos != this->point1->value())
-            set_position(pos);
+        if (m_orientation == Qt::Orientation::Vertical)
+        {
+            if (auto* axis = this->point1->keyAxis())
+                set_position(axis->pixelToCoord(event->position().x()));
+        }
         else
-            emit moved(pos);
+        {
+            if (auto* axis = this->point1->valueAxis())
+                set_position(axis->pixelToCoord(event->position().y()));
+        }
     }
-    this->replot();
+    _last_position = event->position();
+    event->accept();
+}
+
+void StraightLine::move(double dx, double dy)
+{
+    auto pos = position();
+    if (m_orientation == Qt::Orientation::Vertical)
+        set_position(pos + dx);
+    else
+        set_position(pos + dy);
 }
 
 void StraightLine::set_position(double pos)
