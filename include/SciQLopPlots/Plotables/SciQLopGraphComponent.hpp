@@ -115,7 +115,12 @@ public:
             auto pen = this->pen();
             pen.setColor(color);
             this->set_pen(pen);
-            this->set_marker_pen(QPen(color));
+            auto mp = this->marker_pen();
+            if (mp.style() == Qt::NoPen)
+                mp = QPen(color);
+            else
+                mp.setColor(color);
+            this->set_marker_pen(mp);
         }
     }
 

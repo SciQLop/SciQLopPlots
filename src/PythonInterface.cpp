@@ -118,14 +118,38 @@ static void _drain_deferred_queue()
     }
 }
 
+static void _drain_deferred_buffers_only()
+{
+    std::deque<DeferredPyRelease> local;
+    {
+        std::lock_guard<std::mutex> lk(s_deferred_mutex);
+        local.swap(s_deferred_queue);
+    }
+    for (auto& item : local)
+    {
+        if (item.kind == DeferredPyRelease::Kind::BufferRelease)
+            PyBuffer_Release(&item.buffer);
+    }
+}
+
+static std::once_flag s_atexit_registered;
+static void _ensure_atexit_drain()
+{
+    std::call_once(s_atexit_registered, []() {
+        Py_AtExit([]() { _drain_deferred_buffers_only(); });
+    });
+}
+
 static void _enqueue_decref(PyObject* obj)
 {
+    _ensure_atexit_drain();
     std::lock_guard<std::mutex> lk(s_deferred_mutex);
     s_deferred_queue.push_back({ DeferredPyRelease::Kind::DecRef, obj, { 0 } });
 }
 
 static void _enqueue_buffer_release(Py_buffer buf)
 {
+    _ensure_atexit_drain();
     std::lock_guard<std::mutex> lk(s_deferred_mutex);
     s_deferred_queue.push_back({ DeferredPyRelease::Kind::BufferRelease, nullptr, buf });
 }

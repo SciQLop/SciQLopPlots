@@ -296,6 +296,9 @@ void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
 
 void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
 {
+    if (!callback)
+        return;
+    callback->setParent(this);
     _accepted_mime_types[callback->mime_type()] = callback;
 }
 
