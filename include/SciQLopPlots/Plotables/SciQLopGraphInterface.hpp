@@ -35,10 +35,12 @@
 #include <QObject>
 #include <QPointer>
 #include <QWidget>
+#include <memory>
 #include <utility>
 
 class SciQLopPlotAxisInterface;
 class InspectorExtension;
+class InspectorExtensionHolder;
 
 class SciQLopPlottableInterface : public QObject
 {
@@ -48,14 +50,14 @@ protected:
     SciQLopPlotRange m_range;
     SciQLopPlotRange m_data_range; // key range of currently loaded data
     QVariantMap m_metaData;
+    std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
     Q_PROPERTY(QList<PyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
-    SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr)
-            : QObject(parent),m_metaData{std::move(metaData)} { }
+    SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr);
 
     virtual ~SciQLopPlottableInterface() = default;
 
@@ -193,7 +195,6 @@ signals:
 
     protected:
     bool _got_first_data = false;
-    QList<QPointer<InspectorExtension>> m_inspector_extensions;
 
     void check_first_data(std::size_t n)
     {

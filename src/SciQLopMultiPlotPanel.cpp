@@ -28,6 +28,7 @@
 #include "SciQLopPlots/DragNDrop/PlaceHolderManager.hpp"
 #include "SciQLopPlots/MultiPlots/CrosshairSynchronizer.hpp"
 
+#include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
@@ -49,6 +50,8 @@
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x,
                                              bool synchronize_time, Qt::Orientation orientation)
         : SciQLopPlotPanelInterface { parent }, _uuid { QUuid::createUuid() }
+        , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
+              this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
 {
     _container = new SciQLopPlotContainer(this, orientation);
     connect(_container, &SciQLopPlotContainer::plot_list_changed, this,
@@ -833,4 +836,21 @@ void SciQLopMultiPlotPanel::set_span_creation_modifier(Qt::KeyboardModifier modi
                 sp->qcp_plot()->setCreationModifier(modifier);
         }
     }
+}
+
+void SciQLopMultiPlotPanel::add_inspector_extension(InspectorExtension* extension)
+{
+    if (m_extension_holder->add(extension))
+        Q_EMIT inspector_extension_added(extension);
+}
+
+void SciQLopMultiPlotPanel::remove_inspector_extension(InspectorExtension* extension)
+{
+    if (m_extension_holder->remove(extension))
+        Q_EMIT inspector_extension_removed(extension);
+}
+
+QList<InspectorExtension*> SciQLopMultiPlotPanel::inspector_extensions() const
+{
+    return m_extension_holder->list();
 }

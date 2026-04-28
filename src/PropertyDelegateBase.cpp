@@ -21,12 +21,38 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtension.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <algorithm>
 
 static constexpr auto EXT_GROUP_PREFIX = "__inspector_ext__";
+
+template <typename T>
+static bool _try_collect(QObject* obj, QList<InspectorExtension*>& out)
+{
+    if (auto* typed = qobject_cast<T*>(obj))
+    {
+        out = typed->inspector_extensions();
+        return true;
+    }
+    return false;
+}
+
+static QList<InspectorExtension*> _collect_extensions(QObject* obj)
+{
+    QList<InspectorExtension*> out;
+    _try_collect<SciQLopPlottableInterface>(obj, out)
+        || _try_collect<SciQLopMultiPlotPanel>(obj, out)
+        || _try_collect<SciQLopPlotInterface>(obj, out)
+        || _try_collect<SciQLopPlotAxisInterface>(obj, out)
+        || _try_collect<SciQLopGraphComponentInterface>(obj, out);
+    return out;
+}
 
 PropertyDelegateBase::PropertyDelegateBase(QObject *object, QWidget *parent)
         : QWidget(parent), m_object { object }
@@ -42,20 +68,30 @@ PropertyDelegateBase::PropertyDelegateBase(QObject *object, QWidget *parent)
 
 void PropertyDelegateBase::append_inspector_extensions()
 {
-    auto* plottable = qobject_cast<SciQLopPlottableInterface*>(m_object.data());
-    if (!plottable)
+    auto* obj = m_object.data();
+    if (!obj)
         return;
-    rebuild_inspector_extensions();
-    connect(plottable, &SciQLopPlottableInterface::inspector_extensions_changed, this,
-            &PropertyDelegateBase::rebuild_inspector_extensions, Qt::UniqueConnection);
+
+    auto try_connect = [&](auto* typed) -> bool
+    {
+        if (!typed)
+            return false;
+        connect(typed, &std::remove_pointer_t<decltype(typed)>::inspector_extensions_changed, this,
+                &PropertyDelegateBase::rebuild_inspector_extensions, Qt::UniqueConnection);
+        return true;
+    };
+
+    bool connected = try_connect(qobject_cast<SciQLopPlottableInterface*>(obj))
+        || try_connect(qobject_cast<SciQLopMultiPlotPanel*>(obj))
+        || try_connect(qobject_cast<SciQLopPlotInterface*>(obj))
+        || try_connect(qobject_cast<SciQLopPlotAxisInterface*>(obj))
+        || try_connect(qobject_cast<SciQLopGraphComponentInterface*>(obj));
+    if (connected)
+        rebuild_inspector_extensions();
 }
 
 void PropertyDelegateBase::rebuild_inspector_extensions()
 {
-    auto* plottable = qobject_cast<SciQLopPlottableInterface*>(m_object.data());
-    if (!plottable)
-        return;
-
     const auto prior = findChildren<QGroupBox*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto* gb : prior)
     {
@@ -66,7 +102,7 @@ void PropertyDelegateBase::rebuild_inspector_extensions()
         }
     }
 
-    auto exts = plottable->inspector_extensions();
+    auto exts = _collect_extensions(m_object.data());
     std::sort(exts.begin(), exts.end(),
               [](InspectorExtension* a, InspectorExtension* b)
               { return a->priority() < b->priority(); });

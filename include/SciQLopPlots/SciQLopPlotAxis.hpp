@@ -22,9 +22,11 @@
 #pragma once
 #include "SciQLopPlotRange.hpp"
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QObject>
 #include <QPointer>
+#include <memory>
 class QCPAxis;
 class QCPColorScale;
 namespace _impl { class SciQLopPlot; }
@@ -37,11 +39,15 @@ protected:
     bool _is_time_axis = false;
     double m_max_range_size = std::numeric_limits<double>::infinity();
     double m_min_range_size = 0.0;
+    std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
 
     SciQLopPlotRange clamp_range(const SciQLopPlotRange& range) const noexcept;
 
 public:
-    SciQLopPlotAxisInterface(QObject* parent = nullptr, const QString& name = "") : QObject(parent)
+    SciQLopPlotAxisInterface(QObject* parent = nullptr, const QString& name = "")
+        : QObject(parent)
+        , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
+              this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
     {
         if (!name.isEmpty())
             setObjectName(name);
@@ -156,6 +162,20 @@ public:
     void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
     void decouple_range_from(SciQLopPlotAxisInterface* other) noexcept;
 
+    void add_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->add(extension);
+    }
+
+    void remove_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->remove(extension);
+    }
+
+    QList<InspectorExtension*> inspector_extensions() const
+    {
+        return m_extension_holder->list();
+    }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -168,6 +188,7 @@ signals:
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void label_changed(const QString& label);
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void inspector_extensions_changed();
 };
 
 class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface

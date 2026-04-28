@@ -93,6 +93,13 @@ class SciQLopStraightLine : public QObject
     QPointer<StraightLine> m_line;
 
 public:
+    virtual ~SciQLopStraightLine()
+    {
+        if (!m_line.isNull())
+            if (auto* plot = m_line->parentPlot())
+                plot->removeItem(m_line);
+    }
+
     /*!
      * \brief SciQLopStraightLine
      * \param plot The plot to which the item will be added

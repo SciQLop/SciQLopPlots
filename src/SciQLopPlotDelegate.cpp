@@ -45,4 +45,5 @@ SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
     m_layout->addRow("Auto scale", auto_scale);
     connect(auto_scale, &BooleanDelegate::value_changed, object, &SciQLopPlot::set_auto_scale);
     connect(object, &SciQLopPlot::auto_scale_changed, auto_scale, &BooleanDelegate::set_value);
+    append_inspector_extensions();
 }

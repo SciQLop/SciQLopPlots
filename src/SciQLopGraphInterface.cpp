@@ -20,9 +20,17 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
-#include "SciQLopPlots/Inspector/InspectorExtension.hpp"
+#include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
+
+SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObject* parent)
+    : QObject(parent)
+    , m_metaData { std::move(metaData) }
+    , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
+          this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
+{
+}
 
 SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)
         : SciQLopPlottableInterface(metaData, parent)
@@ -43,46 +51,17 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
 
 void SciQLopPlottableInterface::add_inspector_extension(InspectorExtension* extension)
 {
-    if (!extension)
-        return;
-    for (const auto& p : m_inspector_extensions)
-        if (p.data() == extension)
-            return;
-    extension->setParent(this);
-    m_inspector_extensions.append(QPointer<InspectorExtension>(extension));
-    connect(extension, &QObject::destroyed, this,
-            [this]() { Q_EMIT inspector_extensions_changed(); });
-    Q_EMIT inspector_extensions_changed();
+    m_extension_holder->add(extension);
 }
 
 void SciQLopPlottableInterface::remove_inspector_extension(InspectorExtension* extension)
 {
-    bool removed = false;
-    for (int i = m_inspector_extensions.size() - 1; i >= 0; --i)
-    {
-        auto& p = m_inspector_extensions[i];
-        if (!p || p.data() == extension)
-        {
-            m_inspector_extensions.removeAt(i);
-            removed = true;
-        }
-    }
-    if (removed)
-    {
-        if (extension && extension->parent() == this)
-            extension->setParent(nullptr);
-        Q_EMIT inspector_extensions_changed();
-    }
+    m_extension_holder->remove(extension);
 }
 
 QList<InspectorExtension*> SciQLopPlottableInterface::inspector_extensions() const
 {
-    QList<InspectorExtension*> out;
-    out.reserve(m_inspector_extensions.size());
-    for (const auto& p : m_inspector_extensions)
-        if (p)
-            out.append(p.data());
-    return out;
+    return m_extension_holder->list();
 }
 
 SciQLopColorMapInterface::SciQLopColorMapInterface(QVariantMap metaData, QObject* parent)

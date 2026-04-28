@@ -171,9 +171,21 @@
         </modify-function>
     </value-type>
 
-    <object-type name="SciQLopGraphComponentInterface" parent-management="yes"/>
+    <object-type name="SciQLopGraphComponentInterface" parent-management="yes">
+        <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
-    <object-type name="SciQLopPlottableInterface" parent-management="yes"/>
+    <object-type name="SciQLopPlottableInterface" parent-management="yes">
+        <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopGraphInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapBase" parent-management="yes" allow-thread="yes"/>
@@ -378,8 +390,19 @@
             <modify-argument index="3"><rename to="height"/></modify-argument>
             <modify-argument index="4"><rename to="scale"/></modify-argument>
         </modify-function>
+        <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
     </object-type>
-    <object-type name="SciQLopPlotAxisInterface" parent-management="yes"/>
+    <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
+        <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopPlotDummyAxis" parent-management="yes">
         <modify-function signature="SciQLopPlotDummyAxis(QObject*)" remove="all"/>
     </object-type>
@@ -799,6 +822,11 @@
             <modify-argument index="1">
                 <parent index="this" action="add"/>
             </modify-argument>
+        </modify-function>
+        <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
         </modify-function>
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>

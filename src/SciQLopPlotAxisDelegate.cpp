@@ -68,6 +68,6 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
        connect(color_scale, &SciQLopPlotColorScaleAxis::color_gradient_changed, color_scale_delegate, &ColorGradientDelegate::setGradient);
        addWidgetWithLabel(color_scale_delegate, "Color gradient");
     }
-
+    append_inspector_extensions();
 }
 

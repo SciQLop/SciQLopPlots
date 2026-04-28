@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
 #include "SciQLopPlots/Inspector/Model/DelegateRegistry.hpp"
+#include "SciQLopPlots/Inspector/InspectorExtension.hpp"
 
 // Domain types
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
@@ -40,6 +41,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp"
 
 namespace
 {
@@ -53,8 +55,12 @@ void register_all_types()
             auto panel = qobject_cast<SciQLopMultiPlotPanel*>(obj);
             QList<QObject*> result;
             if (panel)
+            {
                 for (auto w : panel->child_widgets())
                     result.append(w);
+                for (auto* ext : panel->inspector_extensions())
+                    result.append(ext);
+            }
             return result;
         },
         .connect_children = [](QObject* obj, auto add, auto remove)
@@ -70,6 +76,10 @@ void register_all_types()
                     [add](SciQLopPlotPanelInterface* p) { add(p); }),
                 QObject::connect(panel, &SciQLopMultiPlotPanel::panel_removed, panel,
                     [remove](SciQLopPlotPanelInterface* p) { remove(p); }),
+                QObject::connect(panel, &SciQLopMultiPlotPanel::inspector_extension_added, panel,
+                    [add](InspectorExtension* ext) { add(ext); }),
+                QObject::connect(panel, &SciQLopMultiPlotPanel::inspector_extension_removed, panel,
+                    [remove](InspectorExtension* ext) { remove(ext); }),
             };
         },
         .set_selected = [](QObject* obj, bool s) {
@@ -199,6 +209,12 @@ void register_all_types()
         .deletable = false,
     });
 
+    types.register_type<InspectorExtension>({
+        .children = [](QObject*) -> QList<QObject*> { return {}; },
+        .connect_children = nullptr,
+        .deletable = true,
+    });
+
     auto& delegates = DelegateRegistry::instance();
     delegates.register_type<SciQLopMultiPlotPanelDelegate>();
     delegates.register_type<SciQLopPlotDelegate>();
@@ -207,6 +223,7 @@ void register_all_types()
     delegates.register_type<SciQLopColorMapDelegate>();
     delegates.register_type<SciQLopWaterfallDelegate>();
     delegates.register_type<SciQLopPlotAxisDelegate>();
+    delegates.register_type<InspectorExtensionDelegate>();
 }
 
 static const int _registrations = (register_all_types(), 0);

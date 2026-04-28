@@ -32,9 +32,12 @@
 #include <QPointF>
 #include <QShortcut>
 #include <QUuid>
+#include <memory>
 #include <qcustomplot.h>
 
 class SciQLopTheme;
+class InspectorExtension;
+#include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 
 class SciQLopPlotInterface : public QFrame
 {
@@ -47,6 +50,7 @@ protected:
     QList<SciQLopPlotAxisInterface*> m_frozen_axes;
     QUuid m_uuid;
     bool m_selected = false;
+    std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
 
     inline virtual SciQLopGraphInterface*
     plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
@@ -110,6 +114,8 @@ public:
 
     SciQLopPlotInterface(QWidget* parent = nullptr, const QString& name = "")
             : QFrame(parent), m_uuid(QUuid::createUuid())
+            , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
+                  this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
     {
         if (!name.isEmpty())
             setObjectName(name);
@@ -483,6 +489,20 @@ public:
         return false;
     }
 
+    void add_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->add(extension);
+    }
+
+    void remove_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->remove(extension);
+    }
+
+    QList<InspectorExtension*> inspector_extensions() const
+    {
+        return m_extension_holder->list();
+    }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -500,6 +520,7 @@ signals:
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();
     Q_SIGNAL void cursor_time_changed(double time);
+    Q_SIGNAL void inspector_extensions_changed();
 
 protected:
     inline virtual QList<SciQLopPlotAxisInterface*> axes_to_rescale() const noexcept

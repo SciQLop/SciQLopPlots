@@ -22,6 +22,7 @@
 #pragma once
 
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 
@@ -29,16 +30,25 @@
 #include <QList>
 #include <QObject>
 #include <QPen>
+#include <memory>
 
 class SciQLopGraphComponentInterface : public QObject
 {
     SciQLopPlotRange m_range;
     Q_OBJECT
 
+protected:
+    std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
+
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
 
-    SciQLopGraphComponentInterface(QObject* parent = nullptr) : QObject(parent) { }
+    SciQLopGraphComponentInterface(QObject* parent = nullptr)
+        : QObject(parent)
+        , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
+              this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
+    {
+    }
 
     virtual ~SciQLopGraphComponentInterface() = default;
 
@@ -114,6 +124,21 @@ public:
         return false;
     }
 
+    void add_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->add(extension);
+    }
+
+    void remove_inspector_extension(InspectorExtension* extension)
+    {
+        m_extension_holder->remove(extension);
+    }
+
+    QList<InspectorExtension*> inspector_extensions() const
+    {
+        return m_extension_holder->list();
+    }
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
@@ -123,4 +148,5 @@ signals:
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void replot();
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void inspector_extensions_changed();
 };

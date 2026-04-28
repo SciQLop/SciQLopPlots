@@ -41,4 +41,5 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
             &SciQLopGraphComponentInterface::set_line_style);
     connect(m_lineDelegate, &LineDelegate::markerShapeChanged, object,
             &SciQLopGraphComponentInterface::set_marker_shape);
+    append_inspector_extensions();
 }
