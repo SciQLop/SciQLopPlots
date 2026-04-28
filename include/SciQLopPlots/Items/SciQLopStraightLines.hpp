@@ -78,6 +78,8 @@ public:
 
     virtual ~StraightLine() { }
 
+    void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override;
+
     virtual void move(double dx, double dy) override;
     void set_position(double pos);
     [[nodiscard]] double position() const;
