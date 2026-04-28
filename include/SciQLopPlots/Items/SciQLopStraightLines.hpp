@@ -24,6 +24,7 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include <optional>
 
 class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public impl::SciQlopItemWithToolTip
 {
@@ -31,6 +32,17 @@ class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public i
 
     Qt::Orientations m_orientation;
     Coordinates m_coordinates;
+    std::optional<double> m_min_value;
+    std::optional<double> m_max_value;
+
+    inline double _clamp(double pos) const
+    {
+        if (m_min_value && pos < *m_min_value)
+            return *m_min_value;
+        if (m_max_value && pos > *m_max_value)
+            return *m_max_value;
+        return pos;
+    }
 
 public:
 
@@ -70,6 +82,14 @@ public:
     void set_position(double pos);
     [[nodiscard]] double position() const;
 
+    inline void set_min_value(double min) { m_min_value = min; }
+    inline void clear_min_value() { m_min_value.reset(); }
+    [[nodiscard]] inline std::optional<double> min_value() const { return m_min_value; }
+
+    inline void set_max_value(double max) { m_max_value = max; }
+    inline void clear_max_value() { m_max_value.reset(); }
+    [[nodiscard]] inline std::optional<double> max_value() const { return m_max_value; }
+
     void set_color(const QColor& color);
     [[nodiscard]] QColor color() const;
 
@@ -78,6 +98,15 @@ public:
 
     void set_line_style(Qt::PenStyle style);
     [[nodiscard]] Qt::PenStyle line_style() const;
+
+    virtual QCursor cursor(QMouseEvent* event) const noexcept override
+    {
+        if (!_movable)
+            return Qt::ArrowCursor;
+        if (m_orientation == Qt::Orientation::Vertical)
+            return Qt::SizeHorCursor;
+        return Qt::SizeVerCursor;
+    }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -162,6 +191,30 @@ public:
         if (!m_line.isNull())
             return this->m_line->line_style();
         return Qt::SolidLine;
+    }
+
+    inline void set_min_value(double min)
+    {
+        if (!m_line.isNull())
+            m_line->set_min_value(min);
+    }
+
+    inline void clear_min_value()
+    {
+        if (!m_line.isNull())
+            m_line->clear_min_value();
+    }
+
+    inline void set_max_value(double max)
+    {
+        if (!m_line.isNull())
+            m_line->set_max_value(max);
+    }
+
+    inline void clear_max_value()
+    {
+        if (!m_line.isNull())
+            m_line->clear_max_value();
     }
 
 #ifdef BINDINGS_H

@@ -51,6 +51,68 @@ class TestStraightLineSignal:
         assert line.position == pytest.approx(12.0)
 
 
+class TestStraightLineMinMax:
+
+    def test_min_clamps_set_position(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_min_value(2.0)
+        line.set_position(1.0)
+        assert line.position == pytest.approx(2.0)
+
+    def test_max_clamps_set_position(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_max_value(10.0)
+        line.set_position(15.0)
+        assert line.position == pytest.approx(10.0)
+
+    def test_within_range_not_clamped(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_min_value(0.0)
+        line.set_max_value(10.0)
+        line.set_position(7.0)
+        assert line.position == pytest.approx(7.0)
+
+    def test_clear_min_removes_limit(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_min_value(3.0)
+        line.set_position(1.0)
+        assert line.position == pytest.approx(3.0)
+        line.clear_min_value()
+        line.set_position(1.0)
+        assert line.position == pytest.approx(1.0)
+
+    def test_clear_max_removes_limit(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_max_value(8.0)
+        line.set_position(20.0)
+        assert line.position == pytest.approx(8.0)
+        line.clear_max_value()
+        line.set_position(20.0)
+        assert line.position == pytest.approx(20.0)
+
+    def test_signal_emits_clamped_value(self, plot):
+        line = SciQLopVerticalLine(plot, 5.0, True)
+        line.set_min_value(2.0)
+        line.set_max_value(10.0)
+        received = []
+        line.position_changed.connect(lambda v: received.append(v))
+        line.set_position(-5.0)
+        process_events()
+        assert received[-1] == pytest.approx(2.0)
+        line.set_position(99.0)
+        process_events()
+        assert received[-1] == pytest.approx(10.0)
+
+    def test_horizontal_line_min_max(self, plot):
+        line = SciQLopHorizontalLine(plot, 5.0, True)
+        line.set_min_value(1.0)
+        line.set_max_value(9.0)
+        line.set_position(0.0)
+        assert line.position == pytest.approx(1.0)
+        line.set_position(100.0)
+        assert line.position == pytest.approx(9.0)
+
+
 class TestVSpanPixelRange:
 
     def test_pixel_range_returns_valid(self, plot):
