@@ -111,7 +111,7 @@
         </add-function>
         <add-function signature="__len__" >
             <inject-code class="target" position="end">
-                return PyLong_AsSsize_t(PyLong_FromLong(2));
+                return 2;
             </inject-code>
         </add-function>
         <add-function signature="__getitem__" >

@@ -31,7 +31,12 @@ void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldR
 
 void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
 {
-    for (std::size_t i = 0; i < plottable_count(); i++)
+    // The resampler emits via QueuedConnection, so the component count may
+    // have grown or shrunk between emit and delivery. Cap iteration to the
+    // smaller of the two to avoid OOB indexing into `data`.
+    const std::size_t n = std::min<std::size_t>(plottable_count(),
+                                                static_cast<std::size_t>(data.size()));
+    for (std::size_t i = 0; i < n; i++)
     {
         auto curve = line(i);
         if (curve)
