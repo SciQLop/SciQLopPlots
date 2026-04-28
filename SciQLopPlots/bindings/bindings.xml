@@ -514,11 +514,24 @@
     <object-type name="SciQLopPolygonItemInterface" parent-management="yes"/>
     <object-type name="SciQLopRangeItemInterface" parent-management="yes"/>
 
-    <object-type name="SciQLopVerticalSpan" parent-management="yes"/>
+    <object-type name="SciQLopVerticalSpan" parent-management="yes">
+        <modify-function signature="SciQLopVerticalSpan(SciQLopPlot*,SciQLopPlotRange,QColor,bool,bool,QString,Coordinates)">
+            <modify-argument index="3"><rename to="color"/></modify-argument>
+            <modify-argument index="4"><rename to="read_only"/></modify-argument>
+            <modify-argument index="5"><rename to="visible"/></modify-argument>
+            <modify-argument index="6"><rename to="tool_tip"/></modify-argument>
+            <modify-argument index="7"><rename to="coordinates"/></modify-argument>
+        </modify-function>
+        <modify-function signature="pixel_range() const" rename="_pixel_range"/>
+        <property name="pixel_range" type="SciQLopPlotRange" get="pixel_range" set="set_pixel_range" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopHorizontalSpan" parent-management="yes"/>
     <object-type name="SciQLopRectangularSpan" parent-management="yes"/>
     <object-type name="SciQLopPixmapItem" parent-management="yes"/>
-    <object-type name="SciQLopStraightLine" parent-management="yes"/>
+    <object-type name="SciQLopStraightLine" parent-management="yes">
+        <modify-function signature="position() const" rename="_position"/>
+        <property name="position" type="double" get="position" set="set_position" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopVerticalLine" parent-management="yes"/>
     <object-type name="SciQLopHorizontalLine" parent-management="yes"/>
     <object-type name="SciQLopEllipseItem" parent-management="yes"/>
