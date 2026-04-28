@@ -225,11 +225,15 @@ public:
 
     inline void set_obj(PyObject* py_obj)
     {
-        _py_obj = std::shared_ptr<PyObject>(py_obj, [](PyObject* py_obj) { _dec_ref(py_obj); });
-        if (_py_obj != nullptr)
+        if (py_obj == nullptr)
         {
-            _inc_ref(py_obj);
+            // Wrapping null in shared_ptr would still invoke the deleter at
+            // destruction, calling Py_DECREF(NULL) (UB).
+            _py_obj.reset();
+            return;
         }
+        _py_obj = std::shared_ptr<PyObject>(py_obj, [](PyObject* p) { _dec_ref(p); });
+        _inc_ref(py_obj);
     }
 
     inline PyObject* py_object() const { return _py_obj.get(); }
@@ -514,6 +518,11 @@ struct _GetDataPyCallable_impl
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
             auto args = PyTuple_New(2);
+            if (args == nullptr)
+            {
+                PyErr_Clear();
+                return data;
+            }
             PyTuple_SetItem(args, 0, PyFloat_FromDouble(lower));
             PyTuple_SetItem(args, 1, PyFloat_FromDouble(upper));
             auto res = PyObject_CallObject(_py_obj.py_object(), args);
@@ -554,11 +563,20 @@ struct _GetDataPyCallable_impl
         {
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
+            auto* x_obj = x.py_object();
+            auto* y_obj = y.py_object();
+            if (x_obj == nullptr || y_obj == nullptr)
+                return data;
             auto args = PyTuple_New(2);
-            Py_IncRef(x.py_object());
-            Py_IncRef(y.py_object());
-            PyTuple_SetItem(args, 0, x.py_object());
-            PyTuple_SetItem(args, 1, y.py_object());
+            if (args == nullptr)
+            {
+                PyErr_Clear();
+                return data;
+            }
+            Py_IncRef(x_obj);
+            Py_IncRef(y_obj);
+            PyTuple_SetItem(args, 0, x_obj);
+            PyTuple_SetItem(args, 1, y_obj);
             auto res = PyObject_CallObject(_py_obj.py_object(), args);
             Py_DECREF(args);
             if (res != nullptr)
@@ -597,13 +615,23 @@ struct _GetDataPyCallable_impl
         {
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
+            auto* x_obj = x.py_object();
+            auto* y_obj = y.py_object();
+            auto* z_obj = z.py_object();
+            if (x_obj == nullptr || y_obj == nullptr || z_obj == nullptr)
+                return data;
             auto args = PyTuple_New(3);
-            Py_IncRef(x.py_object());
-            Py_IncRef(y.py_object());
-            Py_IncRef(z.py_object());
-            PyTuple_SetItem(args, 0, x.py_object());
-            PyTuple_SetItem(args, 1, y.py_object());
-            PyTuple_SetItem(args, 2, z.py_object());
+            if (args == nullptr)
+            {
+                PyErr_Clear();
+                return data;
+            }
+            Py_IncRef(x_obj);
+            Py_IncRef(y_obj);
+            Py_IncRef(z_obj);
+            PyTuple_SetItem(args, 0, x_obj);
+            PyTuple_SetItem(args, 1, y_obj);
+            PyTuple_SetItem(args, 2, z_obj);
             auto res = PyObject_CallObject(_py_obj.py_object(), args);
             Py_DECREF(args);
             if (res != nullptr)
