@@ -36,9 +36,11 @@ namespace impl
 class VerticalSpan : public QCPItemVSpan, public impl::SpanBase
 {
     Q_OBJECT
+    Coordinates m_coordinates = Coordinates::Data;
 
 public:
     VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
+                 Coordinates coordinates = Coordinates::Data,
                  bool do_not_replot = false, bool immediate_replot = false);
 
     using SpanBase::set_visible;
@@ -51,6 +53,12 @@ public:
 
     void set_range(const SciQLopPlotRange horizontal_range);
     [[nodiscard]] SciQLopPlotRange range() const noexcept;
+
+    [[nodiscard]] Coordinates coordinates() const noexcept { return m_coordinates; }
+    void set_coordinates(Coordinates coordinates);
+
+    [[nodiscard]] SciQLopPlotRange pixel_range() const noexcept;
+    void set_pixel_range(const SciQLopPlotRange& px_range);
 
     void select_lower_border(bool selected);
     void select_upper_border(bool selected);
@@ -99,7 +107,8 @@ signals:
 public:
     SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
                         QColor color = QColor(100, 100, 100, 100), bool read_only = false,
-                        bool visible = true, const QString& tool_tip = "");
+                        bool visible = true, const QString& tool_tip = "",
+                        Coordinates coordinates = Coordinates::Data);
 
     virtual ~SciQLopVerticalSpan() override = default;
 
@@ -116,6 +125,27 @@ public:
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
     {
         return qptr_apply_or(_impl, [](auto& item) { return item->range(); });
+    }
+
+    [[nodiscard]] inline Coordinates coordinates() const noexcept override
+    {
+        return qptr_apply_or(
+            _impl, [](auto& item) { return item->coordinates(); }, Coordinates::Data);
+    }
+
+    inline void set_coordinates(Coordinates coordinates) override
+    {
+        qptr_apply(_impl, [coordinates](auto& item) { item->set_coordinates(coordinates); });
+    }
+
+    [[nodiscard]] inline SciQLopPlotRange pixel_range() const noexcept
+    {
+        return qptr_apply_or(_impl, [](auto& item) { return item->pixel_range(); });
+    }
+
+    inline void set_pixel_range(const SciQLopPlotRange& px_range) noexcept
+    {
+        qptr_apply(_impl, [px_range](auto& item) { item->set_pixel_range(px_range); });
     }
 
     inline void set_color(const QColor& color) { _base.set_color(color); }

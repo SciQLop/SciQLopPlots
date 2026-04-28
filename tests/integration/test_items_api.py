@@ -92,17 +92,17 @@ class TestStraightLines:
     def test_create_vertical_line(self, plot):
         line = SciQLopVerticalLine(plot, 5.0)
         assert line is not None
-        assert abs(line.position() - 5.0) < 1e-9
+        assert abs(line.position - 5.0) < 1e-9
 
     def test_create_horizontal_line(self, plot):
         line = SciQLopHorizontalLine(plot, 3.0)
         assert line is not None
-        assert abs(line.position() - 3.0) < 1e-9
+        assert abs(line.position - 3.0) < 1e-9
 
     def test_set_position(self, plot):
         line = SciQLopVerticalLine(plot, 5.0)
         line.set_position(8.0)
-        assert abs(line.position() - 8.0) < 1e-9
+        assert abs(line.position - 8.0) < 1e-9
 
     def test_set_color(self, plot):
         line = SciQLopVerticalLine(plot, 5.0)

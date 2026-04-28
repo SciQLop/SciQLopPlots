@@ -51,6 +51,7 @@ void StraightLine::set_position(double pos)
         this->point1->setCoords(0, pos);
         this->point2->setCoords(1, pos);
     }
+    emit moved(pos);
     this->replot();
 }
 

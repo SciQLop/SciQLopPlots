@@ -113,6 +113,7 @@ public:
                         Qt::Orientation orientation = Qt::Orientation::Vertical)
     {
         m_line = new StraightLine(plot->qcp_plot(), position, movable, coordinates, orientation);
+        connect(m_line, &StraightLine::moved, this, &SciQLopStraightLine::position_changed);
     }
 
     void set_position(double pos);
@@ -162,6 +163,12 @@ public:
             return this->m_line->line_style();
         return Qt::SolidLine;
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void position_changed(double new_position);
 };
 
 class SciQLopVerticalLine : public SciQLopStraightLine
