@@ -24,6 +24,7 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include <cmath>
 #include <optional>
 
 class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public impl::SciQlopItemWithToolTip
@@ -37,6 +38,24 @@ class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public i
 
     inline double _clamp(double pos) const
     {
+        if (std::isnan(pos))
+        {
+            if (m_min_value)
+                return *m_min_value;
+            if (m_max_value)
+                return *m_max_value;
+            return 0.0;
+        }
+        // If both bounds are set but inverted (min > max), the user-most-recent
+        // setter wins by clamping to the tighter bound: max takes precedence
+        // because hitting the upper limit is the more common UI intent.
+        if (m_min_value && m_max_value && *m_min_value > *m_max_value)
+        {
+            // Inverted bounds — fall back to the upper bound to keep callers
+            // safe instead of silently violating max as the unconditional
+            // ladder would.
+            return *m_max_value;
+        }
         if (m_min_value && pos < *m_min_value)
             return *m_min_value;
         if (m_max_value && pos > *m_max_value)
