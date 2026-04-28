@@ -532,6 +532,7 @@
         <modify-function signature="position() const" rename="_position"/>
         <property name="position" type="double" get="position" set="set_position" generate-getsetdef="yes"/>
     </object-type>
+    <!-- min/max value methods and cursor override on StraightLine -->
     <object-type name="SciQLopVerticalLine" parent-management="yes"/>
     <object-type name="SciQLopHorizontalLine" parent-management="yes"/>
     <object-type name="SciQLopEllipseItem" parent-management="yes"/>

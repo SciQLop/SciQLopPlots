@@ -26,21 +26,32 @@ void StraightLine::move(double dx, double dy)
 {
     if (m_orientation == Qt::Orientation::Vertical)
     {
-        this->point1->setPixelPosition({this->point1->pixelPosition().x() + dx, this->point1->pixelPosition().y()});
-        this->point2->setPixelPosition({this->point2->pixelPosition().x() + dx, this->point2->pixelPosition().y()});
-        emit moved(this->point1->key());
+        auto newPx = this->point1->pixelPosition().x() + dx;
+        this->point1->setPixelPosition({newPx, this->point1->pixelPosition().y()});
+        this->point2->setPixelPosition({newPx, this->point2->pixelPosition().y()});
+        auto pos = _clamp(this->point1->key());
+        if (pos != this->point1->key())
+            set_position(pos);
+        else
+            emit moved(pos);
     }
     else
     {
-        this->point1->setPixelPosition({this->point1->pixelPosition().x(), this->point1->pixelPosition().y() + dy});
-        this->point2->setPixelPosition({this->point2->pixelPosition().x(), this->point2->pixelPosition().y() + dy});
-        emit moved(this->point1->value());
+        auto newPx = this->point1->pixelPosition().y() + dy;
+        this->point1->setPixelPosition({this->point1->pixelPosition().x(), newPx});
+        this->point2->setPixelPosition({this->point2->pixelPosition().x(), newPx});
+        auto pos = _clamp(this->point1->value());
+        if (pos != this->point1->value())
+            set_position(pos);
+        else
+            emit moved(pos);
     }
     this->replot();
 }
 
 void StraightLine::set_position(double pos)
 {
+    pos = _clamp(pos);
     if (m_orientation == Qt::Orientation::Vertical)
     {
         this->point1->setCoords(pos, 0);
