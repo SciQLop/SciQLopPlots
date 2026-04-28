@@ -115,6 +115,7 @@ public:
             auto pen = this->pen();
             pen.setColor(color);
             this->set_pen(pen);
+            this->set_marker_pen(QPen(color));
         }
     }
 
