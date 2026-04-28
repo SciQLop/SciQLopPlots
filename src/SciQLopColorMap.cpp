@@ -67,8 +67,18 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     if (x.format_code() != 'd')
         throw std::runtime_error("Keys (x) must be float64");
 
+    const std::size_t nx_sz = x.flat_size();
+    const std::size_t ny_sz = y.flat_size();
+    const std::size_t nz_sz = z.flat_size();
+    // All-empty is allowed and behaves as a clear; otherwise z must be the
+    // full nx*ny matrix the QCP datasource expects.
+    const bool all_empty = (nx_sz == 0 && ny_sz == 0 && nz_sz == 0);
+    if (!all_empty && nz_sz != nx_sz * ny_sz)
+        throw std::runtime_error(
+            "ColorMap.set_data: z size must equal len(x) * len(y)");
+
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
-    const int nx = static_cast<int>(x.flat_size());
+    const int nx = static_cast<int>(nx_sz);
 
     if (nx > 0)
         m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);

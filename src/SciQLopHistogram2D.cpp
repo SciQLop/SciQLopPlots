@@ -66,6 +66,10 @@ void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
     if (!_hist || !x.is_valid() || !y.is_valid())
         return;
 
+    if (x.flat_size() != y.flat_size())
+        throw std::runtime_error(
+            "Histogram2D.set_data: x and y must have the same length");
+
     dispatch_dtype(x.format_code(), [&](auto x_tag) {
         dispatch_dtype(y.format_code(), [&](auto y_tag) {
             using X = typename decltype(x_tag)::type;

@@ -481,9 +481,11 @@
     </object-type>
     <object-type name="SciQLopColorMap" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_data(PyBuffer,PyBuffer,PyBuffer)" exception-handling="auto-on"/>
     </object-type>
     <object-type name="SciQLopHistogram2D" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_data(PyBuffer,PyBuffer)" exception-handling="auto-on"/>
     </object-type>
 
     <object-type name="SciQLopFunctionGraph" parent-management="no"/>

@@ -62,6 +62,9 @@ void StraightLine::move(double dx, double dy)
 void StraightLine::set_position(double pos)
 {
     pos = _clamp(pos);
+    const double current = position();
+    if (current == pos)
+        return;
     if (m_orientation == Qt::Orientation::Vertical)
     {
         this->point1->setCoords(pos, 0);

@@ -30,8 +30,10 @@ class TestStraightLineSignal:
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(5.0)
         process_events()
-        assert len(received) == 1
-        assert received[0] == pytest.approx(5.0)
+        assert received == [], (
+            "set_position must not re-emit when value is unchanged "
+            "(prevents two-way binding loops)"
+        )
 
     def test_horizontal_line_signal(self, plot):
         line = SciQLopHorizontalLine(plot, 3.0, True)
