@@ -156,17 +156,23 @@ public:
 
     inline virtual std::size_t parent_plot_height() const noexcept
     {
-        return qobject_cast<QWidget*>(parent())->height();
+        if (auto* w = qobject_cast<QWidget*>(parent()))
+            return w->height();
+        return 0;
     }
 
     inline virtual std::size_t parent_plot_width() const noexcept
     {
-        return qobject_cast<QWidget*>(parent())->width();
+        if (auto* w = qobject_cast<QWidget*>(parent()))
+            return w->width();
+        return 0;
     }
 
     inline virtual QSize parent_plot_size() const noexcept
     {
-        return qobject_cast<QWidget*>(parent())->size();
+        if (auto* w = qobject_cast<QWidget*>(parent()))
+            return w->size();
+        return {};
     }
 
     void add_inspector_extension(InspectorExtension* extension);

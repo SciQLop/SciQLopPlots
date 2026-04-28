@@ -44,6 +44,12 @@ public:
     {
     }
 
+    ~InspectorExtensionHolder()
+    {
+        for (auto& e : m_entries)
+            QObject::disconnect(e.conn);
+    }
+
     bool add(InspectorExtension* extension)
     {
         if (!extension)
@@ -62,9 +68,12 @@ public:
     bool remove(InspectorExtension* extension)
     {
         bool removed = false;
+        bool found_exact = false;
         for (int i = m_entries.size() - 1; i >= 0; --i)
         {
             auto& e = m_entries[i];
+            if (e.ext.data() == extension)
+                found_exact = true;
             if (!e.ext || e.ext.data() == extension)
             {
                 QObject::disconnect(e.conn);
@@ -74,7 +83,7 @@ public:
         }
         if (removed)
         {
-            if (extension && extension->parent() == m_owner)
+            if (found_exact && extension && extension->parent() == m_owner)
                 extension->setParent(nullptr);
             m_notify();
         }

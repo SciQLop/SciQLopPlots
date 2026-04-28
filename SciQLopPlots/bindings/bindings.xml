@@ -91,7 +91,10 @@
                     PyDateTime_IMPORT;
                 PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->start());
                 PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
-                return PyDateTime_FromTimestamp(timeTuple);
+                Py_DECREF(floatObj);
+                PyObject *result = PyDateTime_FromTimestamp(timeTuple);
+                Py_DECREF(timeTuple);
+                return result;
             </inject-code>
         </add-function>
         <add-function signature="datetime_stop" >
@@ -100,7 +103,10 @@
                     PyDateTime_IMPORT;
                 PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->stop());
                 PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
-                return PyDateTime_FromTimestamp(timeTuple);
+                Py_DECREF(floatObj);
+                PyObject *result = PyDateTime_FromTimestamp(timeTuple);
+                Py_DECREF(timeTuple);
+                return result;
             </inject-code>
         </add-function>
         <add-function signature="__len__" >
@@ -110,11 +116,21 @@
         </add-function>
         <add-function signature="__getitem__" >
             <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt; 1)
+                {
+                    PyErr_SetString(PyExc_IndexError, "SciQLopPlotRange index out of range");
+                    return nullptr;
+                }
                 return PyFloat_FromDouble((*%CPPSELF)[_i]);
             </inject-code>
         </add-function>
         <add-function signature="__setitem__" >
             <inject-code class="target" position="beginning">
+                if (_i &lt; 0 || _i &gt; 1)
+                {
+                    PyErr_SetString(PyExc_IndexError, "SciQLopPlotRange index out of range");
+                    return -1;
+                }
                 if(PyFloat_Check(_value))
                 {
                     (*%CPPSELF)[_i] = PyFloat_AS_DOUBLE(_value);
@@ -824,6 +840,11 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="add_inspector_extension(InspectorExtension*)">
+          <modify-argument index="1">
+            <parent index="this" action="add"/>
+          </modify-argument>
+        </modify-function>
+        <modify-function signature="add_accepted_mime_type(PlotDragNDropCallback*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
