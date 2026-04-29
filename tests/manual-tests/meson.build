@@ -21,6 +21,14 @@ foreach example : examples
     )
 endforeach
 
+test('inspector_properties',
+    python3,
+    args: [meson.current_source_dir() + '/test_inspector_properties.py'],
+    env: ['PYTHONPATH=' + meson.project_build_root()],
+    suite: 'integration',
+    timeout: 120,
+)
+
 sources = []
 foreach example : examples
     sources += example['source']
