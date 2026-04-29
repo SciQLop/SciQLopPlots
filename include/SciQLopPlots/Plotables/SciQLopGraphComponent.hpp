@@ -197,6 +197,31 @@ public:
                                  },
                                  [](std::monostate) {} },
                        to_variant());
+            Q_EMIT marker_pen_changed(pen);
+        }
+    }
+
+    inline virtual void set_marker_size(qreal size) noexcept override
+    {
+        if (m_plottable)
+        {
+            auto set_scatter_size = [size](auto* any)
+            {
+                auto scatterStyle = any->scatterStyle();
+                scatterStyle.setSize(size);
+                any->setScatterStyle(scatterStyle);
+            };
+            std::visit(visitor { [&](QCPGraph* any) { set_scatter_size(any); },
+                                 [&](QCPGraph2* any) { set_scatter_size(any); },
+                                 [&](QCPCurve* any) { set_scatter_size(any); },
+                                 [size](MultiGraphRef ref)
+                                 {
+                                     ref.graph->component(ref.componentIndex)
+                                         .scatterStyle.setSize(size);
+                                 },
+                                 [](std::monostate) {} },
+                       to_variant());
+            Q_EMIT marker_size_changed(size);
         }
     }
 
@@ -291,6 +316,23 @@ public:
                               to_variant());
         }
         return QPen();
+    }
+
+    inline virtual qreal marker_size() const noexcept override
+    {
+        if (m_plottable)
+        {
+            auto get_size = [](auto* any) -> qreal { return any->scatterStyle().size(); };
+            return std::visit(
+                visitor { [&](QCPGraph* any) { return get_size(any); },
+                          [&](QCPGraph2* any) { return get_size(any); },
+                          [&](QCPCurve* any) { return get_size(any); },
+                          [](MultiGraphRef ref) -> qreal
+                          { return ref.graph->component(ref.componentIndex).scatterStyle.size(); },
+                          [](std::monostate) -> qreal { return 0.0; } },
+                to_variant());
+        }
+        return 0.0;
     }
 
     inline virtual qreal line_width() const noexcept override
