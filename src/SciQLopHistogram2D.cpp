@@ -117,7 +117,12 @@ QList<PyBuffer> SciQLopHistogram2D::data() const noexcept
 void SciQLopHistogram2D::set_bins(int key_bins, int value_bins)
 {
     if (_hist)
+    {
+        if (_hist->keyBins() == key_bins && _hist->valueBins() == value_bins)
+            return;
         _hist->setBins(key_bins, value_bins);
+        Q_EMIT bins_changed(key_bins, value_bins);
+    }
 }
 
 int SciQLopHistogram2D::key_bins() const
@@ -133,7 +138,12 @@ int SciQLopHistogram2D::value_bins() const
 void SciQLopHistogram2D::set_normalization(int normalization)
 {
     if (_hist)
+    {
+        if (static_cast<int>(_hist->normalization()) == normalization)
+            return;
         _hist->setNormalization(static_cast<QCPHistogram2D::Normalization>(normalization));
+        Q_EMIT normalization_changed(normalization);
+    }
 }
 
 int SciQLopHistogram2D::normalization() const
