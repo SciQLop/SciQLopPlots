@@ -62,6 +62,8 @@ public:
 
     inline virtual void set_marker_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
 
+    inline virtual void set_marker_size(qreal size) noexcept { WARN_ABSTRACT_METHOD; }
+
     inline virtual void set_line_width(const qreal width) noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void set_visible(bool visible) noexcept { WARN_ABSTRACT_METHOD; }
@@ -102,6 +104,12 @@ public:
     {
         WARN_ABSTRACT_METHOD;
         return QPen();
+    }
+
+    inline virtual qreal marker_size() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return 0;
     }
 
     inline virtual qreal line_width() const noexcept
@@ -146,6 +154,8 @@ signals:
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
+    Q_SIGNAL void marker_pen_changed(const QPen& pen);
+    Q_SIGNAL void marker_size_changed(qreal size);
     Q_SIGNAL void replot();
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void inspector_extensions_changed();
