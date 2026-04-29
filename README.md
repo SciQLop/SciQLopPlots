@@ -163,7 +163,7 @@ python tests/manual-tests/gallery.py
 
 ## Building from source
 
-Requires Qt6, PySide6 == 6.10.2, a C++20 compiler, and Meson.
+Requires Qt6, PySide6 == 6.11.0, a C++20 compiler, and Meson.
 
 ```bash
 # Development build

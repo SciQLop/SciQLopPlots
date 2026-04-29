@@ -45,7 +45,7 @@ pip install -e . --no-build-isolation
 ### Build Dependencies
 
 - Qt6 (Core, Widgets, Gui, Svg, PrintSupport, OpenGL)
-- PySide6 == 6.10.2 and matching shiboken6/shiboken6_generator
+- PySide6 == 6.11.0 and matching shiboken6/shiboken6_generator
 - Python >= 3.10, < 3.15
 - numpy
 - OpenGL
