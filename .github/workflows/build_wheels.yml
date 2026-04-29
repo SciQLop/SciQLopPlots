@@ -102,7 +102,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} CC="ccache gcc" CXX="ccache g++" CCACHE_DIR=${{ env.GITHUB_WORKSPACE }}/.ccache PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
             pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master"
-            && if not exist "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}" aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} msvc2022_64 -m qtshadertools
+            && if not exist "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}" aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64 -m qtshadertools
           CIBW_BEFORE_BUILD_MACOS: >
             pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master"
             && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }} -m qtshadertools
