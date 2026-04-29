@@ -15,10 +15,8 @@ import unittest
 os.environ['QT_API'] = 'PySide6'
 
 from PySide6.QtWidgets import QApplication, QGroupBox, QSpinBox, QDoubleSpinBox, QComboBox, QCheckBox, QLineEdit
-from PySide6.QtCore import Qt
 
 import numpy as np
-import SciQLopPlots as sp
 from SciQLopPlots import (
     SciQLopMultiPlotPanel, PlotType, GraphType,
 )
