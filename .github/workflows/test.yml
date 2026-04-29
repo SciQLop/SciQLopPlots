@@ -51,7 +51,7 @@ jobs:
 
       - name: Install Qt
         run: |
-          pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@main"
+          pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master"
           [ -d "Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O Qt linux desktop ${{ env.QT_VERSION }} -m qtshadertools
 
       - name: Cache ccache
