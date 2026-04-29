@@ -7,9 +7,15 @@ omitted — they cannot be reliably triggered from Python.
 """
 import gc
 import sys
+import tempfile
 
 import numpy as np
 import pytest
+
+
+# Subprocess cwd: must be outside the repo so the in-tree `SciQLopPlots/`
+# source dir doesn't shadow the installed package (which carries the .so).
+_SUBPROCESS_CWD = tempfile.gettempdir()
 
 from SciQLopPlots import (
     ColorGradient,
@@ -75,6 +81,7 @@ class TestC5_StraightLineEmitGuard:
         result = subprocess.run(
             [sys.executable, "-c", script],
             capture_output=True, timeout=30,
+            cwd=_SUBPROCESS_CWD,
         )
         # Bug: returncode != 0 (segfault) or non-zero exit. Fix: clean exit.
         assert result.returncode == 0, (
@@ -151,6 +158,7 @@ class TestC6_ColorMapShapeValidation:
         ) + textwrap.dedent(script)
         return subprocess.run(
             [sys.executable, "-c", full], capture_output=True, timeout=30,
+            cwd=_SUBPROCESS_CWD,
         )
 
     def test_z_size_mismatch_does_not_crash(self):
@@ -224,6 +232,7 @@ class TestC6_Histogram2DShapeValidation:
         )
         result = subprocess.run(
             [sys.executable, "-c", script], capture_output=True, timeout=30,
+            cwd=_SUBPROCESS_CWD,
         )
         assert result.returncode == 0, (
             f"histogram2d shape mismatch crashed (rc={result.returncode}): "
