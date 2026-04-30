@@ -267,5 +267,78 @@ class TestColorMapDelegate(unittest.TestCase):
         self.assertEqual(spin.value(), 0)
 
 
+class TestGraphComponentDelegate(unittest.TestCase):
+    """Graph component delegate: existing LineDelegate + Marker group.
+
+    Exercises Line and Curve plottable kinds — both use SciQLopGraphComponent
+    under the hood but via different QCustomPlot variants (QCPGraph2 vs QCPCurve).
+    """
+
+    def _make_panel(self, graph_type):
+        panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        plot, graph = panel.plot(
+            x, y,
+            plot_type=PlotType.BasicXY,
+            graph_type=graph_type,
+            labels=["sig"],
+        )
+        comps = graph.components()
+        self.assertGreater(len(comps), 0, "graph should have at least one component")
+        return panel, plot, graph, comps[0]
+
+    def setUp(self):
+        # Default fixture uses Line; per-test setUps may use other kinds.
+        self.panel, self.plot, self.graph, self.component = self._make_panel(GraphType.Line)
+        self.delegate = make_delegate_for(self.component)
+        self.assertIsNotNone(self.delegate)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.panel.deleteLater()
+
+    def test_marker_group_present(self):
+        box = find_group(self.delegate, 'Marker')
+        self.assertIsNotNone(box)
+        dspins = box.findChildren(QDoubleSpinBox)
+        self.assertEqual(len(dspins), 1, "Marker group should have 1 size DoubleSpinBox")
+
+    def test_marker_size_widget_to_model(self):
+        box = find_group(self.delegate, 'Marker')
+        size_spin = box.findChildren(QDoubleSpinBox)[0]
+        size_spin.setValue(8.0)
+        self.assertAlmostEqual(self.component.marker_size(), 8.0, places=1)
+
+    def test_marker_size_model_to_widget(self):
+        self.component.set_marker_size(12.5)
+        box = find_group(self.delegate, 'Marker')
+        size_spin = box.findChildren(QDoubleSpinBox)[0]
+        self.assertAlmostEqual(size_spin.value(), 12.5, places=1)
+
+    def test_marker_size_no_emit_loop(self):
+        emitted = []
+        self.component.marker_size_changed.connect(lambda s: emitted.append(s))
+        box = find_group(self.delegate, 'Marker')
+        size_spin = box.findChildren(QDoubleSpinBox)[0]
+        size_spin.setValue(7.0)
+        self.assertLessEqual(len(emitted), 1, f"runaway emits: {emitted}")
+
+    def test_marker_size_round_trip_curve_plottable(self):
+        # Curve plot exercises the QCPCurve variant branch in set_marker_size.
+        panel, plot, graph, component = self._make_panel(GraphType.ParametricCurve)
+        try:
+            delegate = make_delegate_for(component)
+            self.assertIsNotNone(delegate)
+            box = find_group(delegate, 'Marker')
+            self.assertIsNotNone(box, "Marker group should exist for curves too")
+            size_spin = box.findChildren(QDoubleSpinBox)[0]
+            size_spin.setValue(6.5)
+            self.assertAlmostEqual(component.marker_size(), 6.5, places=1)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
