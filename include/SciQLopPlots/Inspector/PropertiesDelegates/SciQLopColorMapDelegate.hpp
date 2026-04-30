@@ -21,11 +21,11 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
 
 class SciQLopColorMap;
 
-class SciQLopColorMapDelegate : public PropertyDelegateBase
+class SciQLopColorMapDelegate : public SciQLopColorMapBaseDelegate
 {
     Q_OBJECT
 
@@ -35,5 +35,5 @@ public:
     using compatible_type = SciQLopColorMap;
     SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent = nullptr);
 
-    virtual ~SciQLopColorMapDelegate() = default;
+    ~SciQLopColorMapDelegate() override = default;
 };

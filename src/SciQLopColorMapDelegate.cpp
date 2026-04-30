@@ -21,8 +21,16 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QSignalBlocker>
+#include <QSpinBox>
 
 SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
 {
@@ -30,11 +38,62 @@ SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
 }
 
 SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent)
-        : PropertyDelegateBase(object, parent)
+        : SciQLopColorMapBaseDelegate(object, parent)
 {
-    ColorGradientDelegate* gradient = new ColorGradientDelegate(colorMap()->gradient(), this);
-    m_layout->addWidget(gradient);
-    connect(gradient, &ColorGradientDelegate::gradientChanged, this,
-            [this](ColorGradient gradient) { colorMap()->set_gradient(gradient); });
+    auto* auto_scale = new BooleanDelegate(object->auto_scale_y(), this);
+    m_layout->addRow("Auto scale Y", auto_scale);
+    connect(auto_scale, &BooleanDelegate::value_changed, object,
+            &SciQLopColorMap::set_auto_scale_y);
+    connect(object, &SciQLopColorMap::auto_scale_y_changed, auto_scale,
+            &BooleanDelegate::set_value);
+
+    auto* contoursBox = new QGroupBox("Contours", this);
+    auto* contoursLayout = new QFormLayout(contoursBox);
+
+    auto* countSpin = new QSpinBox(contoursBox);
+    countSpin->setRange(0, 50);
+    countSpin->setValue(object->auto_contour_level_count());
+    contoursLayout->addRow("Auto level count", countSpin);
+    connect(countSpin, QOverload<int>::of(&QSpinBox::valueChanged), object,
+            [object](int v) { object->set_auto_contour_levels(v); });
+
+    auto* colorWidget = new ColorDelegate(object->contour_color(), contoursBox);
+    contoursLayout->addRow("Color", colorWidget);
+    connect(colorWidget, &ColorDelegate::colorChanged, object,
+            [object](const QColor& c) { object->set_contour_color(c); });
+
+    auto* widthSpin = new QDoubleSpinBox(contoursBox);
+    widthSpin->setRange(0.1, 10.0);
+    widthSpin->setDecimals(1);
+    widthSpin->setSingleStep(0.1);
+    widthSpin->setValue(object->contour_width());
+    contoursLayout->addRow("Width", widthSpin);
+    connect(widthSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), object,
+            [object](double w) { object->set_contour_width(w); });
+
+    auto* labelsCheck = new BooleanDelegate(object->contour_labels_enabled(), contoursBox);
+    contoursLayout->addRow("Show labels", labelsCheck);
+    connect(labelsCheck, &BooleanDelegate::value_changed, object,
+            &SciQLopColorMap::set_contour_labels_enabled);
+
+    m_layout->addRow(contoursBox);
+
+    // Reverse path: model -> widgets, signal-blocked to avoid loops.
+    connect(object, &SciQLopColorMap::contour_levels_changed, this,
+            [countSpin, object]()
+            {
+                QSignalBlocker b(countSpin);
+                countSpin->setValue(object->auto_contour_level_count());
+            });
+    connect(object, &SciQLopColorMap::contour_pen_changed, this,
+            [colorWidget, widthSpin](const QPen& pen)
+            {
+                colorWidget->setColor(pen.color());
+                QSignalBlocker b(widthSpin);
+                widthSpin->setValue(pen.widthF());
+            });
+    connect(object, &SciQLopColorMap::contour_labels_enabled_changed, labelsCheck,
+            &BooleanDelegate::set_value);
+
     append_inspector_extensions();
 }
