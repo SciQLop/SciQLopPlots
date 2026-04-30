@@ -370,19 +370,20 @@ public:
     inline virtual SciQLopGraphInterface*
     waterfall(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               QVariantMap metaData = {})
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::Waterfall,
-                         ::GraphMarkerShape::NoMarker, metaData);
+        return plot_impl(x, y, labels, colors, ::GraphType::Waterfall, marker, metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     waterfall(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               QObject* sync_with = nullptr, QVariantMap metaData = {})
     {
-        return plot_impl(callable, labels, colors, ::GraphType::Waterfall,
-                         ::GraphMarkerShape::NoMarker, sync_with, metaData);
+        return plot_impl(callable, labels, colors, ::GraphType::Waterfall, marker, sync_with,
+                         metaData);
     }
 
     inline virtual SciQLopColorMapInterface*
