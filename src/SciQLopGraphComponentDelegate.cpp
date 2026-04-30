@@ -21,8 +21,14 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
 
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
+
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QSignalBlocker>
 
 SciQLopGraphComponentInterface* SciQLopGraphComponentDelegate::component() const
 {
@@ -33,7 +39,8 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
                                                              QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    m_lineDelegate = new LineDelegate(object->pen(), object->line_style(), object->marker_shape(), this);
+    m_lineDelegate = new LineDelegate(object->pen(), object->line_style(),
+                                      object->marker_shape(), this);
     m_layout->addWidget(m_lineDelegate);
     connect(m_lineDelegate, &LineDelegate::penChanged, object,
             &SciQLopGraphComponentInterface::set_pen);
@@ -41,5 +48,40 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
             &SciQLopGraphComponentInterface::set_line_style);
     connect(m_lineDelegate, &LineDelegate::markerShapeChanged, object,
             &SciQLopGraphComponentInterface::set_marker_shape);
+
+    auto* markerBox = new QGroupBox("Marker", this);
+    auto* markerLayout = new QFormLayout(markerBox);
+
+    auto* penColor = new ColorDelegate(object->marker_pen().color(), markerBox);
+    markerLayout->addRow("Pen color", penColor);
+    connect(penColor, &ColorDelegate::colorChanged, this,
+            [object](const QColor& c)
+            {
+                auto pen = object->marker_pen();
+                pen.setColor(c);
+                object->set_marker_pen(pen);
+            });
+
+    auto* sizeSpin = new QDoubleSpinBox(markerBox);
+    sizeSpin->setRange(1.0, 30.0);
+    sizeSpin->setDecimals(1);
+    sizeSpin->setSingleStep(0.5);
+    sizeSpin->setValue(object->marker_size());
+    markerLayout->addRow("Size", sizeSpin);
+    connect(sizeSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), object,
+            &SciQLopGraphComponentInterface::set_marker_size);
+
+    m_layout->addWidget(markerBox);
+
+    // Reverse path
+    connect(object, &SciQLopGraphComponentInterface::marker_pen_changed, this,
+            [penColor](const QPen& pen) { penColor->setColor(pen.color()); });
+    connect(object, &SciQLopGraphComponentInterface::marker_size_changed, this,
+            [sizeSpin](qreal s)
+            {
+                QSignalBlocker b(sizeSpin);
+                sizeSpin->setValue(s);
+            });
+
     append_inspector_extensions();
 }
