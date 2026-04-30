@@ -19,9 +19,12 @@ def _merge_kwargs(kwargs, **kwargs2):
             kwargs[k] = v
     return kwargs
 
-def _apply_waterfall_kwargs(wf, offsets=None, normalize=True, gain=1.0):
+def _apply_waterfall_kwargs(result, offsets=None, normalize=True, gain=1.0):
     import numpy as np
     from .SciQLopPlotsBindings import WaterfallOffsetMode
+
+    # Plot-level cls.waterfall returns the graph; panel-level returns (plot, graph).
+    wf = result[1] if isinstance(result, tuple) else result
 
     if offsets is None:
         wf.set_offset_mode(WaterfallOffsetMode.Uniform)
@@ -36,7 +39,7 @@ def _apply_waterfall_kwargs(wf, offsets=None, normalize=True, gain=1.0):
 
     wf.set_normalize(bool(normalize))
     wf.set_gain(float(gain))
-    return wf
+    return result
 
 
 _WATERFALL_KWARGS = ("offsets", "normalize", "gain")

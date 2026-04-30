@@ -374,6 +374,26 @@ public:
         return plot_impl(callable, name, key_bins, value_bins, plot_type, sync_with, index,
                          metaData);
     }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    waterfall(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(),
+              ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
+              QVariantMap metaData = {})
+    {
+        return plot_impl(x, y, labels, colors, plot_type, ::GraphType::Waterfall,
+                         ::GraphMarkerShape::NoMarker, index, metaData);
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
+    waterfall(GetDataPyCallable callable, QStringList labels = QStringList(),
+              QList<QColor> colors = QList<QColor>(),
+              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              int index = -1, QVariantMap metaData = {})
+    {
+        return plot_impl(callable, labels, colors, ::GraphType::Waterfall,
+                         ::GraphMarkerShape::NoMarker, plot_type, sync_with, index, metaData);
+    }
 };
 
 template <typename U, typename Interface_T, typename... Args>

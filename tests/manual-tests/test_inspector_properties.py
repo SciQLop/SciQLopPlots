@@ -614,5 +614,51 @@ class TestWaterfallDelegateRegression(unittest.TestCase):
         self.assertGreaterEqual(len(loose), 1, "normalize checkbox should be loose")
 
 
+class TestPanelWaterfallRoute(unittest.TestCase):
+    """Regression: SciQLopMultiPlotPanel.plot(graph_type=Waterfall) returns (plot, wf)
+    and applies waterfall kwargs (offsets/normalize/gain) post-hoc."""
+
+    def test_panel_waterfall_basic(self):
+        panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        try:
+            x = np.linspace(0, 10, 100)
+            y = np.column_stack([np.sin(x * k) for k in range(1, 4)])
+            result = panel.plot(
+                x, y,
+                plot_type=PlotType.BasicXY,
+                graph_type=GraphType.Waterfall,
+                labels=["a", "b", "c"],
+            )
+            self.assertIsInstance(result, tuple, "panel waterfall must return (plot, wf)")
+            self.assertEqual(len(result), 2)
+            plot, wf = result
+            self.assertEqual(type(wf).__name__, 'SciQLopWaterfallGraph')
+            # Defaults applied via _apply_waterfall_kwargs.
+            self.assertAlmostEqual(wf.uniform_spacing(), 1.0, places=2)
+            self.assertAlmostEqual(wf.gain(), 1.0, places=2)
+        finally:
+            panel.deleteLater()
+
+    def test_panel_waterfall_with_kwargs(self):
+        panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        try:
+            x = np.linspace(0, 10, 100)
+            y = np.column_stack([np.sin(x * k) for k in range(1, 4)])
+            _, wf = panel.plot(
+                x, y,
+                plot_type=PlotType.BasicXY,
+                graph_type=GraphType.Waterfall,
+                labels=["a", "b", "c"],
+                offsets=2.5,
+                normalize=False,
+                gain=3.0,
+            )
+            self.assertAlmostEqual(wf.uniform_spacing(), 2.5, places=2)
+            self.assertAlmostEqual(wf.gain(), 3.0, places=2)
+            self.assertFalse(wf.normalize())
+        finally:
+            panel.deleteLater()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
