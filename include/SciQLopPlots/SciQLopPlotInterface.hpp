@@ -509,6 +509,8 @@ public:
 signals:
 #endif
     Q_SIGNAL void scroll_factor_changed(double factor);
+    Q_SIGNAL void crosshair_enabled_changed(bool enabled);
+    Q_SIGNAL void equal_aspect_ratio_changed(bool enabled);
     Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
