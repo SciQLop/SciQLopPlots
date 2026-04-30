@@ -459,5 +459,92 @@ class TestPlotAxisDelegate(unittest.TestCase):
             panel.deleteLater()
 
 
+class TestPlotDelegate(unittest.TestCase):
+    """SciQLopPlot delegate: legend, auto_scale, crosshair, equal aspect, scroll factor.
+
+    Crosshair defaults to True after plot construction — tests that wire the signal
+    must normalize to a known state before connecting.
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 50)
+        self.plot, _g = self.panel.plot(
+            x, np.sin(x * 6), plot_type=PlotType.BasicXY, graph_type=GraphType.Line,
+            labels=["s"],
+        )
+        self.delegate = make_delegate_for(self.plot)
+        self.assertIsNotNone(self.delegate)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.panel.deleteLater()
+
+    def _scroll_spin(self):
+        # The scroll factor spin is the only direct-child QDoubleSpinBox of the
+        # delegate (range 1.0..10.0). Range axes have their own spins but they
+        # live inside the axis delegate, not the plot delegate.
+        for s in self.delegate.findChildren(QDoubleSpinBox):
+            if s.minimum() == 1.0 and s.maximum() == 10.0:
+                return s
+        return None
+
+    def test_scroll_factor_widget_to_model(self):
+        spin = self._scroll_spin()
+        self.assertIsNotNone(spin)
+        spin.setValue(2.5)
+        self.assertAlmostEqual(self.plot.scroll_factor(), 2.5, places=2)
+
+    def test_scroll_factor_model_to_widget(self):
+        self.plot.set_scroll_factor(3.0)
+        spin = self._scroll_spin()
+        self.assertAlmostEqual(spin.value(), 3.0, places=2)
+
+    def test_scroll_factor_clamps_below_min(self):
+        spin = self._scroll_spin()
+        spin.setValue(0.5)  # below min, should clamp to 1.0
+        self.assertGreaterEqual(spin.value(), 1.0)
+
+    def test_scroll_factor_clamps_above_max(self):
+        spin = self._scroll_spin()
+        spin.setValue(50.0)  # above max, should clamp to 10.0
+        self.assertLessEqual(spin.value(), 10.0)
+
+    def test_crosshair_round_trip_through_model(self):
+        # Default crosshair state is True. Normalize to a known state, then toggle.
+        self.plot.set_crosshair_enabled(False)
+        self.assertFalse(self.plot.crosshair_enabled())
+        self.plot.set_crosshair_enabled(True)
+        self.assertTrue(self.plot.crosshair_enabled())
+
+    def test_crosshair_idempotent_set(self):
+        self.plot.set_crosshair_enabled(False)
+        emitted = []
+        self.plot.crosshair_enabled_changed.connect(lambda b: emitted.append(b))
+        self.plot.set_crosshair_enabled(False)  # idempotent — must not emit
+        self.assertEqual(len(emitted), 0)
+
+    def test_equal_aspect_round_trip_through_model(self):
+        self.plot.set_equal_aspect_ratio(True)
+        self.assertTrue(self.plot.equal_aspect_ratio())
+        self.plot.set_equal_aspect_ratio(False)
+        self.assertFalse(self.plot.equal_aspect_ratio())
+
+    def test_equal_aspect_idempotent_set(self):
+        self.plot.set_equal_aspect_ratio(True)  # set baseline
+        emitted = []
+        self.plot.equal_aspect_ratio_changed.connect(lambda b: emitted.append(b))
+        self.plot.set_equal_aspect_ratio(True)  # idempotent — must not emit
+        self.assertEqual(len(emitted), 0)
+
+    def test_delegate_has_at_least_three_checkboxes(self):
+        # legend, auto_scale, crosshair, equal_aspect = 4 boolean-ish widgets
+        # (legend is a custom LegendDelegate; the rest are BooleanDelegate which
+        # contains a QCheckBox). Expect at least 3 QCheckBox descendants.
+        checks = self.delegate.findChildren(QCheckBox)
+        self.assertGreaterEqual(len(checks), 3,
+            "expected at least 3 BooleanDelegate checkboxes")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
