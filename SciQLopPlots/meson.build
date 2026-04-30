@@ -243,6 +243,7 @@ sources = moc_files \
             '../src/SciQLopPlotDelegate.cpp',
             '../src/LegendDelegate.cpp',
             '../src/SciQLopGraphDelegate.cpp',
+            '../src/SciQLopColorMapBaseDelegate.cpp',
             '../src/SciQLopColorMapDelegate.cpp',
             '../src/SciQLopWaterfallDelegate.cpp',
             '../src/SciQLopGraphComponentDelegate.cpp',
