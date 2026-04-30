@@ -164,5 +164,108 @@ class TestHistogram2DDelegate(unittest.TestCase):
             panel2.deleteLater()
 
 
+class TestColorMapDelegate(unittest.TestCase):
+    """ColorMap delegate: gradient (inherited), auto_scale_y, Contours group."""
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 10, 50)
+        y = np.linspace(0, 10, 50)
+        z = np.outer(np.sin(x), np.cos(y))
+        self.plot, self.cmap = self.panel.plot(
+            x, y, z,
+            plot_type=PlotType.BasicXY,
+            graph_type=GraphType.ColorMap,
+        )
+        self.delegate = make_delegate_for(self.cmap)
+        self.assertIsNotNone(self.delegate)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.panel.deleteLater()
+
+    def _contours_box(self):
+        return find_group(self.delegate, 'Contours')
+
+    def _auto_scale_check(self):
+        # Auto scale Y is the loose BooleanDelegate (a QCheckBox descendant)
+        # OUTSIDE the Contours group. The Contours group also has a labels QCheckBox.
+        contours = self._contours_box()
+        in_contours = set(contours.findChildren(QCheckBox)) if contours else set()
+        for cb in self.delegate.findChildren(QCheckBox):
+            if cb not in in_contours:
+                return cb
+        return None
+
+    def _labels_check(self):
+        contours = self._contours_box()
+        if not contours:
+            return None
+        checks = contours.findChildren(QCheckBox)
+        return checks[-1] if checks else None
+
+    def test_contours_group_present(self):
+        box = self._contours_box()
+        self.assertIsNotNone(box, "Contours group should exist")
+        spins = box.findChildren(QSpinBox)
+        dspins = box.findChildren(QDoubleSpinBox)
+        self.assertEqual(len(spins), 1, "Contours group should have 1 SpinBox (level count)")
+        self.assertEqual(len(dspins), 1, "Contours group should have 1 DoubleSpinBox (width)")
+
+    def test_auto_scale_y_widget_to_model(self):
+        check = self._auto_scale_check()
+        self.assertIsNotNone(check, "auto_scale_y checkbox not found")
+        initial = self.cmap.auto_scale_y()
+        check.setChecked(not initial)
+        self.assertEqual(self.cmap.auto_scale_y(), not initial)
+
+    def test_auto_scale_y_model_to_widget(self):
+        self.cmap.set_auto_scale_y(True)
+        check = self._auto_scale_check()
+        self.assertTrue(check.isChecked())
+        self.cmap.set_auto_scale_y(False)
+        self.assertFalse(check.isChecked())
+
+    def test_contour_level_count_widget_to_model(self):
+        spin = self._contours_box().findChildren(QSpinBox)[0]
+        spin.setValue(7)
+        self.assertEqual(self.cmap.auto_contour_level_count(), 7)
+
+    def test_contour_level_count_model_to_widget(self):
+        self.cmap.set_auto_contour_levels(12)
+        spin = self._contours_box().findChildren(QSpinBox)[0]
+        self.assertEqual(spin.value(), 12)
+
+    def test_contour_width_widget_to_model(self):
+        dspin = self._contours_box().findChildren(QDoubleSpinBox)[0]
+        dspin.setValue(2.5)
+        self.assertAlmostEqual(self.cmap.contour_width(), 2.5, places=2)
+
+    def test_contour_width_model_to_widget(self):
+        self.cmap.set_contour_width(3.0)
+        dspin = self._contours_box().findChildren(QDoubleSpinBox)[0]
+        self.assertAlmostEqual(dspin.value(), 3.0, places=2)
+
+    def test_contour_labels_widget_to_model(self):
+        check = self._labels_check()
+        self.assertIsNotNone(check, "labels checkbox not found")
+        check.setChecked(True)
+        self.assertTrue(self.cmap.contour_labels_enabled())
+        check.setChecked(False)
+        self.assertFalse(self.cmap.contour_labels_enabled())
+
+    def test_contour_labels_model_to_widget(self):
+        self.cmap.set_contour_labels_enabled(True)
+        check = self._labels_check()
+        self.assertTrue(check.isChecked())
+        self.cmap.set_contour_labels_enabled(False)
+        self.assertFalse(check.isChecked())
+
+    def test_zero_auto_levels_manual_mode(self):
+        self.cmap.set_auto_contour_levels(0)
+        spin = self._contours_box().findChildren(QSpinBox)[0]
+        self.assertEqual(spin.value(), 0)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
