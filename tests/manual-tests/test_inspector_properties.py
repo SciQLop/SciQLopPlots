@@ -340,5 +340,124 @@ class TestGraphComponentDelegate(unittest.TestCase):
             panel.deleteLater()
 
 
+class TestPlotAxisDelegate(unittest.TestCase):
+    """PlotAxis delegate: label + Range group with type guards.
+
+    Range group present for numeric axes; absent for time and color-scale axes.
+    Label edit present for all axis types.
+    """
+
+    def _make_xy_panel(self):
+        panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        plot, _g = panel.plot(
+            x, y, plot_type=PlotType.BasicXY, graph_type=GraphType.Line, labels=["s"],
+        )
+        return panel, plot
+
+    def _make_time_panel(self):
+        panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+        t = np.arange(0, 100, dtype=np.float64)
+        plot, _g = panel.plot(t, np.sin(t / 5), plot_type=PlotType.TimeSeries, labels=["t"])
+        return panel, plot
+
+    def _delegate_label_edit(self, delegate):
+        # Each QDoubleSpinBox contains an internal QLineEdit. Filter those out
+        # by skipping any QLineEdit whose parent is a QDoubleSpinBox.
+        for edit in delegate.findChildren(QLineEdit):
+            if not isinstance(edit.parent(), QDoubleSpinBox):
+                return edit
+        return None
+
+    # --- Numeric axis ---
+
+    def test_numeric_axis_has_range_group(self):
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            self.assertFalse(ax.is_time_axis())
+            delegate = make_delegate_for(ax)
+            self.assertIsNotNone(find_group(delegate, 'Range'))
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_numeric_axis_label_edit(self):
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            edit = self._delegate_label_edit(delegate)
+            self.assertIsNotNone(edit, "label QLineEdit not found")
+            edit.setText("My Axis")
+            edit.editingFinished.emit()
+            self.assertEqual(ax.label(), "My Axis")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_numeric_axis_range_widget_to_model(self):
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Range')
+            spins = box.findChildren(QDoubleSpinBox)
+            spins[0].setValue(0.1)
+            spins[0].editingFinished.emit()
+            spins[1].setValue(0.9)
+            spins[1].editingFinished.emit()
+            r = ax.range()
+            self.assertAlmostEqual(r.start(), 0.1, places=4)
+            self.assertAlmostEqual(r.stop(), 0.9, places=4)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_numeric_axis_range_model_to_widget(self):
+        from SciQLopPlots import SciQLopPlotRange
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Range')
+            spins = box.findChildren(QDoubleSpinBox)
+            ax.set_range(SciQLopPlotRange(0.2, 0.8))
+            self.assertAlmostEqual(spins[0].value(), 0.2, places=4)
+            self.assertAlmostEqual(spins[1].value(), 0.8, places=4)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    # --- Time axis ---
+
+    def test_time_axis_no_range_group(self):
+        panel, plot = self._make_time_panel()
+        try:
+            tax = plot.x_axis()
+            self.assertTrue(tax.is_time_axis())
+            delegate = make_delegate_for(tax)
+            self.assertIsNone(find_group(delegate, 'Range'),
+                              "time axis must NOT show Range group")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_time_axis_has_label_edit(self):
+        panel, plot = self._make_time_panel()
+        try:
+            tax = plot.x_axis()
+            delegate = make_delegate_for(tax)
+            edit = self._delegate_label_edit(delegate)
+            self.assertIsNotNone(edit, "time axis must show Label edit")
+            edit.setText("Time")
+            edit.editingFinished.emit()
+            self.assertEqual(tax.label(), "Time")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
