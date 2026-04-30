@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QApplication, QGroupBox, QSpinBox, QDoubleSpinBox,
 
 import numpy as np
 from SciQLopPlots import (
-    SciQLopMultiPlotPanel, PlotType, GraphType,
+    SciQLopMultiPlotPanel, SciQLopPlot, PlotType, GraphType,
 )
 from SciQLopPlots.SciQLopPlotsBindings import DelegateRegistry
 
@@ -544,6 +544,74 @@ class TestPlotDelegate(unittest.TestCase):
         checks = self.delegate.findChildren(QCheckBox)
         self.assertGreaterEqual(len(checks), 3,
             "expected at least 3 BooleanDelegate checkboxes")
+
+
+class TestWaterfallDelegateRegression(unittest.TestCase):
+    """Regression: after wrapping mode/spacing/offsets in an Offsets QGroupBox,
+    the waterfall delegate must still correctly drive the model.
+
+    Constructed via SciQLopPlot directly because SciQLopMultiPlotPanel.plot(...)
+    routes waterfall through a non-existent cls.waterfall accessor (pre-existing
+    panel-API gap, unrelated to this task).
+    """
+
+    def setUp(self):
+        self.plot = SciQLopPlot()
+        x = np.linspace(0, 10, 200)
+        y = np.column_stack([np.sin(x * k) for k in range(1, 4)])
+        self.wf = self.plot.plot(
+            x, y,
+            graph_type=GraphType.Waterfall,
+            labels=["a", "b", "c"],
+        )
+        self.delegate = make_delegate_for(self.wf)
+        self.assertIsNotNone(self.delegate)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.plot.deleteLater()
+
+    def test_offsets_group_present(self):
+        box = find_group(self.delegate, 'Offsets')
+        self.assertIsNotNone(box)
+
+    def test_offsets_group_contains_mode_combo(self):
+        box = find_group(self.delegate, 'Offsets')
+        combos = box.findChildren(QComboBox)
+        # Mode combo: exactly 2 items ("Uniform", "Custom")
+        mode = next((c for c in combos if c.count() == 2 and c.itemText(0) == 'Uniform'), None)
+        self.assertIsNotNone(mode, "Mode combo not found inside Offsets group")
+
+    def test_uniform_spacing_widget_to_model(self):
+        box = find_group(self.delegate, 'Offsets')
+        # Spacing is the first DoubleSpinBox inside the Offsets group.
+        spin = box.findChildren(QDoubleSpinBox)[0]
+        spin.setValue(2.5)
+        self.assertAlmostEqual(self.wf.uniform_spacing(), 2.5, places=2)
+
+    def test_uniform_spacing_model_to_widget(self):
+        self.wf.set_uniform_spacing(3.0)
+        box = find_group(self.delegate, 'Offsets')
+        spin = box.findChildren(QDoubleSpinBox)[0]
+        self.assertAlmostEqual(spin.value(), 3.0, places=2)
+
+    def test_gain_spinbox_loose_outside_group(self):
+        # Gain is loose (outside any QGroupBox). It's the only DoubleSpinBox in
+        # the delegate that is NOT a child of the Offsets group.
+        box = find_group(self.delegate, 'Offsets')
+        all_dspins = self.delegate.findChildren(QDoubleSpinBox)
+        in_box = set(box.findChildren(QDoubleSpinBox))
+        loose = [s for s in all_dspins if s not in in_box]
+        self.assertGreaterEqual(len(loose), 1, "gain spinbox should be loose")
+        loose[-1].setValue(1.5)
+        self.assertAlmostEqual(self.wf.gain(), 1.5, places=2)
+
+    def test_normalize_loose_outside_group(self):
+        box = find_group(self.delegate, 'Offsets')
+        all_checks = self.delegate.findChildren(QCheckBox)
+        in_box = set(box.findChildren(QCheckBox))
+        loose = [c for c in all_checks if c not in in_box]
+        self.assertGreaterEqual(len(loose), 1, "normalize checkbox should be loose")
 
 
 if __name__ == '__main__':
