@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2026, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,21 +19,25 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#pragma once
-
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 
-class SciQLopColorMap;
-
-class SciQLopColorMapDelegate : public SciQLopColorMapBaseDelegate
+SciQLopColorMapBase* SciQLopColorMapBaseDelegate::color_map_base() const
 {
-    Q_OBJECT
+    return as_type<SciQLopColorMapBase>(m_object);
+}
 
-    SciQLopColorMap* colorMap() const;
-
-public:
-    using compatible_type = SciQLopColorMap;
-    SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent = nullptr);
-
-    ~SciQLopColorMapDelegate() override = default;
-};
+SciQLopColorMapBaseDelegate::SciQLopColorMapBaseDelegate(SciQLopColorMapBase* object,
+                                                         QWidget* parent)
+        : PropertyDelegateBase(object, parent)
+{
+    auto* gradient = new ColorGradientDelegate(object->gradient(), this);
+    m_layout->addRow("Gradient", gradient);
+    connect(gradient, &ColorGradientDelegate::gradientChanged, this,
+            [this](ColorGradient g)
+            {
+                if (auto* cm = color_map_base())
+                    cm->set_gradient(g);
+            });
+}

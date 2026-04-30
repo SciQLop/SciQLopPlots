@@ -24,6 +24,8 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QVBoxLayout>
@@ -32,25 +34,30 @@
 SciQLopWaterfallDelegate::SciQLopWaterfallDelegate(SciQLopWaterfallGraph* object, QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    m_modeCombo = new QComboBox;
+    auto* offsetsBox = new QGroupBox("Offsets", this);
+    auto* offsetsForm = new QFormLayout(offsetsBox);
+
+    m_modeCombo = new QComboBox(offsetsBox);
     m_modeCombo->addItem("Uniform", QVariant::fromValue(WaterfallOffsetMode::Uniform));
     m_modeCombo->addItem("Custom", QVariant::fromValue(WaterfallOffsetMode::Custom));
     m_modeCombo->setCurrentIndex(object->offset_mode() == WaterfallOffsetMode::Uniform ? 0 : 1);
-    m_layout->addRow("Offset mode", m_modeCombo);
+    offsetsForm->addRow("Mode", m_modeCombo);
 
-    m_spacingSpin = new QDoubleSpinBox;
+    m_spacingSpin = new QDoubleSpinBox(offsetsBox);
     m_spacingSpin->setRange(-1e9, 1e9);
     m_spacingSpin->setDecimals(4);
     m_spacingSpin->setValue(object->uniform_spacing());
-    m_layout->addRow("Uniform spacing", m_spacingSpin);
+    offsetsForm->addRow("Uniform spacing", m_spacingSpin);
 
-    m_offsetsScroll = new QScrollArea;
+    m_offsetsScroll = new QScrollArea(offsetsBox);
     m_offsetsScroll->setWidgetResizable(true);
     auto* offsetsHost = new QWidget;
     m_offsetsLayout = new QVBoxLayout(offsetsHost);
     m_offsetsScroll->setWidget(offsetsHost);
     m_offsetsScroll->setMaximumHeight(120);
-    m_layout->addRow("Offsets", m_offsetsScroll);
+    offsetsForm->addRow("Per-line", m_offsetsScroll);
+
+    m_layout->addRow(offsetsBox);
     rebuild_offsets_editor();
 
     m_normalizeCheck = new QCheckBox("Normalize per trace");

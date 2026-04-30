@@ -325,6 +325,9 @@ public:
      */
     void enable_cursor(bool enable = true) noexcept override;
 
+    void set_crosshair_enabled(bool enable);
+    bool crosshair_enabled() const;
+
     void minimize_margins() override;
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,

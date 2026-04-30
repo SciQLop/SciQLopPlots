@@ -736,7 +736,20 @@ double SciQLopPlot::scroll_factor() const noexcept
 
 void SciQLopPlot::enable_cursor(bool enable) noexcept
 {
+    set_crosshair_enabled(enable);
+}
+
+void SciQLopPlot::set_crosshair_enabled(bool enable)
+{
+    if (m_impl->crosshair_enabled() == enable)
+        return;
     m_impl->set_crosshair_enabled(enable);
+    Q_EMIT crosshair_enabled_changed(enable);
+}
+
+bool SciQLopPlot::crosshair_enabled() const
+{
+    return m_impl->crosshair_enabled();
 }
 
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
@@ -1032,6 +1045,7 @@ void SciQLopPlot::set_equal_aspect_ratio(bool enabled) noexcept
         disconnect(m_impl->xAxis, qOverload<const QCPRange&>(&QCPAxis::rangeChanged),
                    this, &SciQLopPlot::_enforce_equal_aspect);
     }
+    Q_EMIT equal_aspect_ratio_changed(enabled);
 }
 
 void SciQLopPlot::_enforce_equal_aspect()

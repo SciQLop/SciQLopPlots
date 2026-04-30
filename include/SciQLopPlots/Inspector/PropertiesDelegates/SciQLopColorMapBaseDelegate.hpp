@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
 -- This file is a part of the SciQLop Software
--- Copyright (C) 2024, Plasma Physics Laboratory - CNRS
+-- Copyright (C) 2026, Plasma Physics Laboratory - CNRS
 --
 -- This program is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -20,20 +20,20 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 
-#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
+class SciQLopColorMapBase;
 
-class SciQLopColorMap;
-
-class SciQLopColorMapDelegate : public SciQLopColorMapBaseDelegate
+class SciQLopColorMapBaseDelegate : public PropertyDelegateBase
 {
     Q_OBJECT
 
-    SciQLopColorMap* colorMap() const;
+protected:
+    SciQLopColorMapBase* color_map_base() const;
 
 public:
-    using compatible_type = SciQLopColorMap;
-    SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent = nullptr);
+    using compatible_type = SciQLopColorMapBase;
+    SciQLopColorMapBaseDelegate(SciQLopColorMapBase* object, QWidget* parent = nullptr);
 
-    ~SciQLopColorMapDelegate() override = default;
+    ~SciQLopColorMapBaseDelegate() override = default;
 };

@@ -23,17 +23,19 @@
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
 
-class SciQLopColorMap;
+class SciQLopHistogram2D;
+class QSpinBox;
+class QComboBox;
 
-class SciQLopColorMapDelegate : public SciQLopColorMapBaseDelegate
+class SciQLopHistogram2DDelegate : public SciQLopColorMapBaseDelegate
 {
     Q_OBJECT
 
-    SciQLopColorMap* colorMap() const;
+    SciQLopHistogram2D* histogram() const;
 
 public:
-    using compatible_type = SciQLopColorMap;
-    SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent = nullptr);
+    using compatible_type = SciQLopHistogram2D;
+    SciQLopHistogram2DDelegate(SciQLopHistogram2D* object, QWidget* parent = nullptr);
 
-    ~SciQLopColorMapDelegate() override = default;
+    ~SciQLopHistogram2DDelegate() override = default;
 };

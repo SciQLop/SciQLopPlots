@@ -71,6 +71,13 @@ public:
 
     void set_normalization(int normalization);
     int normalization() const;
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void bins_changed(int key_bins, int value_bins);
+    Q_SIGNAL void normalization_changed(int normalization);
 };
 
 

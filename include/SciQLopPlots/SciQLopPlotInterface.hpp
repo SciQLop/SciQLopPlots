@@ -370,19 +370,20 @@ public:
     inline virtual SciQLopGraphInterface*
     waterfall(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               QVariantMap metaData = {})
     {
-        return plot_impl(x, y, labels, colors, ::GraphType::Waterfall,
-                         ::GraphMarkerShape::NoMarker, metaData);
+        return plot_impl(x, y, labels, colors, ::GraphType::Waterfall, marker, metaData);
     }
 
     inline virtual SciQLopGraphInterface*
     waterfall(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
+              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               QObject* sync_with = nullptr, QVariantMap metaData = {})
     {
-        return plot_impl(callable, labels, colors, ::GraphType::Waterfall,
-                         ::GraphMarkerShape::NoMarker, sync_with, metaData);
+        return plot_impl(callable, labels, colors, ::GraphType::Waterfall, marker, sync_with,
+                         metaData);
     }
 
     inline virtual SciQLopColorMapInterface*
@@ -509,6 +510,8 @@ public:
 signals:
 #endif
     Q_SIGNAL void scroll_factor_changed(double factor);
+    Q_SIGNAL void crosshair_enabled_changed(bool enabled);
+    Q_SIGNAL void equal_aspect_ratio_changed(bool enabled);
     Q_SIGNAL void x_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void x2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void y_axis_range_changed(SciQLopPlotRange range);
