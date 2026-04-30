@@ -38,7 +38,9 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp"
@@ -220,8 +222,10 @@ void register_all_types()
     delegates.register_type<SciQLopPlotDelegate>();
     delegates.register_type<SciQLopGraphDelegate>();
     delegates.register_type<SciQLopGraphComponentDelegate>();
+    delegates.register_type<SciQLopColorMapBaseDelegate>();
     delegates.register_type<SciQLopColorMapDelegate>();
     delegates.register_type<SciQLopWaterfallDelegate>();
+    delegates.register_type<SciQLopHistogram2DDelegate>();
     delegates.register_type<SciQLopPlotAxisDelegate>();
     delegates.register_type<InspectorExtensionDelegate>();
 }
