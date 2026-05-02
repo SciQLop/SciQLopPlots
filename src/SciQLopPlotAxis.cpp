@@ -175,6 +175,66 @@ void SciQLopPlotAxis::set_tick_labels_visible(bool visible) noexcept
     }
 }
 
+void SciQLopPlotAxis::set_label_font(const QFont& font) noexcept
+{
+    if (!m_axis.isNull() && m_axis->labelFont() != font)
+    {
+        m_axis->setLabelFont(font);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT label_font_changed(font);
+    }
+}
+
+void SciQLopPlotAxis::set_label_color(const QColor& color) noexcept
+{
+    if (!m_axis.isNull() && m_axis->labelColor() != color)
+    {
+        m_axis->setLabelColor(color);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT label_color_changed(color);
+    }
+}
+
+void SciQLopPlotAxis::set_tick_label_font(const QFont& font) noexcept
+{
+    if (!m_axis.isNull() && m_axis->tickLabelFont() != font)
+    {
+        m_axis->setTickLabelFont(font);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT tick_label_font_changed(font);
+    }
+}
+
+void SciQLopPlotAxis::set_tick_label_color(const QColor& color) noexcept
+{
+    if (!m_axis.isNull() && m_axis->tickLabelColor() != color)
+    {
+        m_axis->setTickLabelColor(color);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT tick_label_color_changed(color);
+    }
+}
+
+QFont SciQLopPlotAxis::label_font() const noexcept
+{
+    return m_axis.isNull() ? QFont() : m_axis->labelFont();
+}
+
+QColor SciQLopPlotAxis::label_color() const noexcept
+{
+    return m_axis.isNull() ? QColor() : m_axis->labelColor();
+}
+
+QFont SciQLopPlotAxis::tick_label_font() const noexcept
+{
+    return m_axis.isNull() ? QFont() : m_axis->tickLabelFont();
+}
+
+QColor SciQLopPlotAxis::tick_label_color() const noexcept
+{
+    return m_axis.isNull() ? QColor() : m_axis->tickLabelColor();
+}
+
 SciQLopPlotRange SciQLopPlotAxis::range() const noexcept
 {
     if (m_axis.isNull())
