@@ -55,3 +55,33 @@ void SciQLopPlotLegend::set_position(const QPointF&)
 {
     WARN_UNSUPPORTED_FUNCTIONALITY;
 }
+
+QFont SciQLopPlotLegend::font() const
+{
+    return m_legend ? m_legend->font() : QFont();
+}
+
+void SciQLopPlotLegend::set_font(const QFont& font)
+{
+    if (m_legend && m_legend->font() != font)
+    {
+        m_legend->setFont(font);
+        m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT font_changed(font);
+    }
+}
+
+QColor SciQLopPlotLegend::color() const
+{
+    return m_legend ? m_legend->textColor() : QColor();
+}
+
+void SciQLopPlotLegend::set_color(const QColor& color)
+{
+    if (m_legend && m_legend->textColor() != color)
+    {
+        m_legend->setTextColor(color);
+        m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT color_changed(color);
+    }
+}
