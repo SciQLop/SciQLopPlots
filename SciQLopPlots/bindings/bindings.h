@@ -19,6 +19,7 @@
 #include <SciQLopPlots/Inspector/Model/Node.hpp>
 #include <SciQLopPlots/Inspector/InspectorExtension.hpp>
 #include <SciQLopPlots/Inspector/PropertyDelegateBase.hpp>
+#include <SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp>
 #include <SciQLopPlots/Inspector/View/InspectorView.hpp>
 #include <SciQLopPlots/Inspector/View/PropertiesPanel.hpp>
 #include <SciQLopPlots/Inspector/View/TreeView.hpp>
