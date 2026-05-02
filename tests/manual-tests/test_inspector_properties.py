@@ -883,5 +883,61 @@ class TestTextItemFontControls(unittest.TestCase):
         self.assertEqual(self.item.font().family(), "Arial")
 
 
+class TestFontDelegate(unittest.TestCase):
+    """FontDelegate widget surface — getter, setter, signal isolation.
+
+    Driven via the public API (setFont/setColor/font/color + the two
+    signals). Internal popup widgets are not exercised here; they're
+    indirectly covered by the inspector tests that wire FontDelegate
+    to model setters.
+    """
+
+    def setUp(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont, QColor
+        self.delegate = FontDelegate(QFont("Arial", 10), QColor("black"), None)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+
+    def test_initial_font_and_color(self):
+        self.assertEqual(self.delegate.font().family(), "Arial")
+        self.assertEqual(self.delegate.font().pointSize(), 10)
+        self.assertEqual(self.delegate.color().name(), "#000000")
+
+    def test_set_font_emits_font_changed_only(self):
+        from PySide6.QtGui import QFont
+        font_emits, color_emits = [], []
+        self.delegate.fontChanged.connect(lambda f: font_emits.append(f))
+        self.delegate.colorChanged.connect(lambda c: color_emits.append(c))
+        self.delegate.setFont(QFont("Courier New", 12))
+        self.assertEqual(len(font_emits), 1)
+        self.assertEqual(len(color_emits), 0)
+
+    def test_set_color_emits_color_changed_only(self):
+        from PySide6.QtGui import QColor
+        font_emits, color_emits = [], []
+        self.delegate.fontChanged.connect(lambda f: font_emits.append(f))
+        self.delegate.colorChanged.connect(lambda c: color_emits.append(c))
+        self.delegate.setColor(QColor("#ff00ff"))
+        self.assertEqual(len(color_emits), 1)
+        self.assertEqual(len(font_emits), 0)
+
+    def test_set_font_idempotent_no_emit(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Arial", 10)
+        emits = []
+        self.delegate.fontChanged.connect(lambda x: emits.append(x))
+        self.delegate.setFont(f)  # same as initial
+        self.assertEqual(len(emits), 0)
+
+    def test_set_color_idempotent_no_emit(self):
+        from PySide6.QtGui import QColor
+        emits = []
+        self.delegate.colorChanged.connect(lambda x: emits.append(x))
+        self.delegate.setColor(QColor("black"))  # same as initial
+        self.assertEqual(len(emits), 0)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
