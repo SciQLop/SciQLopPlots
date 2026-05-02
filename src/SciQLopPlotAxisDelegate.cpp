@@ -56,12 +56,29 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
 {
     auto* ax = this->axis();
 
-    auto* axis_visible_delegate = new BooleanDelegate(ax->tick_labels_visible(), this);
+    auto* tickBox = new QGroupBox("Tick labels", this);
+    auto* tickLayout = new QFormLayout(tickBox);
+
+    auto* axis_visible_delegate = new BooleanDelegate(ax->tick_labels_visible(), tickBox);
+    tickLayout->addRow("Visible", axis_visible_delegate);
     connect(axis_visible_delegate, &BooleanDelegate::value_changed, ax,
             &SciQLopPlotAxisInterface::set_tick_labels_visible);
     connect(ax, &SciQLopPlotAxisInterface::tick_labels_visible_changed,
             axis_visible_delegate, &BooleanDelegate::set_value);
-    addWidgetWithLabel(axis_visible_delegate, "Tick labels visible");
+
+    auto* tickFontDelegate
+        = new FontDelegate(ax->tick_label_font(), ax->tick_label_color(), tickBox);
+    tickLayout->addRow("Font", tickFontDelegate);
+    connect(tickFontDelegate, &FontDelegate::fontChanged, ax,
+            &SciQLopPlotAxisInterface::set_tick_label_font);
+    connect(ax, &SciQLopPlotAxisInterface::tick_label_font_changed,
+            tickFontDelegate, &FontDelegate::setFont);
+    connect(tickFontDelegate, &FontDelegate::colorChanged, ax,
+            &SciQLopPlotAxisInterface::set_tick_label_color);
+    connect(ax, &SciQLopPlotAxisInterface::tick_label_color_changed,
+            tickFontDelegate, &FontDelegate::setColor);
+
+    m_layout->addRow(tickBox);
 
     if (!ax->is_time_axis())
     {

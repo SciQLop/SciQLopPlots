@@ -556,6 +556,70 @@ class TestPlotAxisDelegate(unittest.TestCase):
         finally:
             panel.deleteLater()
 
+    def test_tick_labels_group_present(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        panel, plot = self._make_xy_panel()
+        try:
+            delegate = make_delegate_for(plot.x_axis())
+            box = find_group(delegate, 'Tick labels')
+            self.assertIsNotNone(box, "Tick labels group should exist")
+            self.assertIsNotNone(box.findChild(QCheckBox),
+                                 "Tick labels group should contain visibility QCheckBox")
+            self.assertIsNotNone(box.findChild(FontDelegate),
+                                 "Tick labels group should contain a FontDelegate")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_tick_label_font_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Tick labels')
+            fd = box.findChild(FontDelegate)
+            fd.setFont(QFont("Courier New", 8))
+            self.assertEqual(ax.tick_label_font().family(), "Courier New")
+            self.assertEqual(ax.tick_label_font().pointSize(), 8)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_tick_label_font_model_to_widget(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Tick labels')
+            fd = box.findChild(FontDelegate)
+            ax.set_tick_label_font(QFont("Arial", 11))
+            self.assertEqual(fd.font().family(), "Arial")
+            self.assertEqual(fd.font().pointSize(), 11)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_label_and_tick_label_font_delegates_are_distinct(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            ax.set_label_font(QFont("Times", 18))
+            ax.set_tick_label_font(QFont("Arial", 9))
+            label_box = find_group(delegate, 'Label')
+            tick_box = find_group(delegate, 'Tick labels')
+            self.assertEqual(label_box.findChild(FontDelegate).font().family(), "Times")
+            self.assertEqual(tick_box.findChild(FontDelegate).font().family(), "Arial")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
 
 class TestAxisFontControls(unittest.TestCase):
     """Axis label and tick-label font/color setters + signals.
