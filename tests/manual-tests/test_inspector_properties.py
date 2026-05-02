@@ -495,6 +495,83 @@ class TestPlotAxisDelegate(unittest.TestCase):
             panel.deleteLater()
 
 
+class TestAxisFontControls(unittest.TestCase):
+    """Axis label and tick-label font/color setters + signals.
+
+    Exercises the wrapper surface directly (no delegate). The inspector
+    delegate is exercised in TestPlotAxisDelegate's added cases.
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _g = self.panel.plot(
+            x, y,
+            plot_type=PlotType.BasicXY,
+            graph_type=GraphType.Line,
+            labels=["s"],
+        )
+        self.axis = self.plot.x_axis()
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_label_font_round_trip(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Courier New", 14)
+        f.setBold(True)
+        self.axis.set_label_font(f)
+        got = self.axis.label_font()
+        self.assertEqual(got.family(), "Courier New")
+        self.assertEqual(got.pointSize(), 14)
+        self.assertTrue(got.bold())
+
+    def test_label_color_round_trip(self):
+        from PySide6.QtGui import QColor
+        self.axis.set_label_color(QColor("red"))
+        self.assertEqual(self.axis.label_color().name(), "#ff0000")
+
+    def test_tick_label_font_round_trip(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Arial", 9)
+        f.setItalic(True)
+        self.axis.set_tick_label_font(f)
+        got = self.axis.tick_label_font()
+        self.assertEqual(got.family(), "Arial")
+        self.assertEqual(got.pointSize(), 9)
+        self.assertTrue(got.italic())
+
+    def test_tick_label_color_round_trip(self):
+        from PySide6.QtGui import QColor
+        self.axis.set_tick_label_color(QColor("#00aa00"))
+        self.assertEqual(self.axis.tick_label_color().name(), "#00aa00")
+
+    def test_label_font_signal_fires_once(self):
+        from PySide6.QtGui import QFont
+        emitted = []
+        self.axis.label_font_changed.connect(lambda f: emitted.append(f))
+        self.axis.set_label_font(QFont("Courier New", 11))
+        self.assertEqual(len(emitted), 1)
+
+    def test_label_font_idempotent_no_emit(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Courier New", 11)
+        self.axis.set_label_font(f)  # baseline
+        emitted = []
+        self.axis.label_font_changed.connect(lambda x: emitted.append(x))
+        self.axis.set_label_font(f)  # same value
+        self.assertEqual(len(emitted), 0)
+
+    def test_label_color_change_does_not_fire_font_signal(self):
+        from PySide6.QtGui import QColor
+        emitted = []
+        self.axis.label_font_changed.connect(lambda f: emitted.append(f))
+        self.axis.set_label_color(QColor("blue"))
+        self.assertEqual(len(emitted), 0,
+                         "label_color edit must not fire label_font_changed")
+
+
 class TestPlotDelegate(unittest.TestCase):
     """SciQLopPlot delegate: legend, auto_scale, crosshair, equal aspect, scroll factor.
 
