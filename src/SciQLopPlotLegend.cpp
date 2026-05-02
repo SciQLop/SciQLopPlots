@@ -58,12 +58,12 @@ void SciQLopPlotLegend::set_position(const QPointF&)
 
 QFont SciQLopPlotLegend::font() const
 {
-    return m_legend ? m_legend->font() : QFont();
+    return m_legend->font();
 }
 
 void SciQLopPlotLegend::set_font(const QFont& font)
 {
-    if (m_legend && m_legend->font() != font)
+    if (m_legend->font() != font)
     {
         m_legend->setFont(font);
         m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
@@ -73,12 +73,12 @@ void SciQLopPlotLegend::set_font(const QFont& font)
 
 QColor SciQLopPlotLegend::color() const
 {
-    return m_legend ? m_legend->textColor() : QColor();
+    return m_legend->textColor();
 }
 
 void SciQLopPlotLegend::set_color(const QColor& color)
 {
-    if (m_legend && m_legend->textColor() != color)
+    if (m_legend->textColor() != color)
     {
         m_legend->setTextColor(color);
         m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
