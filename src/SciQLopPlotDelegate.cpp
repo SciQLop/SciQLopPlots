@@ -23,11 +23,13 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp"
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
 #include <QDoubleSpinBox>
+#include <QGroupBox>
 #include <QSignalBlocker>
 
 SciQLopPlot* SciQLopPlotDelegate::plot() const
@@ -38,13 +40,29 @@ SciQLopPlot* SciQLopPlotDelegate::plot() const
 SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    auto legend = object->legend();
-    auto* legend_delegate = new LegendDelegate(legend->is_visible(), this);
-    m_layout->addRow(legend_delegate);
+    auto* legend = object->legend();
+    auto* legendBox = new QGroupBox("Legend", this);
+    auto* legendLayout = new QFormLayout(legendBox);
+
+    auto* legend_delegate = new LegendDelegate(legend->is_visible(), legendBox);
+    legendLayout->addRow(legend_delegate);
     connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
             &SciQLopPlotLegendInterface::set_visible);
     connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
             &LegendDelegate::set_visible);
+
+    auto* legendFont = new FontDelegate(legend->font(), legend->color(), legendBox);
+    legendLayout->addRow("Font", legendFont);
+    connect(legendFont, &FontDelegate::fontChanged, legend,
+            &SciQLopPlotLegendInterface::set_font);
+    connect(legend, &SciQLopPlotLegendInterface::font_changed, legendFont,
+            &FontDelegate::setFont);
+    connect(legendFont, &FontDelegate::colorChanged, legend,
+            &SciQLopPlotLegendInterface::set_color);
+    connect(legend, &SciQLopPlotLegendInterface::color_changed, legendFont,
+            &FontDelegate::setColor);
+
+    m_layout->addRow(legendBox);
 
     auto* auto_scale = new BooleanDelegate(object->auto_scale());
     m_layout->addRow("Auto scale", auto_scale);
