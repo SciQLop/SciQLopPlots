@@ -38,6 +38,7 @@ namespace
 {
 constexpr int MIN_FONT_SIZE = 4;
 constexpr int MAX_FONT_SIZE = 72;
+constexpr int DEFAULT_POINT_SIZE = 10;
 }
 
 FontDelegate::FontDelegate(const QFont& font, const QColor& color, QWidget* parent)
@@ -47,7 +48,6 @@ FontDelegate::FontDelegate(const QFont& font, const QColor& color, QWidget* pare
 {
     setAutoFillBackground(false);
     setFlat(true);
-    setText("Aa");
     setMinimumWidth(48);
     connect(this, &QPushButton::clicked, this, &FontDelegate::toggle_popup);
 }
@@ -119,7 +119,7 @@ void FontDelegate::ensure_popup()
 
     m_size = new QSpinBox(m_popup);
     m_size->setRange(MIN_FONT_SIZE, MAX_FONT_SIZE);
-    m_size->setValue(m_font.pointSize() > 0 ? m_font.pointSize() : 10);
+    m_size->setValue(m_font.pointSize() > 0 ? m_font.pointSize() : DEFAULT_POINT_SIZE);
     m_size->setSuffix(" pt");
     font_row->addWidget(m_size);
     outer->addLayout(font_row);
@@ -178,7 +178,7 @@ void FontDelegate::sync_popup_widgets()
     QSignalBlocker bi(m_italic);
     QSignalBlocker bc(m_color_picker);
     m_family->setCurrentFont(m_font);
-    m_size->setValue(m_font.pointSize() > 0 ? m_font.pointSize() : 10);
+    m_size->setValue(m_font.pointSize() > 0 ? m_font.pointSize() : DEFAULT_POINT_SIZE);
     m_bold->setChecked(m_font.bold());
     m_italic->setChecked(m_font.italic());
     m_color_picker->setColor(m_color);
@@ -192,7 +192,7 @@ void FontDelegate::paintEvent(QPaintEvent* event)
     painter.setPen(m_color);
     QFont preview = m_font;
     if (preview.pointSize() <= 0)
-        preview.setPointSize(10);
+        preview.setPointSize(DEFAULT_POINT_SIZE);
     painter.setFont(preview);
     painter.drawText(rect(), Qt::AlignCenter, "Aa");
 }
