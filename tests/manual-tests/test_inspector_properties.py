@@ -494,6 +494,68 @@ class TestPlotAxisDelegate(unittest.TestCase):
         finally:
             panel.deleteLater()
 
+    def test_label_group_present_with_font_delegate(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        panel, plot = self._make_xy_panel()
+        try:
+            delegate = make_delegate_for(plot.x_axis())
+            box = find_group(delegate, 'Label')
+            self.assertIsNotNone(box, "Label group should exist")
+            self.assertIsNotNone(box.findChild(QLineEdit),
+                                 "Label group should contain the QLineEdit for label text")
+            self.assertIsNotNone(box.findChild(FontDelegate),
+                                 "Label group should contain a FontDelegate")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_label_font_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Label')
+            font_widget = box.findChild(FontDelegate)
+            font_widget.setFont(QFont("Courier New", 13))
+            self.assertEqual(ax.label_font().family(), "Courier New")
+            self.assertEqual(ax.label_font().pointSize(), 13)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_label_font_model_to_widget(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Label')
+            font_widget = box.findChild(FontDelegate)
+            ax.set_label_font(QFont("Arial", 17))
+            self.assertEqual(font_widget.font().family(), "Arial")
+            self.assertEqual(font_widget.font().pointSize(), 17)
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
+    def test_label_color_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QColor
+        panel, plot = self._make_xy_panel()
+        try:
+            ax = plot.x_axis()
+            delegate = make_delegate_for(ax)
+            box = find_group(delegate, 'Label')
+            font_widget = box.findChild(FontDelegate)
+            font_widget.setColor(QColor("#abcdef"))
+            self.assertEqual(ax.label_color().name(), "#abcdef")
+            delegate.deleteLater()
+        finally:
+            panel.deleteLater()
+
 
 class TestAxisFontControls(unittest.TestCase):
     """Axis label and tick-label font/color setters + signals.
