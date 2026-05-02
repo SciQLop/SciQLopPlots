@@ -1065,5 +1065,56 @@ class TestFontDelegate(unittest.TestCase):
         self.assertEqual(len(emits), 0)
 
 
+class TestPlotDelegateLegendFont(unittest.TestCase):
+    """Plot delegate's Legend group: visibility + FontDelegate."""
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _g = self.panel.plot(
+            x, y, plot_type=PlotType.BasicXY,
+            graph_type=GraphType.Line, labels=["s"],
+        )
+        self.delegate = make_delegate_for(self.plot)
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.panel.deleteLater()
+
+    def test_legend_group_present(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        box = find_group(self.delegate, 'Legend')
+        self.assertIsNotNone(box, "Legend group should exist on plot delegate")
+        self.assertIsNotNone(box.findChild(FontDelegate),
+                             "Legend group should contain a FontDelegate")
+
+    def test_legend_font_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        box = find_group(self.delegate, 'Legend')
+        fd = box.findChild(FontDelegate)
+        fd.setFont(QFont("Courier New", 11))
+        self.assertEqual(self.plot.legend().font().family(), "Courier New")
+        self.assertEqual(self.plot.legend().font().pointSize(), 11)
+
+    def test_legend_font_model_to_widget(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        box = find_group(self.delegate, 'Legend')
+        fd = box.findChild(FontDelegate)
+        self.plot.legend().set_font(QFont("Arial", 14))
+        self.assertEqual(fd.font().family(), "Arial")
+        self.assertEqual(fd.font().pointSize(), 14)
+
+    def test_legend_color_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QColor
+        box = find_group(self.delegate, 'Legend')
+        fd = box.findChild(FontDelegate)
+        fd.setColor(QColor("#123456"))
+        self.assertEqual(self.plot.legend().color().name(), "#123456")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
