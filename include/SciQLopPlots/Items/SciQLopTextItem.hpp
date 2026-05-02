@@ -150,4 +150,25 @@ public:
     {
         return qptr_apply_or(m_item, [](auto& item) { return item->color(); });
     }
+
+    void set_font(const QFont& font)
+    {
+        qptr_apply(m_item, [font](auto& item) { item->setFont(font); });
+    }
+
+    [[nodiscard]] QFont font() const
+    {
+        return qptr_apply_or(m_item, [](auto& item) { return item->font(); });
+    }
+
+    void set_font_family(const QString& family)
+    {
+        qptr_apply(m_item,
+                   [family](auto& item)
+                   {
+                       auto f = item->font();
+                       f.setFamily(family);
+                       item->setFont(f);
+                   });
+    }
 };
