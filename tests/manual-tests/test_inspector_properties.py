@@ -339,6 +339,42 @@ class TestGraphComponentDelegate(unittest.TestCase):
         finally:
             panel.deleteLater()
 
+    def test_marker_group_disabled_when_no_marker(self):
+        # Default Line plot has marker_shape == NoMarker -> Marker group inert.
+        from SciQLopPlots import GraphMarkerShape
+        self.assertEqual(self.component.marker_shape(), GraphMarkerShape.NoMarker)
+        box = find_group(self.delegate, 'Marker')
+        self.assertFalse(box.isEnabled(), "Marker group should be disabled when shape is NoMarker")
+
+    def test_marker_group_enables_when_shape_picked(self):
+        # Drive the LineDelegate's marker combo to pick a real shape and
+        # confirm the Marker group enables.
+        from SciQLopPlots import GraphMarkerShape
+        # The MarkerDelegate (combobox) lives inside LineDelegate; identify it
+        # by item count > 1 and presence of NoMarker as one option. Easier:
+        # iterate combos and pick the one whose data values map to GraphMarkerShape.
+        combos = self.delegate.findChildren(QComboBox)
+        marker_combo = None
+        for combo in combos:
+            for i in range(combo.count()):
+                if combo.itemData(i) == GraphMarkerShape.Cross:
+                    marker_combo = combo
+                    break
+            if marker_combo is not None:
+                break
+        self.assertIsNotNone(marker_combo, "marker shape combo not found")
+        # Switch to Cross.
+        target_index = next(i for i in range(marker_combo.count())
+                            if marker_combo.itemData(i) == GraphMarkerShape.Cross)
+        marker_combo.setCurrentIndex(target_index)
+        box = find_group(self.delegate, 'Marker')
+        self.assertTrue(box.isEnabled(), "Marker group should enable after picking a shape")
+        # Toggle back to NoMarker -> disabled again.
+        no_marker_index = next(i for i in range(marker_combo.count())
+                               if marker_combo.itemData(i) == GraphMarkerShape.NoMarker)
+        marker_combo.setCurrentIndex(no_marker_index)
+        self.assertFalse(box.isEnabled())
+
 
 class TestPlotAxisDelegate(unittest.TestCase):
     """PlotAxis delegate: label + Range group with type guards.

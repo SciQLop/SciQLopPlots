@@ -73,6 +73,11 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
 
     m_layout->addWidget(markerBox);
 
+    markerBox->setEnabled(object->marker_shape() != GraphMarkerShape::NoMarker);
+    connect(m_lineDelegate, &LineDelegate::markerShapeChanged, markerBox,
+            [markerBox](GraphMarkerShape shape)
+            { markerBox->setEnabled(shape != GraphMarkerShape::NoMarker); });
+
     // Reverse path
     connect(object, &SciQLopGraphComponentInterface::marker_pen_changed, this,
             [penColor](const QPen& pen) { penColor->setColor(pen.color()); });
