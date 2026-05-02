@@ -572,6 +572,61 @@ class TestAxisFontControls(unittest.TestCase):
                          "label_color edit must not fire label_font_changed")
 
 
+class TestLegendFontControls(unittest.TestCase):
+    """Legend font + color round-trip and signal isolation."""
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _g = self.panel.plot(
+            x, y, plot_type=PlotType.BasicXY,
+            graph_type=GraphType.Line, labels=["s"],
+        )
+        self.legend = self.plot.legend()
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_font_round_trip(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Courier New", 12)
+        f.setItalic(True)
+        self.legend.set_font(f)
+        got = self.legend.font()
+        self.assertEqual(got.family(), "Courier New")
+        self.assertEqual(got.pointSize(), 12)
+        self.assertTrue(got.italic())
+
+    def test_color_round_trip(self):
+        from PySide6.QtGui import QColor
+        self.legend.set_color(QColor("#0080ff"))
+        self.assertEqual(self.legend.color().name(), "#0080ff")
+
+    def test_font_signal_fires_once(self):
+        from PySide6.QtGui import QFont
+        emitted = []
+        self.legend.font_changed.connect(lambda f: emitted.append(f))
+        self.legend.set_font(QFont("Arial", 13))
+        self.assertEqual(len(emitted), 1)
+
+    def test_font_idempotent_no_emit(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Arial", 13)
+        self.legend.set_font(f)
+        emitted = []
+        self.legend.font_changed.connect(lambda x: emitted.append(x))
+        self.legend.set_font(f)
+        self.assertEqual(len(emitted), 0)
+
+    def test_color_change_does_not_fire_font_signal(self):
+        from PySide6.QtGui import QColor
+        emitted = []
+        self.legend.font_changed.connect(lambda f: emitted.append(f))
+        self.legend.set_color(QColor("magenta"))
+        self.assertEqual(len(emitted), 0)
+
+
 class TestPlotDelegate(unittest.TestCase):
     """SciQLopPlot delegate: legend, auto_scale, crosshair, equal aspect, scroll factor.
 

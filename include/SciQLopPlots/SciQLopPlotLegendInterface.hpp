@@ -22,6 +22,8 @@
 #pragma once
 
 #include "SciQLopPlots/Debug.hpp"
+#include <QColor>
+#include <QFont>
 #include <QPointF>
 #include <QObject>
 
@@ -56,6 +58,28 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
+    inline virtual QFont font() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return QFont();
+    }
+
+    inline virtual void set_font(const QFont&)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline virtual QColor color() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return QColor();
+    }
+
+    inline virtual void set_color(const QColor&)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -63,5 +87,7 @@ signals:
 #endif
     Q_SIGNAL void visibility_changed(bool value);
     Q_SIGNAL void position_changed(const QPointF& value);
+    Q_SIGNAL void font_changed(const QFont& font);
+    Q_SIGNAL void color_changed(const QColor& color);
 
 };

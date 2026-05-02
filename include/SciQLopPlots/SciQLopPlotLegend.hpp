@@ -43,4 +43,9 @@ public:
     QPointF position() const override;
 
     void set_position(const QPointF&) override;
+
+    QFont font() const override;
+    void set_font(const QFont& font) override;
+    QColor color() const override;
+    void set_color(const QColor& color) override;
 };
