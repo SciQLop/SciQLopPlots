@@ -29,13 +29,18 @@ Expose the standard text-styling properties (font family, point size, bold, ital
 
 ## Reusable widget: `FontDelegate`
 
-A new widget under `include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp`. It owns the four standard font controls plus color, in a compact horizontal layout suitable for embedding under a label like "Label font" or "Tick label font":
+A new widget under `include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp`. UX-wise it mirrors `ColorDelegate`: a single compact button shows a preview ("Aa" rendered in the current font and color), and clicking it opens a popup with the editing controls. This keeps the inspector panel compact and avoids constructing heavy widgets (notably `QFontComboBox`) until the user actually opens the picker.
 
 ```
-[ Family ▾ ] [ Size ▴▾ ] [ B ] [ I ] [ ■ color ]
+inspector row:   Label font:  [ Aa ▾ ]
+
+popup contents:
+  [ Family ▾ ] [ Size ▴▾ ]
+  [ B ] [ I ]
+  Color: [ ■ ]
 ```
 
-| Control | Widget | Maps to |
+| Control (in popup) | Widget | Maps to |
 |---|---|---|
 | Family | `QFontComboBox` | `QFont::setFamily` |
 | Point size | `QSpinBox` (range 4–72) | `QFont::setPointSize` |
@@ -43,15 +48,23 @@ A new widget under `include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates
 | Italic | `QToolButton` (checkable) | `QFont::setItalic` |
 | Color | `ColorDelegate` | separate signal — color is per-element, not on QFont |
 
+The popup is created lazily on first click and reused thereafter. The preview button repaints whenever the font or color changes so the inspector row always reflects current state at a glance.
+
 **Signals:**
 - `fontChanged(const QFont& font)` — emitted on family/size/bold/italic edit
 - `colorChanged(const QColor& color)` — emitted on color edit (color is paired with font but stored separately on the underlying object)
 
 **Slots (reverse path):**
-- `setFont(const QFont& font)` — updates all four font widgets without re-emitting (signal-blocked)
-- `setColor(const QColor& color)` — updates the ColorDelegate
+- `setFont(const QFont& font)` — updates the popup widgets and the preview button without re-emitting (signal-blocked)
+- `setColor(const QColor& color)` — updates the popup's ColorDelegate and the preview swatch
 
 The widget is constructed with `(QFont initial_font, QColor initial_color, QWidget* parent)`.
+
+### Why a popup-style picker instead of inline controls
+
+Two reasons:
+1. **Panel real estate.** Embedding `QFontComboBox` + spinbox + two toggles + color swatch inline for every axis (label + tick labels) and the legend would dominate the inspector vertically. A single preview button per font slot keeps the panel scannable.
+2. **Construction cost.** `QFontComboBox` scans installed fonts. By deferring popup construction until the user clicks, we never pay that cost for axes the user never restyles.
 
 ### Why one widget that emits two signals (font + color)
 
@@ -94,7 +107,9 @@ The existing `set_font_size` / `font_size` stay for backwards compatibility.
 
 ### `SciQLopPlotAxisDelegate`
 
-Add a `Label` `QGroupBox` (with the existing `QLineEdit` for label text moving inside it, plus the new `FontDelegate`). Add a `Tick labels` `QGroupBox` (containing the existing visibility checkbox plus the new `FontDelegate` for tick fonts).
+Add a `Label` `QGroupBox` (with the existing `QLineEdit` for label text moving inside it, plus a `FontDelegate` for the label font/color). Add a `Tick labels` `QGroupBox` (containing the existing visibility checkbox plus a separate `FontDelegate` for the tick-label font/color).
+
+Label font and tick-label font are deliberately **two separate `FontDelegate` widgets** — they map to independent QCPAxis getters/setters and users routinely want a larger / bolder axis label paired with smaller tick labels.
 
 The Range group from PR #52 stays as-is.
 
@@ -131,9 +146,9 @@ Estimated ~25–30 new test methods.
 
 ## Risks
 
-- **`QFontComboBox` is heavy**: it scans installed fonts on construction. With one `FontDelegate` per axis on a 5-axis plot, that's 5 scans. Mitigation: `QFontDatabase` caches the result, so subsequent constructions are cheap. Verify with a perf check during implementation.
 - **Color and font emission are paired in the user's mental model but separate on the wire**. Tests must verify that editing only the font does NOT fire `*_color_changed` (and vice versa) — otherwise users connecting to `*_color_changed` would see spurious notifications.
 - **Bindings drift**: Adding signals to `SciQLopPlotAxisInterface` (so all axis types inherit them) requires the same `touch bindings.xml + meson compile` cycle as PR #52. Note in implementation plan.
+- **Popup lifetime**: the lazily-constructed popup must be parented correctly so it's destroyed with the `FontDelegate`, and must be hidden (not destroyed) on close so reopening it preserves any in-progress edits. Mirror what `ColorDelegate`'s color-dialog handling does — read its source before implementing.
 
 ## Out of scope (future work)
 
