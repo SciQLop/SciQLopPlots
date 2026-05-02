@@ -835,5 +835,53 @@ class TestPanelWaterfallRoute(unittest.TestCase):
             panel.deleteLater()
 
 
+class TestTextItemFontControls(unittest.TestCase):
+    """SciQLopTextItem font + font family setters."""
+
+    def setUp(self):
+        from SciQLopPlots import SciQLopMultiPlotPanel
+        from PySide6.QtCore import QPointF
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _g = self.panel.plot(
+            x, y, plot_type=PlotType.BasicXY,
+            graph_type=GraphType.Line, labels=["s"],
+        )
+        # SciQLopTextItem(plot, text, position, movable=False, coordinates=Pixels)
+        from SciQLopPlots import SciQLopTextItem, Coordinates
+        self.item = SciQLopTextItem(self.plot, "hello",
+                                    QPointF(0.5, 0.5), False,
+                                    Coordinates.Data)
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_set_font_round_trip(self):
+        from PySide6.QtGui import QFont
+        f = QFont("Courier New", 16)
+        f.setBold(True)
+        self.item.set_font(f)
+        got = self.item.font()
+        self.assertEqual(got.family(), "Courier New")
+        self.assertEqual(got.pointSize(), 16)
+        self.assertTrue(got.bold())
+
+    def test_set_font_family_preserves_size(self):
+        # Set initial size via existing setter
+        self.item.set_font_size(20.0)
+        self.item.set_font_family("Arial")
+        self.assertEqual(self.item.font().family(), "Arial")
+        self.assertAlmostEqual(self.item.font().pointSizeF(), 20.0, places=1)
+
+    def test_set_font_size_still_works_after_set_font(self):
+        # Backward compat: set_font_size keeps working after set_font has been used.
+        from PySide6.QtGui import QFont
+        self.item.set_font(QFont("Arial", 10))
+        self.item.set_font_size(18.0)
+        self.assertAlmostEqual(self.item.font_size(), 18.0, places=1)
+        self.assertEqual(self.item.font().family(), "Arial")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
