@@ -626,6 +626,13 @@ class TestLegendFontControls(unittest.TestCase):
         self.legend.set_color(QColor("magenta"))
         self.assertEqual(len(emitted), 0)
 
+    def test_font_change_does_not_fire_color_signal(self):
+        from PySide6.QtGui import QFont
+        emitted = []
+        self.legend.color_changed.connect(lambda c: emitted.append(c))
+        self.legend.set_font(QFont("Courier New", 17))
+        self.assertEqual(len(emitted), 0)
+
 
 class TestPlotDelegate(unittest.TestCase):
     """SciQLopPlot delegate: legend, auto_scale, crosshair, equal aspect, scroll factor.
