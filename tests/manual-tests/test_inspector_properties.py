@@ -1116,5 +1116,60 @@ class TestPlotDelegateLegendFont(unittest.TestCase):
         self.assertEqual(self.plot.legend().color().name(), "#123456")
 
 
+class TestTextItemDelegate(unittest.TestCase):
+    """Inspector delegate for SciQLopTextItem: text + font controls."""
+
+    def setUp(self):
+        from SciQLopPlots import SciQLopTextItem, Coordinates
+        from PySide6.QtCore import QPointF
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _g = self.panel.plot(
+            x, y, plot_type=PlotType.BasicXY,
+            graph_type=GraphType.Line, labels=["s"],
+        )
+        self.item = SciQLopTextItem(self.plot, "label",
+                                    QPointF(0.5, 0.5), False,
+                                    Coordinates.Data)
+        self.delegate = make_delegate_for(self.item)
+        self.assertIsNotNone(self.delegate, "TextItem delegate should resolve")
+
+    def tearDown(self):
+        self.delegate.deleteLater()
+        self.panel.deleteLater()
+
+    def test_text_edit_present(self):
+        line_edit = self.delegate.findChild(QLineEdit)
+        self.assertIsNotNone(line_edit)
+        self.assertEqual(line_edit.text(), "label")
+
+    def test_font_delegate_present(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        fd = self.delegate.findChild(FontDelegate)
+        self.assertIsNotNone(fd, "TextItem delegate should embed a FontDelegate")
+
+    def test_font_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QFont
+        fd = self.delegate.findChild(FontDelegate)
+        fd.setFont(QFont("Courier New", 22))
+        self.assertEqual(self.item.font().family(), "Courier New")
+        self.assertEqual(self.item.font().pointSize(), 22)
+
+    def test_color_widget_to_model(self):
+        from SciQLopPlots.SciQLopPlotsBindings import FontDelegate
+        from PySide6.QtGui import QColor
+        fd = self.delegate.findChild(FontDelegate)
+        fd.setColor(QColor("#22aabb"))
+        self.assertEqual(self.item.color().name(), "#22aabb")
+
+    def test_text_widget_to_model(self):
+        line_edit = self.delegate.findChild(QLineEdit)
+        line_edit.setText("hi")
+        line_edit.editingFinished.emit()
+        self.assertEqual(self.item.text(), "hi")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
