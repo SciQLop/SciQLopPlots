@@ -24,6 +24,7 @@
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp"
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -83,9 +84,12 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         addWidgetWithLabel(color_scale_delegate, "Color gradient");
     }
 
-    // Label edit (all axis types).
-    auto* labelEdit = new QLineEdit(ax->label(), this);
-    m_layout->addRow("Label", labelEdit);
+    // Label group: text + font/color picker.
+    auto* labelBox = new QGroupBox("Label", this);
+    auto* labelLayout = new QFormLayout(labelBox);
+
+    auto* labelEdit = new QLineEdit(ax->label(), labelBox);
+    labelLayout->addRow("Text", labelEdit);
     connect(labelEdit, &QLineEdit::editingFinished, ax,
             [labelEdit, ax]() { ax->set_label(labelEdit->text()); });
     connect(ax, &SciQLopPlotAxisInterface::label_changed, this,
@@ -94,6 +98,19 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
                 if (labelEdit->text() != s)
                     labelEdit->setText(s);
             });
+
+    auto* labelFontDelegate = new FontDelegate(ax->label_font(), ax->label_color(), labelBox);
+    labelLayout->addRow("Font", labelFontDelegate);
+    connect(labelFontDelegate, &FontDelegate::fontChanged, ax,
+            &SciQLopPlotAxisInterface::set_label_font);
+    connect(ax, &SciQLopPlotAxisInterface::label_font_changed, labelFontDelegate,
+            &FontDelegate::setFont);
+    connect(labelFontDelegate, &FontDelegate::colorChanged, ax,
+            &SciQLopPlotAxisInterface::set_label_color);
+    connect(ax, &SciQLopPlotAxisInterface::label_color_changed, labelFontDelegate,
+            &FontDelegate::setColor);
+
+    m_layout->addRow(labelBox);
 
     // Range group (numeric, non-color-scale axes only).
     const bool show_range = !ax->is_time_axis() && (this->color_scale() == nullptr);
