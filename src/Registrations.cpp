@@ -32,6 +32,7 @@
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include "SciQLopPlots/Items/SciQLopTextItem.hpp"
 
 // Delegate widgets
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp"
@@ -43,6 +44,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTextItemDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp"
 
 namespace
@@ -201,6 +203,13 @@ void register_all_types()
         },
     });
 
+    types.register_type<SciQLopTextItem>({
+        .children = [](QObject*) -> QList<QObject*> { return {}; },
+        .connect_children = nullptr,
+        .set_selected = nullptr,
+        .deletable = true,
+    });
+
     types.register_type<SciQLopPlotAxisInterface>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
@@ -227,6 +236,7 @@ void register_all_types()
     delegates.register_type<SciQLopWaterfallDelegate>();
     delegates.register_type<SciQLopHistogram2DDelegate>();
     delegates.register_type<SciQLopPlotAxisDelegate>();
+    delegates.register_type<SciQLopTextItemDelegate>();
     delegates.register_type<InspectorExtensionDelegate>();
 }
 
