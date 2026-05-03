@@ -399,12 +399,13 @@ class TestPlotAxisDelegate(unittest.TestCase):
         return panel, plot
 
     def _delegate_label_edit(self, delegate):
-        # Each QDoubleSpinBox contains an internal QLineEdit. Filter those out
-        # by skipping any QLineEdit whose parent is a QDoubleSpinBox.
-        for edit in delegate.findChildren(QLineEdit):
-            if not isinstance(edit.parent(), QDoubleSpinBox):
-                return edit
-        return None
+        # Scope the search to the Label group so the helper is robust against
+        # other QLineEdits introduced by sibling widgets (e.g. FontDelegate's
+        # QFontComboBox / QSpinBox both embed internal QLineEdits).
+        label_box = find_group(delegate, 'Label')
+        if label_box is None:
+            return None
+        return label_box.findChild(QLineEdit)
 
     # --- Numeric axis ---
 

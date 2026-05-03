@@ -54,6 +54,8 @@ public:
     QColor color() const;
 
 public:
+    // Shadows QWidget::setFont; only this slot tracks m_font and emits.
+    // Stylesheet relayouts that call the inherited setFont bypass us.
     Q_SLOT void setFont(const QFont& font);
     Q_SLOT void setColor(const QColor& color);
 
