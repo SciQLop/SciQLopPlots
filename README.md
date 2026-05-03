@@ -10,7 +10,7 @@ A high-performance scientific plotting library built on C++20/Qt6 with Python bi
 ## Features
 
 - **Async resampling** — render millions of points smoothly; data is downsampled in background threads via [NeoQCP](https://github.com/SciQLop/NeoQCP) pipelines
-- **Multiple plot types** — time series (line graphs), spectrograms (color maps), 2D histograms, parametric curves, N-D projection curves
+- **Multiple plot types** — time series (line graphs), spectrograms (color maps), 2D histograms, parametric curves, N-D projection curves, waterfall plots
 - **Interactive** — pan, zoom, data-driven callbacks, vertical/horizontal/rectangular spans, tracers, straight lines, text, shapes, pixmaps
 - **Multi-plot panels** — synchronized axes, aligned margins, drag-and-drop from product trees
 - **Reactive pipelines** — connect plot properties with `>>` to build live data flows
@@ -42,6 +42,8 @@ graph TD
         LG[SciQLopLineGraph]
         SLG[SciQLopSingleLineGraph]
         CRV[SciQLopCurve]
+        WF[SciQLopWaterfallGraph]
+        NDC[SciQLopNDProjectionCurves]
         CMB[SciQLopColorMapBase]
         CM[SciQLopColorMap]
         H2D[SciQLopHistogram2D]
@@ -73,6 +75,8 @@ graph TD
     GI --> LG
     GI --> SLG
     GI --> CRV
+    GI --> WF
+    GI --> NDC
     CMI --> CMB
     CMB --> CM
     CMB --> H2D
@@ -166,8 +170,9 @@ python tests/manual-tests/gallery.py
 Requires Qt6, PySide6 == 6.11.0, a C++20 compiler, and Meson.
 
 ```bash
-# Development build
-meson setup build --buildtype=debug
+# Development build (recommended — plain `debug` disables optimizations
+# and makes the resampling pipelines noticeably sluggish)
+meson setup build --buildtype=debugoptimized
 meson compile -C build
 
 # Install as editable Python package
