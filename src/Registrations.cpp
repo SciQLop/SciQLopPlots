@@ -107,9 +107,11 @@ void register_all_types()
             }
             for (auto p : plot->plottables())
                 c.append(p);
+            for (auto* ext : plot->inspector_extensions())
+                c.append(ext);
             return c;
         },
-        .connect_children = [](QObject* obj, auto add, auto /*remove*/)
+        .connect_children = [](QObject* obj, auto add, auto remove)
                 -> QList<QMetaObject::Connection> {
             auto plot = qobject_cast<SciQLopPlot*>(obj);
             if (!plot) return {};
@@ -119,6 +121,10 @@ void register_all_types()
                         for (auto p : plot->plottables())
                             add(p);
                     }),
+                QObject::connect(plot, &SciQLopPlot::inspector_extension_added, plot,
+                    [add](InspectorExtension* ext) { add(ext); }),
+                QObject::connect(plot, &SciQLopPlot::inspector_extension_removed, plot,
+                    [remove](InspectorExtension* ext) { remove(ext); }),
             };
         },
         .set_selected = [](QObject* obj, bool s) {
@@ -137,9 +143,21 @@ void register_all_types()
             QList<QObject*> c;
             for (auto p : plot->plottables())
                 c.append(p);
+            for (auto* ext : plot->inspector_extensions())
+                c.append(ext);
             return c;
         },
-        .connect_children = nullptr,
+        .connect_children = [](QObject* obj, auto add, auto remove)
+                -> QList<QMetaObject::Connection> {
+            auto plot = qobject_cast<SciQLopNDProjectionPlot*>(obj);
+            if (!plot) return {};
+            return {
+                QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_added, plot,
+                    [add](InspectorExtension* ext) { add(ext); }),
+                QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_removed, plot,
+                    [remove](InspectorExtension* ext) { remove(ext); }),
+            };
+        },
         .set_selected = [](QObject* obj, bool s) {
             if (auto p = qobject_cast<SciQLopNDProjectionPlot*>(obj))
                 p->set_selected(s);

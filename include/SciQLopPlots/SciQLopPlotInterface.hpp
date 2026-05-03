@@ -492,12 +492,14 @@ public:
 
     void add_inspector_extension(InspectorExtension* extension)
     {
-        m_extension_holder->add(extension);
+        if (m_extension_holder->add(extension))
+            Q_EMIT inspector_extension_added(extension);
     }
 
     void remove_inspector_extension(InspectorExtension* extension)
     {
-        m_extension_holder->remove(extension);
+        if (m_extension_holder->remove(extension))
+            Q_EMIT inspector_extension_removed(extension);
     }
 
     QList<InspectorExtension*> inspector_extensions() const
@@ -524,6 +526,8 @@ signals:
     Q_SIGNAL void resized();
     Q_SIGNAL void cursor_time_changed(double time);
     Q_SIGNAL void inspector_extensions_changed();
+    Q_SIGNAL void inspector_extension_added(InspectorExtension* extension);
+    Q_SIGNAL void inspector_extension_removed(InspectorExtension* extension);
 
 protected:
     inline virtual QList<SciQLopPlotAxisInterface*> axes_to_rescale() const noexcept
