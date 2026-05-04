@@ -77,20 +77,28 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     const std::size_t nx_sz = x.flat_size();
     const std::size_t ny_sz = y.flat_size();
     const std::size_t nz_sz = z.flat_size();
-    // All-empty is allowed and behaves as a clear; otherwise z must be the
-    // full nx*ny matrix the QCP datasource expects.
-    const bool all_empty = (nx_sz == 0 && ny_sz == 0 && nz_sz == 0);
-    if (!all_empty && nz_sz != nx_sz * ny_sz)
+    // Empty payload ⇒ clear the colormap and bail out. Speasy returns a
+    // "well-formed empty" spectrogram (time=0, freq=N, values=(0,N)) for
+    // windows with no data; QCPSoADataSource2D asserts nx > 0 && nz > 0 so
+    // we must not construct it on empty input.
+    if (nx_sz == 0 || ny_sz == 0)
+    {
+        _dataHolder.reset();
+        _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
+        m_data_range = SciQLopPlotRange();
+        Q_EMIT data_changed(x, y, z);
+        Q_EMIT data_changed();
+        return;
+    }
+
+    if (nz_sz != nx_sz * ny_sz)
         throw std::runtime_error(
             "ColorMap.set_data: z size must equal len(x) * len(y)");
 
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);
 
-    if (nx > 0)
-        m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);
-    else
-        m_data_range = SciQLopPlotRange();
+    m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);
 
     dispatch_dtype(y.format_code(), [&](auto y_tag) {
         dispatch_dtype(z.format_code(), [&](auto z_tag) {
