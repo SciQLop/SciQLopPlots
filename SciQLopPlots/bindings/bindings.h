@@ -70,6 +70,8 @@
 
 #include <SciQLopPlots/Icons/icons.hpp>
 
+#include <SciQLopPlots/Tracing.hpp>
+
 #include <qcustomplot.h>
 
 #endif // SCIQLOPPLOTS_BINDINGS_H

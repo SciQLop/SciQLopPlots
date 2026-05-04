@@ -1107,6 +1107,147 @@
             }
         </inject-code>
     </add-function>
+
+    <!-- Runtime tracer: Chrome JSON / Perfetto-compatible event logger. -->
+    <add-function signature="tracing_enable(std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::enable(%1); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_disable()" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::disable(); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_flush()" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::flush(); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_is_enabled()" return-type="bool">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { auto v = SciQLopPlots::tracing::is_enabled(); %PYARG_0 = PyBool_FromLong(v ? 1 : 0); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_set_thread_name(std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::set_thread_name(%1); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_begin(std::string, std::string)" return-type="unsigned long long">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { auto h = SciQLopPlots::tracing::sync_zone_begin(%1, %2); %PYARG_0 = PyLong_FromUnsignedLongLong(h); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_end(unsigned long long)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::sync_zone_end(%1); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_add_int(unsigned long long, std::string, long long)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::sync_zone_add_int(%1, %2, %3); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_add_double(unsigned long long, std::string, double)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::sync_zone_add_double(%1, %2, %3); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_add_bool(unsigned long long, std::string, bool)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::sync_zone_add_bool(%1, %2, %3); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_sync_zone_add_str(unsigned long long, std::string, std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::sync_zone_add_str(%1, %2, %3); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_async_begin(std::string, std::string)" return-type="unsigned long long">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { auto h = SciQLopPlots::tracing::async_begin(%1.c_str(), %2.empty() ? nullptr : %2.c_str()); %PYARG_0 = PyLong_FromUnsignedLongLong(h); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_async_end(unsigned long long)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::async_end(%1); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
+
+    <add-function signature="tracing_counter(std::string, double, std::string)" return-type="void">
+        <extra-includes>
+            <include file-name="SciQLopPlots/Tracing.hpp" location="global"/>
+        </extra-includes>
+        <inject-code class="target" position="beginning">
+            try { SciQLopPlots::tracing::counter(%1.c_str(), %2, %3.empty() ? nullptr : %3.c_str()); }
+            catch (const std::exception&amp; e) { PyErr_SetString(PyExc_RuntimeError, e.what()); return nullptr; }
+        </inject-code>
+    </add-function>
 </typesystem>
 
 

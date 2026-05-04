@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
@@ -218,6 +219,7 @@ QMargins SciQLopPlot::minimal_axis_margins()
 
 void SciQLopPlot::replot(RefreshPriority priority)
 {
+    PROFILE_HERE_N("plot.replot");
     QCustomPlot::replot(priority);
 }
 
@@ -789,6 +791,7 @@ void SciQLopPlot::minimize_margins()
 
 void SciQLopPlot::replot(bool immediate)
 {
+    PROFILE_HERE_N("plot.replot.dispatch");
     if (immediate)
         m_impl->replot();
     else
