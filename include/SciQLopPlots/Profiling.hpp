@@ -25,8 +25,11 @@
 
 // NeoQCP's Profiling.hpp may have defined the PROFILE_* macros first (it ships
 // in a subproject and is pulled in transitively via QCustomPlot headers).
-// Undefine them before redefining so the SciQLopPlots versions — which also
-// feed the runtime Chrome JSON tracer — always win in TUs that pull in both.
+// NeoQCP guards its own #defines with #ifndef (since SciQLop/NeoQCP#26), so it
+// won't override us if we're included first — but if NeoQCP loads first in a
+// TU, its definitions are in place and our redefines would warn. Undefine
+// them so the SciQLopPlots versions — which also feed the runtime Chrome JSON
+// tracer — always win regardless of include order.
 #ifdef PROFILE_HERE
 #  undef PROFILE_HERE
 #endif
