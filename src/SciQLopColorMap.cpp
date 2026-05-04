@@ -77,11 +77,11 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     const std::size_t nx_sz = x.flat_size();
     const std::size_t ny_sz = y.flat_size();
     const std::size_t nz_sz = z.flat_size();
-    // Empty payload ⇒ clear the colormap and bail out. Speasy returns a
-    // "well-formed empty" spectrogram (time=0, freq=N, values=(0,N)) for
-    // windows with no data; QCPSoADataSource2D asserts nx > 0 && nz > 0 so
-    // we must not construct it on empty input.
-    if (nx_sz == 0 || ny_sz == 0)
+    // No data to plot ⇒ clear and bail. Speasy returns a "well-formed
+    // empty" spectrogram (time=0, freq=N, values=(0,N)) for windows
+    // with no samples; QCPSoADataSource2D asserts nx > 0 && nz > 0 so
+    // we must not construct it on any empty input.
+    if (nx_sz == 0 || nz_sz == 0)
     {
         _dataHolder.reset();
         _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
@@ -91,9 +91,21 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
         return;
     }
 
-    if (nz_sz != nx_sz * ny_sz)
+    // QCPSoADataSource2D accepts both 1D and 2D y axes:
+    //   1D y:  ny == nz / nx   (one y value per row)
+    //   2D y:  ny == nz        (per-cell y, e.g. a spectrogram whose
+    //                           frequency axis varies per timestamp)
+    if (nz_sz % nx_sz != 0)
         throw std::runtime_error(
-            "ColorMap.set_data: z size must equal len(x) * len(y)");
+            "ColorMap.set_data: z size must be a multiple of x size");
+
+    const std::size_t y_size_per_row = nz_sz / nx_sz;
+    const bool valid_1d_y = (ny_sz == y_size_per_row);
+    const bool valid_2d_y = (ny_sz == nz_sz);
+    if (!valid_1d_y && !valid_2d_y)
+        throw std::runtime_error(
+            "ColorMap.set_data: y size must equal len(z)/len(x) (1D y) "
+            "or len(z) (2D y)");
 
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);
