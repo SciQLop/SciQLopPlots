@@ -170,6 +170,34 @@ class TestColormapEmptyData:
         )
         assert b"OK" in result.stdout
 
+    def test_2d_y_axis_does_not_throw(self):
+        """y can be 2D (per-timestamp varying frequencies).
+
+        QCPSoADataSource2D supports both 1D y (`ny == nz/nx`) and 2D y
+        (`ny == nz`). The size check must accept both — spectrograms with
+        a per-timestamp frequency axis send `y` flattened from shape
+        `(nx, M)` with `ny = nx*M = nz`, which violates the naive
+        `nz == nx*ny` invariant.
+        """
+        result = _run_colormap_script(
+            """
+            nx, m = 20, 22
+            x = np.linspace(0, 10, nx).astype(np.float64)
+            y_2d = np.tile(np.linspace(0, 5, m), (nx, 1)).astype(np.float64)
+            z = np.random.rand(nx, m).astype(np.float64)
+            cmap = plot.colormap(x, y_2d.ravel(), z)
+            cmap.set_data(x, y_2d.ravel(), z)
+            print("OK")
+            """
+        )
+        assert result.returncode == 0, (
+            "set_data with 2D y axis aborted/threw "
+            f"(rc={result.returncode}): "
+            f"stderr={result.stderr.decode(errors='replace')[-400:]}\n"
+            f"stdout={result.stdout.decode(errors='replace')[-200:]}"
+        )
+        assert b"OK" in result.stdout
+
     def test_empty_then_real_data_recovers(self):
         """After an empty set_data, a subsequent populated update must work."""
         result = _run_colormap_script(
