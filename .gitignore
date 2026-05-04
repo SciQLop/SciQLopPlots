@@ -17,3 +17,6 @@ subprojects/**/*
 *.user*
 .cache/*
 .idea/
+.worktrees/
+.serena/
+aqtinstall.log
