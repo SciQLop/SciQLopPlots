@@ -97,6 +97,8 @@ pip install -e . --no-build-isolation
 
 **Python interface** (`include/SciQLopPlots/Python/`): `PythonInterface.hpp` defines `PyBuffer` and `GetDataPyCallable` types for bridging numpy arrays and Python callbacks to C++
 
+**Runtime tracer** (`include/SciQLopPlots/Tracing.hpp` + `src/Tracing.cpp`): always-compiled-in event logger that emits Chrome trace JSON (Perfetto / Speedscope / chrome://tracing). Toggle via `tracing.enable("path.json") / disable() / flush()` from C++ or Python (`from SciQLopPlots import tracing`), or auto-enable with the `SCIQLOP_TRACE` env var. ~1 ns when off (single relaxed atomic load + branch). `Profiling.hpp`'s `PROFILE_HERE_N` feeds both this tracer and Tracy (when `tracy_enable=true` at build time) — instrument once, view in either tool.
+
 ### Python Bindings Pipeline
 
 1. `bindings.xml` defines the typesystem for Shiboken

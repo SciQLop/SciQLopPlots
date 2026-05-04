@@ -51,7 +51,7 @@ shiboken_typesystem  = run_command(python3, shiboken_helper, '--qmake', qmake.fu
 sciqlopplots_bindings_src = []
 sciqlopplots_bindings_headers = files('bindings/bindings.h')
 
-sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py', 'dsp.py']
+sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py', 'dsp.py', 'tracing.py']
 foreach py_src:sciqlopplots_python_sources
   configure_file(input:py_src,output:py_src, copy:true)
 endforeach
@@ -187,6 +187,7 @@ sources = moc_files \
         + resources_files \
         + [
             '../src/Profiling.cpp',
+            '../src/Tracing.cpp',
             '../src/SciQLopPlotInterface.cpp',
             '../src/SciQLopPlot.cpp',
             '../src/SciQLopPlotLegend.cpp',

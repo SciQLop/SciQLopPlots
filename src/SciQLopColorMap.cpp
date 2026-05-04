@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Profiling.hpp"
+#include "SciQLopPlots/Tracing.hpp"
 #include "SciQLopPlots/constants.hpp"
 
 void SciQLopColorMap::_cmap_got_destroyed()
@@ -61,6 +63,11 @@ SciQLopColorMap::~SciQLopColorMap()
 
 void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
 {
+    PROFILE_HERE_N("setdata.colormap");
+    ::SciQLopPlots::tracing::ScopedZone _sz("setdata.colormap", "setdata");
+    _sz.add_arg("nx", static_cast<int64_t>(x.flat_size()));
+    _sz.add_arg("ny", static_cast<int64_t>(y.flat_size()));
+    _sz.add_arg("nz", static_cast<int64_t>(z.flat_size()));
     if (!_cmap || !x.is_valid() || !y.is_valid() || !z.is_valid())
         return;
 

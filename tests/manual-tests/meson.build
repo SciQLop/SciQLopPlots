@@ -29,6 +29,14 @@ test('inspector_properties',
     timeout: 120,
 )
 
+test('tracing_python',
+    python3,
+    args: [meson.current_source_dir() + '/test_tracing_python.py'],
+    env: ['PYTHONPATH=' + meson.project_build_root()],
+    suite: 'integration',
+    timeout: 60,
+)
+
 sources = []
 foreach example : examples
     sources += example['source']

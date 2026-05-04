@@ -20,9 +20,11 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp"
+#include "SciQLopPlots/Profiling.hpp"
 
 void AbstractResampler1d::_async_resample()
 {
+    PROFILE_HERE_N("resample.async_1d");
     _async_resample_callback();
 }
 
@@ -38,12 +40,14 @@ AbstractResampler1d::AbstractResampler1d(SciQLopPlottableInterface* parent, std:
 
 void AbstractResampler1d::resample(const QCPRange new_range)
 {
+    PROFILE_HERE_N("resample.dispatch_1d");
     this->set_next_plot_range(new_range);
     emit _resample_sig();
 }
 
 void AbstractResampler2d::_async_resample()
 {
+    PROFILE_HERE_N("resample.async_2d");
     _async_resample_callback();
 }
 
@@ -58,6 +62,7 @@ AbstractResampler2d::AbstractResampler2d(SciQLopPlottableInterface* parent) : QO
 
 void AbstractResampler2d::resample(const QCPRange new_range)
 {
+    PROFILE_HERE_N("resample.dispatch_2d");
     this->set_next_plot_range(new_range);
     emit _resample_sig();
 }

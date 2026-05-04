@@ -1,6 +1,8 @@
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include "SciQLopPlots/Profiling.hpp"
+#include "SciQLopPlots/Tracing.hpp"
 #include <datasource/row-major-multi-datasource.h>
 #include <datasource/soa-multi-datasource.h>
 #include <vector>
@@ -116,6 +118,9 @@ void SciQLopMultiGraphBase::sync_components()
 
 void SciQLopMultiGraphBase::set_data(PyBuffer x, PyBuffer y)
 {
+    PROFILE_HERE_N("setdata.multigraph");
+    ::SciQLopPlots::tracing::ScopedZone _sz("setdata.multigraph", "setdata");
+    _sz.add_arg("n_points", static_cast<int64_t>(x.flat_size()));
     if (!_multiGraph || !x.is_valid() || !y.is_valid())
         return;
 

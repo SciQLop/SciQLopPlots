@@ -165,6 +165,43 @@ Run the gallery for a full feature showcase:
 python tests/manual-tests/gallery.py
 ```
 
+## Runtime tracing
+
+SciQLopPlots ships with a built-in tracer that emits Chrome trace JSON, viewable in
+[Perfetto](https://ui.perfetto.dev/), [Speedscope](https://www.speedscope.app/), or
+`chrome://tracing`. Always compiled in, runtime-toggled, ~1 ns when off.
+
+Enable for a session, then open the file in Perfetto:
+
+```python
+from SciQLopPlots import tracing
+
+with tracing.session("/tmp/sciqlop.json"):
+    panel.zoom_in_a_lot()       # whatever's slow
+```
+
+Annotate Python work to land alongside the C++ zones (`plot.replot`,
+`setdata.colormap`, `resample.async_2d`, …):
+
+```python
+with tracing.zone("speasy.fetch", cat="data", product="amda/mms_fgm"):
+    data = speasy.get_data(...)
+
+@tracing.traced("layer.eval", cat="layer")
+def render_layer(...): ...
+
+tracing.counter("queue_depth", q.size(), cat="fetch")
+```
+
+You can also auto-enable at process start with the `SCIQLOP_TRACE` env var:
+
+```bash
+SCIQLOP_TRACE=/tmp/sciqlop.json python my_script.py
+```
+
+When `tracy_enable=true` is also passed at build time, the same `PROFILE_HERE_N`
+sites feed both the Chrome JSON tracer and the Tracy live-streaming view.
+
 ## Building from source
 
 Requires Qt6, PySide6 == 6.11.0, a C++20 compiler, and Meson.
