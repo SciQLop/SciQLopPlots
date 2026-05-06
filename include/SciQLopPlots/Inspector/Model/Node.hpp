@@ -51,6 +51,7 @@ public:
     PlotsModelNode* parent_node() const;
 
     PlotsModelNode* insert_child(QObject* obj, const TypeDescriptor* desc, int row = -1);
+    void insert_child_node(PlotsModelNode* node, int row);
     bool remove_child(int row);
 
     void add_connections(const QList<QMetaObject::Connection>& conns);

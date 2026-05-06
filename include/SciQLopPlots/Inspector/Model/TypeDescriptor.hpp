@@ -36,6 +36,10 @@ struct TypeDescriptor
         std::function<void(QObject*)> remove_child)>
         connect_children;
 
+    std::function<QList<QMetaObject::Connection>(QObject* obj,
+        std::function<void(QObject*, int)> move_child)>
+        connect_moves = {};
+
     std::function<QIcon(const QObject*)> icon = {};
     std::function<QString(const QObject*)> tooltip = {};
     std::function<void(QObject*, bool)> set_selected = {};

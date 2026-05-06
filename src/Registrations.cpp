@@ -86,10 +86,20 @@ void register_all_types()
                     [remove](InspectorExtension* ext) { remove(ext); }),
             };
         },
+        .connect_moves = [](QObject* obj, auto move)
+                -> QList<QMetaObject::Connection> {
+            auto panel = qobject_cast<SciQLopMultiPlotPanel*>(obj);
+            if (!panel) return {};
+            return {
+                QObject::connect(panel, &SciQLopMultiPlotPanel::plot_moved, panel,
+                    [move](SciQLopPlotInterface* p, int to) { move(p, to); }),
+            };
+        },
         .set_selected = [](QObject* obj, bool s) {
             if (auto p = qobject_cast<SciQLopMultiPlotPanel*>(obj))
                 p->setSelected(s);
         },
+        .flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDropEnabled,
     });
 
     // graph_list_changed() has no args — can't do individual add/remove.
@@ -131,8 +141,7 @@ void register_all_types()
             if (auto p = qobject_cast<SciQLopPlot*>(obj))
                 p->set_selected(s);
         },
-        .flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable
-               | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled,
+        .flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled,
     });
 
     // Same limitation: graph_list_changed has no args

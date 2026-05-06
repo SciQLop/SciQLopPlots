@@ -22,9 +22,26 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Inspector/Model/TypeDescriptor.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
+#include <QByteArray>
 #include <QMimeData>
 #include <QPointer>
 #include <qapplicationstatic.h>
+
+namespace
+{
+constexpr auto k_plot_reorder_mime = "application/x-sciqlop-plot-reorder";
+
+QObject* decode_reorder_payload(const QMimeData* data)
+{
+    if (!data || !data->hasFormat(k_plot_reorder_mime))
+        return nullptr;
+    bool ok = false;
+    auto value = data->data(k_plot_reorder_mime).toULongLong(&ok);
+    if (!ok)
+        return nullptr;
+    return reinterpret_cast<QObject*>(static_cast<quintptr>(value));
+}
+}
 
 PlotsModel::PlotsModel(QObject* parent) : QAbstractItemModel(parent)
 {
@@ -203,6 +220,16 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
         node->add_connections(desc->connect_children(obj, add_child, remove_child));
     }
 
+    if (desc && desc->connect_moves)
+    {
+        auto move_child = [this, guardedNode](QObject* child, int dest_row)
+        {
+            if (guardedNode)
+                moveChildByObject(guardedNode, child, dest_row);
+        };
+        node->add_connections(desc->connect_moves(obj, move_child));
+    }
+
     if (desc && desc->children)
     {
         for (auto child : desc->children(obj))
@@ -217,6 +244,28 @@ void PlotsModel::removeChildByObject(PlotsModelNode* parent, QObject* obj)
     int row = parent->child_row_by_object(obj);
     if (row >= 0)
         removeRows(row, 1, make_index(parent));
+}
+
+void PlotsModel::moveChildByObject(PlotsModelNode* parent, QObject* obj, int dest_row)
+{
+    if (!parent || !obj)
+        return;
+    int from = parent->child_row_by_object(obj);
+    if (from < 0)
+        return;
+    int count = parent->children_count();
+    int to = std::clamp(dest_row, 0, count - 1);
+    if (from == to)
+        return;
+    auto parent_idx = make_index(parent);
+    // beginMoveRows uses Qt's "before this row" convention: moving down needs +1
+    int qt_dest = (to > from) ? to + 1 : to;
+    if (!beginMoveRows(parent_idx, from, from, parent_idx, qt_dest))
+        return;
+    auto* node = parent->child(from);
+    parent->remove_child(from);
+    parent->insert_child_node(node, to);
+    endMoveRows();
 }
 
 void PlotsModel::set_selected(const QList<QModelIndex>& indexes, bool selected)
@@ -252,9 +301,88 @@ QObject* PlotsModel::object(const QModelIndex& index)
     return nullptr;
 }
 
-QMimeData* PlotsModel::mimeData(const QModelIndexList&) const
+QStringList PlotsModel::mimeTypes() const
 {
-    return new QMimeData();
+    return { QString::fromLatin1(k_plot_reorder_mime) };
+}
+
+QMimeData* PlotsModel::mimeData(const QModelIndexList& indexes) const
+{
+    auto* mime = new QMimeData();
+    for (const auto& idx : indexes)
+    {
+        if (!idx.isValid())
+            continue;
+        auto* node = static_cast<PlotsModelNode*>(idx.internalPointer());
+        if (!node || !node->object())
+            continue;
+        if (!(node->flags() & Qt::ItemIsDragEnabled))
+            continue;
+        auto value = static_cast<qulonglong>(reinterpret_cast<quintptr>(node->object()));
+        mime->setData(k_plot_reorder_mime, QByteArray::number(value));
+        break; // single-selection mode; only one payload
+    }
+    return mime;
+}
+
+Qt::DropActions PlotsModel::supportedDropActions() const
+{
+    return Qt::MoveAction;
+}
+
+bool PlotsModel::canDropMimeData(const QMimeData* data, Qt::DropAction action,
+    int /*row*/, int /*column*/, const QModelIndex& parent) const
+{
+    if (action != Qt::MoveAction)
+        return false;
+    auto* source = decode_reorder_payload(data);
+    if (!source)
+        return false;
+    if (!parent.isValid())
+        return false;
+    auto* parent_node = static_cast<PlotsModelNode*>(parent.internalPointer());
+    if (!parent_node)
+        return false;
+    auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(parent_node->object());
+    if (!panel)
+        return false;
+    return parent_node->child_row_by_object(source) >= 0;
+}
+
+bool PlotsModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
+    int row, int /*column*/, const QModelIndex& parent)
+{
+    if (!canDropMimeData(data, action, row, 0, parent))
+        return false;
+    auto* plot = qobject_cast<SciQLopPlotInterface*>(decode_reorder_payload(data));
+    auto* parent_node = static_cast<PlotsModelNode*>(parent.internalPointer());
+    auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(parent_node->object());
+    if (!plot || !panel)
+        return false;
+
+    int plot_count = static_cast<int>(panel->plots().size());
+    int from = panel->index(plot);
+    if (from < 0)
+        return false;
+
+    // Qt passes an insertion-slot row (before-this-row, or -1 for "on parent").
+    // Collapse to a final plot-list index, clamped to the plot range so drops
+    // over extension rows still resolve to a valid plot position.
+    int to;
+    if (row < 0 || row >= plot_count)
+        to = plot_count - 1;
+    else if (row > from)
+        to = row - 1;
+    else
+        to = row;
+
+    if (from == to)
+        return false;
+
+    panel->move_plot(plot, to);
+    // Model row update is driven by the panel's plot_moved signal,
+    // wired in Registrations via TypeDescriptor::connect_moves.
+    return true;
 }
 
 QModelIndex PlotsModel::make_index(PlotsModelNode* node) const

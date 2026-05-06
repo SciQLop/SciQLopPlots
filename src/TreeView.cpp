@@ -20,8 +20,10 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/View/TreeView.hpp"
+#include <QDropEvent>
 #include <QHeaderView>
 #include <QKeyEvent>
+#include <QMimeData>
 
 PlotsTreeView::PlotsTreeView(QWidget* parent) : QTreeView(parent)
 {
@@ -61,4 +63,16 @@ void PlotsTreeView::mousePressEvent(QMouseEvent* event)
             clearSelection();
     }
     QTreeView::mousePressEvent(event);
+}
+
+void PlotsTreeView::dropEvent(QDropEvent* event)
+{
+    const bool is_reorder = event->mimeData()
+        && event->mimeData()->hasFormat(QStringLiteral("application/x-sciqlop-plot-reorder"));
+    QTreeView::dropEvent(event);
+    // PlotsModel::dropMimeData already performed the move atomically.
+    // Neutralise the action so QAbstractItemView::startDrag does not
+    // also call removeRows() on the source row and delete the plot.
+    if (is_reorder && event->isAccepted())
+        event->setDropAction(Qt::IgnoreAction);
 }

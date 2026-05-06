@@ -48,6 +48,7 @@ public:
 
     void addNode(PlotsModelNode* parent, QObject* obj);
     void removeChildByObject(PlotsModelNode* parent, QObject* obj);
+    void moveChildByObject(PlotsModelNode* parent, QObject* obj, int dest_row);
 
     void set_selected(const QList<QModelIndex>& indexes, bool selected);
 
@@ -56,7 +57,13 @@ public:
     static PlotsModel* instance();
     static QObject* object(const QModelIndex& index);
 
+    QStringList mimeTypes() const override;
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
+    Qt::DropActions supportedDropActions() const override;
+    bool canDropMimeData(const QMimeData* data, Qt::DropAction action,
+        int row, int column, const QModelIndex& parent) const override;
+    bool dropMimeData(const QMimeData* data, Qt::DropAction action,
+        int row, int column, const QModelIndex& parent) override;
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL

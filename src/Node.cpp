@@ -93,6 +93,16 @@ PlotsModelNode* PlotsModelNode::insert_child(
     return node;
 }
 
+void PlotsModelNode::insert_child_node(PlotsModelNode* node, int row)
+{
+    if (!node)
+        return;
+    if (row < 0 || row > m_children.size())
+        m_children.append(node);
+    else
+        m_children.insert(row, node);
+}
+
 bool PlotsModelNode::remove_child(int row)
 {
     if (row < 0 || row >= m_children.size())
