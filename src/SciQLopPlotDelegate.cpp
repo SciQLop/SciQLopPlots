@@ -30,6 +30,7 @@
 
 #include <QDoubleSpinBox>
 #include <QGroupBox>
+#include <QLineEdit>
 #include <QSignalBlocker>
 
 SciQLopPlot* SciQLopPlotDelegate::plot() const
@@ -40,6 +41,17 @@ SciQLopPlot* SciQLopPlotDelegate::plot() const
 SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
+    auto* name_edit = new QLineEdit(object->objectName(), this);
+    m_layout->addRow("Name", name_edit);
+    connect(name_edit, &QLineEdit::editingFinished, object,
+            [name_edit, object]() { object->setObjectName(name_edit->text()); });
+    connect(object, &QObject::objectNameChanged, name_edit,
+            [name_edit](const QString& name)
+            {
+                if (name_edit->text() != name)
+                    name_edit->setText(name);
+            });
+
     auto* legend = object->legend();
     auto* legendBox = new QGroupBox("Legend", this);
     auto* legendLayout = new QFormLayout(legendBox);
