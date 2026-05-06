@@ -51,7 +51,10 @@ public:
     PlotsModelNode* parent_node() const;
 
     PlotsModelNode* insert_child(QObject* obj, const TypeDescriptor* desc, int row = -1);
-    void insert_child_node(PlotsModelNode* node, int row);
+    // Re-attach an existing child node at `row`. The node MUST already be a
+    // QObject child of this — used for same-parent reorders. Cross-parent
+    // moves would corrupt QObject parentage; use a different API for that.
+    void reinsert_child_at(PlotsModelNode* node, int row);
     bool remove_child(int row);
 
     void add_connections(const QList<QMetaObject::Connection>& conns);

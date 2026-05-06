@@ -264,7 +264,7 @@ void PlotsModel::moveChildByObject(PlotsModelNode* parent, QObject* obj, int des
         return;
     auto* node = parent->child(from);
     parent->remove_child(from);
-    parent->insert_child_node(node, to);
+    parent->reinsert_child_at(node, to);
     endMoveRows();
 }
 
