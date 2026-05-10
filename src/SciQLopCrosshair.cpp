@@ -27,8 +27,8 @@
 #include <plottables/plottable-multigraph.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
-#include <chrono>
 #include <cmath>
+#include <ctime>
 
 SciQLopCrosshair::SciQLopCrosshair(QCustomPlot* plot)
     : QObject(plot), m_plot(plot)
@@ -192,9 +192,20 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
     if (auto datetime_ticker = m_plot->xAxis->ticker().dynamicCast<QCPAxisTickerDateTime>();
         !datetime_ticker.isNull())
     {
-        const auto tp = std::chrono::system_clock::time_point(
-            std::chrono::milliseconds(static_cast<long long>(key * 1000)));
-        header = QString::fromStdString(fmt::format("{:%Y-%m-%d %H:%M:%S}", tp));
+        // Microsecond resolution — needed for high-rate data (e.g. 100 ksps).
+        // Nanosecond would exceed double-precision on a Unix-epoch double.
+        // Format via std::tm so fmt's %S prints exactly 2 whole-seconds digits
+        // (formatting a time_point would promote to system_clock::duration's
+        // resolution and emit trailing zeros). Local time matches the default
+        // QCPAxisTickerDateTime spec (Qt::LocalTime).
+        const auto us = std::llround(key * 1'000'000.0);
+        const auto sec_part = static_cast<std::time_t>(us / 1'000'000);
+        const auto frac_us = static_cast<long>(
+            std::abs(us - static_cast<long long>(sec_part) * 1'000'000));
+        std::tm tm {};
+        localtime_r(&sec_part, &tm);
+        header = QString::fromStdString(
+            fmt::format("{:%Y-%m-%d %H:%M:%S}.{:06d}", tm, frac_us));
     }
     else
     {
