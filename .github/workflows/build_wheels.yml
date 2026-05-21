@@ -114,6 +114,17 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.11 --exclude libshiboken6.abi3.so.6.11 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.11 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
+          # Windows: cibuildwheel runs delvewheel by default, but (1) it skips the MSVC
+          # runtime, causing "DLL load failed" on machines without the VC++ redistributable,
+          # and (2) it would otherwise vendor a private copy of Qt, which conflicts with the
+          # Qt that PySide6 loads in-process. Force-bundle the runtime, exclude the Qt/PySide
+          # stack (provided by PySide6 at runtime, mirroring the Linux auditwheel excludes).
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+            delvewheel repair -w {dest_dir}
+            --add-path "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin"
+            --include "msvcp140.dll;msvcp140_1.dll;msvcp140_2.dll;vcruntime140.dll;vcruntime140_1.dll;concrt140.dll"
+            --exclude "Qt6Core.dll;Qt6Gui.dll;Qt6Widgets.dll;Qt6Svg.dll;Qt6PrintSupport.dll;Qt6OpenGL.dll;Qt6OpenGLWidgets.dll;pyside6.abi3.dll;shiboken6.abi3.dll;pyside6qml.abi3.dll"
+            {wheel}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_39_aarch64
           CIBW_SKIP: "*-win32 *i686 *38-* *39-* pp* *musllinux* *314t*"
