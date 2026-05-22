@@ -61,6 +61,7 @@ extern "C"
 #include <mutex>
 #include <variant>
 #include <functional>
+#include <QDebug>
 #include <QThread>
 
 #define SKIP_PYTHON_INTERFACE_CPP
@@ -486,6 +487,42 @@ std::size_t PyBuffer::flat_size() const
     return 0;
 }
 
+// Convert a Python list/tuple of buffer-protocol objects into PyBuffers.
+// `PyBuffer`'s constructor throws on non-numeric / non-buffer items; catching
+// here drops the whole batch instead of letting the exception escape into the
+// worker-thread event loop and call std::terminate. The caller treats an
+// empty vector as "no data this round".
+inline std::vector<PyBuffer> _collect_buffers(PyObject* res)
+{
+    std::vector<PyBuffer> data;
+    Py_ssize_t size = 0;
+    PyObject* (*getitem)(PyObject*, Py_ssize_t) = nullptr;
+    if (PyList_Check(res))
+    {
+        size = PyList_Size(res);
+        getitem = PyList_GetItem;
+    }
+    else if (PyTuple_Check(res))
+    {
+        size = PyTuple_Size(res);
+        getitem = PyTuple_GetItem;
+    }
+    else
+        return data;
+    try
+    {
+        data.reserve(static_cast<std::size_t>(size));
+        for (Py_ssize_t i = 0; i < size; ++i)
+            data.emplace_back(getitem(res, i));
+    }
+    catch (const std::exception& e)
+    {
+        qWarning() << "[GetDataPyCallable] dropping data provider result:" << e.what();
+        data.clear();
+    }
+    return data;
+}
+
 struct _GetDataPyCallable_impl
 {
     PyObjectWrapper _py_obj;
@@ -529,22 +566,7 @@ struct _GetDataPyCallable_impl
             Py_DECREF(args);
             if (res != nullptr)
             {
-                if (PyList_Check(res))
-                {
-                    auto size = PyList_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyList_GetItem(res, i));
-                    }
-                }
-                else if (PyTuple_Check(res))
-                {
-                    auto size = PyTuple_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyTuple_GetItem(res, i));
-                    }
-                }
+                data = _collect_buffers(res);
                 Py_DECREF(res);
             }
             else
@@ -581,22 +603,7 @@ struct _GetDataPyCallable_impl
             Py_DECREF(args);
             if (res != nullptr)
             {
-                if (PyList_Check(res))
-                {
-                    auto size = PyList_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyList_GetItem(res, i));
-                    }
-                }
-                else if (PyTuple_Check(res))
-                {
-                    auto size = PyTuple_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyTuple_GetItem(res, i));
-                    }
-                }
+                data = _collect_buffers(res);
                 Py_DECREF(res);
             }
             else
@@ -636,22 +643,7 @@ struct _GetDataPyCallable_impl
             Py_DECREF(args);
             if (res != nullptr)
             {
-                if (PyList_Check(res))
-                {
-                    auto size = PyList_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyList_GetItem(res, i));
-                    }
-                }
-                else if (PyTuple_Check(res))
-                {
-                    auto size = PyTuple_Size(res);
-                    for (Py_ssize_t i = 0; i < size; ++i)
-                    {
-                        data.emplace_back(PyTuple_GetItem(res, i));
-                    }
-                }
+                data = _collect_buffers(res);
                 Py_DECREF(res);
             }
             else
