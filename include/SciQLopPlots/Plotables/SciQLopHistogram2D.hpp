@@ -72,6 +72,10 @@ public:
     void set_normalization(int normalization);
     int normalization() const;
 
+    SciQLopPlotRange z_percentile_range(const SciQLopPlotRange& x_range,
+                                        const SciQLopPlotRange& y_range, double low,
+                                        double high) const noexcept override;
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:

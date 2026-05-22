@@ -23,6 +23,9 @@
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 void SciQLopColorMap::_cmap_got_destroyed()
 {
@@ -41,6 +44,8 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
     SciQLopColorMap::set_name(name);
+
+    install_rescale_provider();
 
     if (auto legend_item = _legend_item(); legend_item)
     {
@@ -159,6 +164,67 @@ void SciQLopColorMap::set_auto_scale_y(bool auto_scale_y)
 {
     _auto_scale_y = auto_scale_y;
     Q_EMIT auto_scale_y_changed(auto_scale_y);
+}
+
+SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_range,
+                                                     const SciQLopPlotRange& y_range, double low,
+                                                     double high) const noexcept
+{
+    if (!_dataHolder)
+        return SciQLopPlotRange();
+    const PyBuffer& xb = _dataHolder->x;
+    const PyBuffer& yb = _dataHolder->y;
+    const PyBuffer& zb = _dataHolder->z;
+    if (!xb.is_valid() || !yb.is_valid() || !zb.is_valid())
+        return SciQLopPlotRange();
+
+    const std::size_t nx = xb.flat_size();
+    const std::size_t nz = zb.flat_size();
+    if (nx == 0 || nz == 0 || nz % nx != 0)
+        return SciQLopPlotRange();
+    const std::size_t y_per_row = nz / nx;
+    const bool y_is_2d = (yb.flat_size() == nz);
+
+    const double x_lo = std::min(x_range.start(), x_range.stop());
+    const double x_hi = std::max(x_range.start(), x_range.stop());
+    const double y_lo = std::min(y_range.start(), y_range.stop());
+    const double y_hi = std::max(y_range.start(), y_range.stop());
+
+    const auto* x_ptr = static_cast<const double*>(xb.raw_data());
+
+    std::vector<double> values;
+    values.reserve(nz);
+    dispatch_dtype(yb.format_code(),
+                   [&](auto y_tag)
+                   {
+                       dispatch_dtype(zb.format_code(),
+                                      [&](auto z_tag)
+                                      {
+                                          using Y = typename decltype(y_tag)::type;
+                                          using Z = typename decltype(z_tag)::type;
+                                          const auto* y_ptr = static_cast<const Y*>(yb.raw_data());
+                                          const auto* z_ptr = static_cast<const Z*>(zb.raw_data());
+                                          for (std::size_t i = 0; i < nx; ++i)
+                                          {
+                                              const double xi = x_ptr[i];
+                                              if (xi < x_lo || xi > x_hi)
+                                                  continue;
+                                              for (std::size_t j = 0; j < y_per_row; ++j)
+                                              {
+                                                  const std::size_t idx = i * y_per_row + j;
+                                                  const double yj = static_cast<double>(
+                                                      y_is_2d ? y_ptr[idx] : y_ptr[j]);
+                                                  if (yj < y_lo || yj > y_hi)
+                                                      continue;
+                                                  const double zv = static_cast<double>(z_ptr[idx]);
+                                                  if (std::isfinite(zv))
+                                                      values.push_back(zv);
+                                              }
+                                          }
+                                      });
+                   });
+
+    return percentile_range(values, low, high);
 }
 
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

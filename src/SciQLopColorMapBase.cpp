@@ -21,6 +21,9 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                                          SciQLopPlotColorScaleAxis* colorScaleAxis,
@@ -34,7 +37,11 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
 
 // Derived destructors null their QPointer then remove the plottable,
 // preventing double-removal when the base destructor runs.
-SciQLopColorMapBase::~SciQLopColorMapBase() = default;
+SciQLopColorMapBase::~SciQLopColorMapBase()
+{
+    if (_colorScaleAxis)
+        _colorScaleAxis->set_rescale_range_provider(nullptr);
+}
 
 void SciQLopColorMapBase::set_selected(bool selected) noexcept
 {
@@ -51,6 +58,56 @@ void SciQLopColorMapBase::set_selected(bool selected) noexcept
 bool SciQLopColorMapBase::selected() const noexcept
 {
     return _selected;
+}
+
+void SciQLopColorMapBase::set_autoscale_percentile_low(double percentile) noexcept
+{
+    _autoscale_percentile_low = std::clamp(percentile, 0., 100.);
+}
+
+void SciQLopColorMapBase::set_autoscale_percentile_high(double percentile) noexcept
+{
+    _autoscale_percentile_high = std::clamp(percentile, 0., 100.);
+}
+
+SciQLopPlotRange SciQLopColorMapBase::percentile_range(std::vector<double>& values, double low,
+                                                       double high) noexcept
+{
+    if (values.empty())
+        return SciQLopPlotRange();
+
+    const auto rank = [n = values.size()](double p) -> std::size_t
+    {
+        const double clamped = std::clamp(p, 0., 100.);
+        const long idx = std::lround(clamped / 100. * static_cast<double>(n - 1));
+        return static_cast<std::size_t>(std::clamp<long>(idx, 0, static_cast<long>(n - 1)));
+    };
+    const std::size_t lo_idx = rank(low);
+    const std::size_t hi_idx = rank(high);
+    std::nth_element(values.begin(), values.begin() + lo_idx, values.end());
+    const double lo_val = values[lo_idx];
+    std::nth_element(values.begin(), values.begin() + hi_idx, values.end());
+    const double hi_val = values[hi_idx];
+    return SciQLopPlotRange(std::min(lo_val, hi_val), std::max(lo_val, hi_val));
+}
+
+std::optional<SciQLopPlotRange> SciQLopColorMapBase::z_rescale_range() const noexcept
+{
+    if (_autoscale_percentile_low <= 0. && _autoscale_percentile_high >= 100.)
+        return std::nullopt;
+    if (!_keyAxis || !_valueAxis)
+        return std::nullopt;
+    auto r = z_percentile_range(_keyAxis->range(), _valueAxis->range(),
+                                _autoscale_percentile_low, _autoscale_percentile_high);
+    if (std::isnan(r.start()) || std::isnan(r.stop()))
+        return std::nullopt;
+    return r;
+}
+
+void SciQLopColorMapBase::install_rescale_provider() noexcept
+{
+    if (_colorScaleAxis)
+        _colorScaleAxis->set_rescale_range_provider([this]() { return z_rescale_range(); });
 }
 
 void SciQLopColorMapBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

@@ -23,6 +23,10 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+
 SciQLopColorMapBase* SciQLopColorMapBaseDelegate::color_map_base() const
 {
     return as_type<SciQLopColorMapBase>(m_object);
@@ -40,4 +44,39 @@ SciQLopColorMapBaseDelegate::SciQLopColorMapBaseDelegate(SciQLopColorMapBase* ob
                 if (auto* cm = color_map_base())
                     cm->set_gradient(g);
             });
+
+    // Robust autoscale: clamp the color (z) range to a percentile of the
+    // visible data. Defaults to 0/100, i.e. plain min/max.
+    auto* percentileBox = new QGroupBox("Color scale percentile", this);
+    auto* percentileLayout = new QFormLayout(percentileBox);
+
+    auto* lowSpin = new QDoubleSpinBox(percentileBox);
+    lowSpin->setRange(0., 100.);
+    lowSpin->setDecimals(1);
+    lowSpin->setSingleStep(0.5);
+    lowSpin->setSuffix(" %");
+    lowSpin->setValue(object->autoscale_percentile_low());
+    percentileLayout->addRow("Low", lowSpin);
+    connect(lowSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            [this](double v)
+            {
+                if (auto* cm = color_map_base())
+                    cm->set_autoscale_percentile_low(v);
+            });
+
+    auto* highSpin = new QDoubleSpinBox(percentileBox);
+    highSpin->setRange(0., 100.);
+    highSpin->setDecimals(1);
+    highSpin->setSingleStep(0.5);
+    highSpin->setSuffix(" %");
+    highSpin->setValue(object->autoscale_percentile_high());
+    percentileLayout->addRow("High", highSpin);
+    connect(highSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            [this](double v)
+            {
+                if (auto* cm = color_map_base())
+                    cm->set_autoscale_percentile_high(v);
+            });
+
+    m_layout->addRow(percentileBox);
 }

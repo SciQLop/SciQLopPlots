@@ -524,6 +524,15 @@ void SciQLopPlotColorScaleAxis::rescale() noexcept
 {
     if (!m_axis.isNull())
     {
+        if (m_rescale_range_provider)
+        {
+            if (auto r = m_rescale_range_provider(); r.has_value())
+            {
+                set_range(*r);
+                m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+                return;
+            }
+        }
         // QCPColorScale::rescaleDataRange only finds QCPColorMap, not QCPColorMap2/QCPHistogram2D.
         auto* plot = m_axis->parentPlot();
         for (int i = 0; i < plot->plottableCount(); ++i)

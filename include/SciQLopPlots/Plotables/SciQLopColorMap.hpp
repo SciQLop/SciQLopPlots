@@ -67,6 +67,10 @@ public:
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
+    SciQLopPlotRange z_percentile_range(const SciQLopPlotRange& x_range,
+                                        const SciQLopPlotRange& y_range, double low,
+                                        double high) const noexcept override;
+
     inline void set_contour_levels(const QVector<double>& levels)
     {
         if (_cmap) _cmap->setContourLevels(levels);
