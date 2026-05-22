@@ -21,6 +21,10 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include <algorithm>
+#include <cmath>
+#include <plottables/plottable-colormap.h>
+#include <vector>
 
 void SciQLopHistogram2D::_hist_got_destroyed()
 {
@@ -41,6 +45,8 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);
     SciQLopHistogram2D::set_name(name);
+
+    install_rescale_provider();
 
     if (auto legend_item = _legend_item(); legend_item)
     {
@@ -149,6 +155,45 @@ void SciQLopHistogram2D::set_normalization(int normalization)
 int SciQLopHistogram2D::normalization() const
 {
     return _hist ? static_cast<int>(_hist->normalization()) : 0;
+}
+
+SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& x_range,
+                                                        const SciQLopPlotRange& y_range, double low,
+                                                        double high) const noexcept
+{
+    if (!_hist)
+        return SciQLopPlotRange();
+    // The binned grid (cell counts) is produced asynchronously; if it isn't
+    // ready yet, fall back to the plain min/max path (empty range ⇒ nullopt).
+    const QCPColorMapData* grid = _hist->pipeline().result();
+    if (!grid)
+        return SciQLopPlotRange();
+    const int nkey = grid->keySize();
+    const int nval = grid->valueSize();
+    if (nkey <= 0 || nval <= 0)
+        return SciQLopPlotRange();
+
+    const double x_lo = std::min(x_range.start(), x_range.stop());
+    const double x_hi = std::max(x_range.start(), x_range.stop());
+    const double y_lo = std::min(y_range.start(), y_range.stop());
+    const double y_hi = std::max(y_range.start(), y_range.stop());
+
+    std::vector<double> values;
+    values.reserve(static_cast<std::size_t>(nkey) * static_cast<std::size_t>(nval));
+    for (int i = 0; i < nkey; ++i)
+    {
+        for (int j = 0; j < nval; ++j)
+        {
+            double kx = 0., vy = 0.;
+            grid->cellToCoord(i, j, &kx, &vy);
+            if (kx < x_lo || kx > x_hi || vy < y_lo || vy > y_hi)
+                continue;
+            const double zv = grid->cell(i, j);
+            if (std::isfinite(zv))
+                values.push_back(zv);
+        }
+    }
+    return percentile_range(values, low, high);
 }
 
 SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
