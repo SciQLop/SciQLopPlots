@@ -120,7 +120,8 @@ jobs:
           # Qt that PySide6 loads in-process. Force-bundle the runtime, exclude the Qt/PySide
           # stack (provided by PySide6 at runtime, mirroring the Linux auditwheel excludes).
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
-            delvewheel repair -w {dest_dir}
+            pip install delvewheel &&
+            python -m delvewheel repair -w {dest_dir}
             --add-path "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin"
             --include "msvcp140.dll;msvcp140_1.dll;msvcp140_2.dll;vcruntime140.dll;vcruntime140_1.dll;concrt140.dll"
             --exclude "Qt6Core.dll;Qt6Gui.dll;Qt6Widgets.dll;Qt6Svg.dll;Qt6PrintSupport.dll;Qt6OpenGL.dll;Qt6OpenGLWidgets.dll;pyside6.abi3.dll;shiboken6.abi3.dll;pyside6qml.abi3.dll"
