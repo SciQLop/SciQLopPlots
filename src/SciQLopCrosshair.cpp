@@ -30,6 +30,20 @@
 #include <cmath>
 #include <ctime>
 
+namespace
+{
+std::tm to_local_tm(std::time_t t)
+{
+    std::tm tm {};
+#ifdef _WIN32
+    localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
+    return tm;
+}
+}
+
 SciQLopCrosshair::SciQLopCrosshair(QCustomPlot* plot)
     : QObject(plot), m_plot(plot)
 {
@@ -202,8 +216,7 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
         const auto sec_part = static_cast<std::time_t>(us / 1'000'000);
         const auto frac_us = static_cast<long>(
             std::abs(us - static_cast<long long>(sec_part) * 1'000'000));
-        std::tm tm {};
-        localtime_r(&sec_part, &tm);
+        const std::tm tm = to_local_tm(sec_part);
         header = QString::fromStdString(
             fmt::format("{:%Y-%m-%d %H:%M:%S}.{:06d}", tm, frac_us));
     }
