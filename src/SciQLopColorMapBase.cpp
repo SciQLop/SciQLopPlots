@@ -34,10 +34,11 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
 {
 }
 
-// Derived destructors null their QPointer then remove the plottable,
-// preventing double-removal when the base destructor runs.
 SciQLopColorMapBase::~SciQLopColorMapBase()
 {
+    // Unhook the rescale provider so the color-scale axis won't call back into
+    // our (half-destroyed) z_rescale_range. Safe if the axis has already been
+    // destroyed thanks to QPointer.
     if (_colorScaleAxis)
         _colorScaleAxis->set_rescale_range_provider(nullptr);
 }
@@ -61,11 +62,15 @@ bool SciQLopColorMapBase::selected() const noexcept
 
 void SciQLopColorMapBase::set_autoscale_percentile_low(double percentile) noexcept
 {
+    if (std::isnan(percentile))
+        return;
     _autoscale_percentile_low = std::clamp(percentile, 0., 100.);
 }
 
 void SciQLopColorMapBase::set_autoscale_percentile_high(double percentile) noexcept
 {
+    if (std::isnan(percentile))
+        return;
     _autoscale_percentile_high = std::clamp(percentile, 0., 100.);
 }
 

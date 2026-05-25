@@ -212,10 +212,15 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
         // (formatting a time_point would promote to system_clock::duration's
         // resolution and emit trailing zeros). Local time matches the default
         // QCPAxisTickerDateTime spec (Qt::LocalTime).
+        // Floor-divide (not truncate-toward-zero) so pre-1970 keys land on the
+        // right second: e.g. us=-1_500_000 should give sec=-2 + frac=500_000,
+        // not sec=-1 + frac=500_000 which would render "23:59:59.5" instead
+        // of "23:59:58.5".
         const auto us = std::llround(key * 1'000'000.0);
-        const auto sec_part = static_cast<std::time_t>(us / 1'000'000);
-        const auto frac_us = static_cast<long>(
-            std::abs(us - static_cast<long long>(sec_part) * 1'000'000));
+        const long long sec_ll = (us >= 0) ? us / 1'000'000
+                                           : -((-us + 999'999) / 1'000'000);
+        const auto sec_part = static_cast<std::time_t>(sec_ll);
+        const auto frac_us = static_cast<long>(us - sec_ll * 1'000'000);
         const std::tm tm = to_local_tm(sec_part);
         header = QString::fromStdString(
             fmt::format("{:%Y-%m-%d %H:%M:%S}.{:06d}", tm, frac_us));
