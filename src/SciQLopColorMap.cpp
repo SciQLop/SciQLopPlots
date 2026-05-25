@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/PercentileMath.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -224,7 +225,7 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
                                       });
                    });
 
-    return percentile_range(values, low, high);
+    return sciqlop::percentile::percentile_range(values, low, high);
 }
 
 SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

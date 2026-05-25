@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include "SciQLopPlots/PercentileMath.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <algorithm>
 #include <cmath>
@@ -193,7 +194,7 @@ SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& 
                 values.push_back(zv);
         }
     }
-    return percentile_range(values, low, high);
+    return sciqlop::percentile::percentile_range(values, low, high);
 }
 
 SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

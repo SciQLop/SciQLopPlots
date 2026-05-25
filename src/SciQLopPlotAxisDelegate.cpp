@@ -167,6 +167,50 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         m_layout->addRow(rangeBox);
     }
 
+    // Robust autoscale percentile: clamp the rescale range to a percentile of
+    // the visible data, so a single outlier doesn't blow up the y-axis. Only
+    // shown on **vertical** value axes — the rescale code pools graphs whose
+    // y_axis() matches `this`, so the group would be a no-op on a key (x)
+    // axis. The color-scale axis owns its own percentile group on the colormap
+    // delegate, and time axes don't autoscale on data extent.
+    if (auto* concrete = as_type<SciQLopPlotAxis>(m_object);
+        concrete && !ax->is_time_axis() && this->color_scale() == nullptr
+        && ax->orientation() == Qt::Vertical)
+    {
+        auto* percentileBox = new QGroupBox("Autoscale percentile", this);
+        auto* percentileLayout = new QFormLayout(percentileBox);
+
+        auto* lowSpin = new QDoubleSpinBox(percentileBox);
+        lowSpin->setRange(0., 100.);
+        lowSpin->setDecimals(1);
+        lowSpin->setSingleStep(0.5);
+        lowSpin->setSuffix(" %");
+        lowSpin->setValue(concrete->autoscale_percentile_low());
+        percentileLayout->addRow("Low", lowSpin);
+        connect(lowSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                [this](double v)
+                {
+                    if (auto* a = as_type<SciQLopPlotAxis>(m_object))
+                        a->set_autoscale_percentile_low(v);
+                });
+
+        auto* highSpin = new QDoubleSpinBox(percentileBox);
+        highSpin->setRange(0., 100.);
+        highSpin->setDecimals(1);
+        highSpin->setSingleStep(0.5);
+        highSpin->setSuffix(" %");
+        highSpin->setValue(concrete->autoscale_percentile_high());
+        percentileLayout->addRow("High", highSpin);
+        connect(highSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                [this](double v)
+                {
+                    if (auto* a = as_type<SciQLopPlotAxis>(m_object))
+                        a->set_autoscale_percentile_high(v);
+                });
+
+        m_layout->addRow(percentileBox);
+    }
+
     append_inspector_extensions();
 }
 

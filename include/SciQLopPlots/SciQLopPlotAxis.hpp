@@ -268,12 +268,19 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     QPointer<QCPAxis> m_axis;
     SciQLopPlotRange m_last_valid_range;
     bool m_suppress_range_signals = false;
+    double m_autoscale_percentile_low = 0.;
+    double m_autoscale_percentile_high = 100.;
     friend class _impl::SciQLopPlot;
 
 public:
     explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false,
                              const QString& name = "Axis");
     virtual ~SciQLopPlotAxis() = default;
+
+    void set_autoscale_percentile_low(double percentile) noexcept;
+    void set_autoscale_percentile_high(double percentile) noexcept;
+    inline double autoscale_percentile_low() const noexcept { return m_autoscale_percentile_low; }
+    inline double autoscale_percentile_high() const noexcept { return m_autoscale_percentile_high; }
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;

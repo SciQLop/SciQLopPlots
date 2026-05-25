@@ -96,6 +96,11 @@ public:
 
     virtual SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
+#ifndef BINDINGS_H
+    void collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                std::vector<double>& out) const noexcept override;
+#endif
+
 private:
 #ifdef BINDINGS_H
 #define Q_SIGNAL

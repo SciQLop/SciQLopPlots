@@ -166,11 +166,6 @@ public:
 
 protected:
 #ifndef BINDINGS_H
-    // [low, high] percentile cutoffs (nearest-rank) of the collected values.
-    // Empty input yields a NaN range. Shared by concrete z_percentile_range
-    // overrides, which differ only in how they gather the visible cells.
-    static SciQLopPlotRange percentile_range(std::vector<double>& values, double low,
-                                             double high) noexcept;
     // nullopt ⇒ caller should use the plain min/max fast path (default 0/100).
     std::optional<SciQLopPlotRange> z_rescale_range() const noexcept;
     // Installs z_rescale_range as the color-scale axis rescale provider.

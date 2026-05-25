@@ -23,7 +23,6 @@
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                                          SciQLopPlotColorScaleAxis* colorScaleAxis,
@@ -68,27 +67,6 @@ void SciQLopColorMapBase::set_autoscale_percentile_low(double percentile) noexce
 void SciQLopColorMapBase::set_autoscale_percentile_high(double percentile) noexcept
 {
     _autoscale_percentile_high = std::clamp(percentile, 0., 100.);
-}
-
-SciQLopPlotRange SciQLopColorMapBase::percentile_range(std::vector<double>& values, double low,
-                                                       double high) noexcept
-{
-    if (values.empty())
-        return SciQLopPlotRange();
-
-    const auto rank = [n = values.size()](double p) -> std::size_t
-    {
-        const double clamped = std::clamp(p, 0., 100.);
-        const long idx = std::lround(clamped / 100. * static_cast<double>(n - 1));
-        return static_cast<std::size_t>(std::clamp<long>(idx, 0, static_cast<long>(n - 1)));
-    };
-    const std::size_t lo_idx = rank(low);
-    const std::size_t hi_idx = rank(high);
-    std::nth_element(values.begin(), values.begin() + lo_idx, values.end());
-    const double lo_val = values[lo_idx];
-    std::nth_element(values.begin(), values.begin() + hi_idx, values.end());
-    const double hi_val = values[hi_idx];
-    return SciQLopPlotRange(std::min(lo_val, hi_val), std::max(lo_val, hi_val));
 }
 
 std::optional<SciQLopPlotRange> SciQLopColorMapBase::z_rescale_range() const noexcept

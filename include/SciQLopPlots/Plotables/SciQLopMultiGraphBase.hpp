@@ -64,4 +64,9 @@ public:
     SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
     void create_graphs(const QStringList& labels);
+
+#ifndef BINDINGS_H
+    void collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                std::vector<double>& out) const noexcept override;
+#endif
 };
