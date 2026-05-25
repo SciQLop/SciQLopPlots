@@ -492,6 +492,11 @@ std::size_t PyBuffer::flat_size() const
 // here drops the whole batch instead of letting the exception escape into the
 // worker-thread event loop and call std::terminate. The caller treats an
 // empty vector as "no data this round".
+//
+// Caller must hold the GIL (true for the three _GetDataPyCallable_impl::get_data
+// overloads via PyAutoScopedGIL). Failures surface as a Python RuntimeWarning
+// (via PyErr_WarnEx) so users can see, at the Python level, why their plot
+// is empty; we also keep the qWarning for non-Python-facing logs.
 inline std::vector<PyBuffer> _collect_buffers(PyObject* res)
 {
     std::vector<PyBuffer> data;
@@ -518,6 +523,16 @@ inline std::vector<PyBuffer> _collect_buffers(PyObject* res)
     catch (const std::exception& e)
     {
         qWarning() << "[GetDataPyCallable] dropping data provider result:" << e.what();
+        const std::string msg
+            = std::string("SciQLopPlots data provider returned an unsupported buffer "
+                          "(dropping batch): ")
+            + e.what();
+        // PyErr_WarnEx returns -1 if the warning is upgraded to an exception by
+        // Python's warning filters. In that case clear it so the next callable
+        // invocation starts with a clean error state — the C++-side recovery
+        // is the same either way.
+        if (PyErr_WarnEx(PyExc_RuntimeWarning, msg.c_str(), 1) < 0)
+            PyErr_Clear();
         data.clear();
     }
     return data;

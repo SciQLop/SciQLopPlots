@@ -195,35 +195,47 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
 
     std::vector<double> values;
     values.reserve(nz);
-    dispatch_dtype(yb.format_code(),
-                   [&](auto y_tag)
-                   {
-                       dispatch_dtype(zb.format_code(),
-                                      [&](auto z_tag)
-                                      {
-                                          using Y = typename decltype(y_tag)::type;
-                                          using Z = typename decltype(z_tag)::type;
-                                          const auto* y_ptr = static_cast<const Y*>(yb.raw_data());
-                                          const auto* z_ptr = static_cast<const Z*>(zb.raw_data());
-                                          for (std::size_t i = 0; i < nx; ++i)
+    // noexcept gather: dispatch_dtype throws std::invalid_argument on
+    // unsupported codes. _dataHolder is only assigned after set_data's own
+    // dispatch succeeds, so reaching here with an unknown dtype is
+    // unreachable today — catch it anyway to keep the noexcept contract
+    // honest for any future dtype that lands in set_data before this fn.
+    try
+    {
+        dispatch_dtype(yb.format_code(),
+                       [&](auto y_tag)
+                       {
+                           dispatch_dtype(zb.format_code(),
+                                          [&](auto z_tag)
                                           {
-                                              const double xi = x_ptr[i];
-                                              if (xi < x_lo || xi > x_hi)
-                                                  continue;
-                                              for (std::size_t j = 0; j < y_per_row; ++j)
+                                              using Y = typename decltype(y_tag)::type;
+                                              using Z = typename decltype(z_tag)::type;
+                                              const auto* y_ptr = static_cast<const Y*>(yb.raw_data());
+                                              const auto* z_ptr = static_cast<const Z*>(zb.raw_data());
+                                              for (std::size_t i = 0; i < nx; ++i)
                                               {
-                                                  const std::size_t idx = i * y_per_row + j;
-                                                  const double yj = static_cast<double>(
-                                                      y_is_2d ? y_ptr[idx] : y_ptr[j]);
-                                                  if (yj < y_lo || yj > y_hi)
+                                                  const double xi = x_ptr[i];
+                                                  if (xi < x_lo || xi > x_hi)
                                                       continue;
-                                                  const double zv = static_cast<double>(z_ptr[idx]);
-                                                  if (std::isfinite(zv))
-                                                      values.push_back(zv);
+                                                  for (std::size_t j = 0; j < y_per_row; ++j)
+                                                  {
+                                                      const std::size_t idx = i * y_per_row + j;
+                                                      const double yj = static_cast<double>(
+                                                          y_is_2d ? y_ptr[idx] : y_ptr[j]);
+                                                      if (yj < y_lo || yj > y_hi)
+                                                          continue;
+                                                      const double zv = static_cast<double>(z_ptr[idx]);
+                                                      if (std::isfinite(zv))
+                                                          values.push_back(zv);
+                                                  }
                                               }
-                                          }
-                                      });
-                   });
+                                          });
+                       });
+    }
+    catch (const std::invalid_argument&)
+    {
+        return SciQLopPlotRange();
+    }
 
     return sciqlop::percentile::percentile_range(values, low, high);
 }

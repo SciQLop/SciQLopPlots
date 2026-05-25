@@ -130,6 +130,15 @@ jobs:
           CIBW_SKIP: "*-win32 *i686 *38-* *39-* pp* *musllinux* *314t*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
+          # Smoke test: install the freshly-repaired wheel and import it. This
+          # catches "DLL load failed" / missing-runtime / broken-bundle classes
+          # of regressions that the build step itself can't see (since it
+          # links against the build-machine Qt, not the bundled one). Three
+          # consecutive Windows-wheel fixes shipped in May 2026 would have
+          # been blocked by this. Headless import only — no QApplication.
+          # Command string contains no GitHub event data so it's not exposed
+          # to expression-injection.
+          CIBW_TEST_COMMAND: python -c "import SciQLopPlots; print('SciQLopPlots', SciQLopPlots.__version__, 'imports OK')"
 
       - uses: actions/upload-artifact@v7
         with:

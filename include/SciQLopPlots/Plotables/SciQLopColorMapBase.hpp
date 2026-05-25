@@ -22,6 +22,7 @@
 #pragma once
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include <QPointer>
 #include <optional>
 #include <qcustomplot.h>
 
@@ -33,7 +34,9 @@ protected:
     bool _selected = false;
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
-    SciQLopPlotColorScaleAxis* _colorScaleAxis;
+    // QPointer because the color-scale axis is owned by the parent QCustomPlot
+    // and may be destroyed before us in atypical teardown orders.
+    QPointer<SciQLopPlotColorScaleAxis> _colorScaleAxis;
     double _autoscale_percentile_low = 0.;
     double _autoscale_percentile_high = 100.;
 
@@ -96,12 +99,13 @@ public:
 
     inline virtual ColorGradient gradient() const noexcept override
     {
-        return _colorScaleAxis->color_gradient();
+        return _colorScaleAxis ? _colorScaleAxis->color_gradient() : ColorGradient::Jet;
     }
 
     inline virtual void set_gradient(ColorGradient gradient) noexcept override
     {
-        _colorScaleAxis->set_color_gradient(gradient);
+        if (_colorScaleAxis)
+            _colorScaleAxis->set_color_gradient(gradient);
     }
 
     inline virtual void set_visible(bool visible) noexcept override
