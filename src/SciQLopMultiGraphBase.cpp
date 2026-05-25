@@ -3,6 +3,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
+#include <cmath>
 #include <datasource/row-major-multi-datasource.h>
 #include <datasource/soa-multi-datasource.h>
 #include <vector>
@@ -142,6 +143,51 @@ void SciQLopMultiGraphBase::set_data(PyBuffer x, PyBuffer y)
 QList<PyBuffer> SciQLopMultiGraphBase::data() const noexcept
 {
     return {_x, _y};
+}
+
+void SciQLopMultiGraphBase::collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                                   std::vector<double>& out) const noexcept
+{
+    if (!_x.is_valid() || !_y.is_valid())
+        return;
+    if (_x.format_code() != 'd')
+        return;
+    const std::size_t n = _x.flat_size();
+    if (n == 0)
+        return;
+
+    const double x_lo = visible_key_range.first;
+    const double x_hi = visible_key_range.second;
+    const double* xs = _x.data();
+    const std::size_t k = (_y.ndim() == 1) ? 1 : _y.shape()[1];
+    const bool row_major = (_y.ndim() == 1) || _y.row_major();
+
+    out.reserve(out.size() + n * k);
+    try
+    {
+        dispatch_dtype(_y.format_code(), [&](auto tag) {
+            using V = typename decltype(tag)::type;
+            const auto* ys = static_cast<const V*>(_y.raw_data());
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                const double x = xs[i];
+                if (x < x_lo || x > x_hi)
+                    continue;
+                for (std::size_t j = 0; j < k; ++j)
+                {
+                    const double v = static_cast<double>(
+                        row_major ? ys[i * k + j] : ys[j * n + i]);
+                    if constexpr (std::is_floating_point_v<V>)
+                    {
+                        if (!std::isfinite(v))
+                            continue;
+                    }
+                    out.push_back(v);
+                }
+            }
+        });
+    }
+    catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }
 }
 
 void SciQLopMultiGraphBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

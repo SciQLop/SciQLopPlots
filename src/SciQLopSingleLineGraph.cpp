@@ -157,6 +157,49 @@ QList<PyBuffer> SciQLopSingleLineGraph::data() const noexcept
     return {};
 }
 
+void SciQLopSingleLineGraph::collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                                    std::vector<double>& out) const noexcept
+{
+    if (!_dataHolder)
+        return;
+    const auto& x = _dataHolder->x;
+    const auto& y = _dataHolder->y;
+    if (!x.is_valid() || !y.is_valid())
+        return;
+    if (x.format_code() != 'd')
+        return;
+    const std::size_t n = x.flat_size();
+    if (n == 0 || y.flat_size() < n)
+        return;
+
+    const double x_lo = visible_key_range.first;
+    const double x_hi = visible_key_range.second;
+    const double* xs = x.data();
+
+    out.reserve(out.size() + n);
+    try
+    {
+        dispatch_dtype(y.format_code(), [&](auto tag) {
+            using V = typename decltype(tag)::type;
+            const auto* ys = static_cast<const V*>(y.raw_data());
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                const double xv = xs[i];
+                if (xv < x_lo || xv > x_hi)
+                    continue;
+                const double v = static_cast<double>(ys[i]);
+                if constexpr (std::is_floating_point_v<V>)
+                {
+                    if (!std::isfinite(v))
+                        continue;
+                }
+                out.push_back(v);
+            }
+        });
+    }
+    catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }
+}
+
 void SciQLopSingleLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     apply_axis(_keyAxis, axis, [this](auto* a) { if (_graph) _graph->setKeyAxis(a); });

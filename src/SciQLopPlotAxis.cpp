@@ -21,11 +21,17 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
+#include "SciQLopPlots/PercentileMath.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/Tracing.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
+#include <algorithm>
 #include <plottables/plottable-colormap2.h>
 #include <plottables/plottable-histogram2d.h>
 #include <cmath>
+#include <vector>
 
 SciQLopPlotRange SciQLopPlotAxisInterface::clamp_range(const SciQLopPlotRange& range) const noexcept
 {
@@ -317,6 +323,20 @@ bool SciQLopPlotAxis::selected() const noexcept
     return m_axis->selectedParts().testFlag(QCPAxis::spAxis);
 }
 
+void SciQLopPlotAxis::set_autoscale_percentile_low(double percentile) noexcept
+{
+    if (std::isnan(percentile))
+        return;
+    m_autoscale_percentile_low = std::clamp(percentile, 0., 100.);
+}
+
+void SciQLopPlotAxis::set_autoscale_percentile_high(double percentile) noexcept
+{
+    if (std::isnan(percentile))
+        return;
+    m_autoscale_percentile_high = std::clamp(percentile, 0., 100.);
+}
+
 void SciQLopPlotAxis::rescale() noexcept
 {
     if (m_axis.isNull())
@@ -327,8 +347,63 @@ void SciQLopPlotAxis::rescale() noexcept
     QCPRange newRange;
     bool haveRange = false;
     QCP::SignDomain signDomain = QCP::sdBoth;
-    if (m_axis->scaleType() == QCPAxis::stLogarithmic)
+    const bool is_log = m_axis->scaleType() == QCPAxis::stLogarithmic;
+    if (is_log)
         signDomain = (m_axis->range().upper < 0 ? QCP::sdNegative : QCP::sdPositive);
+
+    // Robust autoscale path: pool finite y-values across graphs on this axis,
+    // then clip to the configured percentile band. Uses the plot's own
+    // authoritative plottable list (sqp_plottables) so it can't miss anything
+    // the plot itself tracks. Only kicks in when percentiles deviate from
+    // 0/100; otherwise we fall through to the plain min/max loop below.
+    const bool wants_percentile
+        = (m_autoscale_percentile_low > 0. || m_autoscale_percentile_high < 100.);
+    if (auto* plot = qobject_cast<_impl::SciQLopPlot*>(m_axis->parentPlot()); wants_percentile && plot)
+    {
+        ::SciQLopPlots::tracing::ScopedZone _sz("axis.rescale.percentile", "rescale");
+        std::vector<double> pooled;
+        for (auto* p : plot->sqp_plottables())
+        {
+            // qobject_cast to SciQLopGraphInterface deliberately excludes
+            // colormaps/histograms: their y axis carries positional metadata
+            // (bin edges, frequency rows), not data values to pool. The
+            // legacy min/max fallthrough still considers them via QCP's own
+            // getValueRange path.
+            auto* graph = qobject_cast<SciQLopGraphInterface*>(p);
+            if (!graph || graph->y_axis() != this)
+                continue;
+            auto* keyAxis = qobject_cast<SciQLopPlotAxis*>(graph->x_axis());
+            if (!keyAxis || !keyAxis->qcp_axis())
+                continue;
+            const auto kr = keyAxis->qcp_axis()->range();
+            graph->collect_visible_values(SciQLopPlotRange(kr.lower, kr.upper), pooled);
+        }
+        if (is_log)
+        {
+            const auto cutoff
+                = [&](double v) { return signDomain == QCP::sdNegative ? v >= 0. : v <= 0.; };
+            pooled.erase(std::remove_if(pooled.begin(), pooled.end(), cutoff), pooled.end());
+        }
+        _sz.add_arg("pool_size", static_cast<int64_t>(pooled.size()));
+        if (!pooled.empty())
+        {
+            const auto r = sciqlop::percentile::percentile_range(
+                pooled, m_autoscale_percentile_low, m_autoscale_percentile_high);
+            // Degenerate (zero-width) percentile ranges happen when data has
+            // less precision than double inside the band (e.g. uint64 values
+            // larger than 2^53). QCPAxis::setRange silently rejects them, so
+            // we fall through to min/max rather than appear no-op.
+            if (!std::isnan(r.start()) && !std::isnan(r.stop()) && r.start() != r.stop())
+            {
+                // Route through set_range so clamp_range, m_last_valid_range,
+                // and the queued replot stay consistent with manual range
+                // changes (avoids the rangeChanged lambda reverting the new
+                // range when it exceeds m_max_range_size).
+                set_range(r);
+                return;
+            }
+        }
+    }
 
     for (auto* plottable : m_axis->plottables())
     {

@@ -23,6 +23,8 @@
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp"
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include <cmath>
 
 void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
 {
@@ -100,6 +102,14 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
 {
+    // CurveResampler reads y via PyBuffer::data() which only returns a valid
+    // double* for float64 buffers (see PythonInterface.hpp). Other dtypes
+    // would misrender silently — fail loudly instead, matching what
+    // SciQLopSingleLineGraph / SciQLopMultiGraphBase do for x.
+    if (x.is_valid() && x.format_code() != 'd')
+        throw std::runtime_error("Curve.set_data: x must be float64");
+    if (y.is_valid() && y.format_code() != 'd')
+        throw std::runtime_error("Curve.set_data: y must be float64");
     set_busy(true);
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);
@@ -108,6 +118,52 @@ void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
 QList<PyBuffer> SciQLopCurve::data() const noexcept
 {
     return _resampler->get_data();
+}
+
+void SciQLopCurve::collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                          std::vector<double>& out) const noexcept
+{
+    if (!_resampler)
+        return;
+    const auto buffers = _resampler->get_data();
+    if (buffers.size() < 2)
+        return;
+    const auto& x = buffers[0];
+    const auto& y = buffers[1];
+    if (!x.is_valid() || !y.is_valid())
+        return;
+    if (x.format_code() != 'd')
+        return;
+    const std::size_t n = x.flat_size();
+    if (n == 0 || y.flat_size() < n)
+        return;
+
+    const double x_lo = visible_key_range.first;
+    const double x_hi = visible_key_range.second;
+    const double* xs = x.data();
+
+    out.reserve(out.size() + n);
+    try
+    {
+        dispatch_dtype(y.format_code(), [&](auto tag) {
+            using V = typename decltype(tag)::type;
+            const auto* ys = static_cast<const V*>(y.raw_data());
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                const double xv = xs[i];
+                if (xv < x_lo || xv > x_hi)
+                    continue;
+                const double v = static_cast<double>(ys[i]);
+                if constexpr (std::is_floating_point_v<V>)
+                {
+                    if (!std::isfinite(v))
+                        continue;
+                }
+                out.push_back(v);
+            }
+        });
+    }
+    catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }
 }
 
 void SciQLopCurve::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

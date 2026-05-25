@@ -37,6 +37,7 @@
 #include <QWidget>
 #include <memory>
 #include <utility>
+#include <vector>
 
 class SciQLopPlotAxisInterface;
 class InspectorExtension;
@@ -259,6 +260,17 @@ public:
     }
 
 #ifndef BINDINGS_H
+    // Appends finite y-values whose x falls in visible_key_range to `out`.
+    // Multi-component graphs append every component. Default no-op — concrete
+    // graphs override. Used by value-axis percentile autoscale (it then runs
+    // nth_element over the pooled values).
+    virtual void collect_visible_values(const SciQLopPlotRange& visible_key_range,
+                                        std::vector<double>& out) const noexcept
+    {
+        Q_UNUSED(visible_key_range);
+        Q_UNUSED(out);
+    }
+
     Q_SIGNAL void labels_changed(const QStringList& labels);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void component_list_changed();
