@@ -4,7 +4,6 @@ from .SciQLopPlotsBindings import (GraphType, SciQLopPlot, SciQLopTimeSeriesPlot
                                     SciQLopGraphInterface, AxisType, SciQLopPlotRange, SciQLopNDProjectionPlot)
 from .SciQLopPlotsBindings import *
 from datetime import datetime, timezone
-from dateutil.parser import parse as dateparse
 import traceback
 
 import sys
