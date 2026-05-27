@@ -156,7 +156,7 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
     return true;
 }
 
-void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
+void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj, int row)
 {
     if (!obj)
         return;
@@ -164,10 +164,11 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
         return;
     auto desc = TypeRegistry::instance().descriptor(obj);
     auto parentIndex = make_index(parent);
-    int row = parent->children_count();
+    int count = parent->children_count();
+    int dest_row = (row < 0 || row > count) ? count : row;
 
-    beginInsertRows(parentIndex, row, row);
-    auto node = parent->insert_child(obj, desc);
+    beginInsertRows(parentIndex, dest_row, dest_row);
+    auto node = parent->insert_child(obj, desc, dest_row);
     endInsertRows();
 
     QPointer<PlotsModelNode> guardedNode = node;
@@ -207,10 +208,10 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj)
 
     if (desc && desc->connect_children)
     {
-        auto add_child = [this, guardedNode](QObject* child)
+        auto add_child = [this, guardedNode](QObject* child, int row)
         {
             if (guardedNode)
-                addNode(guardedNode, child);
+                addNode(guardedNode, child, row);
         };
         auto remove_child = [this, guardedNode](QObject* child)
         {

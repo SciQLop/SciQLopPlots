@@ -64,6 +64,8 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
             &SciQLopMultiPlotPanel::plot_inserted);
     connect(_container, &SciQLopPlotContainer::plot_moved, this,
             &SciQLopMultiPlotPanel::plot_moved);
+    connect(_container, &SciQLopPlotContainer::panel_inserted, this,
+            &SciQLopMultiPlotPanel::panel_inserted);
 
     setWidget(_container);
     this->setWidgetResizable(true);
