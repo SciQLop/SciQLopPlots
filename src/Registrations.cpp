@@ -72,16 +72,19 @@ void register_all_types()
             auto panel = qobject_cast<SciQLopMultiPlotPanel*>(obj);
             if (!panel) return {};
             return {
-                QObject::connect(panel, &SciQLopMultiPlotPanel::plot_added, panel,
-                    [add](SciQLopPlotInterface* p) { add(p); }),
+                // plot_inserted / panel_inserted carry the splitter index so the
+                // inspector row matches the panel UI when insert_plot(0, p) is
+                // used (otherwise we'd always append).
+                QObject::connect(panel, &SciQLopMultiPlotPanel::plot_inserted, panel,
+                    [add](SciQLopPlotInterface* p, int at) { add(p, at); }),
                 QObject::connect(panel, &SciQLopMultiPlotPanel::plot_removed, panel,
                     [remove](SciQLopPlotInterface* p) { remove(p); }),
-                QObject::connect(panel, &SciQLopMultiPlotPanel::panel_added, panel,
-                    [add](SciQLopPlotPanelInterface* p) { add(p); }),
+                QObject::connect(panel, &SciQLopMultiPlotPanel::panel_inserted, panel,
+                    [add](SciQLopPlotPanelInterface* p, int at) { add(p, at); }),
                 QObject::connect(panel, &SciQLopMultiPlotPanel::panel_removed, panel,
                     [remove](SciQLopPlotPanelInterface* p) { remove(p); }),
                 QObject::connect(panel, &SciQLopMultiPlotPanel::inspector_extension_added, panel,
-                    [add](InspectorExtension* ext) { add(ext); }),
+                    [add](InspectorExtension* ext) { add(ext, -1); }),
                 QObject::connect(panel, &SciQLopMultiPlotPanel::inspector_extension_removed, panel,
                     [remove](InspectorExtension* ext) { remove(ext); }),
             };
@@ -134,14 +137,14 @@ void register_all_types()
                         // idempotent (no-op if the axis is already a child).
                         if (plot->has_colormap())
                         {
-                            add(plot->z_axis());
-                            add(plot->y2_axis());
+                            add(plot->z_axis(), -1);
+                            add(plot->y2_axis(), -1);
                         }
                         for (auto p : plot->plottables())
-                            add(p);
+                            add(p, -1);
                     }),
                 QObject::connect(plot, &SciQLopPlot::inspector_extension_added, plot,
-                    [add](InspectorExtension* ext) { add(ext); }),
+                    [add](InspectorExtension* ext) { add(ext, -1); }),
                 QObject::connect(plot, &SciQLopPlot::inspector_extension_removed, plot,
                     [remove](InspectorExtension* ext) { remove(ext); }),
             };
@@ -171,7 +174,7 @@ void register_all_types()
             if (!plot) return {};
             return {
                 QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_added, plot,
-                    [add](InspectorExtension* ext) { add(ext); }),
+                    [add](InspectorExtension* ext) { add(ext, -1); }),
                 QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_removed, plot,
                     [remove](InspectorExtension* ext) { remove(ext); }),
             };
@@ -200,7 +203,7 @@ void register_all_types()
                 QObject::connect(graph, &SciQLopGraphInterface::component_list_changed, graph,
                     [graph, add]() {
                         for (auto comp : graph->components())
-                            add(comp);
+                            add(comp, -1);
                     }),
             };
         },

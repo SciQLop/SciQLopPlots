@@ -31,8 +31,11 @@ struct TypeDescriptor
 {
     std::function<QList<QObject*>(QObject*)> children;
 
+    // add_child(child, row): row == -1 appends, otherwise inserts at that
+    // position in the inspector children list. Use the row form when the
+    // underlying container preserves an insertion index (e.g. a splitter).
     std::function<QList<QMetaObject::Connection>(QObject* obj,
-        std::function<void(QObject*)> add_child,
+        std::function<void(QObject*, int)> add_child,
         std::function<void(QObject*)> remove_child)>
         connect_children;
 

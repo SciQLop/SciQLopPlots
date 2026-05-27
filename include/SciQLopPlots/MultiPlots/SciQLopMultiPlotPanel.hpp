@@ -324,6 +324,7 @@ signals:
     Q_SIGNAL void span_created(MultiPlotsVerticalSpan* span);
     Q_SIGNAL void span_creation_canceled();
     Q_SIGNAL void panel_added(SciQLopPlotPanelInterface* panel);
+    Q_SIGNAL void panel_inserted(SciQLopPlotPanelInterface* panel, int at);
     Q_SIGNAL void panel_removed(SciQLopPlotPanelInterface* panel);
     Q_SIGNAL void inspector_extensions_changed();
     Q_SIGNAL void inspector_extension_added(InspectorExtension* extension);

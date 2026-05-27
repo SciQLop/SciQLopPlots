@@ -46,7 +46,7 @@ public:
     bool removeRows(int row, int count,
         const QModelIndex& parent = QModelIndex()) override;
 
-    void addNode(PlotsModelNode* parent, QObject* obj);
+    void addNode(PlotsModelNode* parent, QObject* obj, int row = -1);
     void removeChildByObject(PlotsModelNode* parent, QObject* obj);
     void moveChildByObject(PlotsModelNode* parent, QObject* obj, int dest_row);
 
