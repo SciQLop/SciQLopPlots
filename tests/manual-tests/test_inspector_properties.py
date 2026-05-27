@@ -53,7 +53,10 @@ class TestHarnessSanity(unittest.TestCase):
 
 
 class TestHistogram2DDelegate(unittest.TestCase):
-    """Histogram2D delegate: gradient (inherited), bins, normalization."""
+    """Histogram2D delegate: bins, normalization, Color scale percentile.
+
+    Gradient is exposed on the color-scale (z) axis delegate, not here.
+    """
 
     def setUp(self):
         self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
@@ -73,10 +76,9 @@ class TestHistogram2DDelegate(unittest.TestCase):
         self.panel.deleteLater()
 
     def _norm_combo(self):
-        # The Histogram2D delegate has two QComboBox children: the inherited
-        # ColorGradientDelegate combo (5+ items) and the normalization combo
-        # (exactly 2 items: 'None' and 'Per-column'). Identify by item count
-        # and first-item text rather than by findChild order.
+        # The normalization combo has exactly 2 items ('None' / 'Per-column').
+        # Identify by item count + first-item text to stay robust against
+        # incidental sibling combos.
         for combo in self.delegate.findChildren(QComboBox):
             if combo.count() == 2 and combo.itemText(0) == 'None':
                 return combo
@@ -165,7 +167,10 @@ class TestHistogram2DDelegate(unittest.TestCase):
 
 
 class TestColorMapDelegate(unittest.TestCase):
-    """ColorMap delegate: gradient (inherited), auto_scale_y, Contours group."""
+    """ColorMap delegate: Color scale percentile, auto_scale_y, Contours group.
+
+    Gradient lives on the color-scale (z) axis delegate, not here.
+    """
 
     def setUp(self):
         self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
@@ -265,6 +270,74 @@ class TestColorMapDelegate(unittest.TestCase):
         self.cmap.set_auto_contour_levels(0)
         spin = self._contours_box().findChildren(QSpinBox)[0]
         self.assertEqual(spin.value(), 0)
+
+
+class TestColorMapGradientLivesOnAxis(unittest.TestCase):
+    """Gradient appears only on the color-scale (z) axis delegate.
+
+    Previously the row was duplicated on both the colormap product node and
+    the z-axis node — same underlying state, two widgets. Regression test for
+    that dedupe.
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 10, 20)
+        y = np.linspace(0, 10, 20)
+        z = np.outer(np.sin(x), np.cos(y))
+        self.plot, self.cmap = self.panel.plot(
+            x, y, z,
+            plot_type=PlotType.BasicXY,
+            graph_type=GraphType.ColorMap,
+        )
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    @staticmethod
+    def _gradient_combo(widget):
+        from SciQLopPlots import ColorGradient
+        for combo in widget.findChildren(QComboBox):
+            if combo.count() > 0 and isinstance(combo.itemData(0), ColorGradient):
+                return combo
+        return None
+
+    def test_colormap_delegate_has_no_gradient(self):
+        delegate = make_delegate_for(self.cmap)
+        try:
+            self.assertIsNone(
+                self._gradient_combo(delegate),
+                "ColorMap product node must NOT carry a gradient widget — "
+                "the color-scale axis node owns it",
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_z_axis_delegate_has_gradient(self):
+        delegate = make_delegate_for(self.plot.z_axis())
+        try:
+            self.assertIsNotNone(
+                self._gradient_combo(delegate),
+                "Color-scale (z) axis delegate must expose the gradient combo",
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_z_axis_gradient_edit_propagates_to_colormap(self):
+        from SciQLopPlots import ColorGradient
+        delegate = make_delegate_for(self.plot.z_axis())
+        try:
+            combo = self._gradient_combo(delegate)
+            self.assertIsNotNone(combo)
+            target = ColorGradient.Hot if self.cmap.gradient() != ColorGradient.Hot \
+                else ColorGradient.Cold
+            target_idx = next(i for i in range(combo.count())
+                              if combo.itemData(i) == target)
+            combo.setCurrentIndex(target_idx)
+            self.assertEqual(self.cmap.gradient(), target,
+                             "z-axis gradient edit must reach the colormap")
+        finally:
+            delegate.deleteLater()
 
 
 class TestGraphComponentDelegate(unittest.TestCase):

@@ -20,7 +20,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
-#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 
 #include <QDoubleSpinBox>
@@ -36,17 +35,8 @@ SciQLopColorMapBaseDelegate::SciQLopColorMapBaseDelegate(SciQLopColorMapBase* ob
                                                          QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    auto* gradient = new ColorGradientDelegate(object->gradient(), this);
-    m_layout->addRow("Gradient", gradient);
-    connect(gradient, &ColorGradientDelegate::gradientChanged, this,
-            [this](ColorGradient g)
-            {
-                if (auto* cm = color_map_base())
-                    cm->set_gradient(g);
-            });
-
-    // Robust autoscale: clamp the color (z) range to a percentile of the
-    // visible data. Defaults to 0/100, i.e. plain min/max.
+    // Gradient is owned by the color-scale axis (SciQLopPlotColorScaleAxis) and
+    // edited from the z-axis delegate. Don't duplicate it here.
     auto* percentileBox = new QGroupBox("Color scale percentile", this);
     auto* percentileLayout = new QFormLayout(percentileBox);
 
