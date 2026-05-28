@@ -23,6 +23,32 @@ def sample_data(start, stop):
     return x, y
 
 
+def check_panel_deselect_all_clears_every_plot():
+    panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+    try:
+        panel.plot(sample_data, labels=["sin", "cos"], plot_type=PlotType.TimeSeries)
+        panel.plot(sample_data, labels=["sin", "cos"], plot_type=PlotType.TimeSeries)
+        panel.set_theme(SciQLopTheme.dark())
+
+        plots = panel.plots()
+        assert len(plots) >= 2, f"expected at least 2 plots, got {len(plots)}"
+        for p in plots:
+            p.set_selected(True)
+        assert all(p.selected() for p in plots), "setup failed: plots not selected"
+
+        panel.deselect_all()
+
+        for p in plots:
+            assert not p.selected(), (
+                f"plot {p.objectName()} still selected after panel.deselect_all()"
+            )
+            assert "border: 0px" in p.styleSheet().lower(), (
+                f"plot {p.objectName()} stylesheet not cleared; got {p.styleSheet()!r}"
+            )
+    finally:
+        panel.deleteLater()
+
+
 def check_selection_border_follows_theme():
     plot = SciQLopPlot()
     try:
@@ -59,6 +85,7 @@ def main():
     app = QApplication(sys.argv)
 
     check_selection_border_follows_theme()
+    check_panel_deselect_all_clears_every_plot()
 
     win = QMainWindow()
     central = QWidget()

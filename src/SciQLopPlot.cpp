@@ -785,6 +785,13 @@ void SciQLopPlot::set_theme(SciQLopTheme* theme)
     apply_selection_style();
 }
 
+void SciQLopPlot::deselect_all()
+{
+    set_selected(false);
+    m_impl->deselectAll();
+    m_impl->replot(QCustomPlot::rpQueuedReplot);
+}
+
 void SciQLopPlot::minimize_margins()
 {
     m_impl->minimize_margins();

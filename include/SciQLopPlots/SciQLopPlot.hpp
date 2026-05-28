@@ -391,6 +391,8 @@ public:
     void set_theme(SciQLopTheme* theme) override;
     SciQLopTheme* theme() const override { return m_theme; }
 
+    void deselect_all() override;
+
     void replot(bool immediate = false) override;
 
 

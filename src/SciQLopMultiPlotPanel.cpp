@@ -310,6 +310,16 @@ void SciQLopMultiPlotPanel::setSelected(bool selected)
     emit selectionChanged(selected);
 }
 
+void SciQLopMultiPlotPanel::deselect_all()
+{
+    for (auto& p : plots())
+    {
+        if (p)
+            p->deselect_all();
+    }
+    setSelected(false);
+}
+
 QList<QColor> SciQLopMultiPlotPanel::color_palette() const noexcept
 {
     return _container->color_palette();
@@ -467,6 +477,10 @@ void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
     {
         case Qt::Key_O:
             _container->organize_plots();
+            event->accept();
+            break;
+        case Qt::Key_Escape:
+            deselect_all();
             event->accept();
             break;
         default:
