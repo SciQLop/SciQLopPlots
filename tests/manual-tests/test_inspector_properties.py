@@ -53,9 +53,10 @@ class TestHarnessSanity(unittest.TestCase):
 
 
 class TestHistogram2DDelegate(unittest.TestCase):
-    """Histogram2D delegate: bins, normalization, Color scale percentile.
+    """Histogram2D delegate: bins, normalization.
 
-    Gradient is exposed on the color-scale (z) axis delegate, not here.
+    Gradient and Color scale percentile are exposed on the color-scale (z)
+    axis delegate (PR #67 + PR #69), not here.
     """
 
     def setUp(self):
@@ -167,9 +168,12 @@ class TestHistogram2DDelegate(unittest.TestCase):
 
 
 class TestColorMapDelegate(unittest.TestCase):
-    """ColorMap delegate: Color scale percentile, auto_scale_y, Contours group.
+    """ColorMap delegate: Contours group only.
 
-    Gradient lives on the color-scale (z) axis delegate, not here.
+    Gradient lives on the color-scale (z) axis delegate (PR #67).
+    Color scale percentile and Auto scale Y were moved to the z-axis and
+    y2-axis delegates respectively (PR #69); see TestColorMapPercentileLivesOnZAxis
+    and TestColorMapAutoScaleYLivesOnY2Axis below.
     """
 
     def setUp(self):
@@ -192,16 +196,6 @@ class TestColorMapDelegate(unittest.TestCase):
     def _contours_box(self):
         return find_group(self.delegate, 'Contours')
 
-    def _auto_scale_check(self):
-        # Auto scale Y is the loose BooleanDelegate (a QCheckBox descendant)
-        # OUTSIDE the Contours group. The Contours group also has a labels QCheckBox.
-        contours = self._contours_box()
-        in_contours = set(contours.findChildren(QCheckBox)) if contours else set()
-        for cb in self.delegate.findChildren(QCheckBox):
-            if cb not in in_contours:
-                return cb
-        return None
-
     def _labels_check(self):
         contours = self._contours_box()
         if not contours:
@@ -216,20 +210,6 @@ class TestColorMapDelegate(unittest.TestCase):
         dspins = box.findChildren(QDoubleSpinBox)
         self.assertEqual(len(spins), 1, "Contours group should have 1 SpinBox (level count)")
         self.assertEqual(len(dspins), 1, "Contours group should have 1 DoubleSpinBox (width)")
-
-    def test_auto_scale_y_widget_to_model(self):
-        check = self._auto_scale_check()
-        self.assertIsNotNone(check, "auto_scale_y checkbox not found")
-        initial = self.cmap.auto_scale_y()
-        check.setChecked(not initial)
-        self.assertEqual(self.cmap.auto_scale_y(), not initial)
-
-    def test_auto_scale_y_model_to_widget(self):
-        self.cmap.set_auto_scale_y(True)
-        check = self._auto_scale_check()
-        self.assertTrue(check.isChecked())
-        self.cmap.set_auto_scale_y(False)
-        self.assertFalse(check.isChecked())
 
     def test_contour_level_count_widget_to_model(self):
         spin = self._contours_box().findChildren(QSpinBox)[0]
@@ -336,6 +316,133 @@ class TestColorMapGradientLivesOnAxis(unittest.TestCase):
             combo.setCurrentIndex(target_idx)
             self.assertEqual(self.cmap.gradient(), target,
                              "z-axis gradient edit must reach the colormap")
+        finally:
+            delegate.deleteLater()
+
+
+class TestColorMapPercentileLivesOnZAxis(unittest.TestCase):
+    """Color-scale percentile appears only on the z-axis ("Color Scale") delegate.
+
+    The previous design parked the spinboxes on the colormap product node,
+    where nobody thought to look — the user clicks Color Scale expecting the
+    rest of the color controls (gradient, log scale) to live alongside the
+    autoscale percentile. Regression test for that move.
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 10, 20)
+        y = np.linspace(0, 10, 20)
+        z = np.outer(np.sin(x), np.cos(y))
+        self.plot, self.cmap = self.panel.plot(
+            x, y, z,
+            plot_type=PlotType.BasicXY,
+            graph_type=GraphType.ColorMap,
+        )
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_colormap_delegate_has_no_percentile(self):
+        delegate = make_delegate_for(self.cmap)
+        try:
+            self.assertIsNone(
+                find_group(delegate, 'Autoscale percentile'),
+                "ColorMap product node must NOT carry the percentile group — "
+                "the color-scale axis node owns it"
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_z_axis_delegate_has_percentile(self):
+        delegate = make_delegate_for(self.plot.z_axis())
+        try:
+            box = find_group(delegate, 'Autoscale percentile')
+            self.assertIsNotNone(
+                box,
+                "Color-scale (z) axis delegate must expose the percentile group"
+            )
+            spins = box.findChildren(QDoubleSpinBox)
+            self.assertEqual(len(spins), 2, "expected Low + High spinboxes")
+        finally:
+            delegate.deleteLater()
+
+    def test_z_axis_percentile_edit_propagates_to_colormap(self):
+        delegate = make_delegate_for(self.plot.z_axis())
+        try:
+            box = find_group(delegate, 'Autoscale percentile')
+            spins = box.findChildren(QDoubleSpinBox)
+            spins[0].setValue(2.5)   # low
+            spins[1].setValue(97.5)  # high
+            self.assertAlmostEqual(self.cmap.autoscale_percentile_low(), 2.5, places=2)
+            self.assertAlmostEqual(self.cmap.autoscale_percentile_high(), 97.5, places=2)
+        finally:
+            delegate.deleteLater()
+
+
+class TestColorMapAutoScaleYLivesOnY2Axis(unittest.TestCase):
+    """`Auto scale Y` for colormaps lives on the Y Axis 2 delegate.
+
+    `auto_scale_y` is a colormap-driven behaviour ("rescale the y axis to this
+    colormap's data extent"). The control belongs on the axis it acts on,
+    not buried on the colormap node.
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 10, 20)
+        y = np.linspace(0, 10, 20)
+        z = np.outer(np.sin(x), np.cos(y))
+        self.plot, self.cmap = self.panel.plot(
+            x, y, z,
+            plot_type=PlotType.BasicXY,
+            graph_type=GraphType.ColorMap,
+        )
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_colormap_delegate_has_no_auto_scale_y(self):
+        delegate = make_delegate_for(self.cmap)
+        try:
+            # Any QCheckBox outside the Contours group would be the auto_scale_y
+            # leftover. We expect zero.
+            contours = find_group(delegate, 'Contours')
+            in_contours = set(contours.findChildren(QCheckBox)) if contours else set()
+            outside = [cb for cb in delegate.findChildren(QCheckBox)
+                       if cb not in in_contours]
+            self.assertEqual(
+                outside, [],
+                "ColorMap product node must NOT carry the Auto scale Y checkbox — "
+                "the Y Axis 2 node owns it"
+            )
+        finally:
+            delegate.deleteLater()
+
+    @staticmethod
+    def _auto_scale_check(delegate):
+        return delegate.findChild(QCheckBox, "auto_scale_y")
+
+    def test_y2_axis_delegate_has_auto_scale_y(self):
+        delegate = make_delegate_for(self.plot.y2_axis())
+        try:
+            check = self._auto_scale_check(delegate)
+            self.assertIsNotNone(
+                check,
+                "Y Axis 2 delegate must expose an Auto scale Y checkbox when "
+                "the plot has a colormap"
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_y2_axis_auto_scale_edit_propagates_to_colormap(self):
+        delegate = make_delegate_for(self.plot.y2_axis())
+        try:
+            check = self._auto_scale_check(delegate)
+            initial = self.cmap.auto_scale_y()
+            check.setChecked(not initial)
+            self.assertEqual(self.cmap.auto_scale_y(), not initial,
+                             "Y2-axis Auto scale Y edit must reach the colormap")
         finally:
             delegate.deleteLater()
 

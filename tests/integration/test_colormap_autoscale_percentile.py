@@ -173,21 +173,35 @@ class TestHistogram2DPercentile:
 
 
 class TestInspectorUI:
-    """The percentile spinboxes live in the shared base delegate, so both the
-    colormap and histogram inspectors expose them."""
+    """Color-scale percentile spinboxes live on the "Color Scale" (z) axis
+    delegate (PR #69), where users find them next to gradient/log/label.
+    They are NOT exposed on the colormap or histogram product nodes."""
 
-    def _percentile_group(self, target, qtbot):
+    def _group_titles(self, target, qtbot):
         delegate = DelegateRegistry.instance().create_delegate(target, None)
         assert delegate is not None
         qtbot.addWidget(delegate)
-        titles = [g.title() for g in delegate.findChildren(QGroupBox)]
-        return titles
+        return [g.title() for g in delegate.findChildren(QGroupBox)]
 
-    def test_colormap_delegate_has_percentile_group(self, plot, qtbot, sample_colormap_data):
+    def test_z_axis_delegate_has_percentile_group_with_colormap(
+        self, plot, qtbot, sample_colormap_data
+    ):
+        x, y, z = sample_colormap_data
+        plot.colormap(x, y, z)
+        assert "Autoscale percentile" in self._group_titles(plot.z_axis(), qtbot)
+
+    def test_z_axis_delegate_has_percentile_group_with_histogram(self, plot, qtbot):
+        plot.add_histogram2d("h", 20, 20)
+        assert "Autoscale percentile" in self._group_titles(plot.z_axis(), qtbot)
+
+    def test_colormap_delegate_does_not_carry_percentile(
+        self, plot, qtbot, sample_colormap_data
+    ):
         x, y, z = sample_colormap_data
         cmap = plot.colormap(x, y, z)
-        assert "Color scale percentile" in self._percentile_group(cmap, qtbot)
+        # Old design parked it on the colormap node; the move is intentional.
+        assert "Autoscale percentile" not in self._group_titles(cmap, qtbot)
 
-    def test_histogram_delegate_has_percentile_group(self, plot, qtbot):
+    def test_histogram_delegate_does_not_carry_percentile(self, plot, qtbot):
         hist = plot.add_histogram2d("h", 20, 20)
-        assert "Color scale percentile" in self._percentile_group(hist, qtbot)
+        assert "Autoscale percentile" not in self._group_titles(hist, qtbot)

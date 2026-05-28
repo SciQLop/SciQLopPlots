@@ -20,6 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
@@ -30,6 +33,45 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QSignalBlocker>
+
+namespace
+{
+SciQLopPlot* _owning_plot(QObject* axis)
+{
+    for (auto* p = axis ? axis->parent() : nullptr; p != nullptr; p = p->parent())
+    {
+        if (auto* plot = qobject_cast<SciQLopPlot*>(p))
+            return plot;
+    }
+    return nullptr;
+}
+
+SciQLopColorMapBase* _colormap_for_axis(QObject* axis)
+{
+    if (auto* plot = _owning_plot(axis))
+    {
+        for (auto* p : plot->plottables())
+        {
+            if (auto* cm = qobject_cast<SciQLopColorMapBase*>(p))
+                return cm;
+        }
+    }
+    return nullptr;
+}
+
+SciQLopColorMap* _colormap_concrete_for_axis(QObject* axis)
+{
+    if (auto* plot = _owning_plot(axis))
+    {
+        for (auto* p : plot->plottables())
+        {
+            if (auto* cm = qobject_cast<SciQLopColorMap*>(p))
+                return cm;
+        }
+    }
+    return nullptr;
+}
+} // namespace
 
 
 SciQLopPlotAxisInterface *SciQLopPlotAxisDelegate::axis() const
@@ -171,8 +213,7 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
     // the visible data, so a single outlier doesn't blow up the y-axis. Only
     // shown on **vertical** value axes — the rescale code pools graphs whose
     // y_axis() matches `this`, so the group would be a no-op on a key (x)
-    // axis. The color-scale axis owns its own percentile group on the colormap
-    // delegate, and time axes don't autoscale on data extent.
+    // axis. Time axes don't autoscale on data extent.
     if (auto* concrete = as_type<SciQLopPlotAxis>(m_object);
         concrete && !ax->is_time_axis() && this->color_scale() == nullptr
         && ax->orientation() == Qt::Vertical)
@@ -209,6 +250,70 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
                 });
 
         m_layout->addRow(percentileBox);
+    }
+
+    // Color-scale percentile (z-axis only): proxies to the owning colormap's
+    // SciQLopColorMapBase state. Lives here, not on the colormap node, because
+    // users look for color-scale controls next to gradient/log/label.
+    if (this->color_scale() != nullptr)
+    {
+        if (auto* cm = _colormap_for_axis(m_object))
+        {
+            auto* percentileBox = new QGroupBox("Autoscale percentile", this);
+            auto* percentileLayout = new QFormLayout(percentileBox);
+
+            auto* lowSpin = new QDoubleSpinBox(percentileBox);
+            lowSpin->setRange(0., 100.);
+            lowSpin->setDecimals(1);
+            lowSpin->setSingleStep(0.5);
+            lowSpin->setSuffix(" %");
+            lowSpin->setValue(cm->autoscale_percentile_low());
+            percentileLayout->addRow("Low", lowSpin);
+            connect(lowSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                    [this](double v)
+                    {
+                        if (auto* c = _colormap_for_axis(m_object))
+                            c->set_autoscale_percentile_low(v);
+                    });
+
+            auto* highSpin = new QDoubleSpinBox(percentileBox);
+            highSpin->setRange(0., 100.);
+            highSpin->setDecimals(1);
+            highSpin->setSingleStep(0.5);
+            highSpin->setSuffix(" %");
+            highSpin->setValue(cm->autoscale_percentile_high());
+            percentileLayout->addRow("High", highSpin);
+            connect(highSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                    [this](double v)
+                    {
+                        if (auto* c = _colormap_for_axis(m_object))
+                            c->set_autoscale_percentile_high(v);
+                    });
+
+            m_layout->addRow(percentileBox);
+        }
+    }
+
+    // Auto scale Y for colormaps: when this delegate is on the y2 axis of a
+    // plot whose colormap drives the y range, expose the toggle here. Only
+    // SciQLopColorMap (not Histogram2D) carries this knob.
+    if (auto* plot = _owning_plot(m_object);
+        plot && plot->y2_axis() == m_object)
+    {
+        if (auto* cm = _colormap_concrete_for_axis(m_object))
+        {
+            auto* check = new BooleanDelegate(cm->auto_scale_y(), this);
+            check->setObjectName("auto_scale_y");
+            m_layout->addRow("Auto scale Y", check);
+            connect(check, &BooleanDelegate::value_changed, this,
+                    [this](bool v)
+                    {
+                        if (auto* c = _colormap_concrete_for_axis(m_object))
+                            c->set_auto_scale_y(v);
+                    });
+            connect(cm, &SciQLopColorMap::auto_scale_y_changed, check,
+                    &BooleanDelegate::set_value);
+        }
     }
 
     append_inspector_extensions();
