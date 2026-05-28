@@ -431,6 +431,8 @@ public:
 
     void set_selected(bool selected) noexcept;
 
+    void apply_selection_style();
+
     inline virtual QList<SciQLopPlottableInterface*> plottables() const noexcept
     {
         WARN_ABSTRACT_METHOD;

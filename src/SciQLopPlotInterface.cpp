@@ -21,16 +21,35 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include "SciQLopPlots/SciQLopTheme.hpp"
+#include <QColor>
+
+void SciQLopPlotInterface::apply_selection_style()
+{
+    if (m_selected)
+    {
+        QColor border_color = Qt::black;
+        if (auto* t = this->theme(); t)
+        {
+            const QColor themed = t->selection();
+            if (themed.isValid())
+                border_color = themed;
+        }
+        this->setStyleSheet(
+            QStringLiteral("border: 2px solid %1;border-style: dashed;").arg(border_color.name()));
+    }
+    else
+    {
+        this->setStyleSheet(QStringLiteral("border: 0px;"));
+    }
+}
 
 void SciQLopPlotInterface::set_selected(bool selected) noexcept
 {
     if (m_selected != selected)
     {
         m_selected = selected;
-        if(selected)
-            this->setStyleSheet("border: 2px solid black;border-style: dashed;");
-        else
-            this->setStyleSheet("border: 0px;");
+        apply_selection_style();
         Q_EMIT selection_changed(selected);
     }
 }
