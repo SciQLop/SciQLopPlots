@@ -20,9 +20,11 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/View/TreeView.hpp"
+#include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include <QDropEvent>
 #include <QHeaderView>
 #include <QKeyEvent>
+#include <QMetaObject>
 #include <QMimeData>
 
 PlotsTreeView::PlotsTreeView(QWidget* parent) : QTreeView(parent)
@@ -47,6 +49,21 @@ void PlotsTreeView::keyPressEvent(QKeyEvent* event)
                 model()->removeRow(index.row(), index.parent());
             }
         }
+    }
+    else if (event->key() == Qt::Key_Escape)
+    {
+        clearSelection();
+        if (auto* plots_model = qobject_cast<PlotsModel*>(model()))
+        {
+            const int rows = plots_model->rowCount(QModelIndex());
+            for (int i = 0; i < rows; ++i)
+            {
+                const QModelIndex idx = plots_model->index(i, 0, QModelIndex());
+                if (auto* obj = PlotsModel::object(idx))
+                    QMetaObject::invokeMethod(obj, "deselect_all", Qt::DirectConnection);
+            }
+        }
+        event->accept();
     }
     else
     {

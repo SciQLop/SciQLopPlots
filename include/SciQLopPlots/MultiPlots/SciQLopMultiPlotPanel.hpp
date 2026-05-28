@@ -281,6 +281,8 @@ public:
 
     void setSelected(bool selected);
 
+    Q_SLOT void deselect_all();
+
     virtual QList<QColor> color_palette() const noexcept override;
 
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;

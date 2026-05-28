@@ -433,6 +433,8 @@ public:
 
     void apply_selection_style();
 
+    Q_SLOT virtual void deselect_all() { set_selected(false); }
+
     inline virtual QList<SciQLopPlottableInterface*> plottables() const noexcept
     {
         WARN_ABSTRACT_METHOD;
