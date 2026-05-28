@@ -35,38 +35,11 @@ SciQLopColorMapBaseDelegate::SciQLopColorMapBaseDelegate(SciQLopColorMapBase* ob
                                                          QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    // Gradient is owned by the color-scale axis (SciQLopPlotColorScaleAxis) and
-    // edited from the z-axis delegate. Don't duplicate it here.
-    auto* percentileBox = new QGroupBox("Color scale percentile", this);
-    auto* percentileLayout = new QFormLayout(percentileBox);
-
-    auto* lowSpin = new QDoubleSpinBox(percentileBox);
-    lowSpin->setRange(0., 100.);
-    lowSpin->setDecimals(1);
-    lowSpin->setSingleStep(0.5);
-    lowSpin->setSuffix(" %");
-    lowSpin->setValue(object->autoscale_percentile_low());
-    percentileLayout->addRow("Low", lowSpin);
-    connect(lowSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
-            [this](double v)
-            {
-                if (auto* cm = color_map_base())
-                    cm->set_autoscale_percentile_low(v);
-            });
-
-    auto* highSpin = new QDoubleSpinBox(percentileBox);
-    highSpin->setRange(0., 100.);
-    highSpin->setDecimals(1);
-    highSpin->setSingleStep(0.5);
-    highSpin->setSuffix(" %");
-    highSpin->setValue(object->autoscale_percentile_high());
-    percentileLayout->addRow("High", highSpin);
-    connect(highSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
-            [this](double v)
-            {
-                if (auto* cm = color_map_base())
-                    cm->set_autoscale_percentile_high(v);
-            });
-
-    m_layout->addRow(percentileBox);
+    Q_UNUSED(object);
+    // Color-scale controls live on the "Color Scale" (z) axis node:
+    //   - Gradient (moved in PR #67)
+    //   - Autoscale percentile (moved in PR #69)
+    // The colormap node only carries product-specific knobs added by
+    // derived delegates (Contours on SciQLopColorMap, Binning/normalization
+    // on SciQLopHistogram2DDelegate).
 }

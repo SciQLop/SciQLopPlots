@@ -40,12 +40,10 @@ SciQLopColorMap* SciQLopColorMapDelegate::colorMap() const
 SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidget* parent)
         : SciQLopColorMapBaseDelegate(object, parent)
 {
-    auto* auto_scale = new BooleanDelegate(object->auto_scale_y(), this);
-    m_layout->addRow("Auto scale Y", auto_scale);
-    connect(auto_scale, &BooleanDelegate::value_changed, object,
-            &SciQLopColorMap::set_auto_scale_y);
-    connect(object, &SciQLopColorMap::auto_scale_y_changed, auto_scale,
-            &BooleanDelegate::set_value);
+    // Auto scale Y lives on the Y Axis 2 delegate (PR #69): it's a colormap-
+    // driven behaviour that rescales the y2 axis to the colormap's data
+    // extent, so the toggle belongs next to the rest of the axis controls,
+    // not buried on the colormap product node.
 
     auto* contoursBox = new QGroupBox("Contours", this);
     auto* contoursLayout = new QFormLayout(contoursBox);
