@@ -76,10 +76,8 @@ SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
 
     m_layout->addRow(legendBox);
 
-    auto* auto_scale = new BooleanDelegate(object->auto_scale());
-    m_layout->addRow("Auto scale", auto_scale);
-    connect(auto_scale, &BooleanDelegate::value_changed, object, &SciQLopPlot::set_auto_scale);
-    connect(object, &SciQLopPlot::auto_scale_changed, auto_scale, &BooleanDelegate::set_value);
+    // "Auto scale" moved to the Y Axis delegate (PR #69) where users look for
+    // axis-rescale controls next to the percentile spinboxes.
 
     auto* crosshair = new BooleanDelegate(object->crosshair_enabled(), this);
     m_layout->addRow("Crosshair", crosshair);
