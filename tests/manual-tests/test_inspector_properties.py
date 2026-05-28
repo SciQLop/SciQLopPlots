@@ -320,6 +320,59 @@ class TestColorMapGradientLivesOnAxis(unittest.TestCase):
             delegate.deleteLater()
 
 
+class TestPlotAutoScaleLivesOnYAxis(unittest.TestCase):
+    """Plot-wide `Auto scale` toggle is surfaced on the Y Axis delegate,
+    not on the Plot node.
+
+    Reason: users look for axis-rescale controls next to the Autoscale
+    percentile spinboxes; the Plot node is the wrong place. Backing state
+    is still SciQLopPlot::auto_scale (single shared bool).
+    """
+
+    def setUp(self):
+        self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
+        x = np.linspace(0, 1, 100)
+        y = np.sin(x * 6)
+        self.plot, _ = self.panel.plot(
+            x, y, plot_type=PlotType.BasicXY, graph_type=GraphType.Line,
+        )
+
+    def tearDown(self):
+        self.panel.deleteLater()
+
+    def test_y_axis_delegate_has_auto_scale_checkbox(self):
+        delegate = make_delegate_for(self.plot.y_axis())
+        try:
+            check = delegate.findChild(QCheckBox, "plot_auto_scale")
+            self.assertIsNotNone(
+                check,
+                "Y Axis delegate must expose the plot-wide Auto scale checkbox"
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_plot_node_no_longer_has_auto_scale_row(self):
+        delegate = make_delegate_for(self.plot)
+        try:
+            self.assertIsNone(
+                delegate.findChild(QCheckBox, "plot_auto_scale"),
+                "Plot node must NOT carry the Auto scale checkbox anymore"
+            )
+        finally:
+            delegate.deleteLater()
+
+    def test_y_axis_auto_scale_edit_propagates_to_plot(self):
+        delegate = make_delegate_for(self.plot.y_axis())
+        try:
+            check = delegate.findChild(QCheckBox, "plot_auto_scale")
+            initial = self.plot.auto_scale()
+            check.setChecked(not initial)
+            self.assertEqual(self.plot.auto_scale(), not initial,
+                             "Y-axis Auto scale edit must reach the plot")
+        finally:
+            delegate.deleteLater()
+
+
 class TestColorMapPercentileLivesOnZAxis(unittest.TestCase):
     """Color-scale percentile appears only on the z-axis ("Color Scale") delegate.
 

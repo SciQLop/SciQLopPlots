@@ -209,6 +209,30 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         m_layout->addRow(rangeBox);
     }
 
+    // Plot-wide "Auto scale" toggle: surfaced on every vertical value axis
+    // delegate (the natural place users look for axis-rescale controls), not
+    // on the Plot node. Backing state lives on the parent SciQLopPlot — all
+    // value-axis delegates share it.
+    if (auto* concrete = as_type<SciQLopPlotAxis>(m_object);
+        concrete && !ax->is_time_axis() && this->color_scale() == nullptr
+        && ax->orientation() == Qt::Vertical)
+    {
+        if (auto* plot = _owning_plot(m_object))
+        {
+            auto* check = new BooleanDelegate(plot->auto_scale(), this);
+            check->setObjectName("plot_auto_scale");
+            m_layout->addRow("Auto scale", check);
+            connect(check, &BooleanDelegate::value_changed, this,
+                    [this](bool v)
+                    {
+                        if (auto* p = _owning_plot(m_object))
+                            p->set_auto_scale(v);
+                    });
+            connect(plot, &SciQLopPlot::auto_scale_changed, check,
+                    &BooleanDelegate::set_value);
+        }
+    }
+
     // Robust autoscale percentile: clamp the rescale range to a percentile of
     // the visible data, so a single outlier doesn't blow up the y-axis. Only
     // shown on **vertical** value axes — the rescale code pools graphs whose
