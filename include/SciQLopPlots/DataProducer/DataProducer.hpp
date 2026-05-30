@@ -48,11 +48,17 @@ using _NDdata = QList<PyBuffer>;
 class DataProviderInterface : public QObject
 {
     Q_OBJECT
-    std::variant<SciQLopPlotRange, _2D_data, _3D_data, _NDdata> m_next_state;
-    std::variant<SciQLopPlotRange, _2D_data, _3D_data, _NDdata> m_current_state;
+    // Range-based and data-based updates use independent pending slots so a
+    // call(range) and a call(x,y) racing on the same provider never overwrite
+    // each other (each is serviced; neither is dropped). A single shared slot
+    // used to let the second caller clobber the first and suppress its wake-up.
+    SciQLopPlotRange m_next_range;
+    std::variant<std::monostate, _2D_data, _3D_data, _NDdata> m_next_data;
+    SciQLopPlotRange m_current_range;
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
-    bool m_has_pending_change = false;
+    bool m_range_pending = false;
+    bool m_data_pending = false;
     bool m_force_next_update = false;
 
 #ifndef BINDINGS_H
