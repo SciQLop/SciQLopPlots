@@ -26,11 +26,6 @@
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include <cmath>
 
-void SciQLopCurve::_range_changed(const QCPRange& newRange, const QCPRange& oldRange)
-{
-    this->_resampler->resample(newRange);
-}
-
 void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
 {
     // The resampler emits via QueuedConnection, so the component count may

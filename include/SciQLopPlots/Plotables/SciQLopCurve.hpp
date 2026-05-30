@@ -43,8 +43,6 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
-    void _range_changed(const QCPRange& newRange, const QCPRange& oldRange);
-
     void _setCurveData(QList<QVector<QCPCurveData>> data);
 
     void clear_curves(bool curve_already_removed = false);
