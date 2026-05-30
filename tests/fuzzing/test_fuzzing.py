@@ -15,6 +15,7 @@ from tests.fuzzing.axis_actions import set_axis_range, toggle_y_log_scale
 from tests.fuzzing.callback_actions import (
     add_callback_line_3c, add_callback_line_1c, add_callback_spectrogram,
     add_slow_callback_line, add_flaky_callback_line, add_flaky_callback_spectrogram,
+    swap_callback,
 )
 from tests.fuzzing.torture_actions import (
     rapid_zoom_burst, rapid_pan_burst, rescale_y, rapid_log_toggle,
@@ -35,6 +36,7 @@ for action in [
     # Callback-based graphs (SciQLop-style)
     add_callback_line_3c, add_callback_line_1c, add_callback_spectrogram,
     add_slow_callback_line, add_flaky_callback_line, add_flaky_callback_spectrogram,
+    swap_callback,
     # Viewport torture
     rapid_zoom_burst, rapid_pan_burst, rescale_y, rapid_log_toggle,
     set_panel_time_range, zoom_pan_zoom, resize_panel, rapid_resize_burst,

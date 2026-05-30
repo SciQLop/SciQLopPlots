@@ -167,10 +167,22 @@ inline void _inc_ref(PyObject* obj)
 #ifdef _TRACE_REF_COUNT
     std::cout << "Inc ref " << obj << " " << obj->ob_refcnt << std::endl;
 #endif
-    PyGILState_STATE state = PyGILState_Ensure();
-    _drain_deferred_queue();
-    Py_INCREF(obj);
-    PyGILState_Release(state);
+    // An incref must happen NOW (it keeps the object alive), so unlike _dec_ref
+    // it can never be deferred — if we don't hold the GIL we must acquire it.
+    // But when we already hold it, skip the redundant Ensure/Release pair and
+    // just drain + incref directly (mirrors _dec_ref's fast path).
+    if (_current_thread_holds_gil())
+    {
+        _drain_deferred_queue();
+        Py_INCREF(obj);
+    }
+    else
+    {
+        PyGILState_STATE state = PyGILState_Ensure();
+        _drain_deferred_queue();
+        Py_INCREF(obj);
+        PyGILState_Release(state);
+    }
 }
 
 inline void _dec_ref(PyObject* obj)
