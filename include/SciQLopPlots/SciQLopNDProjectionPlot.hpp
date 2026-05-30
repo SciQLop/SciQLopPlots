@@ -42,6 +42,7 @@ protected:
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
     QList<QCPItemEllipse*> m_time_markers;
+    QPointer<SciQLopTheme> m_theme;
 
     Q_SLOT void _enforce_equal_aspect();
     void _ensure_marker_layer();
@@ -118,4 +119,7 @@ public:
     {
         return m_time_axis;
     }
+
+    void set_theme(SciQLopTheme* theme) override;
+    inline SciQLopTheme* theme() const override { return m_theme; }
 };

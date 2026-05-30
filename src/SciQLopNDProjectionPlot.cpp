@@ -23,6 +23,14 @@
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include <QHBoxLayout>
 
+void SciQLopNDProjectionPlot::set_theme(SciQLopTheme* theme)
+{
+    m_theme = theme;
+    for (auto* plot : m_plots)
+        if (plot)
+            plot->set_theme(theme);
+}
+
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable callable,
                                                           QStringList labels, QList<QColor> colors,
                                                           GraphType graph_type, GraphMarkerShape marker, QObject* sync_with, QVariantMap metaData)
