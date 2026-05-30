@@ -111,3 +111,31 @@ def add_flaky_callback_spectrogram(panel, model, plot_index):
         name="flaky_spectra",
         y_log_scale=True,
     )
+
+
+@ui_action(
+    precondition=lambda model: model.has_graphs,
+    bundles={"plot_index": "plot_indices_with_graphs"},
+    narrate="Swapped the callable on a function graph in plot {plot_index}",
+    # Pure callable swap — does not change graph count
+    model_update=lambda model, plot_index: None,
+    verify=lambda panel, model, plot_index: True,
+    settle_timeout_ms=200,
+)
+def swap_callback(panel, model, plot_index):
+    """Replace the data callback on a live function graph.
+
+    Exercises SimplePyCallablePWrapper::set_callable / callable() while the
+    worker thread may be mid-fetch — the mutex<->GIL lock-ordering path. With
+    the old (copy-under-lock) code this could deadlock the worker; see
+    tests/integration/test_callback_swap_race.py for the focused regression.
+    """
+    plot = panel.plot_at(plot_index)
+    graphs = plot.plottables() if hasattr(plot, "plottables") else []
+    target = next((g for g in graphs if hasattr(g, "set_callable")), None)
+    if target is None:
+        return
+    target.set_callable(make_timeseries(3))
+    # Read it straight back — the getter copies under the same lock.
+    if hasattr(target, "callable"):
+        target.callable()

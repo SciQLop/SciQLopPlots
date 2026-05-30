@@ -29,6 +29,7 @@
 #include <QPointer>
 #include <QThread>
 #include <QTimer>
+#include <memory>
 
 struct _2D_data
 {
@@ -154,12 +155,34 @@ public:
 class SimplePyCallablePWrapper : public DataProviderInterface
 {
     Q_OBJECT
-    GetDataPyCallable m_callable;
+    // Held by shared_ptr so the worker can take a stable snapshot under the
+    // mutex with a pure (C++ atomic) refcount bump — NO Python incref, so the
+    // GIL is never acquired while m_callable_mutex is held. Copying the callable
+    // directly used to incref under the lock (mutex→GIL), which deadlocks
+    // against set_callable()/callable() called from Python (GIL→mutex). The
+    // snapshot also lets us call into the old callable safely if it is swapped
+    // out concurrently: the snapshot keeps it alive until the call returns.
+    std::shared_ptr<GetDataPyCallable> m_callable;
     mutable QMutex m_callable_mutex;
+
+    inline std::shared_ptr<GetDataPyCallable> _snapshot_callable() const
+    {
+        QMutexLocker lock(&m_callable_mutex);
+        return m_callable; // atomic refcount bump, no GIL
+    }
+
+    static inline QList<PyBuffer> _to_qlist(std::vector<PyBuffer>&& r)
+    {
+        QList<PyBuffer> result;
+        for (auto& a : r)
+            result.emplace_back(std::move(a));
+        return result;
+    }
 
 public:
     SimplePyCallablePWrapper(GetDataPyCallable&& callable, QObject* parent = nullptr)
-            : DataProviderInterface(parent), m_callable(std::move(callable))
+            : DataProviderInterface(parent)
+            , m_callable(std::make_shared<GetDataPyCallable>(std::move(callable)))
     {
     }
 
@@ -167,47 +190,37 @@ public:
 
     inline virtual QList<PyBuffer> get_data(double lower, double upper) override
     {
-        GetDataPyCallable cb;
-        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
-        auto r = cb.get_data(lower, upper);
-        QList<PyBuffer> result;
-        for (auto& a : r)
-            result.emplace_back(std::move(a));
-        return result;
+        auto cb = _snapshot_callable();
+        return cb ? _to_qlist(cb->get_data(lower, upper)) : QList<PyBuffer> {};
     }
 
     inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y) override
     {
-        GetDataPyCallable cb;
-        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
-        auto r = cb.get_data(x, y);
-        QList<PyBuffer> result;
-        for (auto& a : r)
-            result.emplace_back(std::move(a));
-        return result;
+        auto cb = _snapshot_callable();
+        return cb ? _to_qlist(cb->get_data(x, y)) : QList<PyBuffer> {};
     }
 
     inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z) override
     {
-        GetDataPyCallable cb;
-        { QMutexLocker lock(&m_callable_mutex); cb = m_callable; }
-        auto r = cb.get_data(x, y, z);
-        QList<PyBuffer> result;
-        for (auto& a : r)
-            result.emplace_back(std::move(a));
-        return result;
+        auto cb = _snapshot_callable();
+        return cb ? _to_qlist(cb->get_data(x, y, z)) : QList<PyBuffer> {};
     }
 
     inline void set_callable(GetDataPyCallable&& callable)
     {
+        auto next = std::make_shared<GetDataPyCallable>(std::move(callable));
         QMutexLocker lock(&m_callable_mutex);
-        m_callable = std::move(callable);
+        m_callable.swap(next);
+        // `lock` (declared last) unlocks before `next` (the old callable) is
+        // destroyed at scope exit, so the old callable's Python decref happens
+        // outside the mutex — and defers if this thread lacks the GIL.
     }
 
     inline GetDataPyCallable callable() const
     {
-        QMutexLocker lock(&m_callable_mutex);
-        return m_callable;
+        auto cb = _snapshot_callable();
+        // Copy (Python incref) happens here, OUTSIDE the mutex — never mutex→GIL.
+        return cb ? *cb : GetDataPyCallable();
     }
 };
 
