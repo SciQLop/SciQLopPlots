@@ -26,44 +26,41 @@
 
 void DataProviderInterface::_threaded_update()
 {
-    m_mutex.lock();
-    if (std::holds_alternative<SciQLopPlotRange>(m_next_state))
+    SciQLopPlotRange range;
+    bool do_range = false;
+    std::variant<std::monostate, _2D_data, _3D_data, _NDdata> data;
+    bool do_data = false;
     {
-        auto new_range = std::get<SciQLopPlotRange>(m_next_state);
-        m_has_pending_change = false;
-        m_mutex.unlock();
-        _range_based_update(new_range);
+        QMutexLocker lock(&m_mutex);
+        if (m_range_pending)
+        {
+            range = m_next_range;
+            m_range_pending = false;
+            do_range = true;
+        }
+        if (m_data_pending)
+        {
+            data = m_next_data;
+            m_data_pending = false;
+            do_data = true;
+        }
     }
-    else if (std::holds_alternative<_2D_data>(m_next_state))
-    {
-        auto new_data = std::get<_2D_data>(m_next_state);
-        m_has_pending_change = false;
-        m_mutex.unlock();
-        _data_based_update(new_data);
-    }
-    else if (std::holds_alternative<_3D_data>(m_next_state))
-    {
-        auto new_data = std::get<_3D_data>(m_next_state);
-        m_has_pending_change = false;
-        m_mutex.unlock();
-        _data_based_update(new_data);
-    }
-    else if (std::holds_alternative<_NDdata>(m_next_state))
-    {
-        auto new_data = std::get<_NDdata>(m_next_state);
-        m_has_pending_change = false;
-        m_mutex.unlock();
-        _data_based_update(new_data);
-    }
-    else
-    {
-        m_mutex.unlock();
-    }
+
+    if (do_range)
+        _range_based_update(range);
+    if (do_data)
+        std::visit(
+            [this](auto&& d)
+            {
+                if constexpr (!std::is_same_v<std::decay_t<decltype(d)>, std::monostate>)
+                    _data_based_update(d);
+            },
+            data);
 
     bool idle = false;
     {
         QMutexLocker lock(&m_mutex);
-        idle = !m_has_pending_change;
+        idle = !m_range_pending && !m_data_pending;
     }
     if (idle)
         Q_EMIT pipeline_idle();
@@ -93,11 +90,10 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
         force = m_force_next_update;
         m_force_next_update = false;
     }
-    if (!force && std::holds_alternative<SciQLopPlotRange>(m_current_state)
-        && new_range == std::get<SciQLopPlotRange>(m_current_state))
+    if (!force && new_range == m_current_range)
         return;
     auto r = get_data(new_range.start(), new_range.stop());
-    m_current_state = new_range;
+    m_current_range = new_range;
     _notify_new_data(r);
 }
 
@@ -159,23 +155,29 @@ QList<PyBuffer> DataProviderInterface::get_data(QList<PyBuffer> values)
 
 void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 {
-    m_mutex.lock();
-    m_next_state = new_state;
-    m_has_pending_change = true;
-    m_mutex.unlock();
+    {
+        QMutexLocker lock(&m_mutex);
+        m_next_range = new_state;
+        m_range_pending = true;
+    }
+    // Range fetches are rate-limited (panning spams them): the timer coalesces
+    // the wake-up. _threaded_update then services whichever slots are pending.
     QMetaObject::invokeMethod(m_rate_limit_timer, qOverload<>(&QTimer::start),
                               Qt::QueuedConnection);
 }
 
+// The data setters wake on their OWN pending flag only, independently of a
+// pending range fetch — so a range fetch in flight no longer suppresses the
+// data wake-up (and vice-versa). Consecutive data calls still coalesce.
 void DataProviderInterface::set_data(_2D_data new_state) noexcept
 {
     bool should_emit = false;
     {
         QMutexLocker lock(&m_mutex);
-        m_next_state = new_state;
-        if (!m_has_pending_change)
+        m_next_data = new_state;
+        if (!m_data_pending)
         {
-            m_has_pending_change = true;
+            m_data_pending = true;
             should_emit = true;
         }
     }
@@ -188,10 +190,10 @@ void DataProviderInterface::set_data(_3D_data new_state) noexcept
     bool should_emit = false;
     {
         QMutexLocker lock(&m_mutex);
-        m_next_state = new_state;
-        if (!m_has_pending_change)
+        m_next_data = new_state;
+        if (!m_data_pending)
         {
-            m_has_pending_change = true;
+            m_data_pending = true;
             should_emit = true;
         }
     }
@@ -204,10 +206,10 @@ void DataProviderInterface::set_data(_NDdata new_state) noexcept
     bool should_emit = false;
     {
         QMutexLocker lock(&m_mutex);
-        m_next_state = new_state;
-        if (!m_has_pending_change)
+        m_next_data = new_state;
+        if (!m_data_pending)
         {
-            m_has_pending_change = true;
+            m_data_pending = true;
             should_emit = true;
         }
     }
