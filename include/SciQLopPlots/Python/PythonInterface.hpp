@@ -273,13 +273,13 @@ public:
 
     SciQLopPyBuffer();
     SciQLopPyBuffer(const SciQLopPyBuffer& other);
-    SciQLopPyBuffer(SciQLopPyBuffer&& other);
+    SciQLopPyBuffer(SciQLopPyBuffer&& other) noexcept;
     explicit SciQLopPyBuffer(PyObject* obj);
 
     ~SciQLopPyBuffer();
 
     SciQLopPyBuffer& operator=(const SciQLopPyBuffer& other);
-    SciQLopPyBuffer& operator=(SciQLopPyBuffer&& other);
+    SciQLopPyBuffer& operator=(SciQLopPyBuffer&& other) noexcept;
 
     bool is_valid() const;
 
