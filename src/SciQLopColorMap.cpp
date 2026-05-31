@@ -67,7 +67,7 @@ SciQLopColorMap::~SciQLopColorMap()
     }
 }
 
-void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
 {
     PROFILE_HERE_N("setdata.colormap");
     ::SciQLopPlots::tracing::ScopedZone _sz("setdata.colormap", "setdata");
@@ -154,7 +154,7 @@ void SciQLopColorMap::set_data(PyBuffer x, PyBuffer y, PyBuffer z)
     Q_EMIT data_changed();
 }
 
-QList<PyBuffer> SciQLopColorMap::data() const noexcept
+QList<SciQLopPyBuffer> SciQLopColorMap::data() const noexcept
 {
     if (_dataHolder)
         return {_dataHolder->x, _dataHolder->y, _dataHolder->z};
@@ -173,9 +173,9 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
 {
     if (!_dataHolder)
         return SciQLopPlotRange();
-    const PyBuffer& xb = _dataHolder->x;
-    const PyBuffer& yb = _dataHolder->y;
-    const PyBuffer& zb = _dataHolder->z;
+    const SciQLopPyBuffer& xb = _dataHolder->x;
+    const SciQLopPyBuffer& yb = _dataHolder->y;
+    const SciQLopPyBuffer& zb = _dataHolder->z;
     if (!xb.is_valid() || !yb.is_valid() || !zb.is_valid())
         return SciQLopPlotRange();
 

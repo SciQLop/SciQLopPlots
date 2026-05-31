@@ -89,7 +89,7 @@ class SciQLopPlotCollectionInterface
 
 protected:
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
               ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1,QVariantMap metaData={})
@@ -98,7 +98,7 @@ protected:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    plot_impl(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+    plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1, QVariantMap metaData={})
     {
@@ -106,7 +106,7 @@ protected:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
@@ -133,7 +133,7 @@ protected:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(const PyBuffer& x, const PyBuffer& y, QString name, int key_bins, int value_bins,
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int key_bins, int value_bins,
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {})
     {
@@ -268,7 +268,7 @@ public:
     inline virtual void remove_behavior(const QString& type_name) { WARN_ABSTRACT_METHOD; }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    line(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    line(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
          int index = -1, QVariantMap metaData={})
     {
@@ -277,7 +277,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    scatter(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    scatter(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
             QList<QColor> colors = QList<QColor>(),
             ::GraphMarkerShape marker = ::GraphMarkerShape::Cross,
             ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
@@ -286,7 +286,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    parametric_curve(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    parametric_curve(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
                      ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
@@ -295,7 +295,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    colormap(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+    colormap(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
              QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
              bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
@@ -303,7 +303,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    projection(const QList<PyBuffer>& values, QStringList labels = QStringList(),
+    projection(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
                QList<QColor> colors = QList<QColor>(), int index = -1, QVariantMap metaData={})
     {
         return plot_impl(values, labels, colors, ::GraphMarkerShape::NoMarker, index,metaData);
@@ -357,7 +357,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    histogram2d(const PyBuffer& x, const PyBuffer& y,
+    histogram2d(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                 QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
                 int value_bins = 100, ::PlotType plot_type = ::PlotType::BasicXY,
                 int index = -1, QVariantMap metaData = {})
@@ -376,7 +376,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-    waterfall(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    waterfall(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {})

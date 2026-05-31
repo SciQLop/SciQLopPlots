@@ -366,52 +366,52 @@ struct _PyBuffer_impl : PyObjectWrapper
     }
 };
 
-void PyBuffer::share(const PyBuffer& other)
+void SciQLopPyBuffer::share(const SciQLopPyBuffer& other)
 {
     this->_impl = other._impl;
 }
 
-PyBuffer::PyBuffer() { }
+SciQLopPyBuffer::SciQLopPyBuffer() { }
 
-PyBuffer::PyBuffer(const PyBuffer& other)
+SciQLopPyBuffer::SciQLopPyBuffer(const SciQLopPyBuffer& other)
 {
     this->share(other);
 }
 
-PyBuffer::PyBuffer(PyBuffer&& other)
+SciQLopPyBuffer::SciQLopPyBuffer(SciQLopPyBuffer&& other)
 {
     this->share(std::move(other));
 }
 
-PyBuffer::PyBuffer(PyObject* obj)
+SciQLopPyBuffer::SciQLopPyBuffer(PyObject* obj)
 {
     this->_impl = std::shared_ptr<_PyBuffer_impl>(new _PyBuffer_impl(obj));
 }
 
-PyBuffer::~PyBuffer() { }
+SciQLopPyBuffer::~SciQLopPyBuffer() { }
 
-PyBuffer& PyBuffer::operator=(const PyBuffer& other)
+SciQLopPyBuffer& SciQLopPyBuffer::operator=(const SciQLopPyBuffer& other)
 {
     if (this != &other)
         this->share(other);
     return *this;
 }
 
-PyBuffer& PyBuffer::operator=(PyBuffer&& other)
+SciQLopPyBuffer& SciQLopPyBuffer::operator=(SciQLopPyBuffer&& other)
 {
     if (this != &other)
         this->share(other);
     return *this;
 }
 
-bool PyBuffer::is_valid() const
+bool SciQLopPyBuffer::is_valid() const
 {
     if (this->_impl)
         return this->_impl->is_valid;
     return false;
 }
 
-const std::vector<std::size_t>& PyBuffer::shape() const
+const std::vector<std::size_t>& SciQLopPyBuffer::shape() const
 {
     if (this->_impl)
         return this->_impl->shape;
@@ -419,7 +419,7 @@ const std::vector<std::size_t>& PyBuffer::shape() const
     return empty;
 }
 
-std::size_t PyBuffer::ndim() const
+std::size_t SciQLopPyBuffer::ndim() const
 {
     if (is_valid())
     {
@@ -428,7 +428,7 @@ std::size_t PyBuffer::ndim() const
     return 0;
 }
 
-std::size_t PyBuffer::size(std::size_t index) const
+std::size_t SciQLopPyBuffer::size(std::size_t index) const
 {
     if (is_valid())
     {
@@ -441,17 +441,17 @@ std::size_t PyBuffer::size(std::size_t index) const
     return 0;
 }
 
-double* PyBuffer::data() const
+double* SciQLopPyBuffer::data() const
 {
     if (!is_valid())
-        throw std::runtime_error("PyBuffer::data() called on invalid buffer");
+        throw std::runtime_error("SciQLopPyBuffer::data() called on invalid buffer");
     if (_impl->buffer.format[0] != 'd')
         throw std::runtime_error(
-            "PyBuffer::data() called on non-double buffer; use raw_data() + format_code()");
+            "SciQLopPyBuffer::data() called on non-double buffer; use raw_data() + format_code()");
     return reinterpret_cast<double*>(this->_impl->buffer.buf);
 }
 
-bool PyBuffer::row_major() const
+bool SciQLopPyBuffer::row_major() const
 {
     if (is_valid())
     {
@@ -460,37 +460,37 @@ bool PyBuffer::row_major() const
     return false;
 }
 
-char PyBuffer::format_code() const
+char SciQLopPyBuffer::format_code() const
 {
     if (is_valid() && _impl->buffer.format)
         return _impl->buffer.format[0];
     return '\0';
 }
 
-void* PyBuffer::raw_data() const
+void* SciQLopPyBuffer::raw_data() const
 {
     if (is_valid())
         return _impl->buffer.buf;
     return nullptr;
 }
 
-std::size_t PyBuffer::item_size() const
+std::size_t SciQLopPyBuffer::item_size() const
 {
     if (is_valid())
         return _impl->buffer.itemsize;
     return 0;
 }
 
-PyObject* PyBuffer::py_object() const
+PyObject* SciQLopPyBuffer::py_object() const
 {
     if (_impl)
         return this->_impl->py_obj.py_object();
     return nullptr;
 }
 
-void PyBuffer::release() { }
+void SciQLopPyBuffer::release() { }
 
-std::size_t PyBuffer::flat_size() const
+std::size_t SciQLopPyBuffer::flat_size() const
 {
     if (is_valid())
     {
@@ -500,7 +500,7 @@ std::size_t PyBuffer::flat_size() const
 }
 
 // Convert a Python list/tuple of buffer-protocol objects into PyBuffers.
-// `PyBuffer`'s constructor throws on non-numeric / non-buffer items; catching
+// `SciQLopPyBuffer`'s constructor throws on non-numeric / non-buffer items; catching
 // here drops the whole batch instead of letting the exception escape into the
 // worker-thread event loop and call std::terminate. The caller treats an
 // empty vector as "no data this round".
@@ -509,9 +509,9 @@ std::size_t PyBuffer::flat_size() const
 // overloads via PyAutoScopedGIL). Failures surface as a Python RuntimeWarning
 // (via PyErr_WarnEx) so users can see, at the Python level, why their plot
 // is empty; we also keep the qWarning for non-Python-facing logs.
-inline std::vector<PyBuffer> _collect_buffers(PyObject* res)
+inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
 {
-    std::vector<PyBuffer> data;
+    std::vector<SciQLopPyBuffer> data;
     Py_ssize_t size = 0;
     PyObject* (*getitem)(PyObject*, Py_ssize_t) = nullptr;
     if (PyList_Check(res))
@@ -574,9 +574,9 @@ struct _GetDataPyCallable_impl
         this->_is_valid = PyCallable_Check(obj);
     }
 
-    inline std::vector<PyBuffer> get_data(double lower, double upper)
+    inline std::vector<SciQLopPyBuffer> get_data(double lower, double upper)
     {
-        std::vector<PyBuffer> data;
+        std::vector<SciQLopPyBuffer> data;
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
@@ -605,9 +605,9 @@ struct _GetDataPyCallable_impl
         return data;
     }
 
-    inline std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y)
+    inline std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     {
-        std::vector<PyBuffer> data;
+        std::vector<SciQLopPyBuffer> data;
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
@@ -642,9 +642,9 @@ struct _GetDataPyCallable_impl
         return data;
     }
 
-    inline std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    inline std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
     {
-        std::vector<PyBuffer> data;
+        std::vector<SciQLopPyBuffer> data;
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
@@ -765,21 +765,21 @@ void GetDataPyCallable::release()
     }
 }
 
-std::vector<PyBuffer> GetDataPyCallable::get_data(double lower, double upper)
+std::vector<SciQLopPyBuffer> GetDataPyCallable::get_data(double lower, double upper)
 {
     if (this->_impl)
         return this->_impl->get_data(lower, upper);
     return {};
 }
 
-std::vector<PyBuffer> GetDataPyCallable::get_data(PyBuffer x, PyBuffer y)
+std::vector<SciQLopPyBuffer> GetDataPyCallable::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     if (this->_impl)
         return this->_impl->get_data(x, y);
     return {};
 }
 
-std::vector<PyBuffer> GetDataPyCallable::get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+std::vector<SciQLopPyBuffer> GetDataPyCallable::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
 {
     if (this->_impl)
         return this->_impl->get_data(x, y, z);

@@ -28,7 +28,7 @@
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
 
     <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
-    <primitive-type name="PyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
+    <primitive-type name="SciQLopPyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
         <conversion-rule>
             <target-to-native>
                 <add-conversion type="Py_None">
@@ -42,7 +42,7 @@
                     }
                     catch (const std::runtime_error&amp; e)
                     {
-                        qWarning() &lt;&lt; "[PyBuffer ctor] rejected buffer:" &lt;&lt; e.what();
+                        qWarning() &lt;&lt; "[SciQLopPyBuffer ctor] rejected buffer:" &lt;&lt; e.what();
                         %out = %OUTTYPE();
                     }
                 </add-conversion>
@@ -154,7 +154,7 @@
     </value-type>
 
     <value-type name="MatchedXY">
-        <modify-function signature="from_py(PyBuffer,PyBuffer)">
+        <modify-function signature="from_py(SciQLopPyBuffer,SciQLopPyBuffer)">
             <inject-code class="target" position="beginning">
                 try {
                     auto result = MatchedXY::from_py(%1, %2);
@@ -171,7 +171,7 @@
     </value-type>
 
     <value-type name="MatchedXYZ">
-        <modify-function signature="from_py(PyBuffer,PyBuffer,PyBuffer)">
+        <modify-function signature="from_py(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer)">
             <inject-code class="target" position="beginning">
                 try {
                     auto result = MatchedXYZ::from_py(%1, %2, %3);
@@ -209,7 +209,7 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
-        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
+        <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -223,7 +223,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="scatter(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
+        <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -237,7 +237,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
+        <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -251,7 +251,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="parametric_curve(const QList&lt;PyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
+        <modify-function signature="parametric_curve(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -265,7 +265,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool,QVariantMap)">
+        <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,QVariantMap)">
             <modify-argument index="4">
                 <rename to="name"/>
             </modify-argument>
@@ -347,7 +347,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(const PyBuffer&amp;,const PyBuffer&amp;,QString,int,int,QVariantMap)">
+        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -438,7 +438,7 @@
                 <define-ownership class="target" owner="c++"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="add_reference_curve(const QList&lt;PyBuffer&gt;&amp;,const QString&amp;,const QColor&amp;)">
+        <modify-function signature="add_reference_curve(const QList&lt;SciQLopPyBuffer&gt;&amp;,const QString&amp;,const QColor&amp;)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="c++"/>
             </modify-argument>
@@ -481,11 +481,11 @@
     </object-type>
     <object-type name="SciQLopColorMap" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-        <modify-function signature="set_data(PyBuffer,PyBuffer,PyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
     </object-type>
     <object-type name="SciQLopHistogram2D" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-        <modify-function signature="set_data(PyBuffer,PyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
     </object-type>
 
     <object-type name="SciQLopFunctionGraph" parent-management="no"/>
@@ -542,7 +542,7 @@
     <object-type name="SciQLopCurvedLineItem" parent-management="yes"/>
 
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
-        <modify-function signature="line(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap)">
+        <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -559,7 +559,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="scatter(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,int,QVariantMap)">
+        <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -579,7 +579,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="parametric_curve(const PyBuffer&amp;,const PyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap)">
+        <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -596,7 +596,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="projection(const QList&lt;PyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap)">
+        <modify-function signature="projection(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap)">
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -610,7 +610,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="colormap(const PyBuffer&amp;,const PyBuffer&amp;,const PyBuffer&amp;,QString,bool,bool,PlotType,int,QVariantMap)">
+        <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,PlotType,int,QVariantMap)">
             <modify-argument index="4">
                 <rename to="name"/>
             </modify-argument>
@@ -733,7 +733,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(const PyBuffer&amp;,const PyBuffer&amp;,QString,int,int,PlotType,int,QVariantMap)">
+        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,PlotType,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -972,7 +972,7 @@
 
     <object-type name="Icons" parent-management="yes"/>
 
-    <add-function signature="validate_buffer(PyBuffer, std::string, int, char)" return-type="void">
+    <add-function signature="validate_buffer(SciQLopPyBuffer, std::string, int, char)" return-type="void">
         <extra-includes>
             <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
         </extra-includes>
@@ -1015,7 +1015,7 @@
         </inject-code>
     </add-function>
 
-    <add-function signature="validate_same_length(PyBuffer, std::string, PyBuffer, std::string)" return-type="void">
+    <add-function signature="validate_same_length(SciQLopPyBuffer, std::string, SciQLopPyBuffer, std::string)" return-type="void">
         <extra-includes>
             <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
         </extra-includes>
@@ -1032,7 +1032,7 @@
         </inject-code>
     </add-function>
 
-    <add-function signature="validate_xy(PyBuffer, PyBuffer)" return-type="void">
+    <add-function signature="validate_xy(SciQLopPyBuffer, SciQLopPyBuffer)" return-type="void">
         <extra-includes>
             <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
         </extra-includes>
@@ -1052,7 +1052,7 @@
         </inject-code>
     </add-function>
 
-    <add-function signature="validate_xyz(PyBuffer, PyBuffer, PyBuffer)" return-type="void">
+    <add-function signature="validate_xyz(SciQLopPyBuffer, SciQLopPyBuffer, SciQLopPyBuffer)" return-type="void">
         <extra-includes>
             <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
         </extra-includes>
@@ -1072,7 +1072,7 @@
         </inject-code>
     </add-function>
 
-    <add-function signature="validate_nd_list(QList&lt;PyBuffer&gt;, std::size_t)" return-type="void">
+    <add-function signature="validate_nd_list(QList&lt;SciQLopPyBuffer&gt;, std::size_t)" return-type="void">
         <extra-includes>
             <include file-name="SciQLopPlots/Python/Validation.hpp" location="global"/>
         </extra-includes>

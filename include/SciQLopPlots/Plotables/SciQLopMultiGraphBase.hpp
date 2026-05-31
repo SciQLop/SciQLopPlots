@@ -32,7 +32,7 @@ class SciQLopMultiGraphBase : public SQPQCPAbstractPlottableWrapper
     Q_OBJECT
 protected:
     QCPMultiGraph* _multiGraph = nullptr;
-    PyBuffer _x, _y;
+    SciQLopPyBuffer _x, _y;
     std::shared_ptr<void> _dataHolder;
     QStringList _pendingLabels;
     SciQLopPlotAxis* _keyAxis = nullptr;
@@ -41,7 +41,7 @@ protected:
     virtual QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) = 0;
 
     void clear_graphs(bool graph_already_removed = false);
-    void build_data_source(const PyBuffer& x, const PyBuffer& y);
+    void build_data_source(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y);
     void sync_components();
 
 public:
@@ -50,8 +50,8 @@ public:
                                    const QStringList& labels, QVariantMap metaData);
     ~SciQLopMultiGraphBase() override;
 
-    Q_SLOT void set_data(PyBuffer x, PyBuffer y) override;
-    QList<PyBuffer> data() const noexcept override;
+    Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
+    QList<SciQLopPyBuffer> data() const noexcept override;
 
     std::size_t line_count() const noexcept
     {

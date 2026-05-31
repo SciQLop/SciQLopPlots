@@ -46,16 +46,16 @@ private:
     std::unique_ptr<ArrayViewBase> _y;
 
 public:
-    explicit XYView(const PyBuffer& x, const PyBuffer& y, std::size_t start = 0,
+    explicit XYView(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, std::size_t start = 0,
                     std::size_t stop = 0)
     {
         this->_x = x.view(start, stop);
         this->_y = y.view(start, stop);
     }
 
-    explicit XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)
+    explicit XYView(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, double x_start, double x_stop)
     {
-        PROFILE_HERE_N("XYView(const PyBuffer& x, const PyBuffer& y, double x_start, double x_stop)");
+        PROFILE_HERE_N("XYView(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, double x_start, double x_stop)");
         std::size_t start_index = std::distance(
             x.data(), std::lower_bound(x.data(), x.data() + x.flat_size(), x_start));
         std::size_t stop_index
@@ -89,7 +89,7 @@ private:
     std::unique_ptr<ArrayViewBase> _z;
     bool _y_is_2d;
 
-    inline void _init_views(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+    inline void _init_views(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
                             std::size_t start, std::size_t stop)
     {
         _y_is_2d = (y.ndim() == 2) ? 1 : 0;
@@ -106,13 +106,13 @@ private:
     }
 
 public:
-    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, std::size_t start = 0,
+    explicit XYZView(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z, std::size_t start = 0,
                      std::size_t stop = 0)
     {
         _init_views(x, y, z, start, stop);
     }
 
-    explicit XYZView(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z, double x_start,
+    explicit XYZView(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z, double x_start,
                      double x_stop)
     {
         std::size_t start_index = std::distance(

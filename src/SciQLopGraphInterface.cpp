@@ -83,15 +83,15 @@ void SciQLopFunctionGraph::observe(QObject* observable)
     }
     if (auto graph = qobject_cast<SciQLopGraphInterface*>(observable))
     {
-        connect(graph, QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](PyBuffer x, PyBuffer y) { this->call(x, y); });
+        connect(graph, QOverload<SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::data_changed),
+                as_graph, [this](SciQLopPyBuffer x, SciQLopPyBuffer y) { this->call(x, y); });
 
         connect(graph,
-                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](PyBuffer x, PyBuffer y, PyBuffer z) { this->call(x, y, z); });
+                QOverload<SciQLopPyBuffer, SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::data_changed),
+                as_graph, [this](SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) { this->call(x, y, z); });
 
-        connect(graph, QOverload<const QList<PyBuffer>&>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](const QList<PyBuffer>& values) { this->call(values); });
+        connect(graph, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopGraphInterface::data_changed),
+                as_graph, [this](const QList<SciQLopPyBuffer>& values) { this->call(values); });
     }
 }
 
@@ -104,17 +104,17 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
     {
         case 2:
             QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this->as_graph,
-                             QOverload<PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data));
+                             QOverload<SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::set_data));
             break;
         case 3:
             QObject::connect(
                 m_pipeline, &SimplePyCallablePipeline::new_data_3d, this->as_graph,
-                QOverload<PyBuffer, PyBuffer, PyBuffer>::of(&SciQLopGraphInterface::set_data));
+                QOverload<SciQLopPyBuffer, SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::set_data));
             break;
         default:
             QObject::connect(
                 m_pipeline, &SimplePyCallablePipeline::new_data_nd, this->as_graph,
-                QOverload<const QList<PyBuffer>&>::of(&SciQLopGraphInterface::set_data));
+                QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopGraphInterface::set_data));
             break;
     }
     m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,

@@ -812,7 +812,7 @@ void SciQLopPlot::replot(bool immediate)
         m_impl->replot(QCustomPlot::rpQueuedReplot);
 }
 
-SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
+SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                               QStringList labels, QList<QColor> colors,
                                               GraphType graph_type, GraphMarkerShape marker,
                                               QVariantMap metaData)
@@ -845,8 +845,8 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer&
     return plottable;
 }
 
-SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
-                                                 const PyBuffer& z, QString name, bool y_log_scale,
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
+                                                 const SciQLopPyBuffer& z, QString name, bool y_log_scale,
                                                  bool z_log_scale, QVariantMap metaData)
 {
     auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
@@ -956,7 +956,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
     return plotable;
 }
 
-SciQLopColorMapInterface* SciQLopPlot::plot_impl(const PyBuffer& x, const PyBuffer& y,
+SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                   QString name, int key_bins, int value_bins,
                                                   QVariantMap metaData)
 {
