@@ -6,6 +6,8 @@ percentile of the *visible* data, making it robust against outliers. Default
 percentiles are 0/100, so the behaviour is identical to plain min/max unless
 configured.
 """
+import time
+
 import pytest
 import numpy as np
 from PySide6.QtCore import QCoreApplication
@@ -17,6 +19,26 @@ from SciQLopPlots import SciQLopPlotRange, DelegateRegistry
 def _pump_events(n=50):
     for _ in range(n):
         QCoreApplication.processEvents()
+
+
+def _wait_histogram_ready(hist, timeout_s=5.0):
+    """Block until the histogram's async binning pipeline has published its grid.
+
+    Histogram2D bins points on a worker thread; ``z_percentile_range`` returns a
+    NaN range until ``pipeline().result()`` is available. Pumping a fixed number
+    of events races the worker on a loaded CI runner, so poll for a finite range
+    instead of guessing an event count.
+    """
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        r = hist.z_percentile_range(
+            SciQLopPlotRange(-6.0, 6.0), SciQLopPlotRange(-6.0, 6.0), 0.0, 100.0
+        )
+        if np.isfinite(r.stop()):
+            return
+        _pump_events()
+        time.sleep(0.01)
+    raise AssertionError("histogram grid not ready within timeout")
 
 
 def _make_colormap_with_outliers(plot):
@@ -129,6 +151,7 @@ def _make_histogram_with_spike(plot):
     _pump_events()
     plot.replot(True)
     _pump_events()
+    _wait_histogram_ready(hist)
     return hist
 
 
