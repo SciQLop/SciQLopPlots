@@ -33,18 +33,18 @@
 
 struct _2D_data
 {
-    PyBuffer x;
-    PyBuffer y;
+    SciQLopPyBuffer x;
+    SciQLopPyBuffer y;
 };
 
 struct _3D_data
 {
-    PyBuffer x;
-    PyBuffer y;
-    PyBuffer z;
+    SciQLopPyBuffer x;
+    SciQLopPyBuffer y;
+    SciQLopPyBuffer z;
 };
 
-using _NDdata = QList<PyBuffer>;
+using _NDdata = QList<SciQLopPyBuffer>;
 
 class DataProviderInterface : public QObject
 {
@@ -67,7 +67,7 @@ class DataProviderInterface : public QObject
 #endif
     Q_SLOT void _threaded_update();
 
-    void _notify_new_data(const QList<PyBuffer>& data);
+    void _notify_new_data(const QList<SciQLopPyBuffer>& data);
 
     void _range_based_update(const SciQLopPlotRange& new_range);
     void _data_based_update(const _2D_data& new_data);
@@ -87,10 +87,10 @@ public:
     DataProviderInterface(QObject* parent = nullptr);
     virtual ~DataProviderInterface() = default;
 
-    virtual QList<PyBuffer> get_data(double lower, double upper);
-    virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y);
-    virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
-    virtual QList<PyBuffer> get_data(QList<PyBuffer> values);
+    virtual QList<SciQLopPyBuffer> get_data(double lower, double upper);
+    virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
+    virtual QList<SciQLopPyBuffer> get_data(QList<SciQLopPyBuffer> values);
 
     void invalidate_cache();
 
@@ -100,9 +100,9 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
-    Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
-    Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
+    Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
+    Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
     Q_SIGNAL void pipeline_idle();
 
 protected:
@@ -135,17 +135,17 @@ public:
         m_data_provider->set_range(range);
     }
 
-    inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y)
+    inline Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     {
         m_data_provider->set_data(_2D_data { x, y });
     }
 
-    inline Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    inline Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
     {
         m_data_provider->set_data(_3D_data { x, y, z });
     }
 
-    inline Q_SLOT virtual void set_data(QList<PyBuffer> values)
+    inline Q_SLOT virtual void set_data(QList<SciQLopPyBuffer> values)
     {
         m_data_provider->set_data(values);
     }
@@ -171,9 +171,9 @@ class SimplePyCallablePWrapper : public DataProviderInterface
         return m_callable; // atomic refcount bump, no GIL
     }
 
-    static inline QList<PyBuffer> _to_qlist(std::vector<PyBuffer>&& r)
+    static inline QList<SciQLopPyBuffer> _to_qlist(std::vector<SciQLopPyBuffer>&& r)
     {
-        QList<PyBuffer> result;
+        QList<SciQLopPyBuffer> result;
         for (auto& a : r)
             result.emplace_back(std::move(a));
         return result;
@@ -188,22 +188,22 @@ public:
 
     virtual ~SimplePyCallablePWrapper() = default;
 
-    inline virtual QList<PyBuffer> get_data(double lower, double upper) override
+    inline virtual QList<SciQLopPyBuffer> get_data(double lower, double upper) override
     {
         auto cb = _snapshot_callable();
-        return cb ? _to_qlist(cb->get_data(lower, upper)) : QList<PyBuffer> {};
+        return cb ? _to_qlist(cb->get_data(lower, upper)) : QList<SciQLopPyBuffer> {};
     }
 
-    inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y) override
+    inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override
     {
         auto cb = _snapshot_callable();
-        return cb ? _to_qlist(cb->get_data(x, y)) : QList<PyBuffer> {};
+        return cb ? _to_qlist(cb->get_data(x, y)) : QList<SciQLopPyBuffer> {};
     }
 
-    inline virtual QList<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z) override
+    inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) override
     {
         auto cb = _snapshot_callable();
-        return cb ? _to_qlist(cb->get_data(x, y, z)) : QList<PyBuffer> {};
+        return cb ? _to_qlist(cb->get_data(x, y, z)) : QList<SciQLopPyBuffer> {};
     }
 
     inline void set_callable(GetDataPyCallable&& callable)
@@ -237,9 +237,9 @@ public:
     virtual ~SimplePyCallablePipeline() = default;
 
     inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
-    inline Q_SLOT void call(PyBuffer x, PyBuffer y) { m_worker->set_data(x, y); }
-    inline Q_SLOT void call(PyBuffer x, PyBuffer y, PyBuffer z) { m_worker->set_data(x, y, z); }
-    inline Q_SLOT void call(QList<PyBuffer> values) { m_worker->set_data(values); }
+    inline Q_SLOT void call(SciQLopPyBuffer x, SciQLopPyBuffer y) { m_worker->set_data(x, y); }
+    inline Q_SLOT void call(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) { m_worker->set_data(x, y, z); }
+    inline Q_SLOT void call(QList<SciQLopPyBuffer> values) { m_worker->set_data(values); }
 
     inline void set_callable(GetDataPyCallable&& callable) { m_callable_wrapper->set_callable(std::move(callable)); }
     inline GetDataPyCallable callable() const { return m_callable_wrapper->callable(); }
@@ -251,8 +251,8 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void new_data_3d(PyBuffer x, PyBuffer y, PyBuffer z);
-    Q_SIGNAL void new_data_2d(PyBuffer x, PyBuffer y);
-    Q_SIGNAL void new_data_nd(QList<PyBuffer> values);
+    Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
+    Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
     Q_SIGNAL void pipeline_idle();
 };

@@ -95,9 +95,9 @@ SciQLopCurve::~SciQLopCurve()
     clear_resampler();
 }
 
-void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
+void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    // CurveResampler reads y via PyBuffer::data() which only returns a valid
+    // CurveResampler reads y via SciQLopPyBuffer::data() which only returns a valid
     // double* for float64 buffers (see PythonInterface.hpp). Other dtypes
     // would misrender silently — fail loudly instead, matching what
     // SciQLopSingleLineGraph / SciQLopMultiGraphBase do for x.
@@ -110,7 +110,7 @@ void SciQLopCurve::set_data(PyBuffer x, PyBuffer y)
     Q_EMIT data_changed(x, y);
 }
 
-QList<PyBuffer> SciQLopCurve::data() const noexcept
+QList<SciQLopPyBuffer> SciQLopCurve::data() const noexcept
 {
     return _resampler->get_data();
 }

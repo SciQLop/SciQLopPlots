@@ -38,7 +38,7 @@ class SciQLopHistogram2D : public SciQLopColorMapBase
 
     struct DataSourceWithBuffers
     {
-        PyBuffer x, y;
+        SciQLopPyBuffer x, y;
         std::shared_ptr<QCPAbstractDataSource> source;
     };
     std::shared_ptr<DataSourceWithBuffers> _dataHolder;
@@ -60,8 +60,8 @@ public:
                                 QVariantMap metaData = {});
     virtual ~SciQLopHistogram2D() override;
 
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) override;
-    virtual QList<PyBuffer> data() const noexcept override;
+    Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
+    virtual QList<SciQLopPyBuffer> data() const noexcept override;
 
     inline QCPHistogram2D* histogram() const { return _hist; }
 

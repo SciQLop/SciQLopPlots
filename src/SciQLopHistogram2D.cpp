@@ -68,7 +68,7 @@ SciQLopHistogram2D::~SciQLopHistogram2D()
     }
 }
 
-void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
+void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     if (!_hist || !x.is_valid() || !y.is_valid())
         return;
@@ -114,7 +114,7 @@ void SciQLopHistogram2D::set_data(PyBuffer x, PyBuffer y)
     Q_EMIT data_changed();
 }
 
-QList<PyBuffer> SciQLopHistogram2D::data() const noexcept
+QList<SciQLopPyBuffer> SciQLopHistogram2D::data() const noexcept
 {
     if (_dataHolder)
         return { _dataHolder->x, _dataHolder->y };

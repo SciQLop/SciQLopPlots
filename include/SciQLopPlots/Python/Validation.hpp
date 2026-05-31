@@ -12,7 +12,7 @@
 
 namespace sqp::validation {
 
-inline void validate_buffer(const PyBuffer& b,
+inline void validate_buffer(const SciQLopPyBuffer& b,
                             std::string_view name,
                             int expected_ndim = -1,
                             char expected_dtype = 0)
@@ -64,8 +64,8 @@ inline void validate_index(long long i, long long size, std::string_view name)
     }
 }
 
-inline void validate_same_length(const PyBuffer& a, std::string_view name_a,
-                                 const PyBuffer& b, std::string_view name_b)
+inline void validate_same_length(const SciQLopPyBuffer& a, std::string_view name_a,
+                                 const SciQLopPyBuffer& b, std::string_view name_b)
 {
     if (a.size(0) != b.size(0))
     {
@@ -76,7 +76,7 @@ inline void validate_same_length(const PyBuffer& a, std::string_view name_a,
     }
 }
 
-inline void validate_xy(const PyBuffer& x, const PyBuffer& y)
+inline void validate_xy(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y)
 {
     validate_buffer(x, "x", 1);
     if (y.ndim() != 1 && y.ndim() != 2)
@@ -89,7 +89,7 @@ inline void validate_xy(const PyBuffer& x, const PyBuffer& y)
     validate_same_length(x, "x", y, "y");
 }
 
-inline void validate_xyz(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z)
+inline void validate_xyz(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z)
 {
     validate_buffer(x, "x", 1);
     validate_buffer(y, "y", 1);
@@ -110,7 +110,7 @@ inline void validate_xyz(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z
     }
 }
 
-inline void validate_nd_list(const QList<PyBuffer>& bufs, std::size_t expected_count)
+inline void validate_nd_list(const QList<SciQLopPyBuffer>& bufs, std::size_t expected_count)
 {
     if (static_cast<std::size_t>(bufs.size()) != expected_count)
     {

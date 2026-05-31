@@ -38,7 +38,7 @@ class SciQLopColorMap : public SciQLopColorMapBase
     bool _auto_scale_y = false;
 
     struct DataSourceWithBuffers {
-        PyBuffer x, y, z;
+        SciQLopPyBuffer x, y, z;
         std::shared_ptr<QCPAbstractDataSource2D> source;
     };
     std::shared_ptr<DataSourceWithBuffers> _dataHolder;
@@ -59,8 +59,8 @@ public:
                              QVariantMap metaData = {});
     virtual ~SciQLopColorMap() override;
 
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) override;
-    virtual QList<PyBuffer> data() const noexcept override;
+    Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) override;
+    virtual QList<SciQLopPyBuffer> data() const noexcept override;
 
     inline QCPColorMap2* colorMap() const { return _cmap; }
 
@@ -174,7 +174,7 @@ class SciQLopColorMapFunction : public SciQLopColorMap, public SciQLopFunctionGr
 {
     Q_OBJECT
 
-    inline Q_SLOT void _set_data(PyBuffer x, PyBuffer y, PyBuffer z)
+    inline Q_SLOT void _set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
     {
         SciQLopColorMap::set_data(x, y, z);
     }

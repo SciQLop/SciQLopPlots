@@ -44,7 +44,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
     return graph;
 }
 
-SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<PyBuffer>& data,
+SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<SciQLopPyBuffer>& data,
                                                           QStringList labels, QList<QColor> colors,
                                                           GraphType graph_type, GraphMarkerShape marker, QVariantMap metaData)
 {
@@ -172,7 +172,7 @@ void SciQLopNDProjectionPlot::_enforce_equal_aspect()
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
-    const QList<PyBuffer>& dimensions, const QString& label, const QColor& color)
+    const QList<SciQLopPyBuffer>& dimensions, const QString& label, const QColor& color)
 {
     const auto n = m_plots.size();
     if (dimensions.size() != n)
@@ -184,7 +184,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
 
     auto* graph = new SciQLopNDProjectionCurves(this, m_plots, labels);
 
-    QList<PyBuffer> paired_data;
+    QList<SciQLopPyBuffer> paired_data;
     for (int i = 0; i < n; ++i)
     {
         paired_data.append(dimensions[i % n]);

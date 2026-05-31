@@ -46,7 +46,7 @@ public:
     explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
     virtual ~SciQLopNDProjectionCurves() override = default;
 
-    Q_SLOT virtual void set_data(const QList<PyBuffer>& data) override;
+    Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& data) override;
     virtual void set_selected(bool selected) noexcept override;
     virtual  bool selected() const noexcept override;
 
@@ -62,7 +62,7 @@ class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, publi
 {
     Q_OBJECT
 
-    inline Q_SLOT void _set_data(QList<PyBuffer> data)
+    inline Q_SLOT void _set_data(QList<SciQLopPyBuffer> data)
     {
         SciQLopNDProjectionCurves::set_data(data);
     }

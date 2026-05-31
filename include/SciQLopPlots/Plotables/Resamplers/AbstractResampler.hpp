@@ -51,8 +51,8 @@ struct ResamplerPlotInfo
 
 struct ResamplerData1d
 {
-    PyBuffer x;
-    PyBuffer y;
+    SciQLopPyBuffer x;
+    SciQLopPyBuffer y;
     QCPRange x_range;
     bool new_data = true;
 };
@@ -65,9 +65,9 @@ inline XYView make_view(const ResamplerData1d& data, const ResamplerPlotInfo& pl
 
 struct ResamplerData2d
 {
-    PyBuffer x;
-    PyBuffer y;
-    PyBuffer z;
+    SciQLopPyBuffer x;
+    SciQLopPyBuffer y;
+    SciQLopPyBuffer z;
     QCPRange x_range;
     bool new_data = true;
 };
@@ -120,7 +120,7 @@ protected:
         _plot_info.plot_range = new_range;
     }
 
-    QCPRange _bounds(const PyBuffer& b)
+    QCPRange _bounds(const SciQLopPyBuffer& b)
     {
         const auto len = b.flat_size();
         if (len > 0)
@@ -137,7 +137,7 @@ protected:
     }
 
 public:
-    inline void setData(PyBuffer x, PyBuffer y, auto... maybe_z)
+    inline void setData(SciQLopPyBuffer x, SciQLopPyBuffer y, auto... maybe_z)
     {
         constexpr auto has_z = sizeof...(maybe_z) == 1;
         static_assert(!(data2d xor has_z), "Data must be 2D or 3D");
@@ -174,7 +174,7 @@ public:
         return this->_data.x_range;
     }
 
-    QList<PyBuffer> get_data()
+    QList<SciQLopPyBuffer> get_data()
     {
         if constexpr (data2d)
         {

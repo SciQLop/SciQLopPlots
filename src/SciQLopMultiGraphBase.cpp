@@ -45,7 +45,7 @@ void SciQLopMultiGraphBase::clear_graphs(bool graph_already_removed)
     _multiGraph = nullptr;
 }
 
-void SciQLopMultiGraphBase::build_data_source(const PyBuffer& x, const PyBuffer& y)
+void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y)
 {
     const auto* keys = static_cast<const double*>(x.raw_data());
     const int n = static_cast<int>(x.flat_size());
@@ -58,7 +58,7 @@ void SciQLopMultiGraphBase::build_data_source(const PyBuffer& x, const PyBuffer&
     // Build the data source with a dataGuard that co-owns the PyBuffers,
     // preventing use-after-free when the async pipeline thread reads while
     // new data arrives and replaces _x/_y.
-    struct Buffers { PyBuffer x, y; };
+    struct Buffers { SciQLopPyBuffer x, y; };
     auto guard = std::make_shared<Buffers>(Buffers{x, y});
 
     dispatch_dtype(y.format_code(), [&](auto tag) {
@@ -117,7 +117,7 @@ void SciQLopMultiGraphBase::sync_components()
     }
 }
 
-void SciQLopMultiGraphBase::set_data(PyBuffer x, PyBuffer y)
+void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     PROFILE_HERE_N("setdata.multigraph");
     ::SciQLopPlots::tracing::ScopedZone _sz("setdata.multigraph", "setdata");
@@ -140,7 +140,7 @@ void SciQLopMultiGraphBase::set_data(PyBuffer x, PyBuffer y)
     Q_EMIT data_changed();
 }
 
-QList<PyBuffer> SciQLopMultiGraphBase::data() const noexcept
+QList<SciQLopPyBuffer> SciQLopMultiGraphBase::data() const noexcept
 {
     return {_x, _y};
 }

@@ -66,7 +66,7 @@ void DataProviderInterface::_threaded_update()
         Q_EMIT pipeline_idle();
 }
 
-void DataProviderInterface::_notify_new_data(const QList<PyBuffer> &data)
+void DataProviderInterface::_notify_new_data(const QList<SciQLopPyBuffer> &data)
 {
     if (data.size() == 2)
     {
@@ -129,25 +129,25 @@ DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
         &DataProviderInterface::_threaded_update, Qt::QueuedConnection);
 }
 
-QList<PyBuffer> DataProviderInterface::get_data(double lower, double upper)
+QList<SciQLopPyBuffer> DataProviderInterface::get_data(double lower, double upper)
 {
     WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 
-QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y)
+QList<SciQLopPyBuffer> DataProviderInterface::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 
-QList<PyBuffer> DataProviderInterface::get_data(PyBuffer x, PyBuffer y, PyBuffer z)
+QList<SciQLopPyBuffer> DataProviderInterface::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
 {
     WARN_ABSTRACT_METHOD;
     return { {}, {}, {} };
 }
 
-QList<PyBuffer> DataProviderInterface::get_data(QList<PyBuffer> values)
+QList<SciQLopPyBuffer> DataProviderInterface::get_data(QList<SciQLopPyBuffer> values)
 {
     WARN_ABSTRACT_METHOD;
     return { {}, {}, {} , {} };

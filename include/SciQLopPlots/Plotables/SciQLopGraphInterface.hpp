@@ -55,7 +55,7 @@ protected:
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
-    Q_PROPERTY(QList<PyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
+    Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
     SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr);
@@ -90,25 +90,25 @@ public:
     inline const QVariantMap& meta_data() const {return this->m_metaData;}
     inline void set_meta_data(const QVariantMap& metaData) { this->m_metaData = metaData; }
 
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y) { WARN_ABSTRACT_METHOD; };
+    Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) { WARN_ABSTRACT_METHOD; };
 
-    Q_SLOT virtual void set_data(PyBuffer x, PyBuffer y, PyBuffer z) { WARN_ABSTRACT_METHOD; };
+    Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) { WARN_ABSTRACT_METHOD; };
 
-    Q_SLOT virtual void set_data(const QList<PyBuffer>& values) { WARN_ABSTRACT_METHOD; }
+    Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& values) { WARN_ABSTRACT_METHOD; }
 
-    Q_SLOT virtual void set_color_data(PyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet)
+    Q_SLOT virtual void set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet)
     {
         WARN_ABSTRACT_METHOD;
     }
 
-    virtual QList<PyBuffer> data() const noexcept
+    virtual QList<SciQLopPyBuffer> data() const noexcept
     {
         return m_data;
     }
 
-    virtual QBindable<QList<PyBuffer>> bindable_data() const noexcept
+    virtual QBindable<QList<SciQLopPyBuffer>> bindable_data() const noexcept
     {
-        return QBindable<QList<PyBuffer>>(&m_data);
+        return QBindable<QList<SciQLopPyBuffer>>(&m_data);
     }
 
     virtual void set_selected(bool selected) noexcept { WARN_ABSTRACT_METHOD; }
@@ -192,9 +192,9 @@ signals:
     Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void replot();
     Q_SIGNAL void data_changed();
-    Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y);
-    Q_SIGNAL void data_changed(PyBuffer x, PyBuffer y, PyBuffer z);
-    Q_SIGNAL void data_changed(const QList<PyBuffer>& values);
+    Q_SIGNAL void data_changed(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    Q_SIGNAL void data_changed(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
+    Q_SIGNAL void data_changed(const QList<SciQLopPyBuffer>& values);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void busy_changed(bool busy);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
@@ -212,7 +212,7 @@ signals:
         }
     }
 
-    Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<PyBuffer>, m_data, QOverload<const QList<PyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
+    Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<SciQLopPyBuffer>, m_data, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };
 
 class SciQLopGraphInterface : public SciQLopPlottableInterface
@@ -357,19 +357,19 @@ public:
         m_pipeline->call(range);
     }
 
-    inline virtual void call(PyBuffer x, PyBuffer y) noexcept
+    inline virtual void call(SciQLopPyBuffer x, SciQLopPyBuffer y) noexcept
     {
         as_graph->set_busy(true);
         m_pipeline->call(x, y);
     }
 
-    inline virtual void call(PyBuffer x, PyBuffer y, PyBuffer z) noexcept
+    inline virtual void call(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) noexcept
     {
         as_graph->set_busy(true);
         m_pipeline->call(x, y, z);
     }
 
-    inline virtual void call(const QList<PyBuffer>& values) noexcept
+    inline virtual void call(const QList<SciQLopPyBuffer>& values) noexcept
     {
         as_graph->set_busy(true);
         m_pipeline->call(values);

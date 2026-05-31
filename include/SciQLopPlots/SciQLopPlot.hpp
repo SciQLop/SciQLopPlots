@@ -260,12 +260,12 @@ protected:
                              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker);
 
     virtual SciQLopGraphInterface*
-    plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels = QStringList(),
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={}) override;
 
-    virtual SciQLopColorMapInterface* plot_impl(const PyBuffer& x, const PyBuffer& y,
-                                                const PyBuffer& z,
+    virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
+                                                const SciQLopPyBuffer& z,
                                                 QString name = QStringLiteral("ColorMap"),
                                                 bool y_log_scale = false,
                                                 bool z_log_scale = false,QVariantMap metaData={}) override;
@@ -282,7 +282,7 @@ protected:
                                                 QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface*
-    plot_impl(const PyBuffer& x, const PyBuffer& y,
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
               QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
               int value_bins = 100, QVariantMap metaData = {}) override;
 

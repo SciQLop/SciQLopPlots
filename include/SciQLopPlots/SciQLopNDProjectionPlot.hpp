@@ -54,7 +54,7 @@ protected:
               QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopGraphInterface*
-    plot_impl(const QList<PyBuffer>& data, QStringList labels = QStringList(),
+    plot_impl(const QList<SciQLopPyBuffer>& data, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::GraphType graph_type = ::GraphType::ParametricCurve,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,QVariantMap metaData={}) override;
@@ -96,7 +96,7 @@ public:
     }
 
     SciQLopGraphInterface* add_reference_curve(
-        const QList<PyBuffer>& dimensions,
+        const QList<SciQLopPyBuffer>& dimensions,
         const QString& label = QString(),
         const QColor& color = QColor());
 

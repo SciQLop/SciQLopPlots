@@ -254,13 +254,13 @@ public:
     }
 };
 
-struct PyBuffer
+struct SciQLopPyBuffer
 {
 private:
     std::shared_ptr<_PyBuffer_impl> _impl = nullptr;
 
 
-    void share(const PyBuffer& other);
+    void share(const SciQLopPyBuffer& other);
 
 public:
     using value_type = double;
@@ -271,15 +271,15 @@ public:
     using pointer = value_type*;
     using const_pointer = const value_type*;
 
-    PyBuffer();
-    PyBuffer(const PyBuffer& other);
-    PyBuffer(PyBuffer&& other);
-    explicit PyBuffer(PyObject* obj);
+    SciQLopPyBuffer();
+    SciQLopPyBuffer(const SciQLopPyBuffer& other);
+    SciQLopPyBuffer(SciQLopPyBuffer&& other);
+    explicit SciQLopPyBuffer(PyObject* obj);
 
-    ~PyBuffer();
+    ~SciQLopPyBuffer();
 
-    PyBuffer& operator=(const PyBuffer& other);
-    PyBuffer& operator=(PyBuffer&& other);
+    SciQLopPyBuffer& operator=(const SciQLopPyBuffer& other);
+    SciQLopPyBuffer& operator=(SciQLopPyBuffer&& other);
 
     bool is_valid() const;
 
@@ -382,7 +382,7 @@ public:
 
     void release();
 
-    std::vector<PyBuffer> get_data(double lower, double upper);
-    std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y);
-    std::vector<PyBuffer> get_data(PyBuffer x, PyBuffer y, PyBuffer z);
+    std::vector<SciQLopPyBuffer> get_data(double lower, double upper);
+    std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
 };

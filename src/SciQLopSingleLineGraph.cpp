@@ -72,7 +72,7 @@ SciQLopSingleLineGraph::~SciQLopSingleLineGraph()
     clear_graph();
 }
 
-void SciQLopSingleLineGraph::set_data(PyBuffer x, PyBuffer y)
+void SciQLopSingleLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     if (!_graph || !x.is_valid() || !y.is_valid())
         return;
@@ -109,7 +109,7 @@ void SciQLopSingleLineGraph::set_data(PyBuffer x, PyBuffer y)
     Q_EMIT data_changed();
 }
 
-void SciQLopSingleLineGraph::set_color_data(PyBuffer values, ::ColorGradient gradient)
+void SciQLopSingleLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
     if (!_graph || !values.is_valid())
         return;
@@ -150,7 +150,7 @@ void SciQLopSingleLineGraph::set_color_data(PyBuffer values, ::ColorGradient gra
     Q_EMIT this->replot();
 }
 
-QList<PyBuffer> SciQLopSingleLineGraph::data() const noexcept
+QList<SciQLopPyBuffer> SciQLopSingleLineGraph::data() const noexcept
 {
     if (_dataHolder)
         return {_dataHolder->x, _dataHolder->y};

@@ -34,7 +34,7 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
     for (int i = 0; i < plots.size(); ++i)
     {
         auto curve = qobject_cast<SciQLopCurve*>(
-            plots[i]->parametric_curve(PyBuffer(), PyBuffer(), { labels[i] }));
+            plots[i]->parametric_curve(SciQLopPyBuffer(), SciQLopPyBuffer(), { labels[i] }));
         if (curve)
             m_curves.append(curve);
     }
@@ -71,7 +71,7 @@ bool SciQLopNDProjectionCurves::selected() const noexcept
     return false;
 }
 
-void SciQLopNDProjectionCurves::set_data(const QList<PyBuffer>& data)
+void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 {
     const auto curves_count = m_curves.size();
 

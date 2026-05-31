@@ -331,7 +331,7 @@ void SciQLopMultiPlotPanel::set_color_palette(const QList<QColor>& palette) noex
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringList labels,
+SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels,
                                  QList<QColor> colors, PlotType plot_type, GraphType graph_type,
                                  GraphMarkerShape marker, int index, QVariantMap metaData)
 {
@@ -352,7 +352,7 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QStringLi
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyBuffer& z,
+SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
                                  QString name, bool y_log_scale, bool z_log_scale,
                                  PlotType plot_type, int index, QVariantMap metaData)
 {
@@ -373,7 +373,7 @@ SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, const PyB
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
-SciQLopMultiPlotPanel::plot_impl(const QList<PyBuffer>& values, QStringList labels,
+SciQLopMultiPlotPanel::plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels,
                                  QList<QColor> colors, GraphMarkerShape marker, int index, QVariantMap metaData)
 {
     auto* plot = new SciQLopNDProjectionPlot();
@@ -430,7 +430,7 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-SciQLopMultiPlotPanel::plot_impl(const PyBuffer& x, const PyBuffer& y, QString name, int key_bins,
+SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int key_bins,
                                  int value_bins, PlotType plot_type, int index,
                                  QVariantMap metaData)
 {
