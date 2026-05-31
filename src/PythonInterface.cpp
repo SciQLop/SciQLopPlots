@@ -378,7 +378,7 @@ SciQLopPyBuffer::SciQLopPyBuffer(const SciQLopPyBuffer& other)
     this->share(other);
 }
 
-SciQLopPyBuffer::SciQLopPyBuffer(SciQLopPyBuffer&& other)
+SciQLopPyBuffer::SciQLopPyBuffer(SciQLopPyBuffer&& other) noexcept
 {
     this->share(std::move(other));
 }
@@ -397,7 +397,7 @@ SciQLopPyBuffer& SciQLopPyBuffer::operator=(const SciQLopPyBuffer& other)
     return *this;
 }
 
-SciQLopPyBuffer& SciQLopPyBuffer::operator=(SciQLopPyBuffer&& other)
+SciQLopPyBuffer& SciQLopPyBuffer::operator=(SciQLopPyBuffer&& other) noexcept
 {
     if (this != &other)
         this->share(other);
