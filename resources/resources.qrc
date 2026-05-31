@@ -1,33 +1,45 @@
 <RCC>
     <qresource prefix="/">
-        <file>icons/theme/dataSourceRoot.png</file>
-        <file>icons/theme/delete.png</file>
-        <file>icons/theme/time.png</file>
-        <file>icons/theme/zoom.png</file>
-        <file>icons/theme/search.png</file>
-        <file>icons/theme/catalogue.png</file>
-        <file>icons/theme/add.png</file>
-        <file>icons/theme/add_graph.png</file>
-        <file>icons/theme/remove.png</file>
-        <file>icons/theme/save.png</file>
-        <file>icons/theme/folder_open.png</file>
-        <file>icons/theme/folder_copy.png</file>
-        <file>icons/theme/close.png</file>
+        <file>icons/theme/add.svg</file>
+        <file>icons/theme/add_graph.svg</file>
+        <file>icons/theme/arrow_drop_down.svg</file>
+        <file>icons/theme/arrow_drop_up.svg</file>
+        <file>icons/theme/arrow_right.svg</file>
+        <file>icons/theme/assistant.svg</file>
+        <file>icons/theme/catalogue.svg</file>
+        <file>icons/theme/check_box_checked.svg</file>
+        <file>icons/theme/check_box_unchecked.svg</file>
+        <file>icons/theme/close.svg</file>
         <file>icons/theme/close_small.png</file>
-        <file>icons/theme/push_pin.png</file>
-        <file>icons/theme/push_pin_filled.png</file>
+        <file>icons/theme/cloud.svg</file>
+        <file>icons/theme/collab.svg</file>
+        <file>icons/theme/dataSourceRoot.svg</file>
+        <file>icons/theme/delete.svg</file>
+        <file>icons/theme/detach_tab.svg</file>
+        <file>icons/theme/expand_more.svg</file>
+        <file>icons/theme/folder_copy.svg</file>
+        <file>icons/theme/folder_open.svg</file>
+        <file>icons/theme/fullscreen.svg</file>
+        <file>icons/theme/fullscreen_exit.svg</file>
+        <file>icons/theme/home.svg</file>
+        <file>icons/theme/link.svg</file>
+        <file>icons/theme/link_off.svg</file>
+        <file>icons/theme/location_disabled.svg</file>
+        <file>icons/theme/my_location.svg</file>
+        <file>icons/theme/plot_properties.svg</file>
+        <file>icons/theme/push_pin.svg</file>
+        <file>icons/theme/push_pin_filled.svg</file>
         <file>icons/theme/push_pin_grad.png</file>
-        <file>icons/theme/detach_tab.png</file>
-        <file>icons/theme/arrow_drop_down.png</file>
-        <file>icons/theme/arrow_drop_up.png</file>
-        <file>icons/theme/arrow_right.png</file>
-        <file>icons/theme/expand_more.png</file>
-        <file>icons/theme/fullscreen.png</file>
-        <file>icons/theme/fullscreen_exit.png</file>
-        <file>icons/theme/radio_button_checked.png</file>
-        <file>icons/theme/radio_button_unchecked.png</file>
-        <file>icons/theme/check_box_checked.png</file>
-        <file>icons/theme/check_box_unchecked.png</file>
+        <file>icons/theme/radio_button_checked.svg</file>
+        <file>icons/theme/radio_button_unchecked.svg</file>
+        <file>icons/theme/remove.svg</file>
+        <file>icons/theme/save.svg</file>
+        <file>icons/theme/search.svg</file>
+        <file>icons/theme/settings.svg</file>
+        <file>icons/theme/time.svg</file>
+        <file>icons/theme/tree.svg</file>
+        <file>icons/theme/view_list.svg</file>
+        <file>icons/theme/zoom_in.svg</file>
         <file>icons/SciQLop.png</file>
         <file>icons/MPL.png</file>
         <file>icons/QCP.png</file>
@@ -58,10 +70,5 @@
         <file>LineStyles/StepCenter.png</file>
         <file>LineStyles/NoLine.png</file>
         <file>LineStyles/Line.png</file>
-        <file>icons/theme/collab.png</file>
-        <file>icons/theme/settings.png</file>
-        <file>icons/theme/home.png</file>
-        <file>icons/theme/tree.png</file>
-        <file>icons/theme/view_list.png</file>
     </qresource>
 </RCC>
