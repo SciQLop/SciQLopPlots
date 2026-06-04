@@ -158,6 +158,38 @@ int SciQLopHistogram2D::normalization() const
     return _hist ? static_cast<int>(_hist->normalization()) : 0;
 }
 
+void SciQLopHistogram2D::set_x_bins_log(bool log)
+{
+    if (!_hist)
+        return;
+    const auto type = log ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
+    if (_hist->keyBinScale() == type)
+        return;
+    _hist->setKeyBinScale(type);
+    Q_EMIT x_bins_log_changed(log);
+}
+
+void SciQLopHistogram2D::set_y_bins_log(bool log)
+{
+    if (!_hist)
+        return;
+    const auto type = log ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
+    if (_hist->valueBinScale() == type)
+        return;
+    _hist->setValueBinScale(type);
+    Q_EMIT y_bins_log_changed(log);
+}
+
+bool SciQLopHistogram2D::x_bins_log() const
+{
+    return _hist && _hist->keyBinScale() == QCPAxis::stLogarithmic;
+}
+
+bool SciQLopHistogram2D::y_bins_log() const
+{
+    return _hist && _hist->valueBinScale() == QCPAxis::stLogarithmic;
+}
+
 SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& x_range,
                                                         const SciQLopPlotRange& y_range, double low,
                                                         double high) const noexcept
