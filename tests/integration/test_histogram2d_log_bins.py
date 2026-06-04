@@ -47,6 +47,16 @@ class TestLogBinScale:
         assert hist.y_bins_log() is True
         assert hist.x_bins_log() is False
 
+    def test_creation_kwarg_x_bins_log(self, plot):
+        hist = plot.add_histogram2d("kw", 20, 20, x_bins_log=True)
+        assert hist.x_bins_log() is True
+        assert hist.y_bins_log() is False
+
+    def test_creation_kwarg_y_bins_log(self, plot):
+        hist = plot.add_histogram2d("kw2", 20, 20, x_bins_log=False, y_bins_log=True)
+        assert hist.x_bins_log() is False
+        assert hist.y_bins_log() is True
+
     def test_log_bins_changed_signal(self, plot):
         hist = plot.add_histogram2d("sig", 20, 20)
         seen = []

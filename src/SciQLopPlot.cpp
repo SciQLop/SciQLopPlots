@@ -156,11 +156,14 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
     return nullptr;
 }
 
-SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins)
+SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins,
+                                                  bool x_bins_log, bool y_bins_log)
 {
     auto hist = new SciQLopHistogram2D(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, key_bins, value_bins);
+    hist->set_x_bins_log(x_bins_log);
+    hist->set_y_bins_log(y_bins_log);
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;
@@ -168,12 +171,15 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
 
 SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& callable,
                                                           const QString& name, int key_bins,
-                                                          int value_bins)
+                                                          int value_bins, bool x_bins_log,
+                                                          bool y_bins_log)
 {
     auto hist = new SciQLopHistogram2DFunction(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable), name,
         key_bins, value_bins);
+    hist->set_x_bins_log(x_bins_log);
+    hist->set_y_bins_log(y_bins_log);
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;
@@ -666,9 +672,10 @@ SciQLopPlot::~SciQLopPlot()
     }
 }
 
-SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins)
+SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bins, int value_bins,
+                                                  bool x_bins_log, bool y_bins_log)
 {
-    auto hist = m_impl->add_histogram2d(name, key_bins, value_bins);
+    auto hist = m_impl->add_histogram2d(name, key_bins, value_bins, x_bins_log, y_bins_log);
     if (hist)
     {
         _configure_color_map(hist, false, false);
@@ -678,9 +685,11 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
 
 SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& callable,
                                                           const QString& name, int key_bins,
-                                                          int value_bins)
+                                                          int value_bins, bool x_bins_log,
+                                                          bool y_bins_log)
 {
-    auto hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins);
+    auto hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins,
+                                        x_bins_log, y_bins_log);
     if (hist)
     {
         _configure_color_map(hist, false, false);

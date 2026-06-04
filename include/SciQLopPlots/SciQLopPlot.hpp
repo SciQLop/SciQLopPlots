@@ -95,10 +95,12 @@ public:
                                            bool y_log_scale = false, bool z_log_scale = false);
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
-                                        int value_bins = 100);
+                                        int value_bins = 100, bool x_bins_log = false,
+                                        bool y_bins_log = false);
     SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
                                                  const QString& name, int key_bins = 100,
-                                                 int value_bins = 100);
+                                                 int value_bins = 100, bool x_bins_log = false,
+                                                 bool y_bins_log = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
 
@@ -331,10 +333,12 @@ public:
     void minimize_margins() override;
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
-                                        int value_bins = 100);
+                                        int value_bins = 100, bool x_bins_log = false,
+                                        bool y_bins_log = false);
     SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
                                                  const QString& name, int key_bins = 100,
-                                                 int value_bins = 100);
+                                                 int value_bins = 100, bool x_bins_log = false,
+                                                 bool y_bins_log = false);
 
     SciQLopWaterfallGraph* add_waterfall(const QString& name,
                                          const QStringList& labels = {},
