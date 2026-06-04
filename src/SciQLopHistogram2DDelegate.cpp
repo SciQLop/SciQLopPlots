@@ -23,6 +23,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -59,6 +60,18 @@ SciQLopHistogram2DDelegate::SciQLopHistogram2DDelegate(SciQLopHistogram2D* objec
     connect(valueBinsSpin, QOverload<int>::of(&QSpinBox::valueChanged), this,
             [push_bins](int) { push_bins(); });
 
+    auto* keyLogCheck = new QCheckBox(binningBox);
+    keyLogCheck->setChecked(object->x_bins_log());
+    binningLayout->addRow("X log bins", keyLogCheck);
+    connect(keyLogCheck, &QCheckBox::toggled, this,
+            [object](bool on) { object->set_x_bins_log(on); });
+
+    auto* valueLogCheck = new QCheckBox(binningBox);
+    valueLogCheck->setChecked(object->y_bins_log());
+    binningLayout->addRow("Y log bins", valueLogCheck);
+    connect(valueLogCheck, &QCheckBox::toggled, this,
+            [object](bool on) { object->set_y_bins_log(on); });
+
     m_layout->addRow(binningBox);
 
     auto* normCombo = new QComboBox(this);
@@ -86,6 +99,18 @@ SciQLopHistogram2DDelegate::SciQLopHistogram2DDelegate(SciQLopHistogram2D* objec
             {
                 QSignalBlocker b(normCombo);
                 normCombo->setCurrentIndex(normCombo->findData(n));
+            });
+    connect(object, &SciQLopHistogram2D::x_bins_log_changed, this,
+            [keyLogCheck](bool on)
+            {
+                QSignalBlocker b(keyLogCheck);
+                keyLogCheck->setChecked(on);
+            });
+    connect(object, &SciQLopHistogram2D::y_bins_log_changed, this,
+            [valueLogCheck](bool on)
+            {
+                QSignalBlocker b(valueLogCheck);
+                valueLogCheck->setChecked(on);
             });
 
     append_inspector_extensions();

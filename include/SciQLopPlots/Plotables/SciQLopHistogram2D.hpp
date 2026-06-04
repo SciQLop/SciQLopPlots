@@ -72,6 +72,13 @@ public:
     void set_normalization(int normalization);
     int normalization() const;
 
+    // Logarithmic bin spacing per axis. Bins are spaced evenly in log10 and
+    // non-positive samples are dropped; meant to accompany a log-scaled axis.
+    void set_x_bins_log(bool log);
+    void set_y_bins_log(bool log);
+    bool x_bins_log() const;
+    bool y_bins_log() const;
+
     SciQLopPlotRange z_percentile_range(const SciQLopPlotRange& x_range,
                                         const SciQLopPlotRange& y_range, double low,
                                         double high) const noexcept override;
@@ -82,6 +89,8 @@ signals:
 #endif
     Q_SIGNAL void bins_changed(int key_bins, int value_bins);
     Q_SIGNAL void normalization_changed(int normalization);
+    Q_SIGNAL void x_bins_log_changed(bool log);
+    Q_SIGNAL void y_bins_log_changed(bool log);
 };
 
 
