@@ -306,9 +306,13 @@ python3.install_sources(sciqlopplots_python_sources, pure: false, subdir: 'SciQL
 # DSP Python extension module (no Qt/Shiboken dependency — pure computation)
 numpy_inc = run_command(python3, ['-c', 'import numpy; print(numpy.get_include())'], check: true).stdout().strip()
 
+# Pass numpy's include via -I rather than include_directories(): the latter
+# rejects an absolute path that lives inside the source tree, which happens when
+# the build venv (hence numpy) sits in-tree (e.g. ./.venv).
 sciqlop_dsp_ext = python3.extension_module('_sciqlop_dsp',
     '../src/DSP/python_module.cpp',
-    include_directories: [includes, include_directories(numpy_inc)],
+    include_directories: [includes],
+    cpp_args: ['-I' + numpy_inc],
     dependencies: [python3_dep, dsp_dep],
     subdir: 'SciQLopPlots',
     install: true,
