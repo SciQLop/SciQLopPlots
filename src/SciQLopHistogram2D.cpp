@@ -211,6 +211,19 @@ SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& 
     const double y_lo = std::min(y_range.start(), y_range.stop());
     const double y_hi = std::max(y_range.start(), y_range.stop());
 
+    // Cells are uniform in coordinate space, but under log binning the renderer
+    // places them at log positions. Remap each cell centre the same way so the
+    // viewport filter matches what is actually drawn.
+    const QCPRange kr = grid->keyRange();
+    const QCPRange vr = grid->valueRange();
+    const bool x_log = x_bins_log() && kr.lower > 0. && kr.upper > kr.lower;
+    const bool y_log = y_bins_log() && vr.lower > 0. && vr.upper > vr.lower;
+    const auto to_log = [](double linear, const QCPRange& r)
+    {
+        const double t = (linear - r.lower) / (r.upper - r.lower);
+        return std::pow(10., std::log10(r.lower) + t * (std::log10(r.upper) - std::log10(r.lower)));
+    };
+
     std::vector<double> values;
     values.reserve(static_cast<std::size_t>(nkey) * static_cast<std::size_t>(nval));
     for (int i = 0; i < nkey; ++i)
@@ -219,6 +232,10 @@ SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& 
         {
             double kx = 0., vy = 0.;
             grid->cellToCoord(i, j, &kx, &vy);
+            if (x_log)
+                kx = to_log(kx, kr);
+            if (y_log)
+                vy = to_log(vy, vr);
             if (kx < x_lo || kx > x_hi || vy < y_lo || vy > y_hi)
                 continue;
             const double zv = grid->cell(i, j);
