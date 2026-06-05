@@ -47,6 +47,26 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);
     SciQLopHistogram2D::set_name(name);
 
+    // The bin scale follows the axis scale. SciQLopPlotAxis::set_log blocks the
+    // underlying QCPAxis::scaleTypeChanged, so drive the re-bin (and the UI
+    // signal) from the wrapper's log_changed instead.
+    if (_keyAxis)
+        connect(_keyAxis, &SciQLopPlotAxis::log_changed, this,
+                [this](bool on)
+                {
+                    if (_hist)
+                        _hist->refreshBinning();
+                    Q_EMIT x_bins_log_changed(on);
+                });
+    if (_valueAxis)
+        connect(_valueAxis, &SciQLopPlotAxis::log_changed, this,
+                [this](bool on)
+                {
+                    if (_hist)
+                        _hist->refreshBinning();
+                    Q_EMIT y_bins_log_changed(on);
+                });
+
     install_rescale_provider();
 
     if (auto legend_item = _legend_item(); legend_item)
@@ -158,36 +178,28 @@ int SciQLopHistogram2D::normalization() const
     return _hist ? static_cast<int>(_hist->normalization()) : 0;
 }
 
+// Log binning is just the axis being logarithmic. Driving the axis re-bins (and
+// updates the inspector) through the log_changed connection in the constructor.
 void SciQLopHistogram2D::set_x_bins_log(bool log)
 {
-    if (!_hist)
-        return;
-    const auto type = log ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
-    if (_hist->keyBinScale() == type)
-        return;
-    _hist->setKeyBinScale(type);
-    Q_EMIT x_bins_log_changed(log);
+    if (_keyAxis)
+        _keyAxis->set_log(log);
 }
 
 void SciQLopHistogram2D::set_y_bins_log(bool log)
 {
-    if (!_hist)
-        return;
-    const auto type = log ? QCPAxis::stLogarithmic : QCPAxis::stLinear;
-    if (_hist->valueBinScale() == type)
-        return;
-    _hist->setValueBinScale(type);
-    Q_EMIT y_bins_log_changed(log);
+    if (_valueAxis)
+        _valueAxis->set_log(log);
 }
 
 bool SciQLopHistogram2D::x_bins_log() const
 {
-    return _hist && _hist->keyBinScale() == QCPAxis::stLogarithmic;
+    return _keyAxis && _keyAxis->log();
 }
 
 bool SciQLopHistogram2D::y_bins_log() const
 {
-    return _hist && _hist->valueBinScale() == QCPAxis::stLogarithmic;
+    return _valueAxis && _valueAxis->log();
 }
 
 SciQLopPlotRange SciQLopHistogram2D::z_percentile_range(const SciQLopPlotRange& x_range,

@@ -74,6 +74,18 @@ class TestLogBinScale:
         assert hist.y_bins_log() is False
         del panel
 
+    def test_bins_log_couples_to_axis(self, plot):
+        """Bin scale and axis scale are the same thing, driven from either side."""
+        hist = plot.add_histogram2d("couple", 20, 20)
+        # setter drives the axis
+        hist.set_x_bins_log(True)
+        assert hist.x_axis().log() is True
+        # toggling the axis (as the 'l' shortcut does) drives the bins
+        hist.x_axis().set_log(False)
+        assert hist.x_bins_log() is False
+        hist.x_axis().set_log(True)
+        assert hist.x_bins_log() is True
+
     def test_log_kwarg_rejected_for_non_histogram(self, plot):
         x = np.array([1.0, 2.0, 3.0, 4.0])
         y = np.array([1.0, 2.0, 3.0, 4.0])
