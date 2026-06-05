@@ -967,9 +967,10 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
 
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                   QString name, int key_bins, int value_bins,
+                                                  bool x_bins_log, bool y_bins_log,
                                                   QVariantMap metaData)
 {
-    auto* hist = m_impl->add_histogram2d(name, key_bins, value_bins);
+    auto* hist = m_impl->add_histogram2d(name, key_bins, value_bins, x_bins_log, y_bins_log);
     if (hist)
     {
         hist->set_meta_data(metaData);
@@ -981,9 +982,11 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
 
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
                                                   int key_bins, int value_bins,
+                                                  bool x_bins_log, bool y_bins_log,
                                                   QObject* sync_with, QVariantMap metaData)
 {
-    auto* hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins);
+    auto* hist = m_impl->add_histogram2d(std::move(callable), name, key_bins, value_bins,
+                                         x_bins_log, y_bins_log);
     if (hist)
     {
         hist->set_meta_data(metaData);

@@ -286,11 +286,13 @@ protected:
     virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
               QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
-              int value_bins = 100, QVariantMap metaData = {}) override;
+              int value_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
+              QVariantMap metaData = {}) override;
 
     virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
-              int key_bins = 100, int value_bins = 100, QObject* sync_with = nullptr,
+              int key_bins = 100, int value_bins = 100, bool x_bins_log = false,
+              bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {}) override;
 
     virtual void toggle_selected_objects_visibility() noexcept override;
