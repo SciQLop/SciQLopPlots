@@ -678,7 +678,7 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int key_bi
     auto hist = m_impl->add_histogram2d(name, key_bins, value_bins, x_bins_log, y_bins_log);
     if (hist)
     {
-        _configure_color_map(hist, false, false);
+        _configure_color_map(hist, y_bins_log, false);
     }
     return hist;
 }
@@ -692,7 +692,7 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
                                         x_bins_log, y_bins_log);
     if (hist)
     {
-        _configure_color_map(hist, false, false);
+        _configure_color_map(hist, y_bins_log, false);
         _connect_callable_sync(hist, nullptr);
     }
     return hist;
@@ -974,7 +974,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
     if (hist)
     {
         hist->set_meta_data(metaData);
-        _configure_color_map(hist, false, false);
+        _configure_color_map(hist, y_bins_log, false);
         hist->set_data(x, y);
     }
     return hist;
@@ -990,7 +990,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
     if (hist)
     {
         hist->set_meta_data(metaData);
-        _configure_color_map(hist, false, false);
+        _configure_color_map(hist, y_bins_log, false);
         _connect_callable_sync(hist, sync_with);
     }
     return hist;
