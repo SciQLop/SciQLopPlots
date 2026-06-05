@@ -347,7 +347,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,QVariantMap)">
+        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,QVariantMap)">
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -358,10 +358,16 @@
                 <rename to="value_bins"/>
             </modify-argument>
             <modify-argument index="6">
+                <rename to="x_bins_log"/>
+            </modify-argument>
+            <modify-argument index="7">
+                <rename to="y_bins_log"/>
+            </modify-argument>
+            <modify-argument index="8">
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,QObject*,QVariantMap)">
+        <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,QObject*,QVariantMap)">
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -372,9 +378,15 @@
                 <rename to="value_bins"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="sync_with"/>
+                <rename to="x_bins_log"/>
             </modify-argument>
             <modify-argument index="6">
+                <rename to="y_bins_log"/>
+            </modify-argument>
+            <modify-argument index="7">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="8">
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
@@ -733,7 +745,7 @@
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,PlotType,int,QVariantMap)">
+        <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,PlotType,int,QVariantMap)">
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -744,16 +756,22 @@
                 <rename to="value_bins"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="plot_type"/>
+                <rename to="x_bins_log"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="index"/>
+                <rename to="y_bins_log"/>
             </modify-argument>
             <modify-argument index="8">
+                <rename to="plot_type"/>
+            </modify-argument>
+            <modify-argument index="9">
+                <rename to="index"/>
+            </modify-argument>
+            <modify-argument index="10">
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,PlotType,QObject*,int,QVariantMap)">
+        <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,PlotType,QObject*,int,QVariantMap)">
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -764,15 +782,21 @@
                 <rename to="value_bins"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="plot_type"/>
+                <rename to="x_bins_log"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="sync_with"/>
+                <rename to="y_bins_log"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="index"/>
+                <rename to="plot_type"/>
             </modify-argument>
             <modify-argument index="8">
+                <rename to="sync_with"/>
+            </modify-argument>
+            <modify-argument index="9">
+                <rename to="index"/>
+            </modify-argument>
+            <modify-argument index="10">
                 <rename to="metaData"/>
             </modify-argument>
         </modify-function>

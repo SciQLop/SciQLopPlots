@@ -134,6 +134,7 @@ protected:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int key_bins, int value_bins,
+              bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {})
     {
@@ -142,6 +143,7 @@ protected:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(GetDataPyCallable callable, QString name, int key_bins, int value_bins,
+              bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData = {})
     {
@@ -359,20 +361,23 @@ public:
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     histogram2d(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                 QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
-                int value_bins = 100, ::PlotType plot_type = ::PlotType::BasicXY,
+                int value_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
+                ::PlotType plot_type = ::PlotType::BasicXY,
                 int index = -1, QVariantMap metaData = {})
     {
-        return plot_impl(x, y, name, key_bins, value_bins, plot_type, index, metaData);
+        return plot_impl(x, y, name, key_bins, value_bins, x_bins_log, y_bins_log, plot_type,
+                         index, metaData);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
-                int key_bins = 100, int value_bins = 100,
+                int key_bins = 100, int value_bins = 100, bool x_bins_log = false,
+                bool y_bins_log = false,
                 ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
                 int index = -1, QVariantMap metaData = {})
     {
-        return plot_impl(callable, name, key_bins, value_bins, plot_type, sync_with, index,
-                         metaData);
+        return plot_impl(callable, name, key_bins, value_bins, x_bins_log, y_bins_log, plot_type,
+                         sync_with, index, metaData);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>

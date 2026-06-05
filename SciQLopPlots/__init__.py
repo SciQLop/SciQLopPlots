@@ -58,7 +58,7 @@ def _reject_waterfall_kwargs(kwargs, graph_type):
             f"got graph_type={graph_type!r}")
 
 
-_HISTOGRAM2D_KWARGS = ("key_bins", "value_bins")
+_HISTOGRAM2D_KWARGS = ("key_bins", "value_bins", "x_bins_log", "y_bins_log")
 
 
 def _reject_histogram2d_kwargs(kwargs, graph_type):

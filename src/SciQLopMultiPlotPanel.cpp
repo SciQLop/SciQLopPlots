@@ -431,18 +431,18 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int key_bins,
-                                 int value_bins, PlotType plot_type, int index,
-                                 QVariantMap metaData)
+                                 int value_bins, bool x_bins_log, bool y_bins_log,
+                                 PlotType plot_type, int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot_histogram2d<SciQLopPlot>(
-                index, x, y, name, key_bins, value_bins, metaData);
+                index, x, y, name, key_bins, value_bins, x_bins_log, y_bins_log, metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot_histogram2d<SciQLopTimeSeriesPlot>(
-                index, x, y, name, key_bins, value_bins, metaData);
+                index, x, y, name, key_bins, value_bins, x_bins_log, y_bins_log, metaData);
             break;
         default:
             break;
@@ -452,18 +452,21 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int key_bins,
-                                 int value_bins, PlotType plot_type, QObject* sync_with,
+                                 int value_bins, bool x_bins_log, bool y_bins_log,
+                                 PlotType plot_type, QObject* sync_with,
                                  int index, QVariantMap metaData)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot_histogram2d<SciQLopPlot>(
-                index, std::move(callable), name, key_bins, value_bins, sync_with, metaData);
+                index, std::move(callable), name, key_bins, value_bins, x_bins_log, y_bins_log,
+                sync_with, metaData);
             break;
         case ::PlotType::TimeSeries:
             return _plot_histogram2d<SciQLopTimeSeriesPlot>(
-                index, std::move(callable), name, key_bins, value_bins, sync_with, metaData);
+                index, std::move(callable), name, key_bins, value_bins, x_bins_log, y_bins_log,
+                sync_with, metaData);
             break;
         default:
             break;

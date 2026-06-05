@@ -4,7 +4,7 @@ import pytest
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QCoreApplication
 
-from SciQLopPlots import SciQLopPlot
+from SciQLopPlots import SciQLopPlot, SciQLopMultiPlotPanel, GraphType
 
 
 @pytest.fixture(scope="module")
@@ -56,6 +56,29 @@ class TestLogBinScale:
         hist = plot.add_histogram2d("kw2", 20, 20, x_bins_log=False, y_bins_log=True)
         assert hist.x_bins_log() is False
         assert hist.y_bins_log() is True
+
+    def test_plot_dispatcher_kwarg(self, plot):
+        x = np.array([1.0, 2.0, 3.0, 4.0])
+        y = np.array([1.0, 2.0, 3.0, 4.0])
+        hist = plot.plot(x, y, graph_type=GraphType.Histogram2D,
+                         x_bins_log=True, y_bins_log=True)
+        assert hist.x_bins_log() is True
+        assert hist.y_bins_log() is True
+
+    def test_panel_dispatcher_kwarg(self, app):
+        panel = SciQLopMultiPlotPanel()
+        x = np.array([1.0, 2.0, 3.0, 4.0])
+        y = np.array([1.0, 2.0, 3.0, 4.0])
+        _, hist = panel.plot(x, y, graph_type=GraphType.Histogram2D, x_bins_log=True)
+        assert hist.x_bins_log() is True
+        assert hist.y_bins_log() is False
+        del panel
+
+    def test_log_kwarg_rejected_for_non_histogram(self, plot):
+        x = np.array([1.0, 2.0, 3.0, 4.0])
+        y = np.array([1.0, 2.0, 3.0, 4.0])
+        with pytest.raises(TypeError):
+            plot.plot(x, y, graph_type=GraphType.Line, x_bins_log=True)
 
     def test_log_bins_changed_signal(self, plot):
         hist = plot.add_histogram2d("sig", 20, 20)
