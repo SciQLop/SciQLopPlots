@@ -183,13 +183,13 @@ protected:
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int key_bins, int value_bins,
+    plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(GetDataPyCallable callable, QString name, int key_bins, int value_bins,
+    plot_impl(GetDataPyCallable callable, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData = {}) Q_DECL_OVERRIDE;

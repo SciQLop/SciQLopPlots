@@ -91,23 +91,23 @@ class TestHistogram2DDelegate(unittest.TestCase):
         spins = box.findChildren(QSpinBox)
         self.assertEqual(len(spins), 2, "Binning group should have 2 spinboxes")
 
-    def test_initial_key_bins_reflects_model(self):
+    def test_initial_x_bins_reflects_model(self):
         box = find_group(self.delegate, 'Binning')
         spin = box.findChildren(QSpinBox)[0]
-        self.assertEqual(spin.value(), self.hist.key_bins())
+        self.assertEqual(spin.value(), self.hist.x_bins())
 
-    def test_initial_value_bins_reflects_model(self):
+    def test_initial_y_bins_reflects_model(self):
         box = find_group(self.delegate, 'Binning')
         spin = box.findChildren(QSpinBox)[1]
-        self.assertEqual(spin.value(), self.hist.value_bins())
+        self.assertEqual(spin.value(), self.hist.y_bins())
 
     def test_widget_edit_pushes_to_model(self):
         box = find_group(self.delegate, 'Binning')
         spins = box.findChildren(QSpinBox)
         spins[0].setValue(50)
         spins[1].setValue(75)
-        self.assertEqual(self.hist.key_bins(), 50)
-        self.assertEqual(self.hist.value_bins(), 75)
+        self.assertEqual(self.hist.x_bins(), 50)
+        self.assertEqual(self.hist.y_bins(), 75)
 
     def test_model_change_updates_widgets(self):
         self.hist.set_bins(33, 44)
@@ -162,7 +162,7 @@ class TestHistogram2DDelegate(unittest.TestCase):
                 plot_type=PlotType.BasicXY, graph_type=GraphType.Histogram2D,
             )
             self.hist.set_bins(20, 20)
-            self.assertNotEqual(hist2.key_bins(), 20)
+            self.assertNotEqual(hist2.x_bins(), 20)
         finally:
             panel2.deleteLater()
 

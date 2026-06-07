@@ -95,8 +95,8 @@ protected:
 
     inline virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-              QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
-              int value_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
+              QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+              int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
               QVariantMap metaData = {})
     {
         throw std::runtime_error("Not implemented");
@@ -104,7 +104,7 @@ protected:
 
     inline virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
-              int key_bins = 100, int value_bins = 100, bool x_bins_log = false,
+              int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
               bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {})
     {
@@ -390,20 +390,20 @@ public:
 
     inline virtual SciQLopColorMapInterface*
     histogram2d(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-                QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
-                int value_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
+                QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+                int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
                 QVariantMap metaData = {})
     {
-        return plot_impl(x, y, name, key_bins, value_bins, x_bins_log, y_bins_log, metaData);
+        return plot_impl(x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metaData);
     }
 
     inline virtual SciQLopColorMapInterface*
     histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
-                int key_bins = 100, int value_bins = 100, bool x_bins_log = false,
+                int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
                 bool y_bins_log = false, QObject* sync_with = nullptr,
                 QVariantMap metaData = {})
     {
-        return plot_impl(callable, name, key_bins, value_bins, x_bins_log, y_bins_log,
+        return plot_impl(callable, name, x_bins, y_bins, x_bins_log, y_bins_log,
                          sync_with, metaData);
     }
 

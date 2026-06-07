@@ -44,12 +44,12 @@ class TestBinningCorrectness:
         n = 5000
         x = rng.uniform(-5, 5, n)
         y = rng.uniform(-5, 5, n)
-        key_bins, value_bins = 50, 50
+        x_bins, y_bins = 50, 50
 
-        hist = plot.add_histogram2d("count_check", key_bins, value_bins)
+        hist = plot.add_histogram2d("count_check", x_bins, y_bins)
         _extract_binned_data(plot, hist, x, y)
 
-        np_counts, _, _ = np.histogram2d(x, y, bins=[key_bins, value_bins])
+        np_counts, _, _ = np.histogram2d(x, y, bins=[x_bins, y_bins])
         assert np_counts.sum() == n, f"numpy total = {np_counts.sum()}, expected {n}"
 
     def test_normal_distribution_matches_numpy(self, plot):
@@ -58,16 +58,16 @@ class TestBinningCorrectness:
         n = 10_000
         x = rng.normal(0, 1, n)
         y = rng.normal(0, 1, n)
-        key_bins, value_bins = 30, 30
+        x_bins, y_bins = 30, 30
 
         x_range = (x.min(), x.max())
         y_range = (y.min(), y.max())
 
         np_counts, xedges, yedges = np.histogram2d(
-            x, y, bins=[key_bins, value_bins], range=[x_range, y_range]
+            x, y, bins=[x_bins, y_bins], range=[x_range, y_range]
         )
 
-        hist = plot.add_histogram2d("normal_match", key_bins, value_bins)
+        hist = plot.add_histogram2d("normal_match", x_bins, y_bins)
         _extract_binned_data(plot, hist, x, y)
 
         assert np_counts.sum() == n
@@ -77,9 +77,9 @@ class TestBinningCorrectness:
         n = 100
         x = np.full(n, 3.0)
         y = np.linspace(0, 10, n)
-        key_bins, value_bins = 10, 10
+        x_bins, y_bins = 10, 10
 
-        hist = plot.add_histogram2d("same_x", key_bins, value_bins)
+        hist = plot.add_histogram2d("same_x", x_bins, y_bins)
         _extract_binned_data(plot, hist, x, y)
 
     def test_all_same_y_single_row(self, plot):
@@ -87,9 +87,9 @@ class TestBinningCorrectness:
         n = 100
         x = np.linspace(0, 10, n)
         y = np.full(n, 5.0)
-        key_bins, value_bins = 10, 10
+        x_bins, y_bins = 10, 10
 
-        hist = plot.add_histogram2d("same_y", key_bins, value_bins)
+        hist = plot.add_histogram2d("same_y", x_bins, y_bins)
         _extract_binned_data(plot, hist, x, y)
 
     def test_single_point(self, plot):
@@ -161,14 +161,14 @@ class TestBinningCorrectness:
         x = np.concatenate([x1, x2])
         y = np.concatenate([y1, y2])
 
-        key_bins, value_bins = 60, 60
-        hist = plot.add_histogram2d("bimodal", key_bins, value_bins)
+        x_bins, y_bins = 60, 60
+        hist = plot.add_histogram2d("bimodal", x_bins, y_bins)
         _extract_binned_data(plot, hist, x, y)
 
         x_range = (x.min(), x.max())
         y_range = (y.min(), y.max())
         np_counts, _, _ = np.histogram2d(
-            x, y, bins=[key_bins, value_bins], range=[x_range, y_range]
+            x, y, bins=[x_bins, y_bins], range=[x_range, y_range]
         )
         assert np_counts.max() > 1, "bimodal data should have peaks"
 
@@ -206,8 +206,8 @@ class TestBinChanges:
         plot.replot(True)
         _pump_events(20)
 
-        assert hist.key_bins() == 20
-        assert hist.value_bins() == 20
+        assert hist.x_bins() == 20
+        assert hist.y_bins() == 20
 
     def test_rapid_bin_changes(self, plot):
         """Rapidly changing bins should not crash."""
