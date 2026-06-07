@@ -41,6 +41,7 @@ class QueryLineEdit : public QTextEdit
     QStringList m_field_names;
     QMap<QString, QStringList> m_field_values;
     QStringList m_product_names;
+    QString m_help_override;
 
 public:
     QueryLineEdit(QWidget* parent = nullptr);
@@ -50,6 +51,11 @@ public:
                          const QStringList& product_names);
 
     void set_known_fields(const QSet<QString>& fields);
+
+    void set_help_text(const QString& html);
+    QString help_text() const;
+
+    Q_SIGNAL void helpTextChanged();
 
     Q_SIGNAL void queryChanged(const Query& query);
 
@@ -65,4 +71,6 @@ private:
     void show_popup(const QStringList& items);
     void hide_popup();
     QString current_word() const;
+    QString build_help_html() const;
+    void refresh_help();
 };
