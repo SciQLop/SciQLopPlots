@@ -438,7 +438,13 @@ void SciQLopPlotAxis::rescale() noexcept
             newRange.lower = center - m_axis->range().size() / 2.0;
             newRange.upper = center + m_axis->range().size() / 2.0;
         }
-        m_axis->setRange(newRange);
+        // Route through set_range (not m_axis->setRange directly) so clamp_range
+        // and m_last_valid_range stay consistent: with a max/min range-size limit
+        // configured, a direct setRange makes the rangeChanged handler see
+        // clamped != requested and revert to the old range, so 'm' silently does
+        // nothing. Mirrors the percentile path above.
+        set_range(SciQLopPlotRange(newRange.lower, newRange.upper, _is_time_axis));
+        return;
     }
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
