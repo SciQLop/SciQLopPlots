@@ -20,15 +20,17 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
+#include "SciQLopPlots/Python/DtypeDispatch.hpp"
 
-QVector<QCPCurveData> curve_copy_data(const double* x, const double* y, std::size_t x_size,
-                                      const int y_incr)
+template <typename X, typename Y>
+QVector<QCPCurveData> curve_copy_data(const X* x, const Y* y, std::size_t x_size, const int y_incr)
 {
     QVector<QCPCurveData> data(x_size);
-    const double* current_y_it = y;
+    const Y* current_y_it = y;
     for (auto i = 0UL; i < x_size; i++)
     {
-        data[i] = QCPCurveData { static_cast<double>(i), x[i], *current_y_it };
+        data[i] = QCPCurveData { static_cast<double>(i), static_cast<double>(x[i]),
+                                 static_cast<double>(*current_y_it) };
         current_y_it += y_incr;
     }
     return data;
@@ -39,12 +41,34 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
     if (data.x.is_valid() && data.x.flat_size() > 0 && data.new_data)
     {
         const auto y_incr = 1UL;
+        const auto count = data.x.flat_size();
         QList<QVector<QCPCurveData>> curve_data;
-        for (auto line_index = 0UL; line_index < line_count(); line_index++)
+        // x/y may be any numeric dtype (set_data validates support); dispatch on
+        // both and convert to double. Guarded so an unexpected dtype can't
+        // terminate this worker thread.
+        try
         {
-            const auto count = data.x.flat_size();
-            const auto start_y = data.y.data() + (line_index * data.x.flat_size());
-            curve_data.emplace_back(curve_copy_data(data.x.data(), start_y, count, y_incr));
+            dispatch_dtype(
+                data.x.format_code(),
+                [&](auto x_tag)
+                {
+                    dispatch_dtype(
+                        data.y.format_code(),
+                        [&](auto y_tag)
+                        {
+                            using X = typename decltype(x_tag)::type;
+                            using Y = typename decltype(y_tag)::type;
+                            const auto* xs = static_cast<const X*>(data.x.raw_data());
+                            const auto* ys = static_cast<const Y*>(data.y.raw_data());
+                            for (auto line_index = 0UL; line_index < line_count(); line_index++)
+                                curve_data.emplace_back(
+                                    curve_copy_data(xs, ys + (line_index * count), count, y_incr));
+                        });
+                });
+        }
+        catch (const std::invalid_argument&)
+        {
+            return;
         }
         Q_EMIT setGraphData(curve_data);
     }
