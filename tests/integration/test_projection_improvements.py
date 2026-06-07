@@ -241,3 +241,24 @@ class TestLinkedCrosshairs:
         proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
         proj.set_linked_crosshairs(True)
         process_events()
+
+
+class TestProjectionFloat32Data:
+    """NDProjectionCurves::set_data copied time/scalar buffers via the double-only
+    SciQLopPyBuffer::data(), which throws -> std::terminate on float32 (or int)
+    buffers. Speasy routinely returns float32, so this crashed the app. Fixed by
+    dtype-dispatched copies. These pass only when the crash is gone."""
+
+    @pytest.mark.parametrize("time_dtype", [np.float32, np.int64, np.uint32])
+    def test_non_double_time_does_not_crash(self, qtbot, time_dtype):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        n = 50
+        t = np.linspace(0, 49, n).astype(time_dtype)   # non-double time -> N+1 path
+        # x/y kept float64: the curve resampler is separately double-only.
+        x = np.cos(np.linspace(0, 10, n)).astype(np.float64)
+        y = np.sin(np.linspace(0, 10, n)).astype(np.float64)
+        z = (np.arange(n) * 0.1).astype(np.float64)
+        graph = proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
+        process_events()
+        assert graph is not None
