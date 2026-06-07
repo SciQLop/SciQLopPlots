@@ -53,6 +53,45 @@ class TestStraightLineSignal:
         assert line.position == pytest.approx(12.0)
 
 
+class TestStraightLinePixelCoordinates:
+    """A Pixels-mode StraightLine must land at the requested pixel position.
+
+    Regression: the ctor set coords before setType(ptAbsolute); setType retains
+    the pixel position computed under the old (default plot-coords)
+    interpretation, so the intended absolute-pixel value was converted off-screen
+    (e.g. 200 -> ~1550 with an x range of [0,100]). Fixed by setting the type
+    before the coords, matching EllipseItem/TextItem.
+    """
+
+    def _vline_pixels(self, plot, px):
+        from SciQLopPlots import SciQLopStraightLine
+        from PySide6.QtCore import Qt
+        return SciQLopStraightLine(plot, px, False, Coordinates.Pixels, Qt.Orientation.Vertical)
+
+    def test_pixel_position_is_not_reinterpreted_as_data(self, plot):
+        plot.resize(800, 600)
+        plot.show()
+        process_events()
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))  # data range != pixels
+        process_events()
+        line = self._vline_pixels(plot, 200.0)
+        process_events()
+        assert line.position == pytest.approx(200.0, abs=1.0)
+
+    def test_pixel_line_stays_fixed_on_zoom(self, plot):
+        plot.resize(800, 600)
+        plot.show()
+        process_events()
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
+        process_events()
+        line = self._vline_pixels(plot, 200.0)
+        process_events()
+        before = line.position
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 1000.0))  # zoom out 10x
+        process_events()
+        assert line.position == pytest.approx(before, abs=1.0)  # pixel anchor unmoved
+
+
 class TestStraightLineMinMax:
 
     def test_min_clamps_set_position(self, plot):

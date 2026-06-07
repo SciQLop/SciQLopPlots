@@ -42,9 +42,10 @@ public:
             : impl::SciQLopPlotItem<QCPItemPixmap> { plot }
     {
         this->setPixmap(pixmap);
-        this->topLeft->setCoords(rect.topLeft());
-        this->bottomRight->setCoords(rect.bottomRight());
-        this->setMovable(movable);
+        // setType before setCoords: setType retains the pixel position computed
+        // under the current type, so coords set first (default plot-coords) then
+        // switched to ptAbsolute would be converted off-screen. Matches
+        // EllipseItem/TextItem ordering.
         if (coordinates == Coordinates::Data)
         {
             this->topLeft->setType(QCPItemPosition::ptPlotCoords);
@@ -55,6 +56,9 @@ public:
             this->topLeft->setType(QCPItemPosition::ptAbsolute);
             this->bottomRight->setType(QCPItemPosition::ptAbsolute);
         }
+        this->topLeft->setCoords(rect.topLeft());
+        this->bottomRight->setCoords(rect.bottomRight());
+        this->setMovable(movable);
     }
 
     virtual ~PixmapItem() { }
