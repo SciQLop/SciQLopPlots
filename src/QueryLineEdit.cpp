@@ -5,6 +5,7 @@
 #include <QKeyEvent>
 #include <QListView>
 #include <QScrollBar>
+#include <QSet>
 #include <QStringListModel>
 #include <QTimer>
 #include <algorithm>
@@ -57,6 +58,7 @@ void QueryLineEdit::set_completions(const QStringList& field_names,
     m_field_names = field_names;
     m_field_values = field_values;
     m_product_names = product_names;
+    refresh_help();
 }
 
 void QueryLineEdit::set_known_fields(const QSet<QString>& fields)
@@ -259,4 +261,73 @@ QString QueryLineEdit::current_word() const
         --start;
 
     return text.mid(start, pos - start);
+}
+
+namespace
+{
+struct BuiltinField
+{
+    const char* name;
+    const char* description;
+    const char* example;
+};
+
+constexpr BuiltinField builtin_fields[] = {
+    { "provider", "data source", "provider:amda" },
+    { "type", "parameter kind", "type:vector" },
+    { "after", "start date (ISO)", "after:2015-01-01" },
+    { "before", "end date (ISO)", "before:2016" },
+};
+}
+
+QString QueryLineEdit::build_help_html() const
+{
+    QString html;
+    html += "<b>Search products</b><br/>";
+    html += "Type words to match product names, and combine with "
+            "<i>field:value</i> filters.<br/><br/>";
+    html += "<table cellspacing='4'>";
+
+    QSet<QString> builtin_names;
+    for (const auto& f : builtin_fields)
+    {
+        builtin_names.insert(QString::fromLatin1(f.name));
+        html += QString("<tr><td><b>%1</b></td><td>%2</td><td><i>%3</i></td></tr>")
+                    .arg(f.name, f.description, f.example);
+    }
+    html += "</table>";
+
+    QStringList metadata_fields;
+    for (const auto& name : m_field_names)
+    {
+        if (!builtin_names.contains(name))
+            metadata_fields.append(name.toHtmlEscaped());
+    }
+    if (!metadata_fields.isEmpty())
+    {
+        metadata_fields.sort();
+        html += QString("<br/>Metadata fields: %1").arg(metadata_fields.join(", "));
+    }
+
+    html += "<br/><br/><i>Tip: press Ctrl+Space to autocomplete.</i>";
+    return html;
+}
+
+QString QueryLineEdit::help_text() const
+{
+    if (!m_help_override.trimmed().isEmpty())
+        return m_help_override;
+    return build_help_html();
+}
+
+void QueryLineEdit::set_help_text(const QString& html)
+{
+    m_help_override = html;
+    refresh_help();
+}
+
+void QueryLineEdit::refresh_help()
+{
+    setToolTip(help_text());
+    emit helpTextChanged();
 }

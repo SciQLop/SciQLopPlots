@@ -30,6 +30,7 @@
 #include <QLabel>
 #include <QListView>
 #include <QStackedWidget>
+#include <QTextBrowser>
 #include <QTimer>
 #include <QToolButton>
 #include <QTreeView>
@@ -51,6 +52,11 @@ ProductsView::ProductsView(QWidget* parent) : QWidget(parent)
     m_view_toggle->setCheckable(true);
     m_view_toggle->hide();
     toolbar->addWidget(m_view_toggle);
+
+    m_help_button = new QToolButton(this);
+    m_help_button->setText("?");
+    m_help_button->setToolTip("Show search syntax help");
+    toolbar->addWidget(m_help_button);
 
     m_result_count = new QLabel(this);
     m_result_count->hide();
@@ -87,10 +93,18 @@ ProductsView::ProductsView(QWidget* parent) : QWidget(parent)
     m_stack->setCurrentWidget(m_tree_view);
     layout->addWidget(m_stack);
 
+    m_help_popup = nullptr;
+
     connect(m_query_line_edit, &QueryLineEdit::queryChanged, this,
             &ProductsView::on_query_changed);
     connect(m_view_toggle, &QToolButton::toggled, this,
             [this](bool) { toggle_view(); });
+    connect(m_help_button, &QToolButton::clicked, this,
+            &ProductsView::show_help_popup);
+    connect(m_query_line_edit, &QueryLineEdit::helpTextChanged, this, [this]() {
+        if (m_help_popup && m_help_popup->isVisible())
+            m_help_popup->setHtml(search_help());
+    });
 
     m_completion_refresh_timer = new QTimer(this);
     m_completion_refresh_timer->setSingleShot(true);
@@ -201,4 +215,30 @@ void ProductsView::refresh_completions()
     for (const auto& f : field_names)
         known_fields_set.insert(f.toLower());
     m_query_line_edit->set_known_fields(known_fields_set);
+}
+
+void ProductsView::set_search_help(const QString& html)
+{
+    m_query_line_edit->set_help_text(html);
+}
+
+QString ProductsView::search_help() const
+{
+    return m_query_line_edit->help_text();
+}
+
+void ProductsView::show_help_popup()
+{
+    if (!m_help_popup)
+    {
+        m_help_popup = new QTextBrowser(this);
+        m_help_popup->setWindowFlags(Qt::Popup);
+        m_help_popup->setOpenExternalLinks(true);
+        m_help_popup->setFixedSize(380, 240);
+    }
+    m_help_popup->setHtml(search_help());
+    QPoint pos = m_query_line_edit->mapToGlobal(
+        QPoint(0, m_query_line_edit->height()));
+    m_help_popup->move(pos);
+    m_help_popup->show();
 }
