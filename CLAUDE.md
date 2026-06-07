@@ -12,27 +12,42 @@ Uses **Meson** with `meson-python` as the Python build backend.
 
 ### Development Build
 
+> **STOP — do not run a bare `meson setup build` / `meson compile -C build`.**
+> Qt is not on the default PATH and the stale top-level `build/` dir will trigger
+> a doomed reconfigure. Use the dedicated in-tree venv + `build-venv` recipe below.
+> Never build against (or `cp .so` into) the SciQLop runtime venv during dev.
+
 ```bash
-# Configure (debug build)
-meson setup build --buildtype=debug
+# One-time: dedicated in-tree venv (Qt/PySide6 6.11.1, meson pinned to 1.10.2)
+cd /var/home/jeandet/Documents/prog/SciQLopPlots
+uv venv .venv --python 3.13
+VIRTUAL_ENV=$(pwd)/.venv uv pip install \
+  pyside6==6.11.1 shiboken6==6.11.1 shiboken6-generator==6.11.1 \
+  numpy meson==1.10.2 ninja meson-python pytest pytest-qt scipy
 
-# Configure (debug with optimizations, recommended for profiling)
-meson setup build --buildtype=debugoptimized
+# Every build: Qt MUST be on PATH (6.11.1 first, 6.11.0 after it for `qsb`)
+VENV=$(pwd)/.venv
+export PATH="$VENV/bin:/home/jeandet/Qt/6.11.1/gcc_64/bin:/home/jeandet/Qt/6.11.0/gcc_64/bin:$PATH"
+export PKG_CONFIG_PATH="/home/jeandet/Qt/6.11.1/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH"
+$VENV/bin/meson setup build-venv --buildtype=debugoptimized   # first time only
+$VENV/bin/meson compile -C build-venv
 
-# Build
-meson compile -C build
-
-# Run tests (manual test examples)
-meson test -C build
+# Run tests from /tmp so the source pkg doesn't shadow the build (no LD_LIBRARY_PATH!)
+cd /tmp && PYTHONPATH=<PROJ>/build-venv $VENV/bin/python -m pytest <PROJ>/tests/integration -q
 ```
+
+Always `--buildtype=debugoptimized` (never plain `debug`: -O0 makes CPU code unusably slow).
+After switching branches, a stale shiboken wrapper can fail to regenerate — `rm` the
+offending `build-venv/SciQLopPlots/bindings/.../**_wrapper.cpp` and `meson setup
+--reconfigure build-venv` to force a clean regen.
 
 ### Python Wheel Build
 
 ```bash
-pip install .
-# or for development:
-pip install -e . --no-build-isolation
+pip install .   # produces a wheel; NOT for iterative dev
 ```
+
+For iterative development use the `build-venv` recipe above and `cp build-venv/SciQLopPlots/*.so build-venv/SciQLopPlots/*.py` into the target venv — never `pip install -e .` (it disturbs the venv).
 
 ### Meson Options
 
