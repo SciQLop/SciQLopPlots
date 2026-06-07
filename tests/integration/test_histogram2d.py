@@ -238,3 +238,88 @@ class TestHistogram2DDispatcher:
         y = rng.normal(0, 1, 100)
         with pytest.raises(TypeError, match="Waterfall"):
             plot.plot(x, y, graph_type=GraphType.Histogram2D, gain=2.0)
+
+
+class TestRescaleRespectsRangeLimit:
+    """The 'm'-key rescale (axis.rescale()) must land on the clamped target when a
+    max/min range-size limit is configured, not revert to the previous range.
+
+    Regression for: the min/max rescale path called QCPAxis::setRange() directly,
+    so the rangeChanged clamp-handler saw clamped != requested and reverted to the
+    old range -- making 'm' silently do nothing on axes with a zoom limit (as
+    SciQLop sets). The percentile path already routed through set_range(); the
+    plain path did not.
+    """
+
+    @staticmethod
+    def _pump(n=80):
+        from PySide6.QtCore import QCoreApplication
+        for _ in range(n):
+            QCoreApplication.processEvents()
+
+    def test_x_rescale_lands_on_clamped_range_not_revert(self, plot):
+        from SciQLopPlots import SciQLopPlotRange
+        hist = plot.add_histogram2d("h", 50, 50)
+        rng = np.random.default_rng(0)
+        hist.set_data(rng.uniform(10.0, 90.0, 5000), rng.uniform(-30.0, 40.0, 5000))
+        self._pump()
+        plot.replot(True)
+        self._pump()
+
+        plot.x_axis().set_max_range_size(50.0)              # SciQLop-style zoom cap
+        plot.x_axis().set_range(SciQLopPlotRange(45.0, 55.0))  # zoom in
+        self._pump()
+
+        plot.x_axis().rescale()                              # the 'm' action
+        self._pump()
+
+        xr = plot.x_axis().range()
+        # Must NOT revert to the [45,55] zoom.
+        assert not (abs(xr.start() - 45.0) < 0.5 and abs(xr.stop() - 55.0) < 0.5), \
+            "x rescale reverted to the pre-rescale zoom instead of landing on the clamped target"
+        # Should land on the clamped target (~width 50, centred on the data ~50).
+        assert (xr.stop() - xr.start()) == pytest.approx(50.0, abs=1.0)
+        assert 24.0 <= xr.start() <= 27.0 and 73.0 <= xr.stop() <= 77.0
+
+    def test_y_value_axis_rescale_lands_on_clamped_range_not_revert(self, plot):
+        # The value-axis branch (getValueRange) is a different code path than the
+        # key-axis branch, but shares the final set_range; verify it too so the
+        # fix is proven for value axes, not just key axes.
+        from SciQLopPlots import SciQLopPlotRange
+        hist = plot.add_histogram2d("h", 50, 50)
+        rng = np.random.default_rng(2)
+        hist.set_data(rng.uniform(10.0, 90.0, 5000), rng.uniform(-30.0, 40.0, 5000))
+        self._pump()
+        plot.replot(True)
+        self._pump()
+
+        # full x first so the value-range restriction sees all points
+        plot.x_axis().rescale()
+        plot.y_axis().set_max_range_size(40.0)               # y extent is 70 > 40
+        plot.y_axis().set_range(SciQLopPlotRange(0.0, 5.0))   # zoom in
+        self._pump()
+
+        plot.y_axis().rescale()
+        self._pump()
+
+        yr = plot.y_axis().range()
+        assert not (abs(yr.start() - 0.0) < 0.5 and abs(yr.stop() - 5.0) < 0.5), \
+            "y rescale reverted to the pre-rescale zoom instead of landing on the clamped target"
+        assert (yr.stop() - yr.start()) == pytest.approx(40.0, abs=1.5)
+
+    def test_rescale_without_limit_still_fits_full_extent(self, plot):
+        from SciQLopPlots import SciQLopPlotRange
+        hist = plot.add_histogram2d("h", 50, 50)
+        rng = np.random.default_rng(1)
+        hist.set_data(rng.uniform(10.0, 90.0, 5000), rng.uniform(-30.0, 40.0, 5000))
+        self._pump()
+        plot.replot(True)
+        self._pump()
+
+        plot.x_axis().set_range(SciQLopPlotRange(45.0, 55.0))
+        self._pump()
+        plot.x_axis().rescale()
+        self._pump()
+
+        xr = plot.x_axis().range()  # no limit -> full data extent
+        assert xr.start() <= 12.0 and xr.stop() >= 88.0
