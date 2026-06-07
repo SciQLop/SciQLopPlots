@@ -169,3 +169,40 @@ class TestPlotMethod:
         plot_obj, graph_obj = result
         assert plot_obj is not None
         assert graph_obj is not None
+
+
+class TestParametricCurveDtypes:
+    """SciQLopCurve must accept non-float64 x/y. The CurveResampler read x/y via
+    the double-only SciQLopPyBuffer::data(), and set_data hard-rejected anything
+    but float64 — a std::terminate crash on float32 (which Speasy routinely
+    produces). These pass only once the dtype-dispatched resampler is in place."""
+
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int32,
+                                       np.int64, np.uint16])
+    def test_parametric_curve_accepts_dtype(self, plot, qtbot, dtype):
+        n = 200
+        t = np.linspace(0, 2 * np.pi, n)
+        x = (np.cos(t) * 100).astype(dtype)
+        y = (np.sin(t) * 100).astype(dtype)
+        g = plot.parametric_curve(x, y, labels=["c"])
+        plot.replot(True)
+        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0].size > 0
+                                and not g.busy(),
+                        timeout=5000)
+        assert len(g.data()) >= 2
+
+    def test_float32_curve_values_are_correct(self, plot, qtbot):
+        # not just "doesn't crash" — the resampled values must match the input.
+        n = 100
+        x = np.linspace(-50, 50, n).astype(np.float32)
+        y = (x * 2.0).astype(np.float32)
+        g = plot.parametric_curve(x, y, labels=["c"])
+        plot.replot(True)
+        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0].size > 0
+                                and not g.busy(),
+                        timeout=5000)
+        gx = np.array(g.data()[0])
+        gy = np.array(g.data()[1])
+        assert gx.min() == pytest.approx(-50.0, abs=1.0)
+        assert gx.max() == pytest.approx(50.0, abs=1.0)
+        assert gy.max() == pytest.approx(100.0, abs=2.0)

@@ -97,14 +97,25 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    // CurveResampler reads y via SciQLopPyBuffer::data() which only returns a valid
-    // double* for float64 buffers (see PythonInterface.hpp). Other dtypes
-    // would misrender silently — fail loudly instead, matching what
-    // SciQLopSingleLineGraph / SciQLopMultiGraphBase do for x.
-    if (x.is_valid() && x.format_code() != 'd')
-        throw std::runtime_error("Curve.set_data: x must be float64");
-    if (y.is_valid() && y.format_code() != 'd')
-        throw std::runtime_error("Curve.set_data: y must be float64");
+    // The resampler converts x/y from any numeric dtype to double. Reject
+    // unsupported dtypes here (at the Python boundary) so the worker thread only
+    // ever sees dtypes dispatch_dtype can handle.
+    const auto require_numeric = [](const SciQLopPyBuffer& buf, const char* name)
+    {
+        if (!buf.is_valid())
+            return;
+        try
+        {
+            dispatch_dtype(buf.format_code(), [](auto) {});
+        }
+        catch (const std::invalid_argument&)
+        {
+            throw std::runtime_error(std::string("Curve.set_data: ") + name
+                                     + " has an unsupported (non-numeric) dtype");
+        }
+    };
+    require_numeric(x, "x");
+    require_numeric(y, "y");
     set_busy(true);
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);
@@ -127,25 +138,25 @@ void SciQLopCurve::collect_visible_values(const SciQLopPlotRange& visible_key_ra
     const auto& y = buffers[1];
     if (!x.is_valid() || !y.is_valid())
         return;
-    if (x.format_code() != 'd')
-        return;
     const std::size_t n = x.flat_size();
     if (n == 0 || y.flat_size() < n)
         return;
 
     const double x_lo = visible_key_range.first;
     const double x_hi = visible_key_range.second;
-    const double* xs = x.data();
 
     out.reserve(out.size() + n);
     try
     {
-        dispatch_dtype(y.format_code(), [&](auto tag) {
-            using V = typename decltype(tag)::type;
+        dispatch_dtype(x.format_code(), [&](auto x_tag) {
+        dispatch_dtype(y.format_code(), [&](auto y_tag) {
+            using XT = typename decltype(x_tag)::type;
+            using V = typename decltype(y_tag)::type;
+            const auto* xs = static_cast<const XT*>(x.raw_data());
             const auto* ys = static_cast<const V*>(y.raw_data());
             for (std::size_t i = 0; i < n; ++i)
             {
-                const double xv = xs[i];
+                const double xv = static_cast<double>(xs[i]);
                 if (xv < x_lo || xv > x_hi)
                     continue;
                 const double v = static_cast<double>(ys[i]);
@@ -156,6 +167,7 @@ void SciQLopCurve::collect_visible_values(const SciQLopPlotRange& visible_key_ra
                 }
                 out.push_back(v);
             }
+        });
         });
     }
     catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }

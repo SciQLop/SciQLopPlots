@@ -27,6 +27,7 @@
 #include <SciQLopPlots/Profiling.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Python/PythonInterface.hpp>
+#include <SciQLopPlots/Python/DtypeDispatch.hpp>
 #include <SciQLopPlots/Python/Views.hpp>
 #include <SciQLopPlots/SciQLopPlotAxis.hpp>
 #include <qcustomplot.h>
@@ -125,7 +126,22 @@ protected:
         const auto len = b.flat_size();
         if (len > 0)
         {
-            return { b.data()[0], b.data()[len - 1] };
+            // x may be any numeric dtype (the curve path allows non-double keys);
+            // read first/last (the buffer is sorted) converted to double.
+            try
+            {
+                return dispatch_dtype(b.format_code(),
+                                      [&](auto tag) -> QCPRange
+                                      {
+                                          using T = typename decltype(tag)::type;
+                                          const auto* p = static_cast<const T*>(b.raw_data());
+                                          return { static_cast<double>(p[0]),
+                                                   static_cast<double>(p[len - 1]) };
+                                      });
+            }
+            catch (const std::invalid_argument&)
+            {
+            }
         }
         return { std::nan(""), std::nan("") };
     }
