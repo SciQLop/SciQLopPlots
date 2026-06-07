@@ -72,6 +72,20 @@ public:
             , m_orientation { orientation }
             , m_coordinates { coordinates }
     {
+        // setType before setCoords: setType retains the pixel position computed
+        // under the *current* type, so setting coords first (default plot-coords)
+        // then switching to ptAbsolute converts the intended pixels off-screen.
+        // Matches EllipseItem/TextItem ordering.
+        if (coordinates == Coordinates::Data)
+        {
+            this->point1->setType(QCPItemPosition::ptPlotCoords);
+            this->point2->setType(QCPItemPosition::ptPlotCoords);
+        }
+        else
+        {
+            this->point1->setType(QCPItemPosition::ptAbsolute);
+            this->point2->setType(QCPItemPosition::ptAbsolute);
+        }
         if (orientation == Qt::Orientation::Vertical)
         {
             this->point1->setCoords(position, 0);
@@ -83,16 +97,6 @@ public:
             this->point2->setCoords(1, position);
         }
         this->setMovable(movable);
-        if (coordinates == Coordinates::Data)
-        {
-            this->point1->setType(QCPItemPosition::ptPlotCoords);
-            this->point2->setType(QCPItemPosition::ptPlotCoords);
-        }
-        else
-        {
-            this->point1->setType(QCPItemPosition::ptAbsolute);
-            this->point2->setType(QCPItemPosition::ptAbsolute);
-        }
     }
 
     virtual ~StraightLine() { }
