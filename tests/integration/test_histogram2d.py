@@ -33,13 +33,13 @@ class TestHistogram2DCreation:
 
     def test_default_bins(self, plot):
         hist = plot.add_histogram2d("test")
-        assert hist.key_bins() == 100
-        assert hist.value_bins() == 100
+        assert hist.x_bins() == 100
+        assert hist.y_bins() == 100
 
     def test_custom_bins(self, plot):
         hist = plot.add_histogram2d("test", 50, 60)
-        assert hist.key_bins() == 50
-        assert hist.value_bins() == 60
+        assert hist.x_bins() == 50
+        assert hist.y_bins() == 60
 
     def test_histogram_in_plottables(self, plot):
         hist = plot.add_histogram2d("test")
@@ -83,8 +83,8 @@ class TestHistogram2DProperties:
     def test_set_bins(self, plot):
         hist = plot.add_histogram2d("test")
         hist.set_bins(30, 40)
-        assert hist.key_bins() == 30
-        assert hist.value_bins() == 40
+        assert hist.x_bins() == 30
+        assert hist.y_bins() == 40
 
     def test_normalization_default_none(self, plot):
         hist = plot.add_histogram2d("test")
@@ -165,9 +165,9 @@ class TestHistogram2DCallable:
         def producer(start, stop):
             return np.arange(100.0), np.arange(100.0)
 
-        hist = plot.histogram2d(producer, name="cb", key_bins=25, value_bins=30)
-        assert hist.key_bins() == 25
-        assert hist.value_bins() == 30
+        hist = plot.histogram2d(producer, name="cb", x_bins=25, y_bins=30)
+        assert hist.x_bins() == 25
+        assert hist.y_bins() == 30
 
 
 class TestHistogram2DPanel:
@@ -189,7 +189,7 @@ class TestHistogram2DPanel:
             return rng.normal(0, 1, 300), rng.normal(0, 1, 300)
 
         p, hist = panel.histogram2d(producer, name="cb_panel",
-                                     key_bins=40, value_bins=40)
+                                     x_bins=40, y_bins=40)
         assert p is not None
         assert hist is not None
         del panel
@@ -201,9 +201,9 @@ class TestHistogram2DDispatcher:
         x = rng.normal(0, 1, 400)
         y = rng.normal(0, 1, 400)
         hist = plot.plot(x, y, graph_type=GraphType.Histogram2D,
-                         name="disp_static", key_bins=30, value_bins=30)
+                         name="disp_static", x_bins=30, y_bins=30)
         assert hist is not None
-        assert hist.key_bins() == 30
+        assert hist.x_bins() == 30
 
     def test_plot_dispatcher_callable(self, plot):
         rng = np.random.default_rng(0)
@@ -212,9 +212,9 @@ class TestHistogram2DDispatcher:
             return rng.normal(0, 1, 400), rng.normal(0, 1, 400)
 
         hist = plot.plot(producer, graph_type=GraphType.Histogram2D,
-                         name="disp_cb", key_bins=30, value_bins=30)
+                         name="disp_cb", x_bins=30, y_bins=30)
         assert hist is not None
-        assert hist.key_bins() == 30
+        assert hist.x_bins() == 30
 
     def test_panel_plot_dispatcher_static(self, app):
         panel = SciQLopMultiPlotPanel()
@@ -222,7 +222,7 @@ class TestHistogram2DDispatcher:
         x = rng.normal(0, 1, 300)
         y = rng.normal(0, 1, 300)
         result = panel.plot(x, y, graph_type=GraphType.Histogram2D,
-                            name="panel_disp", key_bins=20, value_bins=20)
+                            name="panel_disp", x_bins=20, y_bins=20)
         assert result is not None
         del panel
 
@@ -230,7 +230,7 @@ class TestHistogram2DDispatcher:
         x = np.arange(10.0)
         y = np.arange(10.0)
         with pytest.raises(TypeError, match="Histogram2D"):
-            plot.plot(x, y, graph_type=GraphType.Line, key_bins=10)
+            plot.plot(x, y, graph_type=GraphType.Line, x_bins=10)
 
     def test_reject_waterfall_kwargs_for_histogram2d(self, plot):
         rng = np.random.default_rng(0)

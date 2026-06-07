@@ -43,13 +43,13 @@ SciQLopHistogram2DDelegate::SciQLopHistogram2DDelegate(SciQLopHistogram2D* objec
 
     auto* keyBinsSpin = new QSpinBox(binningBox);
     keyBinsSpin->setRange(1, 100000);
-    keyBinsSpin->setValue(object->key_bins());
-    binningLayout->addRow("Key bins", keyBinsSpin);
+    keyBinsSpin->setValue(object->x_bins());
+    binningLayout->addRow("X bins", keyBinsSpin);
 
     auto* valueBinsSpin = new QSpinBox(binningBox);
     valueBinsSpin->setRange(1, 100000);
-    valueBinsSpin->setValue(object->value_bins());
-    binningLayout->addRow("Value bins", valueBinsSpin);
+    valueBinsSpin->setValue(object->y_bins());
+    binningLayout->addRow("Y bins", valueBinsSpin);
 
     auto push_bins = [keyBinsSpin, valueBinsSpin, object]()
     {

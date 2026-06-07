@@ -352,10 +352,10 @@
                 <rename to="name"/>
             </modify-argument>
             <modify-argument index="4">
-                <rename to="key_bins"/>
+                <rename to="x_bins"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="value_bins"/>
+                <rename to="y_bins"/>
             </modify-argument>
             <modify-argument index="6">
                 <rename to="x_bins_log"/>
@@ -372,10 +372,10 @@
                 <rename to="name"/>
             </modify-argument>
             <modify-argument index="3">
-                <rename to="key_bins"/>
+                <rename to="x_bins"/>
             </modify-argument>
             <modify-argument index="4">
-                <rename to="value_bins"/>
+                <rename to="y_bins"/>
             </modify-argument>
             <modify-argument index="5">
                 <rename to="x_bins_log"/>
@@ -750,10 +750,10 @@
                 <rename to="name"/>
             </modify-argument>
             <modify-argument index="4">
-                <rename to="key_bins"/>
+                <rename to="x_bins"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="value_bins"/>
+                <rename to="y_bins"/>
             </modify-argument>
             <modify-argument index="6">
                 <rename to="x_bins_log"/>
@@ -776,10 +776,10 @@
                 <rename to="name"/>
             </modify-argument>
             <modify-argument index="3">
-                <rename to="key_bins"/>
+                <rename to="x_bins"/>
             </modify-argument>
             <modify-argument index="4">
-                <rename to="value_bins"/>
+                <rename to="y_bins"/>
             </modify-argument>
             <modify-argument index="5">
                 <rename to="x_bins_log"/>

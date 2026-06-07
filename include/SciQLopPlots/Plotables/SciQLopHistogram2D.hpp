@@ -56,7 +56,7 @@ protected:
 public:
     explicit SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
-                                const QString& name, int key_bins = 100, int value_bins = 100,
+                                const QString& name, int x_bins = 100, int y_bins = 100,
                                 QVariantMap metaData = {});
     virtual ~SciQLopHistogram2D() override;
 
@@ -65,9 +65,9 @@ public:
 
     inline QCPHistogram2D* histogram() const { return _hist; }
 
-    void set_bins(int key_bins, int value_bins);
-    int key_bins() const;
-    int value_bins() const;
+    void set_bins(int x_bins, int y_bins);
+    int x_bins() const;
+    int y_bins() const;
 
     void set_normalization(int normalization);
     int normalization() const;
@@ -87,7 +87,7 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void bins_changed(int key_bins, int value_bins);
+    Q_SIGNAL void bins_changed(int x_bins, int y_bins);
     Q_SIGNAL void normalization_changed(int normalization);
     Q_SIGNAL void x_bins_log_changed(bool log);
     Q_SIGNAL void y_bins_log_changed(bool log);
@@ -103,7 +103,7 @@ public:
                                         SciQLopPlotAxis* yAxis,
                                         SciQLopPlotColorScaleAxis* zAxis,
                                         GetDataPyCallable&& callable, const QString& name,
-                                        int key_bins = 100, int value_bins = 100);
+                                        int x_bins = 100, int y_bins = 100);
 
     virtual ~SciQLopHistogram2DFunction() override = default;
 

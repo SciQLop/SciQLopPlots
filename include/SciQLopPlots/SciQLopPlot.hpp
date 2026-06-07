@@ -94,12 +94,12 @@ public:
     SciQLopColorMapFunction* add_color_map(GetDataPyCallable&& callable, const QString& name,
                                            bool y_log_scale = false, bool z_log_scale = false);
 
-    SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
-                                        int value_bins = 100, bool x_bins_log = false,
+    SciQLopHistogram2D* add_histogram2d(const QString& name, int x_bins = 100,
+                                        int y_bins = 100, bool x_bins_log = false,
                                         bool y_bins_log = false);
     SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
-                                                 const QString& name, int key_bins = 100,
-                                                 int value_bins = 100, bool x_bins_log = false,
+                                                 const QString& name, int x_bins = 100,
+                                                 int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
@@ -285,13 +285,13 @@ protected:
 
     virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-              QString name = QStringLiteral("Histogram2D"), int key_bins = 100,
-              int value_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
+              QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+              int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
               QVariantMap metaData = {}) override;
 
     virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
-              int key_bins = 100, int value_bins = 100, bool x_bins_log = false,
+              int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
               bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {}) override;
 
@@ -334,12 +334,12 @@ public:
 
     void minimize_margins() override;
 
-    SciQLopHistogram2D* add_histogram2d(const QString& name, int key_bins = 100,
-                                        int value_bins = 100, bool x_bins_log = false,
+    SciQLopHistogram2D* add_histogram2d(const QString& name, int x_bins = 100,
+                                        int y_bins = 100, bool x_bins_log = false,
                                         bool y_bins_log = false);
     SciQLopHistogram2DFunction* add_histogram2d(GetDataPyCallable&& callable,
-                                                 const QString& name, int key_bins = 100,
-                                                 int value_bins = 100, bool x_bins_log = false,
+                                                 const QString& name, int x_bins = 100,
+                                                 int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
 
     SciQLopWaterfallGraph* add_waterfall(const QString& name,

@@ -34,13 +34,13 @@ void SciQLopHistogram2D::_hist_got_destroyed()
 
 SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                        SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
-                                       const QString& name, int key_bins, int value_bins,
+                                       const QString& name, int x_bins, int y_bins,
                                        QVariantMap metaData)
     : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metaData), parent)
 {
     _hist = new QCPHistogram2D(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _hist->setLayer(Constants::LayersNames::ColorMap);
-    _hist->setBins(key_bins, value_bins);
+    _hist->setBins(x_bins, y_bins);
     connect(_hist, &QCPHistogram2D::destroyed, this, &SciQLopHistogram2D::_hist_got_destroyed);
     connect(_hist, &QCPAbstractPlottable::busyChanged,
             this, &SciQLopPlottableInterface::busy_changed);
@@ -141,23 +141,23 @@ QList<SciQLopPyBuffer> SciQLopHistogram2D::data() const noexcept
     return {};
 }
 
-void SciQLopHistogram2D::set_bins(int key_bins, int value_bins)
+void SciQLopHistogram2D::set_bins(int x_bins, int y_bins)
 {
     if (_hist)
     {
-        if (_hist->keyBins() == key_bins && _hist->valueBins() == value_bins)
+        if (_hist->keyBins() == x_bins && _hist->valueBins() == y_bins)
             return;
-        _hist->setBins(key_bins, value_bins);
-        Q_EMIT bins_changed(key_bins, value_bins);
+        _hist->setBins(x_bins, y_bins);
+        Q_EMIT bins_changed(x_bins, y_bins);
     }
 }
 
-int SciQLopHistogram2D::key_bins() const
+int SciQLopHistogram2D::x_bins() const
 {
     return _hist ? _hist->keyBins() : 0;
 }
 
-int SciQLopHistogram2D::value_bins() const
+int SciQLopHistogram2D::y_bins() const
 {
     return _hist ? _hist->valueBins() : 0;
 }
@@ -263,8 +263,8 @@ SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQ
                                                        SciQLopPlotColorScaleAxis* zAxis,
                                                        GetDataPyCallable&& callable,
                                                        const QString& name,
-                                                       int key_bins, int value_bins)
-    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, key_bins, value_bins}
+                                                       int x_bins, int y_bins)
+    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

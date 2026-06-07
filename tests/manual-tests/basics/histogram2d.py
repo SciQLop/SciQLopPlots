@@ -2,7 +2,7 @@
 
 Showcases:
 - SciQLopHistogram2D for 2D density estimation
-- Binning configuration (key_bins, value_bins)
+- Binning configuration (x_bins, y_bins)
 - Bimodal gaussian scatter data
 """
 import sys
