@@ -11,7 +11,7 @@ import time
 import pytest
 import numpy as np
 from PySide6.QtCore import QCoreApplication
-from PySide6.QtWidgets import QGroupBox
+from PySide6.QtWidgets import QGroupBox, QWidget
 
 from SciQLopPlots import SciQLopPlotRange, DelegateRegistry
 
@@ -200,10 +200,14 @@ class TestInspectorUI:
     delegate (PR #69), where users find them next to gradient/log/label.
     They are NOT exposed on the colormap or histogram product nodes."""
 
-    def _group_titles(self, target, qtbot):
+    def _delegate(self, target, qtbot):
         delegate = DelegateRegistry.instance().create_delegate(target, None)
         assert delegate is not None
         qtbot.addWidget(delegate)
+        return delegate
+
+    def _group_titles(self, target, qtbot):
+        delegate = self._delegate(target, qtbot)  # keep alive across findChildren
         return [g.title() for g in delegate.findChildren(QGroupBox)]
 
     def test_z_axis_delegate_has_percentile_group_with_colormap(
@@ -212,6 +216,24 @@ class TestInspectorUI:
         x, y, z = sample_colormap_data
         plot.colormap(x, y, z)
         assert "Autoscale percentile" in self._group_titles(plot.z_axis(), qtbot)
+
+    def test_z_axis_delegate_exposes_range(self, plot, qtbot, sample_colormap_data):
+        # The colorbar (z) range must be settable from the inspector, like every
+        # other numeric axis. It was silently dropped when the Range group was
+        # first added (commit 3a9d1ad gated it behind color_scale() == nullptr).
+        x, y, z = sample_colormap_data
+        plot.colormap(x, y, z)
+        assert "Range" in self._group_titles(plot.z_axis(), qtbot)
+
+    def test_z_axis_delegate_exposes_auto_scale_toggle(
+        self, plot, qtbot, sample_colormap_data
+    ):
+        # Pairs with the Range group, mirroring value axes: turning auto-scale
+        # off lets a manually-typed colorbar range stick.
+        x, y, z = sample_colormap_data
+        plot.colormap(x, y, z)
+        delegate = self._delegate(plot.z_axis(), qtbot)
+        assert delegate.findChild(QWidget, "plot_auto_scale") is not None
 
     def test_z_axis_delegate_has_percentile_group_with_histogram(self, plot, qtbot):
         plot.add_histogram2d("h", 20, 20)

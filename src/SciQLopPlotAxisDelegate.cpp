@@ -171,8 +171,9 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
 
     m_layout->addRow(labelBox);
 
-    // Range group (numeric, non-color-scale axes only).
-    const bool show_range = !ax->is_time_axis() && (this->color_scale() == nullptr);
+    // Range group (every numeric axis, including the color-scale / colorbar:
+    // its range() / set_range() drive the QCPColorScale data range).
+    const bool show_range = !ax->is_time_axis();
     if (show_range)
     {
         auto* rangeBox = new QGroupBox("Range", this);
@@ -209,13 +210,14 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         m_layout->addRow(rangeBox);
     }
 
-    // Plot-wide "Auto scale" toggle: surfaced on every vertical value axis
-    // delegate (the natural place users look for axis-rescale controls), not
-    // on the Plot node. Backing state lives on the parent SciQLopPlot — all
-    // value-axis delegates share it.
+    // Plot-wide "Auto scale" toggle: surfaced on every vertical value axis and
+    // on the color-scale (colorbar) node — the natural places users look for
+    // axis-rescale controls, not the Plot node. Backing state lives on the
+    // parent SciQLopPlot and is shared: it gates both value-axis rescale and
+    // the colormap's data-driven z rescale (see SciQLopPlot data_changed wiring).
     if (auto* concrete = as_type<SciQLopPlotAxis>(m_object);
-        concrete && !ax->is_time_axis() && this->color_scale() == nullptr
-        && ax->orientation() == Qt::Vertical)
+        concrete && !ax->is_time_axis()
+        && (this->color_scale() != nullptr || ax->orientation() == Qt::Vertical))
     {
         if (auto* plot = _owning_plot(m_object))
         {
