@@ -76,3 +76,47 @@ class TestColorMapDelegateVisible:
         cmap.set_visible(False)
         process_events()
         assert box.isChecked() is False
+
+
+class TestVisibilityContract:
+    def test_component_round_trip(self, plot, sample_data):
+        x, y = sample_data
+        g = plot.line(x, y, labels=["a"])
+        process_events()
+        comp = g.components()[0]
+        assert comp.visible() is True
+        comp.set_visible(False)
+        assert comp.visible() is False
+        comp.set_visible(True)
+        assert comp.visible() is True
+
+    def test_component_emits_signal(self, plot, sample_data):
+        x, y = sample_data
+        g = plot.line(x, y, labels=["a"])
+        process_events()
+        comp = g.components()[0]
+        seen = []
+        comp.visible_changed.connect(lambda v: seen.append(v))
+        comp.set_visible(False)
+        assert seen == [False]
+
+    def test_multicomponent_independent(self, plot, sample_multicomponent_data):
+        x, y = sample_multicomponent_data
+        g = plot.line(x, y, labels=["a", "b", "c"])
+        process_events()
+        comps = g.components()
+        assert len(comps) == 3
+        comps[1].set_visible(False)
+        assert comps[0].visible() is True
+        assert comps[1].visible() is False
+        assert comps[2].visible() is True
+
+    def test_colormap_round_trip(self, plot, sample_colormap_data):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        process_events()
+        assert cmap.visible() is True
+        cmap.set_visible(False)
+        assert cmap.visible() is False
+        cmap.set_visible(True)
+        assert cmap.visible() is True
