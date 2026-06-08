@@ -28,6 +28,7 @@
 #include <layoutelements/layoutelement-legend-group.h>
 #include "SciQLopPlots/qcp_enums.hpp"
 
+class QMouseEvent;
 
 struct MultiGraphRef {
     QCPMultiGraph* graph = nullptr;
@@ -96,6 +97,14 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
         return nullptr;
     }
 
+    void _connect_legend_visibility();
+    void _apply_legend_visibility_style(bool visible);
+
+private Q_SLOTS:
+    void _on_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item,
+                                   QMouseEvent* event);
+
+private:
     bool m_selected = false;
 
 public:
