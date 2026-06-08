@@ -49,6 +49,8 @@ protected:
         if (auto* p = plottable(); p)
         {
             auto plot = _plot();
+            if (!plot)
+                return nullptr;
             return plot->legend->itemWithPlottable(p);
         }
         return nullptr;

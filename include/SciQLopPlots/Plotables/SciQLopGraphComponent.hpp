@@ -77,6 +77,8 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
         if (m_plottable)
         {
             auto plot = _plot();
+            if (!plot)
+                return nullptr;
             return plot->legend->itemWithPlottable(m_plottable.data());
         }
         return nullptr;
