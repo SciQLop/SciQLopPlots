@@ -208,8 +208,6 @@ protected:
 
     QCPAbstractPlottable* plottable(const QString& name) const;
 
-    void _legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item, QMouseEvent* event);
-
     void _wheel_pan(QCPAxis* axis, const double wheelSteps);
     void _wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPointF& pos);
     void _pinch_zoom(QPinchGesture* gesture);
