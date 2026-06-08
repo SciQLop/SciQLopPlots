@@ -53,3 +53,26 @@ class TestComponentDelegateVisible:
         comp.set_visible(False)
         process_events()
         assert box.isChecked() is False
+
+
+class TestColorMapDelegateVisible:
+    def test_checkbox_toggles_colormap(self, plot, sample_colormap_data, qtbot):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        process_events()
+        d = _make_delegate(cmap, qtbot)
+        box = _visible_checkbox(d)
+        assert box.isChecked() is True
+        box.setChecked(False)
+        process_events()
+        assert cmap.visible() is False
+
+    def test_external_change_updates_checkbox(self, plot, sample_colormap_data, qtbot):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        process_events()
+        d = _make_delegate(cmap, qtbot)
+        box = _visible_checkbox(d)
+        cmap.set_visible(False)
+        process_events()
+        assert box.isChecked() is False
