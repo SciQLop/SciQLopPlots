@@ -61,7 +61,6 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
                           | QCP::iMultiSelect);
 
 
-    connect(this, &QCustomPlot::legendDoubleClick, this, &SciQLopPlot::_legend_double_clicked);
     connect(this->xAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), this,
             [this](const QCPRange& range)
             { if (!m_suppress_range_signals) Q_EMIT x_axis_range_changed({ range.lower, range.upper }); });
@@ -542,46 +541,6 @@ QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const
     return nullptr;
 }
 
-void SciQLopPlot::_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item,
-                                         QMouseEvent* event)
-{
-    if (auto legend_item = dynamic_cast<QCPPlottableLegendItem*>(item); legend_item != nullptr)
-    {
-        auto plottable = legend_item->plottable();
-        plottable->setVisible(!plottable->visible());
-        if (plottable->visible())
-        {
-            item->setTextColor(Qt::black);
-            item->setSelectedTextColor(Qt::black);
-        }
-        else
-        {
-            item->setTextColor(Qt::gray);
-            item->setSelectedTextColor(Qt::gray);
-        }
-        this->replot(rpQueuedReplot);
-    }
-    else if (auto* gi = dynamic_cast<QCPGroupLegendItem*>(item); gi != nullptr)
-    {
-        auto* mg = gi->multiGraph();
-        if (!mg)
-            return;
-        int comp = gi->selectedComponent();
-        if (comp >= 0 && comp < mg->componentCount())
-        {
-            mg->component(comp).visible = !mg->component(comp).visible;
-        }
-        else
-        {
-            bool anyVisible = false;
-            for (int i = 0; i < mg->componentCount(); ++i)
-                anyVisible |= mg->component(i).visible;
-            for (int i = 0; i < mg->componentCount(); ++i)
-                mg->component(i).visible = !anyVisible;
-        }
-        this->replot(rpQueuedReplot);
-    }
-}
 }
 
 void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
