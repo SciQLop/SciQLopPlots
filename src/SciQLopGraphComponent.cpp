@@ -20,6 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include <QMouseEvent>
+#include <layoutelements/layoutelement-legend.h>
+#include <layoutelements/layoutelement-legend-group.h>
 
 SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QObject* parent)
         : SciQLopGraphComponentInterface(parent), m_plottable(plottable)
@@ -40,6 +43,7 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
         connect(plottable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
                 &SciQLopGraphComponent::set_selected);
     }
+    _connect_legend_visibility();
 }
 
 SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int componentIndex,
@@ -62,6 +66,7 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
                     set_selected(clickedComponent == m_componentIndex);
                 });
     }
+    _connect_legend_visibility();
 }
 
 SciQLopGraphComponent::~SciQLopGraphComponent()
@@ -264,4 +269,51 @@ QColor SciQLopGraphComponent::color() const noexcept
         return m_plottable->pen().color();
     }
     return QColor();
+}
+
+void SciQLopGraphComponent::_connect_legend_visibility()
+{
+    if (auto* plot = _plot())
+        connect(plot, &QCustomPlot::legendDoubleClick, this,
+                &SciQLopGraphComponent::_on_legend_double_clicked);
+    connect(this, &SciQLopGraphComponentInterface::visible_changed, this,
+            &SciQLopGraphComponent::_apply_legend_visibility_style);
+}
+
+void SciQLopGraphComponent::_on_legend_double_clicked(QCPLegend* legend,
+                                                      QCPAbstractLegendItem* item,
+                                                      QMouseEvent* event)
+{
+    Q_UNUSED(legend);
+    Q_UNUSED(event);
+    bool mine = false;
+    if (m_componentIndex >= 0)
+    {
+        // selectedComponent() is already set by the time legendDoubleClick fires:
+        // Qt delivers the press/release selection event before the double-click event.
+        if (auto* gi = dynamic_cast<QCPGroupLegendItem*>(item);
+            gi != nullptr && gi->multiGraph() == qobject_cast<QCPMultiGraph*>(m_plottable.data())
+            && gi->selectedComponent() == m_componentIndex)
+            mine = true;
+    }
+    else if (auto* li = dynamic_cast<QCPPlottableLegendItem*>(item);
+             li != nullptr && li == _legend_item())
+    {
+        mine = true;
+    }
+    if (mine)
+        set_visible(!visible());
+}
+
+void SciQLopGraphComponent::_apply_legend_visibility_style(bool visible)
+{
+    // Only single-plottable components have a per-entry legend item to dim;
+    // multi-component group items have no per-row text colour (matches prior
+    // behaviour — the curve simply disappears).
+    if (auto* li = _legend_item(); li != nullptr)
+    {
+        const QColor c = visible ? Qt::black : Qt::gray;
+        li->setTextColor(c);
+        li->setSelectedTextColor(c);
+    }
 }
