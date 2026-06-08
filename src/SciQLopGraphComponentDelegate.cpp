@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp"
 
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 
@@ -39,6 +40,17 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
                                                              QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
+    auto* visibleCheck = new BooleanDelegate("Visible", object->visible(), this);
+    m_layout->addRow(visibleCheck);
+    connect(visibleCheck, &BooleanDelegate::value_changed, object,
+            &SciQLopGraphComponentInterface::set_visible);
+    connect(object, &SciQLopGraphComponentInterface::visible_changed, visibleCheck,
+            [visibleCheck](bool v)
+            {
+                QSignalBlocker blocker(visibleCheck);
+                visibleCheck->set_value(v);
+            });
+
     m_lineDelegate = new LineDelegate(object->pen(), object->line_style(),
                                       object->marker_shape(), this);
     m_layout->addWidget(m_lineDelegate);
