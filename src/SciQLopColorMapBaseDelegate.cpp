@@ -21,10 +21,12 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp"
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QSignalBlocker>
 
 SciQLopColorMapBase* SciQLopColorMapBaseDelegate::color_map_base() const
 {
@@ -35,11 +37,17 @@ SciQLopColorMapBaseDelegate::SciQLopColorMapBaseDelegate(SciQLopColorMapBase* ob
                                                          QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
-    Q_UNUSED(object);
-    // Color-scale controls live on the "Color Scale" (z) axis node:
-    //   - Gradient (moved in PR #67)
-    //   - Autoscale percentile (moved in PR #69)
-    // The colormap node only carries product-specific knobs added by
-    // derived delegates (Contours on SciQLopColorMap, Binning/normalization
-    // on SciQLopHistogram2DDelegate).
+    auto* visibleCheck = new BooleanDelegate("Visible", object->visible(), this);
+    m_layout->addRow(visibleCheck);
+    connect(visibleCheck, &BooleanDelegate::value_changed, object,
+            &SciQLopPlottableInterface::set_visible);
+    connect(object, &SciQLopPlottableInterface::visible_changed, visibleCheck,
+            [visibleCheck](bool v)
+            {
+                QSignalBlocker blocker(visibleCheck);
+                visibleCheck->set_value(v);
+            });
+    // Color-scale controls (gradient, autoscale percentile) live on the
+    // "Color Scale" (z) axis node. Product-specific knobs are added by derived
+    // delegates (Contours, Binning/normalization).
 }
