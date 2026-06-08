@@ -26,6 +26,8 @@
 #include <optional>
 #include <qcustomplot.h>
 
+class QMouseEvent;
+
 class SciQLopColorMapBase : public SciQLopColorMapInterface
 {
     Q_OBJECT
@@ -53,6 +55,9 @@ protected:
     }
 
     virtual QCPAbstractPlottable* plottable() const = 0;
+
+    void _connect_legend_visibility();
+    void _apply_legend_visibility_style(bool visible);
 
 public:
     SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
@@ -175,4 +180,8 @@ protected:
     // Installs z_rescale_range as the color-scale axis rescale provider.
     void install_rescale_provider() noexcept;
 #endif
+
+private Q_SLOTS:
+    void _on_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item,
+                                   QMouseEvent* event);
 };

@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
+#include <QMouseEvent>
+#include <layoutelements/layoutelement-legend.h>
 #include <algorithm>
 #include <cmath>
 
@@ -32,6 +34,7 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
     , _valueAxis{valueAxis}
     , _colorScaleAxis{colorScaleAxis}
 {
+    _connect_legend_visibility();
 }
 
 SciQLopColorMapBase::~SciQLopColorMapBase()
@@ -41,6 +44,36 @@ SciQLopColorMapBase::~SciQLopColorMapBase()
     // destroyed thanks to QPointer.
     if (_colorScaleAxis)
         _colorScaleAxis->set_rescale_range_provider(nullptr);
+}
+
+void SciQLopColorMapBase::_connect_legend_visibility()
+{
+    if (auto* plot = _plot())
+        connect(plot, &QCustomPlot::legendDoubleClick, this,
+                &SciQLopColorMapBase::_on_legend_double_clicked);
+    connect(this, &SciQLopPlottableInterface::visible_changed, this,
+            &SciQLopColorMapBase::_apply_legend_visibility_style);
+}
+
+void SciQLopColorMapBase::_on_legend_double_clicked(QCPLegend* legend,
+                                                    QCPAbstractLegendItem* item,
+                                                    QMouseEvent* event)
+{
+    Q_UNUSED(legend);
+    Q_UNUSED(event);
+    if (auto* li = dynamic_cast<QCPPlottableLegendItem*>(item);
+        li != nullptr && li == _legend_item())
+        set_visible(!visible());
+}
+
+void SciQLopColorMapBase::_apply_legend_visibility_style(bool visible)
+{
+    if (auto* li = _legend_item(); li != nullptr)
+    {
+        const QColor c = visible ? Qt::black : Qt::gray;
+        li->setTextColor(c);
+        li->setSelectedTextColor(c);
+    }
 }
 
 void SciQLopColorMapBase::set_selected(bool selected) noexcept
