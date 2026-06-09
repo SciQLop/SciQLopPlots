@@ -312,7 +312,12 @@ void SciQLopGraphComponent::_apply_legend_visibility_style(bool visible)
     // behaviour — the curve simply disappears).
     if (auto* li = _legend_item(); li != nullptr)
     {
-        const QColor c = visible ? Qt::black : Qt::gray;
+        // Restore the legend's themed text colour when visible; dim via alpha
+        // when hidden so it reads correctly on both light and dark themes
+        // (never hard-code black/gray — black is invisible on a dark legend).
+        QColor c = li->parentLegend() ? li->parentLegend()->textColor() : li->textColor();
+        if (!visible)
+            c.setAlpha(90);
         li->setTextColor(c);
         li->setSelectedTextColor(c);
     }
