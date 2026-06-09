@@ -43,15 +43,12 @@ class ProductsView : public QWidget
     QListView* m_list_view;
     QStackedWidget* m_stack;
     QToolButton* m_view_toggle;
-    QToolButton* m_help_button;
-    QTextBrowser* m_help_popup;
     QLabel* m_result_count;
     ProductsTreeFilterModel* m_tree_filter;
     ProductsFlatFilterModel* m_flat_filter;
     QTimer* m_completion_refresh_timer;
 
     Q_SLOT void on_query_changed(const Query& query);
-    Q_SLOT void show_help_popup();
     void toggle_view();
     void update_result_count();
     void refresh_completions();
