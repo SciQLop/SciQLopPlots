@@ -50,18 +50,23 @@ SciQLopCrosshair::SciQLopCrosshair(QCustomPlot* plot)
     m_vline = new QCPItemStraightLine(plot);
     m_vline->setLayer("overlay");
     m_vline->setSelectable(false);
+    // Decorative overlay following the cursor: keep it from stealing clicks
+    // (e.g. a legend double-click) from the elements beneath it.
+    m_vline->setMouseTransparent(true);
     m_vline->setPen(QPen(QColor(128, 128, 128, 180), 1, Qt::DashLine));
     m_vline->setVisible(false);
 
     m_hline = new QCPItemStraightLine(plot);
     m_hline->setLayer("overlay");
     m_hline->setSelectable(false);
+    m_hline->setMouseTransparent(true);
     m_hline->setPen(QPen(QColor(128, 128, 128, 180), 1, Qt::DashLine));
     m_hline->setVisible(false);
 
     m_tooltip = new QCPItemRichText(plot);
     m_tooltip->setLayer("overlay");
     m_tooltip->setSelectable(false);
+    m_tooltip->setMouseTransparent(true);
     m_tooltip->setClipToAxisRect(false);
     m_tooltip->setPadding(QMargins(6, 4, 6, 4));
     m_tooltip->setBrush(QBrush(QColor(0xee, 0xf2, 0xf7, 220)));
