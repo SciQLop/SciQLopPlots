@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<typesystem package="SciQLopPlotsBindings">
+<!-- exception-handling="auto-on": translate C++ exceptions to Python on every
+     wrapped call — a C++ throw unwinding through CPython frames is UB/abort.
+     Per-function opt-ins kept missing classes (line/curve set_data crashed). -->
+<typesystem package="SciQLopPlotsBindings" exception-handling="auto-on">
     <system-include file-name="memory"/>
     <rejection class="std" function-name="^[a-z_]+$"/>
     <system-include file-name="shared_ptr.h"/>

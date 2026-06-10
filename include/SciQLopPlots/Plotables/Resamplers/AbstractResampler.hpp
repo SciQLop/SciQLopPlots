@@ -22,6 +22,7 @@
 #pragma once
 #include <QMutex>
 #include <QObject>
+#include <atomic>
 #include <QRecursiveMutex>
 #include <QVector>
 #include <SciQLopPlots/Profiling.hpp>
@@ -221,7 +222,9 @@ private:
 
 protected:
     Q_OBJECT
-    std::size_t _line_cnt;
+    // Written from the GUI thread (set_line_count), read from the resampler
+    // worker thread (_resample_impl) — atomic, not mutex-protected state.
+    std::atomic<std::size_t> _line_cnt;
 
     Q_SLOT void _async_resample();
 

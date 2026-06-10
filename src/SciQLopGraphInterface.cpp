@@ -24,6 +24,8 @@
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 
+#include <QDebug>
+
 SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObject* parent)
     : QObject(parent)
     , m_metaData { std::move(metaData) }
@@ -100,21 +102,39 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
         : m_pipeline { new SimplePyCallablePipeline(std::move(callable), as_graph) }
         , as_graph { as_graph }
 {
+    // Provider data arrives through a queued connection: a set_data throw here
+    // would escape QObject::event and std::terminate the process. Bad batches
+    // (wrong dtype, mismatched shapes) are dropped with a warning instead —
+    // only direct Python calls to set_data surface the exception.
+    const auto drop_bad_batch = [](SciQLopPlottableInterface* graph, auto&&... buffers)
+    {
+        try
+        {
+            graph->set_data(std::forward<decltype(buffers)>(buffers)...);
+        }
+        catch (const std::exception& e)
+        {
+            qWarning() << "SciQLopPlots: dropping data batch from provider for"
+                       << graph->objectName() << ":" << e.what();
+        }
+    };
     switch (N)
     {
         case 2:
             QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this->as_graph,
-                             QOverload<SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::set_data));
+                             [g = this->as_graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y)
+                             { drop_bad_batch(g, std::move(x), std::move(y)); });
             break;
         case 3:
-            QObject::connect(
-                m_pipeline, &SimplePyCallablePipeline::new_data_3d, this->as_graph,
-                QOverload<SciQLopPyBuffer, SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::set_data));
+            QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this->as_graph,
+                             [g = this->as_graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y,
+                                                                  SciQLopPyBuffer z)
+                             { drop_bad_batch(g, std::move(x), std::move(y), std::move(z)); });
             break;
         default:
-            QObject::connect(
-                m_pipeline, &SimplePyCallablePipeline::new_data_nd, this->as_graph,
-                QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopGraphInterface::set_data));
+            QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_nd, this->as_graph,
+                             [g = this->as_graph, drop_bad_batch](const QList<SciQLopPyBuffer>& values)
+                             { drop_bad_batch(g, values); });
             break;
     }
     m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,
