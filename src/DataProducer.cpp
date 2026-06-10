@@ -233,6 +233,7 @@ void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
 }
 
 SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable, QObject* parent)
+        : QObject(parent)
 {
     m_callable_wrapper = new SimplePyCallablePWrapper(std::move(callable), this);
     m_worker = new DataProviderWorker(this);
