@@ -1,6 +1,7 @@
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
 #include <cmath>
@@ -127,6 +128,9 @@ void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 
     if (x.format_code() != 'd')
         throw std::runtime_error("Keys (x) must be float64");
+    // Length/ndim/dtype guard: y spans are built with x's length below, so a
+    // shorter y would be read out of bounds at render time.
+    sqp::validation::validate_xy(x, y);
 
     _x = x;
     _y = y;

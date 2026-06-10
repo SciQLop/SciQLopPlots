@@ -24,6 +24,7 @@
 #include "SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp"
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 #include <cmath>
 
 void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
@@ -116,6 +117,16 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     };
     require_numeric(x, "x");
     require_numeric(y, "y");
+    if (x.is_valid() && y.is_valid())
+    {
+        sqp::validation::validate_xy(x, y);
+        // The resampler reads one y column per curve component; fewer values
+        // than components * len(x) would be read out of bounds on the worker.
+        const auto components = plottable_count();
+        if (components > 0 && y.flat_size() != x.flat_size() * components)
+            throw std::invalid_argument(
+                "y must hold exactly one column per curve component");
+    }
     set_busy(true);
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);

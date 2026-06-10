@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include <datasource/soa-datasource.h>
 #include <colorgradient.h>
@@ -79,6 +80,11 @@ void SciQLopSingleLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 
     if (x.format_code() != 'd')
         throw std::runtime_error("Keys (x) must be float64");
+    // The y span below is built with x's length: a shorter y would be read out
+    // of bounds at render time. y may be 1D or a single (n, 1) column.
+    sqp::validation::validate_xy(x, y);
+    if (y.flat_size() != x.flat_size())
+        throw std::invalid_argument("y must hold exactly one value per x sample");
 
     const auto* keys = static_cast<const double*>(x.raw_data());
     const int n = static_cast<int>(x.flat_size());
