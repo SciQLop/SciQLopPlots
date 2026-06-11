@@ -75,6 +75,14 @@ ProductsView::ProductsView(QWidget* parent) : QWidget(parent)
     m_stack->addWidget(m_tree_view);
 
     m_flat_filter = new ProductsFlatFilterModel(ProductsModel::instance(), this);
+    // Matching is deferred to zero-interval timer batches: the count is only
+    // known as rows stream in, never synchronously after set_query.
+    connect(m_flat_filter, &QAbstractItemModel::rowsInserted, this,
+            &ProductsView::update_result_count);
+    connect(m_flat_filter, &QAbstractItemModel::rowsRemoved, this,
+            &ProductsView::update_result_count);
+    connect(m_flat_filter, &QAbstractItemModel::modelReset, this,
+            &ProductsView::update_result_count);
 
     m_list_view = new QListView(this);
     m_list_view->setModel(m_flat_filter);

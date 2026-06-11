@@ -77,6 +77,15 @@ public:
 
     inline int child_row(ProductsModelNode* child) { return m_children.indexOf(child); }
 
+    inline ProductsModelNode* take_child(int row)
+    {
+        if (row < 0 || row >= m_children.size())
+            return nullptr;
+        auto* child = m_children.takeAt(row);
+        child->setParent(nullptr);
+        return child;
+    }
+
     inline int children_count() { return m_children.size(); }
 
     inline QList<ProductsModelNode*> children_nodes() { return m_children; }

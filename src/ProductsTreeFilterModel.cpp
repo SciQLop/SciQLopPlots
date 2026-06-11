@@ -14,8 +14,10 @@ ProductsTreeFilterModel::ProductsTreeFilterModel(QObject* parent)
 
 void ProductsTreeFilterModel::set_query(const Query& query)
 {
-    m_query = query;
+    // Contract: beginFilterChange() snapshots the old mapping and must run
+    // BEFORE the filter parameter changes (Qt 6.11 docs).
     beginFilterChange();
+    m_query = query;
     endFilterChange();
 }
 

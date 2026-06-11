@@ -163,10 +163,33 @@ void ProductsFlatFilterModel::process_batch()
     {
         m_batch_timer->stop();
 
-        // Sort by score descending — emit layoutChanged so views update order
+        // Sort by score descending — emit layoutChanged so views update order.
+        // The layout-change contract requires remapping persistent indexes
+        // (selections taken while batches streamed) or they silently retarget
+        // to whatever lands on their old row after the sort.
         emit layoutAboutToBeChanged();
+        const QModelIndexList old_indexes = persistentIndexList();
+        QList<ProductsModelNode*> old_nodes;
+        old_nodes.reserve(old_indexes.size());
+        for (const auto& idx : old_indexes)
+            old_nodes.append(m_results[idx.row()].node);
+
         std::sort(m_results.begin(), m_results.end(),
                   [](const ScoredNode& a, const ScoredNode& b) { return a.score > b.score; });
+
+        if (!old_indexes.isEmpty())
+        {
+            QHash<ProductsModelNode*, int> new_rows;
+            new_rows.reserve(m_results.size());
+            for (int row = 0; row < m_results.size(); ++row)
+                new_rows.insert(m_results[row].node, row);
+            QModelIndexList new_indexes;
+            new_indexes.reserve(old_indexes.size());
+            for (qsizetype i = 0; i < old_indexes.size(); ++i)
+                new_indexes.append(
+                    index(new_rows.value(old_nodes[i], -1), old_indexes[i].column()));
+            changePersistentIndexList(old_indexes, new_indexes);
+        }
         emit layoutChanged();
     }
 }

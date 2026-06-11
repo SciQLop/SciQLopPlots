@@ -61,10 +61,11 @@ ProductsModelNode::ProductsModelNode(const QString& name, const QString& provide
     }
 }
 
+// No silent same-name replacement here: structural changes on a node that is
+// already in the ProductsModel must be announced through the model
+// (begin/endRemoveRows) — _insert_node handles the re-publish case.
 void ProductsModelNode::add_child(ProductsModelNode* child)
 {
-    m_children.removeIf(
-        [&child](ProductsModelNode* node) { return node->name() == child->name(); });
     m_children.append(child);
     child->setParent(this);
 }
