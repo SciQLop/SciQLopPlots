@@ -48,6 +48,17 @@ void ProductsModel::_add_to_completer(ProductsModelNode* node)
 
 void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* parent)
 {
+    // Re-publishing a same-named product replaces the old node. The removal
+    // must be announced (begin/endRemoveRows) — a silent swap leaves views and
+    // proxies believing one more row exists than the node holds.
+    if (auto* existing = parent->child(node->name()); existing)
+    {
+        const int row = parent->child_row(existing);
+        beginRemoveRows(make_index(parent), row, row);
+        parent->take_child(row);
+        endRemoveRows();
+        delete existing;
+    }
     beginInsertRows(make_index(parent), parent->children_count(), parent->children_count());
     parent->add_child(node);
     _add_to_completer(node);
