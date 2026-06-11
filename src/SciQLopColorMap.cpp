@@ -193,8 +193,16 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
 
     const auto* x_ptr = static_cast<const double*>(xb.raw_data());
 
+    // x (time) is sorted: bound the row scan to the visible window and size
+    // the gather for it — reserving the whole z plane allocated hundreds of
+    // MB on large spectrograms zoomed far in.
+    const std::size_t row0 = std::lower_bound(x_ptr, x_ptr + nx, x_lo) - x_ptr;
+    const std::size_t row1 = std::upper_bound(x_ptr + row0, x_ptr + nx, x_hi) - x_ptr;
+    if (row0 >= row1)
+        return SciQLopPlotRange();
+
     std::vector<double> values;
-    values.reserve(nz);
+    values.reserve((row1 - row0) * y_per_row);
     // noexcept gather: dispatch_dtype throws std::invalid_argument on
     // unsupported codes. _dataHolder is only assigned after set_data's own
     // dispatch succeeds, so reaching here with an unknown dtype is
@@ -212,11 +220,8 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
                                               using Z = typename decltype(z_tag)::type;
                                               const auto* y_ptr = static_cast<const Y*>(yb.raw_data());
                                               const auto* z_ptr = static_cast<const Z*>(zb.raw_data());
-                                              for (std::size_t i = 0; i < nx; ++i)
+                                              for (std::size_t i = row0; i < row1; ++i)
                                               {
-                                                  const double xi = x_ptr[i];
-                                                  if (xi < x_lo || xi > x_hi)
-                                                      continue;
                                                   for (std::size_t j = 0; j < y_per_row; ++j)
                                                   {
                                                       const std::size_t idx = i * y_per_row + j;

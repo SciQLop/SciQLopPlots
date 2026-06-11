@@ -26,6 +26,7 @@
 #include "SciQLopPlots/qcp_enums.hpp"
 #include <datasource/soa-datasource.h>
 #include <colorgradient.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -182,17 +183,21 @@ void SciQLopSingleLineGraph::collect_visible_values(const SciQLopPlotRange& visi
     const double x_hi = visible_key_range.second;
     const double* xs = x.data();
 
-    out.reserve(out.size() + n);
+    // x is sorted (NeoQCP source contract): bound the scan to the visible
+    // window instead of testing every sample and over-reserving.
+    const std::size_t i0 = std::lower_bound(xs, xs + n, x_lo) - xs;
+    const std::size_t i1 = std::upper_bound(xs + i0, xs + n, x_hi) - xs;
+    if (i0 >= i1)
+        return;
+
+    out.reserve(out.size() + (i1 - i0));
     try
     {
         dispatch_dtype(y.format_code(), [&](auto tag) {
             using V = typename decltype(tag)::type;
             const auto* ys = static_cast<const V*>(y.raw_data());
-            for (std::size_t i = 0; i < n; ++i)
+            for (std::size_t i = i0; i < i1; ++i)
             {
-                const double xv = xs[i];
-                if (xv < x_lo || xv > x_hi)
-                    continue;
                 const double v = static_cast<double>(ys[i]);
                 if constexpr (std::is_floating_point_v<V>)
                 {

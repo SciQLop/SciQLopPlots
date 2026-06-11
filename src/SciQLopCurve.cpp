@@ -156,7 +156,9 @@ void SciQLopCurve::collect_visible_values(const SciQLopPlotRange& visible_key_ra
     const double x_lo = visible_key_range.first;
     const double x_hi = visible_key_range.second;
 
-    out.reserve(out.size() + n);
+    // Parametric x is unsorted — the scan stays, but no full-dataset reserve:
+    // amortized push_back growth beats a guaranteed n-sized allocation when
+    // only a fraction of the trajectory is visible.
     try
     {
         dispatch_dtype(x.format_code(), [&](auto x_tag) {

@@ -4,6 +4,7 @@
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
+#include <algorithm>
 #include <cmath>
 #include <datasource/row-major-multi-datasource.h>
 #include <datasource/soa-multi-datasource.h>
@@ -166,17 +167,22 @@ void SciQLopMultiGraphBase::collect_visible_values(const SciQLopPlotRange& visib
     const std::size_t k = (_y.ndim() == 1) ? 1 : _y.shape()[1];
     const bool row_major = (_y.ndim() == 1) || _y.row_major();
 
-    out.reserve(out.size() + n * k);
+    // x is sorted (the NeoQCP data sources binary-search the same keys):
+    // bound the scan to the visible window and reserve only what it can hold —
+    // a full-dataset reserve allocated hundreds of MB when zoomed far in.
+    const std::size_t i0 = std::lower_bound(xs, xs + n, x_lo) - xs;
+    const std::size_t i1 = std::upper_bound(xs + i0, xs + n, x_hi) - xs;
+    if (i0 >= i1)
+        return;
+
+    out.reserve(out.size() + (i1 - i0) * k);
     try
     {
         dispatch_dtype(_y.format_code(), [&](auto tag) {
             using V = typename decltype(tag)::type;
             const auto* ys = static_cast<const V*>(_y.raw_data());
-            for (std::size_t i = 0; i < n; ++i)
+            for (std::size_t i = i0; i < i1; ++i)
             {
-                const double x = xs[i];
-                if (x < x_lo || x > x_hi)
-                    continue;
                 for (std::size_t j = 0; j < k; ++j)
                 {
                     const double v = static_cast<double>(
