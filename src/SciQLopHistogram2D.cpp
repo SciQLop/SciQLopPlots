@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include <magic_enum/magic_enum.hpp>
+#include <stdexcept>
 #include "SciQLopPlots/PercentileMath.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <algorithm>
@@ -143,6 +145,10 @@ QList<SciQLopPyBuffer> SciQLopHistogram2D::data() const noexcept
 
 void SciQLopHistogram2D::set_bins(int x_bins, int y_bins)
 {
+    // NeoQCP's setBins silently ignores non-positive values — surface the
+    // mistake instead of dropping the user's requested binning.
+    if (x_bins <= 0 || y_bins <= 0)
+        throw std::invalid_argument("histogram bins must be positive");
     if (_hist)
     {
         if (_hist->keyBins() == x_bins && _hist->valueBins() == y_bins)
@@ -164,6 +170,8 @@ int SciQLopHistogram2D::y_bins() const
 
 void SciQLopHistogram2D::set_normalization(int normalization)
 {
+    if (!magic_enum::enum_contains<QCPHistogram2D::Normalization>(normalization))
+        throw std::invalid_argument("invalid histogram normalization value");
     if (_hist)
     {
         if (static_cast<int>(_hist->normalization()) == normalization)

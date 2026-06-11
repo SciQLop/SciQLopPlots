@@ -1,4 +1,5 @@
 #include "SciQLopPlots/Tracing.hpp"
+#include <QDebug>
 
 #include <atomic>
 #include <chrono>
@@ -132,7 +133,11 @@ namespace
                 disable_locked();
             out_.open(path, std::ios::binary | std::ios::trunc);
             if (!out_.is_open())
+            {
+                qWarning("SciQLopPlots tracing: cannot open trace file '%s' — tracing stays disabled",
+                         path.c_str());
                 return;
+            }
             out_ << "{\"displayTimeUnit\":\"ns\",\"traceEvents\":[\n";
             first_event_ = true;
             origin_ns_ = now_ns();
