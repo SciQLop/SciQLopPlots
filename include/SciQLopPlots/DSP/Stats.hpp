@@ -54,8 +54,11 @@ namespace detail
         double mean = 0.0, m2 = 0.0;
         std::size_t count = 0;
 
-        T lo = data[col];
-        T hi = data[col];
+        // Seeded from the first NON-NaN sample: a NaN seed never loses a
+        // comparison, so min/max would stay NaN even with valid data after it
+        // (instrument data routinely starts with fill values).
+        T lo {};
+        T hi {};
 
         for (std::size_t i = 0; i < n_rows; ++i)
         {
@@ -73,10 +76,18 @@ namespace detail
             const double delta2 = d - mean;
             m2 += delta * delta2;
 
-            if (val < lo)
+            if (count == 1)
+            {
                 lo = val;
-            if (val > hi)
                 hi = val;
+            }
+            else
+            {
+                if (val < lo)
+                    lo = val;
+                if (val > hi)
+                    hi = val;
+            }
         }
 
         s.mean = mean;

@@ -20,30 +20,26 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <iostream>
+#include <QDebug>
+#include <typeinfo>
 
-#ifdef DEBUG
+// These guard "silently empty plot" failures (wrong set_data overload, wrong
+// callable arity, invalid buffer list): all cold paths, so they warn in every
+// build — compiled-out diagnostics left users with no way to see why nothing
+// was drawn in release.
 
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \
-        std::cout << "Abstract method called:" << __PRETTY_FUNCTION__ << std::endl;                \
-        std::cout << "From concrete class:" << typeid(*this).name() << std::endl;                  \
+        qWarning() << "Abstract method called:" << __PRETTY_FUNCTION__                             \
+                   << "from concrete class:" << typeid(*this).name();                              \
     }
 
 #define DEBUG_MESSAGE(message)                                                                     \
     {                                                                                              \
-        std::cout << message << std::endl;                                                         \
+        qWarning() << message;                                                                     \
     }
 
 #define WARN_UNSUPPORTED_FUNCTIONALITY                                                             \
     {                                                                                              \
-        std::cout << "Unsupported functionality:" << __PRETTY_FUNCTION__ << std::endl;             \
+        qWarning() << "Unsupported functionality:" << __PRETTY_FUNCTION__;                         \
     }
-
-#else
-
-#define WARN_ABSTRACT_METHOD
-#define DEBUG_MESSAGE(message)
-#define WARN_UNSUPPORTED_FUNCTIONALITY
-
-#endif

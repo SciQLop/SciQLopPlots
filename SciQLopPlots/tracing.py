@@ -21,8 +21,11 @@ from typing import Any, Optional
 from . import SciQLopPlotsBindings as _b
 
 
-def enable(path: str) -> None:
+def enable(path: str) -> bool:
+    """Start tracing into ``path``. Returns False (with a C++-side warning)
+    if the file cannot be opened."""
     _b.tracing_enable(path)
+    return _b.tracing_is_enabled()
 
 
 def disable() -> None:
