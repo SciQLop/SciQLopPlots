@@ -17,6 +17,7 @@ subprocess so a deadlock fails the test instead of hanging the suite.
 import os
 import subprocess
 import sys
+import tempfile
 import textwrap
 import weakref
 
@@ -149,12 +150,15 @@ _DEADLOCK_SCRIPT_DELETELATER = _SLOW_PROVIDER_PREAMBLE + textwrap.dedent(
 
 
 def _run_teardown_script(script):
+    # Neutral cwd: `python -c` prepends the cwd to sys.path, and from the repo
+    # root the source package shadows the installed SciQLopPlots.
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=dict(os.environ),
         capture_output=True,
         text=True,
         timeout=30,
+        cwd=tempfile.gettempdir(),
     )
     assert result.returncode == 0, (
         f"teardown subprocess failed (rc={result.returncode})\n"
