@@ -30,7 +30,7 @@
 
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \
-        qWarning() << "Abstract method called:" << __PRETTY_FUNCTION__                             \
+        qWarning() << "Abstract method called:" << Q_FUNC_INFO                                     \
                    << "from concrete class:" << typeid(*this).name();                              \
     }
 
@@ -41,5 +41,5 @@
 
 #define WARN_UNSUPPORTED_FUNCTIONALITY                                                             \
     {                                                                                              \
-        qWarning() << "Unsupported functionality:" << __PRETTY_FUNCTION__;                         \
+        qWarning() << "Unsupported functionality:" << Q_FUNC_INFO;                                 \
     }
