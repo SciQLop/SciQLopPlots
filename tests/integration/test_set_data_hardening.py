@@ -17,6 +17,7 @@ C7: no x/y length validation: y spans were built with x's length, so
 import os
 import subprocess
 import sys
+import tempfile
 import textwrap
 
 import numpy as np
@@ -26,12 +27,15 @@ from SciQLopPlots import GraphType
 
 
 def _run_script(script, timeout=30):
+    # Neutral cwd: `python -c` prepends the cwd to sys.path, and from the repo
+    # root the source package shadows the installed SciQLopPlots.
     return subprocess.run(
         [sys.executable, "-c", script],
         env=dict(os.environ),
         capture_output=True,
         text=True,
         timeout=timeout,
+        cwd=tempfile.gettempdir(),
     )
 
 
