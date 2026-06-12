@@ -53,6 +53,8 @@ void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* par
     // proxies believing one more row exists than the node holds.
     if (auto* existing = parent->child(node->name()); existing)
     {
+        if (existing == node)
+            return; // already in place — deleting it here would insert a dangling pointer
         const int row = parent->child_row(existing);
         beginRemoveRows(make_index(parent), row, row);
         parent->take_child(row);
