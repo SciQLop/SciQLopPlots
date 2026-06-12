@@ -89,6 +89,19 @@ class TestRepublishRowAccounting:
             model.rowsInserted.disconnect(on_inserted)
             model.rowsRemoved.disconnect(on_removed)
 
+    def test_readding_same_node_object_is_idempotent(self, qtbot):
+        """_insert_node treated the node being inserted as a same-named
+        duplicate of itself: it deleted `existing` (== the node) and then
+        inserted the freed pointer — use-after-free on re-add."""
+        model = ProductsModel.instance()
+        name = f"same_obj_{uuid.uuid4().hex[:8]}"
+        node = ProductsModelNode(name)
+        n0 = model.rowCount()
+        model.add_node([], node)
+        model.add_node([], node)  # same object again: must be a no-op
+        assert model.rowCount() - n0 == 1
+        assert node.name() == name  # pre-fix: node was deleted out from under us
+
 
 class TestResultCountLabel:
     def test_result_count_label_reflects_async_results(self, qtbot):
