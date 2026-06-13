@@ -41,7 +41,7 @@ void SciQLopMultiGraphBase::clear_graphs(bool graph_already_removed)
     if (_multiGraph && !graph_already_removed)
     {
         auto plot = _multiGraph->parentPlot();
-        if (plot)
+        if (plot && plot->hasPlottable(_multiGraph))
             plot->removePlottable(_multiGraph);
     }
     _multiGraph = nullptr;
