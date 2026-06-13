@@ -45,8 +45,14 @@
                     }
                     catch (const std::runtime_error&amp; e)
                     {
-                        qWarning() &lt;&lt; "[SciQLopPyBuffer ctor] rejected buffer:" &lt;&lt; e.what();
+                        // Throwing here would escape the conversion (which runs
+                        // before the call's try/catch) and std::terminate. Set a
+                        // Python error instead: shiboken checks Errors::occurred()
+                        // after conversion and aborts the call, raising in Python.
+                        // A non-numeric array used to be swallowed to an empty
+                        // buffer and silently no-op'd at set_data.
                         %out = %OUTTYPE();
+                        PyErr_SetString(PyExc_TypeError, e.what());
                     }
                 </add-conversion>
             </target-to-native>

@@ -62,7 +62,7 @@ SciQLopColorMap::~SciQLopColorMap()
         auto* plot = _plot();
         auto* cmap = _cmap.data();
         _cmap = nullptr;
-        if (plot)
+        if (plot && plot->hasPlottable(cmap))
             (void)plot->removePlottable(cmap);
     }
 }

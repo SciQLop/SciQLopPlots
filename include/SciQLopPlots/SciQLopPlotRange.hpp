@@ -22,6 +22,8 @@
 #pragma once
 
 #include <chrono>
+#include <cmath>
+#include <stdexcept>
 #include <QDataStream>
 #include <QDateTime>
 #include <QTimeZone>
@@ -90,6 +92,15 @@ public:
             : QPair<double, double> { str_date_to_double(start), str_date_to_double(end) }
             , _is_time_range(true)
     {
+        // Unparsable strings must not silently become NaN bounds: a NaN range
+        // propagates through set_range/percentile guards as a hard-to-trace
+        // "nothing plots" state.
+        if (std::isnan(first))
+            throw std::invalid_argument("unparsable date string: "
+                                        + start.toStdString());
+        if (std::isnan(second))
+            throw std::invalid_argument("unparsable date string: "
+                                        + end.toStdString());
     }
 
     SciQLopPlotRange(double start, double stop, bool is_time_range = false)
@@ -111,11 +122,14 @@ public:
 
     std::string __repr__() const
     {
-        if (this->_is_time_range)
+        // Non-finite bounds can't go through from_time_t — (time_t)NaN is UB
+        // and lands on epoch 0, making the repr claim 1970 for a NaN range.
+        if (this->_is_time_range && std::isfinite(first) && std::isfinite(second))
             return fmt::format("SciQLopPlotTimeRange({:%Y-%m-%d %H:%M:%S}, {:%Y-%m-%d %H:%M:%S})",
                                epoch_to_std_time(first), epoch_to_std_time(second));
-        else
-            return fmt::format("SciQLopPlotRange({}, {})", first, second);
+        if (this->_is_time_range)
+            return fmt::format("SciQLopPlotTimeRange({}, {})", first, second);
+        return fmt::format("SciQLopPlotRange({}, {})", first, second);
     }
 
     inline double start() const { return first; }

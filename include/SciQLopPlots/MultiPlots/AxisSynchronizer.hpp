@@ -43,6 +43,9 @@ public:
 
     Q_SLOT virtual void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots) override;
     Q_SLOT virtual void plotAdded(SciQLopPlotInterface* plot) override;
+    // Axis (dis)connection happens in updatePlotList on plot_list_changed —
+    // nothing per-plot to undo here, but the base method warns when not overridden.
+    Q_SLOT virtual void plotRemoved(SciQLopPlotInterface* plot) override { Q_UNUSED(plot); }
     Q_SLOT virtual void panelAdded(SciQLopPlotPanelInterface* panel) override;
     Q_SLOT virtual void panelRemoved(SciQLopPlotPanelInterface* panel) override;
     Q_SLOT virtual void set_axis_range(const SciQLopPlotRange& range);

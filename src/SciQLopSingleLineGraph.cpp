@@ -53,7 +53,7 @@ void SciQLopSingleLineGraph::clear_graph(bool graph_already_removed)
     if (_graph && !graph_already_removed)
     {
         auto plot = _graph->parentPlot();
-        if (plot)
+        if (plot && plot->hasPlottable(_graph))
             plot->removePlottable(_graph);
     }
     _graph = nullptr;

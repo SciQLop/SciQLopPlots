@@ -85,7 +85,7 @@ SciQLopHistogram2D::~SciQLopHistogram2D()
         auto* plot = _plot();
         auto* hist = _hist.data();
         _hist = nullptr;
-        if (plot)
+        if (plot && plot->hasPlottable(hist))
             (void)plot->removePlottable(hist);
     }
 }
