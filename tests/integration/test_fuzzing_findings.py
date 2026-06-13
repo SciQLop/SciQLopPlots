@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from PySide6.QtCore import qInstallMessageHandler
 
-from SciQLopPlots import GraphType, SciQLopPlotRange
+from SciQLopPlots import GraphType, SciQLopHorizontalLine, SciQLopPlotRange
 
 
 @pytest.fixture
@@ -67,6 +67,25 @@ class TestGarbageDataRaises:
         x = _x()
         graph = plot.line(x, np.sin(x))
         graph.set_data(x, np.cos(x))  # no exception
+
+
+class TestOverloadErrorMessage:
+    """A wrong-argument call on a SciQLopPlotsBindings class must produce a
+    real TypeError listing the accepted overloads — not the NameError that
+    shiboken's signature formatter throws when it can't resolve the binding
+    module name in its eval namespace (report #2 / finding #1)."""
+
+    def test_wrong_args_raise_typeerror_not_nameerror(self):
+        with pytest.raises(TypeError):
+            SciQLopHorizontalLine("not a plot", 5.0)
+
+    def test_error_message_lists_supported_signatures(self):
+        try:
+            SciQLopHorizontalLine("not a plot", 5.0)
+        except TypeError as e:
+            assert "Supported signatures" in str(e), str(e)
+        except NameError as e:
+            pytest.fail(f"shiboken signature formatter raised NameError: {e}")
 
 
 class TestRangeStringParsing:

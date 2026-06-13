@@ -10,6 +10,47 @@ import sys
 
 sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
 
+
+def _register_with_shiboken_signatures():
+    """Make wrong-argument TypeErrors readable instead of a masking NameError.
+
+    Shiboken builds the "Supported signatures:" part of an argument-mismatch
+    TypeError by eval()-ing the parameter type strings (e.g.
+    ``SciQLopPlotsBindings.SciQLopPlot``) in shibokensupport.signature.mapping's
+    namespace. PySide6's own types are pre-registered there; ours are not, so
+    every overload mismatch raised ``NameError: name 'SciQLopPlotsBindings' is
+    not defined`` that masked the real TypeError.
+
+    Two registrations are needed:
+      * the binding module, so ``SciQLopPlotsBindings.<Type>`` resolves;
+      * our ``<primitive-type>`` declarations in the type map. These are not
+        wrapped classes, so without an entry they resolve to a bare ``str``
+        and shiboken's argument matcher hard-aborts the interpreter
+        (``the_type.__module__`` on a str). PyObject-backed buffer → object,
+        the data callable → Callable.
+
+    Finally, a global ``enum class`` default renders in the generated
+    signatures as ``.GraphMarkerShape.NoMarker`` (module prefix dropped → a
+    leading dot the parser can't eval). That only warns — once per signature,
+    and only while formatting an error — but it would bury the now-useful
+    message under a wall of RuntimeWarnings, so the specific warning is muted.
+    """
+    try:
+        from shibokensupport.signature import mapping
+    except (ImportError, AttributeError):
+        return  # cosmetic, best-effort: never break import over error formatting
+    import collections.abc
+    import warnings
+
+    mapping.namespace["SciQLopPlotsBindings"] = SciQLopPlotsBindings
+    mapping.type_map["SciQLopPyBuffer"] = object
+    mapping.type_map["GetDataPyCallable"] = collections.abc.Callable
+    warnings.filterwarnings(
+        "ignore", message="pyside_type_init", category=RuntimeWarning)
+
+
+_register_with_shiboken_signatures()
+
 from . import tracing  # noqa: E402,F401  -- runtime tracer facade
 
 __version__ = '0.27.1'
