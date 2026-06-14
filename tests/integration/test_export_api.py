@@ -170,3 +170,106 @@ class TestPanelScrolledContent:
         path = str(tmp_path / "scrolled.pdf")
         assert scrolled_panel.save_pdf(path) is True
         assert Path(path).stat().st_size > 0
+
+
+def _nonblank_fraction(png_path):
+    """Fraction of pixels that differ from the top-left (background) pixel."""
+    img = QImage(str(png_path))
+    assert not img.isNull()
+    bg = img.pixel(0, 0)
+    w, h = img.width(), img.height()
+    if w == 0 or h == 0:
+        return 0.0
+    differing = 0
+    total = 0
+    step = max(1, min(w, h) // 64)
+    for yy in range(0, h, step):
+        for xx in range(0, w, step):
+            total += 1
+            if img.pixel(xx, yy) != bg:
+                differing += 1
+    return differing / total if total else 0.0
+
+
+class TestNestedPanelExport:
+    """Nested sub-panels must appear in PDF/PNG export (backlog 2026-06-14)."""
+
+    @pytest.fixture
+    def nested_only(self, qtbot):
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(800, 600)
+        qtbot.addWidget(panel)
+        sub = SciQLopMultiPlotPanel()
+        panel.add_panel(sub)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        sub.plot(x, np.sin(x), labels=["nested"])
+        panel.show()
+        qtbot.waitExposed(panel)
+        qtbot.wait(200)
+        return panel
+
+    @pytest.fixture
+    def top_plus_nested(self, qtbot):
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(800, 600)
+        qtbot.addWidget(panel)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        panel.plot(x, np.cos(x), labels=["top"])
+        sub = SciQLopMultiPlotPanel()
+        panel.add_panel(sub)
+        sub.plot(x, np.sin(x), labels=["nested"])
+        panel.show()
+        qtbot.waitExposed(panel)
+        qtbot.wait(200)
+        return panel
+
+    def test_nested_only_pdf_succeeds(self, nested_only, tmp_path):
+        path = tmp_path / "nested.pdf"
+        assert nested_only.save_pdf(str(path)) is True
+        assert path.stat().st_size > 0
+
+    def test_nested_only_png_nonblank(self, nested_only, tmp_path):
+        path = tmp_path / "nested.png"
+        assert nested_only.save_png(str(path)) is True
+        assert _nonblank_fraction(path) > 0.02
+
+    def test_top_plus_nested_png_nonblank(self, top_plus_nested, tmp_path):
+        path = tmp_path / "mixed.png"
+        assert top_plus_nested.save_png(str(path)) is True
+        assert _nonblank_fraction(path) > 0.05
+
+    def test_top_plus_nested_pdf_has_nested(self, top_plus_nested, tmp_path):
+        nested_path = tmp_path / "mixed.pdf"
+        assert top_plus_nested.save_pdf(str(nested_path)) is True
+        single = SciQLopMultiPlotPanel()
+        single.resize(800, 600)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        single.plot(x, np.cos(x), labels=["top"])
+        single_path = tmp_path / "single.pdf"
+        assert single.save_pdf(str(single_path)) is True
+        assert nested_path.stat().st_size > single_path.stat().st_size
+
+
+class TestPlainWidgetExport:
+    """A non-plot QWidget child renders via the QWidget::render fallback.
+
+    This is the matplotlib-canvas path: a plain QWidget added via the public
+    addWidget(QWidget*) exports for free once the walker is in place.
+    """
+
+    def test_label_region_rendered(self, qtbot, tmp_path):
+        from PySide6.QtWidgets import QLabel
+        from PySide6.QtCore import Qt
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(400, 300)
+        qtbot.addWidget(panel)
+        label = QLabel("EXPORT_ME")
+        label.setStyleSheet("background:#ff0000;")
+        label.setAlignment(Qt.AlignCenter)
+        panel.addWidget(label)
+        panel.show()
+        qtbot.waitExposed(panel)
+        qtbot.wait(200)
+        path = tmp_path / "label.png"
+        assert panel.save_png(str(path)) is True
+        assert _nonblank_fraction(path) > 0.02
