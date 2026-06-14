@@ -23,11 +23,14 @@
 #include <QSplitter>
 
 #include "SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/Export/SciQLopExportable.hpp"
 
 class SciQLopPlotInterface;
 class SciQLopPlotPanelInterface;
 
-class SciQLopPlotContainer : public QSplitter, public SciQLopPlotCollectionInterface
+class SciQLopPlotContainer : public QSplitter,
+                             public SciQLopPlotCollectionInterface,
+                             public SciQLopExportable
 {
     Q_OBJECT
 
@@ -137,6 +140,9 @@ public:
     }
 
     virtual QList<QWidget*> child_widgets() const Q_DECL_OVERRIDE;
+
+    void export_paint(QPainter* painter, const QRect& target,
+                      SciQLopExportTarget kind) override;
 
     inline virtual bool contains(SciQLopPlotInterface* plot) const Q_DECL_OVERRIDE
     {
