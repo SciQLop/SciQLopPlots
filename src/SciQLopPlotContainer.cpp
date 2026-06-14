@@ -142,6 +142,29 @@ QList<QWidget*> SciQLopPlotContainer::child_widgets() const
     return widgets;
 }
 
+void SciQLopPlotContainer::export_paint(QPainter* painter, const QRect& target,
+                                        SciQLopExportTarget kind)
+{
+    const int cw = width();
+    const int ch = height();
+    if (cw <= 0 || ch <= 0 || target.isEmpty())
+        return;
+
+    const double sx = static_cast<double>(target.width()) / cw;
+    const double sy = static_cast<double>(target.height()) / ch;
+
+    for (auto* child : child_widgets())
+    {
+        if (!child || !child->isVisible())
+            continue;
+        const QRect g = child->geometry();
+        const QRect child_target(target.x() + qRound(g.x() * sx),
+                                 target.y() + qRound(g.y() * sy),
+                                 qRound(g.width() * sx), qRound(g.height() * sy));
+        export_widget(child, painter, child_target, kind);
+    }
+}
+
 std::size_t SciQLopPlotContainer::content_height() const
 {
     return this->height()
