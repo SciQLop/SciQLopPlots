@@ -1045,3 +1045,19 @@ void SciQLopPlot::_enforce_equal_aspect()
     m_impl->yAxis->setScaleRatio(m_impl->xAxis, 1.0);
     m_impl->replot(QCustomPlot::rpQueuedReplot);
 }
+
+void SciQLopPlot::export_paint(QPainter* painter, const QRect& target,
+                               SciQLopExportTarget kind)
+{
+    auto* qcp = qcp_plot();
+    if (!qcp || target.isEmpty())
+        return;
+
+    painter->save();
+    painter->translate(target.topLeft());
+    if (kind == SciQLopExportTarget::Vector)
+        qcp->toPainter(static_cast<QCPPainter*>(painter), target.width(), target.height());
+    else
+        painter->drawPixmap(0, 0, qcp->toPixmap(target.width(), target.height()));
+    painter->restore();
+}
