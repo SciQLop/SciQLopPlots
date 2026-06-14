@@ -42,6 +42,9 @@ public:
     virtual ~SciQLopExportable() = default;
 
     // Paint self into `target` (device/page coordinates) on `painter`.
+    // Precondition: for SciQLopExportTarget::Vector the painter must be a
+    // QCPPainter (the export entry points construct one) so plot implementations
+    // can render true vector output via QCustomPlot::toPainter.
     virtual void export_paint(QPainter* painter, const QRect& target,
                               SciQLopExportTarget kind)
         = 0;
