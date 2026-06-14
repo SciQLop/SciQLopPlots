@@ -28,7 +28,9 @@
 void export_widget(QWidget* w, QPainter* painter, const QRect& target,
                    SciQLopExportTarget kind)
 {
-    if (!w || !w->isVisible() || target.isEmpty())
+    // isHidden(), not !isVisible(): skip only explicitly-hidden widgets, so
+    // export still works for a panel rendered before it is shown (offscreen).
+    if (!w || w->isHidden() || target.isEmpty())
         return;
 
     if (auto* exportable = dynamic_cast<SciQLopExportable*>(w))
