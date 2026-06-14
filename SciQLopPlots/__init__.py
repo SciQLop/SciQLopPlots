@@ -35,18 +35,26 @@ def _register_with_shiboken_signatures():
     and only while formatting an error — but it would bury the now-useful
     message under a wall of RuntimeWarnings, so the specific warning is muted.
     """
-    try:
-        from shibokensupport.signature import mapping
-    except (ImportError, AttributeError):
-        return  # cosmetic, best-effort: never break import over error formatting
     import collections.abc
     import warnings
 
-    mapping.namespace["SciQLopPlotsBindings"] = SciQLopPlotsBindings
-    mapping.type_map["SciQLopPyBuffer"] = object
-    mapping.type_map["GetDataPyCallable"] = collections.abc.Callable
-    warnings.filterwarnings(
-        "ignore", message="pyside_type_init", category=RuntimeWarning)
+    # The whole body is best-effort: this only makes binding-misuse errors
+    # readable, so any shift in shiboken's signature internals (missing module,
+    # renamed/restructured namespace or type_map) must degrade to the raw
+    # shiboken errors, never break ``import SciQLopPlots``.
+    try:
+        from shibokensupport.signature import mapping
+
+        mapping.namespace["SciQLopPlotsBindings"] = SciQLopPlotsBindings
+        mapping.type_map["SciQLopPyBuffer"] = object
+        mapping.type_map["GetDataPyCallable"] = collections.abc.Callable
+        # Scoped to the parser that emits it so we never hide a same-named
+        # RuntimeWarning from unrelated code.
+        warnings.filterwarnings(
+            "ignore", message="pyside_type_init", category=RuntimeWarning,
+            module=r"shibokensupport\.signature")
+    except Exception:
+        pass
 
 
 _register_with_shiboken_signatures()
