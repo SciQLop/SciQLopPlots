@@ -155,7 +155,7 @@ void SciQLopPlotContainer::export_paint(QPainter* painter, const QRect& target,
 
     for (auto* child : child_widgets())
     {
-        if (!child || !child->isVisible())
+        if (!child || child->isHidden())  // skip only explicitly-hidden children
             continue;
         const QRect g = child->geometry();
         const QRect child_target(target.x() + qRound(g.x() * sx),

@@ -327,3 +327,35 @@ class TestPlainWidgetExport:
         opaque, colors = _render_stats(path)
         assert opaque > 0.5  # the red label filled its region
         assert colors > 8  # background + anti-aliased text, not a flat fill
+
+
+class TestOffscreenExport:
+    """Export must not depend on the window being shown. The walker skips only
+    explicitly-hidden widgets (isHidden), not ones that merely aren't on screen
+    (!isVisible) — so a panel exported before show() still renders its content.
+    """
+
+    def test_offscreen_nested_png_has_content(self, qtbot, tmp_path):
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(800, 600)
+        qtbot.addWidget(panel)
+        sub = SciQLopMultiPlotPanel()
+        panel.add_panel(sub)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        sub.plot(x, np.sin(x), labels=["offscreen"])
+        qtbot.wait(300)  # let the resampler deliver; deliberately never show()
+        path = tmp_path / "offscreen.png"
+        assert panel.save_png(str(path)) is True
+        opaque, colors = _render_stats(path)
+        assert opaque > 0.5 and colors > 8
+
+    def test_offscreen_pdf_succeeds(self, qtbot, tmp_path):
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(800, 600)
+        qtbot.addWidget(panel)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        panel.plot(x, np.cos(x), labels=["offscreen"])
+        qtbot.wait(200)  # never show()
+        path = tmp_path / "offscreen.pdf"
+        assert panel.save_pdf(str(path)) is True
+        assert path.stat().st_size > 0
