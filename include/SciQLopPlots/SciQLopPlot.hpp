@@ -30,6 +30,7 @@
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
+#include "SciQLopPlots/Export/SciQLopExportable.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotLegend.hpp"
 #include "SciQLopPlots/SciQLopOverlay.hpp"
@@ -220,7 +221,7 @@ protected:
  * \brief The SciQLopPlot class
  *
  */
-class SciQLopPlot : public SciQLopPlotInterface
+class SciQLopPlot : public SciQLopPlotInterface, public SciQLopExportable
 {
     Q_OBJECT
 
@@ -300,6 +301,9 @@ public:
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
 
     inline QCustomPlot* qcp_plot() const noexcept { return m_impl; }
+
+    void export_paint(QPainter* painter, const QRect& target,
+                      SciQLopExportTarget kind) override;
 
     /*!
      * \brief set_scroll_factor Set the scroll factor of the plot.
