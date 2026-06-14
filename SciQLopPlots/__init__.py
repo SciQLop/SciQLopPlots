@@ -285,21 +285,21 @@ for _cls in (
 #     (raw pointer or auto-deref'd Ptr) is unaffected.
 import functools
 
-_PLOT_PTR_TYPES = (
+_PTR_HANDLE_TYPES = (
     SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
     SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr,
 )
 
 
-def _deref_plot_ptr(value):
-    return value.data() if isinstance(value, _PLOT_PTR_TYPES) else value
+def _deref_ptr_handle(value):
+    return value.data() if isinstance(value, _PTR_HANDLE_TYPES) else value
 
 
-def _accept_plot_ptr(func):
+def _accept_ptr_handle(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        return func(*(_deref_plot_ptr(a) for a in args),
-                    **{k: _deref_plot_ptr(v) for k, v in kwargs.items()})
+        return func(*(_deref_ptr_handle(a) for a in args),
+                    **{k: _deref_ptr_handle(v) for k, v in kwargs.items()})
     return wrapper
 
 
@@ -315,9 +315,9 @@ for _item_cls in (
     SciQLopPlotsBindings.SciQLopHorizontalSpan,
     SciQLopPlotsBindings.SciQLopRectangularSpan,
 ):
-    _item_cls.__init__ = _accept_plot_ptr(_item_cls.__init__)
+    _item_cls.__init__ = _accept_ptr_handle(_item_cls.__init__)
 
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains"):
     setattr(SciQLopMultiPlotPanel, _method,
-            _accept_plot_ptr(getattr(SciQLopMultiPlotPanel, _method)))
+            _accept_ptr_handle(getattr(SciQLopMultiPlotPanel, _method)))
 
