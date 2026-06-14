@@ -267,3 +267,57 @@ for _cls in (
 ):
     _cls.on = OnDescriptor()
 
+
+# --- Accept the QPointer wrappers panel.plots() returns wherever a raw plot
+#     pointer is expected (item/span constructors, panel plot-management
+#     methods). shiboken cannot implicitly convert an object-type smart pointer,
+#     so we dereference it here instead of forcing callers to write .data().
+#
+#     A Ptr is matched by isinstance against the registered smart-pointer types —
+#     NEVER by probing for a .data() member: QByteArray, QModelIndex, ndarray and
+#     many others expose .data() and would be silently corrupted by a duck-typed
+#     check.
+#
+#     Tradeoff: routing a ctor through a Python wrapper bypasses shiboken's
+#     tp_init, so a *wrong-args* call to a wrapped entry point yields a terser
+#     "(missing signature)" TypeError instead of the "Supported signatures"
+#     listing. Still a TypeError, never the old NameError; the happy path
+#     (raw pointer or auto-deref'd Ptr) is unaffected.
+import functools
+
+_PLOT_PTR_TYPES = (
+    SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
+    SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr,
+)
+
+
+def _deref_plot_ptr(value):
+    return value.data() if isinstance(value, _PLOT_PTR_TYPES) else value
+
+
+def _accept_plot_ptr(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*(_deref_plot_ptr(a) for a in args),
+                    **{k: _deref_plot_ptr(v) for k, v in kwargs.items()})
+    return wrapper
+
+
+for _item_cls in (
+    SciQLopPlotsBindings.SciQLopTextItem,
+    SciQLopPlotsBindings.SciQLopPixmapItem,
+    SciQLopPlotsBindings.SciQLopEllipseItem,
+    SciQLopPlotsBindings.SciQLopCurvedLineItem,
+    SciQLopPlotsBindings.SciQLopStraightLine,
+    SciQLopPlotsBindings.SciQLopVerticalLine,
+    SciQLopPlotsBindings.SciQLopHorizontalLine,
+    SciQLopPlotsBindings.SciQLopVerticalSpan,
+    SciQLopPlotsBindings.SciQLopHorizontalSpan,
+    SciQLopPlotsBindings.SciQLopRectangularSpan,
+):
+    _item_cls.__init__ = _accept_plot_ptr(_item_cls.__init__)
+
+for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains"):
+    setattr(SciQLopMultiPlotPanel, _method,
+            _accept_plot_ptr(getattr(SciQLopMultiPlotPanel, _method)))
+

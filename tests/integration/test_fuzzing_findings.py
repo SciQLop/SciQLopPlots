@@ -8,7 +8,13 @@ import numpy as np
 import pytest
 from PySide6.QtCore import qInstallMessageHandler
 
-from SciQLopPlots import GraphType, SciQLopHorizontalLine, SciQLopPlotRange
+from SciQLopPlots import (
+    GraphType,
+    SciQLopHorizontalLine,
+    SciQLopMultiPlotPanel,
+    SciQLopPlotRange,
+    SciQLopVerticalLine,
+)
 
 
 @pytest.fixture
@@ -71,21 +77,63 @@ class TestGarbageDataRaises:
 
 class TestOverloadErrorMessage:
     """A wrong-argument call on a SciQLopPlotsBindings class must produce a
-    real TypeError listing the accepted overloads — not the NameError that
-    shiboken's signature formatter throws when it can't resolve the binding
-    module name in its eval namespace (report #2 / finding #1)."""
+    real TypeError — not the NameError that shiboken's signature formatter
+    throws when it can't resolve the binding module name in its eval namespace
+    (report #2 / finding #1)."""
 
     def test_wrong_args_raise_typeerror_not_nameerror(self):
+        # Item ctors are Python-wrapped for Ptr auto-deref (finding #3), which
+        # routes around shiboken's tp_init: still a TypeError, never NameError.
         with pytest.raises(TypeError):
             SciQLopHorizontalLine("not a plot", 5.0)
 
     def test_error_message_lists_supported_signatures(self):
+        # An unwrapped overloaded method keeps shiboken's rich error listing.
+        from PySide6.QtWidgets import QApplication
+        from SciQLopPlots import SciQLopPlot
+        QApplication.instance() or QApplication([])
+        plot = SciQLopPlot()
+        x = _x()
         try:
-            SciQLopHorizontalLine("not a plot", 5.0)
+            plot.colormap(x, np.sin(x))  # 2-arg colormap needs (x, y, z)
         except TypeError as e:
             assert "Supported signatures" in str(e), str(e)
         except NameError as e:
             pytest.fail(f"shiboken signature formatter raised NameError: {e}")
+
+
+class TestInterfacePtrAutoDeref:
+    """``panel.plots()`` returns ``SciQLopPlotInterfacePtr`` (QPointer) wrappers.
+    Passing one where a plot pointer is expected used to require a manual
+    ``ptr.data()`` — shiboken doesn't implicitly deref the smart pointer
+    (finding #3). The typesystem now accepts the Ptr directly."""
+
+    def _panel_with_plot(self, qtbot):
+        panel = SciQLopMultiPlotPanel()
+        qtbot.addWidget(panel)
+        x = _x()
+        panel.plot(x, np.sin(x))
+        return panel
+
+    def test_ptr_accepted_by_item_ctor(self, qtbot):
+        panel = self._panel_with_plot(qtbot)
+        ptr = panel.plots()[0]
+        # SciQLopVerticalLine(SciQLopPlot*, ...) — derived-pointer param
+        line = SciQLopVerticalLine(ptr, 5.0)
+        assert line is not None
+
+    def test_ptr_accepted_by_base_interface_param(self, qtbot):
+        panel = self._panel_with_plot(qtbot)
+        ptr = panel.plots()[0]
+        # remove_plot(SciQLopPlotInterface*) — base-pointer param
+        panel.remove_plot(ptr)
+        assert len(panel.plots()) == 0
+
+    def test_raw_plot_still_accepted(self, qtbot):
+        panel = self._panel_with_plot(qtbot)
+        raw = panel.plots()[0].data()
+        line = SciQLopVerticalLine(raw, 5.0)
+        assert line is not None
 
 
 class TestRangeStringParsing:
