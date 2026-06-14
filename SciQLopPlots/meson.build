@@ -204,6 +204,7 @@ sources = moc_files \
             '../src/SciQLopMultiPlotObject.cpp',
             '../src/SciQLopMultiPlotPanel.cpp',
             '../src/SciQLopPlotContainer.cpp',
+            '../src/Export/SciQLopExportable.cpp',
             '../src/MultiPlotsVSpan.cpp',
             '../src/SciQLopPixmapItem.cpp',
             '../src/SciQLopShapesItems.cpp',
