@@ -270,6 +270,37 @@ class TestNestedPanelExport:
         assert single.save_pdf(str(single_path)) is True
         assert nested_path.stat().st_size > single_path.stat().st_size
 
+    def test_empty_panel_pdf_returns_true(self, qtbot, tmp_path):
+        # The walker-based save_pdf produces a valid (blank) PDF for an empty
+        # panel and returns True, consistent with the raster path. Pin it.
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(400, 300)
+        qtbot.addWidget(panel)
+        path = tmp_path / "empty.pdf"
+        assert panel.save_pdf(str(path)) is True
+        assert path.stat().st_size > 0
+
+    def test_nested_overflow_all_bands_rendered(self, qtbot, tmp_path):
+        # A nested panel taller than the outer viewport must still export every
+        # plot (the inner container keeps full content height under the walker).
+        panel = SciQLopMultiPlotPanel()
+        panel.resize(400, 300)
+        qtbot.addWidget(panel)
+        sub = SciQLopMultiPlotPanel()
+        panel.add_panel(sub)
+        x = np.linspace(0, 10, 100).astype(np.float64)
+        for i in range(8):
+            sub.plot(x, np.sin(x + i), labels=[f"s{i}"])
+        panel.show()
+        qtbot.waitExposed(panel)
+        qtbot.wait(300)
+        path = tmp_path / "overflow.png"
+        assert panel.save_png(str(path)) is True
+        # sample 5 horizontal bands; each must carry opaque plot content
+        for k in range(5):
+            opaque, colors = _render_stats(path, region=(0.0, k / 5, 1.0, (k + 1) / 5))
+            assert opaque > 0.5 and colors > 8, f"band {k} blank"
+
 
 class TestPlainWidgetExport:
     """A non-plot QWidget child renders via the QWidget::render fallback.
