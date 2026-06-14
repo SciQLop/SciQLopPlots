@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp"
+#include "SciQLopPlots/Export/SciQLopExportable.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
@@ -45,7 +46,7 @@ class MultiPlotsVerticalSpan;
 class InspectorExtension;
 class InspectorExtensionHolder;
 
-class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface
+class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface, public SciQLopExportable
 {
     Q_OBJECT
 
@@ -288,6 +289,9 @@ public:
     virtual QList<QColor> color_palette() const noexcept override;
 
     virtual void set_color_palette(const QList<QColor>& palette) noexcept override;
+
+    void export_paint(QPainter* painter, const QRect& target,
+                      SciQLopExportTarget kind) override;
 
     bool save(const QString& filename, int width = 0, int height = 0,
               double scale = 1.0, int quality = -1) override;
