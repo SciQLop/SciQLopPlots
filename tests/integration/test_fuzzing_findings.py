@@ -106,7 +106,8 @@ class TestInterfacePtrAutoDeref:
     """``panel.plots()`` returns ``SciQLopPlotInterfacePtr`` (QPointer) wrappers.
     Passing one where a plot pointer is expected used to require a manual
     ``ptr.data()`` — shiboken doesn't implicitly deref the smart pointer
-    (finding #3). The typesystem now accepts the Ptr directly."""
+    (finding #3). A Python-level wrapper in ``SciQLopPlots/__init__.py`` now
+    auto-dereferences the Ptr before calling the bound API."""
 
     def _panel_with_plot(self, qtbot):
         panel = SciQLopMultiPlotPanel()
