@@ -596,7 +596,10 @@ static bool _save_panel_raster(QWidget* container, const QString& filename,
         return false;
 
     QPixmap pixmap(targetW, targetH);
-    pixmap.fill(Qt::transparent);
+    // Fill with the widget background so inter-plot gaps/margins match the
+    // themed background (the previous QWidget::render path painted it), rather
+    // than leaving them transparent.
+    pixmap.fill(container->palette().color(container->backgroundRole()));
 
     QCPPainter painter(&pixmap);
     if (!painter.isActive())
