@@ -31,6 +31,7 @@
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
+#include "SciQLopPlots/Export/SciQLopExportable.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -159,6 +160,12 @@ QList<QPointer<SciQLopPlotInterface>> SciQLopMultiPlotPanel::plots() const
 QList<QWidget *> SciQLopMultiPlotPanel::child_widgets() const
 {
     return _container->child_widgets();
+}
+
+void SciQLopMultiPlotPanel::export_paint(QPainter* painter, const QRect& target,
+                                         SciQLopExportTarget kind)
+{
+    export_widget(_container, painter, target, kind);
 }
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)
@@ -553,15 +560,9 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
 
 bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int height)
 {
-    auto plot_list = _container->plots();
-    if (plot_list.isEmpty())
-        return false;
-
     const int totalW = (width > 0) ? width : _container->width();
     const int totalH = (height > 0) ? height : _container->height();
-
-    const int containerH = _container->height();
-    if (totalW <= 0 || totalH <= 0 || containerH <= 0)
+    if (totalW <= 0 || totalH <= 0)
         return false;
 
     QPdfWriter writer(filename);
@@ -569,38 +570,14 @@ bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int hei
     writer.setPageMargins(QMarginsF(0, 0, 0, 0));
     writer.setResolution(72);
 
-    QCPPainter painter;
-    painter.begin(&writer);
+    QCPPainter painter(&writer);
     if (!painter.isActive())
         return false;
-
     painter.setMode(QCPPainter::pmVectorized);
     painter.setMode(QCPPainter::pmNoCaching);
 
-    int yOffset = 0;
-    for (auto& plotPtr : plot_list)
-    {
-        if (plotPtr.isNull())
-            continue;
-        auto* sciPlot = qobject_cast<SciQLopPlot*>(plotPtr.data());
-        if (!sciPlot)
-            continue;
-
-        auto* qcpPlot = sciPlot->qcp_plot();
-        if (!qcpPlot)
-            continue;
-
-        const int plotH = static_cast<int>(
-            static_cast<double>(plotPtr->height()) / containerH * totalH);
-        const int plotW = totalW;
-
-        painter.save();
-        painter.translate(0, yOffset);
-        qcpPlot->toPainter(&painter, plotW, plotH);
-        painter.restore();
-        yOffset += plotH;
-    }
-
+    export_widget(_container, &painter, QRect(0, 0, totalW, totalH),
+                  SciQLopExportTarget::Vector);
     painter.end();
     return true;
 }
@@ -613,16 +590,23 @@ static bool _save_panel_raster(QWidget* container, const QString& filename,
         return false;
 
     const auto fullSize = container->sizeHint().expandedTo(container->size());
-    int targetW = (width > 0) ? width : static_cast<int>(fullSize.width() * scale);
-    int targetH = (height > 0) ? height : static_cast<int>(fullSize.height() * scale);
+    const int targetW = (width > 0) ? width : static_cast<int>(fullSize.width() * scale);
+    const int targetH = (height > 0) ? height : static_cast<int>(fullSize.height() * scale);
+    if (targetW <= 0 || targetH <= 0)
+        return false;
 
     QPixmap pixmap(targetW, targetH);
     pixmap.fill(Qt::transparent);
-    container->render(&pixmap, QPoint(), QRegion(), QWidget::DrawChildren);
+
+    QCPPainter painter(&pixmap);
+    if (!painter.isActive())
+        return false;
+    export_widget(container, &painter, QRect(0, 0, targetW, targetH),
+                  SciQLopExportTarget::Raster);
+    painter.end();
 
     if (pixmap.isNull())
         return false;
-
     return pixmap.save(filename, format, quality);
 }
 
