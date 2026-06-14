@@ -172,23 +172,36 @@ class TestPanelScrolledContent:
         assert Path(path).stat().st_size > 0
 
 
-def _nonblank_fraction(png_path):
-    """Fraction of pixels that differ from the top-left (background) pixel."""
-    img = QImage(str(png_path))
+def _render_stats(png_path, region=None):
+    """Content stats for a saved image, optionally over a sub-region.
+
+    Returns ``(opaque_fraction, unique_colors)`` sampled on a grid.
+
+    A rendered widget fills its area with an opaque background and draws
+    chrome/data on top, giving high opaque coverage AND many distinct colours.
+    A dropped/blank region stays transparent (opaque ~ 0) or a flat fill (~1
+    colour). Comparing to a fixed "background" pixel does NOT work here: a
+    correct plot's background equals the corner pixel, so a difference metric
+    would only see the sparse foreground and read as "blank".
+
+    `region` is ``(x0, y0, x1, y1)`` as fractions of width/height.
+    """
+    img = QImage(str(png_path)).convertToFormat(QImage.Format_ARGB32)
     assert not img.isNull()
-    bg = img.pixel(0, 0)
     w, h = img.width(), img.height()
-    if w == 0 or h == 0:
-        return 0.0
-    differing = 0
-    total = 0
-    step = max(1, min(w, h) // 64)
-    for yy in range(0, h, step):
-        for xx in range(0, w, step):
+    x0, y0, x1, y1 = region or (0.0, 0.0, 1.0, 1.0)
+    xa, ya, xb, yb = int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)
+    step = max(1, min(w, h) // 200)
+    opaque = total = 0
+    colors = set()
+    for yy in range(ya, yb, step):
+        for xx in range(xa, xb, step):
             total += 1
-            if img.pixel(xx, yy) != bg:
-                differing += 1
-    return differing / total if total else 0.0
+            c = img.pixelColor(xx, yy)
+            colors.add((c.red(), c.green(), c.blue(), c.alpha()))
+            if c.alpha() > 8:
+                opaque += 1
+    return (opaque / total if total else 0.0), len(colors)
 
 
 class TestNestedPanelExport:
@@ -228,15 +241,23 @@ class TestNestedPanelExport:
         assert nested_only.save_pdf(str(path)) is True
         assert path.stat().st_size > 0
 
-    def test_nested_only_png_nonblank(self, nested_only, tmp_path):
+    def test_nested_only_png_has_content(self, nested_only, tmp_path):
         path = tmp_path / "nested.png"
         assert nested_only.save_png(str(path)) is True
-        assert _nonblank_fraction(path) > 0.02
+        opaque, colors = _render_stats(path)
+        assert opaque > 0.5  # nested plot painted its (opaque) background
+        assert colors > 8  # axes / grid / line / legend present, not a flat fill
 
-    def test_top_plus_nested_png_nonblank(self, top_plus_nested, tmp_path):
+    def test_top_plus_nested_png_both_regions_rendered(self, top_plus_nested, tmp_path):
         path = tmp_path / "mixed.png"
         assert top_plus_nested.save_png(str(path)) is True
-        assert _nonblank_fraction(path) > 0.05
+        # top half = top-level plot, bottom half = nested sub-panel.
+        # The bug dropped the nested region (left transparent); assert BOTH
+        # halves render an opaque background with real plot content.
+        top_opaque, top_colors = _render_stats(path, region=(0.0, 0.0, 1.0, 0.5))
+        bottom_opaque, bottom_colors = _render_stats(path, region=(0.0, 0.5, 1.0, 1.0))
+        assert top_opaque > 0.5 and top_colors > 8
+        assert bottom_opaque > 0.5 and bottom_colors > 8
 
     def test_top_plus_nested_pdf_has_nested(self, top_plus_nested, tmp_path):
         nested_path = tmp_path / "mixed.pdf"
@@ -272,4 +293,6 @@ class TestPlainWidgetExport:
         qtbot.wait(200)
         path = tmp_path / "label.png"
         assert panel.save_png(str(path)) is True
-        assert _nonblank_fraction(path) > 0.02
+        opaque, colors = _render_stats(path)
+        assert opaque > 0.5  # the red label filled its region
+        assert colors > 8  # background + anti-aliased text, not a flat fill
