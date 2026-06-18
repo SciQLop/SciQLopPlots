@@ -357,6 +357,14 @@ public:
     QCPAxis* qcp_axis() const noexcept override;
     QCPColorScale* qcp_colorscale() const noexcept;
 
+private:
+    // Pick the tick-label precision so adjacent labels stay distinct: log keeps
+    // precision 0 (clean decade powers), linear adapts to the current range so
+    // closely-spaced values (e.g. a small range around a huge value) don't all
+    // render to the same significant figure.
+    void update_number_precision() noexcept;
+
+public:
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
