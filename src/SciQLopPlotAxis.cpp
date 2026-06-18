@@ -470,9 +470,45 @@ SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObjec
                                                      const QString& name)
         : SciQLopPlotAxis(axis->axis(), parent, false, name), m_axis(axis)
 {
+    if (axis->axis())
+        axis->axis()->setNumberFormat("gb");
     connect(axis, QOverload<const QCPRange&>::of(&QCPColorScale::dataRangeChanged), this,
             [this](const QCPRange& range)
-            { Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper }); });
+            {
+                update_number_precision();
+                Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper });
+            });
+    update_number_precision();
+}
+
+void SciQLopPlotColorScaleAxis::update_number_precision() noexcept
+{
+    if (m_axis.isNull() || !m_axis->axis())
+        return;
+    auto* ax = m_axis->axis();
+    int precision = 0; // log: clean decade powers (1e3, 1e4, ...)
+    // Use the color scale's dataScaleType (the source of truth this wrapper
+    // drives), not the axis scaleType, so the two can't disagree.
+    if (m_axis->dataScaleType() != QCPAxis::stLogarithmic)
+    {
+        const QCPRange r = ax->range();
+        const double span = r.size();
+        const double maxabs = std::max(std::abs(r.lower), std::abs(r.upper));
+        precision = 4;
+        if (span > 0.0 && maxabs > 0.0)
+        {
+            // Enough significant figures that adjacent ticks (≈ span/5 apart)
+            // stay distinct. Clamp in floating point BEFORE the int cast: an
+            // extreme tiny span makes 5*maxabs/span overflow to inf, and
+            // static_cast<int> of a non-finite/out-of-range double is UB.
+            const double sig = std::log10(5.0 * maxabs / span) + 1.0;
+            precision = std::isfinite(sig)
+                ? static_cast<int>(std::clamp(std::ceil(sig), 3.0, 15.0))
+                : 15; // values nearly identical relative to magnitude: max sig figs
+        }
+    }
+    if (ax->numberPrecision() != precision)
+        ax->setNumberPrecision(precision);
 }
 
 void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcept
@@ -517,6 +553,7 @@ void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
                     QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
             }
         }
+        update_number_precision();  // log -> clean powers, linear -> adaptive
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT log_changed(log);
     }
