@@ -55,3 +55,17 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopLineGraphRemote : public SciQLopLineGraph,
+                               public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                    SciQLopPlotAxis* value_axis,
+                                    const QStringList& labels = QStringList(),
+                                    QVariantMap metaData = {});
+    ~SciQLopLineGraphRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+};
