@@ -117,6 +117,9 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     // Set busy when the range request goes out; clear busy when data arrives.
     // NOT on pipeline_idle: for remote providers pipeline_idle fires as soon as
     // the request is emitted (get_data returns immediately), before the response.
+    // set_remote_busy guarantees the flag even if a concrete class forgets to
+    // override set_busy; as_graph->set_busy virtual-dispatches to that override
+    // to emit busy_changed. The two calls protect different things, not one.
     m_connections << QObject::connect(this->as_graph,
         &SciQLopGraphInterface::range_changed, m_pipeline,
         [this, pipeline = m_pipeline](const SciQLopPlotRange& range)
@@ -124,6 +127,7 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
 
     // Clear busy on the same arity the data path is wired for, so a mismatched
     // signal can never drop busy without data having reached the graph.
+    // Same flag-then-emit split as the range lambda above.
     const auto clear_busy = [this]()
     { this->set_remote_busy(false); this->as_graph->set_busy(false); };
     switch (N)
