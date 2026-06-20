@@ -119,12 +119,13 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     // the request is emitted (get_data returns immediately), before the response.
     m_connections << QObject::connect(this->as_graph,
         &SciQLopGraphInterface::range_changed, m_pipeline,
-        [pipeline = m_pipeline, g = this->as_graph](const SciQLopPlotRange& range)
-        { g->set_busy(true); pipeline->call(range); });
+        [this, pipeline = m_pipeline](const SciQLopPlotRange& range)
+        { this->set_remote_busy(true); this->as_graph->set_busy(true); pipeline->call(range); });
 
     // Clear busy on the same arity the data path is wired for, so a mismatched
     // signal can never drop busy without data having reached the graph.
-    const auto clear_busy = [g = this->as_graph]() { g->set_busy(false); };
+    const auto clear_busy = [this]()
+    { this->set_remote_busy(false); this->as_graph->set_busy(false); };
     switch (N)
     {
         case 2:

@@ -68,4 +68,13 @@ public:
     ~SciQLopLineGraphRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    // busy() / set_busy(): delegate to the mixin's own flag so that the busy
+    // state is valid even before QCP components are created on first set_data.
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
 };

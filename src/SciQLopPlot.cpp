@@ -685,6 +685,16 @@ SciQLopWaterfallGraphFunction* SciQLopPlot::add_waterfall(GetDataPyCallable call
     return wf;
 }
 
+SciQLopLineGraphRemote* SciQLopPlot::add_remote_line_graph(const QStringList& labels,
+                                                           QVariantMap metaData)
+{
+    auto* g = m_impl->add_plottable<SciQLopLineGraphRemote>(labels, metaData);
+    _configure_plotable(g, labels, {}, GraphType::Line, GraphMarkerShape::NoMarker);
+    connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
+            &SciQLopPlottableInterface::set_range);
+    return g;
+}
+
 SciQLopOverlay* SciQLopPlot::overlay()
 {
     if (!m_overlay)

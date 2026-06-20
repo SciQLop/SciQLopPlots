@@ -425,12 +425,17 @@ public:
 // the request is emitted (the remote get_data returns immediately), so we must NOT
 // clear busy on pipeline_idle. Instead: busy=true on range request out, busy=false
 // when data actually arrives.
+//
+// The mixin owns the busy flag because QCP components don't exist until the first
+// set_data call — any component-based busy() would silently return false before
+// that. Concrete classes delegate busy()/set_busy() here.
 class SciQLopRemoteGraph
 {
 protected:
     RemoteDataPipeline* m_pipeline = nullptr;
     SciQLopPlottableInterface* as_graph = nullptr;
     QList<QMetaObject::Connection> m_connections;
+    bool m_busy = false;
 
 public:
     SciQLopRemoteGraph() { }
@@ -442,4 +447,7 @@ public:
     inline RemoteDataPipeline* remote_channel() const noexcept { return m_pipeline; }
 
     inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
+
+    inline bool remote_busy() const noexcept { return m_busy; }
+    inline void set_remote_busy(bool busy) noexcept { m_busy = busy; }
 };

@@ -353,6 +353,9 @@ public:
                                                   const QStringList& labels = {},
                                                   const QList<QColor>& colors = {});
 
+    SciQLopLineGraphRemote* add_remote_line_graph(const QStringList& labels = QStringList(),
+                                                  QVariantMap metaData = {});
+
     SciQLopOverlay* overlay();
 
     inline bool has_colormap() { return m_impl->has_colormap(); }
