@@ -247,3 +247,20 @@ SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable,
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::pipeline_idle, this,
         &SimplePyCallablePipeline::pipeline_idle);
 }
+
+RemoteDataPipeline::RemoteDataPipeline(QObject* parent) : QObject(parent)
+{
+    m_provider = new RemoteDataProvider(this);
+    m_worker = new DataProviderWorker(this);
+    m_worker->set_data_provider(m_provider);
+    connect(m_provider, &RemoteDataProvider::data_requested, this,
+            &RemoteDataPipeline::data_requested);
+    connect(m_provider, &RemoteDataProvider::new_data_2d, this,
+            &RemoteDataPipeline::new_data_2d);
+    connect(m_provider, &RemoteDataProvider::new_data_3d, this,
+            &RemoteDataPipeline::new_data_3d);
+    connect(m_provider, &RemoteDataProvider::new_data_nd, this,
+            &RemoteDataPipeline::new_data_nd);
+    connect(m_provider, &RemoteDataProvider::pipeline_idle, this,
+            &RemoteDataPipeline::pipeline_idle);
+}

@@ -225,6 +225,48 @@ public:
 };
 
 
+// A provider that does not compute: it emits a request for a range and waits.
+// Range get_data emits data_requested and returns nothing (the answer arrives
+// later via set_data). Buffer get_data overrides pass their inputs straight
+// through, so the existing _data_based_update push path turns an incoming
+// set_data(x,y) into new_data_2d(x,y) with no transformation.
+class RemoteDataProvider : public DataProviderInterface
+{
+    Q_OBJECT
+public:
+    RemoteDataProvider(QObject* parent = nullptr) : DataProviderInterface(parent) { }
+    virtual ~RemoteDataProvider() = default;
+
+    inline virtual QList<SciQLopPyBuffer> get_data(double lower, double upper) override
+    {
+        Q_EMIT data_requested(SciQLopPlotRange(lower, upper));
+        return {}; // no synchronous data; response arrives via set_data
+    }
+
+    inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override
+    {
+        return { x, y };
+    }
+
+    inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y,
+                                                   SciQLopPyBuffer z) override
+    {
+        return { x, y, z };
+    }
+
+    inline virtual QList<SciQLopPyBuffer> get_data(QList<SciQLopPyBuffer> values) override
+    {
+        return values;
+    }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void data_requested(const SciQLopPlotRange& range);
+};
+
+
 class SimplePyCallablePipeline : public QObject
 {
     Q_OBJECT
@@ -251,6 +293,42 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
+    Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
+    Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
+    Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
+    Q_SIGNAL void pipeline_idle();
+};
+
+
+// The bound "channel" object. One per remote product. data_requested goes out
+// (SciQLop forwards it to the worker process); set_data(...) brings the final
+// buffers back in.
+class RemoteDataPipeline : public QObject
+{
+    Q_OBJECT
+    RemoteDataProvider* m_provider;
+    DataProviderWorker* m_worker;
+
+public:
+    RemoteDataPipeline(QObject* parent = nullptr);
+    virtual ~RemoteDataPipeline() = default;
+
+    inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
+
+    inline Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) { m_worker->set_data(x, y); }
+    inline Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
+    {
+        m_worker->set_data(x, y, z);
+    }
+    inline Q_SLOT void set_data(QList<SciQLopPyBuffer> values) { m_worker->set_data(values); }
+
+    inline void invalidate_cache() { m_provider->invalidate_cache(); }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void data_requested(const SciQLopPlotRange& range);
     Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
     Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
