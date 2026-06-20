@@ -35,6 +35,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QWidget>
+#include <exception>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -309,6 +310,47 @@ public:
         return false;
     }
 };
+
+// Wire a pipeline's new_data_* signals to graph->set_data, guarding against
+// exceptions escaping a queued connection (which would std::terminate). N picks
+// the arity: 2 -> new_data_2d, 3 -> new_data_3d, else new_data_nd.
+template <typename Pipeline>
+inline QList<QMetaObject::Connection>
+connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* graph, int N)
+{
+    const auto drop_bad_batch = [](SciQLopPlottableInterface* g, auto&&... buffers)
+    {
+        try
+        {
+            g->set_data(std::forward<decltype(buffers)>(buffers)...);
+        }
+        catch (const std::exception& e)
+        {
+            qWarning() << "SciQLopPlots: dropping data batch from provider for"
+                       << g->objectName() << ":" << e.what();
+        }
+    };
+    QList<QMetaObject::Connection> conns;
+    switch (N)
+    {
+        case 2:
+            conns << QObject::connect(pipeline, &Pipeline::new_data_2d, graph,
+                [g = graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y)
+                { drop_bad_batch(g, std::move(x), std::move(y)); });
+            break;
+        case 3:
+            conns << QObject::connect(pipeline, &Pipeline::new_data_3d, graph,
+                [g = graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
+                { drop_bad_batch(g, std::move(x), std::move(y), std::move(z)); });
+            break;
+        default:
+            conns << QObject::connect(pipeline, &Pipeline::new_data_nd, graph,
+                [g = graph, drop_bad_batch](const QList<SciQLopPyBuffer>& values)
+                { drop_bad_batch(g, values); });
+            break;
+    }
+    return conns;
+}
 
 class SciQLopFunctionGraph
 {
