@@ -188,3 +188,22 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopColorMapRemote : public SciQLopColorMap, public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopColorMapRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                   SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
+                                   const QString& name, QVariantMap metaData = {});
+    ~SciQLopColorMapRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
+};

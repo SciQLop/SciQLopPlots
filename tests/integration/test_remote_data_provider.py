@@ -17,6 +17,30 @@ def _remote_line_graph(plot):
     return g
 
 
+def _remote_curve(plot):
+    g = plot.add_remote_curve(["c"])
+    QApplication.processEvents()
+    return g
+
+
+def _remote_waterfall(plot):
+    g = plot.add_remote_waterfall(["w"])
+    QApplication.processEvents()
+    return g
+
+
+def _remote_color_map(plot):
+    g = plot.add_remote_color_map("cm")
+    QApplication.processEvents()
+    return g
+
+
+def _remote_histogram2d(plot):
+    g = plot.add_remote_histogram2d("h")
+    QApplication.processEvents()
+    return g
+
+
 def test_request_emitted_on_range_change(qtbot, plot):
     g = _remote_line_graph(plot)
     ch = g.remote_channel()
@@ -85,3 +109,121 @@ def test_zero_copy_shared_memory_buffer(qtbot, plot):
     finally:
         shm.close()
         shm.unlink()
+
+
+# ---------------------------------------------------------------------------
+# SciQLopCurveRemote
+# ---------------------------------------------------------------------------
+
+def test_curve_request_emitted_on_range_change(qtbot, plot):
+    g = _remote_curve(plot)
+    ch = g.remote_channel()
+    requests = []
+    ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(requests) > 0, timeout=2000)
+    assert requests[-1] == (10.0, 20.0)
+
+
+def test_curve_set_data_round_trip(qtbot, plot):
+    g = _remote_curve(plot)
+    ch = g.remote_channel()
+    x = np.linspace(10.0, 20.0, 100).astype(np.float64)
+    y = np.sin(x).astype(np.float64)
+    ch.data_requested.connect(lambda r: ch.set_data(x, y))
+    got = []
+    ch.new_data_2d.connect(lambda a, b: got.append((np.asarray(a), np.asarray(b))))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(got) > 0, timeout=2000)
+    out_x, out_y = got[-1]
+    assert np.allclose(out_x, x)
+    assert np.allclose(out_y, y)
+
+
+# ---------------------------------------------------------------------------
+# SciQLopWaterfallGraphRemote
+# ---------------------------------------------------------------------------
+
+def test_waterfall_request_emitted_on_range_change(qtbot, plot):
+    g = _remote_waterfall(plot)
+    ch = g.remote_channel()
+    requests = []
+    ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(requests) > 0, timeout=2000)
+    assert requests[-1] == (10.0, 20.0)
+
+
+def test_waterfall_set_data_round_trip(qtbot, plot):
+    g = _remote_waterfall(plot)
+    ch = g.remote_channel()
+    x = np.linspace(10.0, 20.0, 10).astype(np.float64)
+    y = np.column_stack([np.sin(x), np.cos(x)]).astype(np.float64)
+    ch.data_requested.connect(lambda r: ch.set_data(x, y))
+    got = []
+    ch.new_data_2d.connect(lambda a, b: got.append((np.asarray(a), np.asarray(b))))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(got) > 0, timeout=2000)
+    out_x, out_y = got[-1]
+    assert np.allclose(out_x, x)
+    assert np.allclose(out_y, y)
+
+
+# ---------------------------------------------------------------------------
+# SciQLopColorMapRemote
+# ---------------------------------------------------------------------------
+
+def test_colormap_request_emitted_on_range_change(qtbot, plot):
+    g = _remote_color_map(plot)
+    ch = g.remote_channel()
+    requests = []
+    ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(requests) > 0, timeout=2000)
+    assert requests[-1] == (10.0, 20.0)
+
+
+def test_colormap_set_data_round_trip(qtbot, plot):
+    g = _remote_color_map(plot)
+    ch = g.remote_channel()
+    x = np.linspace(10.0, 20.0, 20).astype(np.float64)
+    y = np.linspace(0.0, 5.0, 10).astype(np.float64)
+    z = np.random.rand(len(y), len(x)).astype(np.float64)
+    ch.data_requested.connect(lambda r: ch.set_data(x, y, z))
+    got = []
+    ch.new_data_3d.connect(lambda a, b, c: got.append((np.asarray(a), np.asarray(b), np.asarray(c))))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(got) > 0, timeout=2000)
+    out_x, out_y, out_z = got[-1]
+    assert np.allclose(out_x, x)
+    assert np.allclose(out_y, y)
+    assert np.allclose(out_z, z)
+
+
+# ---------------------------------------------------------------------------
+# SciQLopHistogram2DRemote
+# ---------------------------------------------------------------------------
+
+def test_histogram2d_request_emitted_on_range_change(qtbot, plot):
+    g = _remote_histogram2d(plot)
+    ch = g.remote_channel()
+    requests = []
+    ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(requests) > 0, timeout=2000)
+    assert requests[-1] == (10.0, 20.0)
+
+
+def test_histogram2d_set_data_round_trip(qtbot, plot):
+    g = _remote_histogram2d(plot)
+    ch = g.remote_channel()
+    x = np.linspace(10.0, 20.0, 200).astype(np.float64)
+    y = np.sin(x).astype(np.float64)
+    ch.data_requested.connect(lambda r: ch.set_data(x, y))
+    got = []
+    ch.new_data_2d.connect(lambda a, b: got.append((np.asarray(a), np.asarray(b))))
+    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    qtbot.waitUntil(lambda: len(got) > 0, timeout=2000)
+    out_x, out_y = got[-1]
+    assert np.allclose(out_x, x)
+    assert np.allclose(out_y, y)

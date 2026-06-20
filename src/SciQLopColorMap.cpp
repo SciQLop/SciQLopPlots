@@ -254,3 +254,13 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
+
+SciQLopColorMapRemote::SciQLopColorMapRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                             SciQLopPlotAxis* yAxis,
+                                             SciQLopPlotColorScaleAxis* zAxis,
+                                             const QString& name, QVariantMap metaData)
+    : SciQLopColorMap{parent, xAxis, yAxis, zAxis, name, std::move(metaData)}
+    , SciQLopRemoteGraph(this, 3)
+{
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+}

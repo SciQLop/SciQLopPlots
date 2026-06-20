@@ -94,6 +94,7 @@ public:
                                    bool z_log_scale = false);
     SciQLopColorMapFunction* add_color_map(GetDataPyCallable&& callable, const QString& name,
                                            bool y_log_scale = false, bool z_log_scale = false);
+    SciQLopColorMapRemote* add_remote_color_map(const QString& name);
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int x_bins = 100,
                                         int y_bins = 100, bool x_bins_log = false,
@@ -102,6 +103,8 @@ public:
                                                  const QString& name, int x_bins = 100,
                                                  int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
+    SciQLopHistogram2DRemote* add_remote_histogram2d(const QString& name, int x_bins = 100,
+                                                      int y_bins = 100);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
 
@@ -355,6 +358,18 @@ public:
 
     SciQLopLineGraphRemote* add_remote_line_graph(const QStringList& labels = QStringList(),
                                                   QVariantMap metaData = {});
+
+    SciQLopCurveRemote* add_remote_curve(const QStringList& labels = QStringList(),
+                                         QVariantMap metaData = {});
+
+    SciQLopWaterfallGraphRemote* add_remote_waterfall(const QStringList& labels = QStringList(),
+                                                      QVariantMap metaData = {});
+
+    SciQLopColorMapRemote* add_remote_color_map(const QString& name);
+
+    SciQLopHistogram2DRemote* add_remote_histogram2d(const QString& name, int x_bins = 100,
+                                                     int y_bins = 100, bool x_bins_log = false,
+                                                     bool y_bins_log = false);
 
     SciQLopOverlay* overlay();
 

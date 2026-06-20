@@ -524,13 +524,25 @@
     <object-type name="SciQLopCurveFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="SciQLopCurveRemote" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopColorMapFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopColorMapRemote" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogram2DFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="SciQLopHistogram2DRemote" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopWaterfallGraphFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopWaterfallGraphRemote" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
 

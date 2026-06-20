@@ -86,3 +86,24 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopWaterfallGraphRemote : public SciQLopWaterfallGraph,
+                                    public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopWaterfallGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                         SciQLopPlotAxis* value_axis,
+                                         const QStringList& labels = QStringList(),
+                                         QVariantMap metaData = {});
+    ~SciQLopWaterfallGraphRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
+};
