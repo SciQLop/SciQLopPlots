@@ -277,7 +277,7 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis*
 SciQLopCurveRemote::SciQLopCurveRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                        SciQLopPlotAxis* value_axis,
                                        const QStringList& labels, QVariantMap metaData)
-    : SciQLopCurve{parent, key_axis, value_axis, labels, metaData}
+    : SciQLopCurve{parent, key_axis, value_axis, labels, std::move(metaData)}
     , SciQLopRemoteGraph(this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

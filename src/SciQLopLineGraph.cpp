@@ -44,7 +44,7 @@ SciQLopLineGraphRemote::SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotA
                                                SciQLopPlotAxis* value_axis,
                                                const QStringList& labels,
                                                QVariantMap metaData)
-    : SciQLopLineGraph{parent, key_axis, value_axis, labels, metaData}
+    : SciQLopLineGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
     , SciQLopRemoteGraph(this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

@@ -245,13 +245,13 @@ public:
 
     inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override
     {
-        return { x, y };
+        return { std::move(x), std::move(y) };
     }
 
     inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y,
                                                    SciQLopPyBuffer z) override
     {
-        return { x, y, z };
+        return { std::move(x), std::move(y), std::move(z) };
     }
 
     inline virtual QList<SciQLopPyBuffer> get_data(QList<SciQLopPyBuffer> values) override
