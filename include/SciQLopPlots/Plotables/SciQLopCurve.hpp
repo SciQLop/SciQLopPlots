@@ -120,3 +120,24 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopCurveRemote : public SciQLopCurve, public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopCurveRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                SciQLopPlotAxis* value_axis,
+                                const QStringList& labels = QStringList(),
+                                QVariantMap metaData = {});
+    ~SciQLopCurveRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        SciQLopCurve::set_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
+};

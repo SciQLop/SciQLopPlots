@@ -55,3 +55,29 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopLineGraphRemote : public SciQLopLineGraph,
+                               public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
+                                    SciQLopPlotAxis* value_axis,
+                                    const QStringList& labels = QStringList(),
+                                    QVariantMap metaData = {});
+    ~SciQLopLineGraphRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    // busy() reports the remote request/response lifecycle via the mixin flag so
+    // it is valid even before QCP components exist (first set_data). set_busy
+    // also forwards to the base so the component's own busy flag stays consistent
+    // once components exist (a no-op before that).
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        SciQLopLineGraph::set_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
+};

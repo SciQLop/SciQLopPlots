@@ -277,3 +277,14 @@ SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQ
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
+
+SciQLopHistogram2DRemote::SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                                   SciQLopPlotAxis* yAxis,
+                                                   SciQLopPlotColorScaleAxis* zAxis,
+                                                   const QString& name, int x_bins, int y_bins,
+                                                   QVariantMap metaData)
+    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins, std::move(metaData)}
+    , SciQLopRemoteGraph(this, 2)
+{
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+}

@@ -149,6 +149,17 @@ SciQLopWaterfallGraphFunction::SciQLopWaterfallGraphFunction(QCustomPlot* parent
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
 
+SciQLopWaterfallGraphRemote::SciQLopWaterfallGraphRemote(QCustomPlot* parent,
+                                                         SciQLopPlotAxis* key_axis,
+                                                         SciQLopPlotAxis* value_axis,
+                                                         const QStringList& labels,
+                                                         QVariantMap metaData)
+    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
+    , SciQLopRemoteGraph(this, 2)
+{
+    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+}
+
 double SciQLopWaterfallGraph::raw_value_at(int component, double key) const
 {
     if (!_x.is_valid() || !_y.is_valid())

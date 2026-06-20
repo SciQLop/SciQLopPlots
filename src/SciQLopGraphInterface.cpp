@@ -102,43 +102,47 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
         : m_pipeline { new SimplePyCallablePipeline(std::move(callable), as_graph) }
         , as_graph { as_graph }
 {
-    // Provider data arrives through a queued connection: a set_data throw here
-    // would escape QObject::event and std::terminate the process. Bad batches
-    // (wrong dtype, mismatched shapes) are dropped with a warning instead —
-    // only direct Python calls to set_data surface the exception.
-    const auto drop_bad_batch = [](SciQLopPlottableInterface* graph, auto&&... buffers)
-    {
-        try
-        {
-            graph->set_data(std::forward<decltype(buffers)>(buffers)...);
-        }
-        catch (const std::exception& e)
-        {
-            qWarning() << "SciQLopPlots: dropping data batch from provider for"
-                       << graph->objectName() << ":" << e.what();
-        }
-    };
-    switch (N)
-    {
-        case 2:
-            QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_2d, this->as_graph,
-                             [g = this->as_graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y)
-                             { drop_bad_batch(g, std::move(x), std::move(y)); });
-            break;
-        case 3:
-            QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_3d, this->as_graph,
-                             [g = this->as_graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y,
-                                                                  SciQLopPyBuffer z)
-                             { drop_bad_batch(g, std::move(x), std::move(y), std::move(z)); });
-            break;
-        default:
-            QObject::connect(m_pipeline, &SimplePyCallablePipeline::new_data_nd, this->as_graph,
-                             [g = this->as_graph, drop_bad_batch](const QList<SciQLopPyBuffer>& values)
-                             { drop_bad_batch(g, values); });
-            break;
-    }
+    connect_pipeline_data_to_graph(m_pipeline, this->as_graph, N);
     m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,
                      this->as_graph, [graph = this->as_graph]() { graph->set_busy(false); });
     QObject::connect(this->as_graph, &SciQLopGraphInterface::range_changed, m_pipeline,
                      QOverload<const SciQLopPlotRange&>::of(&SimplePyCallablePipeline::call));
+}
+
+SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int N)
+        : m_pipeline { new RemoteDataPipeline(as_graph) }, as_graph { as_graph }
+{
+    m_connections = connect_pipeline_data_to_graph(m_pipeline, this->as_graph, N);
+
+    // Set busy when the range request goes out; clear busy when data arrives.
+    // NOT on pipeline_idle: for remote providers pipeline_idle fires as soon as
+    // the request is emitted (get_data returns immediately), before the response.
+    // Drive busy through as_graph->set_busy, which virtual-dispatches to the
+    // concrete remote graph's override (set_remote_busy + busy_changed). The
+    // lambdas capture only QObjects (as_graph and its child pipeline) — never the
+    // non-QObject mixin `this`, whose subobject is destroyed before the QObject
+    // base, which would leave a queued delivery dereferencing a dangling pointer.
+    m_connections << QObject::connect(this->as_graph,
+        &SciQLopGraphInterface::range_changed, m_pipeline,
+        [g = this->as_graph, pipeline = m_pipeline](const SciQLopPlotRange& range)
+        { g->set_busy(true); pipeline->call(range); });
+
+    // Clear busy on the same arity the data path is wired for, so a mismatched
+    // signal can never drop busy without data having reached the graph.
+    const auto clear_busy = [g = this->as_graph]() { g->set_busy(false); };
+    switch (N)
+    {
+        case 2:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_2d,
+                                              this->as_graph, clear_busy);
+            break;
+        case 3:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_3d,
+                                              this->as_graph, clear_busy);
+            break;
+        default:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_nd,
+                                              this->as_graph, clear_busy);
+            break;
+    }
 }

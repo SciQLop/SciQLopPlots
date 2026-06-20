@@ -109,3 +109,24 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 };
+
+class SciQLopHistogram2DRemote : public SciQLopHistogram2D, public SciQLopRemoteGraph
+{
+    Q_OBJECT
+public:
+    explicit SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
+                                      SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
+                                      const QString& name, int x_bins = 100, int y_bins = 100,
+                                      QVariantMap metaData = {});
+    ~SciQLopHistogram2DRemote() override = default;
+
+    inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
+
+    inline bool busy() const noexcept override { return remote_busy(); }
+    inline void set_busy(bool busy) noexcept override
+    {
+        set_remote_busy(busy);
+        SciQLopHistogram2D::set_busy(busy);
+        Q_EMIT busy_changed(busy);
+    }
+};

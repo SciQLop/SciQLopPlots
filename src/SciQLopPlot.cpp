@@ -200,6 +200,32 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
     return nullptr;
 }
 
+SciQLopColorMapRemote* SciQLopPlot::add_remote_color_map(const QString& name)
+{
+    if (m_color_map == nullptr)
+    {
+        auto* cmap = new SciQLopColorMapRemote(
+            this, this->m_axes[0], this->m_axes[3],
+            static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name);
+        m_color_map = cmap;
+        _ensure_colorscale_is_visible(m_color_map);
+        _register_plottable_wrapper(m_color_map);
+        return cmap;
+    }
+    return nullptr;
+}
+
+SciQLopHistogram2DRemote* SciQLopPlot::add_remote_histogram2d(const QString& name, int x_bins,
+                                                               int y_bins)
+{
+    auto* hist = new SciQLopHistogram2DRemote(
+        this, this->m_axes[0], this->m_axes[1],
+        static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, x_bins, y_bins);
+    _ensure_colorscale_is_visible(hist);
+    _register_plottable_wrapper(hist);
+    return hist;
+}
+
 void SciQLopPlot::minimize_margins()
 {
     plotLayout()->setMargins(QMargins(0, 0, 0, 0));
@@ -683,6 +709,63 @@ SciQLopWaterfallGraphFunction* SciQLopPlot::add_waterfall(GetDataPyCallable call
         _connect_callable_sync(wf, nullptr);
     }
     return wf;
+}
+
+SciQLopLineGraphRemote* SciQLopPlot::add_remote_line_graph(const QStringList& labels,
+                                                           QVariantMap metaData)
+{
+    auto* g = m_impl->add_plottable<SciQLopLineGraphRemote>(labels, metaData);
+    _configure_plotable(g, labels, {}, GraphType::Line, GraphMarkerShape::NoMarker);
+    connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
+            &SciQLopPlottableInterface::set_range);
+    return g;
+}
+
+SciQLopCurveRemote* SciQLopPlot::add_remote_curve(const QStringList& labels, QVariantMap metaData)
+{
+    auto* g = m_impl->add_plottable<SciQLopCurveRemote>(labels, metaData);
+    _configure_plotable(g, labels, {}, GraphType::ParametricCurve, GraphMarkerShape::NoMarker);
+    connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
+            &SciQLopPlottableInterface::set_range);
+    return g;
+}
+
+SciQLopWaterfallGraphRemote* SciQLopPlot::add_remote_waterfall(const QStringList& labels,
+                                                               QVariantMap metaData)
+{
+    auto* g = m_impl->add_plottable<SciQLopWaterfallGraphRemote>(labels, metaData);
+    _configure_plotable(g, labels, {}, GraphType::Waterfall, GraphMarkerShape::NoMarker);
+    connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
+            &SciQLopPlottableInterface::set_range);
+    return g;
+}
+
+SciQLopColorMapRemote* SciQLopPlot::add_remote_color_map(const QString& name)
+{
+    auto* g = m_impl->add_remote_color_map(name);
+    if (g)
+    {
+        _configure_color_map(g, false, false);
+        connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
+                &SciQLopPlottableInterface::set_range);
+    }
+    return g;
+}
+
+SciQLopHistogram2DRemote* SciQLopPlot::add_remote_histogram2d(const QString& name, int x_bins,
+                                                               int y_bins, bool x_bins_log,
+                                                               bool y_bins_log)
+{
+    auto* hist = m_impl->add_remote_histogram2d(name, x_bins, y_bins);
+    if (hist)
+    {
+        hist->set_x_bins_log(x_bins_log);
+        hist->set_y_bins_log(y_bins_log);
+        _configure_color_map(hist, y_bins_log, false);
+        connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, hist,
+                &SciQLopPlottableInterface::set_range);
+    }
+    return hist;
 }
 
 SciQLopOverlay* SciQLopPlot::overlay()
