@@ -668,11 +668,13 @@ The line-graph slice proves the pattern end-to-end. The remaining graph types ea
 
 | Function class | Remote twin | N |
 |---|---|---|
-| `SciQLopSingleLineGraphFunction` | `SciQLopSingleLineGraphRemote` | 2 |
+| `SciQLopSingleLineGraphFunction` | _(folded into `SciQLopLineGraphRemote` — the multi-line remote handles single-component data; a separate variant would be redundant)_ | — |
 | `SciQLopCurveFunction` | `SciQLopCurveRemote` | 2 |
 | `SciQLopColorMapFunction` | `SciQLopColorMapRemote` | 3 |
-| `SciQLopHistogram2DFunction` | `SciQLopHistogram2DRemote` | 3 |
-| `SciQLopWaterfallGraphFunction` | `SciQLopWaterfallGraphRemote` | 3 (verify) |
+| `SciQLopHistogram2DFunction` | `SciQLopHistogram2DRemote` | 2 |
+| `SciQLopWaterfallGraphFunction` | `SciQLopWaterfallGraphRemote` | 2 |
+
+(N = output arity, taken from each `*Function` ctor's `SciQLopFunctionGraph(callable, this, N)`: only the colormap returns 3 buffers; histogram2d and waterfall return 2.)
 
 - [ ] For each: add the concrete class (header+cpp) mirroring Task 4, add an `add_remote_*` factory mirroring Task 7, bind it (Task 5 pattern), and add a `set_data`-delivers test mirroring Task 6.
 - [ ] Verify the correct `N` (output arity) per type by checking the `N` its `*Function` ctor passes to `SciQLopFunctionGraph`.

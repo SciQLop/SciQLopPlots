@@ -126,10 +126,15 @@ With the callable model, "busy" spans the blocking `get_data` call and
 and response are decoupled in time, so the existing idle detection would clear
 "busy" the instant the request is emitted — before data arrives.
 
-Therefore `RemoteDataProvider` must **mark busy on `data_requested` and clear it
-on the matching `set_data` arrival** (or an explicit end-of-stream). This is the
-only behavioral change beyond signal rewiring, and it is contained inside
-`RemoteDataProvider`.
+Therefore the `SciQLopRemoteGraph` adapter drives busy directly: it **sets busy
+on the graph's `range_changed`** (as the request goes out) and **clears it on
+`new_data_*`** (as the response arrives) — it does *not* wire `pipeline_idle`,
+which fires the instant the request is emitted. Because the QCP components that
+back the base `busy()` only exist after the first `set_data`, busy is held in a
+mixin flag (`m_busy`, read by `busy()`); each concrete remote graph's `set_busy`
+override updates that flag, emits `busy_changed`, and also forwards to the base
+so the component's own busy flag stays consistent once components exist. This is
+the only behavioral change beyond signal rewiring.
 
 ### Backpressure / stale responses
 
