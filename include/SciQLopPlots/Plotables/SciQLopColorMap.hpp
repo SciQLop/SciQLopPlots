@@ -204,6 +204,7 @@ public:
     inline void set_busy(bool busy) noexcept override
     {
         set_remote_busy(busy);
+        SciQLopColorMap::set_busy(busy);
         Q_EMIT busy_changed(busy);
     }
 };

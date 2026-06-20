@@ -1,7 +1,7 @@
 # RemoteDataProvider — out-of-process data channels
 
 **Date:** 2026-06-20
-**Status:** Approved design, pending implementation plan
+**Status:** Implemented (PR #89) — line, curve, waterfall, colormap, histogram2d
 **Branch:** `feat/remote-data-provider`
 
 ## Motivation

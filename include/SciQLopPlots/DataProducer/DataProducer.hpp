@@ -256,7 +256,7 @@ public:
 
     inline virtual QList<SciQLopPyBuffer> get_data(QList<SciQLopPyBuffer> values) override
     {
-        return values;
+        return std::move(values);
     }
 
 #ifdef BINDINGS_H
@@ -315,12 +315,18 @@ public:
 
     inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
 
-    inline Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) { m_worker->set_data(x, y); }
+    inline Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
+    {
+        m_worker->set_data(std::move(x), std::move(y));
+    }
     inline Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
     {
-        m_worker->set_data(x, y, z);
+        m_worker->set_data(std::move(x), std::move(y), std::move(z));
     }
-    inline Q_SLOT void set_data(QList<SciQLopPyBuffer> values) { m_worker->set_data(values); }
+    inline Q_SLOT void set_data(QList<SciQLopPyBuffer> values)
+    {
+        m_worker->set_data(std::move(values));
+    }
 
     inline void invalidate_cache() { m_provider->invalidate_cache(); }
 
