@@ -108,3 +108,36 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
     QObject::connect(this->as_graph, &SciQLopGraphInterface::range_changed, m_pipeline,
                      QOverload<const SciQLopPlotRange&>::of(&SimplePyCallablePipeline::call));
 }
+
+SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int N)
+        : m_pipeline { new RemoteDataPipeline(as_graph) }, as_graph { as_graph }
+{
+    m_connections = connect_pipeline_data_to_graph(m_pipeline, this->as_graph, N);
+
+    // Set busy when the range request goes out; clear busy when data arrives.
+    // NOT on pipeline_idle: for remote providers pipeline_idle fires as soon as
+    // the request is emitted (get_data returns immediately), before the response.
+    m_connections << QObject::connect(this->as_graph,
+        &SciQLopGraphInterface::range_changed, m_pipeline,
+        [pipeline = m_pipeline, g = this->as_graph](const SciQLopPlotRange& range)
+        { g->set_busy(true); pipeline->call(range); });
+
+    // Clear busy on the same arity the data path is wired for, so a mismatched
+    // signal can never drop busy without data having reached the graph.
+    const auto clear_busy = [g = this->as_graph]() { g->set_busy(false); };
+    switch (N)
+    {
+        case 2:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_2d,
+                                              this->as_graph, clear_busy);
+            break;
+        case 3:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_3d,
+                                              this->as_graph, clear_busy);
+            break;
+        default:
+            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_nd,
+                                              this->as_graph, clear_busy);
+            break;
+    }
+}

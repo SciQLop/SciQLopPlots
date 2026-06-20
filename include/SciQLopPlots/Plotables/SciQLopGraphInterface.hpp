@@ -419,3 +419,27 @@ public:
 
     inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
 };
+
+// Mixin that binds a RemoteDataPipeline to a graph. Sibling of SciQLopFunctionGraph.
+// Busy semantics differ from the callable model: pipeline_idle fires as soon as
+// the request is emitted (the remote get_data returns immediately), so we must NOT
+// clear busy on pipeline_idle. Instead: busy=true on range request out, busy=false
+// when data actually arrives.
+class SciQLopRemoteGraph
+{
+protected:
+    RemoteDataPipeline* m_pipeline = nullptr;
+    SciQLopPlottableInterface* as_graph = nullptr;
+    QList<QMetaObject::Connection> m_connections;
+
+public:
+    SciQLopRemoteGraph() { }
+    SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int N = 2);
+    virtual ~SciQLopRemoteGraph() = default;
+
+    // The bound channel endpoint: SciQLop connects channel.data_requested to its
+    // IPC send and calls channel.set_data(...) with shared-memory-backed numpy.
+    inline RemoteDataPipeline* remote_channel() const noexcept { return m_pipeline; }
+
+    inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
+};
