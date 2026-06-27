@@ -30,7 +30,7 @@
 #include <QIcon>
 #include <QPainter>
 #include <QSpinBox>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 LineDelegate::LineDelegate(QPen pen, GraphLineStyle style, GraphMarkerShape marker_shape,
                            QWidget* parent)
