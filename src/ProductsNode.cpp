@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include "SciQLopPlots/Icons/icons.hpp"
-#include "fmt/core.h"
+#include "fmt/format.h"
 
 ProductsModelNode* ProductsModelNode::_root_node()
 {

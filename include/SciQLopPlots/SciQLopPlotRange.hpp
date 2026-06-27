@@ -29,7 +29,7 @@
 #include <QTimeZone>
 #include <QPair>
 #include <fmt/chrono.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <utility>
 #include <QRegularExpression>
 

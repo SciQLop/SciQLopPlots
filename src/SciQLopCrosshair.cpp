@@ -26,7 +26,7 @@
 #include <data-locator.h>
 #include <plottables/plottable-multigraph.h>
 #include <fmt/chrono.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <cmath>
 #include <ctime>
 

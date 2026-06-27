@@ -28,7 +28,7 @@
 #include <QPainter>
 #include <QSpinBox>
 #include <QStringLiteral>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 MarkerDelegate::MarkerDelegate(GraphMarkerShape shape, QWidget* parent) : QComboBox(parent)
 {
