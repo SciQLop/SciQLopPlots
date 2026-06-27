@@ -53,6 +53,11 @@ protected:
     SciQLopPlotRange m_data_range; // key range of currently loaded data
     QVariantMap m_metaData;
     std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
+    // The ctor assigns a unique placeholder objectName ("Line0", "Curve1", …)
+    // used as an internal id. That id is NOT meaningful as a user-facing label,
+    // so auto-naming of components must not derive from it — only from a name
+    // the caller actually set via set_name().
+    bool m_user_named = false;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
@@ -73,7 +78,15 @@ public:
 
     virtual void set_visible(bool visible) noexcept { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
+    inline virtual void set_name(const QString& name) noexcept
+    {
+        m_user_named = true;
+        this->setObjectName(name);
+    }
+
+    // True once a caller has set a meaningful name via set_name() (i.e. the
+    // objectName is no longer just the auto-generated placeholder id).
+    inline bool has_user_name() const noexcept { return m_user_named; }
 
     virtual SciQLopPlotRange range() const noexcept { return m_range; }
 

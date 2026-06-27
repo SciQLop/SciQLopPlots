@@ -572,40 +572,97 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
                                       const QList<QColor>& colors, ::GraphType graph_type,
                                       ::GraphMarkerShape marker)
 {
-    if (plottable)
+    if (!plottable)
+        return;
+
+    auto apply_labels = [plottable, labels]()
     {
-        if (std::size(colors) == std::size(plottable->components()))
+        const int count = static_cast<int>(std::size(plottable->components()));
+        if (count == 0)
+            return;
+        if (labels.size() == count)
+        {
+            plottable->set_labels(labels);
+            return;
+        }
+        // No (or mismatched) explicit labels: derive component names from the
+        // graph's base name so multi-component callbacks don't render with
+        // empty/duplicate names. Only do this when the caller actually named the
+        // graph — never propagate the auto-generated placeholder id ("Line0",
+        // …) into the legend, which is meaningless to the user.
+        if (!plottable->has_user_name())
+            return;
+        const QString base = plottable->name();
+        if (base.isEmpty())
+            return;
+        QStringList derived;
+        if (count == 1)
+            derived << base;
+        else
+            for (int i = 0; i < count; ++i)
+                derived << QStringLiteral("%1[%2]").arg(base).arg(i);
+        plottable->set_labels(derived);
+    };
+
+    auto apply_style = [this, plottable, colors, graph_type, marker, apply_labels]()
+    {
+        const auto components = plottable->components();
+        if (components.isEmpty())
+            return;
+        if (std::size(colors) == std::size(components))
         {
             plottable->set_colors(colors);
         }
         else
         {
-            for (auto& component : plottable->components())
+            for (auto& component : components)
             {
                 component->set_color(m_color_palette[m_color_palette_index]);
                 m_color_palette_index = (m_color_palette_index + 1) % std::size(m_color_palette);
             }
         }
-        for (auto& component : plottable->components())
+        for (auto& component : components)
         {
             component->set_marker_shape(marker);
             if (graph_type == ::GraphType::Scatter)
                 component->set_line_style(::GraphLineStyle::NoLine);
         }
-        if (std::size(labels) == std::size(plottable->components()))
-            plottable->set_labels(labels);
-        connect(
-            plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
-            [this]()
-            {
-                if (this->m_auto_scale)
-                    this->rescale_axes();
-            },
-            Qt::QueuedConnection);
-        connect(
-            plottable, &SciQLopGraphInterface::request_rescale, this,
-            [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
+        apply_labels();
+    };
+
+    if (!plottable->components().isEmpty())
+    {
+        apply_style();
     }
+    else
+    {
+        // Function/remote graphs create their components from the first data
+        // batch (lazily, in sync_components) — after this runs. Re-apply the
+        // per-component style once they exist, mirroring the static path which
+        // calls set_data (creating components) before _configure_plotable.
+        auto conn = std::make_shared<QMetaObject::Connection>();
+        *conn = connect(
+            plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
+            [plottable, apply_style, conn]()
+            {
+                if (!plottable->components().isEmpty())
+                {
+                    apply_style();
+                    QObject::disconnect(*conn);
+                }
+            });
+    }
+    connect(
+        plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
+        [this]()
+        {
+            if (this->m_auto_scale)
+                this->rescale_axes();
+        },
+        Qt::QueuedConnection);
+    connect(
+        plottable, &SciQLopGraphInterface::request_rescale, this,
+        [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
 }
 
 SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
@@ -965,12 +1022,14 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            if (labels.size() <= 1)
-                plottable = m_impl->add_plottable<SciQLopSingleLineGraphFunction>(
-                    std::move(callable), labels, metaData);
-            else
-                plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
-                    std::move(callable), labels, metaData);
+            // Size components from the callback's data, not the label count.
+            // SciQLopLineGraphFunction creates one component per data column on
+            // the first result, so a multi-component callback no longer collapses
+            // to (and gets rejected by) the single-line fast-path when labels are
+            // omitted. The per-component styling is (re)applied once those
+            // components exist, see _configure_plotable.
+            plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
+                std::move(callable), labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,
