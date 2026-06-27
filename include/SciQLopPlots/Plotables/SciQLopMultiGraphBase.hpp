@@ -58,6 +58,16 @@ public:
         return _multiGraph ? _multiGraph->componentCount() : 0;
     }
 
+    // Propagate the user-facing name to the underlying QCPMultiGraph so the
+    // legend shows it even before any data/components arrive (the loading cue),
+    // instead of falling back to a meaningless placeholder.
+    void set_name(const QString& name) noexcept override
+    {
+        SciQLopGraphInterface::set_name(name);
+        if (_multiGraph)
+            _multiGraph->setName(name);
+    }
+
     void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }
