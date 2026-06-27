@@ -263,6 +263,13 @@ protected:
                              const QList<QColor>& colors, ::GraphType graph_type,
                              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker);
 
+    // Apply per-component cosmetics (palette/explicit colors, marker, scatter
+    // line style) then names. Must run when the components actually exist.
+    void _apply_component_style(SciQLopGraphInterface* plottable, const QList<QColor>& colors,
+                                ::GraphType graph_type, ::GraphMarkerShape marker,
+                                const QStringList& labels);
+    void _apply_component_labels(SciQLopGraphInterface* plottable, const QStringList& labels);
+
     virtual SciQLopGraphInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
