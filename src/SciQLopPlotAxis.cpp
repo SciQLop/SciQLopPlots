@@ -365,10 +365,10 @@ void SciQLopPlotAxis::rescale() noexcept
         for (auto* p : plot->sqp_plottables())
         {
             // qobject_cast to SciQLopGraphInterface deliberately excludes
-            // colormaps/histograms: their y axis carries positional metadata
-            // (bin edges, frequency rows), not data values to pool. The
-            // legacy min/max fallthrough still considers them via QCP's own
-            // getValueRange path.
+            // colormaps/histograms: their value axis carries positional metadata
+            // (bin edges, frequency rows), not data values to pool. Their full
+            // value extent is unioned back into the percentile result below so a
+            // colormap sharing the axis with a graph isn't clipped away.
             auto* graph = qobject_cast<SciQLopGraphInterface*>(p);
             if (!graph || graph->y_axis() != this)
                 continue;
@@ -395,11 +395,30 @@ void SciQLopPlotAxis::rescale() noexcept
             // we fall through to min/max rather than appear no-op.
             if (!std::isnan(r.start()) && !std::isnan(r.stop()) && r.start() != r.stop())
             {
+                // Colormaps/histograms were excluded from the pool above, but
+                // their full value extent must still bound the axis when they
+                // share it with a graph. interface1D() is non-null only for 1D
+                // plottables (graphs/curves, already in the pool); colormaps and
+                // histograms return null, so union just their extent back in.
+                QCPRange unioned(r.start(), r.stop());
+                for (auto* plottable : m_axis->plottables())
+                {
+                    if (plottable->interface1D() || !plottable->realVisibility()
+                        || !plottable->keyAxis())
+                        continue;
+                    bool found = false;
+                    const auto extent = (plottable->keyAxis() == m_axis)
+                        ? plottable->getKeyRange(found, signDomain)
+                        : plottable->getValueRange(found, signDomain,
+                                                   plottable->keyAxis()->range());
+                    if (found)
+                        unioned.expand(extent);
+                }
                 // Route through set_range so clamp_range, m_last_valid_range,
                 // and the queued replot stay consistent with manual range
                 // changes (avoids the rangeChanged lambda reverting the new
                 // range when it exceeds m_max_range_size).
-                set_range(r);
+                set_range(SciQLopPlotRange(unioned.lower, unioned.upper, _is_time_axis));
                 return;
             }
         }
