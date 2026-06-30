@@ -413,3 +413,50 @@ class TestInspectorUI:
     def test_time_axis_delegate_has_no_percentile_group(self, ts_plot, qtbot):
         time_ax = ts_plot.time_axis()
         assert "Autoscale percentile" not in self._group_titles(time_ax, qtbot)
+
+
+class TestColormapSharesAxisWithGraph:
+    """When a colormap and a line graph share the same value axis, percentile
+    autoscale clips the graph's outliers but must still keep the colormap's full
+    value extent visible. The colormap is excluded from the percentile pool (its
+    value axis carries bin positions, not samples to clip), so its extent has to
+    be unioned back in -- otherwise the axis collapses onto the (smaller) line.
+    """
+
+    def _colormap_and_line_on_shared_axis(self, plot):
+        # Colormap value (y) extent spans 0..1000.
+        nx, ny = 60, 50
+        xc = np.linspace(0.0, 100.0, nx).astype(np.float64)
+        yc = np.linspace(0.0, 1000.0, ny).astype(np.float64)
+        zc = np.full((nx, ny), 0.5, dtype=np.float64)
+        cmap = plot.colormap(xc, yc, zc.ravel())
+        _pump_events()
+
+        # Line value (y) extent spans only ~[-1, 1] -- much smaller.
+        xl = np.linspace(0.0, 100.0, 200).astype(np.float64)
+        yl = np.sin(xl * 0.1).astype(np.float64)
+        line = plot.line(xl, yl)
+        line.set_y_axis(cmap.y_axis())  # share the colormap's (right) value axis
+        _pump_events()
+        plot.replot(True)
+        _pump_events()
+        return cmap, line
+
+    def test_default_percentiles_include_colormap_extent(self, plot):
+        cmap, line = self._colormap_and_line_on_shared_axis(plot)
+        ax = cmap.y_axis()
+        ax.rescale()
+        r = ax.range()
+        # min/max path: union of line [-1,1] and colormap [0,1000]
+        assert r.stop() == pytest.approx(1000.0, abs=1.0)
+
+    def test_percentile_keeps_colormap_extent(self, plot):
+        cmap, line = self._colormap_and_line_on_shared_axis(plot)
+        ax = cmap.y_axis()
+        ax.set_autoscale_percentile_low(1.0)
+        ax.set_autoscale_percentile_high(99.0)
+        ax.rescale()
+        r = ax.range()
+        # The colormap's 0..1000 extent must survive percentile clipping of the
+        # line; the axis must not collapse onto the line's ~[-1, 1].
+        assert r.stop() == pytest.approx(1000.0, abs=1.0)
