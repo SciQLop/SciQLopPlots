@@ -319,6 +319,7 @@ struct _PyBuffer_impl : PyObjectWrapper
     inline void init_buffer(PyObject* obj)
     {
         this->py_obj.set_obj(obj);
+        bool numeric_type = true;
         {
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
@@ -326,13 +327,25 @@ struct _PyBuffer_impl : PyObjectWrapper
                                                 PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS
                                                     | PyBUF_FORMAT)
                 == 0;
+            if (this->is_valid)
+            {
+                static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
+                numeric_type = this->buffer.format != nullptr
+                    && numeric_formats.find(this->buffer.format[0]) != std::string_view::npos;
+                if (!numeric_type)
+                {
+                    // Release while we still hold the GIL: the ctor threw
+                    // before ~_PyBuffer_impl() ever runs, so this is the
+                    // only chance to drop the exporter ref PyObject_GetBuffer
+                    // took above (otherwise it leaks on every rejected dtype).
+                    PyBuffer_Release(&this->buffer);
+                    this->is_valid = false;
+                }
+            }
         }
         if (!this->is_valid)
-            throw std::runtime_error("Failed to get buffer from object");
-        static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
-        if (this->buffer.format == nullptr
-            || numeric_formats.find(this->buffer.format[0]) == std::string_view::npos)
-            throw std::runtime_error("Buffer must be a numeric type");
+            throw std::runtime_error(
+                numeric_type ? "Failed to get buffer from object" : "Buffer must be a numeric type");
         this->is_row_major = PyBuffer_IsContiguous(&this->buffer, 'C') == 1;
         if (this->buffer.ndim > 0)
         {

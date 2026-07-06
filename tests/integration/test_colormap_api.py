@@ -75,6 +75,20 @@ class TestColormapData:
         data = cmap.data()
         assert data is not None
 
+    def test_non_numeric_dtype_does_not_leak_buffer(self, plot, sample_colormap_data):
+        """A rejected non-numeric buffer (e.g. bool) must not leak the
+        exporter's PyObject ref: PyObject_GetBuffer succeeds and takes a
+        strong ref before the dtype check runs, so the reject path must
+        release it instead of throwing past the release."""
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        bad_z = z.astype(bool)
+        refcount_before = sys.getrefcount(bad_z)
+        for _ in range(50):
+            with pytest.raises(TypeError):
+                cmap.set_data(x, y, bad_z)
+        assert sys.getrefcount(bad_z) == refcount_before
+
 
 class TestColormapProperties:
 
