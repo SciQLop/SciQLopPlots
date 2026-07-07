@@ -152,6 +152,22 @@ class TestColormapProperties:
         del cmap
         force_gc()
 
+    def test_set_contour_levels_emits_changed_signal(self, plot, sample_colormap_data):
+        """set_auto_contour_levels emits contour_levels_changed so the
+        inspector's auto-count spin box can refresh; set_contour_levels
+        also clears the auto count (mAutoContourCount = 0) but historically
+        didn't emit the same signal, leaving the spin box showing a stale
+        value."""
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        cmap.set_auto_contour_levels(3)
+
+        received = []
+        cmap.contour_levels_changed.connect(lambda: received.append(True))
+        cmap.set_contour_levels([0.2, 0.5, 0.8])
+
+        assert received, "set_contour_levels should emit contour_levels_changed"
+
 
 class TestColormapAutoScaleY:
     """auto_scale_y's set_data hook must respect a configured max-range-size

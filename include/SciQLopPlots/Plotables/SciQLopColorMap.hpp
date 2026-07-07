@@ -73,7 +73,11 @@ public:
 
     inline void set_contour_levels(const QVector<double>& levels)
     {
-        if (_cmap) _cmap->setContourLevels(levels);
+        if (_cmap)
+        {
+            _cmap->setContourLevels(levels);
+            Q_EMIT contour_levels_changed();
+        }
     }
 
     inline QVector<double> contour_levels() const
