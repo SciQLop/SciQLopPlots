@@ -153,6 +153,52 @@ class TestColormapProperties:
         force_gc()
 
 
+class TestColormapAutoScaleY:
+    """auto_scale_y's set_data hook must respect a configured max-range-size
+    limit on the value axis, not silently revert to the pre-existing zoom.
+
+    Regression for: `set_data` called `_valueAxis->qcp_axis()->setRange(yRange)`
+    directly (bypassing `SciQLopPlotAxis::set_range`), so with a max-range-size
+    limit configured the `rangeChanged` clamp handler sees `clamped != requested`
+    and reverts to `m_last_valid_range` -- auto-scale-y silently no-ops. This is
+    the exact anti-pattern PR #76 fixed for the 'm'-rescale path
+    (TestRescaleRespectsRangeLimit in test_histogram2d.py); this call site was
+    missed.
+    """
+
+    @staticmethod
+    def _pump(n=80):
+        from PySide6.QtCore import QCoreApplication
+        for _ in range(n):
+            QCoreApplication.processEvents()
+
+    def test_auto_scale_y_respects_range_limit_not_revert(self, plot, sample_colormap_data):
+        from SciQLopPlots import SciQLopPlotRange
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        self._pump()
+        plot.replot(True)
+        self._pump()
+
+        y_axis = cmap.y_axis()
+        y_axis.set_max_range_size(3.0)
+        y_axis.set_range(SciQLopPlotRange(0.0, 2.0))  # a valid zoom within the limit
+        self._pump()
+
+        cmap.set_auto_scale_y(True)
+        new_x = np.linspace(0, 10, 50).astype(np.float64)
+        new_y = np.linspace(0, 20, 30).astype(np.float64)  # extent 20 >> the 3.0 limit
+        new_z = np.random.rand(30, 50).astype(np.float64)
+        cmap.set_data(new_x, new_y, new_z)
+        self._pump()
+
+        yr = y_axis.range()
+        assert not (abs(yr.start() - 0.0) < 0.5 and abs(yr.stop() - 2.0) < 0.5), \
+            "auto_scale_y reverted to the pre-existing zoom instead of rescaling to new data"
+        assert (yr.stop() - yr.start()) == pytest.approx(3.0, abs=0.5)
+        assert 8.0 <= yr.start() <= 9.0 and 11.0 <= yr.stop() <= 12.0
+
+
 class TestColormapEmptyData:
     """set_data with no time samples must not crash.
 

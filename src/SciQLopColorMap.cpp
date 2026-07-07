@@ -151,12 +151,17 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
 
     check_first_data(nx);
 
-    if (_auto_scale_y && _dataHolder && _dataHolder->source)
+    if (_auto_scale_y && _dataHolder && _dataHolder->source && _valueAxis)
     {
         bool found = false;
         auto yRange = _dataHolder->source->yRange(found);
-        if (found)
-            _valueAxis->qcp_axis()->setRange(yRange);
+        // Route through set_range (not QCPAxis::setRange directly) so clamp_range
+        // and m_last_valid_range stay consistent: with a max/min range-size limit
+        // configured, a direct setRange makes the rangeChanged handler see
+        // clamped != requested and revert to the old range, so auto-scale-y
+        // silently does nothing. Mirrors the rescale() fix in SciQLopPlotAxis.cpp.
+        if (found && yRange.lower != yRange.upper)
+            _valueAxis->set_range(SciQLopPlotRange(yRange.lower, yRange.upper));
     }
 
     Q_EMIT data_changed(x, y, z);
