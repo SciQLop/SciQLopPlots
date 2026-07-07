@@ -40,10 +40,14 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
 SciQLopColorMapBase::~SciQLopColorMapBase()
 {
     // Unhook the rescale provider so the color-scale axis won't call back into
-    // our (half-destroyed) z_rescale_range. Safe if the axis has already been
-    // destroyed thanks to QPointer.
+    // our (half-destroyed) z_rescale_range -- but only if we're still the
+    // plottable that owns the shared slot. A colormap and a histogram2d (or
+    // two histograms) can coexist on one plot, sharing this one axis; without
+    // the ownership check, destroying the NON-owner would still clobber
+    // whichever plottable is the current owner. Safe if the axis has already
+    // been destroyed thanks to QPointer.
     if (_colorScaleAxis)
-        _colorScaleAxis->set_rescale_range_provider(nullptr);
+        _colorScaleAxis->clear_rescale_range_provider(this);
 }
 
 void SciQLopColorMapBase::_connect_legend_visibility()
@@ -136,7 +140,7 @@ std::optional<SciQLopPlotRange> SciQLopColorMapBase::z_rescale_range() const noe
 void SciQLopColorMapBase::install_rescale_provider() noexcept
 {
     if (_colorScaleAxis)
-        _colorScaleAxis->set_rescale_range_provider([this]() { return z_rescale_range(); });
+        _colorScaleAxis->set_rescale_range_provider(this, [this]() { return z_rescale_range(); });
 }
 
 void SciQLopColorMapBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept

@@ -319,7 +319,12 @@ class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
 #ifndef BINDINGS_H
     // Lets the owning colormap supply a custom rescale range (e.g. percentile
     // over visible data). Returning nullopt falls back to plain min/max.
+    // Colormap and histogram2d plottables share this ONE slot on the plot's
+    // single color-scale axis; m_rescale_range_provider_owner records which
+    // plottable currently owns it so a differently-owned plottable's
+    // destruction can't clear it out from under the current owner.
     std::function<std::optional<SciQLopPlotRange>()> m_rescale_range_provider;
+    const void* m_rescale_range_provider_owner = nullptr;
 #endif
 
 public:
@@ -329,9 +334,23 @@ public:
 
 #ifndef BINDINGS_H
     inline void
-    set_rescale_range_provider(std::function<std::optional<SciQLopPlotRange>()> provider) noexcept
+    set_rescale_range_provider(const void* owner,
+                              std::function<std::optional<SciQLopPlotRange>()> provider) noexcept
     {
         m_rescale_range_provider = std::move(provider);
+        m_rescale_range_provider_owner = owner;
+    }
+
+    // No-op if `owner` isn't the plottable that currently owns the slot --
+    // lets a plottable's destructor unhook safely without clobbering a
+    // different plottable that has since taken over the shared axis.
+    inline void clear_rescale_range_provider(const void* owner) noexcept
+    {
+        if (m_rescale_range_provider_owner == owner)
+        {
+            m_rescale_range_provider = nullptr;
+            m_rescale_range_provider_owner = nullptr;
+        }
     }
 #endif
 

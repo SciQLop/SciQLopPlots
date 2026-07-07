@@ -205,6 +205,67 @@ def _make_histogram_with_spike(plot):
     return hist
 
 
+class TestSharedColorScaleProviderOwnership:
+    """A colormap and a histogram2d on the same plot share one z (color-scale)
+    axis (SciQLopPlot's m_axes[4]); each installs its own rescale-range
+    provider on it via SciQLopColorMapBase::install_rescale_provider(), and
+    "last install wins" for which one is the active owner.
+
+    Regression for: ~SciQLopColorMapBase() nulled the shared provider slot
+    unconditionally, with no check of whether this plottable is the one that
+    currently owns it. Destroying the NON-owner plottable still cleared the
+    slot, silently degrading the survivor's (the actual owner's) z-axis
+    rescale from percentile-clipped to a plain min/max fallback.
+
+    The histogram2d's own async binning pipeline and the *second*
+    z-plottable added to a plot never getting wired into QCP's own
+    colorScale()-based min/max fallback (a separate, pre-existing gap in
+    _ensure_colorscale_is_visible, out of scope here) make "does the range
+    change at all" an unreliable signal by itself: with two z-plottables
+    sharing an axis, the legacy min/max fallback silently no-ops for
+    whichever one was added second, so a stale value can look unchanged for
+    reasons that have nothing to do with this fix. Reconfiguring the
+    survivor's OWN percentile to a value that would visibly narrow its
+    result -- and asserting the range actually reflects it -- is what
+    isolates "is the provider still installed" from that fallback gap.
+    """
+
+    def test_removing_histogram_does_not_disable_colormap_percentile(self, plot):
+        # histogram installed FIRST (starts as provider owner); colormap
+        # installed SECOND, which takes over ownership (last-install-wins).
+        hist = _make_histogram_with_spike(plot)
+        cmap, cx, cy = _make_colormap_with_spread_and_outliers(plot)
+        cmap.set_autoscale_percentile_low(2.5)
+        cmap.set_autoscale_percentile_high(97.5)
+
+        plot.x_axis().set_range(SciQLopPlotRange(float(cx[0]), float(cx[-1])))
+        plot.y_axis().set_range(SciQLopPlotRange(float(cy[0]), float(cy[-1])))
+
+        zaxis = cmap.z_axis()
+        zaxis.rescale()
+        before = zaxis.range()
+
+        plot.remove_plottable(hist)  # synchronous C++ delete of the NON-owner
+
+        # A materially different (tighter) percentile band on the surviving
+        # colormap: if its provider is still installed, this changes the
+        # rescaled range; if the destruction above wrongly cleared it, the
+        # (broken, no-op-for-a-second-z-plottable) legacy fallback leaves the
+        # range frozen at `before` regardless of this new config.
+        cmap.set_autoscale_percentile_low(10.0)
+        cmap.set_autoscale_percentile_high(90.0)
+        zaxis.rescale()
+        after = zaxis.range()
+
+        assert (after.start(), after.stop()) != (before.start(), before.stop()), (
+            "colormap's percentile rescale provider was cleared by an "
+            "unrelated histogram's destruction"
+        )
+        # 10/90 must clip at least as tight as 2.5/97.5 on this fixture.
+        assert after.start() >= before.start() - 1e-9
+        assert after.stop() <= before.stop() + 1e-9
+
+
 class TestHistogram2DPercentile:
 
     def test_default_percentiles_on_histogram(self, plot):
