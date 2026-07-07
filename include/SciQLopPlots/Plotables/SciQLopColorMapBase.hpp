@@ -76,7 +76,7 @@ public:
 
     inline virtual void set_name(const QString& name) noexcept override
     {
-        this->setObjectName(name);
+        SciQLopPlottableInterface::set_name(name);
         if (auto* p = plottable(); p)
             p->setName(name);
     }

@@ -44,7 +44,11 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
     connect(_cmap, &QCPAbstractPlottable::busyChanged,
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopColorMap::set_gradient(ColorGradient::Jet);
-    SciQLopColorMap::set_name(name);
+    // Not set_name(): that would mark this auto-named ("ColorMap") instance
+    // as user-named, same as SciQLopGraphInterface's ctor avoids it for its
+    // own auto-generated placeholder ("Line0", "Curve1", ...).
+    this->setObjectName(name);
+    _cmap->setName(name);
 
     install_rescale_provider();
 

@@ -47,7 +47,11 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
     connect(_hist, &QCPAbstractPlottable::busyChanged,
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);
-    SciQLopHistogram2D::set_name(name);
+    // Not set_name(): that would mark this auto-named ("Histogram2D") instance
+    // as user-named, same as SciQLopGraphInterface's ctor avoids it for its
+    // own auto-generated placeholder ("Line0", "Curve1", ...).
+    this->setObjectName(name);
+    _hist->setName(name);
 
     // The bin scale follows the axis scale. SciQLopPlotAxis::set_log blocks the
     // underlying QCPAxis::scaleTypeChanged, so drive the re-bin (and the UI

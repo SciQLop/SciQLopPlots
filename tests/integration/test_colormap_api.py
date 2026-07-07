@@ -168,6 +168,21 @@ class TestColormapProperties:
 
         assert received, "set_contour_levels should emit contour_levels_changed"
 
+    def test_set_name_marks_user_named(self, plot, sample_colormap_data):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        assert cmap.has_user_name() is False
+        cmap.set_name("Flux")
+        assert cmap.has_user_name() is True
+
+    def test_set_name_emits_name_changed(self, plot, sample_colormap_data):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        received = []
+        cmap.name_changed.connect(lambda name: received.append(name))
+        cmap.set_name("Flux")
+        assert received == ["Flux"]
+
 
 class TestColormapAutoScaleY:
     """auto_scale_y's set_data hook must respect a configured max-range-size

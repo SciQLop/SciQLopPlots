@@ -32,12 +32,12 @@ SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObje
     , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
           this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
 {
+    connect(this, &QObject::objectNameChanged, this, &SciQLopPlottableInterface::name_changed);
 }
 
 SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)
         : SciQLopPlottableInterface(metaData, parent)
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopGraphInterface::name_changed);
     setObjectName(UniqueNamesFactory::unique_name(prefix));
 }
 
