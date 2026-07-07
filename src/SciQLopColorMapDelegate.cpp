@@ -65,6 +65,7 @@ SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidge
     widthSpin->setDecimals(1);
     widthSpin->setSingleStep(0.1);
     widthSpin->setValue(object->contour_width());
+    widthSpin->setToolTip("Not yet implemented: contour lines are always drawn at a fixed hairline width.");
     contoursLayout->addRow("Width", widthSpin);
     connect(widthSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), object,
             [object](double w) { object->set_contour_width(w); });
