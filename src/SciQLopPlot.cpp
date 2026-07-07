@@ -965,7 +965,20 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
     if (!cm)
         return nullptr;
     cm->set_meta_data(metaData);
-    cm->set_data(std::move(x), std::move(y), std::move(z));
+    try
+    {
+        cm->set_data(std::move(x), std::move(y), std::move(z));
+    }
+    catch (...)
+    {
+        // set_data validates shapes after the colormap is already registered
+        // (m_color_map set, colorscale shown). Without unwinding, m_color_map
+        // stays non-null forever, so every later colormap plot() on this plot
+        // silently returns None. Deleting cm re-enters the destroyed handler
+        // that resets m_color_map, so the plot recovers for the next call.
+        delete cm;
+        throw;
+    }
     _configure_color_map(cm, y_log_scale, z_log_scale);
     return cm;
 }

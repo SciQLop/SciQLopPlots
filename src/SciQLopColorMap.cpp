@@ -113,6 +113,15 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
             "ColorMap.set_data: y size must equal len(z)/len(x) (1D y) "
             "or len(z) (2D y)");
 
+    // PyObject_GetBuffer is requested with PyBUF_ANY_CONTIGUOUS, so a
+    // transposed/np.asfortranarray 2D y or z is silently accepted here — but
+    // QCPSoADataSource2D indexes the raw buffer as row-major, so every cell
+    // would be wrong with no warning. Reject rather than misrender.
+    if ((y.ndim() >= 2 && !y.row_major()) || (z.ndim() >= 2 && !z.row_major()))
+        throw std::runtime_error(
+            "ColorMap.set_data: y/z must be row-major (C-order); pass "
+            "np.ascontiguousarray(arr) for a transposed/Fortran-order array");
+
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);
 

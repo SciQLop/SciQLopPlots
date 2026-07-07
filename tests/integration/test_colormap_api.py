@@ -49,6 +49,20 @@ class TestColormapCreation:
         cmap = plot.colormap(x, y, z, name="heat")
         assert cmap is not None
 
+    def test_failed_colormap_does_not_permanently_disable_plot(self, plot, sample_colormap_data):
+        """add_color_map() registers the plottable (sets m_color_map, shows
+        the colorscale) before set_data() validates shapes. If set_data()
+        throws and nothing unwinds the registration, m_color_map stays
+        non-null forever and every later plot.colormap() call silently
+        returns None."""
+        x, y, z = sample_colormap_data
+        bad_y = y[:7]  # neither len(z)/len(x) (1D) nor len(z) (2D)
+        with pytest.raises(Exception):
+            plot.colormap(x, bad_y, z)
+
+        cmap = plot.colormap(x, y, z)
+        assert cmap is not None
+
     def test_callable_colormap(self, plot):
         def make_data(start, stop):
             x = np.linspace(start, stop, 50).astype(np.float64)
@@ -88,6 +102,18 @@ class TestColormapData:
             with pytest.raises(TypeError):
                 cmap.set_data(x, y, bad_z)
         assert sys.getrefcount(bad_z) == refcount_before
+
+    def test_fortran_order_z_rejected(self, plot, sample_colormap_data):
+        """PyObject_GetBuffer is requested with PyBUF_ANY_CONTIGUOUS, so a
+        transposed/np.asfortranarray z is silently accepted — but the
+        colormap data source indexes it as row-major, misrendering every
+        cell with no warning. set_data must reject it instead."""
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        fortran_z = np.asfortranarray(z)
+        assert not fortran_z.flags["C_CONTIGUOUS"]
+        with pytest.raises(Exception):
+            cmap.set_data(x, y, fortran_z)
 
 
 class TestColormapProperties:
