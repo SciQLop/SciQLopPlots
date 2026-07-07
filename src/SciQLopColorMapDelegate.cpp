@@ -70,6 +70,7 @@ SciQLopColorMapDelegate::SciQLopColorMapDelegate(SciQLopColorMap* object, QWidge
             [object](double w) { object->set_contour_width(w); });
 
     auto* labelsCheck = new BooleanDelegate(object->contour_labels_enabled(), contoursBox);
+    labelsCheck->setToolTip("Not yet implemented: contour lines are drawn but numeric labels are not.");
     contoursLayout->addRow("Show labels", labelsCheck);
     connect(labelsCheck, &BooleanDelegate::value_changed, object,
             &SciQLopColorMap::set_contour_labels_enabled);

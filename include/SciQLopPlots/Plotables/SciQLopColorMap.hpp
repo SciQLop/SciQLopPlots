@@ -142,6 +142,8 @@ public:
         return _cmap ? _cmap->contourPen().widthF() : 1.0;
     }
 
+    // NOTE: no renderer currently draws contour labels, so toggling this has
+    // no visible effect (known limitation, not yet implemented).
     inline void set_contour_labels_enabled(bool enabled)
     {
         if (_cmap)
