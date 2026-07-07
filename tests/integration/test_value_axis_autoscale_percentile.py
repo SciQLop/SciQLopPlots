@@ -249,19 +249,34 @@ def _curve(plot, dtype, qtbot):
 
 
 def _colormap(plot, dtype):
+    # A flat baseline (single repeated value) plus two single-cell outliers
+    # degenerates under ANY non-trivial percentile trim: with only 2 outlier
+    # cells out of 2000, the 2.5/97.5 cutoffs both land back on the flat
+    # value, giving a zero-width clipped range. That's the exact D-08 edge
+    # case (z_rescale_range() now falls back to min/max on a zero-width
+    # percentile result) rather than what this matrix means to test --
+    # genuine percentile narrowing -- so give the baseline real spread
+    # (mirrors _y_with_outliers's sine-baseline approach).
     nx, ny = 50, 40
+    n = nx * ny
     x = np.linspace(0., 49., nx).astype(np.float64)
     y = np.linspace(0., 39., ny).astype(np.float64)
     if np.issubdtype(dtype, np.integer):
         info = np.iinfo(dtype)
-        mid = (int(info.min) + int(info.max)) // 2
-        z = np.full((nx, ny), mid, dtype=dtype)
-        z[10, 5] = info.max
-        z[20, 7] = info.min
+        SAFE_DOUBLE = 1 << 52
+        type_max = min(int(info.max), SAFE_DOUBLE)
+        type_min = max(int(info.min), -SAFE_DOUBLE) if info.min < 0 else 0
+        mid = (type_min + type_max) // 2
+        amp = min(50, (type_max - type_min) // 8) or 1
+        baseline = mid + (np.sin(np.linspace(0., 4. * np.pi, n)) * amp)
+        z = baseline.reshape(nx, ny).astype(dtype)
+        hi, lo = info.max, info.min
     else:
-        z = np.full((nx, ny), 0.5, dtype=dtype)
-        z[10, 5] = 1.0e6
-        z[20, 7] = -1.0e6
+        baseline = np.sin(np.linspace(0., 4. * np.pi, n)) * 100.
+        z = baseline.reshape(nx, ny).astype(dtype)
+        hi, lo = 1.0e6, -1.0e6
+    z[10, 5] = hi
+    z[20, 7] = lo
     cmap = plot.colormap(x, y, z.ravel())
     _pump_events()
     return cmap  # percentile config + rescale go through the colormap, not the axis

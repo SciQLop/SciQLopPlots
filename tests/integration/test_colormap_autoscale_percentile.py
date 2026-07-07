@@ -58,6 +58,24 @@ def _make_colormap_with_outliers(plot):
     return cmap, x, y
 
 
+def _make_colormap_with_spread_and_outliers(plot):
+    """Colormap whose z is uniform noise in [-1, 1] plus two extreme cells.
+
+    Unlike `_make_colormap_with_outliers` (a single flat value), a 2.5/97.5
+    percentile clip here lands inside the spread rather than degenerating to
+    a zero-width range -- needed to exercise "percentile genuinely narrows
+    the range" as distinct from the D-08 zero-width-fallback case.
+    """
+    nx, ny = 50, 40
+    x = np.linspace(0, 49, nx).astype(np.float64)
+    y = np.linspace(0, 39, ny).astype(np.float64)
+    z = np.random.default_rng(3).uniform(-1.0, 1.0, size=(nx, ny))
+    z[10, 5] = 1.0e6
+    z[20, 7] = -1.0e6
+    cmap = plot.colormap(x, y, z.ravel())
+    return cmap, x, y
+
+
 class TestZPercentileRange:
 
     def test_full_range_includes_outliers(self, plot):
@@ -123,7 +141,12 @@ class TestPercentileConfig:
 class TestRescaleRouting:
 
     def test_rescale_uses_percentile_when_configured(self, plot):
-        cmap, x, y = _make_colormap_with_outliers(plot)
+        # Uses the spread fixture, not _make_colormap_with_outliers: that
+        # fixture's z is flat (0.5) apart from two cells, so any percentile
+        # band strictly inside (0, 100) degenerates to a zero-width range
+        # and falls back to min/max (see the dedicated D-08 regression test
+        # below) rather than exercising a genuine percentile-narrowed range.
+        cmap, x, y = _make_colormap_with_spread_and_outliers(plot)
         cmap.set_autoscale_percentile_low(2.5)
         cmap.set_autoscale_percentile_high(97.5)
         zaxis = cmap.z_axis()
@@ -131,6 +154,33 @@ class TestRescaleRouting:
         r = zaxis.range()
         assert abs(r.start()) < 1.0
         assert abs(r.stop()) < 1.0
+
+    def test_rescale_falls_back_to_minmax_on_degenerate_percentile(self, plot):
+        """A tight percentile band (10/90) on this fixture's 0.5-dominated data
+        lands both cutoffs on the same value (0.5) -- a zero-width range.
+        z_rescale_range() only rejected NaN, so `rescale()` fed the colorbar
+        that degenerate range instead of falling through to the min/max
+        fallback (mirrors the value-axis path's zero-width guard). The
+        underlying QCPAxis::setRange silently rejects a zero-width range
+        (validRange requires size > minRange), but QCPColorScale::dataRange()
+        -- what z_axis().range() reports -- gets clobbered with it regardless.
+        """
+        cmap, x, y = _make_colormap_with_outliers(plot)
+        cmap.set_autoscale_percentile_low(10.0)
+        cmap.set_autoscale_percentile_high(90.0)
+        degenerate = cmap.z_percentile_range(
+            SciQLopPlotRange(x[0], x[-1]), SciQLopPlotRange(y[0], y[-1]), 10.0, 90.0
+        )
+        assert degenerate.start() == degenerate.stop() == pytest.approx(0.5), \
+            "test fixture assumption broken: expected a zero-width percentile band"
+
+        zaxis = cmap.z_axis()
+        zaxis.rescale()
+        r = zaxis.range()
+        assert r.start() != r.stop(), \
+            "colorbar rescale landed on the degenerate zero-width percentile range"
+        assert r.start() == pytest.approx(-1.0e6)
+        assert r.stop() == pytest.approx(1.0e6)
 
 
 def _make_histogram_with_spike(plot):

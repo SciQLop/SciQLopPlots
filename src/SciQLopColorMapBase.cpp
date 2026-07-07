@@ -122,6 +122,14 @@ std::optional<SciQLopPlotRange> SciQLopColorMapBase::z_rescale_range() const noe
                                 _autoscale_percentile_low, _autoscale_percentile_high);
     if (std::isnan(r.start()) || std::isnan(r.stop()))
         return std::nullopt;
+    // A degenerate (zero-width) percentile band -- e.g. a sparse spectrogram
+    // where the visible cells are >98% one value -- silently no-ops the
+    // colorbar: QCPAxis::setRange rejects a zero-width range (validRange
+    // requires size > minRange), but leaves QCPColorScale::dataRange()
+    // clobbered with it regardless. Fall through to the min/max fallback
+    // instead, mirroring the value-axis path's zero-width guard.
+    if (r.start() == r.stop())
+        return std::nullopt;
     return r;
 }
 
