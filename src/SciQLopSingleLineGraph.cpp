@@ -49,13 +49,11 @@ void SciQLopSingleLineGraph::create_graph(const QStringList& labels)
 
 void SciQLopSingleLineGraph::clear_graph(bool graph_already_removed)
 {
+    // clear_plottables() already deletes the SciQLopGraphComponent wrapping
+    // _graph, and its destructor removes/deletes the underlying plottable
+    // itself — re-touching _graph afterwards would be a use-after-free.
+    Q_UNUSED(graph_already_removed);
     clear_plottables();
-    if (_graph && !graph_already_removed)
-    {
-        auto plot = _graph->parentPlot();
-        if (plot && plot->hasPlottable(_graph))
-            plot->removePlottable(_graph);
-    }
     _graph = nullptr;
 }
 
