@@ -158,6 +158,54 @@ class TestNodeRemovedIdentity:
         force_gc()
 
 
+class TestNonDeletableNodeSurvivesDeleteRow:
+    """Deleting a non-deletable inspector node (e.g. an axis) via the model's
+    removeRow API must refuse — not detach the row from the tree.
+
+    Regression: PlotsModel::removeRows only consulted node->deletable() to
+    decide whether to *delete the underlying QObject*; it always detached
+    the tree row regardless. Axis nodes are republished only once at
+    addNode time (no connect_children), so once detached from the tree they
+    never come back — a permanent tree/plot desync reachable by selecting
+    an axis in the inspector and pressing Delete.
+    """
+
+    def _find_child(self, model, parent_idx, target):
+        from SciQLopPlots import PlotsModel
+        for r in range(model.rowCount(parent_idx)):
+            idx = model.index(r, 0, parent_idx)
+            if PlotsModel.object(idx) is target:
+                return idx
+        raise AssertionError(f"{target!r} not found")
+
+    def test_delete_row_on_axis_node_is_refused(self, qtbot, sample_data):
+        from SciQLopPlots import PlotsModel
+        from PySide6.QtCore import QModelIndex
+
+        panel = SciQLopMultiPlotPanel()
+        qtbot.addWidget(panel)
+        x, y = sample_data
+        plot, graph = panel.line(x, y)
+        process_events()
+
+        model = PlotsModel.instance()
+        panel_idx = self._find_child(model, QModelIndex(), panel)
+        plot_idx = self._find_child(model, panel_idx, plot)
+        axis_idx = self._find_child(model, plot_idx, plot.x_axis())
+        assert axis_idx.isValid()
+
+        removed = model.removeRow(axis_idx.row(), plot_idx)
+        process_events()
+
+        assert not removed, "removeRow must refuse to remove a non-deletable node"
+        # the axis must still be a live, reachable row under the plot node
+        still_there = self._find_child(model, plot_idx, plot.x_axis())
+        assert still_there.isValid()
+
+        del panel
+        force_gc()
+
+
 class TestNoDoubleDelete:
     """Ensure no double-delete or use-after-free on destruction cascades."""
 
