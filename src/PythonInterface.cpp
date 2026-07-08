@@ -141,18 +141,41 @@ static void _ensure_atexit_drain()
     });
 }
 
+static int _pending_call_drain(void*)
+{
+    _drain_deferred_queue();
+    return 0;
+}
+
+// Py_AddPendingCall is documented as callable without holding the GIL. It
+// wakes the main interpreter to run _pending_call_drain on its next bytecode
+// dispatch, so the queue empties opportunistically instead of only when some
+// thread next happens to call back into a PythonInterface entry point (which
+// may never happen again if plotting goes idle, pinning large arrays).
+// A full pending-call ring (return -1) just means the next enqueue retries.
+static void _schedule_pending_drain()
+{
+    Py_AddPendingCall(&_pending_call_drain, nullptr);
+}
+
 static void _enqueue_decref(PyObject* obj)
 {
     _ensure_atexit_drain();
-    std::lock_guard<std::mutex> lk(s_deferred_mutex);
-    s_deferred_queue.push_back({ DeferredPyRelease::Kind::DecRef, obj, { 0 } });
+    {
+        std::lock_guard<std::mutex> lk(s_deferred_mutex);
+        s_deferred_queue.push_back({ DeferredPyRelease::Kind::DecRef, obj, { 0 } });
+    }
+    _schedule_pending_drain();
 }
 
 static void _enqueue_buffer_release(Py_buffer buf)
 {
     _ensure_atexit_drain();
-    std::lock_guard<std::mutex> lk(s_deferred_mutex);
-    s_deferred_queue.push_back({ DeferredPyRelease::Kind::BufferRelease, nullptr, buf });
+    {
+        std::lock_guard<std::mutex> lk(s_deferred_mutex);
+        s_deferred_queue.push_back({ DeferredPyRelease::Kind::BufferRelease, nullptr, buf });
+    }
+    _schedule_pending_drain();
 }
 
 // Check if the current thread already holds the GIL.
