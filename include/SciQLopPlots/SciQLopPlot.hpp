@@ -77,7 +77,6 @@ public:
     explicit SciQLopPlot(QWidget* parent = nullptr);
 
     virtual ~SciQLopPlot() Q_DECL_OVERRIDE;
-    QCPColorMap* addColorMap();
 
     template <typename T, typename... Args>
     T* add_plottable(Args&&... args)

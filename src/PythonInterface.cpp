@@ -325,7 +325,7 @@ PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
 */
 
 
-struct _PyBuffer_impl : PyObjectWrapper
+struct _PyBuffer_impl
 {
     Py_buffer buffer = { 0 };
     PyObjectWrapper py_obj;
@@ -523,8 +523,6 @@ PyObject* SciQLopPyBuffer::py_object() const
         return this->_impl->py_obj.py_object();
     return nullptr;
 }
-
-void SciQLopPyBuffer::release() { }
 
 std::size_t SciQLopPyBuffer::flat_size() const
 {

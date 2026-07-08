@@ -170,20 +170,12 @@ signals:
     Q_SIGNAL void contour_levels_changed();
     Q_SIGNAL void contour_pen_changed(const QPen& pen);
     Q_SIGNAL void contour_labels_enabled_changed(bool enabled);
-
-private:
-    ::DataOrder _dataOrder = DataOrder::RowMajor;
 };
 
 
 class SciQLopColorMapFunction : public SciQLopColorMap, public SciQLopFunctionGraph
 {
     Q_OBJECT
-
-    inline Q_SLOT void _set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
-    {
-        SciQLopColorMap::set_data(x, y, z);
-    }
 
 public:
     explicit SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

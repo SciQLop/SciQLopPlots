@@ -283,8 +283,6 @@ public:
 
     bool is_valid() const;
 
-    void release();
-
     const std::vector<std::size_t>& shape() const;
 
     std::size_t ndim() const;

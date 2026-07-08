@@ -68,13 +68,6 @@ enum class AxisType
 };
 Q_DECLARE_METATYPE(AxisType);
 
-enum class DataOrder
-{
-    RowMajor,
-    ColumnMajor
-};
-Q_DECLARE_METATYPE(DataOrder);
-
 enum class GraphType
 {
     Line,

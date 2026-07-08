@@ -108,14 +108,6 @@ SciQLopPlot::~SciQLopPlot()
     delete m_crosshair;
 }
 
-QCPColorMap* SciQLopPlot::addColorMap()
-{
-    using namespace Constants;
-    auto cm = new QCPColorMap(this->xAxis, this->yAxis2);
-    cm->setLayer(LayersNames::ColorMap);
-    return cm;
-}
-
 SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(int index)
 {
     if (m_plottables.isEmpty())
