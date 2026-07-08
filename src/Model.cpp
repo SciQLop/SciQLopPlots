@@ -138,7 +138,7 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
         if (obj && child->deletable())
             deferred_deletes.append(obj);
         parentNode->remove_child(i);
-        emit node_removed(obj);
+        emit node_removed(reinterpret_cast<quintptr>(obj));
         delete child;
     }
     endRemoveRows();
@@ -176,7 +176,7 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj, int row)
 
     node->add_connection(
         connect(obj, &QObject::destroyed, this,
-            [this, guardedNode, guardedParent]()
+            [this, guardedNode, guardedParent](QObject* obj)
             {
                 if (!guardedNode || !guardedParent)
                     return;
@@ -184,12 +184,15 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj, int row)
                 if (r < 0)
                     return;
                 // Object is already being destroyed — detach the node
-                // without scheduling deleteLater on the dying object
+                // without scheduling deleteLater on the dying object.
+                // `obj` comes straight from the destroyed() signal argument:
+                // by this point Qt has already cleared every QPointer to it
+                // (including the node's own m_obj), so it must be read from
+                // here, not guardedNode->object(), and never dereferenced.
                 beginRemoveRows(make_index(guardedParent), r, r);
                 guardedNode->disconnect_all();
-                QObject* obj = guardedNode->object();
                 guardedParent->remove_child(r);
-                emit node_removed(obj);
+                emit node_removed(reinterpret_cast<quintptr>(obj));
                 delete guardedNode.data();
                 endRemoveRows();
             }));

@@ -71,5 +71,10 @@ signals:
 #endif
     Q_SIGNAL void item_selection_changed(const QModelIndex& index, bool selected);
     Q_SIGNAL void top_level_nodes_list_changed();
-    Q_SIGNAL void node_removed(QObject* obj);
+    // Identity only (quintptr, not QObject*): the destruction-driven removal
+    // path carries a pointer that is mid-teardown by the time this fires.
+    // PySide's generic QObject* marshalling calls getWrapperForQObject(),
+    // which reads the object's properties and crashes on such a pointer —
+    // a plain integer sidesteps that entirely.
+    Q_SIGNAL void node_removed(quintptr obj_id);
 };

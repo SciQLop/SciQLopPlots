@@ -32,7 +32,7 @@ class PropertiesView : public QWidget
 
 public:
     Q_SLOT void set_current_objects(const QList<QObject*>& objects);
-    Q_SLOT void on_node_removed(QObject* obj);
+    Q_SLOT void on_node_removed(quintptr obj_id);
     PropertiesView(QWidget* parent = nullptr);
     virtual ~PropertiesView() = default;
 };

@@ -45,9 +45,9 @@ void PropertiesView::set_current_objects(const QList<QObject*>& objects)
     }
 }
 
-void PropertiesView::on_node_removed(QObject* obj)
+void PropertiesView::on_node_removed(quintptr obj_id)
 {
-    if (m_delegateWidget && m_currentObject == obj)
+    if (m_delegateWidget && reinterpret_cast<quintptr>(m_currentObject.data()) == obj_id)
     {
         delete m_delegateWidget;
         m_delegateWidget = nullptr;

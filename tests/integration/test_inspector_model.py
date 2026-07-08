@@ -112,6 +112,52 @@ class TestColormapAxesExposed:
         assert "Y Axis 2" in names, names
 
 
+class TestNodeRemovedIdentity:
+    """node_removed(obj_id) must carry the identity of the object being
+    destroyed, not a nulled-out QPointer read after Qt already cleared it.
+
+    Regression: the destroyed-handler read the removed object back through
+    guardedNode->object() (a QPointer<QObject>), which Qt clears at the very
+    start of ~QObject — before the destroyed() signal is even emitted — so
+    node_removed always carried nullptr for every destruction-driven removal.
+
+    The signal carries a plain quintptr, not QObject*: marshalling a QObject*
+    that points mid-destruction into a Python slot crashes inside PySide's
+    getWrapperForQObject() (it calls QObject::property() on the dying
+    object), which a plain integer sidesteps entirely.
+    """
+
+    def test_node_removed_carries_object_not_null(self, qtbot, sample_data):
+        import shiboken6
+        from SciQLopPlots import PlotsModel
+        from PySide6.QtTest import QSignalSpy
+
+        panel = SciQLopMultiPlotPanel()
+        qtbot.addWidget(panel)
+        x, y = sample_data
+        plot, graph = panel.line(x, y)
+        graph.setObjectName("target-graph")
+        process_events()
+        graph_id = shiboken6.getCppPointer(graph)[0]
+
+        model = PlotsModel.instance()
+        spy = QSignalSpy(model.node_removed)
+
+        # remove_plottable() `delete`s the plottable synchronously (deleteLater
+        # on a Python-owned wrapper would never actually free the C++ object,
+        # since the plot holds it as a QObject child / C++-owned).
+        plot.remove_plottable(graph)
+        process_events()
+
+        assert spy.count() >= 1
+        removed_ids = [spy.at(i)[0] for i in range(spy.count())]
+        assert any(removed_ids), "node_removed carried 0/null for every removal"
+        assert graph_id in removed_ids
+
+        del panel
+        force_gc()
+
+
 class TestNoDoubleDelete:
     """Ensure no double-delete or use-after-free on destruction cascades."""
 
