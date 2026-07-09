@@ -149,6 +149,22 @@ class TestColormapData:
 
         del huge
 
+    def test_single_column_rejected(self, plot, sample_colormap_data):
+        """A key axis with a single x sample can't define a cell span:
+        QCPColorMap2's ViewportDependent resample transform requires at
+        least two x positions to rasterize a column
+        (plottable-colormap2.cpp: `if (src.xSize() < 2) return nullptr;`)
+        and silently bails to a blank render otherwise -- no exception, no
+        warning, busy_changed still fires True then False as if the data
+        had settled normally. Reject nx == 1 up front instead of shipping
+        a data source that renders nothing."""
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        single_x = np.zeros(1, dtype=np.float64)
+        single_z = np.ascontiguousarray(z[:, :1])
+        with pytest.raises(RuntimeError, match="at least 2"):
+            cmap.set_data(single_x, y, single_z)
+
 
 class TestColormapProperties:
 

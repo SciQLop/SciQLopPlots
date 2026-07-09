@@ -136,6 +136,16 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
         throw std::runtime_error(
             "ColorMap.set_data: buffer size exceeds INT_MAX (2^31-1) elements per dimension");
 
+    // A single key sample can't define a cell span: QCPColorMap2's
+    // ViewportDependent resample transform needs at least two x positions
+    // to rasterize a column and silently returns no data otherwise, so the
+    // plot area stays blank with no exception and no warning (see NeoQCP's
+    // plottable-colormap2.cpp `if (src.xSize() < 2) return nullptr;`).
+    // Reject here instead of shipping a data source that renders nothing.
+    if (nx_sz == 1)
+        throw std::runtime_error(
+            "ColorMap.set_data: needs at least 2 time/key samples to render, got 1");
+
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);
 
