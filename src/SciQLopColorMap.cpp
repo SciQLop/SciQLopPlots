@@ -220,14 +220,17 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
         return SciQLopPlotRange();
 
     std::vector<double> values;
-    values.reserve((row1 - row0) * y_per_row);
     // noexcept gather: dispatch_dtype throws std::invalid_argument on
     // unsupported codes. _dataHolder is only assigned after set_data's own
     // dispatch succeeds, so reaching here with an unknown dtype is
     // unreachable today — catch it anyway to keep the noexcept contract
     // honest for any future dtype that lands in set_data before this fn.
+    // reserve() can also throw std::bad_alloc/std::length_error on a huge
+    // zoomed-out span; it must stay inside the try so this noexcept function
+    // doesn't std::terminate under memory pressure.
     try
     {
+        values.reserve((row1 - row0) * y_per_row);
         dispatch_dtype(yb.format_code(),
                        [&](auto y_tag)
                        {
@@ -255,7 +258,7 @@ SciQLopPlotRange SciQLopColorMap::z_percentile_range(const SciQLopPlotRange& x_r
                                           });
                        });
     }
-    catch (const std::invalid_argument&)
+    catch (const std::exception&)
     {
         return SciQLopPlotRange();
     }
