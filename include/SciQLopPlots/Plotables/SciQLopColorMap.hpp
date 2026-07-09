@@ -29,6 +29,7 @@
 #include "SciQLopPlots/enums.hpp"
 #include <plottables/plottable-colormap2.h>
 #include <datasource/soa-datasource-2d.h>
+#include <QSignalBlocker>
 #include <memory>
 #include <span>
 
@@ -199,10 +200,19 @@ public:
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 
     inline bool busy() const noexcept override { return remote_busy(); }
+    // SciQLopColorMap::set_busy() forwards to the underlying QCPColorMap2,
+    // whose busyChanged is already connected to busy_changed in
+    // SciQLopColorMap's ctor -- so calling it here would double-emit. Block
+    // that forwarding and always emit exactly once below, driven by the
+    // authoritative remote_busy() state (this also covers the window before
+    // the QCPColorMap2 exists, where the base call is a no-op anyway).
     inline void set_busy(bool busy) noexcept override
     {
         set_remote_busy(busy);
-        SciQLopColorMap::set_busy(busy);
+        {
+            const QSignalBlocker blocker(this);
+            SciQLopColorMap::set_busy(busy);
+        }
         Q_EMIT busy_changed(busy);
     }
 };

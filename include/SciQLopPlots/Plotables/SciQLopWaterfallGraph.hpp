@@ -25,6 +25,7 @@
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <plottables/plottable-waterfall.h>
+#include <QSignalBlocker>
 
 class SciQLopWaterfallGraph : public SciQLopMultiGraphBase
 {
@@ -100,11 +101,17 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 
+    // See SciQLopLineGraphRemote::set_busy: the base setBusy() already
+    // forwards busy_changed via the QCPMultiGraph's busyChanged signal, so
+    // block that and always emit exactly once below.
     inline bool busy() const noexcept override { return remote_busy(); }
     inline void set_busy(bool busy) noexcept override
     {
         set_remote_busy(busy);
-        SciQLopWaterfallGraph::set_busy(busy);
+        {
+            const QSignalBlocker blocker(this);
+            SciQLopWaterfallGraph::set_busy(busy);
+        }
         Q_EMIT busy_changed(busy);
     }
 };

@@ -29,6 +29,7 @@
 #include <qcustomplot.h>
 #include <plottables/plottable-histogram2d.h>
 #include <datasource/soa-datasource.h>
+#include <QSignalBlocker>
 #include <memory>
 #include <span>
 
@@ -123,10 +124,19 @@ public:
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 
     inline bool busy() const noexcept override { return remote_busy(); }
+    // SciQLopHistogram2D::set_busy() forwards to the underlying QCPHistogram2D,
+    // whose busyChanged is already connected to busy_changed in the ctor --
+    // so calling it here would double-emit. Block that forwarding and always
+    // emit exactly once below, driven by the authoritative remote_busy()
+    // state (this also covers the window before the QCPHistogram2D exists,
+    // where the base call is a no-op anyway).
     inline void set_busy(bool busy) noexcept override
     {
         set_remote_busy(busy);
-        SciQLopHistogram2D::set_busy(busy);
+        {
+            const QSignalBlocker blocker(this);
+            SciQLopHistogram2D::set_busy(busy);
+        }
         Q_EMIT busy_changed(busy);
     }
 };

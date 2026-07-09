@@ -82,6 +82,26 @@ def test_busy_clears_only_after_data_arrives(qtbot, plot):
     qtbot.waitUntil(lambda: g.busy() is False, timeout=2000)
 
 
+@pytest.mark.parametrize("factory,make_data", CASES)
+def test_set_busy_emits_exactly_once_per_call(qtbot, plot, factory, make_data):
+    """Each *Remote::set_busy() override forwards to its base class's
+    set_busy() (whose busyChanged is already wired to busy_changed once the
+    underlying QCP plottable/components exist) and used to *also* emit
+    busy_changed explicitly, unconditionally -- double-firing for a single
+    call. Call set_busy() directly (bypassing the remote pipeline, whose own
+    request/response round trip and rescale machinery can legitimately call
+    set_busy more than once per user-visible transition, for reasons
+    unrelated to this) to isolate exactly this bug."""
+    g, _ch = _channel(plot, factory)
+    for target in (True, False, True, False):
+        events = []
+        callback = lambda v: events.append(v)
+        g.busy_changed.connect(callback)
+        g.set_busy(target)
+        g.busy_changed.disconnect(callback)
+        assert events == [target]
+
+
 def test_zero_copy_shared_memory_buffer(qtbot, plot):
     """A shared-memory-backed numpy array must traverse the channel intact.
 

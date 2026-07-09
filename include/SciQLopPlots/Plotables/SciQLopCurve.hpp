@@ -28,6 +28,7 @@
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <qcustomplot.h>
+#include <QSignalBlocker>
 class QThread;
 struct CurveResampler;
 
@@ -133,11 +134,17 @@ public:
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
 
+    // See SciQLopLineGraphRemote::set_busy: the base setBusy() already
+    // forwards busy_changed via the first component's busyChanged signal, so
+    // block that and always emit exactly once below.
     inline bool busy() const noexcept override { return remote_busy(); }
     inline void set_busy(bool busy) noexcept override
     {
         set_remote_busy(busy);
-        SciQLopCurve::set_busy(busy);
+        {
+            const QSignalBlocker blocker(this);
+            SciQLopCurve::set_busy(busy);
+        }
         Q_EMIT busy_changed(busy);
     }
 };
