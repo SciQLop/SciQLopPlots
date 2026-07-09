@@ -78,22 +78,49 @@ void SciQLopFunctionGraph::observe(QObject* observable)
     {
         QObject::disconnect(m_observer_connections.takeLast());
     }
+    // The lambdas below capture only QObject-derived pointers (as_graph and its
+    // child m_pipeline), never `this` (the non-QObject SciQLopFunctionGraph mixin).
+    // C++ destroys bases in reverse construction order: for SciQLopColorMapFunction
+    // (SciQLopColorMap, SciQLopFunctionGraph), ~SciQLopFunctionGraph() runs before
+    // the QObject destructor chain that actually disconnects these connections, so
+    // a lambda holding the mixin's `this` would be dangling during that window.
+    // Mirrors the pattern established in SciQLopRemoteGraph's constructor below.
     if (auto axis = qobject_cast<SciQLopPlotAxisInterface*>(observable))
     {
         connect(axis, &SciQLopPlotAxisInterface::range_changed, as_graph,
-                [this](const SciQLopPlotRange& range) { this->call(range); });
+                [g = this->as_graph, pipeline = this->m_pipeline](const SciQLopPlotRange& range)
+                {
+                    g->set_busy(true);
+                    pipeline->call(range);
+                });
     }
     if (auto graph = qobject_cast<SciQLopGraphInterface*>(observable))
     {
         connect(graph, QOverload<SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](SciQLopPyBuffer x, SciQLopPyBuffer y) { this->call(x, y); });
+                as_graph,
+                [g = this->as_graph, pipeline = this->m_pipeline](SciQLopPyBuffer x, SciQLopPyBuffer y)
+                {
+                    g->set_busy(true);
+                    pipeline->call(x, y);
+                });
 
         connect(graph,
                 QOverload<SciQLopPyBuffer, SciQLopPyBuffer, SciQLopPyBuffer>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) { this->call(x, y, z); });
+                as_graph,
+                [g = this->as_graph, pipeline = this->m_pipeline](SciQLopPyBuffer x, SciQLopPyBuffer y,
+                                                                   SciQLopPyBuffer z)
+                {
+                    g->set_busy(true);
+                    pipeline->call(x, y, z);
+                });
 
         connect(graph, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopGraphInterface::data_changed),
-                as_graph, [this](const QList<SciQLopPyBuffer>& values) { this->call(values); });
+                as_graph,
+                [g = this->as_graph, pipeline = this->m_pipeline](const QList<SciQLopPyBuffer>& values)
+                {
+                    g->set_busy(true);
+                    pipeline->call(values);
+                });
     }
 }
 
