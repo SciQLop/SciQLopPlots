@@ -61,7 +61,7 @@ _register_with_shiboken_signatures()
 
 from . import tracing  # noqa: E402,F401  -- runtime tracer facade
 
-__version__ = '0.29.2'
+__version__ = '0.29.3'
 
 def _merge_kwargs(kwargs, **kwargs2):
     for k, v in kwargs2.items():
