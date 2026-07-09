@@ -491,12 +491,14 @@ SciQLopPlotColorScaleAxis::SciQLopPlotColorScaleAxis(QCPColorScale* axis, QObjec
 {
     if (axis->axis())
         axis->axis()->setNumberFormat("gb");
+    // No separate QCPColorScale::dataRangeChanged -> range_changed connection here:
+    // QCPColorScale::setDataRange() always calls mColorAxis->setRange(...) before
+    // emitting dataRangeChanged, so the base ctor's QCPAxis::rangeChanged connection
+    // (on this color scale's internal axis, wired above via SciQLopPlotAxis(axis->axis(), ...))
+    // already structurally covers every case where dataRangeChanged would fire --
+    // wiring both double-emitted range_changed for one logical change.
     connect(axis, QOverload<const QCPRange&>::of(&QCPColorScale::dataRangeChanged), this,
-            [this](const QCPRange& range)
-            {
-                update_number_precision();
-                Q_EMIT range_changed(SciQLopPlotRange { range.lower, range.upper });
-            });
+            [this](const QCPRange&) { update_number_precision(); });
     update_number_precision();
 }
 
@@ -532,6 +534,11 @@ void SciQLopPlotColorScaleAxis::update_number_precision() noexcept
 
 void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
+    // Note: unlike SciQLopPlotAxis::set_range, this never populates
+    // m_last_valid_range, so the base class's clamp/revert logic
+    // (min_range_size/max_range_size) would silently fail to apply here if
+    // ever configured on a color-scale z-axis. Currently dormant: nothing in
+    // the codebase calls set_min_range_size/set_max_range_size on a z-axis.
     if (!m_axis.isNull()
         && (m_axis->dataRange().lower != range.start()
             || m_axis->dataRange().upper != range.stop()))

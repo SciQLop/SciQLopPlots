@@ -280,6 +280,48 @@ class TestColormapAutoScaleY:
         assert 8.0 <= yr.start() <= 9.0 and 11.0 <= yr.stop() <= 12.0
 
 
+class TestColorScaleAxisRangeChangedSignal:
+    """SciQLopPlotColorScaleAxis wires range_changed from two places: the base
+    SciQLopPlotAxis ctor connects QCPAxis::rangeChanged (on the color scale's
+    internal axis) through the clamp/revert lambda, and the derived ctor
+    ALSO connects QCPColorScale::dataRangeChanged directly, unconditionally.
+
+    QCPColorScale::setDataRange() always does both `mColorAxis->setRange(...)`
+    (firing the first connection) and `emit dataRangeChanged(...)` (firing
+    the second) for one logical change, so range_changed fired twice with
+    identical values for both a direct set_range() and a data-driven
+    percentile rescale().
+    """
+
+    def test_set_range_emits_once(self, plot, sample_colormap_data):
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+        zaxis = cmap.z_axis()
+
+        received = []
+        zaxis.range_changed.connect(lambda r: received.append((r.start(), r.stop())))
+        zaxis.set_range(SciQLopPlotRange(1.0, 9.0))
+
+        assert received == [(1.0, 9.0)], (
+            f"expected exactly one range_changed emission, got {received}"
+        )
+
+    def test_percentile_rescale_emits_once(self, plot):
+        from test_colormap_autoscale_percentile import _make_colormap_with_spread_and_outliers
+        cmap, x, y = _make_colormap_with_spread_and_outliers(plot)
+        cmap.set_autoscale_percentile_low(2.5)
+        cmap.set_autoscale_percentile_high(97.5)
+        zaxis = cmap.z_axis()
+
+        received = []
+        zaxis.range_changed.connect(lambda r: received.append((r.start(), r.stop())))
+        zaxis.rescale()
+
+        assert len(received) == 1, (
+            f"expected exactly one range_changed emission, got {received}"
+        )
+
+
 class TestColormapEmptyData:
     """set_data with no time samples must not crash.
 
