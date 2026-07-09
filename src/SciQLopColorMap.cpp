@@ -26,6 +26,7 @@
 #include "SciQLopPlots/constants.hpp"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 void SciQLopColorMap::_cmap_got_destroyed()
@@ -125,6 +126,15 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
         throw std::runtime_error(
             "ColorMap.set_data: y/z must be row-major (C-order); pass "
             "np.ascontiguousarray(arr) for a transposed/Fortran-order array");
+
+    // QCPSoADataSource2D (and every downstream key/z-range consumer) indexes
+    // with int. nx_sz/ny_sz/nz_sz are validated above in full size_t
+    // precision; truncating one that exceeds INT_MAX to int below would wrap
+    // to a negative size instead of throwing, so reject here first.
+    constexpr auto max_dim = static_cast<std::size_t>(std::numeric_limits<int>::max());
+    if (nx_sz > max_dim || ny_sz > max_dim || nz_sz > max_dim)
+        throw std::runtime_error(
+            "ColorMap.set_data: buffer size exceeds INT_MAX (2^31-1) elements per dimension");
 
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);

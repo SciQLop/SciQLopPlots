@@ -115,6 +115,40 @@ class TestColormapData:
         with pytest.raises(Exception):
             cmap.set_data(x, y, fortran_z)
 
+    def test_dimension_exceeding_int_max_rejected(self, plot, sample_colormap_data, tmp_path):
+        """nx/ny/nz are validated in full size_t precision but then narrowed
+        to int right before being handed to QCPSoADataSource2D, which indexes
+        with int. Any dimension >= 2**31 silently wraps to a negative int
+        with no error unless set_data rejects it explicitly first.
+
+        A real >=2**31-element buffer needs to be genuinely contiguous (a
+        strided/broadcast view is rejected earlier by PyObject_GetBuffer's
+        PyBUF_ANY_CONTIGUOUS requirement, same mechanism as
+        test_fortran_order_z_rejected) — so it can't be faked without a real
+        address range. Densely allocating one would need 2-17GB, violating
+        this project's no-OOM-bomb-tests convention. A sparse-file
+        numpy.memmap sidesteps that: the mapping is real and contiguous (so
+        the buffer export succeeds) but the file has zero allocated disk
+        blocks, and no page is ever touched since the size guard fires
+        before any data is read.
+        """
+        x, y, z = sample_colormap_data
+        cmap = plot.colormap(x, y, z)
+
+        n = 2**31 + 5  # one past INT_MAX
+        path = tmp_path / "sparse_huge.bin"
+        with open(path, "wb") as f:
+            f.truncate(n)
+
+        huge = np.memmap(path, dtype=np.int8, mode="r+", shape=(n,))
+        assert huge.flags["C_CONTIGUOUS"]
+        tiny_x = np.zeros(1, dtype=np.float64)  # nx=1 keeps the 1D-y match: ny == nz/nx == nz
+
+        with pytest.raises(RuntimeError, match="INT_MAX"):
+            cmap.set_data(tiny_x, huge, huge)
+
+        del huge
+
 
 class TestColormapProperties:
 
