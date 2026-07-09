@@ -993,13 +993,35 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
             }
         }
         cmap->set_gradient(ColorGradient::Jet);
+        // request_rescale fires exactly once, on the true first data batch
+        // (SciQLopGraphInterface::check_first_data), and always means "do a
+        // full rescale now". data_changed fires on every batch, including
+        // that same first one, and free-runs into rescale_axes() again when
+        // auto_scale is on -- so the very first batch queues two full
+        // rescale_axes() calls (each one a genuine O(nz) z-range scan) for
+        // what is logically one event. skip_first_batch_data_changed_rescale
+        // is set by the request_rescale handler and consumed by the very
+        // next data_changed handler; both connections are queued on the same
+        // cmap object emitted from the same set_data() call, so Qt delivers
+        // them in emission order and the flag is always set before it's read.
+        auto skip_first_batch_data_changed_rescale = std::make_shared<bool>(false);
         connect(
-            cmap, &SciQLopGraphInterface::request_rescale, this, [this]() { this->rescale_axes(); },
+            cmap, &SciQLopGraphInterface::request_rescale, this,
+            [this, skip_first_batch_data_changed_rescale]()
+            {
+                *skip_first_batch_data_changed_rescale = true;
+                this->rescale_axes();
+            },
             Qt::QueuedConnection);
         connect(
             cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed), this,
-            [this]()
+            [this, skip_first_batch_data_changed_rescale]()
             {
+                if (*skip_first_batch_data_changed_rescale)
+                {
+                    *skip_first_batch_data_changed_rescale = false;
+                    return;
+                }
                 if (this->m_auto_scale)
                     this->rescale_axes();
             },

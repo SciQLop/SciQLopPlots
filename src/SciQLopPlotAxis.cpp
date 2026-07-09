@@ -666,6 +666,7 @@ bool SciQLopPlotColorScaleAxis::selected() const noexcept
 
 void SciQLopPlotColorScaleAxis::rescale() noexcept
 {
+    ::SciQLopPlots::tracing::ScopedZone _sz("colorscale.rescale", "rescale");
     if (!m_axis.isNull())
     {
         if (m_rescale_range_provider)
