@@ -65,6 +65,7 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
 {
     this->_resampler = new CurveResampler(this, std::size(labels));
     this->_resampler_thread = new QThread();
+    this->_resampler_thread->setObjectName(QStringLiteral("curveRsmpl"));
     this->_resampler->moveToThread(this->_resampler_thread);
     this->_resampler_thread->start(QThread::LowPriority);
     connect(this->_resampler, &CurveResampler::setGraphData, this, &SciQLopCurve::_setCurveData,

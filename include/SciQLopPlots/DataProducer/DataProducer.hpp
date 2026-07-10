@@ -123,6 +123,7 @@ public:
     DataProviderWorker(QObject* parent = nullptr) : QObject(parent)
     {
         m_worker_thread = new QThread(this);
+        m_worker_thread->setObjectName(QStringLiteral("dataProv"));
         m_worker_thread->start();
     }
 

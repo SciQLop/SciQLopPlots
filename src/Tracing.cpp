@@ -18,6 +18,7 @@
 #ifdef __linux__
 #  include <sys/syscall.h>
 #  include <unistd.h>
+#  include <pthread.h>
 #endif
 
 namespace SciQLopPlots::tracing
@@ -47,6 +48,16 @@ namespace
 #else
         return static_cast<int64_t>(
             std::hash<std::thread::id> {}(std::this_thread::get_id()));
+#endif
+    }
+
+    // OS-level thread name (visible in /proc/<pid>/task/*/stat, `ps -T`,
+    // thread_cpu_top.hot_threads()) -- distinct from set_thread_name()
+    // below, which only labels this thread's events inside the trace JSON.
+    void name_this_os_thread(const char* name) noexcept
+    {
+#ifdef __linux__
+        ::pthread_setname_np(::pthread_self(), name);
 #endif
     }
 
@@ -206,6 +217,7 @@ namespace
 
         void flush_loop()
         {
+            name_this_os_thread("sqp-trace");
             while (!stop_flush_.load(std::memory_order_acquire))
             {
                 {

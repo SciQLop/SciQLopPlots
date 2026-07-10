@@ -24,15 +24,32 @@
 #include <BS_thread_pool.hpp>
 
 #include <cstddef>
+#include <string>
+
+#ifdef __linux__
+#  include <pthread.h>
+#endif
 
 namespace sqp::dsp
 {
+
+namespace detail
+{
+    inline void name_dsp_pool_thread(std::size_t index) noexcept
+    {
+#ifdef __linux__
+        // 15-char OS limit (TASK_COMM_LEN=16 incl. null); "dsp" + index fits
+        // comfortably for any realistic thread count.
+        ::pthread_setname_np(::pthread_self(), ("dsp" + std::to_string(index)).c_str());
+#endif
+    }
+}
 
 // Process-wide thread pool for DSP work. Lazy-initialized on first use.
 // Thread count matches hardware_concurrency.
 inline BS::light_thread_pool& pool()
 {
-    static BS::light_thread_pool instance;
+    static BS::light_thread_pool instance { &detail::name_dsp_pool_thread };
     return instance;
 }
 
