@@ -24,12 +24,161 @@
 #include <QString>
 #include <QStringView>
 #include <algorithm>
+#include <limits>
 
 struct MatchResult
 {
     int score = 0;
     QList<int> match_positions;
 };
+
+namespace SubsequenceMatcherPrivate
+{
+// Bonus for matching at candidate position i: start of string, right after a
+// separator ('_', ' ', '/'), or a lower->Upper camelCase transition. Depends
+// only on the position, not on which earlier position was matched before it.
+inline int word_start_bonus(QStringView candidate, qsizetype i)
+{
+    if (i == 0)
+        return 3;
+    QChar prev = candidate[i - 1];
+    if (prev == QLatin1Char('_') || prev == QLatin1Char(' ') || prev == QLatin1Char('/'))
+        return 3;
+    if (candidate[i].isUpper() && prev.isLower())
+        return 2;
+    return 0;
+}
+
+constexpr int kNegInf = std::numeric_limits<int>::min() / 2;
+
+// Highest-scoring way to match `query` as a subsequence of `candidate`.
+//
+// A naive left-to-right greedy scan commits to the first occurrence of each
+// query character wherever it happens to appear, which can "waste" an early
+// throwaway match (e.g. a stray lowercase letter buried in an unrelated word)
+// and then miss a clean, contiguous, word-boundary-aligned occurrence of the
+// whole query later in the same text — systematically under-scoring exactly
+// the matches that should rank highest. This DP instead considers every
+// valid alignment and keeps the best-scoring one.
+//
+// O(candidate.size() * query.size()) time, O(candidate.size()) space — no
+// backpointers, since only the score is needed here (see
+// best_alignment_with_positions for the position-reporting variant).
+inline int best_alignment_raw_score(QStringView query, QStringView candidate)
+{
+    const qsizetype n = candidate.size();
+    const qsizetype m = query.size();
+    if (m > n)
+        return -1;
+
+    QList<int> prev_level(n, kNegInf);
+    QList<int> cur_level(n, kNegInf);
+
+    for (qsizetype i = 0; i < n; ++i)
+        if (query[0].toLower() == candidate[i].toLower())
+            prev_level[i] = 1 + word_start_bonus(candidate, i);
+
+    for (qsizetype j = 1; j < m; ++j)
+    {
+        std::fill(cur_level.begin(), cur_level.end(), kNegInf);
+        int prefix_max = kNegInf;
+
+        for (qsizetype i = 0; i < n; ++i)
+        {
+            int adjacent
+                = (i >= 1 && prev_level[i - 1] != kNegInf) ? prev_level[i - 1] + 4 : kNegInf;
+            int best_prev = std::max(prefix_max, adjacent);
+
+            if (best_prev != kNegInf && query[j].toLower() == candidate[i].toLower())
+                cur_level[i] = best_prev + 1 + word_start_bonus(candidate, i);
+
+            if (i >= 1 && prev_level[i - 1] > prefix_max)
+                prefix_max = prev_level[i - 1];
+        }
+        prev_level.swap(cur_level);
+    }
+
+    int best = kNegInf;
+    for (qsizetype i = 0; i < n; ++i)
+        best = std::max(best, prev_level[i]);
+    return best == kNegInf ? -1 : best;
+}
+
+// Same recurrence as best_alignment_raw_score, but keeps a full backpointer
+// table to reconstruct the winning positions. Only used for position
+// reporting (not on the per-node/per-keystroke filtering hot path), so the
+// extra O(n*m) memory is fine.
+inline int best_alignment_with_positions(QStringView query, QStringView candidate,
+                                          QList<int>& out_positions)
+{
+    const qsizetype n = candidate.size();
+    const qsizetype m = query.size();
+    if (m > n)
+        return -1;
+
+    QList<QList<int>> level_score(m, QList<int>(n, kNegInf));
+    QList<QList<qsizetype>> level_back(m, QList<qsizetype>(n, -1));
+
+    for (qsizetype i = 0; i < n; ++i)
+        if (query[0].toLower() == candidate[i].toLower())
+            level_score[0][i] = 1 + word_start_bonus(candidate, i);
+
+    for (qsizetype j = 1; j < m; ++j)
+    {
+        const QList<int>& prev_score = level_score[j - 1];
+        int prefix_max = kNegInf;
+        qsizetype prefix_max_pos = -1;
+
+        for (qsizetype i = 0; i < n; ++i)
+        {
+            int adjacent
+                = (i >= 1 && prev_score[i - 1] != kNegInf) ? prev_score[i - 1] + 4 : kNegInf;
+            int best_prev = prefix_max;
+            qsizetype best_prev_pos = prefix_max_pos;
+            if (adjacent >= best_prev)
+            {
+                best_prev = adjacent;
+                best_prev_pos = i - 1;
+            }
+
+            if (best_prev != kNegInf && query[j].toLower() == candidate[i].toLower())
+            {
+                level_score[j][i] = best_prev + 1 + word_start_bonus(candidate, i);
+                level_back[j][i] = best_prev_pos;
+            }
+
+            if (i >= 1 && prev_score[i - 1] > prefix_max)
+            {
+                prefix_max = prev_score[i - 1];
+                prefix_max_pos = i - 1;
+            }
+        }
+    }
+
+    int best = kNegInf;
+    qsizetype best_pos = -1;
+    const QList<int>& last_level = level_score[m - 1];
+    for (qsizetype i = 0; i < n; ++i)
+    {
+        if (last_level[i] > best)
+        {
+            best = last_level[i];
+            best_pos = i;
+        }
+    }
+    if (best_pos < 0)
+        return -1;
+
+    out_positions.resize(m);
+    qsizetype pos = best_pos;
+    for (qsizetype j = m - 1; j >= 0; --j)
+    {
+        out_positions[j] = int(pos);
+        pos = level_back[j][pos];
+    }
+    return best;
+}
+}
 
 inline int subsequence_score(QStringView query, QStringView candidate)
 {
@@ -38,40 +187,12 @@ inline int subsequence_score(QStringView query, QStringView candidate)
     if (candidate.isEmpty())
         return 0;
 
-    int score = 0;
-    int query_idx = 0;
-    int prev_match = -2;
-
-    for (int i = 0; i < candidate.size() && query_idx < query.size(); ++i)
-    {
-        if (query[query_idx].toLower() == candidate[i].toLower())
-        {
-            int char_score = 1;
-
-            if (i == prev_match + 1)
-                char_score += 4;
-
-            if (i == 0)
-                char_score += 3;
-            else if (candidate[i - 1] == '_' || candidate[i - 1] == ' '
-                     || candidate[i - 1] == '/')
-                char_score += 3;
-            else if (candidate[i].isUpper() && candidate[i - 1].isLower())
-                char_score += 2;
-
-            score += char_score;
-            prev_match = i;
-            ++query_idx;
-        }
-    }
-
-    if (query_idx < query.size())
+    int raw = SubsequenceMatcherPrivate::best_alignment_raw_score(query, candidate);
+    if (raw < 0)
         return 0;
 
     int length_penalty = candidate.size() - query.size();
-    score = std::max(1, score * 100 / (100 + length_penalty));
-
-    return score;
+    return std::max(1, raw * 100 / (100 + length_penalty));
 }
 
 inline MatchResult subsequence_match(QStringView query, QStringView candidate)
@@ -85,43 +206,15 @@ inline MatchResult subsequence_match(QStringView query, QStringView candidate)
     if (candidate.isEmpty())
         return result;
 
-    int query_idx = 0;
-    int prev_match = -2;
-
-    for (int i = 0; i < candidate.size() && query_idx < query.size(); ++i)
-    {
-        if (query[query_idx].toLower() == candidate[i].toLower())
-        {
-            int char_score = 1;
-
-            if (i == prev_match + 1)
-                char_score += 4;
-
-            if (i == 0)
-                char_score += 3;
-            else if (candidate[i - 1] == '_' || candidate[i - 1] == ' '
-                     || candidate[i - 1] == '/')
-                char_score += 3;
-            else if (candidate[i].isUpper() && candidate[i - 1].isLower())
-                char_score += 2;
-
-            result.score += char_score;
-            result.match_positions.append(i);
-            prev_match = i;
-            ++query_idx;
-        }
-    }
-
-    if (query_idx < query.size())
-    {
-        result.score = 0;
-        result.match_positions.clear();
+    QList<int> positions;
+    int raw
+        = SubsequenceMatcherPrivate::best_alignment_with_positions(query, candidate, positions);
+    if (raw < 0)
         return result;
-    }
 
     int length_penalty = candidate.size() - query.size();
-    result.score = std::max(1, result.score * 100 / (100 + length_penalty));
-
+    result.score = std::max(1, raw * 100 / (100 + length_penalty));
+    result.match_positions = positions;
     return result;
 }
 

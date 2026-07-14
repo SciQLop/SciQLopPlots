@@ -29,11 +29,23 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
     Query m_query;
+    int m_max_score_tiers = 2;
+    int m_score_cutoff = 0;
 
 public:
     ProductsTreeFilterModel(QObject* parent = nullptr);
 
     void set_query(const Query& query);
+
+    // The tree has no ranked/flat view to fall back on, so unlike
+    // ProductsFlatFilterModel it needs an explicit notion of "how many
+    // distinct score tiers count as a match" — a raw score threshold would
+    // be meaningless across queries/corpora (see ProductsFlatFilterModel's
+    // free_text_score: the scale is small, coarse, and length-dependent).
+    void set_max_score_tiers(int max_tiers);
+    int max_score_tiers() const noexcept { return m_max_score_tiers; }
+
+    void setSourceModel(QAbstractItemModel* source_model) override;
 
 protected:
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
@@ -42,4 +54,6 @@ private:
     bool node_matches(ProductsModelNode* node) const;
     bool filters_match(ProductsModelNode* node) const;
     int free_text_score(ProductsModelNode* node) const;
+    void collect_all_leaves(ProductsModelNode* node, QList<ProductsModelNode*>& out) const;
+    void recompute_score_cutoff();
 };

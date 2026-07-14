@@ -2,6 +2,8 @@
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/SubsequenceMatcher.hpp"
 #include <QDateTime>
+#include <QSet>
+#include <algorithm>
 #include <magic_enum/magic_enum.hpp>
 
 ProductsTreeFilterModel::ProductsTreeFilterModel(QObject* parent)
@@ -18,7 +20,39 @@ void ProductsTreeFilterModel::set_query(const Query& query)
     // BEFORE the filter parameter changes (Qt 6.11 docs).
     beginFilterChange();
     m_query = query;
+    recompute_score_cutoff();
     endFilterChange();
+}
+
+void ProductsTreeFilterModel::set_max_score_tiers(int max_tiers)
+{
+    max_tiers = std::max(1, max_tiers);
+    if (max_tiers == m_max_score_tiers)
+        return;
+
+    beginFilterChange();
+    m_max_score_tiers = max_tiers;
+    recompute_score_cutoff();
+    endFilterChange();
+}
+
+void ProductsTreeFilterModel::setSourceModel(QAbstractItemModel* source_model)
+{
+    if (auto* old = sourceModel())
+        disconnect(old, nullptr, this, nullptr);
+
+    QSortFilterProxyModel::setSourceModel(source_model);
+
+    if (source_model)
+    {
+        connect(source_model, &QAbstractItemModel::rowsInserted, this,
+                &ProductsTreeFilterModel::recompute_score_cutoff);
+        connect(source_model, &QAbstractItemModel::rowsRemoved, this,
+                &ProductsTreeFilterModel::recompute_score_cutoff);
+        connect(source_model, &QAbstractItemModel::modelReset, this,
+                &ProductsTreeFilterModel::recompute_score_cutoff);
+    }
+    recompute_score_cutoff();
 }
 
 bool ProductsTreeFilterModel::filterAcceptsRow(int source_row,
@@ -32,12 +66,79 @@ bool ProductsTreeFilterModel::filterAcceptsRow(int source_row,
     if (!node)
         return false;
 
+    // Only PARAMETER leaves can independently satisfy a query — folders and
+    // any other non-leaf node stay visible exclusively via
+    // setRecursiveFilteringEnabled(true) when a descendant leaf matches,
+    // never because their own (often short, cheap-to-match) path text
+    // happens to score well. Mirrors ProductsFlatFilterModel, which never
+    // considers non-PARAMETER nodes as candidates in the first place.
+    if (node->node_type() != ProductsModelNodeType::PARAMETER)
+        return false;
+
     return node_matches(node);
 }
 
 bool ProductsTreeFilterModel::node_matches(ProductsModelNode* node) const
 {
-    return filters_match(node) && free_text_score(node) > 0;
+    if (!filters_match(node))
+        return false;
+    int score = free_text_score(node);
+    return score > 0 && score >= m_score_cutoff;
+}
+
+void ProductsTreeFilterModel::collect_all_leaves(ProductsModelNode* node,
+                                                  QList<ProductsModelNode*>& out) const
+{
+    if (node->node_type() == ProductsModelNodeType::PARAMETER)
+    {
+        out.append(node);
+        return;
+    }
+    for (auto* child : node->children_nodes())
+        collect_all_leaves(child, out);
+}
+
+// Raw free-text scores are a small, coarse, query/corpus-dependent scale
+// (see free_text_score's length-penalty normalization) — there's no
+// absolute value that means "good enough" across different queries. So
+// instead of thresholding on score directly, we rank the distinct score
+// values found for the current query and keep only the top
+// m_max_score_tiers of them. This is recomputed whenever the query, the
+// tier count, or the source tree itself changes.
+void ProductsTreeFilterModel::recompute_score_cutoff()
+{
+    m_score_cutoff = 0;
+
+    auto* source = sourceModel();
+    if (!source)
+        return;
+
+    QList<ProductsModelNode*> leaves;
+    for (int i = 0; i < source->rowCount(); ++i)
+    {
+        auto idx = source->index(i, 0);
+        auto* node = static_cast<ProductsModelNode*>(idx.internalPointer());
+        if (node)
+            collect_all_leaves(node, leaves);
+    }
+
+    QSet<int> distinct_scores;
+    for (auto* node : leaves)
+    {
+        if (!filters_match(node))
+            continue;
+        int score = free_text_score(node);
+        if (score > 0)
+            distinct_scores.insert(score);
+    }
+
+    if (distinct_scores.isEmpty())
+        return;
+
+    QList<int> sorted_scores = distinct_scores.values();
+    std::sort(sorted_scores.begin(), sorted_scores.end(), std::greater<int>());
+    int tier_index = std::min(m_max_score_tiers, static_cast<int>(sorted_scores.size())) - 1;
+    m_score_cutoff = sorted_scores[tier_index];
 }
 
 bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node) const

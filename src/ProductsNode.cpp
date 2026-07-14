@@ -57,7 +57,7 @@ ProductsModelNode::ProductsModelNode(const QString& name, const QString& provide
         m_tooltip.append(
             fmt::format("<br/><b>{}:</b> {}", key.toStdString(), value.toString().toStdString())
                 .c_str());
-        m_raw_text.append(key + ": " + value.toString());
+        m_raw_text.append(' ' + key + ": " + value.toString());
     }
 }
 

@@ -46,6 +46,16 @@ class TestSubsequenceScore:
     def test_query_longer_than_candidate(self):
         assert SubsequenceMatcher.score("magnetic_field", "mag") == 0
 
+    def test_finds_best_alignment_not_first_greedy_one(self):
+        # "ace" is reachable two ways in this candidate: scattered through
+        # "aXcXe" (no adjacency/word-start bonuses), or as a clean
+        # word-boundary "ACE" further along. A left-to-right greedy scan
+        # commits to the first (scattered) occurrence and never backtracks to
+        # find the second, much higher-scoring one.
+        candidate = "aXcXe ACE"
+        score_if_only_scattered_found = 5
+        assert SubsequenceMatcher.score("ace", candidate) > score_if_only_scattered_found
+
 
 class TestSubsequenceMatch:
     def test_returns_match_positions(self):
