@@ -38,6 +38,9 @@
 #include "SciQLopPlots/enums.hpp"
 #include <QElapsedTimer>
 #include <QPointF>
+#ifdef Q_OS_LINUX
+#include <QNativeGestureEvent>
+#endif
 #include <qcustomplot.h>
 
 namespace _impl
@@ -214,6 +217,12 @@ protected:
     void _wheel_pan(QCPAxis* axis, const double wheelSteps);
     void _wheel_zoom(QCPAxis* axis, const double wheelSteps, const QPointF& pos);
     void _pinch_zoom(QPinchGesture* gesture);
+#ifdef Q_OS_LINUX
+    // Trackpad pinch on Linux (X11/Wayland, incl. GNOME) arrives as a native
+    // gesture event, not synthesized touch points, so the Qt Gesture
+    // Framework's QPinchGesture recognizer never fires for it.
+    void _native_pinch_zoom(QNativeGestureEvent* event);
+#endif
 
     int _minimal_margin(QCP::MarginSide side);
 };

@@ -308,6 +308,21 @@ void SciQLopPlot::_pinch_zoom(QPinchGesture* gesture)
     }
 }
 
+#ifdef Q_OS_LINUX
+void SciQLopPlot::_native_pinch_zoom(QNativeGestureEvent* event)
+{
+    if (event->gestureType() != Qt::ZoomNativeGesture)
+        return;
+    const auto factor = 1. + event->value();
+    if (factor != 0.)
+    {
+        auto axis = this->xAxis;
+        axis->scaleRange(1. / factor, axis->pixelToCoord(event->position().x()));
+        this->replot(rpQueuedReplot);
+    }
+}
+#endif
+
 int SciQLopPlot::_minimal_margin(QCP::MarginSide side)
 {
     return 0;
@@ -443,6 +458,14 @@ bool SciQLopPlot::event(QEvent* event)
         }
         return true;
     }
+#ifdef Q_OS_LINUX
+    if (event->type() == QEvent::NativeGesture)
+    {
+        _native_pinch_zoom(static_cast<QNativeGestureEvent*>(event));
+        event->accept();
+        return true;
+    }
+#endif
     return r;
 }
 
