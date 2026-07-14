@@ -43,6 +43,13 @@ QVariant ProductsFlatFilterModel::data(const QModelIndex& index, int role) const
 
     auto* node = m_results[index.row()].node;
 
+    if (role == ProductsRelevanceScoreRole)
+    {
+        if (m_query.free_text_tokens.isEmpty() || m_max_score <= 0)
+            return {};
+        return qRound(m_results[index.row()].score * 100.0 / m_max_score);
+    }
+
     switch (role)
     {
     case Qt::DisplayRole:
@@ -101,6 +108,7 @@ void ProductsFlatFilterModel::rebuild()
 
     beginResetModel();
     m_results.clear();
+    m_max_score = 0;
     endResetModel();
 
     m_pending_leaves.clear();
@@ -146,7 +154,10 @@ void ProductsFlatFilterModel::process_batch()
             continue;
         int score = free_text_score(full_text);
         if (score > 0)
+        {
             batch_results.append({ node, score });
+            m_max_score = std::max(m_max_score, score);
+        }
     }
 
     if (!batch_results.isEmpty())

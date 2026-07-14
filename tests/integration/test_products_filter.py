@@ -1,6 +1,6 @@
 """Tests for ProductsTreeFilterModel and ProductsFlatFilterModel."""
 import pytest
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication, Qt
 from SciQLopPlots import (
     ProductsModel, ProductsModelNode, ProductsModelNodeType, ParameterType,
     ProductsTreeFilterModel, ProductsFlatFilterModel, QueryParser
@@ -388,6 +388,34 @@ class TestTreeScoreTiers:
         assert "mag_fld_leaf" in names
         assert "field_data" in names
         assert "unrelated_leaf" in names
+
+
+class TestFlatRelevanceScoreRole:
+    """Relevance % is relative to the best match in the current result set,
+    not an absolute score (see product_search_scoring_fixes memory — raw
+    scores are a coarse, query/corpus-dependent scale)."""
+
+    RELEVANCE_ROLE = Qt.UserRole + 10  # ProductsRelevanceScoreRole
+
+    def test_relevance_relative_to_best_match(self, qtbot, three_tier_model):
+        fm = ProductsFlatFilterModel(three_tier_model)
+        fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
+        scores = {}
+        for i in range(fm.rowCount()):
+            idx = fm.index(i, 0)
+            scores[fm.data(idx)] = fm.data(idx, self.RELEVANCE_ROLE)
+        assert scores["mag_fld_leaf"] == 100
+        assert scores["field_data"] == 71
+        assert scores["unrelated_leaf"] == 43
+
+    def test_no_relevance_role_without_free_text(self, qtbot, three_tier_model):
+        fm = ProductsFlatFilterModel(three_tier_model)
+        fm.set_query(QueryParser.parse("provider:test"))
+        flush_events()
+        assert fm.rowCount() == 3
+        for i in range(fm.rowCount()):
+            assert fm.data(fm.index(i, 0), self.RELEVANCE_ROLE) is None
 
 
 @pytest.fixture

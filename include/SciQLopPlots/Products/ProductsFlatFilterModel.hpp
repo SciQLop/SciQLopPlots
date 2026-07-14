@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
+#include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
 #include <QAbstractListModel>
 #include <QMimeData>
 #include <QTimer>
@@ -40,6 +41,7 @@ class ProductsFlatFilterModel : public QAbstractListModel
         int score;
     };
     QList<ScoredNode> m_results;
+    int m_max_score = 0;
 
     struct LeafEntry
     {
