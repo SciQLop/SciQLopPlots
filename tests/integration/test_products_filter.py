@@ -1,4 +1,6 @@
 """Tests for ProductsTreeFilterModel and ProductsFlatFilterModel."""
+import uuid
+
 import pytest
 from PySide6.QtCore import QCoreApplication, Qt
 from SciQLopPlots import (
@@ -532,44 +534,115 @@ class TestTreeRelevanceScoreRole:
         assert scores["Instrument"] is None
 
 
+@pytest.fixture
+def coverage_test_model(qtbot):
+    """Dedicated fixture for TestTreeCoverageRole, kept separate from
+    three_tier_model (which Task 1/2's already-approved tests depend on).
+
+    ProductsModel is a process-wide singleton shared by the whole test
+    session, so any fixture's top-level node lingers in the corpus for the
+    rest of the run (see test_products_model_consistency.py, which solves
+    the identical problem the same way). recompute_score_cutoff() ranks
+    tiers over the ENTIRE corpus, not just this fixture's leaves -- so an
+    unrelated leftover leaf from another test that happens to score between
+    our tiers would silently shift our cutoff. Embedding a unique
+    per-test token in every leaf's description, and requiring that same
+    token in the query (AND-semantics: a token score of 0 zeroes the whole
+    leaf, see ProductsTreeFilterModel::free_text_score), guarantees only
+    this fixture's own three leaves can ever contribute a nonzero score for
+    this query, regardless of whatever else resides in the shared
+    singleton at test time.
+
+    Same score-tier shape as three_tier_model (verified empirically with
+    SubsequenceMatcher.score): mag_fld_leaf=41 (clean word-boundary match),
+    field_data=33 (partial/scattered match), unrelated_leaf=18
+    (barely-there incidental match) -- three distinct tiers, same
+    2-top-vs-1 split under the default max_score_tiers=2.
+    """
+    token = f"covtok{uuid.uuid4().hex[:8]}"
+    model = ProductsModel.instance()
+    root_name = f"Instrument_{token}"
+    root = ProductsModelNode(root_name)
+
+    mag = ProductsModelNode("MAG")
+    fld = ProductsModelNode("FLD")
+    top_leaf = ProductsModelNode(
+        "mag_fld_leaf", "test",
+        {"dataset": "mag-fld", "description": f"{token} clean match"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+    fld.add_child(top_leaf)
+    mag.add_child(fld)
+    root.add_child(mag)
+
+    other = ProductsModelNode("Other")
+    magnetics = ProductsModelNode("Magnetics")
+    mid_leaf = ProductsModelNode(
+        "field_data", "test",
+        {"dataset": "some-other-set",
+         "description": f"{token} has magnetic and field words scattered"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+    magnetics.add_child(mid_leaf)
+    other.add_child(magnetics)
+    root.add_child(other)
+
+    whatever = ProductsModelNode("Whatever")
+    xyz = ProductsModelNode("xyz123")
+    low_leaf = ProductsModelNode(
+        "unrelated_leaf", "test",
+        {"dataset": "totally-unrelated",
+         "description": "a very long unrelated description that happens to contain the letters "
+                         "m a g somewhere and f l d somewhere else too purely by accident padded "
+                         f"padded padded padded padded padded padded padded {token}"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+    xyz.add_child(low_leaf)
+    whatever.add_child(xyz)
+    root.add_child(whatever)
+
+    model.add_node([], root)
+    yield model, token, root_name
+
+
 class TestTreeCoverageRole:
     COVERAGE_ROLE = Qt.UserRole + 11  # ProductsCoverageRole
 
-    def test_folder_coverage_fraction(self, qtbot, three_tier_model):
+    def test_folder_coverage_fraction(self, qtbot, coverage_test_model):
+        model, token, root_name = coverage_test_model
         fm = ProductsTreeFilterModel()
-        fm.setSourceModel(three_tier_model)
-        # default max_score_tiers=2: only mag_fld_leaf(14) and field_data(10)
-        # pass the cutoff, unrelated_leaf(6) doesn't -> 2 of 3 total match.
-        fm.set_query(QueryParser.parse("mag fld"))
+        fm.setSourceModel(model)
+        # default max_score_tiers=2: only mag_fld_leaf(41) and field_data(33)
+        # pass the cutoff, unrelated_leaf(18) doesn't -> 2 of 3 total match.
+        fm.set_query(QueryParser.parse(f"{token} mag fld"))
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
-        assert scores["Instrument"] == "2/3 (67%)"
+        assert scores[root_name] == "2/3 (67%)"
 
-    def test_leaves_have_no_coverage_role(self, qtbot, three_tier_model):
+    def test_leaves_have_no_coverage_role(self, qtbot, coverage_test_model):
+        model, token, root_name = coverage_test_model
         fm = ProductsTreeFilterModel()
-        fm.setSourceModel(three_tier_model)
+        fm.setSourceModel(model)
         fm.set_max_score_tiers(10)
-        fm.set_query(QueryParser.parse("mag fld"))
+        fm.set_query(QueryParser.parse(f"{token} mag fld"))
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores["mag_fld_leaf"] is None
 
-    def test_total_count_updates_when_new_leaf_added(self, qtbot, three_tier_model):
+    def test_total_count_updates_when_new_leaf_added(self, qtbot, coverage_test_model):
         """The `total` half of the coverage fraction must react to structural
         changes on the source model, not just to set_query() -- this is what
         the on_source_structure_changed rewiring in Step 4 is actually for."""
+        model, token, root_name = coverage_test_model
         fm = ProductsTreeFilterModel()
-        fm.setSourceModel(three_tier_model)
+        fm.setSourceModel(model)
         fm.set_max_score_tiers(10)  # keep every positive match visible
-        fm.set_query(QueryParser.parse("mag fld"))
+        fm.set_query(QueryParser.parse(f"{token} mag fld"))
         scores_before = collect_visible_scores(fm, self.COVERAGE_ROLE)
-        assert scores_before["Instrument"] == "3/3 (100%)"
+        assert scores_before[root_name] == "3/3 (100%)"
 
         new_branch = ProductsModelNode("NewBranch")
         new_leaf = ProductsModelNode(
             "power_monitor", "test", {"description": "power consumption data"},
             ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
         new_branch.add_child(new_leaf)
-        three_tier_model.add_node(["Instrument"], new_branch)
+        model.add_node([root_name], new_branch)
         flush_events()
 
         scores_after = collect_visible_scores(fm, self.COVERAGE_ROLE)
-        assert scores_after["Instrument"] == "3/4 (75%)"
+        assert scores_after[root_name] == "3/4 (75%)"
