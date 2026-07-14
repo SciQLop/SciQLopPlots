@@ -22,6 +22,7 @@
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
+#include <QHash>
 #include <QSortFilterProxyModel>
 
 class ProductsModelNode;
@@ -33,6 +34,13 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
     int m_max_score_tiers = 2;
     int m_score_cutoff = 0;
     int m_max_score = 0;
+
+    struct CoverageInfo
+    {
+        int matched = 0;
+        int total = 0;
+    };
+    QHash<ProductsModelNode*, CoverageInfo> m_coverage;
 
 public:
     ProductsTreeFilterModel(QObject* parent = nullptr);
@@ -60,4 +68,6 @@ private:
     int free_text_score(ProductsModelNode* node) const;
     void collect_all_leaves(ProductsModelNode* node, QList<ProductsModelNode*>& out) const;
     void recompute_score_cutoff();
+    void recompute_total_leaf_counts();
+    void on_source_structure_changed();
 };

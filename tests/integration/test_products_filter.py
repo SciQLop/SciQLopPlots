@@ -530,3 +530,46 @@ class TestTreeRelevanceScoreRole:
         fm.set_query(QueryParser.parse("mag fld"))
         scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
         assert scores["Instrument"] is None
+
+
+class TestTreeCoverageRole:
+    COVERAGE_ROLE = Qt.UserRole + 11  # ProductsCoverageRole
+
+    def test_folder_coverage_fraction(self, qtbot, three_tier_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        # default max_score_tiers=2: only mag_fld_leaf(14) and field_data(10)
+        # pass the cutoff, unrelated_leaf(6) doesn't -> 2 of 3 total match.
+        fm.set_query(QueryParser.parse("mag fld"))
+        scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores["Instrument"] == "2/3 (67%)"
+
+    def test_leaves_have_no_coverage_role(self, qtbot, three_tier_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        fm.set_max_score_tiers(10)
+        fm.set_query(QueryParser.parse("mag fld"))
+        scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores["mag_fld_leaf"] is None
+
+    def test_total_count_updates_when_new_leaf_added(self, qtbot, three_tier_model):
+        """The `total` half of the coverage fraction must react to structural
+        changes on the source model, not just to set_query() -- this is what
+        the on_source_structure_changed rewiring in Step 4 is actually for."""
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        fm.set_max_score_tiers(10)  # keep every positive match visible
+        fm.set_query(QueryParser.parse("mag fld"))
+        scores_before = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores_before["Instrument"] == "3/3 (100%)"
+
+        new_branch = ProductsModelNode("NewBranch")
+        new_leaf = ProductsModelNode(
+            "power_monitor", "test", {"description": "power consumption data"},
+            ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+        new_branch.add_child(new_leaf)
+        three_tier_model.add_node(["Instrument"], new_branch)
+        flush_events()
+
+        scores_after = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores_after["Instrument"] == "3/4 (75%)"

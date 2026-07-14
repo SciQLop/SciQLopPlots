@@ -46,13 +46,42 @@ void ProductsTreeFilterModel::setSourceModel(QAbstractItemModel* source_model)
     if (source_model)
     {
         connect(source_model, &QAbstractItemModel::rowsInserted, this,
-                &ProductsTreeFilterModel::recompute_score_cutoff);
+                &ProductsTreeFilterModel::on_source_structure_changed);
         connect(source_model, &QAbstractItemModel::rowsRemoved, this,
-                &ProductsTreeFilterModel::recompute_score_cutoff);
+                &ProductsTreeFilterModel::on_source_structure_changed);
         connect(source_model, &QAbstractItemModel::modelReset, this,
-                &ProductsTreeFilterModel::recompute_score_cutoff);
+                &ProductsTreeFilterModel::on_source_structure_changed);
     }
+    on_source_structure_changed();
+}
+
+void ProductsTreeFilterModel::on_source_structure_changed()
+{
+    recompute_total_leaf_counts();
     recompute_score_cutoff();
+}
+
+void ProductsTreeFilterModel::recompute_total_leaf_counts()
+{
+    m_coverage.clear();
+
+    auto* source = sourceModel();
+    if (!source)
+        return;
+
+    QList<ProductsModelNode*> leaves;
+    for (int i = 0; i < source->rowCount(); ++i)
+    {
+        auto idx = source->index(i, 0);
+        auto* node = static_cast<ProductsModelNode*>(idx.internalPointer());
+        if (node)
+            collect_all_leaves(node, leaves);
+    }
+
+    for (auto* node : leaves)
+        for (auto* ancestor = node->parent_node(); ancestor != nullptr;
+             ancestor = ancestor->parent_node())
+            m_coverage[ancestor].total += 1;
 }
 
 bool ProductsTreeFilterModel::filterAcceptsRow(int source_row,
@@ -100,6 +129,19 @@ QVariant ProductsTreeFilterModel::data(const QModelIndex& index, int role) const
             return {};
         return qRound(score * 100.0 / m_max_score);
     }
+    if (role == ProductsCoverageRole)
+    {
+        auto* node = static_cast<ProductsModelNode*>(mapToSource(index).internalPointer());
+        if (!node || node->node_type() == ProductsModelNodeType::PARAMETER)
+            return {};
+        auto it = m_coverage.constFind(node);
+        if (it == m_coverage.constEnd() || it.value().total == 0)
+            return {};
+        int matched = it.value().matched;
+        int total = it.value().total;
+        return QString("%1/%2 (%3%)")
+            .arg(matched).arg(total).arg(qRound(matched * 100.0 / total));
+    }
     return QSortFilterProxyModel::data(index, role);
 }
 
@@ -126,6 +168,9 @@ void ProductsTreeFilterModel::recompute_score_cutoff()
 {
     m_score_cutoff = 0;
     m_max_score = 0;
+
+    for (auto it = m_coverage.begin(); it != m_coverage.end(); ++it)
+        it.value().matched = 0;
 
     auto* source = sourceModel();
     if (!source)
@@ -160,6 +205,15 @@ void ProductsTreeFilterModel::recompute_score_cutoff()
     std::sort(sorted_scores.begin(), sorted_scores.end(), std::greater<int>());
     int tier_index = std::min(m_max_score_tiers, static_cast<int>(sorted_scores.size())) - 1;
     m_score_cutoff = sorted_scores[tier_index];
+
+    for (auto* node : leaves)
+    {
+        if (!node_matches(node))
+            continue;
+        for (auto* ancestor = node->parent_node(); ancestor != nullptr;
+             ancestor = ancestor->parent_node())
+            m_coverage[ancestor].matched += 1;
+    }
 }
 
 bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node) const
