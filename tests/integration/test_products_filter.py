@@ -25,6 +25,18 @@ def collect_visible_names(model, parent=None):
     return names
 
 
+def collect_visible_scores(model, role, parent=None):
+    from PySide6.QtCore import QModelIndex
+    if parent is None:
+        parent = QModelIndex()
+    result = {}
+    for row in range(model.rowCount(parent)):
+        idx = model.index(row, 0, parent)
+        result[model.data(idx, Qt.DisplayRole)] = model.data(idx, role)
+        result.update(collect_visible_scores(model, role, idx))
+    return result
+
+
 @pytest.fixture
 def products_model(qtbot):
     """Populate ProductsModel with test data."""
@@ -496,3 +508,25 @@ class TestRawTextSeparators:
             ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
         raw = node.raw_text()
         assert "cass_ldataset" not in raw
+
+
+class TestTreeRelevanceScoreRole:
+    RELEVANCE_ROLE = Qt.UserRole + 10  # ProductsRelevanceScoreRole
+
+    def test_relevance_relative_to_best_match(self, qtbot, three_tier_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        fm.set_max_score_tiers(10)  # show all three leaves for this check
+        fm.set_query(QueryParser.parse("mag fld"))
+        scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
+        assert scores["mag_fld_leaf"] == 100
+        assert scores["field_data"] == 71
+        assert scores["unrelated_leaf"] == 43
+
+    def test_folders_have_no_relevance_role(self, qtbot, three_tier_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        fm.set_max_score_tiers(10)
+        fm.set_query(QueryParser.parse("mag fld"))
+        scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
+        assert scores["Instrument"] is None

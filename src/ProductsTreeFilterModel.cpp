@@ -86,6 +86,23 @@ bool ProductsTreeFilterModel::node_matches(ProductsModelNode* node) const
     return score > 0 && score >= m_score_cutoff;
 }
 
+QVariant ProductsTreeFilterModel::data(const QModelIndex& index, int role) const
+{
+    if (role == ProductsRelevanceScoreRole)
+    {
+        auto* node = static_cast<ProductsModelNode*>(mapToSource(index).internalPointer());
+        if (!node || node->node_type() != ProductsModelNodeType::PARAMETER)
+            return {};
+        if (m_query.free_text_tokens.isEmpty() || m_max_score <= 0)
+            return {};
+        int score = free_text_score(node);
+        if (score <= 0)
+            return {};
+        return qRound(score * 100.0 / m_max_score);
+    }
+    return QSortFilterProxyModel::data(index, role);
+}
+
 void ProductsTreeFilterModel::collect_all_leaves(ProductsModelNode* node,
                                                   QList<ProductsModelNode*>& out) const
 {
@@ -108,6 +125,7 @@ void ProductsTreeFilterModel::collect_all_leaves(ProductsModelNode* node,
 void ProductsTreeFilterModel::recompute_score_cutoff()
 {
     m_score_cutoff = 0;
+    m_max_score = 0;
 
     auto* source = sourceModel();
     if (!source)
@@ -129,7 +147,10 @@ void ProductsTreeFilterModel::recompute_score_cutoff()
             continue;
         int score = free_text_score(node);
         if (score > 0)
+        {
             distinct_scores.insert(score);
+            m_max_score = std::max(m_max_score, score);
+        }
     }
 
     if (distinct_scores.isEmpty())

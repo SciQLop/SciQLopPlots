@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
+#include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
 #include <QSortFilterProxyModel>
 
 class ProductsModelNode;
@@ -31,6 +32,7 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
     Query m_query;
     int m_max_score_tiers = 2;
     int m_score_cutoff = 0;
+    int m_max_score = 0;
 
 public:
     ProductsTreeFilterModel(QObject* parent = nullptr);
@@ -44,6 +46,8 @@ public:
     // free_text_score: the scale is small, coarse, and length-dependent).
     void set_max_score_tiers(int max_tiers);
     int max_score_tiers() const noexcept { return m_max_score_tiers; }
+
+    QVariant data(const QModelIndex& index, int role) const override;
 
     void setSourceModel(QAbstractItemModel* source_model) override;
 
