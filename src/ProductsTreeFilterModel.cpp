@@ -213,7 +213,9 @@ void ProductsTreeFilterModel::process_score_batch()
         if (!filters_match(node, m_pending_query))
             continue;
         int score = free_text_score(node, m_pending_query);
-        int external_score = static_cast<int>(m_external_scores.score_for(node->path().join(' ')));
+        int external_score = m_external_scores.enabled()
+            ? static_cast<int>(m_external_scores.score_for(node->path().join(' ')))
+            : 0;
         score = std::max(score, external_score);
         if (score > 0)
         {
