@@ -67,7 +67,7 @@ jobs:
           export CC="ccache gcc" CXX="ccache g++"
           export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
           export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
-          pip install ".[test]"
+          pip install ".[test,smart_search]"
           pip install scipy
 
       - name: Run DSP unit tests
