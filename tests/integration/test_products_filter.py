@@ -1009,10 +1009,12 @@ class TestSmartSearchControllerEndToEnd:
 
         controller = SmartSearchController()
         controller.register_method(FakeSemanticMethod())
-        controller.set_enabled(True)
         controller.attach(model, corpus_fm, [tree_fm])
+        controller.set_enabled(True)
 
         tree_fm.set_query(QueryParser.parse("magnetic field"))
-        controller.on_query_changed("magnetic field")
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(tree_fm)
 
+        controller.on_query_changed("magnetic field")
         qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(tree_fm), timeout=5000)

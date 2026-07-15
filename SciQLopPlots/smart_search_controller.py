@@ -31,6 +31,8 @@ class SmartSearchController:
         self._source_model = source_model
         self._corpus_model = corpus_model
         self._targets = list(targets)
+        for target in self._targets:
+            target.set_smart_search_enabled(self._enabled)
         source_model.rowsInserted.connect(self._reindex)
         source_model.rowsRemoved.connect(self._reindex)
         source_model.modelReset.connect(self._reindex)
