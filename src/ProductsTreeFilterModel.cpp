@@ -2,7 +2,7 @@
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/SubsequenceMatcher.hpp"
 #include <QDateTime>
-#include <QSet>
+#include <QTimer>
 #include <algorithm>
 #include <magic_enum/magic_enum.hpp>
 
@@ -12,16 +12,17 @@ ProductsTreeFilterModel::ProductsTreeFilterModel(QObject* parent)
     setRecursiveFilteringEnabled(true);
     setDynamicSortFilter(true);
     setFilterCaseSensitivity(Qt::CaseInsensitive);
+
+    m_batch_timer = new QTimer(this);
+    m_batch_timer->setInterval(0);
+    m_batch_timer->setSingleShot(false);
+    connect(m_batch_timer, &QTimer::timeout, this, &ProductsTreeFilterModel::process_score_batch);
 }
 
 void ProductsTreeFilterModel::set_query(const Query& query)
 {
-    // Contract: beginFilterChange() snapshots the old mapping and must run
-    // BEFORE the filter parameter changes (Qt 6.11 docs).
-    beginFilterChange();
-    m_query = query;
-    recompute_score_cutoff();
-    endFilterChange();
+    m_pending_query = query;
+    start_scoring();
 }
 
 void ProductsTreeFilterModel::set_max_score_tiers(int max_tiers)
@@ -30,9 +31,14 @@ void ProductsTreeFilterModel::set_max_score_tiers(int max_tiers)
     if (max_tiers == m_max_score_tiers)
         return;
 
-    beginFilterChange();
     m_max_score_tiers = max_tiers;
-    recompute_score_cutoff();
+
+    // Only the tier *selection* changes -- every leaf's score is already
+    // cached in m_node_scores from the last committed query, so this is a
+    // cheap re-rank over the (small) set of distinct scores, not a new
+    // full-corpus text-scoring pass. Safe to stay synchronous.
+    beginFilterChange();
+    apply_cutoff_and_coverage(m_node_scores, m_distinct_scores, m_max_score);
     endFilterChange();
 }
 
@@ -58,7 +64,8 @@ void ProductsTreeFilterModel::setSourceModel(QAbstractItemModel* source_model)
 void ProductsTreeFilterModel::on_source_structure_changed()
 {
     recompute_total_leaf_counts();
-    recompute_score_cutoff();
+    m_pending_query = m_query;
+    start_scoring();
 }
 
 void ProductsTreeFilterModel::recompute_total_leaf_counts()
@@ -84,6 +91,12 @@ void ProductsTreeFilterModel::recompute_total_leaf_counts()
             m_coverage[ancestor].total += 1;
 }
 
+// Scoring is chunked across 0ms QTimer ticks (see start_scoring/
+// process_score_batch below) instead of walking the whole corpus
+// synchronously here, then swapped into the committed state in one shot by
+// finish_scoring() -- see the m_query/m_pending_query split in the header
+// for why filterAcceptsRow() and data() never need to know a scoring pass
+// is in flight.
 bool ProductsTreeFilterModel::filterAcceptsRow(int source_row,
                                                 const QModelIndex& source_parent) const
 {
@@ -104,15 +117,8 @@ bool ProductsTreeFilterModel::filterAcceptsRow(int source_row,
     if (node->node_type() != ProductsModelNodeType::PARAMETER)
         return false;
 
-    return node_matches(node);
-}
-
-bool ProductsTreeFilterModel::node_matches(ProductsModelNode* node) const
-{
-    if (!filters_match(node))
-        return false;
-    int score = free_text_score(node);
-    return score > 0 && score >= m_score_cutoff;
+    auto it = m_node_scores.constFind(node);
+    return it != m_node_scores.constEnd() && it.value() >= m_score_cutoff;
 }
 
 QVariant ProductsTreeFilterModel::data(const QModelIndex& index, int role) const
@@ -124,10 +130,10 @@ QVariant ProductsTreeFilterModel::data(const QModelIndex& index, int role) const
             return {};
         if (m_query.free_text_tokens.isEmpty() || m_max_score <= 0)
             return {};
-        int score = free_text_score(node);
-        if (score <= 0)
+        auto it = m_node_scores.constFind(node);
+        if (it == m_node_scores.constEnd() || it.value() <= 0)
             return {};
-        return qRound(score * 100.0 / m_max_score);
+        return qRound(it.value() * 100.0 / m_max_score);
     }
     if (role == ProductsCoverageRole)
     {
@@ -159,46 +165,95 @@ void ProductsTreeFilterModel::collect_all_leaves(ProductsModelNode* node,
         collect_all_leaves(child, out);
 }
 
+void ProductsTreeFilterModel::start_scoring()
+{
+    m_batch_timer->stop();
+    ++m_batch_generation;
+
+    m_pending_scores.clear();
+    m_pending_distinct_scores.clear();
+    m_pending_max_score = 0;
+    m_pending_leaves.clear();
+
+    auto* source = sourceModel();
+    if (source)
+    {
+        for (int i = 0; i < source->rowCount(); ++i)
+        {
+            auto idx = source->index(i, 0);
+            auto* node = static_cast<ProductsModelNode*>(idx.internalPointer());
+            if (node)
+                collect_all_leaves(node, m_pending_leaves);
+        }
+    }
+
+    m_batch_cursor = 0;
+    if (m_pending_leaves.isEmpty())
+        finish_scoring();
+    else
+        m_batch_timer->start();
+}
+
+// Runs on the UI thread, but bounded to BATCH_SIZE leaves per tick so the
+// event loop always gets to breathe (repaint, handle input) between
+// batches — this is the actual fix for the freeze: the old code did this
+// same DP scoring work but for the *entire* corpus, *synchronously*, up to
+// three times per query change (see git history on this file).
+void ProductsTreeFilterModel::process_score_batch()
+{
+    int generation = m_batch_generation;
+    int end = std::min(m_batch_cursor + BATCH_SIZE, static_cast<int>(m_pending_leaves.size()));
+
+    for (int i = m_batch_cursor; i < end; ++i)
+    {
+        if (m_batch_generation != generation)
+            return;
+
+        auto* node = m_pending_leaves[i];
+        if (!filters_match(node, m_pending_query))
+            continue;
+        int score = free_text_score(node, m_pending_query);
+        if (score > 0)
+        {
+            m_pending_scores.insert(node, score);
+            m_pending_distinct_scores.insert(score);
+            m_pending_max_score = std::max(m_pending_max_score, score);
+        }
+    }
+
+    m_batch_cursor = end;
+
+    if (m_batch_cursor >= m_pending_leaves.size())
+    {
+        m_batch_timer->stop();
+        finish_scoring();
+    }
+}
+
+void ProductsTreeFilterModel::finish_scoring()
+{
+    beginFilterChange();
+    m_query = m_pending_query;
+    apply_cutoff_and_coverage(m_pending_scores, m_pending_distinct_scores, m_pending_max_score);
+    endFilterChange();
+}
+
 // Raw free-text scores are a small, coarse, query/corpus-dependent scale
 // (see free_text_score's length-penalty normalization) — there's no
 // absolute value that means "good enough" across different queries. So
 // instead of thresholding on score directly, we rank the distinct score
 // values found for the current query and keep only the top
-// m_max_score_tiers of them. This is recomputed whenever the query, the
-// tier count, or the source tree itself changes.
-void ProductsTreeFilterModel::recompute_score_cutoff()
+// m_max_score_tiers of them.
+void ProductsTreeFilterModel::apply_cutoff_and_coverage(
+    const QHash<ProductsModelNode*, int>& scores, const QSet<int>& distinct_scores, int max_score)
 {
+    m_node_scores = scores;
+    m_distinct_scores = distinct_scores;
+    m_max_score = max_score;
     m_score_cutoff = 0;
-    m_max_score = 0;
 
     for (auto it = m_coverage.begin(); it != m_coverage.end(); ++it)
         it.value().matched = 0;
-
-    auto* source = sourceModel();
-    if (!source)
-        return;
-
-    QList<ProductsModelNode*> leaves;
-    for (int i = 0; i < source->rowCount(); ++i)
-    {
-        auto idx = source->index(i, 0);
-        auto* node = static_cast<ProductsModelNode*>(idx.internalPointer());
-        if (node)
-            collect_all_leaves(node, leaves);
-    }
-
-    QSet<int> distinct_scores;
-    for (auto* node : leaves)
-    {
-        if (!filters_match(node))
-            continue;
-        int score = free_text_score(node);
-        if (score > 0)
-        {
-            distinct_scores.insert(score);
-            m_max_score = std::max(m_max_score, score);
-        }
-    }
 
     if (distinct_scores.isEmpty())
         return;
@@ -208,19 +263,19 @@ void ProductsTreeFilterModel::recompute_score_cutoff()
     int tier_index = std::min(m_max_score_tiers, static_cast<int>(sorted_scores.size())) - 1;
     m_score_cutoff = sorted_scores[tier_index];
 
-    for (auto* node : leaves)
+    for (auto it = scores.constBegin(); it != scores.constEnd(); ++it)
     {
-        if (!node_matches(node))
+        if (it.value() < m_score_cutoff)
             continue;
-        for (auto* ancestor = node->parent_node(); ancestor != nullptr;
+        for (auto* ancestor = it.key()->parent_node(); ancestor != nullptr;
              ancestor = ancestor->parent_node())
             m_coverage[ancestor].matched += 1;
     }
 }
 
-bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node) const
+bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node, const Query& query) const
 {
-    for (const auto& filter : m_query.filters)
+    for (const auto& filter : query.filters)
     {
         if (filter.field.compare("after", Qt::CaseInsensitive) == 0)
         {
@@ -264,14 +319,14 @@ bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node) const
     return true;
 }
 
-int ProductsTreeFilterModel::free_text_score(ProductsModelNode* node) const
+int ProductsTreeFilterModel::free_text_score(ProductsModelNode* node, const Query& query) const
 {
-    if (m_query.free_text_tokens.isEmpty())
+    if (query.free_text_tokens.isEmpty())
         return 1;
 
     QString full_text = node->path().join(' ') + ' ' + node->raw_text();
     int total = 0;
-    for (const auto& token : m_query.free_text_tokens)
+    for (const auto& token : query.free_text_tokens)
     {
         int s = subsequence_score(token, full_text);
         if (s == 0)

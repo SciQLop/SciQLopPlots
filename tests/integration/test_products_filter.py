@@ -80,6 +80,7 @@ class TestTreeFilterModel:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
     def test_free_text_filters(self, qtbot, products_model):
@@ -87,6 +88,7 @@ class TestTreeFilterModel:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("magnetic")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
     def test_field_filter_provider(self, qtbot, products_model):
@@ -94,6 +96,7 @@ class TestTreeFilterModel:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("provider:other_filter_provider")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
     def test_combined_query(self, qtbot, products_model):
@@ -101,6 +104,7 @@ class TestTreeFilterModel:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("field provider:test_filter_provider")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
     def test_no_match_returns_empty(self, qtbot, products_model):
@@ -108,6 +112,7 @@ class TestTreeFilterModel:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("zzzznonexistent")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() == 0
 
 
@@ -190,6 +195,7 @@ class TestDateRangeFilters:
         fm.setSourceModel(products_model)
         q = QueryParser.parse("after:2020-06-01")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
     def test_partial_year(self, qtbot, products_model):
@@ -255,6 +261,7 @@ class TestPathScoring:
         fm.setSourceModel(deep_tree_model)
         q = QueryParser.parse("amdaacemfi")
         fm.set_query(q)
+        flush_events()
         assert fm.rowCount() > 0
 
 
@@ -379,6 +386,7 @@ class TestTreeScoreTiers:
         fm.setSourceModel(three_tier_model)
         fm.set_max_score_tiers(1)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         names = collect_visible_names(fm)
         assert "mag_fld_leaf" in names
         assert "field_data" not in names
@@ -388,6 +396,7 @@ class TestTreeScoreTiers:
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(three_tier_model)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         names = collect_visible_names(fm)
         assert "mag_fld_leaf" in names
         assert "field_data" in names
@@ -398,6 +407,7 @@ class TestTreeScoreTiers:
         fm.setSourceModel(three_tier_model)
         fm.set_max_score_tiers(10)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         names = collect_visible_names(fm)
         assert "mag_fld_leaf" in names
         assert "field_data" in names
@@ -474,6 +484,7 @@ class TestFoldersNeverMatchOnTheirOwnText:
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(folder_matches_but_has_no_matching_leaf_model)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         names = collect_visible_names(fm)
         assert "Component03" not in names
         assert "xyz_status" not in names
@@ -483,6 +494,7 @@ class TestFoldersNeverMatchOnTheirOwnText:
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(folder_matches_but_has_no_matching_leaf_model)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         names = collect_visible_names(fm)
         assert "real_leaf" in names
         assert "OtherFolder" in names
@@ -520,6 +532,7 @@ class TestTreeRelevanceScoreRole:
         fm.setSourceModel(three_tier_model)
         fm.set_max_score_tiers(10)  # show all three leaves for this check
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
         assert scores["mag_fld_leaf"] == 100
         assert scores["field_data"] == 71
@@ -530,8 +543,37 @@ class TestTreeRelevanceScoreRole:
         fm.setSourceModel(three_tier_model)
         fm.set_max_score_tiers(10)
         fm.set_query(QueryParser.parse("mag fld"))
+        flush_events()
         scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
         assert scores["Instrument"] is None
+
+
+class TestTreeScoringIsAsync:
+    """Regression test for the freeze bug: ProductsTreeFilterModel::set_query()
+    used to score the entire corpus synchronously -- up to three redundant
+    full-corpus DP passes on the UI thread per call (see git history). It
+    must now hand off to a chunked background QTimer instead: a query's
+    scores only become visible once the batch settles, not immediately on
+    return from set_query()."""
+
+    RELEVANCE_ROLE = Qt.UserRole + 10  # ProductsRelevanceScoreRole
+
+    def test_relevance_role_settles_only_after_flush(self, qtbot, three_tier_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(three_tier_model)
+        fm.set_max_score_tiers(10)
+        flush_events()  # let the initial (query-less) scoring settle first
+
+        fm.set_query(QueryParser.parse("mag fld"))
+        # No flush_events() yet: the new query's scores must not be visible
+        # synchronously -- committing happens only once the background
+        # batch has fully scored the corpus.
+        scores_before_flush = collect_visible_scores(fm, self.RELEVANCE_ROLE)
+        assert scores_before_flush.get("mag_fld_leaf") is None
+
+        flush_events()
+        scores_after_flush = collect_visible_scores(fm, self.RELEVANCE_ROLE)
+        assert scores_after_flush["mag_fld_leaf"] == 100
 
 
 @pytest.fixture
@@ -612,6 +654,7 @@ class TestTreeCoverageRole:
         # default max_score_tiers=2: only mag_fld_leaf(41) and field_data(33)
         # pass the cutoff, unrelated_leaf(18) doesn't -> 2 of 3 total match.
         fm.set_query(QueryParser.parse(f"{token} mag fld"))
+        flush_events()
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores[root_name] == "2/3 (67%)"
 
@@ -621,6 +664,7 @@ class TestTreeCoverageRole:
         fm.setSourceModel(model)
         fm.set_max_score_tiers(10)
         fm.set_query(QueryParser.parse(f"{token} mag fld"))
+        flush_events()
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores["mag_fld_leaf"] is None
 
@@ -642,6 +686,7 @@ class TestTreeCoverageRole:
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
         fm.set_query(QueryParser.parse("provider:test"))
+        flush_events()
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores[root_name] is None
 
@@ -654,6 +699,7 @@ class TestTreeCoverageRole:
         fm.setSourceModel(model)
         fm.set_max_score_tiers(10)  # keep every positive match visible
         fm.set_query(QueryParser.parse(f"{token} mag fld"))
+        flush_events()
         scores_before = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores_before[root_name] == "3/3 (100%)"
 

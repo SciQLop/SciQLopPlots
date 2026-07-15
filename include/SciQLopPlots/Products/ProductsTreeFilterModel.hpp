@@ -23,17 +23,28 @@
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
 #include <QHash>
+#include <QSet>
 #include <QSortFilterProxyModel>
 
 class ProductsModelNode;
+class QTimer;
 
 class ProductsTreeFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
+
+    static constexpr int BATCH_SIZE = 200;
+
+    // Committed state: what filterAcceptsRow()/data() currently expose. Only
+    // ever updated atomically, all-at-once, by finish_scoring() -- so a
+    // reader never sees scores for one query mixed with a cutoff for
+    // another.
     Query m_query;
     int m_max_score_tiers = 2;
     int m_score_cutoff = 0;
     int m_max_score = 0;
+    QHash<ProductsModelNode*, int> m_node_scores;
+    QSet<int> m_distinct_scores;
 
     struct CoverageInfo
     {
@@ -41,6 +52,21 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
         int total = 0;
     };
     QHash<ProductsModelNode*, CoverageInfo> m_coverage;
+
+    // Pending state: in-flight background scoring for a query that hasn't
+    // been committed yet. filterAcceptsRow()/data() never read these --
+    // the view keeps showing the previous committed results until
+    // finish_scoring() swaps pending into committed in one shot, avoiding
+    // the old design's synchronous full-corpus walk (up to 3x per
+    // keystroke) on the UI thread.
+    Query m_pending_query;
+    QList<ProductsModelNode*> m_pending_leaves;
+    QHash<ProductsModelNode*, int> m_pending_scores;
+    QSet<int> m_pending_distinct_scores;
+    int m_pending_max_score = 0;
+    int m_batch_cursor = 0;
+    int m_batch_generation = 0;
+    QTimer* m_batch_timer;
 
 public:
     ProductsTreeFilterModel(QObject* parent = nullptr);
@@ -63,11 +89,20 @@ protected:
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
 
 private:
-    bool node_matches(ProductsModelNode* node) const;
-    bool filters_match(ProductsModelNode* node) const;
-    int free_text_score(ProductsModelNode* node) const;
+    bool filters_match(ProductsModelNode* node, const Query& query) const;
+    int free_text_score(ProductsModelNode* node, const Query& query) const;
     void collect_all_leaves(ProductsModelNode* node, QList<ProductsModelNode*>& out) const;
-    void recompute_score_cutoff();
     void recompute_total_leaf_counts();
     void on_source_structure_changed();
+
+    // Kicks off (or restarts) chunked background scoring of every leaf
+    // against m_pending_query, BATCH_SIZE nodes per 0ms QTimer tick so the
+    // UI thread never blocks for the whole corpus at once.
+    void start_scoring();
+    void process_score_batch();
+    // Atomically swaps the finished pending scoring results into the
+    // committed state and reveals them with a single filter invalidation.
+    void finish_scoring();
+    void apply_cutoff_and_coverage(const QHash<ProductsModelNode*, int>& scores,
+                                    const QSet<int>& distinct_scores, int max_score);
 };
