@@ -126,6 +126,23 @@ void ProductsFlatFilterModel::rebuild()
         m_batch_timer->start();
 }
 
+QHash<QString, QString> ProductsFlatFilterModel::corpus_snapshot() const
+{
+    QList<LeafEntry> leaves;
+    for (int i = 0; i < m_source->rowCount(); ++i)
+    {
+        auto idx = m_source->index(i, 0);
+        auto* node = static_cast<ProductsModelNode*>(idx.internalPointer());
+        if (node)
+            collect_all_leaves(node, leaves);
+    }
+    QHash<QString, QString> snapshot;
+    snapshot.reserve(leaves.size());
+    for (const auto& leaf : leaves)
+        snapshot.insert(leaf.path_text, leaf.meta_text);
+    return snapshot;
+}
+
 void ProductsFlatFilterModel::collect_all_leaves(ProductsModelNode* node,
                                                   QList<LeafEntry>& out) const
 {

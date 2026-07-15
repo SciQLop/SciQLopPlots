@@ -68,6 +68,11 @@ public:
     void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
     bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }
 
+    // Full unfiltered corpus, independent of the current query -- used by
+    // SmartSearchController (Python) to (re)index a search method without
+    // needing to walk ProductsModelNode itself.
+    QHash<QString, QString> corpus_snapshot() const;
+
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
