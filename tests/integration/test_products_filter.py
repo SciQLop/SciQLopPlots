@@ -878,6 +878,38 @@ class TestExternalScoreOverlay:
         fm = ProductsTreeFilterModel()
         assert fm.smart_search_enabled() is False
 
+    def test_tree_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
+        """Regression test: a slow search method (e.g. Task 4's embedding
+        model) calls set_external_scores() long after set_query() already
+        committed a DP-only scoring pass. The view must pick up the new
+        scores immediately, without the caller re-issuing set_query()."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_external_scores({path_key: 100.0})
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
+        """Same regression as above, for ProductsFlatFilterModel."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_external_scores({path_key: 100.0})
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
 
 class TestExternalScoreOverlayConcurrency:
     @pytest.mark.timeout(10)

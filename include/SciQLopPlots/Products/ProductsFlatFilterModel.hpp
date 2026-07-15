@@ -64,7 +64,11 @@ public:
 
     void set_query(const Query& query);
 
-    void set_external_scores(const QHash<QString, QVariant>& scores) { m_external_scores.set_scores(scores); }
+    void set_external_scores(const QHash<QString, QVariant>& scores)
+    {
+        m_external_scores.set_scores(scores);
+        set_query(m_query);
+    }
     void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
     bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }
 
