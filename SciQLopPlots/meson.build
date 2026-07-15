@@ -270,6 +270,7 @@ sources = moc_files \
             '../src/QueryHighlighter.cpp',
             '../src/QueryLineEdit.cpp',
             '../src/ProductsView.cpp',
+            '../src/ProductsScoreDelegate.cpp',
             '../src/icons.cpp'
         ]
 

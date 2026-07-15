@@ -23,6 +23,7 @@
 #include "SciQLopPlots/Products/ProductsFlatFilterModel.hpp"
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/ProductsTreeFilterModel.hpp"
+#include "SciQLopPlots/Products/ProductsScoreDelegate.hpp"
 #include "SciQLopPlots/Products/QueryLineEdit.hpp"
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include <QAbstractItemView>
@@ -91,6 +92,10 @@ ProductsView::ProductsView(QWidget* parent) : QWidget(parent)
     m_list_view->setAlternatingRowColors(true);
     m_list_view->setDragEnabled(true);
     m_stack->addWidget(m_list_view);
+
+    m_score_delegate = new ProductsScoreDelegate(this);
+    m_tree_view->setItemDelegate(m_score_delegate);
+    m_list_view->setItemDelegate(m_score_delegate);
 
     m_stack->setCurrentWidget(m_tree_view);
     layout->addWidget(m_stack);
