@@ -430,8 +430,8 @@ class TestFlatRelevanceScoreRole:
             idx = fm.index(i, 0)
             scores[fm.data(idx)] = fm.data(idx, self.RELEVANCE_ROLE)
         assert scores["mag_fld_leaf"] == 100
-        assert scores["field_data"] == 71
-        assert scores["unrelated_leaf"] == 43
+        assert scores["field_data"] == 85
+        assert scores["unrelated_leaf"] == 30
 
     def test_no_relevance_role_without_free_text(self, qtbot, three_tier_model):
         fm = ProductsFlatFilterModel(three_tier_model)
@@ -449,27 +449,38 @@ def folder_matches_but_has_no_matching_leaf_model(qtbot):
     it has no PARAMETER descendant that matches at all. Mirrors real AMDA
     data where folder/component-index-type entries scored higher than
     genuine parameter leaves purely because their own short text was cheap
-    to match, independent of their children."""
+    to match, independent of their children.
+
+    ProductsModel is a process-wide singleton shared by the whole test
+    session (see coverage_test_model's docstring for the same issue): the
+    default max_score_tiers=2 tier cutoff ranks over the ENTIRE corpus, so
+    leftover leaves from other fixtures (e.g. three_tier_model, reused
+    across many tests) can out-rank real_leaf and tier-cut it out. A unique
+    per-test token, required in the query (AND-semantics zeroes any leaf
+    lacking it), guarantees only this fixture's own leaves can ever
+    contribute a nonzero score for this query."""
+    token = f"foldtok{uuid.uuid4().hex[:8]}"
     model = ProductsModel.instance()
-    root = ProductsModelNode("Provider")
+    root = ProductsModelNode(f"Provider_{token}")
 
     matchy_folder = ProductsModelNode(
-        "Component03", {"description": "magnetic field data component"}, "folder_open")
+        "Component03", {"description": f"{token} magnetic field data component"},
+        "folder_open")
     unrelated_leaf = ProductsModelNode(
-        "xyz_status", "test", {"description": "power supply telemetry channel"},
+        "xyz_status", "test", {"description": f"{token} power supply telemetry channel"},
         ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
     matchy_folder.add_child(unrelated_leaf)
     root.add_child(matchy_folder)
 
     other_folder = ProductsModelNode("OtherFolder")
     real_leaf = ProductsModelNode(
-        "real_leaf", "test", {"description": "magnetic field data, clean match"},
+        "real_leaf", "test", {"description": f"{token} magnetic field data, clean match"},
         ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
     other_folder.add_child(real_leaf)
     root.add_child(other_folder)
 
     model.add_node([], root)
-    yield model
+    yield model, token
 
 
 class TestFoldersNeverMatchOnTheirOwnText:
@@ -481,9 +492,10 @@ class TestFoldersNeverMatchOnTheirOwnText:
 
     def test_folder_with_no_matching_leaf_is_excluded(
             self, qtbot, folder_matches_but_has_no_matching_leaf_model):
+        model, token = folder_matches_but_has_no_matching_leaf_model
         fm = ProductsTreeFilterModel()
-        fm.setSourceModel(folder_matches_but_has_no_matching_leaf_model)
-        fm.set_query(QueryParser.parse("mag fld"))
+        fm.setSourceModel(model)
+        fm.set_query(QueryParser.parse(f"{token} mag fld"))
         flush_events()
         names = collect_visible_names(fm)
         assert "Component03" not in names
@@ -491,9 +503,10 @@ class TestFoldersNeverMatchOnTheirOwnText:
 
     def test_genuine_leaf_elsewhere_still_surfaces(
             self, qtbot, folder_matches_but_has_no_matching_leaf_model):
+        model, token = folder_matches_but_has_no_matching_leaf_model
         fm = ProductsTreeFilterModel()
-        fm.setSourceModel(folder_matches_but_has_no_matching_leaf_model)
-        fm.set_query(QueryParser.parse("mag fld"))
+        fm.setSourceModel(model)
+        fm.set_query(QueryParser.parse(f"{token} mag fld"))
         flush_events()
         names = collect_visible_names(fm)
         assert "real_leaf" in names
@@ -535,8 +548,8 @@ class TestTreeRelevanceScoreRole:
         flush_events()
         scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
         assert scores["mag_fld_leaf"] == 100
-        assert scores["field_data"] == 71
-        assert scores["unrelated_leaf"] == 43
+        assert scores["field_data"] == 85
+        assert scores["unrelated_leaf"] == 30
 
     def test_folders_have_no_relevance_role(self, qtbot, three_tier_model):
         fm = ProductsTreeFilterModel()
@@ -546,6 +559,102 @@ class TestTreeRelevanceScoreRole:
         flush_events()
         scores = collect_visible_scores(fm, self.RELEVANCE_ROLE)
         assert scores["Instrument"] is None
+
+
+@pytest.fixture
+def verbose_metadata_vs_terse_model(qtbot):
+    """Mirrors a real report: query "MMS1 fgm b_gse" only matched AMDA, never
+    the equivalent CDAWeb (speasy "cda" provider) product, even though the
+    CDA leaf's own PATH contains all three tokens cleanly. Root cause: path
+    and raw-text metadata used to be concatenated into one candidate string
+    before scoring, so CDA's much more verbose ISTP-style metadata (units,
+    catdesc, fieldnam, coordinate_system, depend_0, ...) inflated the length
+    penalty for the whole blob, burying a clean path match under a poor
+    total score. cda_leaf here has the same shape: clean path, heavy
+    metadata. amda_leaf has a clean path and terse metadata, for contrast."""
+    model = ProductsModel.instance()
+    root = ProductsModelNode("Root")
+
+    cda = ProductsModelNode("cda")
+    mms = ProductsModelNode("MMS")
+    mms1 = ProductsModelNode("MMS1")
+    fgm = ProductsModelNode("FGM")
+    srvy = ProductsModelNode("MMS1_FGM_SRVY_L2")
+    cda_leaf = ProductsModelNode(
+        "mms1_fgm_b_gse_srvy_l2", "cda",
+        {"description": "Fluxgate Magnetometer Survey mode Level 2 magnetic field in "
+                         "GSE coordinates",
+         "units": "nT", "catdesc": "MMS1 FGM B GSE SRVY L2 vector", "fieldnam": "B_GSE",
+         "var_type": "data", "display_type": "time_series", "depend_0": "Epoch",
+         "coordinate_system": "GSE", "instrument_type": "Magnetic Fields (space)",
+         "data_type": "survey"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Vector)
+    srvy.add_child(cda_leaf)
+    fgm.add_child(srvy)
+    mms1.add_child(fgm)
+    mms.add_child(mms1)
+    cda.add_child(mms)
+    root.add_child(cda)
+
+    amda = ProductsModelNode("amda")
+    a_mms1 = ProductsModelNode("MMS1")
+    a_fgm = ProductsModelNode("FGM")
+    amda_leaf = ProductsModelNode(
+        "b_gse", "amda", {"description": "Magnetic field GSE"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Vector)
+    a_fgm.add_child(amda_leaf)
+    a_mms1.add_child(a_fgm)
+    amda.add_child(a_mms1)
+    root.add_child(amda)
+
+    # Third, intervening-score leaf: a scattered/partial match with moderate
+    # metadata. Calibrated (see SubsequenceMatcher.score) so that under the
+    # OLD concatenated-scoring algorithm its score (22) lands strictly
+    # between amda_leaf (32) and cda_leaf (10) -- with default
+    # max_score_tiers=2 the top two distinct scores are {32, 22}, which
+    # tier-cuts cda_leaf out of the tree entirely even though it's a clean
+    # path match. Under the fixed per-token-max algorithm cda_leaf (37)
+    # outranks this decoy (23), flipping who gets tier-cut.
+    decoy = ProductsModelNode(
+        "decoy_leaf", "other",
+        {"description": "some field data referencing MMS1 fgm b_gse loosely "
+                         "in unrelated free text padded padded padded padded"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Vector)
+    other = ProductsModelNode("Other")
+    sensors = ProductsModelNode("Sensors")
+    mms_payload = ProductsModelNode("MMSPayload")
+    mms_payload.add_child(decoy)
+    sensors.add_child(mms_payload)
+    other.add_child(sensors)
+    root.add_child(other)
+
+    model.add_node([], root)
+    yield model
+
+
+class TestPathAndMetadataScoredSeparately:
+    """Path and raw-text metadata must be scored independently and combined
+    via per-token max, never concatenated into one candidate string --
+    otherwise a clean path match gets its score diluted by unrelated (but
+    voluminous) metadata."""
+
+    def test_verbose_metadata_leaf_ranks_in_flat_results(
+            self, qtbot, verbose_metadata_vs_terse_model):
+        fm = ProductsFlatFilterModel(verbose_metadata_vs_terse_model)
+        fm.set_query(QueryParser.parse("MMS1 fgm b_gse"))
+        flush_events()
+        names = [fm.data(fm.index(i, 0)) for i in range(fm.rowCount())]
+        assert "mms1_fgm_b_gse_srvy_l2" in names
+        assert "b_gse" in names
+
+    def test_verbose_metadata_leaf_survives_default_tree_tier_cutoff(
+            self, qtbot, verbose_metadata_vs_terse_model):
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(verbose_metadata_vs_terse_model)
+        fm.set_query(QueryParser.parse("MMS1 fgm b_gse"))
+        flush_events()
+        names = collect_visible_names(fm)
+        assert "mms1_fgm_b_gse_srvy_l2" in names
 
 
 class TestTreeScoringIsAsync:

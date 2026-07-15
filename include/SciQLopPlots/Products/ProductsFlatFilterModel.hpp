@@ -46,7 +46,8 @@ class ProductsFlatFilterModel : public QAbstractListModel
     struct LeafEntry
     {
         ProductsModelNode* node;
-        QString full_text;
+        QString path_text;
+        QString meta_text;
     };
     QList<LeafEntry> m_pending_leaves;
     int m_batch_cursor = 0;
@@ -72,5 +73,10 @@ private:
     void collect_all_leaves(ProductsModelNode* node, QList<LeafEntry>& out) const;
     void process_batch();
     bool filters_match(ProductsModelNode* node) const;
-    int free_text_score(const QString& text) const;
+    // Scores path and metadata text separately and keeps the max per token
+    // instead of concatenating them into one candidate string -- otherwise a
+    // node with rich metadata (e.g. CDAWeb's verbose ISTP-style attributes)
+    // gets its length penalty inflated by text that has nothing to do with
+    // whether the path itself is a clean match.
+    int free_text_score(const QString& path_text, const QString& meta_text) const;
 };

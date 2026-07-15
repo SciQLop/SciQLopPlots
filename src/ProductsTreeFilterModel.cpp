@@ -319,16 +319,22 @@ bool ProductsTreeFilterModel::filters_match(ProductsModelNode* node, const Query
     return true;
 }
 
+// Path and metadata are scored separately and the max is kept per token,
+// instead of concatenating them into one candidate string -- otherwise a
+// node with rich metadata (e.g. CDAWeb's verbose ISTP-style attributes)
+// gets its length penalty inflated by text that has nothing to do with
+// whether the path itself is a clean match.
 int ProductsTreeFilterModel::free_text_score(ProductsModelNode* node, const Query& query) const
 {
     if (query.free_text_tokens.isEmpty())
         return 1;
 
-    QString full_text = node->path().join(' ') + ' ' + node->raw_text();
+    QString path_text = node->path().join(' ');
+    const QString& meta_text = node->raw_text();
     int total = 0;
     for (const auto& token : query.free_text_tokens)
     {
-        int s = subsequence_score(token, full_text);
+        int s = std::max(subsequence_score(token, path_text), subsequence_score(token, meta_text));
         if (s == 0)
             return 0;
         total += s;
