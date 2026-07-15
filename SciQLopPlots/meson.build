@@ -162,7 +162,8 @@ headers = moc_headers + \
          project_source_root+'/include/SciQLopPlots/Python/SafeSlot.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp',
          project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp']
+         project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/ExternalScoreOverlay.hpp']
 
 includes = include_directories(['../include'])
 
@@ -264,6 +265,7 @@ sources = moc_files \
             '../src/ColorGradientDelegate.cpp',
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
+            '../src/ExternalScoreOverlay.cpp',
             '../src/QueryParser.cpp',
             '../src/ProductsTreeFilterModel.cpp',
             '../src/ProductsFlatFilterModel.cpp',

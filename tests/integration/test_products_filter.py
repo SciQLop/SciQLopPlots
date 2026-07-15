@@ -822,3 +822,57 @@ class TestTreeCoverageRole:
 
         scores_after = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores_after[root_name] == "3/4 (75%)"
+
+
+@pytest.fixture
+def overlay_test_model(qtbot):
+    """One leaf whose own text has zero relation to the probe query, used to
+    prove an external score can surface it when nothing in its own text
+    would ever match lexically."""
+    model = ProductsModel.instance()
+    token = uuid.uuid4().hex[:8]
+    root = ProductsModelNode(f"ExternalScoreRoot_{token}")
+    leaf = ProductsModelNode(
+        "acronym_only", "test",
+        {"dataset": "xyz", "description": "totally unrelated text"},
+        ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+    root.add_child(leaf)
+    model.add_node([], root)
+    yield model, leaf
+
+
+class TestExternalScoreOverlay:
+    def test_tree_filter_ignores_external_scores_when_disabled(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_external_scores({path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+    def test_tree_filter_blends_external_scores_when_enabled(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_external_scores({path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_filter_blends_external_scores_when_enabled(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_external_scores({path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_smart_search_enabled_defaults_to_false(self, qtbot):
+        fm = ProductsTreeFilterModel()
+        assert fm.smart_search_enabled() is False

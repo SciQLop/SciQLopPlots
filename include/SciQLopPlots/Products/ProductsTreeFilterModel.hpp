@@ -22,9 +22,11 @@
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
+#include "SciQLopPlots/Products/ExternalScoreOverlay.hpp"
 #include <QHash>
 #include <QSet>
 #include <QSortFilterProxyModel>
+#include <QVariant>
 
 class ProductsModelNode;
 class QTimer;
@@ -52,6 +54,7 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
         int total = 0;
     };
     QHash<ProductsModelNode*, CoverageInfo> m_coverage;
+    ExternalScoreOverlay m_external_scores;
 
     // Pending state: in-flight background scoring for a query that hasn't
     // been committed yet. filterAcceptsRow()/data() never read these --
@@ -80,6 +83,10 @@ public:
     // free_text_score: the scale is small, coarse, and length-dependent).
     void set_max_score_tiers(int max_tiers);
     int max_score_tiers() const noexcept { return m_max_score_tiers; }
+
+    void set_external_scores(const QHash<QString, QVariant>& scores) { m_external_scores.set_scores(scores); }
+    void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
+    bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }
 
     QVariant data(const QModelIndex& index, int role) const override;
 

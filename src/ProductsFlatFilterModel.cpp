@@ -153,6 +153,8 @@ void ProductsFlatFilterModel::process_batch()
         if (!filters_match(node))
             continue;
         int score = free_text_score(path_text, meta_text);
+        int external_score = static_cast<int>(m_external_scores.score_for(path_text));
+        score = std::max(score, external_score);
         if (score > 0)
         {
             batch_results.append({ node, score });

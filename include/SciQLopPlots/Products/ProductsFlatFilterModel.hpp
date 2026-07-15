@@ -22,9 +22,11 @@
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
+#include "SciQLopPlots/Products/ExternalScoreOverlay.hpp"
 #include <QAbstractListModel>
 #include <QMimeData>
 #include <QTimer>
+#include <QVariant>
 
 class ProductsModel;
 class ProductsModelNode;
@@ -42,6 +44,7 @@ class ProductsFlatFilterModel : public QAbstractListModel
     };
     QList<ScoredNode> m_results;
     int m_max_score = 0;
+    ExternalScoreOverlay m_external_scores;
 
     struct LeafEntry
     {
@@ -60,6 +63,10 @@ public:
     ProductsFlatFilterModel(ProductsModel* source, QObject* parent = nullptr);
 
     void set_query(const Query& query);
+
+    void set_external_scores(const QHash<QString, QVariant>& scores) { m_external_scores.set_scores(scores); }
+    void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
+    bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
