@@ -26,10 +26,10 @@
 #include <QHash>
 #include <QSet>
 #include <QSortFilterProxyModel>
+#include <QTimer>
 #include <QVariant>
 
 class ProductsModelNode;
-class QTimer;
 
 class ProductsTreeFilterModel : public QSortFilterProxyModel
 {
@@ -87,7 +87,13 @@ public:
     void set_external_scores(const QHash<QString, QVariant>& scores)
     {
         m_external_scores.set_scores(scores);
-        set_query(m_query);
+        QMetaObject::invokeMethod(
+            this,
+            [this] {
+                if (!m_batch_timer->isActive())
+                    set_query(m_query);
+            },
+            Qt::QueuedConnection);
     }
     void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
     bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }

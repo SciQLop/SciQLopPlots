@@ -910,6 +910,46 @@ class TestExternalScoreOverlay:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
+    def test_tree_filter_background_thread_external_scores_trigger_rescoring(
+            self, qtbot, overlay_test_model):
+        """Real production call pattern: SmartSearchController always calls
+        set_external_scores() from a background threading.Thread, never the
+        GUI thread. The rescore must still surface via the queued
+        invokeMethod trampoline, without deadlocking or racing model state."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        worker = threading.Thread(target=fm.set_external_scores, args=({path_key: 100.0},))
+        worker.start()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
+
+    def test_flat_filter_background_thread_external_scores_trigger_rescoring(
+            self, qtbot, overlay_test_model):
+        """Same as above, for ProductsFlatFilterModel."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        worker = threading.Thread(target=fm.set_external_scores, args=({path_key: 100.0},))
+        worker.start()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
+
 
 class TestExternalScoreOverlayConcurrency:
     @pytest.mark.timeout(10)
