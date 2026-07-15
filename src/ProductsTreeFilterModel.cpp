@@ -131,6 +131,8 @@ QVariant ProductsTreeFilterModel::data(const QModelIndex& index, int role) const
     }
     if (role == ProductsCoverageRole)
     {
+        if (m_query.free_text_tokens.isEmpty())
+            return {};
         auto* node = static_cast<ProductsModelNode*>(mapToSource(index).internalPointer());
         if (!node || node->node_type() == ProductsModelNodeType::PARAMETER)
             return {};

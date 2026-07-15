@@ -624,6 +624,27 @@ class TestTreeCoverageRole:
         scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
         assert scores["mag_fld_leaf"] is None
 
+    def test_no_coverage_role_without_any_query(self, qtbot, coverage_test_model):
+        """Plain browsing (set_query() never called) must show no coverage
+        badge at all -- the design's explicit "no visual change without an
+        active query" goal."""
+        model, token, root_name = coverage_test_model
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores[root_name] is None
+
+    def test_no_coverage_role_with_filters_only_query(self, qtbot, coverage_test_model):
+        """A filters-only query (no free-text tokens) must not show a
+        coverage badge either -- same rule as
+        test_no_relevance_role_without_free_text for the sibling role."""
+        model, token, root_name = coverage_test_model
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_query(QueryParser.parse("provider:test"))
+        scores = collect_visible_scores(fm, self.COVERAGE_ROLE)
+        assert scores[root_name] is None
+
     def test_total_count_updates_when_new_leaf_added(self, qtbot, coverage_test_model):
         """The `total` half of the coverage fraction must react to structural
         changes on the source model, not just to set_query() -- this is what
