@@ -1,4 +1,5 @@
 """Tests for ProductsTreeFilterModel and ProductsFlatFilterModel."""
+import threading
 import uuid
 
 import pytest
@@ -876,3 +877,32 @@ class TestExternalScoreOverlay:
     def test_smart_search_enabled_defaults_to_false(self, qtbot):
         fm = ProductsTreeFilterModel()
         assert fm.smart_search_enabled() is False
+
+
+class TestExternalScoreOverlayConcurrency:
+    @pytest.mark.timeout(10)
+    def test_concurrent_set_external_scores_does_not_deadlock(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_smart_search_enabled(True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+
+        stop = threading.Event()
+
+        def hammer():
+            i = 0
+            while not stop.is_set():
+                fm.set_external_scores({path_key: float(i % 100)})
+                i += 1
+
+        writer = threading.Thread(target=hammer, daemon=True)
+        writer.start()
+        try:
+            for _ in range(200):
+                QCoreApplication.processEvents()
+        finally:
+            stop.set()
+            writer.join(timeout=5)
+        assert not writer.is_alive()
