@@ -51,7 +51,7 @@ shiboken_typesystem  = run_command(python3, shiboken_helper, '--qmake', qmake.fu
 sciqlopplots_bindings_src = []
 sciqlopplots_bindings_headers = files('bindings/bindings.h')
 
-sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py', 'dsp.py', 'tracing.py', 'smart_search_method.py', 'smart_search_controller.py', 'smart_search_semantic.py']
+sciqlopplots_python_sources = ['__init__.py', 'event.py', 'pipeline.py', 'properties.py', 'dsp.py', 'tracing.py', 'smart_search_method.py', 'smart_search_controller.py', 'smart_search_semantic.py', 'smart_search.py']
 foreach py_src:sciqlopplots_python_sources
   configure_file(input:py_src,output:py_src, copy:true)
 endforeach
