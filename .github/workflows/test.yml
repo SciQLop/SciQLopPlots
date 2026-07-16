@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   QT_VERSION: 6.11.1
+  FASTEMBED_MODEL: BAAI/bge-small-en-v1.5
 
 jobs:
   unit-tests:
@@ -61,6 +62,15 @@ jobs:
           key: ccache-integration-${{ hashFiles('src/**', 'include/**', 'meson.build') }}
           restore-keys: ccache-integration-
           save-always: true
+
+      - name: Cache fastembed model
+        uses: actions/cache@v6
+        with:
+          # fastembed's default cache dir (no FASTEMBED_CACHE_PATH override)
+          # is tempfile.gettempdir()/fastembed_cache, i.e. /tmp/fastembed_cache
+          # on ubuntu-latest runners.
+          path: /tmp/fastembed_cache
+          key: fastembed-${{ env.FASTEMBED_MODEL }}
 
       - name: Install package
         run: |
