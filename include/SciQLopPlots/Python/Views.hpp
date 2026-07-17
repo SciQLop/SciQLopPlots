@@ -26,7 +26,6 @@
 
 #include <assert.h>
 #include <cmath>
-#include <cpp_utils/warnings.h>
 
 #include <algorithm>
 #include <iterator>
