@@ -39,7 +39,6 @@ dynamic = [
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-qt", "pytest-timeout", "hypothesis", "python-dateutil", "numpy"]
-smart_search = ["fastembed"]
 
 [project.urls]
 homepage = "https://github.com/SciQLop/SciQLopPlots"

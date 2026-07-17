@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 env:
   QT_VERSION: 6.11.1
-  FASTEMBED_MODEL: BAAI/bge-small-en-v1.5
 
 jobs:
   unit-tests:
@@ -63,21 +62,12 @@ jobs:
           restore-keys: ccache-integration-
           save-always: true
 
-      - name: Cache fastembed model
-        uses: actions/cache@v6
-        with:
-          # fastembed's default cache dir (no FASTEMBED_CACHE_PATH override)
-          # is tempfile.gettempdir()/fastembed_cache, i.e. /tmp/fastembed_cache
-          # on ubuntu-latest runners.
-          path: /tmp/fastembed_cache
-          key: fastembed-${{ env.FASTEMBED_MODEL }}
-
       - name: Install package
         run: |
           export CC="ccache gcc" CXX="ccache g++"
           export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
           export LD_LIBRARY_PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/lib:$LD_LIBRARY_PATH"
-          pip install ".[test,smart_search]"
+          pip install ".[test]"
           pip install scipy
 
       - name: Run DSP unit tests

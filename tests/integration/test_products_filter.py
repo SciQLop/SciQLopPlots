@@ -980,41 +980,10 @@ class TestExternalScoreOverlayConcurrency:
         assert not writer.is_alive()
 
 
-class TestSmartSearchControllerEndToEnd:
-    def test_controller_surfaces_leaf_via_fake_method(self, qtbot):
-        from SciQLopPlots.smart_search_controller import SmartSearchController
-
-        model = ProductsModel.instance()
-        token = uuid.uuid4().hex[:8]
-        root = ProductsModelNode(f"E2ERoot_{token}")
-        leaf = ProductsModelNode(
-            "acronym_only", "test", {"description": "totally unrelated text"},
-            ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
-        root.add_child(leaf)
-        model.add_node([], root)
-        path_key = ' '.join(leaf.path())
-
-        tree_fm = ProductsTreeFilterModel()
-        tree_fm.setSourceModel(model)
-        corpus_fm = ProductsFlatFilterModel(model)
-
-        class FakeSemanticMethod:
-            def index(self, nodes):
-                self.nodes = list(nodes)
-
-            def query(self, text):
-                if text != "magnetic field":
-                    return {}
-                return {n.path_key: 100.0 for n in self.nodes if n.path_key == path_key}
-
-        controller = SmartSearchController()
-        controller.register_method(FakeSemanticMethod())
-        controller.attach(model, corpus_fm, [tree_fm])
-        controller.set_enabled(True)
-
-        tree_fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" not in collect_visible_names(tree_fm)
-
-        controller.on_query_changed("magnetic field")
-        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(tree_fm), timeout=5000)
+def test_corpus_snapshot_returns_full_unfiltered_corpus(qtbot, overlay_test_model):
+    model, leaf = overlay_test_model
+    path_key = ' '.join(leaf.path())
+    fm = ProductsFlatFilterModel(model)
+    snapshot = fm.corpus_snapshot()
+    assert path_key in snapshot
+    assert snapshot[path_key] == leaf.raw_text()
