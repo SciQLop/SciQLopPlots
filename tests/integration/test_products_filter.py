@@ -843,81 +843,95 @@ def overlay_test_model(qtbot):
     yield model, leaf
 
 
-class TestExternalScoreOverlay:
-    def test_tree_filter_ignores_external_scores_when_disabled(self, qtbot, overlay_test_model):
+class TestScoreSignalRegistryTreeModel:
+    def test_tree_filter_ignores_disabled_signal(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_external_scores({path_key: 100.0})
+        fm.set_external_scores("bm25", {path_key: 100.0})
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
         assert "acronym_only" not in collect_visible_names(fm)
 
-    def test_tree_filter_blends_external_scores_when_enabled(self, qtbot, overlay_test_model):
+    def test_tree_filter_blends_enabled_signal(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_smart_search_enabled(True)
-        fm.set_external_scores({path_key: 100.0})
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_smart_search_enabled_defaults_to_false(self, qtbot):
+    def test_tree_signal_enabled_defaults_to_false(self, qtbot):
         fm = ProductsTreeFilterModel()
-        assert fm.smart_search_enabled() is False
+        assert fm.signal_enabled("bm25") is False
 
     def test_tree_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
-        """Regression test: a slow search method (e.g. Task 4's embedding
-        model) calls set_external_scores() long after set_query() already
-        committed a DP-only scoring pass. The view must pick up the new
+        """Regression test: a slow search method (e.g. an embedding model)
+        calls set_external_scores() long after set_query() already
+        committed a fuzzy-only scoring pass. The view must pick up the new
         scores immediately, without the caller re-issuing set_query()."""
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_smart_search_enabled(True)
+        fm.set_signal_enabled("bm25", True)
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
         assert "acronym_only" not in collect_visible_names(fm)
 
-        fm.set_external_scores({path_key: 100.0})
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_tree_filter_enabling_signal_alone_triggers_rescoring(self, qtbot, overlay_test_model):
+        """Regression: toggling set_signal_enabled() must requery too, not
+        only set_external_scores() -- a gap in the old single-signal API."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_signal_enabled("bm25", True)
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
     def test_tree_filter_background_thread_external_scores_trigger_rescoring(
             self, qtbot, overlay_test_model):
-        """Real production call pattern: SmartSearchController always calls
-        set_external_scores() from a background threading.Thread, never the
-        GUI thread. The rescore must still surface via the queued
+        """Real production call pattern: a Python search controller always
+        calls set_external_scores() from a background threading.Thread,
+        never the GUI thread. The rescore must still surface via the queued
         invokeMethod trampoline, without deadlocking or racing model state."""
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_smart_search_enabled(True)
+        fm.set_signal_enabled("bm25", True)
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
         assert "acronym_only" not in collect_visible_names(fm)
 
-        worker = threading.Thread(target=fm.set_external_scores, args=({path_key: 100.0},))
+        worker = threading.Thread(target=fm.set_external_scores, args=("bm25", {path_key: 100.0}))
         worker.start()
         worker.join(timeout=5)
         assert not worker.is_alive()
 
         qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
 
-
-class TestExternalScoreOverlayConcurrency:
     @pytest.mark.timeout(10)
     def test_concurrent_set_external_scores_does_not_deadlock(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_smart_search_enabled(True)
+        fm.set_signal_enabled("bm25", True)
         fm.set_query(QueryParser.parse("magnetic field"))
 
         stop = threading.Event()
@@ -925,7 +939,7 @@ class TestExternalScoreOverlayConcurrency:
         def hammer():
             i = 0
             while not stop.is_set():
-                fm.set_external_scores({path_key: float(i % 100)})
+                fm.set_external_scores("bm25", {path_key: float(i % 100)})
                 i += 1
 
         writer = threading.Thread(target=hammer, daemon=True)
@@ -937,6 +951,45 @@ class TestExternalScoreOverlayConcurrency:
             stop.set()
             writer.join(timeout=5)
         assert not writer.is_alive()
+
+
+class TestTreeTieringWithMergedScores:
+    def test_max_score_tiers_operates_on_merged_scores(self, qtbot, overlay_test_model):
+        """set_max_score_tiers() must rank the *merged* score, not the raw
+        fuzzy score, so a bm25-boosted leaf can still win a tier slot."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_max_score_tiers(1)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_changing_strategy_on_tree_reranks_without_new_async_pass(
+            self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
+        fm.set_override_signal("bm25")
+        # No flush_events() -- must take effect synchronously. Unlike the
+        # flat model, the tree keeps the leaf's ancestor folder visible too
+        # (setRecursiveFilteringEnabled(true) always shows an ancestor of a
+        # matching descendant), so the exact visible set is [folder, leaf],
+        # not just the leaf. path()[0] is the model's hidden internal root
+        # node ("root"), never itself a visible row -- path()[1] is the
+        # actual top-level "ExternalScoreRoot_..." folder.
+        assert collect_visible_names(fm) == [leaf.path()[1], "acronym_only"]
 
 
 class TestScoreSignalRegistryFlatModel:

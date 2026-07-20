@@ -170,9 +170,8 @@ void ProductsTreeFilterModel::start_scoring()
     m_batch_timer->stop();
     ++m_batch_generation;
 
-    m_pending_scores.clear();
-    m_pending_distinct_scores.clear();
-    m_pending_max_score = 0;
+    m_pending_raw_signals.clear();
+    m_pending_signal_maxes.clear();
     m_pending_leaves.clear();
 
     auto* source = sourceModel();
@@ -212,17 +211,21 @@ void ProductsTreeFilterModel::process_score_batch()
         auto* node = m_pending_leaves[i];
         if (!filters_match(node, m_pending_query))
             continue;
-        int score = free_text_score(node, m_pending_query);
-        int external_score = m_external_scores.enabled()
-            ? static_cast<int>(m_external_scores.score_for(node->path().join(' ')))
-            : 0;
-        score = std::max(score, external_score);
-        if (score > 0)
+
+        QHash<QString, double> raw_signals;
+        raw_signals.insert(QStringLiteral("fuzzy"),
+                            static_cast<double>(free_text_score(node, m_pending_query)));
+        for (const auto& signal_name : m_score_signals.registered_signals())
         {
-            m_pending_scores.insert(node, score);
-            m_pending_distinct_scores.insert(score);
-            m_pending_max_score = std::max(m_pending_max_score, score);
+            auto value = m_score_signals.score_for(signal_name, node->path().join(' '));
+            if (value)
+                raw_signals.insert(signal_name, *value);
         }
+
+        m_pending_raw_signals.insert(node, raw_signals);
+        for (auto it = raw_signals.constBegin(); it != raw_signals.constEnd(); ++it)
+            m_pending_signal_maxes[it.key()]
+                = std::max(m_pending_signal_maxes.value(it.key(), 0.0), it.value());
     }
 
     m_batch_cursor = end;
@@ -238,7 +241,54 @@ void ProductsTreeFilterModel::finish_scoring()
 {
     beginFilterChange();
     m_query = m_pending_query;
-    apply_cutoff_and_coverage(m_pending_scores, m_pending_distinct_scores, m_pending_max_score);
+    m_node_raw_signals = m_pending_raw_signals;
+    m_signal_maxes = m_pending_signal_maxes;
+
+    QHash<ProductsModelNode*, double> merged_scores;
+    QSet<double> distinct_scores;
+    double max_score = 0;
+    for (auto it = m_node_raw_signals.constBegin(); it != m_node_raw_signals.constEnd(); ++it)
+    {
+        auto merged = merge_scores(it.value(), m_merge_strategy, m_signal_weights, m_signal_maxes,
+                                    m_override_signal);
+        if (merged && *merged > 0.0)
+        {
+            merged_scores.insert(it.key(), *merged);
+            distinct_scores.insert(*merged);
+            max_score = std::max(max_score, *merged);
+        }
+    }
+
+    apply_cutoff_and_coverage(merged_scores, distinct_scores, max_score);
+    endFilterChange();
+}
+
+// Re-runs merge_scores() over every already-scored leaf's cached raw
+// signals, then re-applies the tier cutoff -- no re-scoring of free text
+// needed, so this stays synchronous even for a large corpus (same
+// rationale as set_max_score_tiers()).
+void ProductsTreeFilterModel::remerge_committed()
+{
+    if (m_node_raw_signals.isEmpty())
+        return;
+
+    QHash<ProductsModelNode*, double> merged_scores;
+    QSet<double> distinct_scores;
+    double max_score = 0;
+    for (auto it = m_node_raw_signals.constBegin(); it != m_node_raw_signals.constEnd(); ++it)
+    {
+        auto merged = merge_scores(it.value(), m_merge_strategy, m_signal_weights, m_signal_maxes,
+                                    m_override_signal);
+        if (merged && *merged > 0.0)
+        {
+            merged_scores.insert(it.key(), *merged);
+            distinct_scores.insert(*merged);
+            max_score = std::max(max_score, *merged);
+        }
+    }
+
+    beginFilterChange();
+    apply_cutoff_and_coverage(merged_scores, distinct_scores, max_score);
     endFilterChange();
 }
 
@@ -249,7 +299,8 @@ void ProductsTreeFilterModel::finish_scoring()
 // values found for the current query and keep only the top
 // m_max_score_tiers of them.
 void ProductsTreeFilterModel::apply_cutoff_and_coverage(
-    const QHash<ProductsModelNode*, int>& scores, const QSet<int>& distinct_scores, int max_score)
+    const QHash<ProductsModelNode*, double>& scores, const QSet<double>& distinct_scores,
+    double max_score)
 {
     m_node_scores = scores;
     m_distinct_scores = distinct_scores;
@@ -262,8 +313,8 @@ void ProductsTreeFilterModel::apply_cutoff_and_coverage(
     if (distinct_scores.isEmpty())
         return;
 
-    QList<int> sorted_scores = distinct_scores.values();
-    std::sort(sorted_scores.begin(), sorted_scores.end(), std::greater<int>());
+    QList<double> sorted_scores = distinct_scores.values();
+    std::sort(sorted_scores.begin(), sorted_scores.end(), std::greater<double>());
     int tier_index = std::min(m_max_score_tiers, static_cast<int>(sorted_scores.size())) - 1;
     m_score_cutoff = sorted_scores[tier_index];
 

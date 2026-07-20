@@ -22,7 +22,8 @@
 #pragma once
 #include "SciQLopPlots/Products/QueryParser.hpp"
 #include "SciQLopPlots/Products/ProductsScoreRoles.hpp"
-#include "SciQLopPlots/Products/ExternalScoreOverlay.hpp"
+#include "SciQLopPlots/Products/ScoreSignalRegistry.hpp"
+#include "SciQLopPlots/Products/ScoreMerge.hpp"
 #include <QHash>
 #include <QSet>
 #include <QSortFilterProxyModel>
@@ -43,10 +44,10 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
     // another.
     Query m_query;
     int m_max_score_tiers = 2;
-    int m_score_cutoff = 0;
-    int m_max_score = 0;
-    QHash<ProductsModelNode*, int> m_node_scores;
-    QSet<int> m_distinct_scores;
+    double m_score_cutoff = 0;
+    double m_max_score = 0;
+    QHash<ProductsModelNode*, double> m_node_scores;
+    QSet<double> m_distinct_scores;
 
     struct CoverageInfo
     {
@@ -54,19 +55,27 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
         int total = 0;
     };
     QHash<ProductsModelNode*, CoverageInfo> m_coverage;
-    ExternalScoreOverlay m_external_scores;
+
+    ScoreSignalRegistry m_score_signals;
+    ScoreMergeStrategy m_merge_strategy = ScoreMergeStrategy::Max;
+    QHash<QString, double> m_signal_weights;
+    QString m_override_signal;
+
+    // Raw per-signal scores from the last completed scoring pass, kept
+    // after settling so set_score_merge_strategy()/set_signal_weight()/
+    // set_override_signal() -- like set_max_score_tiers() already does --
+    // can cheaply re-rank without re-running the DP scorer.
+    QHash<ProductsModelNode*, QHash<QString, double>> m_node_raw_signals;
+    QHash<QString, double> m_signal_maxes;
 
     // Pending state: in-flight background scoring for a query that hasn't
     // been committed yet. filterAcceptsRow()/data() never read these --
     // the view keeps showing the previous committed results until
-    // finish_scoring() swaps pending into committed in one shot, avoiding
-    // the old design's synchronous full-corpus walk (up to 3x per
-    // keystroke) on the UI thread.
+    // finish_scoring() swaps pending into committed in one shot.
     Query m_pending_query;
     QList<ProductsModelNode*> m_pending_leaves;
-    QHash<ProductsModelNode*, int> m_pending_scores;
-    QSet<int> m_pending_distinct_scores;
-    int m_pending_max_score = 0;
+    QHash<ProductsModelNode*, QHash<QString, double>> m_pending_raw_signals;
+    QHash<QString, double> m_pending_signal_maxes;
     int m_batch_cursor = 0;
     int m_batch_generation = 0;
     QTimer* m_batch_timer;
@@ -84,9 +93,9 @@ public:
     void set_max_score_tiers(int max_tiers);
     int max_score_tiers() const noexcept { return m_max_score_tiers; }
 
-    void set_external_scores(const QHash<QString, QVariant>& scores)
+    void set_external_scores(const QString& signal_name, const QHash<QString, QVariant>& scores)
     {
-        m_external_scores.set_scores(scores);
+        m_score_signals.set_scores(signal_name, scores);
         QMetaObject::invokeMethod(
             this,
             [this] {
@@ -95,8 +104,46 @@ public:
             },
             Qt::QueuedConnection);
     }
-    void set_smart_search_enabled(bool enabled) { m_external_scores.set_enabled(enabled); }
-    bool smart_search_enabled() const noexcept { return m_external_scores.enabled(); }
+    void set_signal_enabled(const QString& signal_name, bool enabled)
+    {
+        m_score_signals.set_signal_enabled(signal_name, enabled);
+        QMetaObject::invokeMethod(
+            this,
+            [this] {
+                if (!m_batch_timer->isActive())
+                    set_query(m_query);
+            },
+            Qt::QueuedConnection);
+    }
+    bool signal_enabled(const QString& signal_name) const
+    {
+        return m_score_signals.signal_enabled(signal_name);
+    }
+    QStringList registered_signals() const { return m_score_signals.registered_signals(); }
+
+    void set_score_merge_strategy(ScoreMergeStrategy strategy)
+    {
+        m_merge_strategy = strategy;
+        remerge_committed();
+    }
+    ScoreMergeStrategy score_merge_strategy() const noexcept { return m_merge_strategy; }
+
+    void set_signal_weight(const QString& signal_name, double weight)
+    {
+        m_signal_weights.insert(signal_name, weight);
+        remerge_committed();
+    }
+    double signal_weight(const QString& signal_name) const
+    {
+        return m_signal_weights.value(signal_name, 1.0);
+    }
+
+    void set_override_signal(const QString& signal_name)
+    {
+        m_override_signal = signal_name;
+        remerge_committed();
+    }
+    QString override_signal() const { return m_override_signal; }
 
     QVariant data(const QModelIndex& index, int role) const override;
 
@@ -120,6 +167,7 @@ private:
     // Atomically swaps the finished pending scoring results into the
     // committed state and reveals them with a single filter invalidation.
     void finish_scoring();
-    void apply_cutoff_and_coverage(const QHash<ProductsModelNode*, int>& scores,
-                                    const QSet<int>& distinct_scores, int max_score);
+    void apply_cutoff_and_coverage(const QHash<ProductsModelNode*, double>& scores,
+                                    const QSet<double>& distinct_scores, double max_score);
+    void remerge_committed();
 };

@@ -164,7 +164,6 @@ headers = moc_headers + \
          project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
          project_source_root+'/include/SciQLopPlots/Products/ScoreMerge.hpp',
          project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/ExternalScoreOverlay.hpp',
          project_source_root+'/include/SciQLopPlots/Products/ScoreSignalRegistry.hpp']
 
 includes = include_directories(['../include'])
@@ -267,7 +266,6 @@ sources = moc_files \
             '../src/ColorGradientDelegate.cpp',
             '../src/ProductsModel.cpp',
             '../src/ProductsNode.cpp',
-            '../src/ExternalScoreOverlay.cpp',
             '../src/ScoreSignalRegistry.cpp',
             '../src/QueryParser.cpp',
             '../src/ProductsTreeFilterModel.cpp',
