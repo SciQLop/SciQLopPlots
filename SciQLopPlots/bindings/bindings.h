@@ -64,6 +64,7 @@
 #include <SciQLopPlots/Products/ProductsNode.hpp>
 #include <SciQLopPlots/Products/ProductsView.hpp>
 #include <SciQLopPlots/Products/SubsequenceMatcher.hpp>
+#include <SciQLopPlots/Products/ScoreMerge.hpp>
 #include <SciQLopPlots/Products/QueryParser.hpp>
 #include <SciQLopPlots/Products/ProductsTreeFilterModel.hpp>
 #include <SciQLopPlots/Products/ProductsFlatFilterModel.hpp>

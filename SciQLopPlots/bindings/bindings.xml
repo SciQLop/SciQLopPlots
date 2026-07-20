@@ -996,6 +996,9 @@
     <value-type name="MatchResult"/>
     <object-type name="SubsequenceMatcher"/>
 
+    <enum-type name="ScoreMergeStrategy"/>
+    <object-type name="ScoreMerger"/>
+
     <enum-type name="QueryTokenKind"/>
     <value-type name="QueryToken"/>
     <value-type name="QueryFilter"/>

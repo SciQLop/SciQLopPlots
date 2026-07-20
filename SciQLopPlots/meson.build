@@ -162,6 +162,7 @@ headers = moc_headers + \
          project_source_root+'/include/SciQLopPlots/Python/SafeSlot.hpp',
          project_source_root+'/include/SciQLopPlots/constants.hpp',
          project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
+         project_source_root+'/include/SciQLopPlots/Products/ScoreMerge.hpp',
          project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp',
          project_source_root+'/include/SciQLopPlots/Products/ExternalScoreOverlay.hpp']
 
