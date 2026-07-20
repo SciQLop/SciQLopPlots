@@ -6,7 +6,8 @@ import pytest
 from PySide6.QtCore import QCoreApplication, Qt
 from SciQLopPlots import (
     ProductsModel, ProductsModelNode, ProductsModelNodeType, ParameterType,
-    ProductsTreeFilterModel, ProductsFlatFilterModel, QueryParser
+    ProductsTreeFilterModel, ProductsFlatFilterModel, QueryParser,
+    ScoreMergeStrategy
 )
 
 
@@ -864,16 +865,6 @@ class TestExternalScoreOverlay:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_flat_filter_blends_external_scores_when_enabled(self, qtbot, overlay_test_model):
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
-        fm = ProductsFlatFilterModel(model)
-        fm.set_smart_search_enabled(True)
-        fm.set_external_scores({path_key: 100.0})
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" in collect_visible_names(fm)
-
     def test_smart_search_enabled_defaults_to_false(self, qtbot):
         fm = ProductsTreeFilterModel()
         assert fm.smart_search_enabled() is False
@@ -896,20 +887,6 @@ class TestExternalScoreOverlay:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_flat_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
-        """Same regression as above, for ProductsFlatFilterModel."""
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
-        fm = ProductsFlatFilterModel(model)
-        fm.set_smart_search_enabled(True)
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" not in collect_visible_names(fm)
-
-        fm.set_external_scores({path_key: 100.0})
-        flush_events()
-        assert "acronym_only" in collect_visible_names(fm)
-
     def test_tree_filter_background_thread_external_scores_trigger_rescoring(
             self, qtbot, overlay_test_model):
         """Real production call pattern: SmartSearchController always calls
@@ -920,24 +897,6 @@ class TestExternalScoreOverlay:
         path_key = ' '.join(leaf.path())
         fm = ProductsTreeFilterModel()
         fm.setSourceModel(model)
-        fm.set_smart_search_enabled(True)
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" not in collect_visible_names(fm)
-
-        worker = threading.Thread(target=fm.set_external_scores, args=({path_key: 100.0},))
-        worker.start()
-        worker.join(timeout=5)
-        assert not worker.is_alive()
-
-        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
-
-    def test_flat_filter_background_thread_external_scores_trigger_rescoring(
-            self, qtbot, overlay_test_model):
-        """Same as above, for ProductsFlatFilterModel."""
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
-        fm = ProductsFlatFilterModel(model)
         fm.set_smart_search_enabled(True)
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
@@ -978,6 +937,189 @@ class TestExternalScoreOverlayConcurrency:
             stop.set()
             writer.join(timeout=5)
         assert not writer.is_alive()
+
+
+class TestScoreSignalRegistryFlatModel:
+    def test_flat_filter_ignores_disabled_signal(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+    def test_flat_filter_blends_enabled_signal(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_signal_enabled_defaults_to_false(self, qtbot):
+        fm = ProductsFlatFilterModel(ProductsModel.instance())
+        assert fm.signal_enabled("bm25") is False
+
+    def test_registered_signals_lists_every_pushed_signal(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_external_scores("bm25", {path_key: 1.0})
+        fm.set_external_scores("semantic", {path_key: 1.0})
+        assert set(fm.registered_signals()) == {"bm25", "semantic"}
+
+    def test_two_signals_blend_independently_under_max(self, qtbot, overlay_test_model):
+        """bm25 alone would surface the leaf; semantic is registered but
+        left disabled, and must not suppress bm25's contribution."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_external_scores("semantic", {path_key: 0.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
+        """Regression test: a slow search method (e.g. an embedding model)
+        calls set_external_scores() long after set_query() already
+        committed a fuzzy-only scoring pass. The view must pick up the new
+        scores immediately, without the caller re-issuing set_query()."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_filter_enabling_signal_alone_triggers_rescoring(self, qtbot, overlay_test_model):
+        """Regression: toggling set_signal_enabled() must requery too, not
+        only set_external_scores() -- a gap in the old single-signal API."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_signal_enabled("bm25", True)
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_flat_filter_background_thread_external_scores_trigger_rescoring(
+            self, qtbot, overlay_test_model):
+        """Real production call pattern: a Python search controller always
+        calls set_external_scores() from a background threading.Thread,
+        never the GUI thread. The rescore must still surface via the queued
+        invokeMethod trampoline, without deadlocking or racing model state."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        worker = threading.Thread(target=fm.set_external_scores, args=("bm25", {path_key: 100.0}))
+        worker.start()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
+
+    @pytest.mark.timeout(10)
+    def test_concurrent_set_external_scores_does_not_deadlock(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+
+        stop = threading.Event()
+
+        def hammer():
+            i = 0
+            while not stop.is_set():
+                fm.set_external_scores("bm25", {path_key: float(i % 100)})
+                i += 1
+
+        writer = threading.Thread(target=hammer, daemon=True)
+        writer.start()
+        try:
+            for _ in range(200):
+                QCoreApplication.processEvents()
+        finally:
+            stop.set()
+            writer.join(timeout=5)
+        assert not writer.is_alive()
+
+
+class TestMergeStrategyConfiguration:
+    def test_weighted_sum_can_zero_out_fuzzy(self, qtbot, overlay_test_model):
+        """Zeroing the 'fuzzy' weight means only bm25 decides matches."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_score_merge_strategy(ScoreMergeStrategy.WeightedSum)
+        fm.set_signal_weight("fuzzy", 0.0)
+        fm.set_query(QueryParser.parse("zzz_no_fuzzy_match_zzz"))
+        flush_events()
+        # "magnetic_field" (the other leaf) has no bm25 score and fuzzy is
+        # zeroed out, so only "acronym_only" (bm25-boosted) should show.
+        assert collect_visible_names(fm) == ["acronym_only"]
+
+    def test_override_excludes_leaves_the_override_signal_has_not_scored(
+            self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
+        fm.set_override_signal("bm25")
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        # Only the leaf bm25 actually scored is visible -- "magnetic_field"
+        # matches under fuzzy alone but bm25 never scored it, so Override
+        # treats it as no match, per the "no per-leaf fallback" design.
+        assert collect_visible_names(fm) == ["acronym_only"]
+
+    def test_override_with_no_signal_set_shows_nothing(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        fm = ProductsFlatFilterModel(model)
+        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert collect_visible_names(fm) == []
+
+    def test_changing_strategy_rereanks_without_new_async_pass(self, qtbot, overlay_test_model):
+        """set_score_merge_strategy() re-merges already-cached raw signals
+        synchronously -- no flush_events() needed, unlike set_query()."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsFlatFilterModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
+        fm.set_override_signal("bm25")
+        # No flush_events() -- this must take effect synchronously.
+        assert collect_visible_names(fm) == ["acronym_only"]
 
 
 def test_corpus_snapshot_returns_full_unfiltered_corpus(qtbot, overlay_test_model):
