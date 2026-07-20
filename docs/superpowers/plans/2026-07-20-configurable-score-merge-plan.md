@@ -357,12 +357,18 @@ git commit -m "feat(products): add configurable score-merge strategies (Max/Sum/
 **Files:**
 - Create: `include/SciQLopPlots/Products/ScoreSignalRegistry.hpp`
 - Create: `src/ScoreSignalRegistry.cpp`
-- Delete: `include/SciQLopPlots/Products/ExternalScoreOverlay.hpp`
-- Delete: `src/ExternalScoreOverlay.cpp`
 - Modify: `include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp`
 - Modify: `src/ProductsFlatFilterModel.cpp`
 - Modify: `SciQLopPlots/meson.build`
 - Test: `tests/integration/test_products_filter.py`
+
+**Note on `ExternalScoreOverlay`:** `ProductsTreeFilterModel` (untouched by
+this task) still `#include`s `ExternalScoreOverlay.hpp` and holds a member
+of that type until Task 3 migrates it. **Do not delete
+`ExternalScoreOverlay.hpp`/`.cpp` or remove their `meson.build` entries in
+this task** — that would break the build for `ProductsTreeFilterModel`,
+which Task 3 alone is responsible for migrating. `ScoreSignalRegistry` is
+purely additive here; both classes coexist until Task 3 deletes the old one.
 
 **Interfaces:**
 - Consumes: `merge_scores`, `ScoreMergeStrategy` from Task 1's `ScoreMerge.hpp`.
@@ -373,35 +379,49 @@ git commit -m "feat(products): add configurable score-merge strategies (Max/Sum/
   `score_merge_strategy() const`, `set_signal_weight(QString,double)`,
   `signal_weight(QString) const`, `set_override_signal(QString)`,
   `override_signal() const`.
+- **Leaves untouched (Task 3's job):** `ProductsTreeFilterModel` and its
+  existing `TestExternalScoreOverlay`/`TestExternalScoreOverlayConcurrency`
+  tree-based test methods — those still use the *old* one-argument
+  `set_external_scores`/`set_smart_search_enabled` API after this task
+  completes, and will be migrated in Task 3 alongside the class itself.
 
 - [ ] **Step 1: Update the failing tests first**
 
-In `tests/integration/test_products_filter.py`, replace the entire
-`TestExternalScoreOverlay` and `TestExternalScoreOverlayConcurrency` classes
-(lines 845-980) with:
+**Important scope note:** `ProductsTreeFilterModel` is *not* touched by this
+task — it still has the old one-argument `set_external_scores`/
+`set_smart_search_enabled`/`smart_search_enabled` API until Task 3. So this
+step must **not** touch the existing `TestExternalScoreOverlay`/
+`TestExternalScoreOverlayConcurrency` classes' tree-based test methods (they
+keep working unchanged against the old tree API) or
+`test_corpus_snapshot_returns_full_unfiltered_corpus` (it never calls any of
+the renamed methods). Task 3 migrates the tree-based tests when it migrates
+the class itself.
+
+In `tests/integration/test_products_filter.py`, make two edits:
+
+**Edit A — remove the three *flat-model* methods from the existing
+`TestExternalScoreOverlay` class** (they call APIs this task removes from
+`ProductsFlatFilterModel`; their replacements are added in Edit B below).
+Delete `test_flat_filter_blends_external_scores_when_enabled`,
+`test_flat_filter_late_external_scores_trigger_rescoring`, and
+`test_flat_filter_background_thread_external_scores_trigger_rescoring` from
+that class. Leave every other method in `TestExternalScoreOverlay` and all
+of `TestExternalScoreOverlayConcurrency` exactly as they are.
+
+**Edit B — add two new classes** after `TestExternalScoreOverlayConcurrency`
+(before the trailing `test_corpus_snapshot_returns_full_unfiltered_corpus`
+function, which needs no changes):
 
 ```python
-class TestScoreSignalRegistry:
-    def test_tree_filter_ignores_disabled_signal(self, qtbot, overlay_test_model):
+class TestScoreSignalRegistryFlatModel:
+    def test_flat_filter_ignores_disabled_signal(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
+        fm = ProductsFlatFilterModel(model)
         fm.set_external_scores("bm25", {path_key: 100.0})
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
         assert "acronym_only" not in collect_visible_names(fm)
-
-    def test_tree_filter_blends_enabled_signal(self, qtbot, overlay_test_model):
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
-        fm.set_signal_enabled("bm25", True)
-        fm.set_external_scores("bm25", {path_key: 100.0})
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" in collect_visible_names(fm)
 
     def test_flat_filter_blends_enabled_signal(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
@@ -413,8 +433,8 @@ class TestScoreSignalRegistry:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_signal_enabled_defaults_to_false(self, qtbot):
-        fm = ProductsTreeFilterModel()
+    def test_flat_signal_enabled_defaults_to_false(self, qtbot):
+        fm = ProductsFlatFilterModel(ProductsModel.instance())
         assert fm.signal_enabled("bm25") is False
 
     def test_registered_signals_lists_every_pushed_signal(self, qtbot, overlay_test_model):
@@ -438,26 +458,11 @@ class TestScoreSignalRegistry:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_tree_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
+    def test_flat_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
         """Regression test: a slow search method (e.g. an embedding model)
         calls set_external_scores() long after set_query() already
         committed a fuzzy-only scoring pass. The view must pick up the new
         scores immediately, without the caller re-issuing set_query()."""
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
-        fm.set_signal_enabled("bm25", True)
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" not in collect_visible_names(fm)
-
-        fm.set_external_scores("bm25", {path_key: 100.0})
-        flush_events()
-        assert "acronym_only" in collect_visible_names(fm)
-
-    def test_flat_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
-        """Same regression as above, for ProductsFlatFilterModel."""
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
         fm = ProductsFlatFilterModel(model)
@@ -470,13 +475,12 @@ class TestScoreSignalRegistry:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_tree_filter_enabling_signal_alone_triggers_rescoring(self, qtbot, overlay_test_model):
+    def test_flat_filter_enabling_signal_alone_triggers_rescoring(self, qtbot, overlay_test_model):
         """Regression: toggling set_signal_enabled() must requery too, not
         only set_external_scores() -- a gap in the old single-signal API."""
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
+        fm = ProductsFlatFilterModel(model)
         fm.set_external_scores("bm25", {path_key: 100.0})
         fm.set_query(QueryParser.parse("magnetic field"))
         flush_events()
@@ -486,7 +490,7 @@ class TestScoreSignalRegistry:
         flush_events()
         assert "acronym_only" in collect_visible_names(fm)
 
-    def test_tree_filter_background_thread_external_scores_trigger_rescoring(
+    def test_flat_filter_background_thread_external_scores_trigger_rescoring(
             self, qtbot, overlay_test_model):
         """Real production call pattern: a Python search controller always
         calls set_external_scores() from a background threading.Thread,
@@ -494,25 +498,6 @@ class TestScoreSignalRegistry:
         invokeMethod trampoline, without deadlocking or racing model state."""
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
-        fm.set_signal_enabled("bm25", True)
-        fm.set_query(QueryParser.parse("magnetic field"))
-        flush_events()
-        assert "acronym_only" not in collect_visible_names(fm)
-
-        worker = threading.Thread(target=fm.set_external_scores, args=("bm25", {path_key: 100.0}))
-        worker.start()
-        worker.join(timeout=5)
-        assert not worker.is_alive()
-
-        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
-
-    def test_flat_filter_background_thread_external_scores_trigger_rescoring(
-            self, qtbot, overlay_test_model):
-        """Same as above, for ProductsFlatFilterModel."""
-        model, leaf = overlay_test_model
-        path_key = ' '.join(leaf.path())
         fm = ProductsFlatFilterModel(model)
         fm.set_signal_enabled("bm25", True)
         fm.set_query(QueryParser.parse("magnetic field"))
@@ -526,14 +511,11 @@ class TestScoreSignalRegistry:
 
         qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
 
-
-class TestScoreSignalRegistryConcurrency:
     @pytest.mark.timeout(10)
     def test_concurrent_set_external_scores_does_not_deadlock(self, qtbot, overlay_test_model):
         model, leaf = overlay_test_model
         path_key = ' '.join(leaf.path())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
+        fm = ProductsFlatFilterModel(model)
         fm.set_signal_enabled("bm25", True)
         fm.set_query(QueryParser.parse("magnetic field"))
 
@@ -636,10 +618,12 @@ from SciQLopPlots import (
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -k "ScoreSignalRegistry or MergeStrategyConfiguration" -v`
+Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -k "ScoreSignalRegistryFlatModel or MergeStrategyConfiguration" -v`
 Expected: FAIL — `AttributeError`/`TypeError` on the not-yet-renamed methods
 (`set_external_scores` still takes one argument, `set_signal_enabled`
-doesn't exist yet, etc).
+doesn't exist yet, etc). The rest of the file (including the untouched
+tree-based `TestExternalScoreOverlay`/`TestExternalScoreOverlayConcurrency`
+methods) is unaffected and should still pass if you run the full file.
 
 - [ ] **Step 3: Create `include/SciQLopPlots/Products/ScoreSignalRegistry.hpp`**
 
@@ -758,29 +742,25 @@ std::optional<double> ScoreSignalRegistry::score_for(const QString& signal_name,
 }
 ```
 
-- [ ] **Step 5: Delete the old overlay files**
+- [ ] **Step 5: Add the new files to `SciQLopPlots/meson.build` (additive only — do not remove `ExternalScoreOverlay` entries; `ProductsTreeFilterModel` still needs them until Task 3)**
 
-```bash
-git rm include/SciQLopPlots/Products/ExternalScoreOverlay.hpp src/ExternalScoreOverlay.cpp
-```
-
-- [ ] **Step 6: Update `SciQLopPlots/meson.build`**
-
-Replace the `ExternalScoreOverlay.hpp` line in the `headers` list (around
-line 166) with:
+Add a new line right after the existing `ExternalScoreOverlay.hpp` line in
+the `headers` list (around line 166):
 
 ```python
+project_source_root+'/include/SciQLopPlots/Products/ExternalScoreOverlay.hpp',
 project_source_root+'/include/SciQLopPlots/Products/ScoreSignalRegistry.hpp']
 ```
 
-Replace `'../src/ExternalScoreOverlay.cpp',` in the `sources` list (around
-line 268) with:
+Add a new line right after `'../src/ExternalScoreOverlay.cpp',` in the
+`sources` list (around line 268):
 
 ```python
+'../src/ExternalScoreOverlay.cpp',
 '../src/ScoreSignalRegistry.cpp',
 ```
 
-- [ ] **Step 7: Rewrite `include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp`**
+- [ ] **Step 6: Rewrite `include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp`**
 
 Change the include (line 25):
 
@@ -901,7 +881,7 @@ Add a new private method declaration alongside `process_batch`
     void sort_and_remap_results();
 ```
 
-- [ ] **Step 8: Rewrite the scoring pipeline in `src/ProductsFlatFilterModel.cpp`**
+- [ ] **Step 7: Rewrite the scoring pipeline in `src/ProductsFlatFilterModel.cpp`**
 
 Update `rebuild()` to also clear the new committed/pending signal caches:
 
@@ -1087,33 +1067,36 @@ are — `m_results[...].score` and `m_max_score` are now `double` instead of
 `int`, but `qRound(score * 100.0 / m_max_score)` already used `100.0`
 (double) and works unchanged with a `double` numerator.
 
-- [ ] **Step 9: Rebuild**
+- [ ] **Step 8: Rebuild**
 
 ```bash
 touch /var/home/jeandet/Documents/prog/SciQLopPlots/SciQLopPlots/bindings/bindings.xml
 $VENV/bin/meson setup --reconfigure /var/home/jeandet/Documents/prog/SciQLopPlots/build-venv
 $VENV/bin/meson compile -C /var/home/jeandet/Documents/prog/SciQLopPlots/build-venv
 ```
-Expected: builds cleanly (the `--reconfigure` picks up the deleted/renamed
-source files).
+Expected: builds cleanly (the `--reconfigure` picks up the new source file
+added to `meson.build`).
 
-- [ ] **Step 10: Run tests to verify they pass**
+- [ ] **Step 9: Run tests to verify they pass**
 
 Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -v`
-Expected: PASS, all tests including the new `TestScoreSignalRegistry`,
-`TestScoreSignalRegistryConcurrency`, and `TestMergeStrategyConfiguration`
-classes, **and** every pre-existing test in this file (in particular
-`TestFlatRelevanceScoreRole`'s exact-percentage assertions must pass
-unchanged).
+Expected: PASS, all tests including the new `TestScoreSignalRegistryFlatModel`
+and `TestMergeStrategyConfiguration` classes, **and** every pre-existing test
+in this file unchanged — including the tree-based methods still left in
+`TestExternalScoreOverlay`/`TestExternalScoreOverlayConcurrency` (untouched,
+still exercising `ProductsTreeFilterModel`'s old API) and
+`TestFlatRelevanceScoreRole`'s exact-percentage assertions.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 cd /var/home/jeandet/Documents/prog/SciQLopPlots
-git add -A -- include/SciQLopPlots/Products/ src/ScoreSignalRegistry.cpp \
-        src/ExternalScoreOverlay.cpp src/ProductsFlatFilterModel.cpp \
+git add include/SciQLopPlots/Products/ScoreSignalRegistry.hpp \
+        src/ScoreSignalRegistry.cpp \
+        include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp \
+        src/ProductsFlatFilterModel.cpp \
         SciQLopPlots/meson.build tests/integration/test_products_filter.py
-git commit -m "feat(products): generalize ExternalScoreOverlay into a named-signal registry, wire configurable merging into ProductsFlatFilterModel"
+git commit -m "feat(products): add ScoreSignalRegistry, wire configurable score merging into ProductsFlatFilterModel"
 ```
 
 ---
@@ -1123,6 +1106,9 @@ git commit -m "feat(products): generalize ExternalScoreOverlay into a named-sign
 **Files:**
 - Modify: `include/SciQLopPlots/Products/ProductsTreeFilterModel.hpp`
 - Modify: `src/ProductsTreeFilterModel.cpp`
+- Modify: `SciQLopPlots/meson.build`
+- Delete: `include/SciQLopPlots/Products/ExternalScoreOverlay.hpp`
+- Delete: `src/ExternalScoreOverlay.cpp`
 - Test: `tests/integration/test_products_filter.py`
 
 **Interfaces:**
@@ -1134,18 +1120,133 @@ git commit -m "feat(products): generalize ExternalScoreOverlay into a named-sign
   `set_signal_weight`, `signal_weight`, `set_override_signal`,
   `override_signal`), on `ProductsTreeFilterModel`.
 
-Task 2's rewritten `TestScoreSignalRegistry`/`TestMergeStrategyConfiguration`
-test classes already exercise both models' tree-side behavior (each test
-method that says "tree" targets `ProductsTreeFilterModel`) — no further test
-file edits are needed for the tree side, since Task 2 wrote them ahead of
-time expecting both models to expose the same API. Add three tree-specific
-tests Task 2 doesn't cover (tiering interaction with merging):
+Task 2 deliberately left `ProductsTreeFilterModel` untouched — it still has
+the *old* one-argument `set_external_scores`/`set_smart_search_enabled`/
+`smart_search_enabled` API, and the tree-based methods still remaining in
+`TestExternalScoreOverlay`/`TestExternalScoreOverlayConcurrency` still call
+that old API (Task 2 only removed and replaced the *flat*-model methods
+from those classes). `ExternalScoreOverlay.hpp`/`.cpp` are therefore still
+present and still compiled — this task both migrates the class and retires
+that file.
 
-- [ ] **Step 1: Add tree-specific failing tests**
+- [ ] **Step 1: Migrate the old tree-based tests to the new API, and add tree-specific tiering tests**
 
-Append to `tests/integration/test_products_filter.py`, inside a new class:
+In `tests/integration/test_products_filter.py`, replace the entire
+remaining `TestExternalScoreOverlay` and `TestExternalScoreOverlayConcurrency`
+classes (by now containing only tree-based methods, since Task 2 already
+removed the flat ones) with:
 
 ```python
+class TestScoreSignalRegistryTreeModel:
+    def test_tree_filter_ignores_disabled_signal(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+    def test_tree_filter_blends_enabled_signal(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_tree_signal_enabled_defaults_to_false(self, qtbot):
+        fm = ProductsTreeFilterModel()
+        assert fm.signal_enabled("bm25") is False
+
+    def test_tree_filter_late_external_scores_trigger_rescoring(self, qtbot, overlay_test_model):
+        """Regression test: a slow search method (e.g. an embedding model)
+        calls set_external_scores() long after set_query() already
+        committed a fuzzy-only scoring pass. The view must pick up the new
+        scores immediately, without the caller re-issuing set_query()."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_tree_filter_enabling_signal_alone_triggers_rescoring(self, qtbot, overlay_test_model):
+        """Regression: toggling set_signal_enabled() must requery too, not
+        only set_external_scores() -- a gap in the old single-signal API."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_external_scores("bm25", {path_key: 100.0})
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        fm.set_signal_enabled("bm25", True)
+        flush_events()
+        assert "acronym_only" in collect_visible_names(fm)
+
+    def test_tree_filter_background_thread_external_scores_trigger_rescoring(
+            self, qtbot, overlay_test_model):
+        """Real production call pattern: a Python search controller always
+        calls set_external_scores() from a background threading.Thread,
+        never the GUI thread. The rescore must still surface via the queued
+        invokeMethod trampoline, without deadlocking or racing model state."""
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+        flush_events()
+        assert "acronym_only" not in collect_visible_names(fm)
+
+        worker = threading.Thread(target=fm.set_external_scores, args=("bm25", {path_key: 100.0}))
+        worker.start()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+
+        qtbot.waitUntil(lambda: "acronym_only" in collect_visible_names(fm), timeout=5000)
+
+    @pytest.mark.timeout(10)
+    def test_concurrent_set_external_scores_does_not_deadlock(self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_signal_enabled("bm25", True)
+        fm.set_query(QueryParser.parse("magnetic field"))
+
+        stop = threading.Event()
+
+        def hammer():
+            i = 0
+            while not stop.is_set():
+                fm.set_external_scores("bm25", {path_key: float(i % 100)})
+                i += 1
+
+        writer = threading.Thread(target=hammer, daemon=True)
+        writer.start()
+        try:
+            for _ in range(200):
+                QCoreApplication.processEvents()
+        finally:
+            stop.set()
+            writer.join(timeout=5)
+        assert not writer.is_alive()
+
+
 class TestTreeTieringWithMergedScores:
     def test_max_score_tiers_operates_on_merged_scores(self, qtbot, overlay_test_model):
         """set_max_score_tiers() must rank the *merged* score, not the raw
@@ -1181,7 +1282,7 @@ class TestTreeTieringWithMergedScores:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -k "TestScoreSignalRegistry or MergeStrategyConfiguration or TieringWithMergedScores" -v`
+Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -k "TestScoreSignalRegistryTreeModel or TieringWithMergedScores" -v`
 Expected: FAIL — tree-model tests error because `ProductsTreeFilterModel`
 still has the old single-signal API from before Task 2's rename (Task 2
 only changed `ProductsFlatFilterModel`).
@@ -1480,26 +1581,46 @@ void ProductsTreeFilterModel::apply_cutoff_and_coverage(
 `it.value() >= m_score_cutoff` and `qRound(it.value() * 100.0 /
 m_max_score)` both already work identically with `double` operands.
 
-- [ ] **Step 5: Rebuild**
+- [ ] **Step 5: Delete the now-unused `ExternalScoreOverlay` and remove it from `meson.build`**
+
+Nothing references `ExternalScoreOverlay` any more after Step 4 — Task 2
+kept it alive only because this task's rewrite hadn't happened yet.
 
 ```bash
-$VENV/bin/meson compile -C /var/home/jeandet/Documents/prog/SciQLopPlots/build-venv
+git rm include/SciQLopPlots/Products/ExternalScoreOverlay.hpp src/ExternalScoreOverlay.cpp
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+In `SciQLopPlots/meson.build`, remove the `ExternalScoreOverlay.hpp` line
+from the `headers` list and the `'../src/ExternalScoreOverlay.cpp',` line
+from the `sources` list (Task 2 added the `ScoreSignalRegistry` equivalents
+alongside these — leave those in place, only remove the old lines).
+
+- [ ] **Step 6: Rebuild**
+
+```bash
+$VENV/bin/meson setup --reconfigure /var/home/jeandet/Documents/prog/SciQLopPlots/build-venv
+$VENV/bin/meson compile -C /var/home/jeandet/Documents/prog/SciQLopPlots/build-venv
+```
+Expected: builds cleanly (the `--reconfigure` picks up the deleted source
+file).
+
+- [ ] **Step 7: Run tests to verify they pass**
 
 Run: `cd /tmp && PYTHONPATH=/var/home/jeandet/Documents/prog/SciQLopPlots/build-venv $VENV/bin/python -m pytest /var/home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_products_filter.py -v`
 Expected: PASS, all tests, including the new
-`TestTreeTieringWithMergedScores` class and every pre-existing
+`TestScoreSignalRegistryTreeModel` and `TestTreeTieringWithMergedScores`
+classes and every pre-existing
 `TestTreeRelevanceScoreRole`/`TestTreeCoverageRole`/`TestTreeScoreTiers`
 exact-value assertion.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 cd /var/home/jeandet/Documents/prog/SciQLopPlots
 git add include/SciQLopPlots/Products/ProductsTreeFilterModel.hpp \
-        src/ProductsTreeFilterModel.cpp tests/integration/test_products_filter.py
+        src/ProductsTreeFilterModel.cpp SciQLopPlots/meson.build \
+        include/SciQLopPlots/Products/ExternalScoreOverlay.hpp \
+        src/ExternalScoreOverlay.cpp tests/integration/test_products_filter.py
 git commit -m "feat(products): wire configurable score-signal merging into ProductsTreeFilterModel"
 ```
 
