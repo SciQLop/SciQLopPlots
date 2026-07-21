@@ -20,7 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Products/ScoreMerge.hpp"
 #include <QObject>
+#include <QStringList>
 #include <QWidget>
 
 class QueryLineEdit;
@@ -61,4 +63,38 @@ public:
 
     void set_search_help(const QString& html);
     QString search_help() const;
+
+    // Forwards to both internal filter models, keeping them in sync so
+    // toggling between tree/list view mid-session never loses signal state.
+    // Getters read m_tree_filter only -- both are always kept configured
+    // identically by construction, so either is a valid source of truth.
+    void set_external_scores(const QString& signal_name, const QHash<QString, QVariant>& scores);
+    void set_signal_enabled(const QString& signal_name, bool enabled);
+    bool signal_enabled(const QString& signal_name) const;
+    QStringList registered_signals() const;
+
+    void set_score_merge_strategy(ScoreMergeStrategy strategy);
+    ScoreMergeStrategy score_merge_strategy() const;
+
+    void set_signal_weight(const QString& signal_name, double weight);
+    double signal_weight(const QString& signal_name) const;
+
+    void set_override_signal(const QString& signal_name);
+    QString override_signal() const;
+
+    // Emitted whenever the query bar's free-text tokens change (filter-only
+    // syntax like "provider:x" is excluded, same split QueryParser already
+    // does) -- lets a Python search controller (re)dispatch an async
+    // external-scoring query (e.g. BM25) without polling or reparsing the
+    // query bar itself. Emitted with an empty list when the query is
+    // cleared, so a controller knows to drop stale external scores too.
+    // Declared last in the class: BINDINGS_H's shiboken-only `signals:`
+    // switch (see SciQLopOverlay.hpp/SciQLopPlotInterface.hpp for the same
+    // pattern) changes the access specifier for everything after it, so
+    // nothing below this may need to stay a plain callable method.
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void free_text_query_changed(const QStringList& tokens);
 };

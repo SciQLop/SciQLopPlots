@@ -124,6 +124,7 @@ void ProductsView::on_query_changed(const Query& query)
 
     m_tree_filter->set_query(query);
     m_flat_filter->set_query(query);
+    emit free_text_query_changed(query.free_text_tokens);
 
     if (has_query)
     {
@@ -226,4 +227,60 @@ void ProductsView::set_search_help(const QString& html)
 QString ProductsView::search_help() const
 {
     return m_query_line_edit->help_text();
+}
+
+void ProductsView::set_external_scores(const QString& signal_name,
+                                        const QHash<QString, QVariant>& scores)
+{
+    m_tree_filter->set_external_scores(signal_name, scores);
+    m_flat_filter->set_external_scores(signal_name, scores);
+}
+
+void ProductsView::set_signal_enabled(const QString& signal_name, bool enabled)
+{
+    m_tree_filter->set_signal_enabled(signal_name, enabled);
+    m_flat_filter->set_signal_enabled(signal_name, enabled);
+}
+
+bool ProductsView::signal_enabled(const QString& signal_name) const
+{
+    return m_tree_filter->signal_enabled(signal_name);
+}
+
+QStringList ProductsView::registered_signals() const
+{
+    return m_tree_filter->registered_signals();
+}
+
+void ProductsView::set_score_merge_strategy(ScoreMergeStrategy strategy)
+{
+    m_tree_filter->set_score_merge_strategy(strategy);
+    m_flat_filter->set_score_merge_strategy(strategy);
+}
+
+ScoreMergeStrategy ProductsView::score_merge_strategy() const
+{
+    return m_tree_filter->score_merge_strategy();
+}
+
+void ProductsView::set_signal_weight(const QString& signal_name, double weight)
+{
+    m_tree_filter->set_signal_weight(signal_name, weight);
+    m_flat_filter->set_signal_weight(signal_name, weight);
+}
+
+double ProductsView::signal_weight(const QString& signal_name) const
+{
+    return m_tree_filter->signal_weight(signal_name);
+}
+
+void ProductsView::set_override_signal(const QString& signal_name)
+{
+    m_tree_filter->set_override_signal(signal_name);
+    m_flat_filter->set_override_signal(signal_name);
+}
+
+QString ProductsView::override_signal() const
+{
+    return m_tree_filter->override_signal();
 }

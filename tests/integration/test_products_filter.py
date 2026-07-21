@@ -4,9 +4,10 @@ import uuid
 
 import pytest
 from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtWidgets import QListView, QTextEdit, QTreeView
 from SciQLopPlots import (
     ProductsModel, ProductsModelNode, ProductsModelNodeType, ParameterType,
-    ProductsTreeFilterModel, ProductsFlatFilterModel, QueryParser,
+    ProductsTreeFilterModel, ProductsFlatFilterModel, ProductsView, QueryParser,
     ScoreMergeStrategy
 )
 
@@ -1182,3 +1183,84 @@ def test_corpus_snapshot_returns_full_unfiltered_corpus(qtbot, overlay_test_mode
     snapshot = fm.corpus_snapshot()
     assert path_key in snapshot
     assert snapshot[path_key] == leaf.raw_text()
+
+
+def _query_bar(view):
+    return view.findChild(QTextEdit)
+
+
+def _list_view_model(view):
+    return next(
+        lv.model() for lv in view.findChildren(QListView)
+        if isinstance(lv.model(), ProductsFlatFilterModel))
+
+
+class TestProductsViewScorePassthrough:
+    """ProductsView -- the widget SciQLop actually mounts as its sidebar
+    Products browser -- builds its own private ProductsTreeFilterModel/
+    ProductsFlatFilterModel and, until this class, exposed neither to
+    Python: the N-signal scoring API added to the two filter models
+    directly (TestScoreSignalRegistryTreeModel/FlatModel above) was
+    unreachable from the one UI surface it was meant for. See
+    docs/superpowers/specs/2026-07-21-productsview-score-passthrough-design.md."""
+
+    def test_external_scores_forward_to_both_tree_and_list_models(
+            self, qtbot, overlay_test_model):
+        model, leaf = overlay_test_model
+        path_key = ' '.join(leaf.path())
+        view = ProductsView()
+        qtbot.addWidget(view)
+
+        view.set_signal_enabled("bm25", True)
+        view.set_external_scores("bm25", {path_key: 100.0})
+
+        _query_bar(view).setPlainText("magnetic field")
+        qtbot.wait(200)
+        flush_events()
+
+        tree_view = view.findChild(QTreeView)
+        assert "acronym_only" in collect_visible_names(tree_view.model())
+        assert "acronym_only" in collect_visible_names(_list_view_model(view))
+
+    def test_registered_signals_and_getters_reflect_view_level_calls(self, qtbot):
+        view = ProductsView()
+        qtbot.addWidget(view)
+        assert view.signal_enabled("bm25") is False
+
+        view.set_signal_enabled("bm25", True)
+        view.set_external_scores("bm25", {"some path": 42.0})
+        view.set_signal_weight("bm25", 2.5)
+        view.set_score_merge_strategy(ScoreMergeStrategy.WeightedSum)
+        view.set_override_signal("bm25")
+
+        assert "bm25" in view.registered_signals()
+        assert view.signal_enabled("bm25") is True
+        assert view.signal_weight("bm25") == 2.5
+        assert view.score_merge_strategy() == ScoreMergeStrategy.WeightedSum
+        assert view.override_signal() == "bm25"
+
+    def test_free_text_query_changed_emits_tokens_only(self, qtbot):
+        view = ProductsView()
+        qtbot.addWidget(view)
+        received = []
+        view.free_text_query_changed.connect(lambda tokens: received.append(tokens))
+
+        _query_bar(view).setPlainText("provider:test_provider magnetic field")
+        qtbot.wait(200)
+
+        assert received
+        assert received[-1] == ["magnetic", "field"]
+
+    def test_free_text_query_changed_emits_empty_list_when_cleared(self, qtbot):
+        view = ProductsView()
+        qtbot.addWidget(view)
+        _query_bar(view).setPlainText("magnetic field")
+        qtbot.wait(200)
+
+        received = []
+        view.free_text_query_changed.connect(lambda tokens: received.append(tokens))
+        _query_bar(view).setPlainText("")
+        qtbot.wait(200)
+
+        assert received
+        assert received[-1] == []
