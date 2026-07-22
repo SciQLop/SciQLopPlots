@@ -15,3 +15,17 @@ bench_segments = executable('bench_segments',
 )
 
 benchmark('bench_segments', bench_segments)
+
+bench_search_moc = qtmod.compile_moc(
+    sources: 'bench_search.cpp',
+    dependencies: [qttest],
+    include_directories: dsp_bench_includes,
+)
+
+bench_search = executable('bench_search',
+    'bench_search.cpp', bench_search_moc,
+    include_directories: dsp_bench_includes,
+    dependencies: [qttest],
+)
+
+benchmark('bench_search', bench_search)

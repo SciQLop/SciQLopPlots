@@ -25,6 +25,7 @@
 #include <QStringView>
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 struct MatchResult
 {
@@ -64,6 +65,18 @@ constexpr int kNegInf = std::numeric_limits<int>::min() / 2;
 // O(candidate.size() * query.size()) time, O(candidate.size()) space — no
 // backpointers, since only the score is needed here (see
 // best_alignment_with_positions for the position-reporting variant).
+//
+// `candidate_lower`/`bonus` depend only on the candidate position `i`, not on
+// which query row `j` is being scored, so they're precomputed once (O(n))
+// instead of being recomputed on every one of the O(n*m) DP cells. Measured
+// via `perf record` on the realistic multi-token benchmark
+// (tests/perf/bench_search.cpp): ~68% of all cycles were spent in
+// QChar::toLower()/QUnicodeTables::caseConversion() before this change, all
+// of it redundant re-folding of the same candidate characters once per query
+// character. The DP levels and the two precomputed arrays are thread_local
+// (this function runs concurrently across cpp_utils::threading::pool()
+// workers, one call per leaf) so steady-state calls do zero heap allocation
+// instead of two QList allocations each.
 inline int best_alignment_raw_score(QStringView query, QStringView candidate)
 {
     const qsizetype n = candidate.size();
@@ -71,17 +84,32 @@ inline int best_alignment_raw_score(QStringView query, QStringView candidate)
     if (m > n)
         return -1;
 
-    QList<int> prev_level(n, kNegInf);
-    QList<int> cur_level(n, kNegInf);
+    thread_local std::vector<char16_t> candidate_lower;
+    thread_local std::vector<int> bonus;
+    thread_local std::vector<int> prev_level;
+    thread_local std::vector<int> cur_level;
 
+    candidate_lower.resize(n);
+    bonus.resize(n);
     for (qsizetype i = 0; i < n; ++i)
-        if (query[0].toLower() == candidate[i].toLower())
-            prev_level[i] = 1 + word_start_bonus(candidate, i);
+    {
+        candidate_lower[i] = candidate[i].toLower().unicode();
+        bonus[i] = word_start_bonus(candidate, i);
+    }
+
+    prev_level.assign(n, kNegInf);
+    cur_level.resize(n);
+
+    const char16_t q0 = query[0].toLower().unicode();
+    for (qsizetype i = 0; i < n; ++i)
+        if (q0 == candidate_lower[i])
+            prev_level[i] = 1 + bonus[i];
 
     for (qsizetype j = 1; j < m; ++j)
     {
         std::fill(cur_level.begin(), cur_level.end(), kNegInf);
         int prefix_max = kNegInf;
+        const char16_t qj = query[j].toLower().unicode();
 
         for (qsizetype i = 0; i < n; ++i)
         {
@@ -89,8 +117,8 @@ inline int best_alignment_raw_score(QStringView query, QStringView candidate)
                 = (i >= 1 && prev_level[i - 1] != kNegInf) ? prev_level[i - 1] + 4 : kNegInf;
             int best_prev = std::max(prefix_max, adjacent);
 
-            if (best_prev != kNegInf && query[j].toLower() == candidate[i].toLower())
-                cur_level[i] = best_prev + 1 + word_start_bonus(candidate, i);
+            if (best_prev != kNegInf && qj == candidate_lower[i])
+                cur_level[i] = best_prev + 1 + bonus[i];
 
             if (i >= 1 && prev_level[i - 1] > prefix_max)
                 prefix_max = prev_level[i - 1];
