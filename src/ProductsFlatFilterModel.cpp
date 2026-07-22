@@ -5,7 +5,10 @@
 #include <QDateTime>
 #include <QIODevice>
 #include <algorithm>
+#include <cpp_utils/threading/parallel_chunks.hpp>
 #include <magic_enum/magic_enum.hpp>
+#include <span>
+#include <vector>
 
 ProductsFlatFilterModel::ProductsFlatFilterModel(ProductsModel* source, QObject* parent)
     : QAbstractListModel(parent), m_source(source)
@@ -164,27 +167,46 @@ void ProductsFlatFilterModel::process_batch()
     int generation = m_batch_generation;
     int end = std::min(m_batch_cursor + BATCH_SIZE, static_cast<int>(m_pending_leaves.size()));
 
-    QList<ScoredNode> batch_results;
+    // filters_match() is a cheap structured-field compare, not worth
+    // dispatching to the pool -- only the expensive per-candidate DP text
+    // scorer (free_text_score, O(text length) per query token) is
+    // parallelized, across cpp_utils::threading::pool() (process-wide,
+    // sized to hardware_concurrency).
+    std::vector<LeafEntry*> candidates;
+    candidates.reserve(end - m_batch_cursor);
     for (int i = m_batch_cursor; i < end; ++i)
+    {
+        auto& leaf = m_pending_leaves[i];
+        if (filters_match(leaf.node))
+            candidates.push_back(&leaf);
+    }
+
+    std::vector<int> fuzzy_scores(candidates.size());
+    cpp_utils::threading::parallel_chunks_transform(
+        candidates, fuzzy_scores.data(), /*min_chunk_size=*/0,
+        [this](std::span<LeafEntry* const> chunk, int* out)
+        {
+            for (auto* leaf : chunk)
+                *out++ = free_text_score(leaf->path_text, leaf->meta_text);
+        });
+
+    QList<ScoredNode> batch_results;
+    for (std::size_t idx = 0; idx < candidates.size(); ++idx)
     {
         if (m_batch_generation != generation)
             return;
 
-        auto& [node, path_text, meta_text] = m_pending_leaves[i];
-        if (!filters_match(node))
-            continue;
-
+        auto* leaf = candidates[idx];
         QHash<QString, double> raw_signals;
-        raw_signals.insert(QStringLiteral("fuzzy"),
-                            static_cast<double>(free_text_score(path_text, meta_text)));
+        raw_signals.insert(QStringLiteral("fuzzy"), static_cast<double>(fuzzy_scores[idx]));
         for (const auto& signal_name : m_score_signals.registered_signals())
         {
-            auto value = m_score_signals.score_for(signal_name, path_text);
+            auto value = m_score_signals.score_for(signal_name, leaf->path_text);
             if (value)
                 raw_signals.insert(signal_name, *value);
         }
 
-        m_pending_raw_signals.insert(node, raw_signals);
+        m_pending_raw_signals.insert(leaf->node, raw_signals);
         for (auto it = raw_signals.constBegin(); it != raw_signals.constEnd(); ++it)
             m_pending_signal_maxes[it.key()]
                 = std::max(m_pending_signal_maxes.value(it.key(), 0.0), it.value());
@@ -198,7 +220,7 @@ void ProductsFlatFilterModel::process_batch()
                                     m_pending_signal_maxes, m_override_signal);
         if (merged && *merged > 0.0)
         {
-            batch_results.append({ node, *merged });
+            batch_results.append({ leaf->node, *merged });
             m_max_score = std::max(m_max_score, *merged);
         }
     }

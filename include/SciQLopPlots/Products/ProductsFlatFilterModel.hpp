@@ -76,7 +76,18 @@ class ProductsFlatFilterModel : public QAbstractListModel
     QHash<ProductsModelNode*, QHash<QString, double>> m_pending_raw_signals;
     QHash<QString, double> m_pending_signal_maxes;
 
-    static constexpr int BATCH_SIZE = 200;
+    // Was 200 (2026-07-15, pre-parallelization): sized purely to keep each
+    // synchronous UI-thread tick cheap. Now that process_batch() scores
+    // each batch in parallel (2026-07-22), a bigger batch's WALL-CLOCK
+    // cost barely grows with size, while each batch still pays a fixed
+    // per-tick cost (QTimer dispatch, thread-pool wait, beginInsertRows/
+    // endInsertRows) -- 200 meant paying that cost ~386 times for the real
+    // 77k-entry corpus, measured to be the dominant remaining cost after
+    // parallelization (a 10x size increase cut real total settle time from
+    // ~3.06s to well under 1s in that measurement). 2000 keeps any single
+    // batch's parallel work in the tens-of-ms range (no perceptible
+    // stutter) while cutting the per-tick overhead payments ~10x.
+    static constexpr int BATCH_SIZE = 2000;
 
 public:
     ProductsFlatFilterModel(ProductsModel* source, QObject* parent = nullptr);

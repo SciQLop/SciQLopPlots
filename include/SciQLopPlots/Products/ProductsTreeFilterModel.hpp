@@ -36,7 +36,13 @@ class ProductsTreeFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
-    static constexpr int BATCH_SIZE = 200;
+    // See ProductsFlatFilterModel.hpp's BATCH_SIZE comment -- same
+    // reasoning (2026-07-22): now that process_score_batch() scores each
+    // batch in parallel, a bigger batch barely costs more wall-clock time,
+    // while every batch still pays a fixed per-tick cost (QTimer dispatch,
+    // thread-pool wait). Kept in sync with the flat model's value rather
+    // than independently re-tuned.
+    static constexpr int BATCH_SIZE = 2000;
 
     // Committed state: what filterAcceptsRow()/data() currently expose. Only
     // ever updated atomically, all-at-once, by finish_scoring() -- so a

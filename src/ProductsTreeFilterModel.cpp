@@ -4,7 +4,10 @@
 #include <QDateTime>
 #include <QTimer>
 #include <algorithm>
+#include <cpp_utils/threading/parallel_chunks.hpp>
 #include <magic_enum/magic_enum.hpp>
+#include <span>
+#include <vector>
 
 ProductsTreeFilterModel::ProductsTreeFilterModel(QObject* parent)
     : QSortFilterProxyModel(parent)
@@ -203,18 +206,39 @@ void ProductsTreeFilterModel::process_score_batch()
     int generation = m_batch_generation;
     int end = std::min(m_batch_cursor + BATCH_SIZE, static_cast<int>(m_pending_leaves.size()));
 
+    // filters_match() is a cheap structured-field compare, not worth
+    // dispatching to the pool -- only the expensive per-candidate DP text
+    // scorer (free_text_score, O(text length) per query token) is
+    // parallelized, across cpp_utils::threading::pool() (process-wide,
+    // sized to hardware_concurrency). Safe to call pool().wait() here: the
+    // calling (UI) thread blocks until every worker finishes, so nothing
+    // can mutate m_pending_query concurrently with these reads.
+    std::vector<ProductsModelNode*> candidates;
+    candidates.reserve(end - m_batch_cursor);
     for (int i = m_batch_cursor; i < end; ++i)
+    {
+        auto* node = m_pending_leaves[i];
+        if (filters_match(node, m_pending_query))
+            candidates.push_back(node);
+    }
+
+    std::vector<int> fuzzy_scores(candidates.size());
+    cpp_utils::threading::parallel_chunks_transform(
+        candidates, fuzzy_scores.data(), /*min_chunk_size=*/0,
+        [this](std::span<ProductsModelNode* const> chunk, int* out)
+        {
+            for (auto* node : chunk)
+                *out++ = free_text_score(node, m_pending_query);
+        });
+
+    for (std::size_t idx = 0; idx < candidates.size(); ++idx)
     {
         if (m_batch_generation != generation)
             return;
 
-        auto* node = m_pending_leaves[i];
-        if (!filters_match(node, m_pending_query))
-            continue;
-
+        auto* node = candidates[idx];
         QHash<QString, double> raw_signals;
-        raw_signals.insert(QStringLiteral("fuzzy"),
-                            static_cast<double>(free_text_score(node, m_pending_query)));
+        raw_signals.insert(QStringLiteral("fuzzy"), static_cast<double>(fuzzy_scores[idx]));
         for (const auto& signal_name : m_score_signals.registered_signals())
         {
             auto value = m_score_signals.score_for(signal_name, node->path().join(' '));
