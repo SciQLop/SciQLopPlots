@@ -231,6 +231,81 @@ namespace detail
         }
     }
 
+    // Rolling percentile via a sorted sliding window (binary-search insert/erase).
+    // Window bounds, NaN handling and edge shrinking match rolling_mean_column
+    // exactly. DELIBERATE DEVIATION: where rolling_mean_column writes 0 for an
+    // all-NaN window, this writes NaN — a 0 background silently turns a
+    // difference into a no-op and makes a ratio divide by zero.
+    template <typename T>
+    void rolling_percentile_column(const T* in, std::size_t n_rows, std::size_t n_cols,
+        std::size_t col, std::size_t window, double q, T* out)
+    {
+        if (n_cols > 1)
+        {
+            std::vector<T> col_in(n_rows), col_out(n_rows);
+            for (std::size_t i = 0; i < n_rows; ++i)
+                col_in[i] = in[i * n_cols + col];
+
+            rolling_percentile_column(col_in.data(), n_rows, 1, 0, window, q, col_out.data());
+
+            for (std::size_t i = 0; i < n_rows; ++i)
+                out[i * n_cols + col] = col_out[i];
+            return;
+        }
+
+        const auto half = window / 2;
+        std::vector<double> win;
+        win.reserve(std::min(window + 1, n_rows));
+
+        auto insert = [&](std::size_t j)
+        {
+            const double v = static_cast<double>(in[j]);
+            if (std::isnan(v))
+                return;
+            win.insert(std::upper_bound(win.begin(), win.end(), v), v);
+        };
+        auto erase = [&](std::size_t j)
+        {
+            const double v = static_cast<double>(in[j]);
+            if (std::isnan(v))
+                return;
+            auto it = std::lower_bound(win.begin(), win.end(), v);
+            if (it != win.end() && *it == v)
+                win.erase(it);
+        };
+        auto current = [&]() -> T
+        {
+            if (win.empty())
+            {
+                if constexpr (std::is_floating_point_v<T>)
+                    return std::numeric_limits<T>::quiet_NaN();
+                else
+                    return T { 0 };
+            }
+            const double idx = q / 100.0 * static_cast<double>(win.size() - 1);
+            const auto lo = static_cast<std::size_t>(idx);
+            const double frac = idx - static_cast<double>(lo);
+            const double a = win[lo];
+            const double b = (lo + 1 < win.size()) ? win[lo + 1] : a;
+            return static_cast<T>(a + frac * (b - a));
+        };
+
+        const auto init_hi = std::min(half + 1, n_rows);
+        for (std::size_t j = 0; j < init_hi; ++j)
+            insert(j);
+        out[0] = current();
+
+        for (std::size_t i = 1; i < n_rows; ++i)
+        {
+            const auto new_hi = i + half;
+            if (new_hi < n_rows)
+                insert(new_hi);
+            if (i > half)
+                erase(i - half - 1);
+            out[i] = current();
+        }
+    }
+
     // O(n) rolling std using sliding sum and sum-of-squares.
     // std = sqrt((sum_sq/n - mean^2) * n/(n-1)) for sample std.
     template <typename T>
@@ -408,6 +483,27 @@ auto rolling_std(std::size_t window) -> Stage<T>
             for (std::size_t col = 0; col < seg.n_cols; ++col)
                 detail::rolling_std_column(
                     seg.y.data(), seg.x.size(), seg.n_cols, col, window, out.y.data());
+        });
+        return results;
+    };
+}
+
+// Pipeline stage: rolling percentile (q=50 is the median).
+template <typename T = double>
+auto rolling_percentile(std::size_t window, double q) -> Stage<T>
+{
+    return [window, q](const std::vector<Segment<T>>& segments) -> std::vector<TimeSeries<T>>
+    {
+        std::vector<TimeSeries<T>> results(segments.size());
+        parallel_for(segments.size(), [&](std::size_t i) {
+            const auto& seg = segments[i];
+            auto& out = results[i];
+            out.x.assign(seg.x.begin(), seg.x.end());
+            out.y.resize(seg.y.size());
+            out.n_cols = seg.n_cols;
+            for (std::size_t col = 0; col < seg.n_cols; ++col)
+                detail::rolling_percentile_column(
+                    seg.y.data(), seg.x.size(), seg.n_cols, col, window, q, out.y.data());
         });
         return results;
     };

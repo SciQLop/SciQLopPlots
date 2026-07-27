@@ -16,6 +16,7 @@ from ._sciqlop_dsp import (
     rolling_mean,
     rolling_std,
     column_percentile,
+    rolling_percentile,
     reduce,
     reduce_axes,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "rolling_mean",
     "rolling_std",
     "column_percentile",
+    "rolling_percentile",
     "reduce",
     "reduce_axes",
 ]
