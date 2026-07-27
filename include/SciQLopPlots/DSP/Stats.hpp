@@ -25,8 +25,10 @@
 #include "Pipeline.hpp"
 #include "Segments.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 namespace sqp::dsp
@@ -100,6 +102,50 @@ namespace detail
             s.std_dev = std::sqrt(s.variance);
         }
         return s;
+    }
+
+    // Percentile of one column, down the time axis. NaN values are excluded.
+    // Uses numpy's default 'linear' interpolation so results match
+    // np.nanpercentile exactly. Returns NaN for an all-NaN column
+    // (integer types have no NaN, so that case is unreachable for them).
+    template <typename T>
+    T column_percentile_value(
+        const T* data, std::size_t n_rows, std::size_t n_cols, std::size_t col, double q)
+    {
+        std::vector<T> buf;
+        buf.reserve(n_rows);
+        for (std::size_t i = 0; i < n_rows; ++i)
+        {
+            const T val = data[i * n_cols + col];
+            if constexpr (std::is_floating_point_v<T>)
+            {
+                if (std::isnan(val))
+                    continue;
+            }
+            buf.push_back(val);
+        }
+
+        if (buf.empty())
+        {
+            if constexpr (std::is_floating_point_v<T>)
+                return std::numeric_limits<T>::quiet_NaN();
+            else
+                return T { 0 };
+        }
+
+        const double idx = q / 100.0 * static_cast<double>(buf.size() - 1);
+        const auto lo = static_cast<std::size_t>(idx);
+        const double frac = idx - static_cast<double>(lo);
+
+        std::nth_element(buf.begin(), buf.begin() + static_cast<std::ptrdiff_t>(lo), buf.end());
+        const double a = static_cast<double>(buf[lo]);
+        // nth_element leaves everything after `lo` >= buf[lo]; the next order
+        // statistic is therefore the minimum of that tail.
+        const double b = (lo + 1 < buf.size())
+            ? static_cast<double>(*std::min_element(
+                  buf.begin() + static_cast<std::ptrdiff_t>(lo) + 1, buf.end()))
+            : a;
+        return static_cast<T>(a + frac * (b - a));
     }
 
     // O(n) rolling mean using a sliding sum.
@@ -311,6 +357,18 @@ auto block_stats(const std::vector<Segment<T>>& segments)
                 = detail::block_stats_column(seg.y.data(), seg.x.size(), seg.n_cols, col);
     });
     return results;
+}
+
+// Per-column percentile down the time axis: one value per column.
+// Reduces time away, so there is no output time axis.
+template <typename T = double>
+auto column_percentiles(const T* data, std::size_t n_rows, std::size_t n_cols, double q)
+    -> std::vector<T>
+{
+    std::vector<T> out(n_cols);
+    parallel_for(n_cols, [&](std::size_t col)
+        { out[col] = detail::column_percentile_value(data, n_rows, n_cols, col, q); });
+    return out;
 }
 
 // Pipeline stage: rolling mean.

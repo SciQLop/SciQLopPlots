@@ -23,6 +23,7 @@ from SciQLopPlots.dsp import (
     rolling_std,
     reduce,
     reduce_axes,
+    column_percentile,
 )
 
 
@@ -703,3 +704,46 @@ class TestNaNRobustness:
         y = np.full(5, np.nan)
         out = interpolate_nan(x, y)
         assert np.all(np.isnan(out))
+
+
+# ── column_percentile ─────────────────────────────────────────────────────────
+
+class TestColumnPercentile:
+    def test_matches_numpy_percentile_2d(self):
+        rng = np.random.default_rng(0)
+        y = rng.normal(size=(500, 7))
+        for q in (0.0, 10.0, 50.0, 90.0, 100.0):
+            assert_allclose(column_percentile(y, q), np.percentile(y, q, axis=0), atol=1e-12)
+
+    def test_skips_nan(self):
+        y = np.array([[1.0, 10.0], [np.nan, 20.0], [3.0, np.nan], [5.0, 40.0]])
+        expected = [np.nanpercentile(y[:, 0], 50.0), np.nanpercentile(y[:, 1], 50.0)]
+        assert_allclose(column_percentile(y, 50.0), expected, atol=1e-12)
+
+    def test_all_nan_column_is_nan(self):
+        y = np.array([[np.nan, 1.0], [np.nan, 2.0]])
+        out = column_percentile(y, 50.0)
+        assert np.isnan(out[0])
+        assert_allclose(out[1], 1.5, atol=1e-12)
+
+    def test_1d_input_returns_length_one(self):
+        y = np.arange(11, dtype=np.float64)
+        out = column_percentile(y, 50.0)
+        assert out.shape == (1,)
+        assert_allclose(out[0], 5.0, atol=1e-12)
+
+    def test_single_row(self):
+        y = np.array([[3.0, 7.0]])
+        assert_allclose(column_percentile(y, 50.0), [3.0, 7.0], atol=1e-12)
+
+    def test_preserves_float32(self):
+        y = np.linspace(0, 1, 100, dtype=np.float32).reshape(50, 2)
+        out = column_percentile(y, 50.0)
+        assert out.dtype == np.float32
+
+    def test_rejects_out_of_range_q(self):
+        y = np.ones((4, 2))
+        with pytest.raises(ValueError):
+            column_percentile(y, 101.0)
+        with pytest.raises(ValueError):
+            column_percentile(y, -1.0)

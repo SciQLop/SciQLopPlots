@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <exception>
 #include <span>
@@ -344,6 +345,21 @@ bool check_window_size(Py_ssize_t window, Py_ssize_t nrows, const char* func_nam
     {
         PyErr_Format(PyExc_ValueError,
             "%s: window (%zd) must be <= number of rows (%zd)", func_name, window, nrows);
+        return false;
+    }
+    return true;
+}
+
+bool check_percentile(double q, const char* func_name)
+{
+    if (!(q >= 0.0 && q <= 100.0))
+    {
+        // PyErr_Format (PyUnicode_FromFormat) has no %f/%g conversion for
+        // doubles, so the value is pre-formatted into a string first.
+        char q_str[32];
+        std::snprintf(q_str, sizeof(q_str), "%g", q);
+        PyErr_Format(PyExc_ValueError,
+            "%s: q must be in [0, 100], got %s", func_name, q_str);
         return false;
     }
     return true;
@@ -1113,6 +1129,33 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     });
 }
 
+PyObject* dsp_column_percentile(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* y_obj = nullptr;
+    double q = 50.0;
+
+    static const char* kwlist[] = { "y", "q", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwargs, "O|d", const_cast<char**>(kwlist), &y_obj, &q))
+        return nullptr;
+
+    YArray y;
+    if (!y.parse(y_obj))
+        return nullptr;
+    if (!check_percentile(q, "column_percentile"))
+        return nullptr;
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        std::vector<T> vals;
+        SQDSP_GIL_RELEASE_BEGIN
+        vals = sqp::dsp::column_percentiles<T>(y.typed_data<T>(),
+            static_cast<std::size_t>(y.nrows), static_cast<std::size_t>(y.ncols), q);
+        SQDSP_GIL_RELEASE_END
+        return vec_to_1d(vals);
+    });
+}
+
 PyObject* dsp_rolling_mean(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 {
     PyObject* x_obj = nullptr;
@@ -1395,6 +1438,14 @@ PyMethodDef methods[] = {
      "spectrogram(x, y, col=0, window_size=256, overlap=0, gap_factor=3.0, window='hann')\n"
      "  -> list[(t, f, power)]\n"
      "Per-segment spectrogram. Power preserves y dtype; t/f always float64."},
+
+    {"column_percentile", reinterpret_cast<PyCFunction>(dsp_column_percentile),
+     METH_VARARGS | METH_KEYWORDS,
+     "column_percentile(y, q=50.0) -> np.ndarray\n"
+     "Per-column percentile down the time axis; one value per column.\n"
+     "q=50 is the median. NaN values are excluded; an all-NaN column gives NaN.\n"
+     "Matches np.nanpercentile's default 'linear' interpolation. Preserves y dtype.\n"
+     "Takes no x and returns no time axis: time is reduced away."},
 
     {"rolling_mean", reinterpret_cast<PyCFunction>(dsp_rolling_mean),
      METH_VARARGS | METH_KEYWORDS,
