@@ -631,6 +631,7 @@ git commit -m "feat(dsp): add gap-aware rolling_percentile"
 - Produces:
   - `SciQLop.user_api.dsp._background.background_subtract(x, y, *, q=50.0, window=None, mode='diff', gap_factor=3.0) -> np.ndarray` — same shape as `y`.
   - `SciQLop.user_api.dsp._background.resolve_window(x, window) -> int | None`
+  - `SciQLop.user_api.dsp._background._realign_to_input(x, x_bg, bg) -> np.ndarray`
   - `SciQLop.user_api.dsp.arrays.background_subtract(...)` — same signature, thin delegation.
 
 `_background.py` is a new module rather than logic added to `_arrays.py` because `_arrays.py` documents itself as a thin typed pass-through over `SciQLopPlots.dsp`, and this function composes rather than passes through.
@@ -690,6 +691,17 @@ class TestBackgroundSubtractArrays:
         slide = dsp_arrays.background_subtract(x, y, window=31)
         margin = 40                                # skip the shrinking edges
         assert np.abs(slide[margin:-margin]).max() < np.abs(const[margin:-margin]).max() / 10.0
+
+    def test_sliding_background_realigns_across_a_gap(self):
+        # rolling_percentile goes through the gap-aware pipeline, which
+        # reassembles segments with one extra NaN separator row per gap. The
+        # background must still line up row-for-row with the input.
+        x = np.concatenate([np.arange(100.0), np.arange(100.0) + 150.0])
+        y = np.concatenate([np.full(100, 10.0), np.full(100, 50.0)]).reshape(200, 1)
+        out = dsp_arrays.background_subtract(x, y, window=11)
+        assert out.shape == y.shape
+        assert np.isfinite(out).all()
+        assert_allclose(out, 0.0, atol=1e-9)
 
     def test_window_as_timedelta_matches_equivalent_samples(self):
         n = 300
@@ -814,6 +826,22 @@ def resolve_window(x: np.ndarray, window: Window) -> Optional[int]:
     return int(max(1, min(x.size, round(seconds / median_dt))))
 
 
+def _realign_to_input(x: np.ndarray, x_bg: np.ndarray, bg: np.ndarray) -> np.ndarray:
+    """Drop the gap-separator rows the DSP pipeline inserts.
+
+    Every gap-aware ``Stage<T>`` kernel reassembles its segments with one
+    extra NaN row per gap, timestamped at the gap midpoint (see
+    ``Pipeline.hpp``'s ``reassemble``). The background would then be longer
+    than the data it has to line up with. Separator timestamps are midpoints
+    and never occur in `x`, and segment timestamps are copied verbatim, so
+    `x` is an exact subsequence of `x_bg` and a searchsorted lookup recovers
+    the original rows.
+    """
+    if bg.shape[0] == x.shape[0]:
+        return bg                                   # no gaps, nothing inserted
+    return bg[np.searchsorted(x_bg, x)]
+
+
 def _apply_mode(y: np.ndarray, bg: np.ndarray, mode: str) -> np.ndarray:
     if mode == 'diff':
         return y - bg
@@ -863,8 +891,9 @@ def background_subtract(x: np.ndarray, y: np.ndarray, *,
     if samples is None:
         bg = _dsp.column_percentile(y, q)          # shape (n_cols,), broadcasts over rows
     else:
-        _, bg = _dsp.rolling_percentile(x, y, samples, q=q,
-                                        gap_factor=gap_factor, has_gaps=True)
+        x_bg, bg = _dsp.rolling_percentile(x, y, samples, q=q,
+                                           gap_factor=gap_factor, has_gaps=True)
+        bg = _realign_to_input(x, x_bg, bg)
     return _apply_mode(y, bg, mode)
 ```
 
