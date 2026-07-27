@@ -215,3 +215,41 @@ class TestCurvedLineItem:
         item = SciQLopCurvedLineItem(plot, QPointF(0, 0), QPointF(10, 10))
         del item
         force_gc()
+
+
+class TestCurvedLineControlPointDefaults:
+    """QCPItemCurve seeds startDir/endDir for a unit square: (0.5, 0) and (0, 0.5).
+
+    SciQLopCurvedLineItem overrides start/end but used to leave those defaults in
+    place for Data coordinates, so the cubic's control points sat near the data
+    origin no matter where the endpoints were -- the curve bulged away from its
+    own endpoints, by more the further the data range was from 0..1 (badly so for
+    time-series keys). They now seed to the endpoints: a straight line until the
+    caller asks for curvature via set_start_dir_position/set_stop_dir_position.
+    """
+
+    def _curve(self, plot, coordinates, start, stop):
+        from SciQLopPlots import LineTermination
+        return SciQLopCurvedLineItem(
+            plot, start, stop, LineTermination.NoneTermination,
+            LineTermination.NoneTermination, coordinates)
+
+    def test_data_mode_control_points_seed_to_the_endpoints(self, plot):
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
+        plot.y_axis().set_range(SciQLopPlotRange(0.0, 100.0))
+        curve = self._curve(plot, Coordinates.Data, QPointF(10.0, 10.0), QPointF(90.0, 90.0))
+        assert (curve.start_dir_position().x(), curve.start_dir_position().y()) == (10.0, 10.0)
+        assert (curve.stop_dir_position().x(), curve.stop_dir_position().y()) == (90.0, 90.0)
+
+    def test_pixels_mode_control_points_seed_to_the_endpoints(self, plot):
+        curve = self._curve(plot, Coordinates.Pixels, QPointF(100.0, 60.0), QPointF(180.0, 60.0))
+        assert (curve.start_dir_position().x(), curve.start_dir_position().y()) == (100.0, 60.0)
+        assert (curve.stop_dir_position().x(), curve.stop_dir_position().y()) == (180.0, 60.0)
+
+    def test_control_points_remain_settable(self, plot):
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
+        curve = self._curve(plot, Coordinates.Data, QPointF(10.0, 10.0), QPointF(90.0, 90.0))
+        curve.set_start_dir_position(QPointF(10.0, 90.0))
+        curve.set_stop_dir_position(QPointF(90.0, 10.0))
+        assert (curve.start_dir_position().x(), curve.start_dir_position().y()) == (10.0, 90.0)
+        assert (curve.stop_dir_position().x(), curve.stop_dir_position().y()) == (90.0, 10.0)

@@ -113,10 +113,19 @@ public:
             : SciQLopPlotItem<QCPItemCurve> { plot }
     {
         this->setMovable(false);
+        // The direction handles are public API (setStartDirPos/setStopDirPos), so
+        // they must share the endpoints' coordinate system. QCPItemCurve seeds them
+        // for a unit square -- (0.5, 0) and (0, 0.5) -- which pins the cubic's
+        // control points near the origin however far away the endpoints actually
+        // are, bulging the curve past them (wildly so for time-series keys). Seed
+        // them on the endpoints instead: a straight line until curvature is asked
+        // for.
         if (coordinates == Coordinates::Data)
         {
             this->start->setType(QCPItemPosition::ptPlotCoords);
             this->end->setType(QCPItemPosition::ptPlotCoords);
+            this->startDir->setType(QCPItemPosition::ptPlotCoords);
+            this->endDir->setType(QCPItemPosition::ptPlotCoords);
         }
         else
         {
@@ -124,18 +133,13 @@ public:
             // origin sits inside the axis margins, where clipToAxisRect() hides it.
             this->start->setType(QCPItemPosition::ptAxisRectAbsolute);
             this->end->setType(QCPItemPosition::ptAxisRectAbsolute);
-            // The direction handles are public API (setStartDirPos/setStopDirPos), so
-            // they have to share the coordinate system of the endpoints they bend.
-            // QCPItemCurve seeds them with plot coordinates, which are meaningless
-            // here, so anchor them on the endpoints: a straight line until the caller
-            // asks for curvature.
             this->startDir->setType(QCPItemPosition::ptAxisRectAbsolute);
             this->endDir->setType(QCPItemPosition::ptAxisRectAbsolute);
-            this->startDir->setCoords(start);
-            this->endDir->setCoords(stop);
         }
         this->start->setCoords(start);
         this->end->setCoords(stop);
+        this->startDir->setCoords(start);
+        this->endDir->setCoords(stop);
         // from QCP doc : The head corresponds to the end position. ¯\_(ツ)_/¯
         this->setTail(to_qcp(startTerminator));
         this->setHead(to_qcp(stopTerminator));
