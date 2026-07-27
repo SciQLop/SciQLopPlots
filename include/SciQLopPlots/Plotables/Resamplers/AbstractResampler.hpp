@@ -149,8 +149,15 @@ protected:
 
     void _resample()
     {
-        QMutexLocker locker(&_plot_info_mutex);
-        static_cast<U*>(this)->resample(_plot_info.plot_range);
+        // Copy the range out and drop the lock before dispatching: resample()
+        // emits _resample_sig(), and holding _plot_info_mutex across Qt's
+        // connection-list walk stalls every other thread touching plot info.
+        QCPRange plot_range;
+        {
+            QMutexLocker locker(&_plot_info_mutex);
+            plot_range = _plot_info.plot_range;
+        }
+        static_cast<U*>(this)->resample(plot_range);
     }
 
 public:
