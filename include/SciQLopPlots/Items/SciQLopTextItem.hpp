@@ -51,7 +51,9 @@ public:
         }
         else
         {
-            QCPItemText::position->setType(QCPItemPosition::ptAbsolute);
+            // Pixels are measured from the plot area, not the widget: ptAbsolute's
+            // origin sits inside the axis margins, where clipToAxisRect() hides it.
+            QCPItemText::position->setType(QCPItemPosition::ptAxisRectAbsolute);
         }
         QCPItemText::position->setCoords(position);
         QCPItemText::setText(text);

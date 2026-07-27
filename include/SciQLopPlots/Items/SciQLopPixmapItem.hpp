@@ -44,8 +44,8 @@ public:
         this->setPixmap(pixmap);
         // setType before setCoords: setType retains the pixel position computed
         // under the current type, so coords set first (default plot-coords) then
-        // switched to ptAbsolute would be converted off-screen. Matches
-        // EllipseItem/TextItem ordering.
+        // switched would be converted off-screen. Matches EllipseItem/TextItem
+        // ordering.
         if (coordinates == Coordinates::Data)
         {
             this->topLeft->setType(QCPItemPosition::ptPlotCoords);
@@ -53,8 +53,10 @@ public:
         }
         else
         {
-            this->topLeft->setType(QCPItemPosition::ptAbsolute);
-            this->bottomRight->setType(QCPItemPosition::ptAbsolute);
+            // Pixels are measured from the plot area, not the widget: ptAbsolute's
+            // origin sits inside the axis margins, where clipToAxisRect() hides it.
+            this->topLeft->setType(QCPItemPosition::ptAxisRectAbsolute);
+            this->bottomRight->setType(QCPItemPosition::ptAxisRectAbsolute);
         }
         this->topLeft->setCoords(rect.topLeft());
         this->bottomRight->setCoords(rect.bottomRight());

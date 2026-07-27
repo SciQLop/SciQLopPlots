@@ -52,8 +52,10 @@ public:
         }
         else
         {
-            this->topLeft->setType(QCPItemPosition::ptAbsolute);
-            this->bottomRight->setType(QCPItemPosition::ptAbsolute);
+            // Pixels are measured from the plot area, not the widget: ptAbsolute's
+            // origin sits inside the axis margins, where clipToAxisRect() hides it.
+            this->topLeft->setType(QCPItemPosition::ptAxisRectAbsolute);
+            this->bottomRight->setType(QCPItemPosition::ptAxisRectAbsolute);
         }
         this->topLeft->setCoords(boundingRectangle.topLeft());
         this->bottomRight->setCoords(boundingRectangle.bottomRight());
@@ -118,8 +120,19 @@ public:
         }
         else
         {
-            this->start->setType(QCPItemPosition::ptAbsolute);
-            this->end->setType(QCPItemPosition::ptAbsolute);
+            // Pixels are measured from the plot area, not the widget: ptAbsolute's
+            // origin sits inside the axis margins, where clipToAxisRect() hides it.
+            this->start->setType(QCPItemPosition::ptAxisRectAbsolute);
+            this->end->setType(QCPItemPosition::ptAxisRectAbsolute);
+            // The direction handles are public API (setStartDirPos/setStopDirPos), so
+            // they have to share the coordinate system of the endpoints they bend.
+            // QCPItemCurve seeds them with plot coordinates, which are meaningless
+            // here, so anchor them on the endpoints: a straight line until the caller
+            // asks for curvature.
+            this->startDir->setType(QCPItemPosition::ptAxisRectAbsolute);
+            this->endDir->setType(QCPItemPosition::ptAxisRectAbsolute);
+            this->startDir->setCoords(start);
+            this->endDir->setCoords(stop);
         }
         this->start->setCoords(start);
         this->end->setCoords(stop);

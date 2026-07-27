@@ -57,6 +57,8 @@ public:
     [[nodiscard]] Coordinates coordinates() const noexcept { return m_coordinates; }
     void set_coordinates(Coordinates coordinates);
 
+    /// Left edge of the plot area, the origin Coordinates::Pixels is measured from.
+    [[nodiscard]] double plot_area_left() const noexcept;
     [[nodiscard]] SciQLopPlotRange pixel_range() const noexcept;
     void set_pixel_range(const SciQLopPlotRange& px_range);
 

@@ -34,8 +34,10 @@ impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_
     setMovable(true);
     if (coordinates == Coordinates::Pixels)
     {
-        lowerEdge->setTypeX(QCPItemPosition::ptAbsolute);
-        upperEdge->setTypeX(QCPItemPosition::ptAbsolute);
+        // Pixels are measured from the plot area, not the widget: ptAbsolute's
+        // origin sits inside the axis margins, where clipToAxisRect() hides it.
+        lowerEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
+        upperEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
     }
     setRange(QCPRange(horizontal_range.first, horizontal_range.second));
 
@@ -66,16 +68,23 @@ SciQLopPlotRange impl::VerticalSpan::range() const noexcept
     return SciQLopPlotRange(r.lower, r.upper);
 }
 
+double impl::VerticalSpan::plot_area_left() const noexcept
+{
+    const auto* rect = lowerEdge->axisRect();
+    return rect ? rect->left() : 0.;
+}
+
 void impl::VerticalSpan::set_coordinates(Coordinates coordinates)
 {
     if (m_coordinates == coordinates)
         return;
     auto current = range();
+    const double origin = plot_area_left();
     if (coordinates == Coordinates::Pixels)
     {
         auto pr = pixel_range();
-        lowerEdge->setTypeX(QCPItemPosition::ptAbsolute);
-        upperEdge->setTypeX(QCPItemPosition::ptAbsolute);
+        lowerEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
+        upperEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
         setRange(QCPRange(pr.first, pr.second));
     }
     else
@@ -85,8 +94,9 @@ void impl::VerticalSpan::set_coordinates(Coordinates coordinates)
         auto* keyAxis = lowerEdge->keyAxis();
         if (keyAxis)
         {
-            double lower = keyAxis->pixelToCoord(current.first);
-            double upper = keyAxis->pixelToCoord(current.second);
+            // current holds plot-area-relative pixels; pixelToCoord wants widget ones.
+            double lower = keyAxis->pixelToCoord(current.first + origin);
+            double upper = keyAxis->pixelToCoord(current.second + origin);
             setRange(QCPRange(lower, upper));
         }
     }
@@ -96,20 +106,27 @@ void impl::VerticalSpan::set_coordinates(Coordinates coordinates)
 
 SciQLopPlotRange impl::VerticalSpan::pixel_range() const noexcept
 {
-    auto* keyAxis = lowerEdge->keyAxis();
-    if (!keyAxis)
-        return {};
-    return SciQLopPlotRange(keyAxis->coordToPixel(lowerEdge->coords().x()),
-                            keyAxis->coordToPixel(upperEdge->coords().x()));
+    // Relative to the plot area, matching what Coordinates::Pixels means. Reading
+    // the resolved pixelPosition() keeps this correct in both coordinate modes;
+    // coordToPixel() would reinterpret already-pixel coords as data values.
+    const double origin = plot_area_left();
+    return SciQLopPlotRange(lowerEdge->pixelPosition().x() - origin,
+                            upperEdge->pixelPosition().x() - origin);
 }
 
 void impl::VerticalSpan::set_pixel_range(const SciQLopPlotRange& px_range)
 {
+    if (m_coordinates == Coordinates::Pixels)
+    {
+        set_range(px_range);
+        return;
+    }
     auto* keyAxis = lowerEdge->keyAxis();
     if (!keyAxis)
         return;
-    set_range(SciQLopPlotRange(keyAxis->pixelToCoord(px_range.first),
-                               keyAxis->pixelToCoord(px_range.second)));
+    const double origin = plot_area_left();
+    set_range(SciQLopPlotRange(keyAxis->pixelToCoord(px_range.first + origin),
+                               keyAxis->pixelToCoord(px_range.second + origin)));
 }
 
 void impl::VerticalSpan::select_lower_border(bool selected)
