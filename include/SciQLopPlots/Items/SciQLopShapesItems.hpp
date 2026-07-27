@@ -248,7 +248,17 @@ public:
                                   QBrush(fillColor), movable, coordinates, toolTip);
     }
 
-    ~SciQLopEllipseItem() = default;
+    ~SciQLopEllipseItem() { qcp_item_remove(m_item); }
+
+    inline void set_visible(bool visible) noexcept override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    [[nodiscard]] inline bool visible() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
 
     [[nodiscard]] virtual inline QPen pen() const noexcept override
     {
@@ -344,7 +354,17 @@ public:
                                         stopTerminator, coordinates, toolTip);
     }
 
-    ~SciQLopCurvedLineItem() = default;
+    ~SciQLopCurvedLineItem() { qcp_item_remove(m_item); }
+
+    inline void set_visible(bool visible) noexcept override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    [[nodiscard]] inline bool visible() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
 
     [[nodiscard]] inline QPointF start_position() const noexcept
     {

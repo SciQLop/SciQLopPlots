@@ -95,7 +95,17 @@ public:
             m_item = new impl::TextItem(plot->qcp_plot(), text, position, movable, coordinates);
     }
 
-    virtual ~SciQLopTextItem() { }
+    virtual ~SciQLopTextItem() { qcp_item_remove(m_item); }
+
+    inline void set_visible(bool visible) noexcept override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    [[nodiscard]] inline bool visible() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
 
     virtual inline void set_position(const QPointF& pos) noexcept override
     {

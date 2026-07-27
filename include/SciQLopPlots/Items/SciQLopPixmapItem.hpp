@@ -24,6 +24,7 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/helpers.hpp"
 #include <QBrush>
 #include <QColor>
 #include <QRgb>
@@ -101,5 +102,17 @@ public:
             throw std::invalid_argument("plot cannot be nullptr");
         else
             m_item = new impl::PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
+    }
+
+    virtual ~SciQLopPixmapItem() { qcp_item_remove(m_item); }
+
+    inline void set_visible(bool visible) noexcept override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    [[nodiscard]] inline bool visible() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
     }
 };

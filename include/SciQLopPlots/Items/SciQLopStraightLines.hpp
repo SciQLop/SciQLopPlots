@@ -24,6 +24,7 @@
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/helpers.hpp"
 #include <cmath>
 #include <optional>
 
@@ -149,12 +150,7 @@ class SciQLopStraightLine : public QObject
     QPointer<StraightLine> m_line;
 
 public:
-    virtual ~SciQLopStraightLine()
-    {
-        if (!m_line.isNull())
-            if (auto* plot = m_line->parentPlot())
-                plot->removeItem(m_line);
-    }
+    virtual ~SciQLopStraightLine() { qcp_item_remove(m_line); }
 
     /*!
      * \brief SciQLopStraightLine
