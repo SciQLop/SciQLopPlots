@@ -221,13 +221,20 @@ bool check_percentile(double q, const char* func_name)
 {
     if (!(q >= 0.0 && q <= 100.0))
     {
+        // PyErr_Format supports only a subset of printf conversions -- no %g/%f
+        // for doubles. Passing one raises SystemError instead of the intended
+        // exception, so q is pre-formatted and passed as %s.
+        char q_str[32];
+        std::snprintf(q_str, sizeof(q_str), "%g", q);
         PyErr_Format(PyExc_ValueError,
-            "%s: q must be in [0, 100], got %g", func_name, q);
+            "%s: q must be in [0, 100], got %s", func_name, q_str);
         return false;
     }
     return true;
 }
 ```
+
+This needs `#include <cstdio>` in `python_module.cpp`'s include block.
 
 - [ ] **Step 5: Add the module function to `python_module.cpp`**
 
