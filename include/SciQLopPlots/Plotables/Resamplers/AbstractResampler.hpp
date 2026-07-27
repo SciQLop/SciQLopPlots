@@ -165,13 +165,17 @@ public:
     {
         constexpr auto has_z = sizeof...(maybe_z) == 1;
         static_assert(!(data2d xor has_z), "Data must be 2D or 3D");
+        const QCPRange data_x_range = _bounds(x);
         {
-            const QCPRange data_x_range = _bounds(x);
             QMutexLocker locker(&_next_data_mutex);
             _next_data
                 = data_t { std::move(x), std::move(y), std::move(maybe_z)..., data_x_range, true };
-            _resample();
         }
+        // Dispatch with the lock released, for the same reason as _resample():
+        // this ends in `emit _resample_sig()`. The data is already published, and
+        // the worker only wakes on that signal, so nothing is lost by publishing
+        // first and waking after.
+        _resample();
     }
 
     inline void set_x_scale_log(bool log)
