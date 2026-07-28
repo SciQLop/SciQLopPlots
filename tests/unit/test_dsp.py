@@ -829,3 +829,13 @@ class TestRollingPercentile:
         y = np.ones(10)
         with pytest.raises(ValueError):
             rolling_percentile(t, y, 3, q=200.0)
+
+    def test_q_boundaries_match_reference(self):
+        # q=0 and q=100 both land exactly on the `lo == win.size()-1` clamp
+        # path in the C++ interpolation (idx = q/100 * (win.size()-1)); make
+        # sure the min/max extremes aren't off by one there.
+        t = np.arange(150, dtype=np.float64) * 0.01
+        y = np.random.default_rng(11).normal(size=150)
+        for q in (0.0, 100.0):
+            _, got = rolling_percentile(t, y, 15, q=q, has_gaps=False)
+            assert_allclose(got, _rolling_percentile_ref(y, 15, q), atol=1e-10)
