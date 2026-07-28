@@ -808,12 +808,14 @@ def resolve_window(x: np.ndarray, window: Window) -> Optional[int]:
     if isinstance(window, bool):
         raise TypeError("window must be an int (samples) or a timedelta/np.timedelta64 "
                         "(duration), got bool")
-    if isinstance(window, (int, np.integer)):
-        return int(window)
-    if isinstance(window, timedelta):
-        seconds = window.total_seconds()
-    elif isinstance(window, np.timedelta64):
+    # np.timedelta64 subclasses np.signedinteger, so it must be checked
+    # before the plain-int branch or it would be misread as a sample count.
+    if isinstance(window, np.timedelta64):
         seconds = float(window / np.timedelta64(1, 's'))
+    elif isinstance(window, (int, np.integer)):
+        return int(window)
+    elif isinstance(window, timedelta):
+        seconds = window.total_seconds()
     else:
         raise TypeError("window must be None, an int (samples), or a "
                         f"timedelta/np.timedelta64 (duration), got {type(window).__name__}")
@@ -893,6 +895,8 @@ def background_subtract(x: np.ndarray, y: np.ndarray, *,
     else:
         x_bg, bg = _dsp.rolling_percentile(x, y, samples, q=q,
                                            gap_factor=gap_factor, has_gaps=True)
+        if y.ndim == 2 and bg.ndim == 1:
+            bg = bg.reshape(-1, 1)                  # rolling_percentile drops a size-1 column axis
         bg = _realign_to_input(x, x_bg, bg)
     return _apply_mode(y, bg, mode)
 ```
