@@ -23,6 +23,8 @@ from SciQLopPlots.dsp import (
     rolling_std,
     reduce,
     reduce_axes,
+    column_percentile,
+    rolling_percentile,
 )
 
 
@@ -703,3 +705,137 @@ class TestNaNRobustness:
         y = np.full(5, np.nan)
         out = interpolate_nan(x, y)
         assert np.all(np.isnan(out))
+
+
+# ── column_percentile ─────────────────────────────────────────────────────────
+
+class TestColumnPercentile:
+    def test_matches_numpy_percentile_2d(self):
+        rng = np.random.default_rng(0)
+        y = rng.normal(size=(500, 7))
+        for q in (0.0, 10.0, 50.0, 90.0, 100.0):
+            assert_allclose(column_percentile(y, q), np.percentile(y, q, axis=0), atol=1e-12)
+
+    def test_skips_nan(self):
+        y = np.array([[1.0, 10.0], [np.nan, 20.0], [3.0, np.nan], [5.0, 40.0]])
+        expected = [np.nanpercentile(y[:, 0], 50.0), np.nanpercentile(y[:, 1], 50.0)]
+        assert_allclose(column_percentile(y, 50.0), expected, atol=1e-12)
+
+    def test_all_nan_column_is_nan(self):
+        y = np.array([[np.nan, 1.0], [np.nan, 2.0]])
+        out = column_percentile(y, 50.0)
+        assert np.isnan(out[0])
+        assert_allclose(out[1], 1.5, atol=1e-12)
+
+    def test_1d_input_returns_length_one(self):
+        y = np.arange(11, dtype=np.float64)
+        out = column_percentile(y, 50.0)
+        assert out.shape == (1,)
+        assert_allclose(out[0], 5.0, atol=1e-12)
+
+    def test_single_row(self):
+        y = np.array([[3.0, 7.0]])
+        assert_allclose(column_percentile(y, 50.0), [3.0, 7.0], atol=1e-12)
+
+    def test_preserves_float32(self):
+        y = np.linspace(0, 1, 100, dtype=np.float32).reshape(50, 2)
+        out = column_percentile(y, 50.0)
+        assert out.dtype == np.float32
+
+    def test_rejects_out_of_range_q(self):
+        y = np.ones((4, 2))
+        with pytest.raises(ValueError):
+            column_percentile(y, 101.0)
+        with pytest.raises(ValueError):
+            column_percentile(y, -1.0)
+
+
+# ── rolling_percentile ────────────────────────────────────────────────────────
+
+def _rolling_percentile_ref(y, window, q):
+    """Centered, NaN-skipping, edge-shrinking reference — mirrors the C++
+    window bounds exactly (half = window // 2, inclusive on both sides)."""
+    half = window // 2
+    n = len(y)
+    out = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        lo = max(0, i - half)
+        hi = min(n, i + half + 1)
+        chunk = y[lo:hi]
+        chunk = chunk[~np.isnan(chunk)]
+        out[i] = np.percentile(chunk, q) if chunk.size else np.nan
+    return out
+
+
+class TestRollingPercentile:
+    def test_matches_reference_gapless(self):
+        t = np.arange(200, dtype=np.float64) * 0.01
+        y = np.random.default_rng(7).normal(size=200)
+        _, got = rolling_percentile(t, y, 21, q=50.0, has_gaps=False)
+        assert_allclose(got, _rolling_percentile_ref(y, 21, 50.0), atol=1e-10)
+
+    def test_non_median_q(self):
+        t = np.arange(150, dtype=np.float64) * 0.01
+        y = np.random.default_rng(8).normal(size=150)
+        _, got = rolling_percentile(t, y, 15, q=10.0, has_gaps=False)
+        assert_allclose(got, _rolling_percentile_ref(y, 15, 10.0), atol=1e-10)
+
+    def test_windows_never_span_a_gap(self):
+        # Two 100-sample segments at dt=1, separated by a 50 s gap. The second
+        # segment sits 100 higher, so a gap-spanning window would drag the
+        # first segment's tail upward.
+        # The gap-aware pipeline (shared by every Stage<T> kernel, e.g.
+        # rolling_mean) reassembles segments with a single NaN separator row
+        # at the gap midpoint — a deliberate line-break marker for plotting —
+        # so the output has one more row than the two segments combined.
+        t = np.concatenate([np.arange(100.0), np.arange(100.0) + 150.0])
+        y = np.concatenate([np.zeros(100), np.full(100, 100.0)])
+        _, got = rolling_percentile(t, y, 21, q=50.0, has_gaps=True)
+        assert got.shape == (201,)
+        assert np.isnan(got[100])
+        got_data = np.concatenate([got[:100], got[101:]])
+        ref = np.concatenate([
+            _rolling_percentile_ref(y[:100], 21, 50.0),
+            _rolling_percentile_ref(y[100:], 21, 50.0),
+        ])
+        assert_allclose(got_data, ref, atol=1e-10)
+
+    def test_multicolumn(self):
+        t = np.arange(120, dtype=np.float64)
+        rng = np.random.default_rng(9)
+        y = rng.normal(size=(120, 3))
+        _, got = rolling_percentile(t, y, 11, q=50.0, has_gaps=False)
+        assert got.shape == y.shape
+        for col in range(3):
+            assert_allclose(got[:, col], _rolling_percentile_ref(y[:, col], 11, 50.0), atol=1e-10)
+
+    def test_all_nan_window_is_nan_not_zero(self):
+        # Deliberate deviation from rolling_mean, which returns 0 here.
+        t = np.arange(20, dtype=np.float64)
+        y = np.full(20, np.nan)
+        y[19] = 1.0
+        _, got = rolling_percentile(t, y, 3, q=50.0, has_gaps=False)
+        assert np.isnan(got[0])
+        assert_allclose(got[19], 1.0, atol=1e-12)
+
+    def test_preserves_float32(self):
+        t = np.arange(100, dtype=np.float64)
+        y = np.linspace(0, 1, 100, dtype=np.float32)
+        _, got = rolling_percentile(t, y, 5, q=50.0, has_gaps=False)
+        assert got.dtype == np.float32
+
+    def test_rejects_out_of_range_q(self):
+        t = np.arange(10, dtype=np.float64)
+        y = np.ones(10)
+        with pytest.raises(ValueError):
+            rolling_percentile(t, y, 3, q=200.0)
+
+    def test_q_boundaries_match_reference(self):
+        # q=0 and q=100 both land exactly on the `lo == win.size()-1` clamp
+        # path in the C++ interpolation (idx = q/100 * (win.size()-1)); make
+        # sure the min/max extremes aren't off by one there.
+        t = np.arange(150, dtype=np.float64) * 0.01
+        y = np.random.default_rng(11).normal(size=150)
+        for q in (0.0, 100.0):
+            _, got = rolling_percentile(t, y, 15, q=q, has_gaps=False)
+            assert_allclose(got, _rolling_percentile_ref(y, 15, q), atol=1e-10)

@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <exception>
 #include <span>
@@ -344,6 +345,21 @@ bool check_window_size(Py_ssize_t window, Py_ssize_t nrows, const char* func_nam
     {
         PyErr_Format(PyExc_ValueError,
             "%s: window (%zd) must be <= number of rows (%zd)", func_name, window, nrows);
+        return false;
+    }
+    return true;
+}
+
+bool check_percentile(double q, const char* func_name)
+{
+    if (!(q >= 0.0 && q <= 100.0))
+    {
+        // PyErr_Format (PyUnicode_FromFormat) has no %f/%g conversion for
+        // doubles, so the value is pre-formatted into a string first.
+        char q_str[32];
+        std::snprintf(q_str, sizeof(q_str), "%g", q);
+        PyErr_Format(PyExc_ValueError,
+            "%s: q must be in [0, 100], got %s", func_name, q_str);
         return false;
     }
     return true;
@@ -1113,6 +1129,33 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     });
 }
 
+PyObject* dsp_column_percentile(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* y_obj = nullptr;
+    double q = 50.0;
+
+    static const char* kwlist[] = { "y", "q", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwargs, "O|d", const_cast<char**>(kwlist), &y_obj, &q))
+        return nullptr;
+
+    YArray y;
+    if (!y.parse(y_obj))
+        return nullptr;
+    if (!check_percentile(q, "column_percentile"))
+        return nullptr;
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        std::vector<T> vals;
+        SQDSP_GIL_RELEASE_BEGIN
+        vals = sqp::dsp::column_percentiles<T>(y.typed_data<T>(),
+            static_cast<std::size_t>(y.nrows), static_cast<std::size_t>(y.ncols), q);
+        SQDSP_GIL_RELEASE_END
+        return vec_to_1d(vals);
+    });
+}
+
 PyObject* dsp_rolling_mean(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 {
     PyObject* x_obj = nullptr;
@@ -1199,6 +1242,54 @@ PyObject* dsp_rolling_std(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
             return out.to_tuple();
         }
         auto stage = sqp::dsp::rolling_std<T>(static_cast<std::size_t>(window));
+        return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
+    });
+}
+
+PyObject* dsp_rolling_percentile(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
+{
+    PyObject* x_obj = nullptr;
+    PyObject* y_obj = nullptr;
+    Py_ssize_t window = 51;
+    double q = 50.0;
+    double gap_factor = 3.0;
+    int has_gaps = 1;
+
+    static const char* kwlist[]
+        = { "x", "y", "window", "q", "gap_factor", "has_gaps", nullptr };
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOn|ddp", const_cast<char**>(kwlist),
+            &x_obj, &y_obj, &window, &q, &gap_factor, &has_gaps))
+        return nullptr;
+
+    XArray x;
+    YArray y;
+    if (!x.parse(x_obj) || !y.parse(y_obj))
+        return nullptr;
+    if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
+        return nullptr;
+    if (!check_window_size(window, y.nrows, "rolling_percentile"))
+        return nullptr;
+    if (!check_percentile(q, "rolling_percentile"))
+        return nullptr;
+
+    return dispatch(y.dtype, [&]<typename T>() -> PyObject*
+    {
+        if (!has_gaps)
+        {
+            ZeroCopyOutput<T> out;
+            if (!out.alloc_like(x, y))
+                return static_cast<PyObject*>(nullptr);
+            const auto nrows = static_cast<std::size_t>(y.nrows);
+            const auto ncols = static_cast<std::size_t>(y.ncols);
+            const auto win = static_cast<std::size_t>(window);
+            SQDSP_GIL_RELEASE_BEGIN
+            for (std::size_t col = 0; col < ncols; ++col)
+                sqp::dsp::detail::rolling_percentile_column(
+                    y.typed_data<T>(), nrows, ncols, col, win, q, out.y_ptr);
+            SQDSP_GIL_RELEASE_END
+            return out.to_tuple();
+        }
+        auto stage = sqp::dsp::rolling_percentile<T>(static_cast<std::size_t>(window), q);
         return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
@@ -1396,6 +1487,14 @@ PyMethodDef methods[] = {
      "  -> list[(t, f, power)]\n"
      "Per-segment spectrogram. Power preserves y dtype; t/f always float64."},
 
+    {"column_percentile", reinterpret_cast<PyCFunction>(dsp_column_percentile),
+     METH_VARARGS | METH_KEYWORDS,
+     "column_percentile(y, q=50.0) -> np.ndarray\n"
+     "Per-column percentile down the time axis; one value per column.\n"
+     "q=50 is the median. NaN values are excluded; an all-NaN column gives NaN.\n"
+     "Matches np.nanpercentile's default 'linear' interpolation. Preserves y dtype.\n"
+     "Takes no x and returns no time axis: time is reduced away."},
+
     {"rolling_mean", reinterpret_cast<PyCFunction>(dsp_rolling_mean),
      METH_VARARGS | METH_KEYWORDS,
      "rolling_mean(x, y, window, gap_factor=3.0) -> (x_out, y_out)\n"
@@ -1405,6 +1504,13 @@ PyMethodDef methods[] = {
      METH_VARARGS | METH_KEYWORDS,
      "rolling_std(x, y, window, gap_factor=3.0) -> (x_out, y_out)\n"
      "Gap-aware rolling standard deviation. Preserves y dtype."},
+
+    {"rolling_percentile", reinterpret_cast<PyCFunction>(dsp_rolling_percentile),
+     METH_VARARGS | METH_KEYWORDS,
+     "rolling_percentile(x, y, window, q=50.0, gap_factor=3.0, has_gaps=True)"
+     " -> (x_out, y_out)\n"
+     "Gap-aware centered rolling percentile; q=50 is the median. Preserves y dtype.\n"
+     "Unlike rolling_mean, an all-NaN window yields NaN rather than 0."},
 
     {"reduce", reinterpret_cast<PyCFunction>(dsp_reduce),
      METH_VARARGS | METH_KEYWORDS,
