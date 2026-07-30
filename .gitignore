@@ -20,3 +20,4 @@ subprojects/**/*
 .worktrees/
 .serena/
 aqtinstall.log
+.claude/*.lock

@@ -148,8 +148,10 @@ QVariant ProductsModel::data(const QModelIndex& index, int role) const
         switch (role)
         {
             case Qt::DisplayRole:
-                return node->name();
+                return node->display_name();
             case Qt::UserRole:
+                // Identity, not presentation: UserRole is consumed as the node's
+                // key, so it must stay the objectName that path lookup matches.
                 return node->name();
             case Qt::DecorationRole:
                 return node->icon();

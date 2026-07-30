@@ -46,6 +46,10 @@ class ProductsModelNode : public QObject
     QString m_icon;
     QString m_tooltip;
     QString m_raw_text;
+    // Presentation only. objectName() stays the node's identity: `child(name)`
+    // and `ProductsModel::node(path)` resolve a product path by matching it, so
+    // renaming a node to prettify its label would move the product instead.
+    QString m_display_name;
 
     ParameterType m_parameter_type;
     QString m_provider;
@@ -109,6 +113,15 @@ public:
     inline ProductsModelNodeType node_type() const noexcept { return m_node_type; }
 
     inline QString name() const noexcept { return objectName(); }
+
+    /// Label shown in the products tree and used as the plot label. Falls back
+    /// to `name()` when unset, so a node that never sets one is unchanged.
+    inline QString display_name() const noexcept
+    {
+        return m_display_name.isEmpty() ? objectName() : m_display_name;
+    }
+
+    inline void set_display_name(const QString& display_name) { m_display_name = display_name; }
 
     inline const QString& raw_text() const noexcept { return m_raw_text; }
 
