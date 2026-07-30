@@ -68,6 +68,20 @@ public:
             _multiGraph->setName(name);
     }
 
+    // Busy belongs to the QCPMultiGraph, not to the components: components are
+    // only created on the first set_data, and each one wraps this very same
+    // plottable anyway. The base implementation walks m_components, so it is a
+    // silent no-op for the whole first fetch — exactly the window the activity
+    // indicator is for (right after a product drop). Mirrors
+    // SciQLopColorMapBase, which routes through its single plottable().
+    bool busy() const noexcept override { return _multiGraph && _multiGraph->busy(); }
+
+    void set_busy(bool busy) noexcept override
+    {
+        if (_multiGraph)
+            _multiGraph->setBusy(busy);
+    }
+
     void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }

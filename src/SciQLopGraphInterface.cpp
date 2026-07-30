@@ -132,8 +132,17 @@ SciQLopFunctionGraph::SciQLopFunctionGraph(GetDataPyCallable&& callable,
     connect_pipeline_data_to_graph(m_pipeline, this->as_graph, N);
     m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,
                      this->as_graph, [graph = this->as_graph]() { graph->set_busy(false); });
+    // Raise busy on the way out, exactly like the explicit call(range) overload
+    // and SciQLopRemoteGraph below: this is the path every range-driven fetch
+    // takes (the ctor's initial set_range and every later pan/zoom), so without
+    // it nothing ever marks a callable graph as fetching and the activity
+    // indicator never appears. Cleared by the pipeline_idle connection above.
     QObject::connect(this->as_graph, &SciQLopGraphInterface::range_changed, m_pipeline,
-                     QOverload<const SciQLopPlotRange&>::of(&SimplePyCallablePipeline::call));
+                     [g = this->as_graph, pipeline = m_pipeline](const SciQLopPlotRange& range)
+                     {
+                         g->set_busy(true);
+                         pipeline->call(range);
+                     });
 }
 
 SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int N)
