@@ -56,6 +56,10 @@ QVariant ProductsFlatFilterModel::data(const QModelIndex& index, int role) const
     switch (role)
     {
     case Qt::DisplayRole:
+        // Same split as ProductsModel::data: the label is presentation, while
+        // UserRole is the node's key. Collapsing them here made a product read
+        // as its bare path leaf again the moment the user typed a query.
+        return node->display_name();
     case Qt::UserRole:
         return node->name();
     case Qt::DecorationRole:
