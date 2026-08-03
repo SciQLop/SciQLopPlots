@@ -72,7 +72,7 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface, public SciQLopEx
     QList<QMetaObject::Connection> m_creation_connections;                // panel-level (plot_added/removed)
     std::map<QCustomPlot*, QList<QMetaObject::Connection>> m_per_plot_connections;
     QPointer<SciQLopTheme> m_theme;
-    QMetaObject::Connection m_theme_connection;
+    QList<QMetaObject::Connection> m_theme_connections;                   // plot_added/panel_added
 
     void _install_span_creator(SciQLopPlot* plot);
     void _uninstall_span_creator(SciQLopPlot* plot);

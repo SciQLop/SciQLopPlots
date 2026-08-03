@@ -761,11 +761,9 @@ void SciQLopMultiPlotPanel::_on_item_canceled(QCustomPlot*)
 
 void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 {
-    if (m_theme_connection)
-    {
-        disconnect(m_theme_connection);
-        m_theme_connection = {};
-    }
+    for (const auto& connection : m_theme_connections)
+        disconnect(connection);
+    m_theme_connections.clear();
 
     m_theme = theme;
 
@@ -775,13 +773,26 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
             p->set_theme(theme);
     }
 
+    for (auto* widget : child_widgets())
+    {
+        if (auto* sub_panel = qobject_cast<SciQLopMultiPlotPanel*>(widget); sub_panel)
+            sub_panel->set_theme(theme);
+    }
+
     if (theme)
     {
-        m_theme_connection = connect(this, &SciQLopMultiPlotPanel::plot_added, this,
+        m_theme_connections << connect(this, &SciQLopMultiPlotPanel::plot_added, this,
             [this](SciQLopPlotInterface* plot)
             {
                 if (m_theme && plot)
                     plot->set_theme(m_theme);
+            });
+        m_theme_connections << connect(this, &SciQLopMultiPlotPanel::panel_added, this,
+            [this](SciQLopPlotPanelInterface* panel)
+            {
+                if (auto* sub_panel = qobject_cast<SciQLopMultiPlotPanel*>(panel);
+                    m_theme && sub_panel)
+                    sub_panel->set_theme(m_theme);
             });
     }
 }
