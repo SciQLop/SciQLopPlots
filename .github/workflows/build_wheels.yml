@@ -127,7 +127,11 @@ jobs:
             {wheel}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_39_aarch64
-          CIBW_SKIP: "*-win32 *i686 *38-* *39-* pp* *musllinux* *314t*"
+          # No '*38-*' (3.8 is past EOL, cibuildwheel no longer knows the
+          # identifier) and no 'pp*' (PyPy is behind the `enable` option, so it
+          # is never built unless asked for). Both were dead selectors that
+          # cibuildwheel warned about on every run.
+          CIBW_SKIP: "*-win32 *i686 *39-* *musllinux* *314t*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
           # Smoke test: install the freshly-repaired wheel and import it. This
