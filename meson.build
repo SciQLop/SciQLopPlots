@@ -31,5 +31,11 @@ subdir('src/DSP')
 
 subdir('SciQLopPlots')
 
-subdir('tests')
+# Off for wheel builds (see pyproject.toml): nothing under tests/ is installed,
+# and test_resampler_locking is an executable, so it links libpython through
+# python3.dependency(embed: true) -- which manylinux images don't ship, failing
+# the wheel build at link time even though the wheel itself needs none of this.
+if get_option('with_tests')
+    subdir('tests')
+endif
 
