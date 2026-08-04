@@ -117,6 +117,14 @@ void SciQLopMultiGraphBase::sync_components()
         }
         _pendingLabels.clear();
     }
+    else
+    {
+        // New data with fewer columns shrank QCPMultiGraph's component array:
+        // drop the trailing wrappers too — a stale wrapper would index
+        // component(i) out of bounds.
+        while (static_cast<int>(plottable_count()) > nComponents)
+            delete m_components.takeLast().data();
+    }
 }
 
 void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)

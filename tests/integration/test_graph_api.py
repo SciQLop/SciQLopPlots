@@ -99,6 +99,21 @@ class TestGraphProperties:
         colors = g.colors()
         assert len(colors) >= 1
 
+    def test_shrinking_columns_drops_stale_components(self, plot):
+        """Regression: when new data has fewer columns, QCPMultiGraph shrinks
+        its component array but sync_components() only ever added wrappers —
+        the stale wrappers kept indexing component(i) out of bounds (UB) and
+        made the wrapper-level count diverge from the real component count."""
+        x = np.linspace(0.0, 10.0, 100)
+        y3 = np.column_stack([np.sin(x), np.cos(x), np.sin(2 * x)])
+        g = plot.line(x, y3, labels=["a", "b", "c"])
+        y2 = np.column_stack([np.sin(x), np.cos(x)])
+        g.set_data(x, y2)
+        # 2 components now: a 2-label batch must fit exactly, and reading the
+        # labels back must reflect the shrink.
+        g.set_labels(["a2", "b2"])
+        assert g.labels() == ["a2", "b2"]
+
     def test_components(self, plot, sample_data):
         x, y = sample_data
         g = plot.line(x, y, labels=["a"])
