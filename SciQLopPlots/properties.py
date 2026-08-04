@@ -75,10 +75,20 @@ class ObservableProperty:
     def value(self, val):
         if self._setter_name is None:
             raise AttributeError(f"Property '{self.property_name}' is not writable")
-        if isinstance(val, (list, tuple)):
-            getattr(self.qobject, self._setter_name)(*val)
+        setter = getattr(self.qobject, self._setter_name)
+        if self.property_type == "data" and isinstance(val, (list, tuple)):
+            # data setters are multi-arg (set_data(x, y[, z])) — splat.
+            setter(*val)
+        elif isinstance(val, (list, tuple)):
+            # Sequence-valued properties (offsets, span range, ...) take the
+            # sequence as one argument; multi-arg setters (axis range) reject it
+            # with TypeError and get the splatted retry.
+            try:
+                setter(val)
+            except TypeError:
+                setter(*val)
         else:
-            getattr(self.qobject, self._setter_name)(val)
+            setter(val)
 
     def __rshift__(self, other):
         # Defer import to avoid circular dependency

@@ -239,3 +239,30 @@ class TestWaterfallTooltip:
         wf.set_gain(10.0)
         wf.set_uniform_spacing(5.0)
         assert wf.raw_value_at(0, 0.5) == pytest.approx(2.0)
+
+
+class TestWaterfallObservableProperties:
+    """Regression: ObservableProperty.value used to splat any list/tuple as
+    *args, so set_offsets(QVector<double>) received N floats instead of one
+    sequence and raised TypeError."""
+
+    def test_offsets_value_setter_list(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0", "c1", "c2"])
+        x, y = _make_2d(cols=3)
+        wf.set_data(x, y)
+        wf.on.offsets.value = [0.0, 1.0, 2.5]
+        assert list(wf.offsets()) == [0.0, 1.0, 2.5]
+
+    def test_offsets_value_roundtrip(self, plot):
+        wf = plot.add_waterfall("w", labels=["c0", "c1", "c2"])
+        x, y = _make_2d(cols=3)
+        wf.set_data(x, y)
+        wf.set_offsets([1.0, 2.0, 3.0])
+        wf.on.offsets.value = wf.offsets()
+        assert list(wf.offsets()) == [1.0, 2.0, 3.0]
+
+    def test_axis_range_value_tuple_still_splats(self, plot):
+        ax = plot.x_axis()
+        ax.on.range.value = (1.0, 5.0)
+        r = ax.range()
+        assert (r.start(), r.stop()) == (1.0, 5.0)
