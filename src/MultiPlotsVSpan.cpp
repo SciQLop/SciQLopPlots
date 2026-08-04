@@ -27,7 +27,8 @@ void MultiPlotsVerticalSpan::select_lower_border(bool selected)
     {
         for (auto span : _spans)
         {
-            span->select_lower_border(selected);
+            if (span)
+                span->select_lower_border(selected);
         }
         replotAll();
         _lower_border_selected = selected;
@@ -40,7 +41,8 @@ void MultiPlotsVerticalSpan::select_upper_border(bool selected)
     {
         for (auto span : _spans)
         {
-            span->select_upper_border(selected);
+            if (span)
+                span->select_upper_border(selected);
         }
         replotAll();
         _upper_border_selected = selected;
@@ -70,11 +72,14 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
 
 void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
 {
+    // Drop spans whose plot was destroyed directly (null QPointers) — they
+    // can never match a removeObject call, so purge them here.
+    _spans.removeIf([](const QPointer<SciQLopVerticalSpan>& span) { return span.isNull(); });
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
         for (int i = _spans.size() - 1; i >= 0; --i)
         {
-            if (_spans[i]->parentPlot() == scp->qcp_plot())
+            if (_spans[i] && _spans[i]->parentPlot() == scp->qcp_plot())
             {
                 delete _spans[i];
                 _spans.removeAt(i);
@@ -89,7 +94,8 @@ void MultiPlotsVerticalSpan::set_selected(bool selected)
     {
         for (auto span : _spans)
         {
-            span->set_selected(selected);
+            if (span)
+                span->set_selected(selected);
         }
         replotAll();
         _selected = selected;
@@ -103,7 +109,8 @@ void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     {
         for (auto span : _spans)
         {
-            span->set_range(horizontal_range);
+            if (span)
+                span->set_range(horizontal_range);
         }
         _horizontal_range = horizontal_range;
         Q_EMIT range_changed(horizontal_range);

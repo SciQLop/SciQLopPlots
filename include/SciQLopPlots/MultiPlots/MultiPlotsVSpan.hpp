@@ -93,7 +93,8 @@ public:
         {
             for (auto span : _spans)
             {
-                span->set_color(color);
+                if (span)
+                    span->set_color(color);
             }
             _color = color;
         }
@@ -111,7 +112,8 @@ public:
         {
             for (auto span : _spans)
             {
-                span->set_visible(visible);
+                if (span)
+                    span->set_visible(visible);
             }
             _visible = visible;
         }
@@ -125,7 +127,8 @@ public:
         {
             for (auto span : _spans)
             {
-                span->set_tool_tip(tool_tip);
+                if (span)
+                    span->set_tool_tip(tool_tip);
             }
             _tool_tip = tool_tip;
         }
@@ -139,7 +142,8 @@ public:
         {
             for (auto span : _spans)
             {
-                span->set_read_only(read_only);
+                if (span)
+                    span->set_read_only(read_only);
             }
             _read_only = read_only;
         }

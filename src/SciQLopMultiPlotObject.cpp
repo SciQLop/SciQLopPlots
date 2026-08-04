@@ -63,12 +63,16 @@ void SciQLopMultiPlotObject::updatePlotList(const QList<QPointer<SciQLopPlotInte
     QList<QPointer<SciQLopPlotInterface>> to_remove;
     for (auto& plot : m_plots)
     {
-        if (!plots.contains(plot) && !plot.isNull())
+        // A plot destroyed directly (not via remove_plot) is a null QPointer
+        // here: purge it too, otherwise it leaks in m_plots forever and its
+        // (already destroyed) per-plot objects never get cleaned up.
+        if (!plots.contains(plot))
             to_remove.append(plot);
     }
     for (auto& plot : to_remove)
     {
         m_plots.removeOne(plot);
-        removeObject(plot);
+        if (!plot.isNull())
+            removeObject(plot);
     }
 }

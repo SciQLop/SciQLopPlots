@@ -195,3 +195,22 @@ class TestMultiPlotsVerticalSpan:
         )
         del span
         force_gc()
+
+    def test_plot_destruction_does_not_crash_span_setters(self, qtbot, panel, sample_data):
+        """Regression: destroying a plot directly destroys its per-plot span
+        wrapper (a QObject child), leaving a null QPointer in _spans. The
+        updatePlotList purge skipped null plots, so removeObject() never ran
+        and every MultiPlotsVerticalSpan setter then dereferenced null."""
+        x, y = sample_data
+        panel.line(x, y)
+        panel.line(x, y)
+        span = MultiPlotsVerticalSpan(
+            panel, SciQLopPlotRange(0.0, 1.0),
+        )
+        victim = panel.plot_at(0)
+        victim.deleteLater()
+        qtbot.wait(100)  # deferred deletion + queued remove_plot
+        span.set_range(SciQLopPlotRange(2.0, 3.0))
+        span.set_visible(False)
+        span.set_color(QColor(255, 0, 0))
+        span.set_selected(True)
