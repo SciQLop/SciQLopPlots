@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <limits>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -1368,7 +1369,26 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     std::size_t prod = 1;
     for (std::size_t i = 0; i < ndim; ++i)
     {
-        shape[i] = static_cast<std::size_t>(PyLong_AsLong(PySequence_Fast_GET_ITEM(shape_seq, i)));
+        const auto dim = PyLong_AsLong(PySequence_Fast_GET_ITEM(shape_seq, i));
+        if (dim == -1 && PyErr_Occurred())
+        {
+            Py_DECREF(shape_seq);
+            return nullptr;
+        }
+        if (dim <= 0)
+        {
+            Py_DECREF(shape_seq);
+            PyErr_Format(PyExc_ValueError, "shape dims must be positive, got %ld at index %zu",
+                         dim, i);
+            return nullptr;
+        }
+        shape[i] = static_cast<std::size_t>(dim);
+        if (prod > std::numeric_limits<std::size_t>::max() / shape[i])
+        {
+            Py_DECREF(shape_seq);
+            PyErr_SetString(PyExc_ValueError, "prod(shape) overflows");
+            return nullptr;
+        }
         prod *= shape[i];
     }
     Py_DECREF(shape_seq);
@@ -1387,7 +1407,23 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     const auto n_axes = static_cast<std::size_t>(PySequence_Fast_GET_SIZE(axes_seq));
     std::vector<std::size_t> axes(n_axes);
     for (std::size_t i = 0; i < n_axes; ++i)
-        axes[i] = static_cast<std::size_t>(PyLong_AsLong(PySequence_Fast_GET_ITEM(axes_seq, i)));
+    {
+        auto axis = PyLong_AsLong(PySequence_Fast_GET_ITEM(axes_seq, i));
+        if (axis == -1 && PyErr_Occurred())
+        {
+            Py_DECREF(axes_seq);
+            return nullptr;
+        }
+        if (axis < 0)
+            axis += static_cast<long>(ndim); // numpy-style negative indexing
+        if (axis < 0 || static_cast<std::size_t>(axis) >= ndim)
+        {
+            Py_DECREF(axes_seq);
+            PyErr_Format(PyExc_ValueError, "axis %ld out of range for ndim = %zu", axis, ndim);
+            return nullptr;
+        }
+        axes[i] = static_cast<std::size_t>(axis);
+    }
     Py_DECREF(axes_seq);
 
     const auto op = parse_reduce_op(op_str);

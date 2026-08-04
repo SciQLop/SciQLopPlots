@@ -589,6 +589,38 @@ class TestReduceAxes:
         with pytest.raises(ValueError):
             reduce_axes(t, y, (10, 10), (0,))  # 100 != actual n_cols
 
+    def test_axis_out_of_range_raises(self, particle_dist):
+        t, y, shape = particle_dist
+        with pytest.raises(ValueError):
+            reduce_axes(t, y, shape, (3,))  # ndim == 3, valid axes are 0..2
+
+    def test_axis_far_out_of_range_raises(self, particle_dist):
+        t, y, shape = particle_dist
+        with pytest.raises(ValueError):
+            reduce_axes(t, y, shape, (1000,))
+
+    def test_negative_axis_maps_numpy_style(self, particle_dist):
+        t, y, shape = particle_dist
+        _, y_r = reduce_axes(t, y, shape, (-1,), op='sum')
+        y_ref = y.reshape(len(t), *shape).sum(axis=3).reshape(len(t), -1)
+        assert_allclose(y_r, y_ref, atol=1e-14)
+
+    def test_negative_axis_out_of_range_raises(self, particle_dist):
+        t, y, shape = particle_dist
+        with pytest.raises(ValueError):
+            reduce_axes(t, y, shape, (-4,))  # ndim == 3
+
+    def test_negative_shape_dim_raises(self):
+        t = np.arange(4.0)
+        y = np.ones((4, 6))
+        with pytest.raises((ValueError, OverflowError)):
+            reduce_axes(t, y, (-2, -3), (0,))  # wraps mod 2^64, prod == 6 by accident
+
+    def test_non_int_axis_raises(self, particle_dist):
+        t, y, shape = particle_dist
+        with pytest.raises((TypeError, ValueError)):
+            reduce_axes(t, y, shape, ("a",))
+
 
 # ── Input validation tests ───────────────────────────────────────────────────
 
