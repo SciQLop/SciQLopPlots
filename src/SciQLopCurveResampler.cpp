@@ -41,8 +41,13 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
 {
     if (data.x.is_valid() && data.x.flat_size() > 0 && data.new_data)
     {
-        const auto y_incr = 1UL;
         const auto count = data.x.flat_size();
+        // y layout: row-major (n, k) buffers (the natural np.column_stack
+        // result) store component i strided at ys + i; anything else keeps the
+        // historical contiguous-per-component layout (ys + i*count).
+        const bool row_major = data.y.ndim() == 2 && data.y.row_major();
+        const auto n_cols = row_major ? data.y.size(1) : 1UL;
+        const auto y_incr = row_major ? n_cols : 1UL;
         QList<QVector<QCPCurveData>> curve_data;
         // x/y may be any numeric dtype (set_data validates support); dispatch on
         // both and convert to double. Guarded so an unexpected dtype can't
@@ -68,7 +73,10 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
                                 = std::min(line_count(), data.y.flat_size() / count);
                             for (auto line_index = 0UL; line_index < lines; line_index++)
                                 curve_data.emplace_back(
-                                    curve_copy_data(xs, ys + (line_index * count), count, y_incr));
+                                    curve_copy_data(xs,
+                                                    ys + (row_major ? line_index
+                                                                    : line_index * count),
+                                                    count, y_incr));
                         });
                 });
         }
