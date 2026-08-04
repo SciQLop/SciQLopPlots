@@ -69,6 +69,10 @@ class ProductsFlatFilterModel : public QAbstractListModel
     int m_batch_cursor = 0;
     int m_batch_generation = 0;
     QTimer* m_batch_timer;
+    // Coalesces source-model change notifications: a bulk ingest fires
+    // rowsInserted once per product, and rebuilding per notification is
+    // O(products^2). One rebuild per event-loop turn instead.
+    QTimer* m_rebuild_timer;
 
     // Scratch state accumulated across batches; committed into
     // m_node_raw_signals/m_signal_maxes only once the whole corpus has

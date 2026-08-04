@@ -18,12 +18,15 @@ ProductsFlatFilterModel::ProductsFlatFilterModel(ProductsModel* source, QObject*
     m_batch_timer->setSingleShot(false);
     connect(m_batch_timer, &QTimer::timeout, this, &ProductsFlatFilterModel::process_batch);
 
-    connect(m_source, &QAbstractItemModel::rowsInserted, this,
-            &ProductsFlatFilterModel::rebuild);
-    connect(m_source, &QAbstractItemModel::rowsRemoved, this,
-            &ProductsFlatFilterModel::rebuild);
-    connect(m_source, &QAbstractItemModel::modelReset, this,
-            &ProductsFlatFilterModel::rebuild);
+    m_rebuild_timer = new QTimer(this);
+    m_rebuild_timer->setInterval(0);
+    m_rebuild_timer->setSingleShot(true);
+    connect(m_rebuild_timer, &QTimer::timeout, this, &ProductsFlatFilterModel::rebuild);
+
+    const auto schedule_rebuild = [this]() { m_rebuild_timer->start(); };
+    connect(m_source, &QAbstractItemModel::rowsInserted, this, schedule_rebuild);
+    connect(m_source, &QAbstractItemModel::rowsRemoved, this, schedule_rebuild);
+    connect(m_source, &QAbstractItemModel::modelReset, this, schedule_rebuild);
 }
 
 void ProductsFlatFilterModel::set_query(const Query& query)
