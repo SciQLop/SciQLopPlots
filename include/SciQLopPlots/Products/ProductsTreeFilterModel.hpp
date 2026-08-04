@@ -164,6 +164,7 @@ private:
     void collect_all_leaves(ProductsModelNode* node, QList<ProductsModelNode*>& out) const;
     void recompute_total_leaf_counts();
     void on_source_structure_changed();
+    void on_source_rows_about_to_be_removed(const QModelIndex& parent, int first, int last);
 
     // Kicks off (or restarts) chunked background scoring of every leaf
     // against m_pending_query, BATCH_SIZE nodes per 0ms QTimer tick so the

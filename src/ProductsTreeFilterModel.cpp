@@ -60,6 +60,8 @@ void ProductsTreeFilterModel::setSourceModel(QAbstractItemModel* source_model)
                 &ProductsTreeFilterModel::on_source_structure_changed);
         connect(source_model, &QAbstractItemModel::modelReset, this,
                 &ProductsTreeFilterModel::on_source_structure_changed);
+        connect(source_model, &QAbstractItemModel::rowsAboutToBeRemoved, this,
+                &ProductsTreeFilterModel::on_source_rows_about_to_be_removed);
     }
     on_source_structure_changed();
 }
@@ -69,6 +71,35 @@ void ProductsTreeFilterModel::on_source_structure_changed()
     recompute_total_leaf_counts();
     m_pending_query = m_query;
     start_scoring();
+}
+
+void ProductsTreeFilterModel::on_source_rows_about_to_be_removed(const QModelIndex& parent,
+                                                                 int first, int last)
+{
+    // ProductsModel::_insert_node deletes replaced subtrees right after
+    // rowsRemoved, while start_scoring() only clears the *pending* hashes —
+    // the committed score state would keep keying on freed nodes until the
+    // next finish_scoring(), and remerge_committed()/set_max_score_tiers()
+    // walk those keys' parent chains. Purge the removed subtree's pointers
+    // up front so no committed hash can dangle.
+    auto* source = sourceModel();
+    if (!source)
+        return;
+    for (int row = first; row <= last; ++row)
+    {
+        auto* node = static_cast<ProductsModelNode*>(source->index(row, 0, parent).internalPointer());
+        if (!node)
+            continue;
+        m_node_scores.remove(node);
+        m_node_raw_signals.remove(node);
+        QList<ProductsModelNode*> leaves;
+        collect_all_leaves(node, leaves);
+        for (auto* leaf : leaves)
+        {
+            m_node_scores.remove(leaf);
+            m_node_raw_signals.remove(leaf);
+        }
+    }
 }
 
 void ProductsTreeFilterModel::recompute_total_leaf_counts()

@@ -1264,3 +1264,52 @@ class TestProductsViewScorePassthrough:
 
         assert received
         assert received[-1] == []
+
+
+class TestTreeFilterRepublishUaf:
+    """Regression: re-publishing a product deletes the old node subtree, but
+    the committed score hashes (m_node_scores / m_node_raw_signals) keep keying
+    on the freed pointers until the re-scoring batch finishes. Calling
+    set_max_score_tiers()/remerge in that window walked
+    `it.key()->parent_node()` on freed memory.
+
+    Run with MALLOC_PERTURB_ set (glibc poisons freed chunks) for a
+    deterministic pre-fix crash instead of a silent stale read.
+    """
+
+    def test_remerge_after_republish_does_not_touch_freed_node(self, qtbot):
+        model = ProductsModel.instance()
+        provider = f"uaf_provider_{uuid.uuid4().hex[:8]}"
+
+        def make_tree():
+            root = ProductsModelNode(provider)
+            leaf = ProductsModelNode(
+                "UafParam", provider,
+                {"uid": "uaf1",
+                 "start_date": "2020-01-01T00:00:00Z",
+                 "stop_date": "2024-12-31T23:59:59Z"},
+                ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+            root.add_child(leaf)
+            return root
+
+        model.add_node([], make_tree())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_query(QueryParser.parse("UafParam"))
+        flush_events()
+        assert fm.rowCount() > 0  # scores committed, keyed on the live leaf
+
+        # Re-publish: old subtree is deleted inside add_node; committed hashes
+        # still reference the freed leaf until the re-score batch completes.
+        model.add_node([], make_tree())
+        # Churn the heap so the freed chunks are reused with non-pointer
+        # garbage — makes a stale deref fault reliably instead of reading
+        # lucky stale bytes.
+        from PySide6.QtCore import QByteArray
+        _churn = [QByteArray(b"\x41" * 128) for _ in range(2000)]
+        # Synchronously re-apply the committed scores — pre-fix this walks the
+        # dangling leaf pointer (segfaults in full-suite runs).
+        fm.set_max_score_tiers(3)
+        fm.set_max_score_tiers(2)
+        flush_events()
+        assert fm.rowCount() > 0
