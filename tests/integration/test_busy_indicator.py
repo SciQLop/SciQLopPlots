@@ -116,6 +116,26 @@ class TestCurveBusy:
         # Right after data is set, curve should be busy
         assert graph.busy() is True
 
+    def test_busy_cleared_after_empty_set_data(self, plot, qtbot):
+        """Regression: the resampler early-returns on empty/invalid input without
+        emitting setGraphData, so _setCurveData (the only busy-clearing path)
+        never ran and the activity marker spun forever."""
+        x = np.linspace(0.0, 10.0, 100)
+        graph = plot.plot(x, np.sin(x), labels=["sig"], graph_type=GraphType.ParametricCurve)
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        graph.set_data(np.empty(0), np.empty(0))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+
+    @pytest.mark.qt_no_exception_capture
+    def test_busy_cleared_when_function_callable_raises(self, plot, qtbot):
+        """Regression: SciQLopCurveFunction disconnects the pipeline_idle busy
+        fallback, so a raising callable (worker returns no data) left busy stuck."""
+        def bad(start, stop):
+            raise RuntimeError("boom")
+
+        graph = plot.plot(bad, labels=["sig"], graph_type=GraphType.ParametricCurve)
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+
 
 class TestLineGraphBusySignal:
     def test_busy_changed_signal(self, plot, sample_multicomponent_data):

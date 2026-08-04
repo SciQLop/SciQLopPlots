@@ -40,6 +40,7 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
         if (curve)
             curve->data()->set(data[i], true);
     }
+    _resampler_busy = false;
     set_busy(false);
     Q_EMIT this->replot();
     Q_EMIT data_changed();
@@ -128,7 +129,12 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
             throw std::invalid_argument(
                 "y must hold exactly one column per curve component");
     }
-    set_busy(true);
+    // The resampler early-returns without emitting setGraphData when x is
+    // invalid/empty or y is invalid (and _setCurveData is the only path that
+    // clears busy) — only raise busy when a result will actually come back.
+    _resampler_busy = x.is_valid() && y.is_valid() && x.flat_size() > 0;
+    if (_resampler_busy)
+        set_busy(true);
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);
 }
@@ -270,8 +276,17 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis*
         : SciQLopCurve { parent, key_axis, value_axis, labels,metaData }
         , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    // Curve manages busy via its own resampler (_setCurveData clears it)
+    // Curve manages busy via its own resampler (_setCurveData clears it), so
+    // the plain pipeline_idle fallback would clear busy while a fetched batch
+    // is still being resampled. But a failing callable produces no data at
+    // all, leaving busy stuck — clear on idle only when no resample is pending.
     QObject::disconnect(m_idle_connection);
+    m_idle_connection = QObject::connect(m_pipeline, &SimplePyCallablePipeline::pipeline_idle,
+                     this, [this]()
+                     {
+                         if (!_resampler_busy)
+                             set_busy(false);
+                     });
     this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
 }
 

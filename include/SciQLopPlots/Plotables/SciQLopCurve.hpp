@@ -42,6 +42,13 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     Q_OBJECT
 
+protected:
+    // True while the resampler owes us a setGraphData emission. SciQLopCurveFunction
+    // reads this to decide whether pipeline_idle may clear the busy flag.
+    bool _resampler_busy = false;
+
+private:
+
     // inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
     void _setCurveData(QList<QVector<QCPCurveData>> data);
