@@ -718,6 +718,13 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
     connect(m_impl, &_impl::SciQLopPlot::hover_x_changed, this,
             &SciQLopPlot::cursor_time_changed);
 
+    // Forward resize notifications: the impl emits resized(QSize) but the
+    // wrapper's public signal is the no-arg resized() from
+    // SciQLopPlotInterface — the one Python sees and the one
+    // SciQLopNDProjectionPlot's equal-aspect enforcement listens to.
+    connect(m_impl, &_impl::SciQLopPlot::resized, this,
+            [this](QSize) { Q_EMIT resized(); });
+
     set_axes_to_rescale(
         QList<SciQLopPlotAxisInterface*> { x_axis(), x2_axis(), y_axis(), y2_axis(), z_axis() });
     this->m_legend = new SciQLopPlotLegend(m_impl->legend, this);

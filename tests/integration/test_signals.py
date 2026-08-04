@@ -60,3 +60,17 @@ class TestPanelSignals:
         panel.add_plot(SciQLopPlot())
         with qtbot.waitSignal(panel.plot_list_changed, timeout=1000):
             panel.clear()
+
+
+class TestPlotResizeSignal:
+
+    def test_resized_emitted_on_widget_resize(self, qtbot, plot):
+        """Regression: SciQLopPlotInterface::resized() was declared and is the
+        only resize signal visible from Python, but the wrapper never emitted
+        it (the impl's resized(QSize) was never forwarded), so consumers like
+        SciQLopNDProjectionPlot's equal-aspect enforcement never ran on
+        resize."""
+        plot.show()
+        qtbot.waitExposed(plot)
+        with qtbot.waitSignal(plot.resized, timeout=1000):
+            plot.resize(640, 480)
