@@ -49,7 +49,7 @@ namespace detail
 {
     // Compute power spectrum of a single windowed chunk.
     template <typename T>
-    auto power_spectrum(const T* data, std::size_t n, const T* window, double inv_n)
+    auto power_spectrum(const T* data, std::size_t n, const double* window, double inv_n)
         -> std::vector<T>
     {
         std::vector<double> windowed(n);
@@ -96,7 +96,7 @@ namespace detail
         if (n_windows == 0)
             return {};
 
-        auto window = make_window<T>(window_size, win_type);
+        auto window = make_window<double>(window_size, win_type);
 
         SpectrogramResult<T> result;
         result.n_freq = n_freq;

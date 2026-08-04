@@ -51,7 +51,7 @@ namespace detail
     // Compute real-to-complex FFT of a single column, return magnitude.
     template <typename T>
     auto fft_column(const T* data, std::size_t n_rows, std::size_t n_cols, std::size_t col,
-                    const T* window) -> std::vector<T>
+                    const double* window) -> std::vector<T>
     {
         // Apply window and copy to contiguous buffer
         std::vector<double> windowed(n_rows);
@@ -88,7 +88,7 @@ namespace detail
         const auto n_freq = n_rows / 2 + 1;
         const double fs = 1.0 / seg.median_dt;
 
-        auto window = make_window<T>(n_rows, win_type);
+        auto window = make_window<double>(n_rows, win_type);
 
         FFTResult<T> result;
         result.n_cols = seg.n_cols;

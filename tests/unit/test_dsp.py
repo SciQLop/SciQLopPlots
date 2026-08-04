@@ -376,6 +376,26 @@ class TestFFT:
         peak_freq = freqs[np.argmax(mag)]
         assert abs(peak_freq - 5.0) < 2.0  # 5 Hz is the dominant component
 
+    def test_int32_input_not_zeroed_by_window(self):
+        """Regression: make_window<T> used the *data* dtype, so Hann/Hamming/
+        Blackman coefficients in [0, 1] truncated to 0 for integer inputs and
+        the whole spectrum came out zero."""
+        fs = 1000.0
+        t = np.arange(2000, dtype=np.float64) / fs
+        y = (np.sin(2 * np.pi * 50 * t) * 10000).astype(np.int32)
+        freqs, mag = fft(t, y, window='hann')[0]
+        assert mag.max() > 1000  # pre-fix: all zeros
+        peak_freq = freqs[np.argmax(mag)]
+        assert abs(peak_freq - 50.0) < 2.0
+
+    def test_spectrogram_int32_input_not_zeroed_by_window(self):
+        fs = 1000.0
+        t = np.arange(4000, dtype=np.float64) / fs
+        y = (np.sin(2 * np.pi * 50 * t) * 10000).astype(np.int32)
+        results = spectrogram(t, y, window_size=256, overlap=128, window='hann')
+        _, _, power = results[0]
+        assert power.max() > 0  # pre-fix: all zeros
+
     def test_preserves_float32(self):
         t = np.arange(256, dtype=np.float64) / 256.0
         y = np.sin(2 * np.pi * 10 * t).astype(np.float32)
