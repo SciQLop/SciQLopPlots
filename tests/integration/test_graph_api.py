@@ -114,6 +114,18 @@ class TestGraphProperties:
         g.set_labels(["a2", "b2"])
         assert g.labels() == ["a2", "b2"]
 
+    def test_shrinking_columns_notifies_component_list(self, plot):
+        """The grow path emits component_list_changed (via _register_component);
+        the shrink path deleted wrappers silently, so anything rebuilt from
+        components() — the inspector tree — kept the stale list."""
+        x = np.linspace(0.0, 10.0, 100)
+        g = plot.line(x, np.column_stack([np.sin(x), np.cos(x), np.sin(2 * x)]),
+                      labels=["a", "b", "c"])
+        changes = []
+        g.component_list_changed.connect(lambda: changes.append(len(g.components())))
+        g.set_data(x, np.column_stack([np.sin(x), np.cos(x)]))
+        assert changes and changes[-1] == 2
+
     def test_components(self, plot, sample_data):
         x, y = sample_data
         g = plot.line(x, y, labels=["a"])
