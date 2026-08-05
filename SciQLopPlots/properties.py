@@ -4,7 +4,8 @@ import weakref
 _property_registry = {}
 
 
-def register_property(cls, property_name, signal_name, getter_name, setter_name, property_type, signal_args=None):
+def register_property(cls, property_name, signal_name, getter_name, setter_name, property_type,
+                      signal_args=None, splat=False):
     """Register an observable property for a class.
 
     Args:
@@ -15,6 +16,9 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         setter_name: Method name to set value (e.g. "set_range"), or None for read-only.
         property_type: One of "data", "range", "string" - determines threading strategy.
         signal_args: Tuple of types to select a specific signal overload, or None for default.
+        splat: True when the setter is multi-argument (set_data(x, y), set_range(start, stop))
+            and an assigned list/tuple must be unpacked. False for setters taking the sequence
+            itself (set_offsets(QVector<double>)).
     """
     if cls not in _property_registry:
         _property_registry[cls] = {}
@@ -24,6 +28,7 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         "setter_name": setter_name,
         "property_type": property_type,
         "signal_args": signal_args,
+        "splat": splat,
     }
 
 
@@ -38,7 +43,7 @@ def _lookup_property_spec(obj, property_name):
 class ObservableProperty:
     """A reference to a specific observable property on a specific QObject instance."""
     __slots__ = ("_qobject_ref", "property_name", "property_type",
-                 "_signal_name", "_getter_name", "_setter_name", "_signal_args")
+                 "_signal_name", "_getter_name", "_setter_name", "_signal_args", "_splat")
 
     def __init__(self, qobject, property_name, spec):
         self._qobject_ref = weakref.ref(qobject) if hasattr(qobject, '__weakref__') else lambda: qobject
@@ -48,6 +53,7 @@ class ObservableProperty:
         self._getter_name = spec["getter_name"]
         self._setter_name = spec["setter_name"]
         self._signal_args = spec.get("signal_args")
+        self._splat = spec.get("splat", False)
 
     @property
     def qobject(self):
@@ -76,17 +82,8 @@ class ObservableProperty:
         if self._setter_name is None:
             raise AttributeError(f"Property '{self.property_name}' is not writable")
         setter = getattr(self.qobject, self._setter_name)
-        if self.property_type == "data" and isinstance(val, (list, tuple)):
-            # data setters are multi-arg (set_data(x, y[, z])) — splat.
+        if self._splat and isinstance(val, (list, tuple)):
             setter(*val)
-        elif isinstance(val, (list, tuple)):
-            # Sequence-valued properties (offsets, span range, ...) take the
-            # sequence as one argument; multi-arg setters (axis range) reject it
-            # with TypeError and get the splatted retry.
-            try:
-                setter(val)
-            except TypeError:
-                setter(*val)
         else:
             setter(val)
 

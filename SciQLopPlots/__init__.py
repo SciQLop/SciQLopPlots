@@ -199,6 +199,7 @@ register_property(
     setter_name="set_data",
     property_type="data",
     signal_args=(),
+    splat=True,  # set_data(x, y[, z])
 )
 
 from .SciQLopPlotsBindings import SciQLopWaterfallGraph
@@ -242,6 +243,7 @@ register_property(
     getter_name="range",
     setter_name="set_range",
     property_type="range",
+    splat=True,  # set_range(start, stop) — unlike the span's set_range(range)
 )
 
 register_property(
