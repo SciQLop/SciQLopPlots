@@ -164,6 +164,9 @@ public:
 
 private:
     void rebuild();
+    // Drops every node pointer held by the model. Must run synchronously
+    // while the nodes are still alive (see the removal connections).
+    void drop_results();
     void collect_all_leaves(ProductsModelNode* node, QList<LeafEntry>& out) const;
     void process_batch();
     void finalize_batch();

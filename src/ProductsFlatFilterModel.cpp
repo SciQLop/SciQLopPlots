@@ -27,6 +27,18 @@ ProductsFlatFilterModel::ProductsFlatFilterModel(ProductsModel* source, QObject*
     connect(m_source, &QAbstractItemModel::rowsInserted, this, schedule_rebuild);
     connect(m_source, &QAbstractItemModel::rowsRemoved, this, schedule_rebuild);
     connect(m_source, &QAbstractItemModel::modelReset, this, schedule_rebuild);
+
+    // Removals can't wait for the coalesced rebuild: ProductsModel::_insert_node
+    // deletes the replaced subtree right after endRemoveRows(), so anything we
+    // still hold would dangle until the timer fires. Drop the pointers now (cheap,
+    // no corpus walk) and let the timer do the expensive re-collection.
+    const auto drop_now = [this]()
+    {
+        drop_results();
+        m_rebuild_timer->start();
+    };
+    connect(m_source, &QAbstractItemModel::rowsAboutToBeRemoved, this, drop_now);
+    connect(m_source, &QAbstractItemModel::modelAboutToBeReset, this, drop_now);
 }
 
 void ProductsFlatFilterModel::set_query(const Query& query)
@@ -111,7 +123,7 @@ Qt::DropActions ProductsFlatFilterModel::supportedDragActions() const
     return Qt::CopyAction;
 }
 
-void ProductsFlatFilterModel::rebuild()
+void ProductsFlatFilterModel::drop_results()
 {
     m_batch_timer->stop();
     ++m_batch_generation;
@@ -127,6 +139,11 @@ void ProductsFlatFilterModel::rebuild()
     m_pending_raw_signals.clear();
     m_pending_signal_maxes.clear();
     m_batch_cursor = 0;
+}
+
+void ProductsFlatFilterModel::rebuild()
+{
+    drop_results();
 
     for (int i = 0; i < m_source->rowCount(); ++i)
     {

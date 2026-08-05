@@ -1313,3 +1313,39 @@ class TestTreeFilterRepublishUaf:
         fm.set_max_score_tiers(2)
         flush_events()
         assert fm.rowCount() > 0
+
+
+class TestFlatFilterRepublishUaf:
+    """Regression: re-publishing a product deletes the old node subtree right
+    after rowsRemoved, while the flat model's rebuild is coalesced onto a 0ms
+    timer — so every m_results entry of the removed subtree dangled until the
+    next event-loop turn and reading a row dereferenced freed memory.
+    """
+
+    def test_read_right_after_republish_does_not_touch_freed_node(self, qtbot):
+        model = ProductsModel.instance()
+        provider = f"flat_uaf_{uuid.uuid4().hex[:8]}"
+
+        def make_tree():
+            root = ProductsModelNode(provider)
+            leaf = ProductsModelNode(
+                "FlatUafParam", provider,
+                {"uid": "flat_uaf1",
+                 "start_date": "2020-01-01T00:00:00Z",
+                 "stop_date": "2024-12-31T23:59:59Z"},
+                ProductsModelNodeType.PARAMETER, ParameterType.Scalar)
+            root.add_child(leaf)
+            return root
+
+        fm = ProductsFlatFilterModel(model)
+        model.add_node([], make_tree())
+        flush_events()
+        assert "FlatUafParam" in collect_visible_names(fm)
+
+        # Re-publish: the old subtree is deleted inside add_node.
+        model.add_node([], make_tree())
+        # No event-loop turn yet: pre-fix, m_results still keyed on the freed
+        # leaf and this read segfaulted.
+        collect_visible_names(fm)
+        flush_events()
+        assert "FlatUafParam" in collect_visible_names(fm)
