@@ -217,6 +217,8 @@ void SciQLopPlotContainer::remove_behavior(const QString& type_name)
 void SciQLopPlotContainer::organize_plots()
 {
     auto _sizes = sizes();
+    if (std::empty(_sizes))
+        return; // nothing to organize -- and the division below would be by zero
     const auto total_height = std::accumulate(std::cbegin(_sizes), std::cend(_sizes), 0);
     const auto per_widget_height = total_height / std::size(_sizes);
     std::transform(std::cbegin(_sizes), std::cend(_sizes), std::begin(_sizes),

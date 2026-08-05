@@ -214,3 +214,13 @@ class TestMultiPlotsVerticalSpan:
         span.set_visible(False)
         span.set_color(QColor(255, 0, 0))
         span.set_selected(True)
+
+
+class TestPanelOrganizePlots:
+    def test_organize_plots_on_empty_panel(self, qtbot, panel):
+        """`O` organizes plot heights by dividing the total height by the plot
+        count — an empty panel divides by zero. UB, so whether it faults is
+        toolchain-dependent; this pins the empty case as a supported no-op."""
+        from PySide6.QtCore import Qt
+        assert len(panel.plots()) == 0
+        qtbot.keyClick(panel, Qt.Key_O)
