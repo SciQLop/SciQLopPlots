@@ -352,6 +352,25 @@ public:
     void set_crosshair_enabled(bool enable);
     bool crosshair_enabled() const;
 
+    /*!
+     * \brief show_crosshair_at_key Move the crosshair to \a key on the x/time axis.
+     * \note No-op while the crosshair is disabled, and deliberately silent: it does
+     *       not emit cursor_time_changed, so a synchronizer driving several plots
+     *       cannot feed itself back.
+     * \sa set_crosshair_enabled, hide_crosshair, crosshair_key
+     */
+    Q_SLOT void show_crosshair_at_key(double key);
+
+    /*!
+     * \brief hide_crosshair Hide the crosshair; crosshair_key() goes back to NaN.
+     */
+    Q_SLOT void hide_crosshair();
+
+    /*!
+     * \brief crosshair_key Key the crosshair currently sits on, NaN when hidden.
+     */
+    double crosshair_key() const;
+
     void minimize_margins() override;
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int x_bins = 100,

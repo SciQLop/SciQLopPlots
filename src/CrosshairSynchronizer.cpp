@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/MultiPlots/CrosshairSynchronizer.hpp"
+#include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <cmath>
@@ -56,65 +57,57 @@ void CrosshairSynchronizer::plotRemoved(SciQLopPlotInterface* plot)
 
 void CrosshairSynchronizer::connect_plot(SciQLopPlotInterface* plot)
 {
-    if (auto* p = qobject_cast<SciQLopPlot*>(plot))
-    {
-        auto* impl = static_cast<_impl::SciQLopPlot*>(p->qcp_plot());
-        connect(impl, &_impl::SciQLopPlot::hover_x_changed,
-                this, &CrosshairSynchronizer::on_hover_x_changed);
-    }
+    if (plot)
+        connect(plot, &SciQLopPlotInterface::cursor_time_changed, this,
+                &CrosshairSynchronizer::on_cursor_moved);
 }
 
 void CrosshairSynchronizer::disconnect_plot(SciQLopPlotInterface* plot)
 {
-    if (auto* p = qobject_cast<SciQLopPlot*>(plot))
-        disconnect(p->qcp_plot(), nullptr, this, nullptr);
+    if (plot)
+        disconnect(plot, nullptr, this, nullptr);
 }
 
-void CrosshairSynchronizer::on_hover_x_changed(double key)
+void CrosshairSynchronizer::drive_plot(SciQLopPlotInterface* plot, double key) const
 {
-    if (m_propagating)
-        return;
-    m_propagating = true;
-
-    auto* source = sender();
-
-    // Find the source SciQLopPlotInterface to check its axis
-    SciQLopPlotInterface* src_plot = nullptr;
-    for (auto& plot : _plots)
+    // A projection plot's time axis is a placeholder, so has_sync_axis() rejects
+    // it and it can never carry a time crosshair. It follows the shared cursor
+    // through its trajectory marker instead — this is the time series <-> XY
+    // link. set_time_marker clears the markers on a NaN key.
+    if (auto* projection = qobject_cast<SciQLopNDProjectionPlot*>(plot))
     {
-        if (plot.isNull())
-            continue;
-        if (auto* p = qobject_cast<SciQLopPlot*>(plot.data()))
-        {
-            if (p->qcp_plot() == source)
-            {
-                src_plot = p;
-                break;
-            }
-        }
+        if (m_sync_axis == AxisType::TimeAxis)
+            projection->set_time_marker(key);
+        return;
     }
 
-    bool src_has_axis = src_plot && has_sync_axis(src_plot);
+    if (auto* target = qobject_cast<SciQLopPlot*>(plot))
+    {
+        if (std::isnan(key))
+            target->hide_crosshair();
+        else if (has_sync_axis(target))
+            target->show_crosshair_at_key(key);
+    }
+}
 
+void CrosshairSynchronizer::on_cursor_moved(double key)
+{
+    // show_crosshair_at_key/set_time_marker are deliberately silent, so this is
+    // only a guard against a future emitting path re-entering us.
+    if (m_propagating)
+        return;
+
+    auto* source = qobject_cast<SciQLopPlotInterface*>(sender());
+    // A leaving cursor (NaN) always clears every plot; a position is only worth
+    // sharing when the source itself sits on the synchronized axis.
+    if (!std::isnan(key) && !(source && has_sync_axis(source)))
+        return;
+
+    m_propagating = true;
     for (auto& plot : _plots)
     {
-        if (plot.isNull())
-            continue;
-        if (auto* p = qobject_cast<SciQLopPlot*>(plot.data()))
-        {
-            auto* impl = static_cast<_impl::SciQLopPlot*>(p->qcp_plot());
-            if (impl == source)
-                continue;
-            if (std::isnan(key))
-            {
-                impl->hide_crosshair();
-                continue;
-            }
-            // Only sync if both source and target participate in axis sync
-            if (!src_has_axis || !has_sync_axis(p))
-                continue;
-            impl->show_crosshair_at_key(key);
-        }
+        if (!plot.isNull() && plot.data() != source)
+            drive_plot(plot.data(), key);
     }
     m_propagating = false;
 }

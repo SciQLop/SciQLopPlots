@@ -21,15 +21,62 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 
-QColor SciQLopTimeColoredCurve::color_for_normalized(double f) const
+namespace
 {
-    f = std::clamp(f, 0.0, 1.0);
-    return QColor(
-        m_gradient_start.red() + f * (m_gradient_end.red() - m_gradient_start.red()),
-        m_gradient_start.green() + f * (m_gradient_end.green() - m_gradient_start.green()),
-        m_gradient_start.blue() + f * (m_gradient_end.blue() - m_gradient_start.blue()));
+QCPColorGradient two_stop_gradient(const QColor& start, const QColor& end)
+{
+    QCPColorGradient gradient;
+    gradient.clearColorStops();
+    gradient.setColorStopAt(0.0, start);
+    gradient.setColorStopAt(1.0, end);
+    return gradient;
+}
+}
+
+SciQLopTimeColoredCurve::SciQLopTimeColoredCurve(QCPAxis* keyAxis, QCPAxis* valueAxis)
+        : QCPCurve(keyAxis, valueAxis)
+        , m_gradient { two_stop_gradient(QColor(0, 0, 255), QColor(255, 0, 0)) }
+{
+    rebuild_lut();
+}
+
+void SciQLopTimeColoredCurve::set_gradient_colors(const QColor& start, const QColor& end)
+{
+    m_gradient = two_stop_gradient(start, end);
+    rebuild_lut();
+}
+
+void SciQLopTimeColoredCurve::set_color_gradient(const QCPColorGradient& gradient)
+{
+    m_gradient = gradient;
+    rebuild_lut();
+}
+
+void SciQLopTimeColoredCurve::rebuild_lut()
+{
+    // QCPColorGradient only exposes bulk colorization, so bake the whole ramp
+    // once per gradient change and index into it while painting.
+    std::array<double, color_buckets> positions {};
+    for (int i = 0; i < color_buckets; ++i)
+        positions[i] = static_cast<double>(i) / (color_buckets - 1);
+    m_gradient.colorize(positions.data(), QCPRange(0.0, 1.0), m_lut.data(), color_buckets, 1,
+                        false);
+}
+
+int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
+{
+    if (index < 0 || index >= m_color_values.size())
+        return 0;
+    const double f = (m_color_values[index] - m_c_min) / (m_c_max - m_c_min);
+    return std::clamp(static_cast<int>(f * color_buckets), 0, color_buckets - 1);
+}
+
+QColor SciQLopTimeColoredCurve::color_for_bucket(int bucket) const
+{
+    return QColor::fromRgb(m_lut[std::clamp(bucket, 0, color_buckets - 1)]);
 }
 
 void SciQLopTimeColoredCurve::set_time_values(const QVector<double>& times)
@@ -77,31 +124,35 @@ std::optional<QPointF> SciQLopTimeColoredCurve::position_at_time(double t) const
 
 void SciQLopTimeColoredCurve::draw(QCPPainter* painter)
 {
-    const double c_range = m_c_max - m_c_min;
-    if (!m_time_color_enabled || m_color_values.isEmpty() || c_range <= 0.0)
+    if (!colouring_active())
     {
         QCPCurve::draw(painter);
         return;
     }
 
-    if (mDataContainer->isEmpty())
+    if (mDataContainer->isEmpty() || !mKeyAxis || !mValueAxis)
         return;
 
+    // draw() bypasses QCPCurve's own culling, so cull against a slightly grown
+    // axis rect here.
+    const QRectF clip_rect = mKeyAxis.data()->axisRect()->rect().adjusted(-10, -10, 10, 10);
+
+    if (mLineStyle != lsNone)
+        draw_colored_line(painter, clip_rect);
+    if (!mScatterStyle.isNone())
+        draw_colored_scatters(painter, clip_rect);
+}
+
+void SciQLopTimeColoredCurve::draw_colored_line(QCPPainter* painter, const QRectF& clip_rect)
+{
     QCPAxis* keyAxis = mKeyAxis.data();
     QCPAxis* valueAxis = mValueAxis.data();
-    if (!keyAxis || !valueAxis)
-        return;
 
-    const QRectF clip_rect = keyAxis->axisRect()->rect().adjusted(-10, -10, 10, 10);
     applyDefaultAntialiasingHint(painter);
     QPen seg_pen = mPen;
 
-    const int n_colors = m_color_values.size();
-    constexpr int color_buckets = 256;
-    const double inv_c_range = 1.0 / c_range;
-
     auto it = mDataContainer->constBegin();
-    auto end = mDataContainer->constEnd();
+    const auto end = mDataContainer->constEnd();
 
     QPointF prev_px(keyAxis->coordToPixel(it->key), valueAxis->coordToPixel(it->value));
     int prev_bucket = -1;
@@ -110,11 +161,11 @@ void SciQLopTimeColoredCurve::draw(QCPPainter* painter)
     batch.append(prev_px);
     ++it;
 
-    auto flush = [&](int bucket) {
+    const auto flush = [&](int bucket)
+    {
         if (batch.size() >= 2)
         {
-            const double f = std::clamp(static_cast<double>(bucket) / color_buckets, 0.0, 1.0);
-            seg_pen.setColor(color_for_normalized(f));
+            seg_pen.setColor(color_for_bucket(bucket));
             painter->setPen(seg_pen);
             painter->drawPolyline(batch.data(), batch.size());
         }
@@ -125,16 +176,13 @@ void SciQLopTimeColoredCurve::draw(QCPPainter* painter)
     {
         QPointF cur_px(keyAxis->coordToPixel(it->key), valueAxis->coordToPixel(it->value));
 
+        // Sub-pixel steps add nothing but painter calls.
         const double dx = cur_px.x() - prev_px.x();
         const double dy = cur_px.y() - prev_px.y();
         if (dx * dx + dy * dy < 0.25)
             continue;
 
-        int bucket = 0;
-        const int idx = static_cast<int>(it->t);
-        if (idx >= 0 && idx < n_colors)
-            bucket = static_cast<int>((m_color_values[idx] - m_c_min) * inv_c_range * color_buckets);
-
+        const int bucket = bucket_at(static_cast<int>(it->t));
         const bool visible = clip_rect.contains(prev_px) || clip_rect.contains(cur_px);
 
         if (visible && bucket == prev_bucket)
@@ -153,4 +201,43 @@ void SciQLopTimeColoredCurve::draw(QCPPainter* painter)
         prev_px = cur_px;
     }
     flush(prev_bucket);
+}
+
+void SciQLopTimeColoredCurve::draw_colored_scatters(QCPPainter* painter, const QRectF& clip_rect)
+{
+    QCPAxis* keyAxis = mKeyAxis.data();
+    QCPAxis* valueAxis = mValueAxis.data();
+
+    applyScattersAntialiasingHint(painter);
+    QCPScatterStyle style = mScatterStyle;
+    const bool tint_brush = style.brush().style() != Qt::NoBrush;
+    const int step = mScatterSkip + 1;
+
+    int prev_bucket = -1;
+    int index = 0;
+    for (auto it = mDataContainer->constBegin(); it != mDataContainer->constEnd(); ++it, ++index)
+    {
+        if (index % step)
+            continue;
+
+        const QPointF pos(keyAxis->coordToPixel(it->key), valueAxis->coordToPixel(it->value));
+        if (!clip_rect.contains(pos) || !qIsFinite(pos.x()) || !qIsFinite(pos.y()))
+            continue;
+
+        const int bucket = bucket_at(static_cast<int>(it->t));
+        if (bucket != prev_bucket)
+        {
+            const QColor color = color_for_bucket(bucket);
+            // Force the colour onto the style: applyTo() would otherwise keep an
+            // explicitly-set marker pen and ignore the colour data entirely.
+            QPen pen = style.isPenDefined() ? style.pen() : mPen;
+            pen.setColor(color);
+            style.setPen(pen);
+            if (tint_brush)
+                style.setBrush(color);
+            style.applyTo(painter, pen);
+            prev_bucket = bucket;
+        }
+        style.drawShape(painter, pos);
+    }
 }

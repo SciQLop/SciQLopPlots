@@ -23,11 +23,13 @@ def _register_with_shiboken_signatures():
 
     Two registrations are needed:
       * the binding module, so ``SciQLopPlotsBindings.<Type>`` resolves;
-      * our ``<primitive-type>`` declarations in the type map. These are not
+      * every ``<primitive-type>`` we declare in bindings.xml. These are not
         wrapped classes, so without an entry they resolve to a bare ``str``
         and shiboken's argument matcher hard-aborts the interpreter
-        (``the_type.__module__`` on a str). PyObject-backed buffer → object,
-        the data callable → Callable.
+        (``the_type.__module__`` on a str) — the caller gets ``Fatal Python
+        error: libshiboken: seterror_argument did not receive a result``
+        instead of a catchable TypeError. Keep ``_PRIMITIVE_TYPE_MAP`` in sync
+        with the ``<primitive-type>`` list at the top of bindings.xml.
 
     Finally, a global ``enum class`` default renders in the generated
     signatures as ``.GraphMarkerShape.NoMarker`` (module prefix dropped → a
@@ -46,8 +48,16 @@ def _register_with_shiboken_signatures():
         from shibokensupport.signature import mapping
 
         mapping.namespace["SciQLopPlotsBindings"] = SciQLopPlotsBindings
-        mapping.type_map["SciQLopPyBuffer"] = object
-        mapping.type_map["GetDataPyCallable"] = collections.abc.Callable
+        mapping.type_map.update({
+            "SciQLopPyBuffer": object,          # PyObject-backed buffer
+            "GetDataPyCallable": collections.abc.Callable,
+            "long": int,
+            # Shiboken emits namespaced primitives with dots in the generated
+            # signature strings (``std::size_t`` -> ``std.size_t``) but looks
+            # some paths up under the original spelling, so register both.
+            "std::string": str, "std.string": str,
+            "std::size_t": int, "std.size_t": int,
+        })
         # Scoped to the parser that emits it so we never hide a same-named
         # RuntimeWarning from unrelated code.
         warnings.filterwarnings(
@@ -322,4 +332,25 @@ for _item_cls in (
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains"):
     setattr(SciQLopMultiPlotPanel, _method,
             _accept_ptr_handle(getattr(SciQLopMultiPlotPanel, _method)))
+
+
+# --- set_color_data(values, gradient): unmask the buffer error.
+#
+# Shiboken converts `values` before `gradient`. When the buffer conversion
+# rejects the array it sets a Python error, and the enum converter then runs
+# with that error already pending and reports "SystemError: bad argument to
+# internal function" instead — burying the real cause. Validating the buffer
+# first, in Python, keeps the useful TypeError.
+def _validate_color_data(func):
+    @functools.wraps(func)
+    def wrapper(self, values, *args, **kwargs):
+        if values is not None:
+            SciQLopPlotsBindings.validate_buffer(values, "values")
+        return func(self, values, *args, **kwargs)
+    return wrapper
+
+
+for _graph_cls in (SciQLopPlotsBindings.SciQLopSingleLineGraph,
+                   SciQLopPlotsBindings.SciQLopCurve):
+    _graph_cls.set_color_data = _validate_color_data(_graph_cls.set_color_data)
 

@@ -276,6 +276,7 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
         return;
     }
 
+    m_time_marker_key = t;
     _ensure_marker_layer();
 
     for (auto* marker : m_time_markers)
@@ -288,9 +289,9 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
             auto positions = proj->positions_at_time(t);
             for (int i = 0; i < positions.size() && i < m_time_markers.size(); ++i)
             {
-                if (positions[i].has_value())
+                if (positions[i].isValid())
                 {
-                    const auto& pt = positions[i].value();
+                    const auto pt = positions[i].value<QPointF>();
                     auto* qcp = m_plots[i]->qcp_plot();
                     const double px = qcp->xAxis->coordToPixel(pt.x());
                     const double py = qcp->yAxis->coordToPixel(pt.y());
@@ -309,6 +310,7 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
 
 void SciQLopNDProjectionPlot::clear_time_marker()
 {
+    m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     for (auto* marker : m_time_markers)
         marker->setVisible(false);
     if (m_time_markers.isEmpty())

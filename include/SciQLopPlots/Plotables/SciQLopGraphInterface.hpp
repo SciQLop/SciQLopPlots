@@ -37,6 +37,8 @@
 #include <QWidget>
 #include <exception>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -110,9 +112,20 @@ public:
 
     Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& values) { WARN_ABSTRACT_METHOD; }
 
+    /*!
+     * \brief set_color_data Map \a values onto this plottable's colour through \a gradient.
+     *
+     * One value per data point. Implemented by SciQLopSingleLineGraph (scatter
+     * markers) and SciQLopCurve (curve segments and markers). Anything else
+     * throws rather than dropping the data on the floor — a silent no-op here
+     * used to look exactly like a working call.
+     */
     Q_SLOT virtual void set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet)
     {
-        WARN_ABSTRACT_METHOD;
+        Q_UNUSED(values);
+        Q_UNUSED(gradient);
+        throw std::runtime_error(std::string(metaObject()->className())
+                                 + " does not support per-point colour data");
     }
 
     virtual QList<SciQLopPyBuffer> data() const noexcept

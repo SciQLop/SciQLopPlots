@@ -24,6 +24,7 @@
 
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include <limits>
 
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface
 {
@@ -42,6 +43,7 @@ protected:
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
     QList<QCPItemEllipse*> m_time_markers;
+    double m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     QPointer<SciQLopTheme> m_theme;
 
     Q_SLOT void _enforce_equal_aspect();
@@ -112,8 +114,19 @@ public:
     bool time_color_enabled() const noexcept { return m_time_color_enabled; }
     void set_time_color_gradient(const QColor& start, const QColor& end) noexcept;
 
+    /*!
+     * \brief set_time_marker Highlight, on every subplot, the trajectory point
+     *        closest to \a t. A NaN \a t clears the markers.
+     */
     Q_SLOT void set_time_marker(double t);
     Q_SLOT void clear_time_marker();
+
+    /*!
+     * \brief time_marker_key Time the markers were last positioned at, NaN when cleared.
+     * \note This is the requested time, not a promise that a marker is visible:
+     *       a subplot whose curve carries no time values has nothing to mark.
+     */
+    inline double time_marker_key() const noexcept { return m_time_marker_key; }
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {

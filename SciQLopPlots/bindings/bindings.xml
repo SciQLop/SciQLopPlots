@@ -499,6 +499,19 @@
     </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
+            <inject-code class="target" position="beginning">
+                try {
+                    %CPPSELF.%FUNCTION_NAME(%1, %2);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopColorMap" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>

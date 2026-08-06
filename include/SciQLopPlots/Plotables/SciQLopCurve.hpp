@@ -23,7 +23,6 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include "QCPAbstractPlottableWrapper.hpp"
-#include <optional>
 #include "SciQLopLineGraph.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -39,6 +38,11 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
 
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
+
+    // Length of the last x buffer handed to the resampler. Colour values are
+    // indexed by original sample index (CurveResampler stores it in QCPCurveData::t),
+    // so this — not the decimated container size — is what they must match.
+    std::size_t _point_count = 0;
 
     Q_OBJECT
 
@@ -87,12 +91,29 @@ public:
 
     inline std::size_t line_count() const noexcept { return plottable_count(); }
 
+    /*!
+     * \brief set_color_data Tint the curve point by point with \a values through \a gradient.
+     * \param values One value per data point, any numeric dtype. An empty buffer
+     *        turns the colouring back off.
+     * \throws std::invalid_argument if \a values does not match the current data length.
+     */
+    Q_SLOT void set_color_data(SciQLopPyBuffer values,
+                               ::ColorGradient gradient = ::ColorGradient::Jet) override;
+
     void set_time_color_enabled(bool enabled);
     bool time_color_enabled() const;
     void set_time_values(const QVector<double>& times);
     void set_color_values(const QVector<double>& values);
     void set_time_color_gradient(const QColor& start, const QColor& end);
-    std::optional<QPointF> position_at_time(double t) const;
+
+    /*!
+     * \brief position_at_time Data point closest to \a t among the time values.
+     * \return the QPointF, or an invalid QVariant (None in Python) when the curve
+     *         carries no time values. QVariant rather than std::optional because
+     *         shiboken cannot bind the latter.
+     * \sa set_time_values
+     */
+    QVariant position_at_time(double t) const;
 
     virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
 
