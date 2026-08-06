@@ -61,6 +61,7 @@ private:
     void clear_resampler();
     void create_resampler(const QStringList& labels);
     void create_graphs(const QStringList& labels);
+    void _sync_component_count(int count);
 
     inline QCPCurve* line(std::size_t index) const
     {

@@ -33,6 +33,15 @@
 
 void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
 {
+    // A curve built without labels starts with no components and leaves the
+    // resampler's line count at 0, which makes it emit every column the data
+    // holds. Size ourselves from that batch — the same "components follow the
+    // data" contract as SciQLopMultiGraphBase::sync_components. A labelled curve
+    // keeps its component count as a contract (set_data validates the column
+    // count against it), so it is left alone here.
+    if (_resampler->line_count() == 0)
+        _sync_component_count(static_cast<int>(data.size()));
+
     // The resampler emits via QueuedConnection, so the component count may
     // have grown or shrunk between emit and delivery. Cap iteration to the
     // smaller of the two to avoid OOB indexing into `data`.
@@ -126,9 +135,12 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     if (x.is_valid() && y.is_valid())
     {
         sqp::validation::validate_xy(x, y);
-        // The resampler reads one y column per curve component; fewer values
-        // than components * len(x) would be read out of bounds on the worker.
-        const auto components = plottable_count();
+        // A labelled curve's component count is a contract — one y column per
+        // label, and short data would have the worker read past the buffer. An
+        // unlabelled curve (line_count() == 0, an invariant _sync_component_count
+        // preserves) sizes itself from each batch instead, so any column count is
+        // legitimate there; the resampler bounds its own reads by the y buffer.
+        const auto components = _resampler->line_count();
         if (components > 0 && y.flat_size() != x.flat_size() * components)
             throw std::invalid_argument(
                 "y must hold exactly one column per curve component");
@@ -212,6 +224,31 @@ void SciQLopCurve::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
         for (auto p : m_components)
             qobject_cast<QCPCurve*>(p->plottable())->setValueAxis(a);
     });
+}
+
+void SciQLopCurve::_sync_component_count(int count)
+{
+    if (static_cast<int>(plottable_count()) == count)
+        return;
+
+    // Fewer columns than last time: a stale wrapper would keep drawing the
+    // previous batch's curve.
+    while (static_cast<int>(plottable_count()) > count)
+        delete m_components.takeLast().data();
+
+    for (int i = static_cast<int>(plottable_count()); i < count; ++i)
+        newComponent<SciQLopTimeColoredCurve>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(),
+                                              QString());
+
+    // The first component carries the busy flag for the whole graph; it changes
+    // identity whenever the list was emptied, so re-arm (UniqueConnection makes
+    // the common no-op case free).
+    if (!m_components.isEmpty())
+        if (auto* p = m_components.first()->plottable())
+            connect(p, &QCPAbstractPlottable::busyChanged, this,
+                    &SciQLopPlottableInterface::busy_changed, Qt::UniqueConnection);
+
+    Q_EMIT this->component_list_changed();
 }
 
 void SciQLopCurve::create_graphs(const QStringList& labels)
