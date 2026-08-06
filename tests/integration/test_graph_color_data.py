@@ -180,12 +180,6 @@ class TestCurveHonoursStyleWhileColoured:
 
 
 class TestScatterColorData:
-    @pytest.mark.xfail(
-        strict=True,
-        reason="NeoQCP: QCPGraph2 only applies mScatterColorValues on the RHI "
-               "scatter layer. Its CPU fallback — which is what export/save_png "
-               "always takes — paints every marker with the single graph pen. "
-               "Needs a fix in plottable-graph2.cpp; remove this mark then.")
     def test_scatter_color_data_paints_many_colours(self, qtbot, spiral, tmp_path):
         x, y, c = spiral
         plain, tinted = SciQLopPlot(), SciQLopPlot()
@@ -200,8 +194,10 @@ class TestScatterColorData:
             p.rescale_axes()
         process_events()
 
+        # Fewer buckets than the curve case: hollow circle outlines leave far
+        # less saturated ink than a filled marker or a stroked line.
         assert _hues(plain, tmp_path, "s_plain") <= 2, "baseline is not single-hued"
-        assert _hues(tinted, tmp_path, "s_tinted") > 8
+        assert _hues(tinted, tmp_path, "s_tinted") > 5
 
 
 class TestUnsupportedColorData:
