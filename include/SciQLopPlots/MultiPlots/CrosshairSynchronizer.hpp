@@ -24,6 +24,15 @@
 #include "SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/enums.hpp"
 
+/*!
+ * \brief Shares one cursor position across every plot of a collection.
+ *
+ * Listens to SciQLopPlotInterface::cursor_time_changed and mirrors the key onto
+ * the other plots: a SciQLopPlot follows it with its crosshair, a
+ * SciQLopNDProjectionPlot — whose time axis is only a placeholder — follows it
+ * with its trajectory time marker. That second path is what links a time series
+ * to the XY projections of the same data.
+ */
 class CrosshairSynchronizer : public SciQLopPlotCollectionBehavior
 {
     Q_OBJECT
@@ -43,5 +52,6 @@ private:
     bool has_sync_axis(SciQLopPlotInterface* plot) const;
     void connect_plot(SciQLopPlotInterface* plot);
     void disconnect_plot(SciQLopPlotInterface* plot);
-    Q_SLOT void on_hover_x_changed(double key);
+    void drive_plot(SciQLopPlotInterface* plot, double key) const;
+    Q_SLOT void on_cursor_moved(double key);
 };

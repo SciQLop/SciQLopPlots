@@ -888,6 +888,21 @@ bool SciQLopPlot::crosshair_enabled() const
     return m_impl->crosshair_enabled();
 }
 
+void SciQLopPlot::show_crosshair_at_key(double key)
+{
+    m_impl->show_crosshair_at_key(key);
+}
+
+void SciQLopPlot::hide_crosshair()
+{
+    m_impl->hide_crosshair();
+}
+
+double SciQLopPlot::crosshair_key() const
+{
+    return m_impl->crosshair()->current_key();
+}
+
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
 {
     if (m_theme)

@@ -21,22 +21,35 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <qcustomplot.h>
+#include <array>
 #include <optional>
 
+/*!
+ * \brief A QCPCurve whose segments and markers are tinted by a per-point scalar.
+ *
+ * The scalar is normalized over its own [min, max] and looked up in a
+ * QCPColorGradient. Both entry points feed the same gradient: two-stop
+ * (set_gradient_colors, used by the projection plots' time colouring) and full
+ * QCPColorGradient (set_color_gradient, used by SciQLopCurve::set_color_data).
+ */
 class SciQLopTimeColoredCurve : public QCPCurve
 {
     Q_OBJECT
 
+    // Segments and markers are quantised to this many colours so the painter pen
+    // is re-applied a handful of times per frame instead of once per point.
+    static constexpr int color_buckets = 256;
+
     bool m_time_color_enabled = false;
-    QColor m_gradient_start { 0, 0, 255 };
-    QColor m_gradient_end { 255, 0, 0 };
+    QCPColorGradient m_gradient;
+    std::array<QRgb, color_buckets> m_lut {};
     QVector<double> m_time_values;
     QVector<double> m_color_values;
     double m_c_min = 0.0;
     double m_c_max = 1.0;
 
 public:
-    using QCPCurve::QCPCurve;
+    explicit SciQLopTimeColoredCurve(QCPAxis* keyAxis, QCPAxis* valueAxis);
 
     void set_time_color_enabled(bool enabled) { m_time_color_enabled = enabled; }
     bool time_color_enabled() const { return m_time_color_enabled; }
@@ -44,15 +57,25 @@ public:
     void set_time_values(const QVector<double>& times);
     void set_color_values(const QVector<double>& values);
     std::optional<QPointF> position_at_time(double t) const;
-    void set_gradient_colors(const QColor& start, const QColor& end)
-    {
-        m_gradient_start = start;
-        m_gradient_end = end;
-    }
+
+    /*! \brief Tint from \a start to \a end through a two-stop gradient. */
+    void set_gradient_colors(const QColor& start, const QColor& end);
+    void set_color_gradient(const QCPColorGradient& gradient);
 
 protected:
     void draw(QCPPainter* painter) override;
 
 private:
-    QColor color_for_normalized(double f) const;
+    //! True when there is something to tint with — otherwise QCPCurve draws us.
+    bool colouring_active() const noexcept
+    {
+        return m_time_color_enabled && !m_color_values.isEmpty() && m_c_max > m_c_min;
+    }
+    //! Colour bucket of the data point at container index \a index.
+    int bucket_at(int index) const noexcept;
+    QColor color_for_bucket(int bucket) const;
+    //! Bakes m_gradient into m_lut; call on every gradient change.
+    void rebuild_lut();
+    void draw_colored_line(QCPPainter* painter, const QRectF& clip_rect);
+    void draw_colored_scatters(QCPPainter* painter, const QRectF& clip_rect);
 };

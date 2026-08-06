@@ -25,7 +25,11 @@
 #include "SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/Python/Validation.hpp"
+#include "SciQLopPlots/qcp_enums.hpp"
+#include <algorithm>
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
 {
@@ -129,6 +133,7 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
             throw std::invalid_argument(
                 "y must hold exactly one column per curve component");
     }
+    _point_count = x.is_valid() ? x.flat_size() : 0;
     // The resampler early-returns without emitting setGraphData when x is
     // invalid/empty or y is invalid (and _setCurveData is the only path that
     // clears busy) — only raise busy when a result will actually come back.
@@ -262,12 +267,46 @@ void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& en
             tc->set_gradient_colors(start, end);
 }
 
-std::optional<QPointF> SciQLopCurve::position_at_time(double t) const
+void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
+{
+    QVector<double> colors;
+    if (values.is_valid() && values.flat_size() > 0)
+    {
+        if (values.flat_size() != _point_count)
+            throw std::invalid_argument(
+                "Curve.set_color_data: expected one colour value per data point ("
+                + std::to_string(_point_count) + "), got "
+                + std::to_string(values.flat_size()));
+
+        const auto n = static_cast<int>(values.flat_size());
+        colors.resize(n);
+        dispatch_dtype(values.format_code(),
+                       [&](auto tag)
+                       {
+                           using V = typename decltype(tag)::type;
+                           const auto* src = static_cast<const V*>(values.raw_data());
+                           std::transform(src, src + n, colors.begin(),
+                                          [](V v) { return static_cast<double>(v); });
+                       });
+    }
+
+    const QCPColorGradient qcp_gradient { to_qcp(gradient) };
+    for (auto comp : m_components)
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
+            tc->set_color_gradient(qcp_gradient);
+
+    set_color_values(colors);
+    set_time_color_enabled(!colors.isEmpty());
+    Q_EMIT this->replot();
+}
+
+QVariant SciQLopCurve::position_at_time(double t) const
 {
     if (!m_components.isEmpty())
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(m_components.first()->plottable()))
-            return tc->position_at_time(t);
-    return std::nullopt;
+            if (const auto point = tc->position_at_time(t))
+                return QVariant::fromValue(*point);
+    return {};
 }
 
 SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,

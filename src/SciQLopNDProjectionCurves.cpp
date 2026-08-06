@@ -163,9 +163,9 @@ void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, con
         curve->set_time_color_gradient(start, end);
 }
 
-QList<std::optional<QPointF>> SciQLopNDProjectionCurves::positions_at_time(double t) const
+QList<QVariant> SciQLopNDProjectionCurves::positions_at_time(double t) const
 {
-    QList<std::optional<QPointF>> result;
+    QList<QVariant> result;
     for (auto* curve : std::as_const(m_curves))
         result.append(curve->position_at_time(t));
     return result;
