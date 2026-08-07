@@ -123,8 +123,9 @@ class TestCurveColorData:
 
     def test_non_numeric_data_is_rejected(self, qtbot, plot, spiral):
         curve = _curve(qtbot, plot, spiral)
+        strings = np.array(["a"] * N)
         with pytest.raises((TypeError, ValueError)):
-            curve.set_color_data(np.array(["a"] * N), ColorGradient.Jet)
+            curve.set_color_data(strings, ColorGradient.Jet)
 
     def test_empty_data_clears_the_colouring(self, qtbot, plot, spiral):
         curve = _curve(qtbot, plot, spiral)

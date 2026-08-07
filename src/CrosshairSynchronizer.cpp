@@ -104,7 +104,7 @@ void CrosshairSynchronizer::on_cursor_moved(double key)
         return;
 
     m_propagating = true;
-    for (auto& plot : _plots)
+    for (const auto& plot : _plots)
     {
         if (!plot.isNull() && plot.data() != source)
             drive_plot(plot.data(), key);

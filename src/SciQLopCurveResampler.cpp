@@ -52,6 +52,16 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
         // x/y may be any numeric dtype (set_data validates support); dispatch on
         // both and convert to double. Guarded so an unexpected dtype can't
         // terminate this worker thread.
+        // Independent of both dtypes, so computed once rather than inside every
+        // dispatch instantiation. A curve built without labels has no components
+        // yet and so reports line_count() == 0: emit every column the data holds
+        // and let SciQLopCurve size itself from the batch. Otherwise the label
+        // list fixes the count, still hard-bounded against the y buffer —
+        // line_count() can race ahead of a queued batch (set_line_count runs on
+        // the GUI thread), so never trust it alone.
+        const auto available = data.y.flat_size() / count;
+        const auto lines
+            = line_count() > 0 ? std::min(line_count(), available) : available;
         try
         {
             dispatch_dtype(
@@ -66,17 +76,6 @@ void CurveResampler::_resample_impl(const ResamplerData1d& data, const Resampler
                             using Y = typename decltype(y_tag)::type;
                             const auto* xs = static_cast<const X*>(data.x.raw_data());
                             const auto* ys = static_cast<const Y*>(data.y.raw_data());
-                            // A curve built without labels has no components yet
-                            // and so reports line_count() == 0; emit every column
-                            // the data holds and let SciQLopCurve size itself from
-                            // the batch. Otherwise the label list fixes the count,
-                            // still hard-bounded against the y buffer: line_count()
-                            // can race ahead of a queued batch (set_line_count runs
-                            // on the GUI thread), so never trust it alone.
-                            const auto available = data.y.flat_size() / count;
-                            const auto lines = line_count() > 0
-                                ? std::min(line_count(), available)
-                                : available;
                             for (auto line_index = 0UL; line_index < lines; line_index++)
                                 curve_data.emplace_back(
                                     curve_copy_data(xs,
