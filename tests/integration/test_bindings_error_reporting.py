@@ -32,30 +32,48 @@ BAD_CALLS = {
 }
 
 
-def run_snippet(body):
-    """Run `body` in a fresh interpreter, return (returncode, stdout, stderr)."""
+def run_snippet(body, tmp_path):
+    """Run `body` in a fresh interpreter, return (returncode, stdout, stderr).
+
+    The child runs from an empty directory on purpose. `python -c` prepends its
+    working directory to sys.path, so inheriting the parent's cwd meant that
+    running pytest from the repo root — which is what CI does — put the *source*
+    ``SciQLopPlots/`` package first. It has an ``__init__.py`` but no compiled
+    ``SciQLopPlotsBindings``, so every child died with an ImportError before
+    reaching the call under test. The package itself is found through the
+    inherited environment, exactly as the parent found it.
+    """
     proc = subprocess.run(
         [sys.executable, "-c", PREAMBLE + textwrap.dedent(body)],
-        capture_output=True, text=True)
+        capture_output=True, text=True, cwd=tmp_path)
     return proc.returncode, proc.stdout, proc.stderr
 
 
+def test_the_child_interpreter_imports_the_built_package(tmp_path):
+    """Guard the harness itself: a broken import would fail every test below
+    for a reason that has nothing to do with what they assert."""
+    code, out, err = run_snippet('print("OK:" + SciQLopPlots.__file__)', tmp_path)
+    assert code == 0, err
+    assert out.startswith("OK:"), err
+
+
 @pytest.mark.parametrize("call", BAD_CALLS.values(), ids=list(BAD_CALLS))
-def test_wrong_argument_stays_catchable(call):
+def test_wrong_argument_stays_catchable(call, tmp_path):
     code, out, err = run_snippet(
         f"""
         try:
             {call}
         except Exception as e:
             print("RAISED:" + type(e).__name__)
-        """
+        """,
+        tmp_path,
     )
     assert "Fatal Python error" not in err, f"interpreter aborted:\n{err}"
     assert code == 0, f"exited {code}:\n{err}"
     assert out.startswith("RAISED:"), f"nothing raised, got {out!r} {err!r}"
 
 
-def test_signature_mismatch_reports_supported_signatures():
+def test_signature_mismatch_reports_supported_signatures(tmp_path):
     """The TypeError must carry shiboken's listing, not a masked NameError."""
     code, out, err = run_snippet(
         """
@@ -63,7 +81,8 @@ def test_signature_mismatch_reports_supported_signatures():
             SciQLopPlots.SciQLopNDProjectionPlot(None, 3)
         except TypeError as e:
             print("MSG:" + str(e).replace(chr(10), " | "))
-        """
+        """,
+        tmp_path,
     )
     assert code == 0, err
     assert "Supported signatures" in out, f"no signature listing in: {out!r}"
