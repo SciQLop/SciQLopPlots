@@ -102,3 +102,85 @@ class TestLatexAxisLabels:
         plain = _bands(_render(_plot_with_label(qtbot, "Cost per kg"),
                                tmp_path, "plain"))
         assert got == plain
+
+
+def _bands_in(img, y0, y1):
+    """Contiguous runs of inked rows between y0 and y1."""
+    inked = [any(img.pixelColor(x, y).lightness() < 140 for x in range(img.width()))
+             for y in range(y0, y1)]
+    return sum(1 for i, v in enumerate(inked) if v and (i == 0 or not inked[i - 1]))
+
+
+def _ink_height(img, y0, y1):
+    """Vertical extent of ink between y0 and y1."""
+    rows = [y for y in range(y0, y1)
+            if any(img.pixelColor(x, y).lightness() < 140 for x in range(img.width()))]
+    return (max(rows) - min(rows)) if rows else 0
+
+
+def _quiet_plot(qtbot):
+    """A plot with its axes hidden, so only the element under test leaves ink.
+
+    The axis rect's borders are vertical lines, which put ink in *every* row and
+    would collapse any band count to one.
+    """
+    from SciQLopPlots import SciQLopPlotRange
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
+    plot.y_axis().set_range(SciQLopPlotRange(-1.0, 1.0))
+    for axis in (plot.x_axis(), plot.y_axis()):
+        axis.set_visible(False)
+    process_events()
+    return plot
+
+
+class TestLatexElsewhere:
+    """The same renderer serves every element that sets user text."""
+
+    def test_a_legend_entry_grows_to_fit_a_fraction(self, qtbot, tmp_path):
+        r"""A graph named `$\frac{a}{b}$` stacks, so its legend entry gets taller.
+
+        This also pins the measurement half: the legend sizes itself from the
+        text, so it can only grow if the size hint went through the renderer
+        too, not just the painting.
+        """
+        def legend_height(name, tag):
+            plot = _quiet_plot(qtbot)
+            x = np.linspace(0, 10, 50).astype(np.float64)
+            graph = plot.plot(x, np.full_like(x, -0.9), labels=[name])
+            qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+            process_events()
+            return _ink_height(_render(plot, tmp_path, tag), 0, 100)
+
+        typeset = legend_height(r"$\frac{a}{b}$", "leg_tex")
+        literal = legend_height(r"\frac{a}{b}", "leg_lit")
+        assert typeset > literal, f"legend did not grow: {typeset} vs {literal}"
+
+    def test_a_text_item_is_typeset(self, qtbot, tmp_path):
+        r"""QCPItemText goes through the same seam, so items typeset too."""
+        from PySide6.QtCore import QPointF
+        from SciQLopPlots import SciQLopTextItem, Coordinates
+
+        def item_bands(text, tag):
+            plot = _quiet_plot(qtbot)
+            item = SciQLopTextItem(plot, text, QPointF(5.0, 0.0), False,
+                                   Coordinates.Data)
+            process_events()
+            bands = _bands_in(_render(plot, tmp_path, tag), 100, 300)
+            del item
+            return bands
+
+        assert item_bands(r"$\frac{a}{b}$", "item_tex") > \
+               item_bands(r"\frac{a}{b}", "item_lit")
+
+    def test_a_plain_item_is_unaffected(self, qtbot, tmp_path):
+        from PySide6.QtCore import QPointF
+        from SciQLopPlots import SciQLopTextItem, Coordinates
+
+        plot = _quiet_plot(qtbot)
+        item = SciQLopTextItem(plot, "hello", QPointF(5.0, 0.0), False,
+                               Coordinates.Data)
+        process_events()
+        assert _bands_in(_render(plot, tmp_path, "item_plain"), 100, 300) == 1
+        del item
