@@ -11,7 +11,7 @@ from SciQLopPlots import (
     SciQLopPlot, SciQLopGraphInterface, SciQLopPlotRange,
     ColorGradient,
 )
-from conftest import force_gc
+from conftest import force_gc, process_events
 
 
 # Subprocess cwd: outside the repo so the in-tree `SciQLopPlots/` source dir
@@ -432,3 +432,74 @@ class TestColormapEmptyData:
             f"stderr={result.stderr.decode(errors='replace')[-400:]}"
         )
         assert b"OK" in result.stdout
+
+
+class TestUnusedLeftAxisIsHidden:
+    """A colormap reads on the right (Y Axis 2), leaving the left axis unused.
+
+    It was still drawn, showing whatever default range it happened to hold
+    (0..5) next to a spectrogram whose real energies run on the right -- a scale
+    that means nothing. The left axis is now hidden while nothing is bound to
+    it, and comes back as soon as something is.
+    """
+
+    @staticmethod
+    def _spectrogram(plot):
+        x = np.linspace(0, 100, 60).astype(np.float64)
+        y = np.geomspace(10, 1000, 40).astype(np.float64)
+        z = np.random.rand(60, 40).astype(np.float64)
+        return plot.plot(x, y, z, name="spectro", y_log_scale=True)
+
+    @staticmethod
+    def _line(plot):
+        x = np.linspace(0, 100, 60).astype(np.float64)
+        return plot.plot(x, np.sin(x), labels=["line"])
+
+    def test_an_empty_plot_keeps_its_left_axis(self, qtbot):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        assert plot.y_axis().visible() is True
+
+    def test_a_colormap_only_plot_hides_the_left_axis(self, qtbot):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        self._spectrogram(plot)
+        process_events()
+        assert plot.y2_axis().visible() is True
+        assert plot.y_axis().visible() is False
+
+    def test_a_line_graph_keeps_the_left_axis(self, qtbot):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        self._line(plot)
+        process_events()
+        assert plot.y_axis().visible() is True
+
+    def test_a_colormap_beside_a_line_graph_keeps_the_left_axis(self, qtbot):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        self._spectrogram(plot)
+        self._line(plot)
+        process_events()
+        assert plot.y_axis().visible() is True
+
+    def test_the_left_axis_comes_back_when_the_colormap_goes(self, qtbot):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        cmap = self._spectrogram(plot)
+        process_events()
+        assert plot.y_axis().visible() is False
+
+        plot.remove_plottable(cmap)  # synchronous C++ delete
+        process_events()
+        assert plot.y_axis().visible() is True
+
+    def test_a_histogram2d_keeps_the_left_axis(self, qtbot):
+        """histogram2d binds to the left axis, so it must stay drawn."""
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        rng = np.random.default_rng(0)
+        plot.histogram2d(rng.normal(size=500), rng.normal(size=500),
+                         name="h", x_bins=20, y_bins=20)
+        process_events()
+        assert plot.y_axis().visible() is True
