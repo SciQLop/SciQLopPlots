@@ -540,7 +540,19 @@ void SciQLopPlot::_update_value_axis_visibility()
     bool used = m_plottables.isEmpty();
     for (const auto* p : std::as_const(m_plottables))
         used = used || p->y_axis() == m_axes[1];
-    m_axes[1]->set_visible(used);
+
+    // Only ever undo our own hiding: a caller who hid the axis on purpose must
+    // not have it reappear underneath them the next time a graph is added.
+    if (!used && m_axes[1]->visible())
+    {
+        m_value_axis_hidden_here = true;
+        m_axes[1]->set_visible(false);
+    }
+    else if (used && m_value_axis_hidden_here)
+    {
+        m_value_axis_hidden_here = false;
+        m_axes[1]->set_visible(true);
+    }
 }
 
 void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottable)
