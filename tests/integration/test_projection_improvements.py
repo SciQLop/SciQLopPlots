@@ -262,3 +262,106 @@ class TestProjectionFloat32Data:
         graph = proj.parametric_curve([t, x, y, z], labels=["a", "b", "c"])
         process_events()
         assert graph is not None
+
+
+class TestTimeColoredReferenceCurve:
+    """add_reference_curve() rejected the time-first form it needs to colour by time.
+
+    It required exactly one buffer per subplot and paired them itself, always
+    landing on SciQLopNDProjectionCurves::set_data's `2 * curves_count` branch --
+    the one that sets no time values. So a reference curve could never be
+    time-coloured nor carry a time marker, and callers passing time as a trailing
+    array (SciQLop's plot_time_colored_curve did) silently got it plotted as a
+    spatial dimension. The `[t, d0..dn-1]` form used by parametric_curve() is now
+    accepted and forwarded whole.
+    """
+
+    N = 200
+
+    @staticmethod
+    def _orbit(n):
+        """(t, x, y, z) -- a unit-ish helix on an epoch-scale time axis.
+
+        t is deliberately 9 orders of magnitude away from x/y/z so that a time
+        buffer mistaken for a spatial dimension is unmissable on an axis range.
+        """
+        a = np.linspace(0, 2 * np.pi, n)
+        return (
+            np.linspace(1.0e9, 1.0e9 + 100.0, n),
+            np.cos(a),
+            np.sin(a),
+            np.linspace(-1.0, 1.0, n),
+        )
+
+    def test_time_first_form_is_accepted(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        t, x, y, z = self._orbit(self.N)
+
+        ref = proj.add_reference_curve([t, x, y, z], label="orbit")
+        process_events()
+        assert ref is not None
+
+    def test_only_n_and_n_plus_one_buffers_are_accepted(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        t, x, y, z = self._orbit(self.N)
+        assert proj.add_reference_curve([x, y]) is None
+        assert proj.add_reference_curve([t, x, y, z, x]) is None
+
+    def test_time_is_not_plotted_as_a_dimension(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        t, x, y, z = self._orbit(self.N)
+
+        ref = proj.add_reference_curve([t, x, y, z], label="orbit")
+        assert ref is not None
+        qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
+        process_events()
+
+        for i in range(proj.subplot_count()):
+            proj.subplot(i).rescale_axes()
+        process_events()
+
+        for i in range(proj.subplot_count()):
+            for name, axis in (("x", proj.subplot(i).x_axis()),
+                               ("y", proj.subplot(i).y_axis())):
+                r = axis.range()
+                assert r.start() < -0.9 and r.stop() > 0.9, (
+                    f"subplot {i} {name} axis {r.start()}..{r.stop()} does not "
+                    "span the trajectory")
+                assert abs(r.start()) < 2.0 and abs(r.stop()) < 2.0, (
+                    f"subplot {i} {name} axis {r.start()}..{r.stop()} looks like "
+                    "the time buffer")
+
+    def test_reference_curve_colours_by_time(self, qtbot, tmp_path):
+        from PySide6.QtGui import QColor, QImage
+
+        def hues(plot, name):
+            path = tmp_path / f"{name}.png"
+            assert plot.save_png(str(path), 500, 400) is True
+            img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
+            assert not img.isNull()
+            return len({img.pixelColor(px, py).hue() // 10
+                        for py in range(img.height())
+                        for px in range(img.width())
+                        if img.pixelColor(px, py).saturation() > 100
+                        and img.pixelColor(px, py).value() > 60})
+
+        t, x, y, z = self._orbit(self.N)
+        plain, tinted = SciQLopNDProjectionPlot(3), SciQLopNDProjectionPlot(3)
+        for p in (plain, tinted):
+            qtbot.addWidget(p)
+            ref = p.add_reference_curve([t, x, y, z], label="orbit")
+            assert ref is not None
+            qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
+            process_events()  # the resampled data reaches the curve on a queued signal
+            for i in range(p.subplot_count()):
+                p.subplot(i).legend().set_visible(False)
+                p.subplot(i).rescale_axes()
+        tinted.set_time_color_gradient(QColor("blue"), QColor("red"))
+        tinted.set_time_color_enabled(True)
+        process_events()
+
+        assert hues(plain.subplot(0), "plain") <= 2, "baseline is not single-hued"
+        assert hues(tinted.subplot(0), "tinted") > 4

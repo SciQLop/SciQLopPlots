@@ -175,7 +175,8 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     const QList<SciQLopPyBuffer>& dimensions, const QString& label, const QColor& color)
 {
     const auto n = m_plots.size();
-    if (dimensions.size() != n)
+    const bool with_time = dimensions.size() == n + 1;
+    if (dimensions.size() != n && !with_time)
         return nullptr;
 
     QStringList labels;
@@ -184,13 +185,22 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
 
     auto* graph = new SciQLopNDProjectionCurves(this, m_plots, labels);
 
-    QList<SciQLopPyBuffer> paired_data;
-    for (int i = 0; i < n; ++i)
+    if (with_time)
     {
-        paired_data.append(dimensions[i % n]);
-        paired_data.append(dimensions[(i + 1) % n]);
+        // set_data pairs the dimensions itself on this form, and time-tags the
+        // curves -- pre-pairing here would land on its untimed 2n branch instead.
+        graph->set_data(dimensions);
     }
-    graph->set_data(paired_data);
+    else
+    {
+        QList<SciQLopPyBuffer> paired_data;
+        for (int i = 0; i < n; ++i)
+        {
+            paired_data.append(dimensions[i % n]);
+            paired_data.append(dimensions[(i + 1) % n]);
+        }
+        graph->set_data(paired_data);
+    }
 
     if (color.isValid())
         graph->set_colors(QList<QColor>(n, color));
