@@ -97,6 +97,13 @@ public:
             plot->set_color_palette(palette);
     }
 
+    /*!
+     * \brief add_reference_curve Add a static curve, projected on every subplot.
+     * \param dimensions Either one buffer per subplot, or -- as parametric_curve()
+     *        takes it -- time first followed by one buffer per subplot. Only the
+     *        latter carries time, so only it can be time-coloured or time-marked.
+     * \return The new curve, or nullptr on any other buffer count.
+     */
     SciQLopGraphInterface* add_reference_curve(
         const QList<SciQLopPyBuffer>& dimensions,
         const QString& label = QString(),
