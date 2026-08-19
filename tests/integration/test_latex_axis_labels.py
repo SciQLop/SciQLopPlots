@@ -184,3 +184,33 @@ class TestLatexElsewhere:
         process_events()
         assert _bands_in(_render(plot, tmp_path, "item_plain"), 100, 300) == 1
         del item
+
+
+class TestMathSpanSpacing:
+    """A space touching a `$` delimiter used to be swallowed.
+
+    LaTeX renders it about a pixel wide where an ordinary text-mode space is
+    six, so `time $t$ [s]` set as "timet [s]". The renderer now makes those
+    spaces explicit before parsing.
+    """
+
+    def test_spaces_around_a_math_span_survive(self, qtbot, tmp_path):
+        spaced = _last_band_width(
+            _render(_plot_with_label(qtbot, r"aaa $b$ ccc"), tmp_path, "spaced"))
+        tight = _last_band_width(
+            _render(_plot_with_label(qtbot, r"aaa$b$ccc"), tmp_path, "tight"))
+        assert spaced > tight + 4, (
+            f"the two spaces barely widened the label: {spaced} vs {tight}")
+
+    def test_spacing_matches_ordinary_text(self, qtbot, tmp_path):
+        """The gap must be a word space, not a hairline.
+
+        Compared against the same string set entirely as text, so this pins the
+        actual width rather than just 'wider than nothing'.
+        """
+        math = _last_band_width(
+            _render(_plot_with_label(qtbot, r"aaa $b$ ccc"), tmp_path, "m"))
+        plain = _last_band_width(
+            _render(_plot_with_label(qtbot, r"aaa b ccc"), tmp_path, "p"))
+        assert abs(math - plain) < 0.35 * plain, (
+            f"math-span spacing is off from plain text: {math} vs {plain}")
