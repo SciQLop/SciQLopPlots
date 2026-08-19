@@ -494,6 +494,20 @@ class TestUnusedLeftAxisIsHidden:
         process_events()
         assert plot.y_axis().visible() is True
 
+    def test_an_explicit_hide_is_not_undone(self, qtbot):
+        """Hiding the axis yourself must stick when a graph is added.
+
+        The rule only ever undoes its *own* hiding -- otherwise a caller who
+        hid the left axis on purpose gets it back underneath them as soon as
+        anything is plotted.
+        """
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        plot.y_axis().set_visible(False)
+        self._line(plot)
+        process_events()
+        assert plot.y_axis().visible() is False
+
     def test_a_histogram2d_keeps_the_left_axis(self, qtbot):
         """histogram2d binds to the left axis, so it must stay drawn."""
         plot = SciQLopPlot()

@@ -211,6 +211,8 @@ protected:
 
     //! Hide the left axis while no plottable is scaled to it (colormaps use yAxis2).
     void _update_value_axis_visibility();
+    //! True while _update_value_axis_visibility is the one holding the left axis hidden.
+    bool m_value_axis_hidden_here = false;
 
     void _ensure_colorscale_is_visible(SciQLopColorMap* cmap);
     void _ensure_colorscale_is_visible(SciQLopHistogram2D* hist);
