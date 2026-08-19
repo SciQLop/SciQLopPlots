@@ -209,6 +209,9 @@ protected:
 
     void _register_plottable_wrapper(SciQLopPlottableInterface* plottable);
 
+    //! Hide the left axis while no plottable is scaled to it (colormaps use yAxis2).
+    void _update_value_axis_visibility();
+
     void _ensure_colorscale_is_visible(SciQLopColorMap* cmap);
     void _ensure_colorscale_is_visible(SciQLopHistogram2D* hist);
 

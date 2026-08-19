@@ -532,6 +532,17 @@ bool SciQLopPlot::_handle_tool_tip(QEvent* event)
     return true;
 }
 
+void SciQLopPlot::_update_value_axis_visibility()
+{
+    // Colormaps read on yAxis2, so a colormap-only plot would draw a left axis
+    // nothing is scaled to. An empty plot keeps its axes: there is no data to
+    // contradict them yet.
+    bool used = m_plottables.isEmpty();
+    for (const auto* p : std::as_const(m_plottables))
+        used = used || p->y_axis() == m_axes[1];
+    m_axes[1]->set_visible(used);
+}
+
 void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottable)
 {
     m_plottables.append(plottable);
@@ -541,11 +552,13 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
                 m_plottables.removeOne(plottable);
                 if (m_color_map == plottable)
                     m_color_map = nullptr;
+                _update_value_axis_visibility();
                 emit this->plotables_list_changed();
             });
     connect(plottable, &SciQLopGraphInterface::replot, this, [this]() { this->replot(); });
     connect(this, &SciQLopPlot::resized, plottable,
             &SciQLopPlottableInterface::parent_plot_resized);
+    _update_value_axis_visibility();
     emit this->plotables_list_changed();
 }
 
