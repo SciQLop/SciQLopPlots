@@ -53,22 +53,28 @@ def _bands(img):
     return sum(1 for i, v in enumerate(inked) if v and (i == 0 or not inked[i - 1]))
 
 
+# A descender or an underscore can sit a row or two clear of the rest of the
+# glyphs, and whether it does is a font and DPI question -- it differs between
+# this machine and CI. Rows separated by no more than this many blank rows are
+# therefore one band; the gap up to the tick labels above is far wider.
+_BAND_GAP = 3
+
+
 def _last_band_width(img):
     """Ink width of the lowest band -- the axis label itself."""
     rows = [[x for x in range(img.width())
              if img.pixelColor(x, y).lightness() < 140]
             for y in range(img.height() - BOTTOM, img.height())]
-    last = [xs for xs in rows if xs]
-    if not last:
-        return 0
-    lowest, seen = [], False
+    lowest, seen, gap = [], False, 0
     for xs in reversed(rows):
         if xs:
             lowest.extend(xs)
-            seen = True
+            seen, gap = True, 0
         elif seen:
-            break
-    return max(lowest) - min(lowest)
+            gap += 1
+            if gap > _BAND_GAP:
+                break
+    return (max(lowest) - min(lowest)) if lowest else 0
 
 
 class TestLatexAxisLabels:
@@ -88,11 +94,16 @@ class TestLatexAxisLabels:
             f"({typeset} vs {literal})")
 
     def test_a_subscript_is_narrower_than_its_markup(self, qtbot, tmp_path):
-        """Typeset `B_x` drops the underscore and shrinks the x."""
+        """Typeset, `B_{xyz}` loses its braces and underscore and shrinks the xyz.
+
+        A multi-character subscript is used on purpose: with `B_x` the two
+        renderings differ by only a few pixels, which is too thin a margin to
+        mean anything across fonts and DPIs.
+        """
         typeset = _last_band_width(
-            _render(_plot_with_label(qtbot, r"$B_x$ [nT]"), tmp_path, "sub"))
+            _render(_plot_with_label(qtbot, r"$B_{xyz}$ [nT]"), tmp_path, "sub"))
         literal = _last_band_width(
-            _render(_plot_with_label(qtbot, r"B_x [nT]"), tmp_path, "lit"))
+            _render(_plot_with_label(qtbot, r"B_{xyz} [nT]"), tmp_path, "lit"))
         assert 0 < typeset < literal
 
     @pytest.mark.parametrize("label", ["Cost [$/kg]", "100 $"])
