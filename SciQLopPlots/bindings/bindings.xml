@@ -534,6 +534,16 @@
     <object-type name="SciQLopSingleLineGraphFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
+    <!-- Without these the projection graphs came back to Python as the base
+         SciQLopGraphInterface, which hides observe(): a callable on a
+         projection plot could never be bound to a time axis, so it never
+         fetched anything. -->
+    <object-type name="SciQLopNDProjectionCurves" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopNDProjectionCurvesFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="SciQLopCurveFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>

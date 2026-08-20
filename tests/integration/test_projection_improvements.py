@@ -365,3 +365,54 @@ class TestTimeColoredReferenceCurve:
 
         assert hues(plain.subplot(0), "plain") <= 2, "baseline is not single-hued"
         assert hues(tinted.subplot(0), "tinted") > 4
+
+
+class TestProjectionGraphIsConcrete:
+    """A callable on a projection plot came back as the base interface.
+
+    Shiboken only exposes a class listed in the typesystem, and
+    SciQLopNDProjectionCurves was not, so `panel.plot(callable,
+    plot_type=Projections)` returned something typed SciQLopGraphInterface.
+    That hides observe(), which is how a function graph gets bound to a time
+    axis -- so a projection graph could never be driven and never fetched.
+    """
+
+    def test_a_callable_projection_graph_exposes_observe(self, qtbot):
+        from SciQLopPlots import SciQLopMultiPlotPanel, PlotType
+
+        panel = SciQLopMultiPlotPanel(None, synchronize_x=False,
+                                      synchronize_time=True)
+        qtbot.addWidget(panel)
+        _plot, graph = panel.plot(
+            lambda start, stop: [np.linspace(start, stop, 10)] * 4,
+            labels=["x", "y", "z"], plot_type=PlotType.Projections)
+        process_events()
+        assert type(graph).__name__ == "SciQLopNDProjectionCurvesFunction"
+        assert hasattr(graph, "observe")
+
+    def test_observing_a_time_axis_drives_the_callable(self, qtbot):
+        """The whole point of exposing observe(): the callable now runs."""
+        from SciQLopPlots import SciQLopMultiPlotPanel, PlotType, SciQLopPlotRange
+
+        calls = []
+
+        def trajectory(start, stop):
+            calls.append((start, stop))
+            n = 20
+            a = np.linspace(0, 2 * np.pi, n)
+            return [np.linspace(start, stop, n), np.cos(a), np.sin(a),
+                    np.linspace(-1.0, 1.0, n)]
+
+        panel = SciQLopMultiPlotPanel(None, synchronize_x=False,
+                                      synchronize_time=True)
+        qtbot.addWidget(panel)
+        _proj, graph = panel.plot(trajectory, labels=["x", "y", "z"],
+                                  plot_type=PlotType.Projections)
+        ts, _ = panel.plot(lambda a, b: [np.linspace(a, b, 10), np.zeros(10)],
+                           labels=["v"])
+        process_events()
+
+        graph.observe(ts.time_axis())
+        panel.set_time_axis_range(SciQLopPlotRange(1.0e9, 1.0e9 + 3600))
+        qtbot.waitUntil(lambda: len(calls) > 0, timeout=5000)
+        assert calls, "the projection callable was never invoked"

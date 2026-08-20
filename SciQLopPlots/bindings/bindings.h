@@ -42,6 +42,7 @@
 #include <SciQLopPlots/Plotables/SciQLopHistogram2D.hpp>
 #include <SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp>
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
+#include <SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
