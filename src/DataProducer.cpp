@@ -23,6 +23,23 @@
 #include <iostream>
 #include "SciQLopPlots/Debug.hpp"
 
+// Python C-API for the conditional GIL release in ~DataProviderWorker below.
+// Included after the Qt-carrying header with the same slots-macro guard as
+// PythonInterface.cpp (Qt defines `slots`, which clashes with Python.h).
+#if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
+#pragma push_macro("slots")
+#undef slots
+#define _SQP_SLOTS_WAS_DEFINED
+#endif
+extern "C"
+{
+#include <Python.h>
+}
+#ifdef _SQP_SLOTS_WAS_DEFINED
+#pragma pop_macro("slots")
+#undef _SQP_SLOTS_WAS_DEFINED
+#endif
+
 
 void DataProviderInterface::_threaded_update()
 {
@@ -217,8 +234,36 @@ void DataProviderInterface::set_data(_NDdata new_state) noexcept
         Q_EMIT _state_changed();
 }
 
+namespace
+{
+// Releases the GIL while the worker thread is joined, iff this thread holds
+// it. Same PyEval_SaveThread/PyEval_RestoreThread mechanism as
+// DSP/python_module.cpp's GILReleaseScope, but conditional: this destructor
+// also runs from non-Python threads that never held the GIL, where
+// PyEval_SaveThread would be an error. Unblocking the join matters because a
+// worker blocked in PyGILState_Ensure would otherwise wait on a GIL the
+// joining (GUI) thread never drops -> deadlock at teardown.
+struct ConditionalGILRelease
+{
+    PyThreadState* m_save = nullptr;
+    ConditionalGILRelease()
+    {
+        if (PyGILState_Check())
+            m_save = PyEval_SaveThread();
+    }
+    ~ConditionalGILRelease()
+    {
+        if (m_save != nullptr)
+            PyEval_RestoreThread(m_save);
+    }
+    ConditionalGILRelease(const ConditionalGILRelease&) = delete;
+    ConditionalGILRelease& operator=(const ConditionalGILRelease&) = delete;
+};
+}
+
 DataProviderWorker::~DataProviderWorker()
 {
+    ConditionalGILRelease release_gil;
     m_worker_thread->quit();
     m_worker_thread->wait();
 }

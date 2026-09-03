@@ -567,7 +567,8 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
                 _update_value_axis_visibility();
                 emit this->plotables_list_changed();
             });
-    connect(plottable, &SciQLopGraphInterface::replot, this, [this]() { this->replot(); });
+    connect(plottable, &SciQLopGraphInterface::replot, this,
+            [this]() { this->replot(QCustomPlot::rpQueuedReplot); });
     connect(this, &SciQLopPlot::resized, plottable,
             &SciQLopPlottableInterface::parent_plot_resized);
     _update_value_axis_visibility();
