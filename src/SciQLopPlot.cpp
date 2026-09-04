@@ -50,6 +50,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
+    setSkipReplotsWhenHidden(true);
     this->setFocusPolicy(Qt::StrongFocus);
     this->grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren);
     this->grabGesture(Qt::PanGesture, Qt::DontStartGestureOnChildren);
