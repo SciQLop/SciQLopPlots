@@ -865,3 +865,14 @@ git commit -m "docs: implementation plan for NeoQCP perf round"
 - **Spec coverage:** span churn → Task 1; stale layer entries → Task 2; stale axis entries → Task 3; hidden replots → Task 4; testing/verification → per-task tests + Task 5. All spec sections covered.
 - **Known limitation (documented in spec and tasks):** headless autotests cannot exercise RHI-backed paths (`mRhi == nullptr`), so the UAF fixes are verified via smoke tests + the ASAN suite (Task 5 Step 2), and span dirty detection is verified through the RHI-free `detectGeometryChanges()` API.
 - **Type consistency:** `detectGeometryChanges()`, `SpanSignature`, `gridRhiLayerIfExists()`, `setSkipReplotsWhenHidden()`/`skipReplotsWhenHidden()` are used with the same names/signatures in every task that references them.
+
+---
+
+## Implementation amendments
+
+Recorded after the final code review of the implemented round:
+
+- **Task 4 guard gained a shown-before condition.** Verification found that never-shown plots legitimately drive data pipelines via `replot()`, so the skip-hidden-replots guard only engages once the widget has been shown at least once (`mWasShown` set in `showEvent`). Without this, offscreen/headless users creating a plot, feeding data and exporting without ever showing it would have had their replots skipped.
+- **Grid-layer `invalidatePipeline()` now dirties geometry.** Same hole as the span layer fixed during review of Task 1: `cleanupDrawGroups()` released the grid draw groups without setting `mGeometryDirty`, so a render-target recreation or sample-count change at unchanged size left grid lines and tick marks invisible until the next unrelated change.
+- **Span draw-group allocation failures are retried.** `rebuildGeometry()` now reports allocation failure and `uploadResources()` keeps `mGeometryDirty` set in that case, so the next frame retries instead of dropping the group until an unrelated geometry change (the pre-round forced per-frame rebuild used to retry implicitly).
+- **`clipAxisRect()` pointer added to the span change signature.** `QCPAbstractItem::setClipAxisRect()` does not mark RHI dirty, so moving a span between two axis rects with identical bounds and ranges changed neither the signature nor the bounds map and the span kept rendering in the stale group.
