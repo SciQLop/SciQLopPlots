@@ -213,7 +213,8 @@ class TestParametricCurveDtypes:
         y = (np.sin(t) * 100).astype(dtype)
         g = plot.parametric_curve(x, y, labels=["c"])
         plot.replot(True)
-        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0].size > 0
+        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0] is not None
+                                and g.data()[0].size > 0
                                 and not g.busy(),
                         timeout=5000)
         assert len(g.data()) >= 2
@@ -225,7 +226,8 @@ class TestParametricCurveDtypes:
         y = (x * 2.0).astype(np.float32)
         g = plot.parametric_curve(x, y, labels=["c"])
         plot.replot(True)
-        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0].size > 0
+        qtbot.waitUntil(lambda: len(g.data()) >= 2 and g.data()[0] is not None
+                                and g.data()[0].size > 0
                                 and not g.busy(),
                         timeout=5000)
         gx = np.array(g.data()[0])

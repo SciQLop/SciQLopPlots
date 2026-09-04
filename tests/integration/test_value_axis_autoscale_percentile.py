@@ -240,6 +240,7 @@ def _curve(plot, dtype, qtbot):
     y = _y_with_outliers(dtype, n)
     g = plot.parametric_curve(x, y, labels=["c"])
     qtbot.waitUntil(lambda: len(g.data()) >= 2
+                            and g.data()[0] is not None
                             and g.data()[0].size > 0
                             and not g.busy(),
                     timeout=5000)
@@ -362,6 +363,7 @@ class TestParametricCurvePercentileRescale:
         # SciQLopCurve gathers from the resampler's committed data; wait until
         # the worker thread has swapped _next_data into _data.
         qtbot.waitUntil(lambda: len(g.data()) >= 2
+                                and g.data()[0] is not None
                                 and g.data()[0].size > 0
                                 and not g.busy(),
                         timeout=5000)
