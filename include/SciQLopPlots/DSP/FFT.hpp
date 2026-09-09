@@ -66,7 +66,7 @@ namespace detail
         const std::size_t n_freq = n_rows / 2 + 1;
         std::vector<std::complex<double>> spectrum(n_freq);
 
-        pocketfft::r2c(shape, stride_in, stride_out, /*axes=*/ { 0 },
+        pocketfft::r2c(shape, stride_in, stride_out, /*axis=*/ std::size_t { 0 },
                         pocketfft::FORWARD, windowed.data(), spectrum.data(), 1.0);
 
         // Magnitude (normalized by N)
