@@ -30,7 +30,6 @@
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
 
-    <inject-code class="native" position="beginning" file="snippets.cpp" snippet="CheckIsBuffer"/>
     <primitive-type name="SciQLopPyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
         <conversion-rule>
             <target-to-native>

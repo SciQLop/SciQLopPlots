@@ -70,11 +70,4 @@ Py_BEGIN_ALLOW_THREADS
 Py_END_ALLOW_THREADS
 // @snippet DataProviderInterface-set_data
 
-// @snippet CheckIsBuffer
-static bool CheckIsBuffer(PyObject* pyIn) {
-    Py_buffer _buffer = { 0 };
-    return PyObject_GetBuffer(pyIn, &_buffer, PyBUF_SIMPLE | PyBUF_READ | PyBUF_C_CONTIGUOUS)==0;
-}
-// @snippet CheckIsBuffer
-
 

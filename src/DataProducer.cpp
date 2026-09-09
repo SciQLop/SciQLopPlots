@@ -19,26 +19,15 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+// Python C-API for the conditional GIL release in ~DataProviderWorker below.
+// Python.h must be the first include: it sets libc feature macros that the
+// standard headers would otherwise define first (redefinition warnings), and
+// coming before any Qt header it never meets Qt's `slots` macro.
+#include <Python.h>
+
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include <iostream>
 #include "SciQLopPlots/Debug.hpp"
-
-// Python C-API for the conditional GIL release in ~DataProviderWorker below.
-// Included after the Qt-carrying header with the same slots-macro guard as
-// PythonInterface.cpp (Qt defines `slots`, which clashes with Python.h).
-#if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
-#pragma push_macro("slots")
-#undef slots
-#define _SQP_SLOTS_WAS_DEFINED
-#endif
-extern "C"
-{
-#include <Python.h>
-}
-#ifdef _SQP_SLOTS_WAS_DEFINED
-#pragma pop_macro("slots")
-#undef _SQP_SLOTS_WAS_DEFINED
-#endif
 
 
 void DataProviderInterface::_threaded_update()
