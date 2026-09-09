@@ -68,6 +68,12 @@ geometry is on screen. The replacement is staged as **pending**:
   `setDataSource`), transform re-evaluated for the pending size, `mPipeline.setSource`
   (L1 built in the worker for the pending source), `mPendingGeneration =
   mPipeline.currentGeneration()`. No transform → pending is ready immediately.
+  Syncing eagerly to a *fewer*-column replacement hides the surplus displayed
+  components for the rest of the window (they stop being drawn even though their
+  old data is still technically on screen): this is required because SciQLopPlots
+  deletes the trailing component wrappers on shrink, so keeping them displayed
+  until the commit would leave the plottable referencing wrappers Python has
+  already discarded.
 - `onL1Ready(generation)`: with a pending source, results older than
   `mPendingGeneration` are ignored (a superseded source's job); otherwise the L1 is
   extracted into `mPendingL1` and the plottable calls
