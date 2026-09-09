@@ -81,7 +81,7 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
         if (QCustomPlot* plot = dynamic_cast<QCustomPlot*>(m_plottable->parentPlot());
             plot && plot->hasPlottable(m_plottable.data()))
         {
-            plot->removePlottable(m_plottable.data());
+            (void)plot->removePlottable(m_plottable.data());
         }
     }
     set_selected(false);

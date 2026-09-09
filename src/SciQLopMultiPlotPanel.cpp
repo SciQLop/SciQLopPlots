@@ -727,7 +727,7 @@ void SciQLopMultiPlotPanel::_clear_preview_spans()
         if (preview)
         {
             auto* plot = preview->parentPlot();
-            plot->removeItem(preview);
+            (void)plot->removeItem(preview);
             to_replot.insert(plot);
         }
     }
@@ -745,7 +745,7 @@ void SciQLopMultiPlotPanel::_on_item_created(QCustomPlot* qcp, QCPAbstractItem* 
     auto qcp_range = vspan->range();
     SciQLopPlotRange range(qcp_range.lower, qcp_range.upper);
 
-    qcp->removeItem(vspan);
+    (void)qcp->removeItem(vspan);
     _clear_preview_spans();
 
     auto* mpvspan

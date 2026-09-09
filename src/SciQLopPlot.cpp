@@ -44,10 +44,10 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 {
     using namespace Constants;
     setAttribute(Qt::WA_OpaquePaintEvent);
-    this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
+    (void)this->addLayer(LayersNames::Spans, this->layer(LayersNames::Main), QCustomPlot::limAbove);
     this->layer(LayersNames::Spans)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::Spans)->setVisible(true);
-    this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
+    (void)this->addLayer(LayersNames::ColorMap, this->layer(LayersNames::Main), QCustomPlot::limBelow);
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
     setSkipReplotsWhenHidden(true);

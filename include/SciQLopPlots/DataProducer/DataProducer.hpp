@@ -257,7 +257,7 @@ public:
 
     inline virtual QList<SciQLopPyBuffer> get_data(QList<SciQLopPyBuffer> values) override
     {
-        return std::move(values);
+        return values;
     }
 
 #ifdef BINDINGS_H
