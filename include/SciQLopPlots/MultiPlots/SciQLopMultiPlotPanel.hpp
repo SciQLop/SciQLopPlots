@@ -278,6 +278,10 @@ public:
     SciQLopPlotCollectionBehavior* behavior(const QString& type_name) const Q_DECL_OVERRIDE;
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
+    //! Evens out plot/panel sizes. Formerly the hard-coded 'O' shortcut; now a
+    //! plain method so a host application can bind its own key to it.
+    void organize_plots();
+
     void add_accepted_mime_type(PlotDragNDropCallback* callback);
 
     inline bool selected() const { return _selected; }
@@ -318,7 +322,6 @@ public:
     QList<InspectorExtension*> inspector_extensions() const;
 
 protected:
-    void keyPressEvent(QKeyEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;

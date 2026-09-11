@@ -30,7 +30,6 @@
 #include "SciQLopPlots/unique_names_factory.hpp"
 #include <QFrame>
 #include <QPointF>
-#include <QShortcut>
 #include <QUuid>
 #include <memory>
 #include <qcustomplot.h>
@@ -123,46 +122,6 @@ public:
             setObjectName(name);
         else
             setObjectName(UniqueNamesFactory::unique_name("Plot"));
-
-        auto auto_scale = new QShortcut(QKeySequence(Qt::Key_M), this);
-        auto_scale->setContext(Qt::WidgetWithChildrenShortcut);
-        connect(auto_scale, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
-                [this]
-                {
-                    QList<SciQLopPlotAxisInterface*> axes;
-                    QList<SciQLopPlotAxisInterface*> axes_to_rescale;
-                    if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
-                        axes.append(ax);
-                    else
-                        axes = selected_axes();
-                    if (axes.isEmpty())
-                        axes_to_rescale = m_axes_to_rescale;
-                    else
-                        axes_to_rescale = axes;
-
-                    for (auto ax : m_frozen_axes)
-                        axes_to_rescale.removeAll(ax);
-                    rescale_axes(axes_to_rescale);
-                });
-
-        auto toggle_log = new QShortcut(QKeySequence(Qt::Key_L), this);
-        toggle_log->setContext(Qt::WidgetWithChildrenShortcut);
-        connect(toggle_log, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
-                [this]
-                {
-                    QList<SciQLopPlotAxisInterface*> axes;
-                    if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
-                        axes.append(ax);
-                    else
-                        axes = selected_axes();
-                    for (auto ax : axes)
-                        ax->set_log(not ax->log());
-                });
-
-        auto toggle_visibility = new QShortcut(QKeySequence(Qt::Key_H), this);
-        toggle_visibility->setContext(Qt::WidgetWithChildrenShortcut);
-        connect(toggle_visibility, &QShortcut::activated, this, // #SciQLop-check-ignore-connect
-                &SciQLopPlotInterface::toggle_selected_objects_visibility);
     }
 
     virtual ~SciQLopPlotInterface() = default;
@@ -294,6 +253,40 @@ public:
         {
             ax->rescale();
         }
+    }
+
+    //! Rescales the axis under the cursor, else the selected axes, else all
+    //! rescalable axes (minus frozen ones). Formerly the hard-coded 'M' shortcut;
+    //! now a plain method so a host application can bind its own key to it.
+    void rescale_hovered_or_selected_axes() noexcept
+    {
+        QList<SciQLopPlotAxisInterface*> axes;
+        QList<SciQLopPlotAxisInterface*> axes_to_rescale;
+        if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
+            axes.append(ax);
+        else
+            axes = selected_axes();
+        if (axes.isEmpty())
+            axes_to_rescale = m_axes_to_rescale;
+        else
+            axes_to_rescale = axes;
+
+        for (auto ax : m_frozen_axes)
+            axes_to_rescale.removeAll(ax);
+        rescale_axes(axes_to_rescale);
+    }
+
+    //! Toggles log scale on the axis under the cursor, else the selected axes.
+    //! Formerly the hard-coded 'L' shortcut; see rescale_hovered_or_selected_axes().
+    void toggle_log_scale_hovered_or_selected_axes() noexcept
+    {
+        QList<SciQLopPlotAxisInterface*> axes;
+        if (auto ax = axis_at(mapFromGlobal(QCursor::pos())))
+            axes.append(ax);
+        else
+            axes = selected_axes();
+        for (auto ax : axes)
+            ax->set_log(not ax->log());
     }
 
     inline virtual SciQLopGraphInterface*
@@ -440,6 +433,10 @@ public:
 
     Q_SLOT virtual void deselect_all() { set_selected(false); }
 
+    //! Toggles visibility of the currently-selected objects. Formerly the
+    //! hard-coded 'H' shortcut; now a plain method a host application can bind.
+    inline virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
+
     inline virtual QList<SciQLopPlottableInterface*> plottables() const noexcept
     {
         WARN_ABSTRACT_METHOD;
@@ -562,6 +559,4 @@ protected:
         WARN_ABSTRACT_METHOD;
         return nullptr;
     }
-
-    inline virtual void toggle_selected_objects_visibility() noexcept { WARN_ABSTRACT_METHOD; }
 };

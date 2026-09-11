@@ -44,7 +44,6 @@
 #include <cpp_utils/containers/algorithms.hpp>
 
 #include <QFileInfo>
-#include <QKeyEvent>
 #include <QPainter>
 #include <QPdfWriter>
 
@@ -303,6 +302,11 @@ void SciQLopMultiPlotPanel::remove_behavior(const QString& type_name)
     _container->remove_behavior(type_name);
 }
 
+void SciQLopMultiPlotPanel::organize_plots()
+{
+    _container->organize_plots();
+}
+
 void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
 {
     if (!callback)
@@ -479,25 +483,6 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int x
             break;
     }
     return { nullptr, nullptr };
-}
-
-void SciQLopMultiPlotPanel::keyPressEvent(QKeyEvent* event)
-{
-    switch (event->key())
-    {
-        case Qt::Key_O:
-            _container->organize_plots();
-            event->accept();
-            break;
-        case Qt::Key_Escape:
-            deselect_all();
-            event->accept();
-            break;
-        default:
-            break;
-    }
-    if (!event->isAccepted())
-        QScrollArea::keyPressEvent(event);
 }
 
 void SciQLopMultiPlotPanel::dragEnterEvent(QDragEnterEvent* event)

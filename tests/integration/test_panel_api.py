@@ -217,10 +217,26 @@ class TestMultiPlotsVerticalSpan:
 
 
 class TestPanelOrganizePlots:
-    def test_organize_plots_on_empty_panel(self, qtbot, panel):
-        """`O` organizes plot heights by dividing the total height by the plot
-        count — an empty panel divides by zero. UB, so whether it faults is
+    def test_organize_plots_on_empty_panel(self, panel):
+        """organize_plots() divides the total height by the plot count — an
+        empty panel divides by zero. UB, so whether it faults is
         toolchain-dependent; this pins the empty case as a supported no-op."""
-        from PySide6.QtCore import Qt
         assert len(panel.plots()) == 0
+        panel.organize_plots()
+
+    def test_organize_plots_callable_with_plots(self, panel):
+        """organize_plots() is now directly callable from Python instead of
+        only reachable by simulating the removed 'O' key shortcut."""
+        panel.add_plot(SciQLopPlot())
+        panel.add_plot(SciQLopPlot())
+        panel.organize_plots()
+        assert panel.size() == 2
+
+    def test_key_o_no_longer_organizes_plots(self, qtbot, panel):
+        """Regression: 'O' used to call organize_plots() via a hard-coded
+        keyPressEvent switch. That binding moved out of the library (SciQLop
+        now owns it), so pressing 'O' must not raise or otherwise misbehave."""
+        from PySide6.QtCore import Qt
+        panel.add_plot(SciQLopPlot())
+        panel.add_plot(SciQLopPlot())
         qtbot.keyClick(panel, Qt.Key_O)
