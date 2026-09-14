@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/SciQLop/NeoQCP.git
-revision = 8cb204b605d6b5e72116fd270455ca13dcd51fb4
+revision = 6062ebfd2ed1a874b7e76f8a3be9f8695d420167
 depth = 1
 
 [provide]
