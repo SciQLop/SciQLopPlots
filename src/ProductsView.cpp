@@ -130,8 +130,7 @@ void ProductsView::on_query_changed(const Query& query)
     {
         m_view_toggle->show();
         m_result_count->show();
-        if (!m_view_toggle->isChecked())
-            m_stack->setCurrentWidget(m_list_view);
+        toggle_view();
     }
     else
     {
@@ -145,10 +144,10 @@ void ProductsView::on_query_changed(const Query& query)
 
 void ProductsView::toggle_view()
 {
-    if (m_stack->currentWidget() == m_tree_view)
-        m_stack->setCurrentWidget(m_list_view);
-    else
-        m_stack->setCurrentWidget(m_tree_view);
+    // The tree is the default while filtering; the flat list is opt-in.
+    QWidget* current = m_view_toggle->isChecked() ? static_cast<QWidget*>(m_list_view)
+                                                  : static_cast<QWidget*>(m_tree_view);
+    m_stack->setCurrentWidget(current);
 }
 
 void ProductsView::update_result_count()
