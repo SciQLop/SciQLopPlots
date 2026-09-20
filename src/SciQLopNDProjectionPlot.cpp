@@ -288,6 +288,7 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
         return;
     }
 
+    const bool changed = m_time_marker_key != t;
     m_time_marker_key = t;
     _ensure_marker_layer();
 
@@ -318,17 +319,22 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
 
     for (auto* plot : m_plots)
         plot->qcp_plot()->layer("markers")->replot();
+
+    if (changed)
+        Q_EMIT time_marker_changed(t);
 }
 
 void SciQLopNDProjectionPlot::clear_time_marker()
 {
+    const bool was_set = !std::isnan(m_time_marker_key);
     m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     for (auto* marker : m_time_markers)
         marker->setVisible(false);
-    if (m_time_markers.isEmpty())
-        return;
-    for (auto* plot : m_plots)
-        plot->qcp_plot()->layer("markers")->replot();
+    if (!m_time_markers.isEmpty())
+        for (auto* plot : m_plots)
+            plot->qcp_plot()->layer("markers")->replot();
+    if (was_set)
+        Q_EMIT time_marker_changed(m_time_marker_key);
 }
 
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)

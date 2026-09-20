@@ -161,6 +161,9 @@ public:
      */
     inline double time_marker_key() const noexcept { return m_time_marker_key; }
 
+    //! Emitted when the marker moves to a new time, with NaN when it is cleared.
+    Q_SIGNAL void time_marker_changed(double t);
+
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
         return m_time_axis;
