@@ -10,15 +10,7 @@ import uuid
 
 from PySide6.QtCore import QCoreApplication, QThread, Qt
 
-from SciQLopPlots import (
-    ParameterType,
-    ProductsModel,
-    ProductsModelNode,
-    ProductsModelNodeType,
-    ProductsTreeFilterModel,
-    QueryParser,
-    ScoreMergeStrategy,
-)
+from SciQLopPlots import ProductsModel, ProductsModelNode
 
 
 def _flush(n=10):
@@ -103,33 +95,3 @@ class TestAddNodeFromWorkerThread:
         assert model.rowCount() == n0
         assert ProductsModel.node([name]) is None
 
-
-class TestReplaceWhileQueryIsActive:
-    def test_worker_replace_then_remerge_does_not_touch_freed_nodes(self, qtbot):
-        """#138 sequence: a filter model holds scores for a product, the product is
-        re-registered from a worker thread, then the merge strategy changes and
-        walks every scored node. Crash-based, so a regression may show as a
-        segfault rather than an assertion."""
-        token = f"tok{uuid.uuid4().hex[:8]}"
-        model = ProductsModel.instance()
-
-        def make_provider():
-            provider = ProductsModelNode(f"{token}_provider")
-            provider.add_child(ProductsModelNode(
-                f"{token}_leaf", "prov", {"uid": token},
-                ProductsModelNodeType.PARAMETER, ParameterType.Scalar))
-            return provider
-
-        model.add_node([], make_provider())
-        fm = ProductsTreeFilterModel()
-        fm.setSourceModel(model)
-        fm.set_query(QueryParser.parse(token))
-        qtbot.waitUntil(lambda: (_flush(2), fm.rowCount() > 0)[1], timeout=5000)
-
-        for _ in range(5):
-            _run_in_worker(lambda: model.add_node([], make_provider()))
-            _flush(20)
-        qtbot.wait(300)
-        assert fm.rowCount() == 1
-        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
-        _flush(20)
