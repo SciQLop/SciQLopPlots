@@ -49,6 +49,11 @@ def _ink(img):
     return sum(pixels.values()) - bg_count
 
 
+def _coloured(img):
+    return sum(1 for y in range(img.height()) for x in range(img.width())
+               if img.pixelColor(x, y).saturation() > 100)
+
+
 def _hues(img):
     buckets = set()
     for y in range(img.height()):
@@ -152,3 +157,23 @@ class TestColourFollowsTheData:
         qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
         process_events()
         assert _hues(_pane_image(proj, tmp_path, "after_refresh")) < 12
+
+
+class TestStaleScalar:
+    def test_points_without_a_colour_value_are_not_drawn(self, qtbot, tmp_path):
+        """A scalar shorter than a refreshed trajectory used to paint the whole
+        tail in the lowest colour, a silently wrong picture. Those points now
+        have no colour, so they are not drawn."""
+        turn = np.linspace(0, 2 * np.pi, N)
+        proj, graph = _projection(qtbot, (turn, 10 * np.cos(turn), 10 * np.sin(turn), turn))
+        graph.set_color_data(turn, ColorGradient.Jet)
+        process_events()
+        before = _coloured(_pane_image(proj, tmp_path, "before"))
+
+        longer = np.linspace(0, 2 * np.pi, 2 * N)
+        graph.set_data([longer, 10 * np.cos(longer), 10 * np.sin(longer), longer])
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        qtbot.waitUntil(
+            lambda: (process_events(),
+                     _coloured(_pane_image(proj, tmp_path, "after")) < 0.75 * before)[1],
+            timeout=3000)

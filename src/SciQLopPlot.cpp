@@ -587,24 +587,14 @@ void _impl::SciQLopPlot::show_color_scale()
 
 void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
 {
-    if (!m_color_scale->visible())
-    {
-        m_color_scale->setVisible(true);
-        plotLayout()->addElement(0, 1, m_color_scale);
-        cmap->colorMap()->setColorScale(m_color_scale);
-        applyTheme();
-    }
+    show_color_scale();
+    cmap->colorMap()->setColorScale(m_color_scale);
 }
 
 void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopHistogram2D* hist)
 {
-    if (!m_color_scale->visible())
-    {
-        m_color_scale->setVisible(true);
-        plotLayout()->addElement(0, 1, m_color_scale);
-        hist->histogram()->setColorScale(m_color_scale);
-        applyTheme();
-    }
+    show_color_scale();
+    hist->histogram()->setColorScale(m_color_scale);
 }
 
 QCPAbstractPlottable* SciQLopPlot::plottable(const QString& name) const

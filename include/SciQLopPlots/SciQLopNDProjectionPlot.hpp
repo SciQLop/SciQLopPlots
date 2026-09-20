@@ -44,6 +44,8 @@ protected:
     bool m_enforcing_aspect = false;
     bool m_z_auto_range = true;
     bool m_updating_z = false;
+    //! Once the gradient was chosen, the default ramp no longer replaces it.
+    bool m_z_gradient_chosen = false;
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
     QList<QCPItemEllipse*> m_time_markers;
@@ -53,6 +55,7 @@ protected:
     Q_SLOT void _enforce_equal_aspect();
     void _ensure_marker_layer();
     void _wire_color_scale(SciQLopPlot* owner);
+    void _apply_two_stop_z_gradient();
     void _rescale_color_scale(const QList<SciQLopNDProjectionCurves*>& graphs);
 
     virtual SciQLopGraphInterface*

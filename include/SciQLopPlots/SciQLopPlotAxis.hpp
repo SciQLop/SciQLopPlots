@@ -32,6 +32,7 @@
 #include <memory>
 #include <optional>
 class QCPAxis;
+class QCPColorGradient;
 class QCPColorScale;
 namespace _impl { class SciQLopPlot; }
 
@@ -360,6 +361,9 @@ public:
     void set_log(bool log) noexcept override;
     void set_label(const QString& label) noexcept override;
     void set_color_gradient(const ColorGradient gradient) noexcept;
+    //! A gradient that is not one of the presets. Forgets the tracked preset, so
+    //! the next set_color_gradient() applies even when it names the same preset.
+    void set_custom_gradient(const QCPColorGradient& gradient) noexcept;
 
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;

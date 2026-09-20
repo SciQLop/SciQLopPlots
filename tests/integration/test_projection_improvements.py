@@ -203,14 +203,37 @@ class TestTimeColorEncoding:
         proj.set_time_color_enabled(True)
         process_events()
 
-    def test_time_color_set_gradient_colors(self, qtbot):
-        from PySide6.QtGui import QColor
+    def test_time_color_set_gradient_colors(self, qtbot, tmp_path):
+        """A green-to-green ramp leaves a single hue; the default blue-to-red one
+        spreads over several, which the first assertion pins so the second one
+        cannot pass by accident."""
+        from PySide6.QtGui import QColor, QImage
+
+        def hues():
+            pane = proj.subplot(0)
+            pane.legend().set_visible(False)
+            pane.rescale_axes()
+            path = tmp_path / "pane.png"
+            assert pane.save_png(str(path), 400, 400) is True
+            img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
+            return len({img.pixelColor(x, y).hue() // 10
+                        for y in range(img.height()) for x in range(img.width())
+                        if img.pixelColor(x, y).saturation() > 100
+                        and img.pixelColor(x, y).value() > 60})
+
         proj = SciQLopNDProjectionPlot(3)
         qtbot.addWidget(proj)
+        t = np.linspace(0, 10, 200, dtype=np.float64)
+        ref = proj.add_reference_curve([t, np.cos(t), np.sin(t), t * 0.1], label="orbit")
+        qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
+        process_events()  # the resampled data reaches the curve on a queued signal
         proj.set_time_color_enabled(True)
-        proj.set_time_color_gradient(QColor("blue"), QColor("red"))
         process_events()
-        assert proj.time_color_enabled() is True
+        assert hues() > 4
+
+        proj.set_time_color_gradient(QColor("green"), QColor("green"))
+        process_events()
+        assert hues() <= 3
 
 
 class TestLinkedCrosshairs:

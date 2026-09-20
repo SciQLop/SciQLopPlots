@@ -133,7 +133,7 @@ int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
 {
     const auto& values = active_values();
     if (index < 0 || index >= values.size())
-        return 0;
+        return gap_bucket;
     if (!std::isfinite(values[index]))
         return gap_bucket;
     const double f = use_scale() ? scale_fraction(values[index])

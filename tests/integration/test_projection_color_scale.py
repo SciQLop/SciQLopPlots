@@ -67,6 +67,13 @@ def _coloured(img):
                if img.pixelColor(x, y).saturation() > 100)
 
 
+def _has_green(img):
+    """Jet passes through green; a blue-to-red two-stop ramp never does."""
+    return any(90 <= img.pixelColor(x, y).hue() <= 160
+               and img.pixelColor(x, y).saturation() > 100
+               for y in range(img.height()) for x in range(img.width()))
+
+
 def _hues(img):
     buckets = set()
     for y in range(img.height()):
@@ -182,3 +189,35 @@ class TestScaleDrivesTheCurve:
         _graph(qtbot, proj, orbit).set_color_data(orbit[3], ColorGradient.Jet)
         proj.z_axis().set_label("n [cm^-3]")
         assert proj.z_axis().label() == "n [cm^-3]"
+
+
+def _three_n(orbit):
+    x, y, z, c = orbit[1], orbit[2], orbit[2] * 0.5, orbit[3]
+    return [x, y, c, y, z, c, z, x, c]
+
+
+class TestGradientChoice:
+    def test_a_gradient_chosen_before_the_first_scalar_is_kept(
+            self, qtbot, proj, orbit, tmp_path):
+        """The scale used to be stamped with the default blue-to-red ramp the
+        moment the first scalar arrived, discarding an earlier choice."""
+        graph = _graph(qtbot, proj, orbit)
+        proj.set_z_gradient(ColorGradient.Jet)
+        graph.set_data(_three_n(orbit))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        process_events()
+        assert _has_green(_pane_image(proj, tmp_path, "kept"))
+
+    def test_a_preset_can_be_reapplied_after_a_two_stop_gradient(
+            self, qtbot, proj, orbit, tmp_path):
+        from PySide6.QtGui import QColor
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_data(_three_n(orbit))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        proj.set_z_gradient(ColorGradient.Jet)
+        proj.set_time_color_gradient(QColor("green"), QColor("green"))
+        process_events()
+        assert _hues(_pane_image(proj, tmp_path, "green")) <= 3
+        proj.set_z_gradient(ColorGradient.Jet)
+        process_events()
+        assert _has_green(_pane_image(proj, tmp_path, "jet_again"))

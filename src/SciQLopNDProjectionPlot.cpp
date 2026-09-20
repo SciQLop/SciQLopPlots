@@ -374,13 +374,20 @@ void SciQLopNDProjectionPlot::set_z_gradient_colors(const QColor& start, const Q
 {
     m_time_color_start = start;
     m_time_color_end = end;
-    if (!m_plots.isEmpty() && m_plots.last()->color_scale()->visible())
-        m_plots.last()->color_scale()->setGradient(
-            SciQLopTimeColoredCurve::two_stop_gradient(start, end));
+    m_z_gradient_chosen = true;
+    _apply_two_stop_z_gradient();
+}
+
+void SciQLopNDProjectionPlot::_apply_two_stop_z_gradient()
+{
+    if (auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(z_axis()))
+        axis->set_custom_gradient(
+            SciQLopTimeColoredCurve::two_stop_gradient(m_time_color_start, m_time_color_end));
 }
 
 void SciQLopNDProjectionPlot::set_z_gradient(::ColorGradient gradient)
 {
+    m_z_gradient_chosen = true;
     if (auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(z_axis()))
         axis->set_color_gradient(gradient);
 }
@@ -419,8 +426,8 @@ void SciQLopNDProjectionPlot::update_color_scale()
     if (!owner->color_scale()->visible())
     {
         owner->show_color_scale();
-        owner->color_scale()->setGradient(
-            SciQLopTimeColoredCurve::two_stop_gradient(m_time_color_start, m_time_color_end));
+        if (!m_z_gradient_chosen)
+            _apply_two_stop_z_gradient();
     }
     for (auto* graph : std::as_const(coloured))
         graph->attach_color_scale(owner->color_scale());
