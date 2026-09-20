@@ -1,0 +1,74 @@
+"""Reproducers for SciQLop issue #138: ``ProductsModel::add_node`` called from a
+non-GUI thread (kernel thread) mutated the model there. Its signals then reached
+the filter models as queued calls, *after* a replaced node had been deleted, and
+a later query change dereferenced the freed node.
+
+The model must apply every mutation on its own thread, without blocking the caller.
+"""
+import threading
+import uuid
+
+from PySide6.QtCore import QCoreApplication, QThread, Qt
+
+from SciQLopPlots import ProductsModel, ProductsModelNode
+
+
+def _flush(n=10):
+    for _ in range(n):
+        QCoreApplication.processEvents()
+
+
+def _run_in_worker(fn):
+    worker = threading.Thread(target=fn)
+    worker.start()
+    worker.join(timeout=5)
+    assert not worker.is_alive(), "add_node from a worker thread blocked"
+
+
+def _record_signal_threads(model):
+    threads = []
+    record = lambda *_: threads.append(QThread.currentThread())
+    model.rowsAboutToBeInserted.connect(record, Qt.DirectConnection)
+    model.rowsAboutToBeRemoved.connect(record, Qt.DirectConnection)
+    return threads, record
+
+
+class TestAddNodeFromWorkerThread:
+    def test_node_is_added_and_signals_fire_on_the_model_thread(self, qtbot):
+        model = ProductsModel.instance()
+        name = f"worker_add_{uuid.uuid4().hex[:8]}"
+        threads, record = _record_signal_threads(model)
+        try:
+            n0 = model.rowCount()
+            _run_in_worker(lambda: model.add_node([], ProductsModelNode(name)))
+            qtbot.waitUntil(lambda: (_flush(2), model.rowCount() == n0 + 1)[1], timeout=5000)
+            assert threads and all(t == model.thread() for t in threads)
+        finally:
+            model.rowsAboutToBeInserted.disconnect(record)
+            model.rowsAboutToBeRemoved.disconnect(record)
+
+    def test_replacing_a_node_from_a_worker_thread_keeps_row_accounting(self, qtbot):
+        model = ProductsModel.instance()
+        name = f"worker_replace_{uuid.uuid4().hex[:8]}"
+        model.add_node([], ProductsModelNode(name))
+        threads, record = _record_signal_threads(model)
+        try:
+            n0 = model.rowCount()
+            _run_in_worker(lambda: model.add_node([], ProductsModelNode(name)))
+            qtbot.waitUntil(lambda: (_flush(2), len(threads) >= 2)[1], timeout=5000)
+            assert model.rowCount() == n0
+            assert all(t == model.thread() for t in threads)
+        finally:
+            model.rowsAboutToBeInserted.disconnect(record)
+            model.rowsAboutToBeRemoved.disconnect(record)
+
+    def test_node_belongs_to_the_model_thread_afterwards(self, qtbot):
+        model = ProductsModel.instance()
+        node = {}
+
+        def add():
+            node["n"] = ProductsModelNode(f"worker_owner_{uuid.uuid4().hex[:8]}")
+            model.add_node([], node["n"])
+
+        _run_in_worker(add)
+        qtbot.waitUntil(lambda: (_flush(2), node["n"].thread() == model.thread())[1], timeout=5000)

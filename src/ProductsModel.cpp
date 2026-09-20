@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include <QIODevice>
+#include <QThread>
 #include <qapplicationstatic.h>
 
 QModelIndex ProductsModel::make_index(ProductsModelNode* node)
@@ -217,6 +218,17 @@ QList<QStringList> ProductsModel::decode_mime_data(const QMimeData* mime_data)
 
 void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
 {
+    // Filter models purge dangling nodes from synchronous begin/endRemoveRows
+    // signals; emitted from another thread they would arrive queued, after
+    // _insert_node already deleted the replaced node. Queue instead of blocking:
+    // a blocking hop can deadlock when the GUI thread waits on the caller.
+    if (QThread::currentThread() != thread())
+    {
+        obj->moveToThread(thread());
+        QMetaObject::invokeMethod(this, [this, path, obj] { add_node(path, obj); },
+                                  Qt::QueuedConnection);
+        return;
+    }
     auto parent = m_rootNode;
     for (const auto& name : path)
     {
