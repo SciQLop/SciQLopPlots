@@ -61,6 +61,14 @@ public:
 
     inline QStringListModel* completer_model() const { return m_completer_model; }
 
+    /*!
+     * \brief add_node Insert \a obj under \a path, replacing a same-named node.
+     *
+     * Called from another thread it does not block: \a obj is moved to the model
+     * thread and inserted later, so node() and rowCount() only see it once the
+     * model thread has processed events. A node that cannot be moved (it already
+     * has a QObject parent) is refused with a warning.
+     */
     Q_SLOT void add_node(QStringList path, ProductsModelNode* obj);
 
     static ProductsModelNode* node(const QStringList& path);

@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include <QIODevice>
+#include <QDebug>
 #include <QThread>
 #include <qapplicationstatic.h>
 
@@ -224,7 +225,12 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
     // a blocking hop can deadlock when the GUI thread waits on the caller.
     if (QThread::currentThread() != thread())
     {
-        obj->moveToThread(thread());
+        if (!obj->moveToThread(thread()))
+        {
+            qWarning() << "ProductsModel::add_node: refusing" << obj->name()
+                       << "- it cannot be moved to the model thread (already parented?)";
+            return;
+        }
         QMetaObject::invokeMethod(this, [this, path, obj] { add_node(path, obj); },
                                   Qt::QueuedConnection);
         return;

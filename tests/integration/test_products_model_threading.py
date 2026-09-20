@@ -10,7 +10,15 @@ import uuid
 
 from PySide6.QtCore import QCoreApplication, QThread, Qt
 
-from SciQLopPlots import ProductsModel, ProductsModelNode
+from SciQLopPlots import (
+    ParameterType,
+    ProductsModel,
+    ProductsModelNode,
+    ProductsModelNodeType,
+    ProductsTreeFilterModel,
+    QueryParser,
+    ScoreMergeStrategy,
+)
 
 
 def _flush(n=10):
@@ -62,13 +70,66 @@ class TestAddNodeFromWorkerThread:
             model.rowsAboutToBeInserted.disconnect(record)
             model.rowsAboutToBeRemoved.disconnect(record)
 
-    def test_node_belongs_to_the_model_thread_afterwards(self, qtbot):
+    def test_node_is_inserted_and_owned_by_the_model_thread(self, qtbot):
         model = ProductsModel.instance()
+        name = f"worker_owner_{uuid.uuid4().hex[:8]}"
         node = {}
 
         def add():
-            node["n"] = ProductsModelNode(f"worker_owner_{uuid.uuid4().hex[:8]}")
+            node["n"] = ProductsModelNode(name)
             model.add_node([], node["n"])
 
         _run_in_worker(add)
-        qtbot.waitUntil(lambda: (_flush(2), node["n"].thread() == model.thread())[1], timeout=5000)
+        qtbot.waitUntil(lambda: (_flush(2), ProductsModel.node([name]) is not None)[1], timeout=5000)
+        assert node["n"].thread() == model.thread()
+        assert node["n"].parent() is not None
+        assert node["n"].parent().thread() == model.thread()
+
+    def test_node_that_cannot_be_moved_is_refused(self, qtbot):
+        model = ProductsModel.instance()
+        name = f"worker_parented_{uuid.uuid4().hex[:8]}"
+        keep = []
+
+        def add():
+            parent = ProductsModelNode(f"{name}_parent")
+            child = ProductsModelNode(name)
+            parent.add_child(child)
+            keep.extend([parent, child])
+            model.add_node([], child)
+
+        n0 = model.rowCount()
+        _run_in_worker(add)
+        _flush(20)
+        assert model.rowCount() == n0
+        assert ProductsModel.node([name]) is None
+
+
+class TestReplaceWhileQueryIsActive:
+    def test_worker_replace_then_remerge_does_not_touch_freed_nodes(self, qtbot):
+        """#138 sequence: a filter model holds scores for a product, the product is
+        re-registered from a worker thread, then the merge strategy changes and
+        walks every scored node. Crash-based, so a regression may show as a
+        segfault rather than an assertion."""
+        token = f"tok{uuid.uuid4().hex[:8]}"
+        model = ProductsModel.instance()
+
+        def make_provider():
+            provider = ProductsModelNode(f"{token}_provider")
+            provider.add_child(ProductsModelNode(
+                f"{token}_leaf", "prov", {"uid": token},
+                ProductsModelNodeType.PARAMETER, ParameterType.Scalar))
+            return provider
+
+        model.add_node([], make_provider())
+        fm = ProductsTreeFilterModel()
+        fm.setSourceModel(model)
+        fm.set_query(QueryParser.parse(token))
+        qtbot.waitUntil(lambda: (_flush(2), fm.rowCount() > 0)[1], timeout=5000)
+
+        for _ in range(5):
+            _run_in_worker(lambda: model.add_node([], make_provider()))
+            _flush(20)
+        qtbot.wait(300)
+        assert fm.rowCount() == 1
+        fm.set_score_merge_strategy(ScoreMergeStrategy.Override)
+        _flush(20)
