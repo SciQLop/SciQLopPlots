@@ -351,6 +351,7 @@ def _validate_color_data(func):
 
 
 for _graph_cls in (SciQLopPlotsBindings.SciQLopSingleLineGraph,
-                   SciQLopPlotsBindings.SciQLopCurve):
+                   SciQLopPlotsBindings.SciQLopCurve,
+                   SciQLopPlotsBindings.SciQLopNDProjectionCurves):
     _graph_cls.set_color_data = _validate_color_data(_graph_cls.set_color_data)
 

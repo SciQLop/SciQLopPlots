@@ -77,6 +77,13 @@ class TestSetColorData:
         with pytest.raises(ValueError):
             graph.set_color_data(orbit[3][:10], ColorGradient.Jet)
 
+    def test_non_numeric_data_keeps_its_own_error(self, qtbot, orbit):
+        """Not the SystemError the enum converter reports when the buffer
+        conversion already left an error pending."""
+        _proj, graph = _projection(qtbot, orbit)
+        with pytest.raises((TypeError, ValueError)):
+            graph.set_color_data(np.array(["a"] * N), ColorGradient.Jet)
+
     def test_empty_data_turns_colouring_off(self, qtbot, orbit):
         _proj, graph = _projection(qtbot, orbit)
         graph.set_color_data(orbit[3], ColorGradient.Jet)
@@ -89,9 +96,11 @@ class TestColorGradientSetter:
         proj, graph = _projection(qtbot, orbit)
         x, y, z, c = orbit[1], orbit[2], orbit[2] * 0.5, orbit[3]
         graph.set_data([x, y, c, y, z, c, z, x, c])
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
         graph.set_time_color_enabled(True)
         process_events()
         two_stop = _hues(_pane_image(proj, tmp_path, "two_stop"))
+        assert two_stop > 0, "the 3n data never reached the panes"
 
         graph.set_color_gradient(ColorGradient.Jet)
         process_events()
