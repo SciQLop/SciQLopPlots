@@ -576,6 +576,15 @@ void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottab
     emit this->plotables_list_changed();
 }
 
+void _impl::SciQLopPlot::show_color_scale()
+{
+    if (m_color_scale->visible())
+        return;
+    m_color_scale->setVisible(true);
+    plotLayout()->addElement(0, 1, m_color_scale);
+    applyTheme();
+}
+
 void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
 {
     if (!m_color_scale->visible())

@@ -315,7 +315,8 @@ class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
 {
     Q_OBJECT
     QPointer<QCPColorScale> m_axis;
-    ColorGradient m_color_gradient;
+    ColorGradient m_color_gradient = ColorGradient::Grayscale;
+    bool m_color_gradient_set = false;
 #ifndef BINDINGS_H
     // Lets the owning colormap supply a custom rescale range (e.g. percentile
     // over visible data). Returning nullopt falls back to plain min/max.

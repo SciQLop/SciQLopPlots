@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
+#include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 #include <algorithm>
 
@@ -127,6 +129,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
             m_curves[i]->set_color_values(scalars);
             m_curves[i]->set_time_color_enabled(!scalars.isEmpty());
         }
+        _update_color_scale();
     }
     else if (data.size() == 2 * curves_count)
     {
@@ -159,12 +162,50 @@ void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGr
 {
     for (auto* curve : std::as_const(m_curves))
         curve->set_color_data(values, gradient);
+    _update_color_scale();
+    _set_scale_gradient(gradient);
 }
 
 void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
 {
     for (auto* curve : std::as_const(m_curves))
         curve->set_color_gradient(gradient);
+    _set_scale_gradient(gradient);
+}
+
+void SciQLopNDProjectionCurves::_update_color_scale()
+{
+    if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
+        plot->update_color_scale();
+}
+
+void SciQLopNDProjectionCurves::_set_scale_gradient(::ColorGradient gradient)
+{
+    if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
+        plot->set_z_gradient(gradient);
+}
+
+void SciQLopNDProjectionCurves::attach_color_scale(QCPColorScale* scale)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_color_scale(scale);
+}
+
+bool SciQLopNDProjectionCurves::has_color_values() const
+{
+    return std::any_of(m_curves.begin(), m_curves.end(),
+                       [](auto* curve) { return curve->has_color_values(); });
+}
+
+std::optional<std::pair<double, double>> SciQLopNDProjectionCurves::color_range(bool log) const
+{
+    std::optional<std::pair<double, double>> range;
+    for (auto* curve : m_curves)
+        if (const auto r = curve->color_range(log))
+            range = range ? std::pair { std::min(range->first, r->first),
+                                        std::max(range->second, r->second) }
+                          : *r;
+    return range;
 }
 
 void SciQLopNDProjectionCurves::set_line_width(qreal width)
@@ -193,6 +234,8 @@ void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, con
 {
     for (auto* curve : std::as_const(m_curves))
         curve->set_time_color_gradient(start, end);
+    if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
+        plot->set_z_gradient_colors(start, end);
 }
 
 QList<QVariant> SciQLopNDProjectionCurves::positions_at_time(double t) const

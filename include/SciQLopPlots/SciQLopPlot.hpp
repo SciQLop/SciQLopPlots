@@ -116,6 +116,9 @@ public:
 
     inline QCPColorScale* color_scale() const noexcept { return m_color_scale; }
 
+    //! Puts the colour scale in the layout without a colormap. Idempotent.
+    void show_color_scale();
+
     void minimize_margins();
 
     inline int calculateAutoMargin(QCP::MarginSide side)
@@ -415,6 +418,8 @@ public:
     inline bool has_colormap() { return m_impl->has_colormap(); }
 
     inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
+
+    inline void show_color_scale() { m_impl->show_color_scale(); }
 
     inline int calculateAutoMargin(QCP::MarginSide side)
     {

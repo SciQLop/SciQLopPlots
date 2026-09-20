@@ -26,6 +26,8 @@
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include <limits>
 
+class SciQLopNDProjectionCurves;
+
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface
 {
     Q_OBJECT
@@ -40,6 +42,8 @@ protected:
     bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
     bool m_enforcing_aspect = false;
+    bool m_z_auto_range = true;
+    bool m_updating_z = false;
     QColor m_time_color_start { 0, 0, 255 };
     QColor m_time_color_end { 255, 0, 0 };
     QList<QCPItemEllipse*> m_time_markers;
@@ -48,6 +52,8 @@ protected:
 
     Q_SLOT void _enforce_equal_aspect();
     void _ensure_marker_layer();
+    void _wire_color_scale(SciQLopPlot* owner);
+    void _rescale_color_scale(const QList<SciQLopNDProjectionCurves*>& graphs);
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -120,6 +126,26 @@ public:
     void set_time_color_enabled(bool enabled) noexcept;
     bool time_color_enabled() const noexcept { return m_time_color_enabled; }
     void set_time_color_gradient(const QColor& start, const QColor& end) noexcept;
+    //! Gradient of the shared scale, and so of every scalar-coloured curve.
+    void set_z_gradient_colors(const QColor& start, const QColor& end);
+    //! Preset gradient of the shared scale.
+    void set_z_gradient(::ColorGradient gradient);
+
+    /*!
+     * \brief z_axis The plot's one colour scale, shared by every pane and graph.
+     *        It sits next to the last pane and only shows once a graph is coloured
+     *        by a scalar.
+     */
+    inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept override
+    {
+        return m_plots.isEmpty() ? nullptr : m_plots.last()->z_axis();
+    }
+    //! While on (the default) the scale range follows the coloured data of all graphs;
+    //! setting the range through z_axis() switches it off.
+    inline bool z_auto_range() const noexcept { return m_z_auto_range; }
+    void set_z_auto_range(bool enabled);
+    //! Called by the graphs when their colour scalar changes.
+    void update_color_scale();
 
     /*!
      * \brief set_time_marker Highlight, on every subplot, the trajectory point

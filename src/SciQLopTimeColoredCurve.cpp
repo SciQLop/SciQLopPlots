@@ -27,14 +27,27 @@
 
 namespace
 {
-QCPColorGradient two_stop_gradient(const QColor& start, const QColor& end)
+using Lut = std::array<QRgb, 256>;
+
+// QCPColorGradient only exposes bulk colorization, so bake the whole ramp
+// once per gradient change and index into it while painting.
+void bake(QCPColorGradient gradient, Lut& lut)
+{
+    std::array<double, 256> positions {};
+    for (std::size_t i = 0; i < positions.size(); ++i)
+        positions[i] = static_cast<double>(i) / (positions.size() - 1);
+    gradient.colorize(positions.data(), QCPRange(0.0, 1.0), lut.data(), positions.size(), 1,
+                      false);
+}
+}
+
+QCPColorGradient SciQLopTimeColoredCurve::two_stop_gradient(const QColor& start, const QColor& end)
 {
     QCPColorGradient gradient;
     gradient.clearColorStops();
     gradient.setColorStopAt(0.0, start);
     gradient.setColorStopAt(1.0, end);
     return gradient;
-}
 }
 
 SciQLopTimeColoredCurve::SciQLopTimeColoredCurve(QCPAxis* keyAxis, QCPAxis* valueAxis)
@@ -58,13 +71,62 @@ void SciQLopTimeColoredCurve::set_color_gradient(const QCPColorGradient& gradien
 
 void SciQLopTimeColoredCurve::rebuild_lut()
 {
-    // QCPColorGradient only exposes bulk colorization, so bake the whole ramp
-    // once per gradient change and index into it while painting.
-    std::array<double, color_buckets> positions {};
-    for (int i = 0; i < color_buckets; ++i)
-        positions[i] = static_cast<double>(i) / (color_buckets - 1);
-    m_gradient.colorize(positions.data(), QCPRange(0.0, 1.0), m_lut.data(), color_buckets, 1,
-                        false);
+    bake(m_gradient, m_lut);
+}
+
+void SciQLopTimeColoredCurve::rebuild_scale_lut()
+{
+    if (m_scale)
+        bake(m_scale->gradient(), m_scale_lut);
+}
+
+void SciQLopTimeColoredCurve::request_replot()
+{
+    if (mParentPlot)
+        mParentPlot->replot(QCustomPlot::rpQueuedReplot);
+}
+
+void SciQLopTimeColoredCurve::set_color_scale(QCPColorScale* scale)
+{
+    if (m_scale == scale)
+        return;
+    if (m_scale)
+        m_scale->disconnect(this);
+    m_scale = scale;
+    if (!scale)
+        return;
+    rebuild_scale_lut();
+    connect(scale, &QCPColorScale::gradientChanged, this,
+            [this] { rebuild_scale_lut(); request_replot(); });
+    connect(scale, &QCPColorScale::dataRangeChanged, this, [this] { request_replot(); });
+    connect(scale, &QCPColorScale::dataScaleTypeChanged, this, [this] { request_replot(); });
+}
+
+std::optional<std::pair<double, double>> SciQLopTimeColoredCurve::color_range(bool log) const
+{
+    double lo = std::numeric_limits<double>::infinity();
+    double hi = -lo;
+    for (const double v : m_color_values)
+        if (std::isfinite(v) && (!log || v > 0))
+        {
+            lo = std::min(lo, v);
+            hi = std::max(hi, v);
+        }
+    if (lo > hi)
+        return std::nullopt;
+    return std::pair { lo, hi };
+}
+
+double SciQLopTimeColoredCurve::scale_fraction(double value) const noexcept
+{
+    const QCPRange range = m_scale->dataRange();
+    if (m_scale->dataScaleType() == QCPAxis::stLogarithmic)
+    {
+        if (value <= 0 || range.lower <= 0)
+            return std::numeric_limits<double>::quiet_NaN();
+        return std::log(value / range.lower) / std::log(range.upper / range.lower);
+    }
+    return (value - range.lower) / (range.upper - range.lower);
 }
 
 int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
@@ -74,13 +136,18 @@ int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
         return 0;
     if (!std::isfinite(values[index]))
         return gap_bucket;
-    const double f = (values[index] - m_c_min) / (m_c_max - m_c_min);
-    return std::clamp(static_cast<int>(f * color_buckets), 0, color_buckets - 1);
+    const double f = use_scale() ? scale_fraction(values[index])
+                                 : (values[index] - m_c_min) / (m_c_max - m_c_min);
+    if (std::isnan(f))
+        return gap_bucket;
+    return std::clamp(static_cast<int>(std::clamp(f, 0.0, 1.0) * color_buckets), 0,
+                      color_buckets - 1);
 }
 
 QColor SciQLopTimeColoredCurve::color_for_bucket(int bucket) const
 {
-    return QColor::fromRgb(m_lut[std::clamp(bucket, 0, color_buckets - 1)]);
+    const auto& lut = use_scale() ? m_scale_lut : m_lut;
+    return QColor::fromRgb(lut[std::clamp(bucket, 0, color_buckets - 1)]);
 }
 
 void SciQLopTimeColoredCurve::set_time_values(const QVector<double>& times)

@@ -313,6 +313,29 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
     Q_EMIT this->replot();
 }
 
+void SciQLopCurve::set_color_scale(QCPColorScale* scale)
+{
+    for (auto comp : m_components)
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
+            tc->set_color_scale(scale);
+}
+
+bool SciQLopCurve::has_color_values() const
+{
+    if (!m_components.isEmpty())
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(m_components.first()->plottable()))
+            return tc->has_color_values();
+    return false;
+}
+
+std::optional<std::pair<double, double>> SciQLopCurve::color_range(bool log) const
+{
+    if (!m_components.isEmpty())
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(m_components.first()->plottable()))
+            return tc->color_range(log);
+    return std::nullopt;
+}
+
 void SciQLopCurve::set_line_width(qreal width)
 {
     for (auto comp : m_components)

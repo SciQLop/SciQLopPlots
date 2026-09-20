@@ -108,6 +108,12 @@ public:
     void set_time_color_gradient(const QColor& start, const QColor& end);
     //! Preset gradient for the scalar colouring, without touching the colour values.
     void set_color_gradient(::ColorGradient gradient);
+#ifndef BINDINGS_H
+    //! Follow a scale shared with other curves instead of the curve's own range and gradient.
+    void set_color_scale(QCPColorScale* scale);
+    bool has_color_values() const;
+    std::optional<std::pair<double, double>> color_range(bool log) const;
+#endif
 
     //! Applies to every component. Reads back the first one (1 when there is none).
     void set_line_width(qreal width);

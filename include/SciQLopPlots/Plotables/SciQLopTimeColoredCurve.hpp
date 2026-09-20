@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <qcustomplot.h>
+#include <QPointer>
+#include <utility>
 #include <array>
 #include <optional>
 
@@ -45,6 +47,9 @@ class SciQLopTimeColoredCurve : public QCPCurve
     bool m_time_color_enabled = false;
     QCPColorGradient m_gradient;
     std::array<QRgb, color_buckets> m_lut {};
+    //! Shared scale of the plot; read while an explicit scalar is set (see use_scale()).
+    QPointer<QCPColorScale> m_scale;
+    std::array<QRgb, color_buckets> m_scale_lut {};
     QVector<double> m_time_values;
     //! Explicit scalar. While empty the time values colour the curve instead.
     QVector<double> m_color_values;
@@ -64,6 +69,17 @@ public:
     /*! \brief Tint from \a start to \a end through a two-stop gradient. */
     void set_gradient_colors(const QColor& start, const QColor& end);
     void set_color_gradient(const QCPColorGradient& gradient);
+    static QCPColorGradient two_stop_gradient(const QColor& start, const QColor& end);
+
+    /*!
+     * \brief set_color_scale Take range, log scale and gradient from \a scale
+     *        instead of the curve's own, for as long as an explicit scalar is set.
+     *        nullptr goes back to the curve's own.
+     */
+    void set_color_scale(QCPColorScale* scale);
+    bool has_color_values() const { return !m_color_values.isEmpty(); }
+    //! [min, max] of the finite explicit values; only positive ones when \a log.
+    std::optional<std::pair<double, double>> color_range(bool log) const;
 
 protected:
     void draw(QCPPainter* painter) override;
@@ -72,8 +88,16 @@ private:
     //! True when there is something to tint with — otherwise QCPCurve draws us.
     bool colouring_active() const noexcept
     {
-        return m_time_color_enabled && !active_values().isEmpty() && m_c_max > m_c_min;
+        if (!m_time_color_enabled || active_values().isEmpty())
+            return false;
+        return use_scale() ? m_scale->dataRange().upper > m_scale->dataRange().lower
+                           : m_c_max > m_c_min;
     }
+    bool use_scale() const noexcept { return m_scale && !m_color_values.isEmpty(); }
+    //! Position of \a value on the shared scale, NaN where it has no colour (log of <= 0).
+    double scale_fraction(double value) const noexcept;
+    void rebuild_scale_lut();
+    void request_replot();
     const QVector<double>& active_values() const noexcept
     {
         return m_color_values.isEmpty() ? m_time_values : m_color_values;

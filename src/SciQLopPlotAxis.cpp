@@ -597,9 +597,10 @@ void SciQLopPlotColorScaleAxis::set_label(const QString& label) noexcept
 
 void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient) noexcept
 {
-    if (!m_axis.isNull() && m_color_gradient != gradient)
+    if (!m_axis.isNull() && (!m_color_gradient_set || m_color_gradient != gradient))
     {
         m_color_gradient = gradient;
+        m_color_gradient_set = true;
         QCPColorGradient new_gradient = to_qcp(gradient);
         new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
         m_axis->setGradient(new_gradient);

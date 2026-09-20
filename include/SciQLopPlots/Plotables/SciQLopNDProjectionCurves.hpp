@@ -40,6 +40,9 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
     Q_OBJECT
     QList<SciQLopCurve*> m_curves;
 
+    void _update_color_scale();
+    void _set_scale_gradient(::ColorGradient gradient);
+
 
 public:
     explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
@@ -64,6 +67,12 @@ public:
 
     void set_line_width(qreal width);
     qreal line_width() const;
+#ifndef BINDINGS_H
+    //! Called by the plot: every pane's curve follows the plot's one shared scale.
+    void attach_color_scale(QCPColorScale* scale);
+    bool has_color_values() const;
+    std::optional<std::pair<double, double>> color_range(bool log) const;
+#endif
 
     void set_time_color_enabled(bool enabled);
     bool time_color_enabled() const;

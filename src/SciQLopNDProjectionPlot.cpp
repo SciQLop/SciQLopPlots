@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
+#include "SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp"
 #include <QHBoxLayout>
 
 void SciQLopNDProjectionPlot::set_theme(SciQLopTheme* theme)
@@ -73,6 +74,8 @@ SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, Q
     {
         m_plots[0]->x_axis()->couple_range_with(m_plots.last()->y_axis());
     }
+    if (!m_plots.isEmpty())
+        _wire_color_scale(m_plots.last());
     m_time_axis = new SciQLopPlotDummyAxis(this);
     connect(m_time_axis, &SciQLopPlotAxis::range_changed, this,
             &SciQLopPlot::time_axis_range_changed);
@@ -249,8 +252,7 @@ void SciQLopNDProjectionPlot::set_time_color_enabled(bool enabled) noexcept
 
 void SciQLopNDProjectionPlot::set_time_color_gradient(const QColor& start, const QColor& end) noexcept
 {
-    m_time_color_start = start;
-    m_time_color_end = end;
+    set_z_gradient_colors(start, end);
     for (auto* p : plottables())
         if (auto* proj = qobject_cast<SciQLopNDProjectionCurves*>(p))
             proj->set_time_color_gradient(start, end);
@@ -360,4 +362,84 @@ QList<SciQLopPlottableInterface*> SciQLopNDProjectionPlot::plottables() const no
         }
     }
     return plottables;
+}
+
+void SciQLopNDProjectionPlot::set_z_gradient_colors(const QColor& start, const QColor& end)
+{
+    m_time_color_start = start;
+    m_time_color_end = end;
+    if (!m_plots.isEmpty() && m_plots.last()->color_scale()->visible())
+        m_plots.last()->color_scale()->setGradient(
+            SciQLopTimeColoredCurve::two_stop_gradient(start, end));
+}
+
+void SciQLopNDProjectionPlot::set_z_gradient(::ColorGradient gradient)
+{
+    if (auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(z_axis()))
+        axis->set_color_gradient(gradient);
+}
+
+void SciQLopNDProjectionPlot::_wire_color_scale(SciQLopPlot* owner)
+{
+    connect(owner->z_axis(), &SciQLopPlotAxisInterface::range_changed, this,
+            [this](const SciQLopPlotRange&)
+            {
+                if (!m_updating_z)
+                    m_z_auto_range = false;
+            });
+    connect(owner->z_axis(), &SciQLopPlotAxisInterface::log_changed, this,
+            [this](bool) { if (m_z_auto_range) update_color_scale(); });
+    connect(owner, &SciQLopPlotInterface::z_axis_range_changed, this,
+            &SciQLopPlotInterface::z_axis_range_changed);
+}
+
+void SciQLopNDProjectionPlot::set_z_auto_range(bool enabled)
+{
+    m_z_auto_range = enabled;
+    if (enabled)
+        update_color_scale();
+}
+
+void SciQLopNDProjectionPlot::update_color_scale()
+{
+    QList<SciQLopNDProjectionCurves*> coloured;
+    for (auto* p : plottables())
+        if (auto* graph = qobject_cast<SciQLopNDProjectionCurves*>(p); graph && graph->has_color_values())
+            coloured.append(graph);
+    if (coloured.isEmpty() || m_plots.isEmpty())
+        return;
+
+    auto* owner = m_plots.last();
+    if (!owner->color_scale()->visible())
+    {
+        owner->show_color_scale();
+        owner->color_scale()->setGradient(
+            SciQLopTimeColoredCurve::two_stop_gradient(m_time_color_start, m_time_color_end));
+    }
+    for (auto* graph : std::as_const(coloured))
+        graph->attach_color_scale(owner->color_scale());
+    if (m_z_auto_range)
+        _rescale_color_scale(coloured);
+}
+
+void SciQLopNDProjectionPlot::_rescale_color_scale(const QList<SciQLopNDProjectionCurves*>& graphs)
+{
+    const bool log = z_axis()->log();
+    std::optional<std::pair<double, double>> range;
+    for (auto* graph : graphs)
+        if (const auto r = graph->color_range(log))
+            range = range ? std::pair { std::min(range->first, r->first),
+                                        std::max(range->second, r->second) }
+                          : *r;
+    if (!range)
+        return;
+    auto [lo, hi] = *range;
+    if (lo >= hi)
+    {
+        lo = log ? lo / 2 : lo - 0.5;
+        hi = log ? hi * 2 : hi + 0.5;
+    }
+    m_updating_z = true;
+    z_axis()->set_range(SciQLopPlotRange(lo, hi));
+    m_updating_z = false;
 }
