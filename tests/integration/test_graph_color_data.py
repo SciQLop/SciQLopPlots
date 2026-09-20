@@ -142,6 +142,31 @@ class TestCurveColorData:
         assert _ink(plot, tmp_path, "flat") > 0
 
 
+class TestNaNInColorData:
+    """A NaN colour value used to poison the [min, max] range (std::minmax_element
+    on NaN), which switched the whole curve back to a single plain colour. A NaN
+    now marks a gap: that segment is skipped, the rest keeps its gradient."""
+
+    def test_a_leading_nan_does_not_switch_the_gradient_off(
+            self, qtbot, plot, spiral, tmp_path):
+        colours = spiral[2].copy()
+        colours[0] = np.nan
+        _curve(qtbot, plot, spiral).set_color_data(colours, ColorGradient.Jet)
+        process_events()
+        assert _hues(plot, tmp_path, "nan_first") > 8
+
+    def test_nan_segments_are_not_drawn(self, qtbot, spiral, tmp_path):
+        plain, gapped = SciQLopPlot(), SciQLopPlot()
+        for p in (plain, gapped):
+            qtbot.addWidget(p)
+        _curve(qtbot, plain, spiral)
+        colours = spiral[2].copy()
+        colours[N // 2:] = np.nan
+        _curve(qtbot, gapped, spiral).set_color_data(colours, ColorGradient.Jet)
+        process_events()
+        assert _ink(gapped, tmp_path, "gapped") < 0.75 * _ink(plain, tmp_path, "plain")
+
+
 class TestCurveHonoursStyleWhileColoured:
     """The coloured draw() path must not ignore line style or markers.
 

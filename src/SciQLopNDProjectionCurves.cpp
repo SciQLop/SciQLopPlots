@@ -146,6 +146,37 @@ void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
         m_curves[i]->set_colors({ colors[i] });
 }
 
+QList<QColor> SciQLopNDProjectionCurves::colors() const noexcept
+{
+    QList<QColor> colors;
+    for (auto* curve : m_curves)
+        colors.append(curve->colors().value(0));
+    return colors;
+}
+
+void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_color_data(values, gradient);
+}
+
+void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_color_gradient(gradient);
+}
+
+void SciQLopNDProjectionCurves::set_line_width(qreal width)
+{
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_line_width(width);
+}
+
+qreal SciQLopNDProjectionCurves::line_width() const
+{
+    return m_curves.isEmpty() ? 1.0 : m_curves.first()->line_width();
+}
+
 void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)
 {
     for (auto* curve : std::as_const(m_curves))

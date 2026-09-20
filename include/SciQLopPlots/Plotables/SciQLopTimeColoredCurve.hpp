@@ -39,6 +39,8 @@ class SciQLopTimeColoredCurve : public QCPCurve
     // Segments and markers are quantised to this many colours so the painter pen
     // is re-applied a handful of times per frame instead of once per point.
     static constexpr int color_buckets = 256;
+    //! Bucket of a non-finite colour value: the segment or marker is not drawn.
+    static constexpr int gap_bucket = -1;
 
     bool m_time_color_enabled = false;
     QCPColorGradient m_gradient;

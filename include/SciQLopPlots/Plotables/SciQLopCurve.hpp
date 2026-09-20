@@ -106,6 +106,12 @@ public:
     void set_time_values(const QVector<double>& times);
     void set_color_values(const QVector<double>& values);
     void set_time_color_gradient(const QColor& start, const QColor& end);
+    //! Preset gradient for the scalar colouring, without touching the colour values.
+    void set_color_gradient(::ColorGradient gradient);
+
+    //! Applies to every component. Reads back the first one (1 when there is none).
+    void set_line_width(qreal width);
+    qreal line_width() const;
 
     /*!
      * \brief position_at_time Data point closest to \a t among the time values.

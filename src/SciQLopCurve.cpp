@@ -304,6 +304,27 @@ void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& en
             tc->set_gradient_colors(start, end);
 }
 
+void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
+{
+    const QCPColorGradient qcp_gradient { to_qcp(gradient) };
+    for (auto comp : m_components)
+        if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
+            tc->set_color_gradient(qcp_gradient);
+    Q_EMIT this->replot();
+}
+
+void SciQLopCurve::set_line_width(qreal width)
+{
+    for (auto comp : m_components)
+        comp->set_line_width(width);
+    Q_EMIT this->replot();
+}
+
+qreal SciQLopCurve::line_width() const
+{
+    return m_components.isEmpty() ? 1.0 : m_components.first()->line_width();
+}
+
 void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
     QVector<double> colors;

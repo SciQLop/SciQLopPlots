@@ -50,6 +50,20 @@ public:
     virtual  bool selected() const noexcept override;
 
     virtual void set_colors(const QList<QColor>& colors) override;
+    virtual QList<QColor> colors() const noexcept override;
+
+    /*!
+     * \brief set_color_data Tint every pane's curve with \a values through \a gradient.
+     * \param values One value per data point (the panes share the same points).
+     * \throws std::invalid_argument if \a values does not match the data length.
+     */
+    Q_SLOT virtual void set_color_data(SciQLopPyBuffer values,
+                                       ::ColorGradient gradient = ::ColorGradient::Jet) override;
+    //! Preset gradient for the scalar colouring, e.g. of the `3n` data layout.
+    void set_color_gradient(::ColorGradient gradient);
+
+    void set_line_width(qreal width);
+    qreal line_width() const;
 
     void set_time_color_enabled(bool enabled);
     bool time_color_enabled() const;

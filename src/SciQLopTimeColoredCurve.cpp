@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 
 namespace
 {
@@ -70,6 +71,8 @@ int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
 {
     if (index < 0 || index >= m_color_values.size())
         return 0;
+    if (!std::isfinite(m_color_values[index]))
+        return gap_bucket;
     const double f = (m_color_values[index] - m_c_min) / (m_c_max - m_c_min);
     return std::clamp(static_cast<int>(f * color_buckets), 0, color_buckets - 1);
 }
@@ -90,9 +93,17 @@ void SciQLopTimeColoredCurve::set_color_values(const QVector<double>& values)
     m_color_values = values;
     if (!values.isEmpty())
     {
-        const auto [min_it, max_it] = std::minmax_element(values.begin(), values.end());
-        m_c_min = *min_it;
-        m_c_max = *max_it;
+        double lo = std::numeric_limits<double>::infinity();
+        double hi = -lo;
+        for (const double v : values)
+            if (std::isfinite(v))
+            {
+                lo = std::min(lo, v);
+                hi = std::max(hi, v);
+            }
+        const bool any_finite = lo <= hi;
+        m_c_min = any_finite ? lo : 0.0;
+        m_c_max = any_finite ? hi : 0.0;
     }
 }
 
@@ -163,7 +174,7 @@ void SciQLopTimeColoredCurve::draw_colored_line(QCPPainter* painter, const QRect
 
     const auto flush = [&](int bucket)
     {
-        if (batch.size() >= 2)
+        if (bucket != gap_bucket && batch.size() >= 2)
         {
             seg_pen.setColor(color_for_bucket(bucket));
             painter->setPen(seg_pen);
@@ -225,6 +236,8 @@ void SciQLopTimeColoredCurve::draw_colored_scatters(QCPPainter* painter, const Q
             continue;
 
         const int bucket = bucket_at(static_cast<int>(it->t));
+        if (bucket == gap_bucket)
+            continue;
         if (bucket != prev_bucket)
         {
             const QColor color = color_for_bucket(bucket);
