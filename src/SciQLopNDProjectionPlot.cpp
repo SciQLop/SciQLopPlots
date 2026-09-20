@@ -419,8 +419,13 @@ void SciQLopNDProjectionPlot::update_color_scale()
     for (auto* p : plottables())
         if (auto* graph = qobject_cast<SciQLopNDProjectionCurves*>(p); graph && graph->has_color_values())
             coloured.append(graph);
-    if (coloured.isEmpty() || m_plots.isEmpty())
+    if (m_plots.isEmpty())
         return;
+    if (coloured.isEmpty())
+    {
+        m_plots.last()->hide_color_scale();
+        return;
+    }
 
     auto* owner = m_plots.last();
     if (!owner->color_scale()->visible())

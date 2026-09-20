@@ -163,7 +163,8 @@ void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGr
     for (auto* curve : std::as_const(m_curves))
         curve->set_color_data(values, gradient);
     _update_color_scale();
-    _set_scale_gradient(gradient);
+    if (values.is_valid() && values.flat_size() > 0)
+        _set_scale_gradient(gradient);
 }
 
 void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
@@ -171,6 +172,14 @@ void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
     for (auto* curve : std::as_const(m_curves))
         curve->set_color_gradient(gradient);
     _set_scale_gradient(gradient);
+}
+
+SciQLopNDProjectionCurves::~SciQLopNDProjectionCurves()
+{
+    // Still listed among the plot's plottables here, so let it look again once we are gone.
+    if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
+        QMetaObject::invokeMethod(plot, [plot] { plot->update_color_scale(); },
+                                  Qt::QueuedConnection);
 }
 
 void SciQLopNDProjectionCurves::_update_color_scale()

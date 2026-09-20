@@ -129,7 +129,8 @@ public:
     void set_time_color_enabled(bool enabled) noexcept;
     bool time_color_enabled() const noexcept { return m_time_color_enabled; }
     void set_time_color_gradient(const QColor& start, const QColor& end) noexcept;
-    //! Gradient of the shared scale, and so of every scalar-coloured curve.
+    //! Two-stop gradient of the shared scale, and so of every scalar-coloured curve. It
+    //! also colours by time, so one choice serves both modes.
     void set_z_gradient_colors(const QColor& start, const QColor& end);
     //! Preset gradient of the shared scale.
     void set_z_gradient(::ColorGradient gradient);
@@ -147,8 +148,10 @@ public:
     //! setting the range through z_axis() switches it off.
     inline bool z_auto_range() const noexcept { return m_z_auto_range; }
     void set_z_auto_range(bool enabled);
-    //! Called by the graphs when their colour scalar changes.
+#ifndef BINDINGS_H
+    //! For the graphs only: called when their colour scalar changes or they go away.
     void update_color_scale();
+#endif
 
     /*!
      * \brief set_time_marker Highlight, on every subplot, the trajectory point
@@ -164,8 +167,14 @@ public:
      */
     inline double time_marker_key() const noexcept { return m_time_marker_key; }
 
+#ifdef BINDINGS_H
+signals:
+#endif
     //! Emitted when the marker moves to a new time, with NaN when it is cleared.
     Q_SIGNAL void time_marker_changed(double t);
+#ifdef BINDINGS_H
+public:
+#endif
 
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {

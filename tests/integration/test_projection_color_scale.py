@@ -221,3 +221,55 @@ class TestGradientChoice:
         proj.set_z_gradient(ColorGradient.Jet)
         process_events()
         assert _has_green(_pane_image(proj, tmp_path, "jet_again"))
+
+
+class TestScaleGoesAwayWithTheColour:
+    """The scale used to stay on screen, frozen at the range of data that no longer
+    exists, after the last scalar was cleared or the last coloured graph removed."""
+
+    def test_clearing_the_scalar_hides_the_scale(self, qtbot, proj, orbit):
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_color_data(orbit[3], ColorGradient.Jet)
+        assert proj.z_axis().visible() is True
+        graph.set_color_data(np.array([], dtype=np.float64), ColorGradient.Jet)
+        process_events()
+        assert proj.z_axis().visible() is False
+        assert _visible_scales(proj) == []
+
+    def test_colouring_again_shows_it_again_with_the_new_range(self, qtbot, proj, orbit):
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_color_data(orbit[3], ColorGradient.Jet)
+        graph.set_color_data(np.array([], dtype=np.float64), ColorGradient.Jet)
+        graph.set_color_data(orbit[3] * 100, ColorGradient.Jet)
+        assert len(_visible_scales(proj)) == 1
+        assert _range(proj.z_axis())[1] == pytest.approx(300.0)
+
+    def test_removing_the_last_coloured_graph_hides_the_scale(self, qtbot, proj, orbit):
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_color_data(orbit[3], ColorGradient.Jet)
+        assert proj.z_axis().visible() is True
+        proj.remove_plottable(graph)
+        qtbot.waitUntil(lambda: (process_events(), not proj.z_axis().visible())[1], timeout=3000)
+
+    def test_removing_one_of_two_coloured_graphs_keeps_the_scale(self, qtbot, proj, orbit):
+        first = _graph(qtbot, proj, orbit)
+        first.set_color_data(orbit[3], ColorGradient.Jet)
+        second = _graph(qtbot, proj, orbit, labels=("a", "b", "c"))
+        second.set_color_data(orbit[3] * 10, ColorGradient.Jet)
+        proj.remove_plottable(second)
+        qtbot.waitUntil(
+            lambda: (process_events(), _range(proj.z_axis())[1] == pytest.approx(3.0))[1],
+            timeout=3000)
+        assert proj.z_axis().visible() is True
+
+    def test_clearing_the_scalar_is_not_a_gradient_choice(self, qtbot, proj, orbit, tmp_path):
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_color_data(np.array([], dtype=np.float64), ColorGradient.Jet)
+        graph.set_data(_three_n(orbit))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        process_events()
+        assert not _has_green(_pane_image(proj, tmp_path, "default_ramp"))
+
+
+def test_the_plot_does_not_expose_its_graph_internal_hook(proj):
+    assert not hasattr(proj, "update_color_scale")

@@ -118,6 +118,9 @@ public:
 
     //! Puts the colour scale in the layout without a colormap. Idempotent.
     void show_color_scale();
+    //! Takes a scale shown by show_color_scale() back out of the layout. Do not use it
+    //! on a plot with a colormap, which needs the scale.
+    void hide_color_scale();
 
     void minimize_margins();
 
@@ -420,6 +423,7 @@ public:
     inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 
     inline void show_color_scale() { m_impl->show_color_scale(); }
+    inline void hide_color_scale() { m_impl->hide_color_scale(); }
 
     inline int calculateAutoMargin(QCP::MarginSide side)
     {

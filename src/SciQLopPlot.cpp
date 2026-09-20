@@ -585,6 +585,16 @@ void _impl::SciQLopPlot::show_color_scale()
     applyTheme();
 }
 
+void _impl::SciQLopPlot::hide_color_scale()
+{
+    if (!m_color_scale->visible())
+        return;
+    m_color_scale->setVisible(false);
+    plotLayout()->take(m_color_scale);
+    plotLayout()->simplify();
+    replot(QCustomPlot::rpQueuedReplot);
+}
+
 void _impl::SciQLopPlot::_ensure_colorscale_is_visible(SciQLopColorMap* cmap)
 {
     show_color_scale();

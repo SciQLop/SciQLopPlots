@@ -46,7 +46,7 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 
 public:
     explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
-    virtual ~SciQLopNDProjectionCurves() override = default;
+    virtual ~SciQLopNDProjectionCurves() override;
 
     Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& data) override;
     virtual void set_selected(bool selected) noexcept override;
@@ -57,7 +57,11 @@ public:
 
     /*!
      * \brief set_color_data Tint every pane's curve with \a values through \a gradient.
-     * \param values One value per data point (the panes share the same points).
+     * \param values One value per data point (the panes share the same points). An
+     *        empty buffer turns the colouring off.
+     * \param gradient Applied to the plot's shared scale, so it replaces an earlier
+     *        set_z_gradient() choice, the default included. The `3n` data layout has no
+     *        such argument and keeps whatever the plot already uses.
      * \throws std::invalid_argument if \a values does not match the data length.
      */
     Q_SLOT virtual void set_color_data(SciQLopPyBuffer values,
