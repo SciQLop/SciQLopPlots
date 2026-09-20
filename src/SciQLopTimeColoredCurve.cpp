@@ -69,11 +69,12 @@ void SciQLopTimeColoredCurve::rebuild_lut()
 
 int SciQLopTimeColoredCurve::bucket_at(int index) const noexcept
 {
-    if (index < 0 || index >= m_color_values.size())
+    const auto& values = active_values();
+    if (index < 0 || index >= values.size())
         return 0;
-    if (!std::isfinite(m_color_values[index]))
+    if (!std::isfinite(values[index]))
         return gap_bucket;
-    const double f = (m_color_values[index] - m_c_min) / (m_c_max - m_c_min);
+    const double f = (values[index] - m_c_min) / (m_c_max - m_c_min);
     return std::clamp(static_cast<int>(f * color_buckets), 0, color_buckets - 1);
 }
 
@@ -85,26 +86,31 @@ QColor SciQLopTimeColoredCurve::color_for_bucket(int bucket) const
 void SciQLopTimeColoredCurve::set_time_values(const QVector<double>& times)
 {
     m_time_values = times;
-    set_color_values(times);
+    update_range();
 }
 
 void SciQLopTimeColoredCurve::set_color_values(const QVector<double>& values)
 {
     m_color_values = values;
-    if (!values.isEmpty())
-    {
-        double lo = std::numeric_limits<double>::infinity();
-        double hi = -lo;
-        for (const double v : values)
-            if (std::isfinite(v))
-            {
-                lo = std::min(lo, v);
-                hi = std::max(hi, v);
-            }
-        const bool any_finite = lo <= hi;
-        m_c_min = any_finite ? lo : 0.0;
-        m_c_max = any_finite ? hi : 0.0;
-    }
+    update_range();
+}
+
+void SciQLopTimeColoredCurve::update_range()
+{
+    const auto& values = active_values();
+    if (values.isEmpty())
+        return;
+    double lo = std::numeric_limits<double>::infinity();
+    double hi = -lo;
+    for (const double v : values)
+        if (std::isfinite(v))
+        {
+            lo = std::min(lo, v);
+            hi = std::max(hi, v);
+        }
+    const bool any_finite = lo <= hi;
+    m_c_min = any_finite ? lo : 0.0;
+    m_c_max = any_finite ? hi : 0.0;
 }
 
 std::optional<QPointF> SciQLopTimeColoredCurve::position_at_time(double t) const

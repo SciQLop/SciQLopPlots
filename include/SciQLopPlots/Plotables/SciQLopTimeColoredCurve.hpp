@@ -46,6 +46,7 @@ class SciQLopTimeColoredCurve : public QCPCurve
     QCPColorGradient m_gradient;
     std::array<QRgb, color_buckets> m_lut {};
     QVector<double> m_time_values;
+    //! Explicit scalar. While empty the time values colour the curve instead.
     QVector<double> m_color_values;
     double m_c_min = 0.0;
     double m_c_max = 1.0;
@@ -71,8 +72,14 @@ private:
     //! True when there is something to tint with — otherwise QCPCurve draws us.
     bool colouring_active() const noexcept
     {
-        return m_time_color_enabled && !m_color_values.isEmpty() && m_c_max > m_c_min;
+        return m_time_color_enabled && !active_values().isEmpty() && m_c_max > m_c_min;
     }
+    const QVector<double>& active_values() const noexcept
+    {
+        return m_color_values.isEmpty() ? m_time_values : m_color_values;
+    }
+    //! Recomputes [m_c_min, m_c_max] over the finite active values.
+    void update_range();
     //! Colour bucket of the data point at container index \a index.
     int bucket_at(int index) const noexcept;
     QColor color_for_bucket(int bucket) const;

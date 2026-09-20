@@ -125,6 +125,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
             const auto& scalar_buf = data[3 * i + 2];
             QVector<double> scalars = to_double_vector(scalar_buf);
             m_curves[i]->set_color_values(scalars);
+            m_curves[i]->set_time_color_enabled(!scalars.isEmpty());
         }
     }
     else if (data.size() == 2 * curves_count)

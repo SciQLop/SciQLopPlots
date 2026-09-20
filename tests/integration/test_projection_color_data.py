@@ -129,3 +129,26 @@ class TestLineWidth:
         graph.set_line_width(5.0)
         process_events()
         assert _ink(_pane_image(proj, tmp_path, "thick")) > thin
+
+
+class TestColourFollowsTheData:
+    def test_a_3n_payload_switches_colouring_on(self, qtbot, orbit):
+        _proj, graph = _projection(qtbot, orbit)
+        x, y, z, c = orbit[1], orbit[2], orbit[2] * 0.5, orbit[3]
+        assert graph.time_color_enabled() is False
+        graph.set_data([x, y, c, y, z, c, z, x, c])
+        assert graph.time_color_enabled() is True
+
+    def test_a_time_refresh_does_not_replace_the_colour_scalar(
+            self, qtbot, orbit, tmp_path):
+        """Colour and the time marker used to exclude each other: every n+1
+        refresh overwrote the scalar with the time values. The scalar here has
+        two values (about 6 hue buckets with antialiasing), where time paints a
+        full ramp (about 23)."""
+        proj, graph = _projection(qtbot, orbit)
+        two_valued = np.where(np.arange(N) < N // 2, 0.0, 1.0)
+        graph.set_color_data(two_valued, ColorGradient.Jet)
+        graph.set_data(list(orbit))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        process_events()
+        assert _hues(_pane_image(proj, tmp_path, "after_refresh")) < 12
