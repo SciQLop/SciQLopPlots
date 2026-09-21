@@ -220,8 +220,11 @@ void SciQLopPlotContainer::organize_plots()
     if (std::empty(_sizes))
         return; // nothing to organize -- and the division below would be by zero
     const auto total_height = std::accumulate(std::cbegin(_sizes), std::cend(_sizes), 0);
-    const auto per_widget_height = total_height / std::size(_sizes);
-    std::transform(std::cbegin(_sizes), std::cend(_sizes), std::begin(_sizes),
-                   [per_widget_height](int height) { return per_widget_height; });
+    QList<int> weights;
+    for (int i = 0; i < _sizes.size(); ++i)
+        weights.append(std::max(1, static_cast<int>(widget(i)->sizePolicy().verticalStretch())));
+    const auto total_weight = std::accumulate(weights.cbegin(), weights.cend(), 0);
+    for (int i = 0; i < _sizes.size(); ++i)
+        _sizes[i] = total_height * weights[i] / total_weight;
     setSizes(_sizes);
 }

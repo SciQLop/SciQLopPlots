@@ -282,6 +282,13 @@ public:
     //! plain method so a host application can bind its own key to it.
     void organize_plots();
 
+    /*!
+     * \brief set_plot_stretch Relative height of \a plot, 1 or more. Organizes the
+     *        panel right away, and organize_plots() keeps honouring it.
+     */
+    void set_plot_stretch(SciQLopPlotInterface* plot, int factor);
+    int plot_stretch(const SciQLopPlotInterface* plot) const;
+
     void add_accepted_mime_type(PlotDragNDropCallback* callback);
 
     inline bool selected() const { return _selected; }

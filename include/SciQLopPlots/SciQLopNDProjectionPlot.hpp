@@ -43,6 +43,7 @@ protected:
     bool m_time_color_enabled = false;
     bool m_enforcing_aspect = false;
     bool m_z_auto_range = true;
+    bool m_shared_legend = false;
     bool m_updating_z = false;
     //! Once the gradient was chosen, the default ramp no longer replaces it.
     bool m_z_gradient_chosen = false;
@@ -122,6 +123,10 @@ public:
         GetDataPyCallable callable,
         const QString& label = QString(),
         const QColor& color = QColor());
+
+    //! Shows the legend on the first pane only, instead of repeating it in every pane.
+    void set_shared_legend(bool shared);
+    inline bool shared_legend() const noexcept { return m_shared_legend; }
 
     void set_linked_crosshairs(bool enabled) noexcept;
     bool linked_crosshairs() const noexcept { return m_linked_crosshairs; }

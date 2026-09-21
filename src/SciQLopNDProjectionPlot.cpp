@@ -370,6 +370,13 @@ QList<SciQLopPlottableInterface*> SciQLopNDProjectionPlot::plottables() const no
     return plottables;
 }
 
+void SciQLopNDProjectionPlot::set_shared_legend(bool shared)
+{
+    m_shared_legend = shared;
+    for (int i = 1; i < m_plots.size(); ++i)
+        m_plots[i]->legend()->set_visible(!shared);
+}
+
 void SciQLopNDProjectionPlot::set_z_gradient_colors(const QColor& start, const QColor& end)
 {
     m_time_color_start = start;

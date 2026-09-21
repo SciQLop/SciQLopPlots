@@ -72,11 +72,15 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
         : SciQLopNDProjectionCurves { parent, plots, labels, metaData }
         , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
-    /*m_pipeline = new SimplePyCallablePipeline(std::move(callable), this);
-    connect(m_pipeline, &SimplePyCallablePipeline::new_data_nd, this,
-            &SciQLopNDProjectionCurvesFunction::_set_data);
-    connect(this, &SciQLopLineGraph::range_changed, m_pipeline,
-            &SimplePyCallablePipeline::set_range);*/
+    // Fetch for the range the plot already has, like the other function graphs:
+    // the panel applies its time range before the graph exists, so waiting for the
+    // next change would leave the graph empty until someone pans.
+    if (auto* time_axis = parent->time_axis())
+    {
+        const auto range = time_axis->range();
+        if (range.start() != range.stop())
+            this->set_range(range);
+    }
 }
 
 void SciQLopNDProjectionCurves::set_selected(bool selected) noexcept
@@ -226,6 +230,42 @@ void SciQLopNDProjectionCurves::set_line_width(qreal width)
 qreal SciQLopNDProjectionCurves::line_width() const
 {
     return m_curves.isEmpty() ? 1.0 : m_curves.first()->line_width();
+}
+
+void SciQLopNDProjectionCurves::set_visible(bool visible) noexcept
+{
+    const bool changed = this->visible() != visible;
+    for (auto* curve : std::as_const(m_curves))
+        curve->set_visible(visible);
+    if (changed)
+        Q_EMIT visible_changed(visible);
+}
+
+bool SciQLopNDProjectionCurves::visible() const noexcept
+{
+    return std::any_of(m_curves.begin(), m_curves.end(),
+                       [](auto* curve) { return curve->visible(); });
+}
+
+QList<SciQLopGraphComponentInterface*> SciQLopNDProjectionCurves::components() const noexcept
+{
+    QList<SciQLopGraphComponentInterface*> all;
+    for (auto* curve : m_curves)
+        all.append(curve->components());
+    return all;
+}
+
+SciQLopGraphComponentInterface* SciQLopNDProjectionCurves::component(int index) const noexcept
+{
+    return components().value(index, nullptr);
+}
+
+SciQLopGraphComponentInterface* SciQLopNDProjectionCurves::component(const QString& name) const noexcept
+{
+    for (auto* component : components())
+        if (component->name() == name)
+            return component;
+    return nullptr;
 }
 
 void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)

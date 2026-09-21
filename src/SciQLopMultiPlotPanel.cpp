@@ -307,6 +307,21 @@ void SciQLopMultiPlotPanel::organize_plots()
     _container->organize_plots();
 }
 
+void SciQLopMultiPlotPanel::set_plot_stretch(SciQLopPlotInterface* plot, int factor)
+{
+    if (!plot)
+        return;
+    auto policy = plot->sizePolicy();
+    policy.setVerticalStretch(static_cast<uchar>(std::clamp(factor, 1, 255)));
+    plot->setSizePolicy(policy);
+    _container->organize_plots();
+}
+
+int SciQLopMultiPlotPanel::plot_stretch(const SciQLopPlotInterface* plot) const
+{
+    return plot ? std::max(1, static_cast<int>(plot->sizePolicy().verticalStretch())) : 1;
+}
+
 void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callback)
 {
     if (!callback)

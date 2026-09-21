@@ -53,6 +53,14 @@ public:
     virtual  bool selected() const noexcept override;
 
     virtual void set_colors(const QList<QColor>& colors) override;
+
+    virtual void set_visible(bool visible) noexcept override;
+    virtual bool visible() const noexcept override;
+
+    //! One component per pane, in pane order.
+    virtual QList<SciQLopGraphComponentInterface*> components() const noexcept override;
+    virtual SciQLopGraphComponentInterface* component(int index) const noexcept override;
+    virtual SciQLopGraphComponentInterface* component(const QString& name) const noexcept override;
     virtual QList<QColor> colors() const noexcept override;
 
     /*!
