@@ -334,7 +334,7 @@ void SciQLopCurve::_notify_plot(std::optional<::ColorGradient> gradient)
         return;
     plot->update_curve_color_scale();
     if (gradient)
-        plot->set_z_gradient(*gradient);
+        plot->request_z_gradient(*gradient);
 }
 
 void SciQLopCurve::set_color_scale(QCPColorScale* scale)

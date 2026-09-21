@@ -212,6 +212,44 @@ class TestColormapOwnershipBothWays:
         assert _range(plot) == (100.0, 110.0)
 
 
+class TestColormapGoesAway:
+    def test_the_scale_goes_with_the_colormap_when_nothing_is_coloured(self, qtbot, plot):
+        cmap = _colormap(qtbot, plot)
+        assert plot.z_axis().visible() is True
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), not plot.z_axis().visible())[1], timeout=3000)
+
+    def test_curves_take_the_scale_back_when_the_colormap_is_removed(self, qtbot, plot):
+        cmap = _colormap(qtbot, plot)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
+                        timeout=3000)
+        assert plot.z_axis().visible() is True
+        assert plot.z_auto_range() is True
+
+
+class TestUserGradientBesideAColormap:
+    def test_set_z_gradient_still_works_when_the_user_asks(self, qtbot, plot, tmp_path):
+        """Only a curve's own gradient call is kept away from a colormap's scale; the
+        plot's public setter is an explicit request."""
+        _colormap(qtbot, plot)
+        assert _bar_hues(plot, tmp_path, "jet") > 8
+        plot.set_z_gradient(ColorGradient.Grayscale)
+        process_events()
+        assert _bar_hues(plot, tmp_path, "gray") <= 2
+
+
+def test_destroying_a_plot_that_shows_a_scale_is_safe(qtbot):
+    from shiboken6 import delete
+    plot = SciQLopPlot()
+    curve = _curve(qtbot, plot)
+    curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+    assert plot.z_axis().visible() is True
+    delete(plot)
+    process_events()
+
+
 class TestVisibilityFollowsTheScale:
     def test_hiding_the_only_coloured_curve_hides_the_scale(self, qtbot, plot):
         curve = _curve(qtbot, plot)

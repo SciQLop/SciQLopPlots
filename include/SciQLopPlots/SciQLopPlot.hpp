@@ -443,6 +443,8 @@ public:
 #ifndef BINDINGS_H
     //! For the curves only: called when their colour scalar changes or they go away.
     void update_curve_color_scale();
+    //! A curve's own gradient: kept away from a colormap's scale, unlike set_z_gradient().
+    void request_z_gradient(::ColorGradient gradient);
 #endif
     inline void hide_color_scale() { m_impl->hide_color_scale(); }
 

@@ -34,7 +34,10 @@ class SciQLopPlot;
  * It lives in the colour scale of \a owner (a pane). It is shown while some source
  * carries values and hidden when none does. Its range follows the values of all
  * sources until the range is set through the owner's z axis, which pins it. A
- * colormap that already owns the scale keeps it: nothing is touched then.
+ * colormap always wins the scale, whichever came first: a colormap added later takes
+ * it over from the curves (they fall back to their own range and gradient), and one
+ * that is removed leaves the scale to the curves, or hides it if none is coloured.
+ * Hidden sources do not count.
  * See docs/colour-by-scalar-curves-vs-line-graphs.md.
  */
 class ColorScaleController : public QObject
@@ -63,7 +66,13 @@ public:
 
     //! A gradient set here is kept: the default ramp no longer replaces it.
     void set_gradient(::ColorGradient gradient);
+    //! Same, on behalf of a coloured graph: it never touches a scale that a colormap owns.
+    void request_gradient(::ColorGradient gradient);
     void set_gradient_colors(const QColor& start, const QColor& end);
+
+    //! For the plot's destructor body, which deletes graphs before this object learns
+    //! about it: no more reading of the plot's children.
+    void quiesce() noexcept { m_dying = true; }
 
     //! Re-reads the sources: shows or hides the scale, attaches them, rescales.
     void update();
@@ -73,6 +82,7 @@ private:
     bool foreign() const;
     //! Lets go of the curves without hiding the scale, which a colormap now uses.
     void yield();
+    void refresh();
     bool show();
     void hide();
     void rescale(const std::vector<Source>& coloured);
@@ -85,6 +95,7 @@ private:
     bool m_auto_range = true;
     bool m_updating = false;
     bool m_dying = false;
+    bool m_had_colormap = false;
     bool m_gradient_chosen = false;
     QColor m_start { 0, 0, 255 };
     QColor m_end { 255, 0, 0 };

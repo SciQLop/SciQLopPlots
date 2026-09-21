@@ -785,6 +785,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 
 SciQLopPlot::~SciQLopPlot()
 {
+    m_curve_scale->quiesce();
     while (plottables().size() > 0)
     {
         delete plottable(0);
@@ -1354,6 +1355,11 @@ void SciQLopPlot::set_z_auto_range(bool enabled)
 void SciQLopPlot::set_z_gradient(::ColorGradient gradient)
 {
     m_curve_scale->set_gradient(gradient);
+}
+
+void SciQLopPlot::request_z_gradient(::ColorGradient gradient)
+{
+    m_curve_scale->request_gradient(gradient);
 }
 
 void SciQLopPlot::update_curve_color_scale()

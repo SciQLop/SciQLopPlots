@@ -130,15 +130,20 @@ void register_all_types()
             if (!plot) return {};
             return {
                 QObject::connect(plot, &SciQLopPlot::graph_list_changed, plot,
-                    [plot, add]() {
+                    [plot, add, remove]() {
                         // has_colormap() flips from false to true on the first
                         // colormap/histogram add — re-publish the colormap axes
-                        // so they appear under the plot node. addNode is
-                        // idempotent (no-op if the axis is already a child).
+                        // so they appear under the plot node (addNode is
+                        // idempotent), and take them out again when it flips back.
                         if (plot->has_colormap())
                         {
                             add(plot->z_axis(), -1);
                             add(plot->y2_axis(), -1);
+                        }
+                        else
+                        {
+                            remove(plot->z_axis());
+                            remove(plot->y2_axis());
                         }
                         for (auto p : plot->plottables())
                             add(p, -1);
