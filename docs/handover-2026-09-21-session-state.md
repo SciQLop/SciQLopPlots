@@ -35,7 +35,10 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 - Whole-range opencode review + challenge (round 10): fixed the public show/hide_color_scale blind spot, pin lost when a colormap drives the scale, gradient dropped while the curve scale is off, `add_node` with a node from another thread. Left alone: descendants of an added node are not thread-checked; `has_colormap()` now means "colour scale visible".
 - **NeoQCP fix not pushed**: local branch `fix/legend-busy-repaint` (3711b86) in `subprojects/NeoQCP` makes the legend repaint when the busy symbol toggles (user report: busy flag stayed until the first click). Needs a push to SciQLop/NeoQCP (org repo, ask first) and a pin bump in `subprojects/NeoQCP.wrap` here.
 
-## Evening changes (all reviewed by opencode, pushed to the fork)
+## RELEASED: v0.37.0 (2026-09-21 evening)
+Published on GitHub (tag on upstream at `f351982`) and uploaded to PyPI: 26 files (5 platforms x 5 Pythons + sdist). Nothing about the release is pending. Newer local commits (this note) are docs only.
+
+## Evening changes (all reviewed by opencode)
 - NeoQCP (org main at `2259e0f`, pin bumped): show/hide of a graph or multigraph component after a pan repaints the layer; `setComponentVisible()`; a component re-shown after a cache rebuild is rebuilt; the legend group row and legend item text style changes repaint the legend; legend repaints when the busy symbol toggles.
 - No-join teardown for SciQLop#137 (`00f8057`): destroying a pipeline no longer waits for a running data callback; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads running at aboutToQuit (SciQLopPlots#108). Follow-up issues: SciQLopPlots #109 (resampler join in `SciQLopCurve::clear_resampler`, same family as #137), #110 (colour-by-scalar for line graphs, needs NeoQCP), #111 (product-kind interface for SciQLop, backlog B1), #112 (pipeline / `add_node` hardening leftovers), NeoQCP #38 (mutable `component(i)`, legend setters).
 - Tag `v0.37.0` is on the fork at an OLD commit; the user agreed to a force-push to the fork (never upstream) once everything is green and we are done.
