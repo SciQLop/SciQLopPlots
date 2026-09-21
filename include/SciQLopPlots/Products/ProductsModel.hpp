@@ -41,6 +41,13 @@ class ProductsModel : public QAbstractItemModel
 
     void _insert_node(ProductsModelNode* node, ProductsModelNode* parent);
 
+    //! Announces the removal before the node is freed: the filter models purge their
+    //! per-node state from rowsAboutToBeRemoved, so `delete` must come last.
+    void _remove_child(ProductsModelNode* parent, int row);
+
+    //! Walks \a path like node() does: empty segments and one leading root name are skipped.
+    ProductsModelNode* _resolve(const QStringList& path) const;
+
     void _add_text_mime_data(QMimeData* mime_data, const QModelIndexList& indexes) const;
 
 public:
@@ -70,6 +77,18 @@ public:
      * has a QObject parent) is refused with a warning.
      */
     Q_SLOT void add_node(QStringList path, ProductsModelNode* obj);
+
+    /*!
+     * \brief remove_node Delete the node at \a path and everything below it.
+     *
+     * The path is read like node()'s, so `remove_node(node.path())` works. A missing
+     * path, or the root, is ignored. Empty parent folders are left in place: a folder
+     * may have been published on purpose, remove it explicitly if unwanted.
+     * Called from another thread it does not block: the removal runs later on the
+     * model thread, so node() only stops finding it once that thread has processed
+     * events. Python wrappers of the removed nodes become invalid.
+     */
+    Q_SLOT void remove_node(QStringList path);
 
     static ProductsModelNode* node(const QStringList& path);
 

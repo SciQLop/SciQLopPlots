@@ -48,6 +48,14 @@ void ProductsModel::_add_to_completer(ProductsModelNode* node)
         _add_to_completer(str);
 }
 
+void ProductsModel::_remove_child(ProductsModelNode* parent, int row)
+{
+    beginRemoveRows(make_index(parent), row, row);
+    auto* removed = parent->take_child(row);
+    endRemoveRows();
+    delete removed;
+}
+
 void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* parent)
 {
     // Re-publishing a same-named product replaces the old node. The removal
@@ -57,11 +65,7 @@ void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* par
     {
         if (existing == node)
             return; // already in place — deleting it here would insert a dangling pointer
-        const int row = parent->child_row(existing);
-        beginRemoveRows(make_index(parent), row, row);
-        parent->take_child(row);
-        endRemoveRows();
-        delete existing;
+        _remove_child(parent, parent->child_row(existing));
     }
     beginInsertRows(make_index(parent), parent->children_count(), parent->children_count());
     parent->add_child(node);
@@ -252,24 +256,45 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
     _insert_node(obj, parent);
 }
 
+ProductsModelNode* ProductsModel::_resolve(const QStringList& path) const
+{
+    auto parent = m_rootNode;
+    auto without_root = path;
+    if (!without_root.isEmpty()
+        && (without_root.first().isEmpty() or without_root.first() == parent->name()))
+        without_root.removeFirst();
+    for (const auto& name : without_root)
+    {
+        auto node = parent->child(name);
+        if (node == nullptr)
+            return nullptr;
+        parent = node;
+    }
+    return parent;
+}
+
+void ProductsModel::remove_node(QStringList path)
+{
+    // Same rule as add_node: mutate on the model thread only. Only the path crosses,
+    // so unlike add_node there is nothing to move.
+    if (QThread::currentThread() != thread())
+    {
+        QMetaObject::invokeMethod(this, [this, path] { remove_node(path); },
+                                  Qt::QueuedConnection);
+        return;
+    }
+    auto* node = _resolve(path);
+    if (node == nullptr || node == m_rootNode)
+        return;
+    auto* parent = node->parent_node();
+    _remove_child(parent, parent->child_row(node));
+}
+
 ProductsModelNode* ProductsModel::node(const QStringList& path)
 {
-    if (!path.isEmpty())
-    {
-        auto parent = ProductsModel::instance()->m_rootNode;
-        auto without_root = path;
-        if (without_root.first().isEmpty() or without_root.first() == parent->name())
-            without_root.removeFirst();
-        for (const auto& name : without_root)
-        {
-            auto node = parent->child(name);
-            if (node == nullptr)
-                return nullptr;
-            parent = node;
-        }
-        return parent;
-    }
-    return nullptr;
+    if (path.isEmpty())
+        return nullptr;
+    return ProductsModel::instance()->_resolve(path);
 }
 
 Q_APPLICATION_STATIC(ProductsModel, _products_model);

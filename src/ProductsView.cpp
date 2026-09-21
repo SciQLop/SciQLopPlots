@@ -112,8 +112,9 @@ ProductsView::ProductsView(QWidget* parent) : QWidget(parent)
     m_completion_refresh_timer->setInterval(1000);
     connect(m_completion_refresh_timer, &QTimer::timeout, this,
             &ProductsView::refresh_completions);
-    connect(ProductsModel::instance(), &QAbstractItemModel::rowsInserted, this,
-            [this]() { m_completion_refresh_timer->start(); });
+    for (auto signal : { &QAbstractItemModel::rowsInserted, &QAbstractItemModel::rowsRemoved })
+        connect(ProductsModel::instance(), signal, this,
+                [this]() { m_completion_refresh_timer->start(); });
 
     refresh_completions();
 }

@@ -8,11 +8,11 @@ For a fresh session picking this up. Read this first, then the two other notes:
 
 | | |
 |---|---|
-| Branch | `main`, **28 commits ahead of `origin/main`, nothing pushed** |
+| Branch | `main`, **30 commits ahead of `origin/main`, nothing pushed** |
 | HEAD | third review round fixes (gradient kept across a colormap, inspector drops the colour axes, inspector picks recorded) on top of `2cd1f3a` |
 | Tag | `v0.37.0` on HEAD, **local only** (it was moved several times; safe because never pushed) |
 | Version | 0.37.0 (`meson.build`, `SciQLopPlots/__init__.py`) |
-| Tests | `tests/integration`: **1121 passed, exit 0** |
+| Tests | `tests/integration`: **1133 passed, exit 0** |
 | Working tree | clean |
 | NeoQCP | untouched, pin unchanged |
 | SciQLop repo | never modified (user rule: do not touch it; reading is fine) |
@@ -24,6 +24,10 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 - #141: colour a projection curve by a scalar; one shared scale per projection plot; the same for curves on ordinary plots (`ColorScaleController`); NaN gaps; log; gradient; pinning; line width; components; visibility; shared legend; panel plot stretch; projection graphs fetch on creation.
 - #142: `time_marker_changed` signal; arrow-on-pane spike (works, pixel head).
 - Deferred on purpose: quiver plottable; colour-by-scalar for `SciQLopLineGraph` (needs NeoQCP change, push and pin bump: user consent needed).
+
+## Also done after the colour work
+- `ProductsModel::remove_node(path)` (design challenged by opencode, tests first, 12 tests): path read like `node()`, queued onto the model thread, subtree removed, no pruning of empty parents, root and missing paths ignored, `ProductsView` suggestions refresh on removal too. The `ProductsModel`'s own completer list stays append-only (nothing reads it). **Not reviewed by opencode yet.**
+- Backlog: `docs/backlog-2026-09-21.md` B1, a way for SciQLop to identify product kinds (virtual products, vectors, spectrograms) without SciQLopPlots implementing each.
 
 ## What to do next
 
