@@ -37,7 +37,7 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 
 ## Evening changes (all reviewed by opencode, pushed to the fork)
 - NeoQCP (org main at `2259e0f`, pin bumped): show/hide of a graph or multigraph component after a pan repaints the layer; `setComponentVisible()`; a component re-shown after a cache rebuild is rebuilt; the legend group row and legend item text style changes repaint the legend; legend repaints when the busy symbol toggles.
-- No-join teardown for SciQLop#137 (`00f8057`): destroying a pipeline no longer waits for a running data callback; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads running at aboutToQuit (SciQLopPlots#108). Not yet logged: `SciQLopCurve::clear_resampler` joins its resampler thread on the GUI thread (same family, `src/SciQLopCurve.cpp:71`).
+- No-join teardown for SciQLop#137 (`00f8057`): destroying a pipeline no longer waits for a running data callback; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads running at aboutToQuit (SciQLopPlots#108). Follow-up issues: SciQLopPlots #109 (resampler join in `SciQLopCurve::clear_resampler`, same family as #137), #110 (colour-by-scalar for line graphs, needs NeoQCP), #111 (product-kind interface for SciQLop, backlog B1), #112 (pipeline / `add_node` hardening leftovers), NeoQCP #38 (mutable `component(i)`, legend setters).
 - Tag `v0.37.0` is on the fork at an OLD commit; the user agreed to a force-push to the fork (never upstream) once everything is green and we are done.
 
 ## What to do next
