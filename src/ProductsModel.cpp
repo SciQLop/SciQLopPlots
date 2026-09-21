@@ -48,6 +48,10 @@ void ProductsModel::_add_to_completer(ProductsModelNode* node)
         _add_to_completer(str);
 }
 
+// simplify: remove_node leaves m_completer_model alone. Its entries (name and "key: value"
+// strings) are shared between nodes, and pruning them means walking the whole tree (77k+
+// products). Nothing in this repo reads it; the search bar's own suggestions are rebuilt
+// by ProductsView on removal. Upgrade path: refcounted completer entries.
 void ProductsModel::_remove_child(ProductsModelNode* parent, int row)
 {
     beginRemoveRows(make_index(parent), row, row);

@@ -27,6 +27,8 @@
 #include <QSignalBlocker>
 
 
+static const QString custom_text = "Custom";
+
 QIcon icon(ColorGradient gradient)
 {
     auto gradient_qcp = QCPColorGradient(to_qcp(gradient));
@@ -60,16 +62,22 @@ void ColorGradientDelegate::setGradient(ColorGradient gradient)
 {
     m_gradient = gradient;
     setCurrentIndex(findData(QVariant::fromValue(gradient)));
+    removeCustomEntry();
     emit gradientChanged(gradient);
+}
+
+void ColorGradientDelegate::removeCustomEntry()
+{
+    if (const auto row = findText(custom_text); row >= 0)
+        removeItem(row);
 }
 
 void ColorGradientDelegate::show_custom()
 {
-    static const QString custom = "Custom";
     QSignalBlocker blocker(this);
-    if (findText(custom) < 0)
-        addItem(custom);
-    setCurrentIndex(findText(custom));
+    if (findText(custom_text) < 0)
+        addItem(custom_text);
+    setCurrentIndex(findText(custom_text));
 }
 
 ColorGradient ColorGradientDelegate::gradient() const

@@ -245,6 +245,7 @@ class TestInspectorComboFollowsTheGradient:
         combo.setCurrentIndex(combo.findText("Jet"))
         process_events()
         assert _has_green(_pane_image(proj, tmp_path, "jet_from_custom"))
+        assert combo.findText("Custom") < 0, "a dead Custom entry is left in the popup"
 
 
 class TestScaleGoesAwayWithTheColour:

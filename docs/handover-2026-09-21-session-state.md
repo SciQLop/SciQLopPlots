@@ -8,7 +8,7 @@ For a fresh session picking this up. Read this first, then the two other notes:
 
 | | |
 |---|---|
-| Branch | `main`, **30 commits ahead of `origin/main`, nothing pushed** |
+| Branch | `main`, **31 commits ahead of `origin/main`, nothing pushed** |
 | HEAD | third review round fixes (gradient kept across a colormap, inspector drops the colour axes, inspector picks recorded) on top of `2cd1f3a` |
 | Tag | `v0.37.0` on HEAD, **local only** (it was moved several times; safe because never pushed) |
 | Version | 0.37.0 (`meson.build`, `SciQLopPlots/__init__.py`) |
@@ -26,13 +26,13 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 - Deferred on purpose: quiver plottable; colour-by-scalar for `SciQLopLineGraph` (needs NeoQCP change, push and pin bump: user consent needed).
 
 ## Also done after the colour work
-- `ProductsModel::remove_node(path)` (design challenged by opencode, tests first, 12 tests): path read like `node()`, queued onto the model thread, subtree removed, no pruning of empty parents, root and missing paths ignored, `ProductsView` suggestions refresh on removal too. The `ProductsModel`'s own completer list stays append-only (nothing reads it). **Not reviewed by opencode yet.**
+- `ProductsModel::remove_node(path)` (design challenged by opencode, tests first, 12 tests): path read like `node()`, queued onto the model thread, subtree removed, no pruning of empty parents, root and missing paths ignored, `ProductsView` suggestions refresh on removal too. The `ProductsModel`'s own completer list stays append-only (nothing reads it). Reviewed by opencode (round 9): no defect.
 - Backlog: `docs/backlog-2026-09-21.md` B1, a way for SciQLop to identify product kinds (virtual products, vectors, spectrograms) without SciQLopPlots implementing each.
 
 ## What to do next
 
 0. **Round 6 and 7 are done** (opencode reviewed `2cd1f3a`, challenged the fix plan, reviewed the fixes): gradient requests are now recorded by `ColorScaleController` also during colormap ownership and re-applied on reclaim; `PlotsModel::remove_rows_unchecked` detaches the z/y2 axis nodes; inspector gradient picks go through `plot.set_z_gradient`. Known and left: a colour scale left visible when the controller is disabled and a colormap goes (was never hidden before the controller either).
-1. **Decide with the user: one more opencode review round, or push.** (Round 8 reviewed the inspector-pick fix: no defect. The "Custom" combo entry, the last commit, is unreviewed.) Every round so far found real bugs (once a segfault introduced by my own fix). The last commit `2cd1f3a` touches the colormap-ownership logic again and has been reviewed by nobody. My recommendation was one more round. Run it with the workflow below, brief scope: `git diff 7f32124..HEAD`.
+1. **Decide with the user: one more opencode review round, or push.** (Round 8 reviewed the inspector-pick fix: no defect. Round 9 reviewed the "Custom" combo entry and remove_node: one low-severity defect (dead Custom entry), fixed.) Every round so far found real bugs (once a segfault introduced by my own fix). The last commit `2cd1f3a` touches the colormap-ownership logic again and has been reviewed by nobody. My recommendation was one more round. Run it with the workflow below, brief scope: `git diff 7f32124..HEAD`.
 2. **Push only on the user's explicit request** (global rule). Push `main` and the tag `v0.37.0` to the fork/origin the user names; check `git remote -v` first (a personal-username remote next to an org remote is the tell; never push a feature branch to the upstream org remote). Before opening any PR: `meson wrap update`, rebuild, rerun the full suite (user rule for meson projects).
 3. After pushing: comment on SciQLop #141/#142/#138 with the release link and the ownership/visibility notes. Nothing more until something changes.
 4. Optional, low priority, all listed in the API handover "Still open": nested-panel `set_plot_stretch`, legend/`H` visibility bypass, time marker following zoom (unchecked), quiver.

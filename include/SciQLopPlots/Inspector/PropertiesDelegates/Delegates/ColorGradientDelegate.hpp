@@ -31,6 +31,9 @@ class ColorGradientDelegate : public QComboBox
 
     ColorGradient m_gradient;
 
+    //! The "Custom" entry only exists while the scale shows a gradient that is no preset.
+    void removeCustomEntry();
+
 public:
     ColorGradientDelegate(ColorGradient gradient, QWidget* parent = nullptr);
     virtual ~ColorGradientDelegate() = default;
