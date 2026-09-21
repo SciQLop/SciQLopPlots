@@ -1,7 +1,7 @@
 """ProductsScoreDelegate: colored relevance badges must actually render."""
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QListView, QTextEdit
+from PySide6.QtWidgets import QListView, QTextEdit, QToolButton
 
 from SciQLopPlots import (
     ParameterType, ProductsFlatFilterModel, ProductsModel, ProductsModelNode,
@@ -56,6 +56,11 @@ class TestScoreDelegateRendersBadges:
         bar = view.findChild(QTextEdit)
         assert bar is not None
 
+        # The tree is the default while filtering; the badges are in the flat list, so
+        # ask for it. Grabbing a list hidden behind the tree renders it at whatever
+        # size it happens to have, and its colour count then depends on the platform.
+        next(b for b in view.findChildren(QToolButton) if b.text() == "List").setChecked(True)
+
         # ProductsView contains two QListViews: the real results list
         # (m_list_view, backed by ProductsFlatFilterModel) and the search
         # bar's own internal completion popup (QueryLineEdit's private
@@ -74,6 +79,7 @@ class TestScoreDelegateRendersBadges:
         bar.setPlainText(f"provider:{provider}")
         qtbot.waitUntil(lambda: list_view.model().rowCount() == 3, timeout=5000)
         qtbot.wait(100)
+        assert list_view.isVisible(), "the badges are grabbed from a list that is not shown"
         baseline_colors = _distinct_colors(list_view.grab())
 
         # Keep the provider filter alongside the free-text tokens: a bare
