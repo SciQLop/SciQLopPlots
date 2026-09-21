@@ -141,7 +141,7 @@ void SciQLopGraphComponent::set_visible(bool visible) noexcept
         {
             auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
             if (mg)
-                mg->component(m_componentIndex).visible = visible;
+                mg->setComponentVisible(m_componentIndex, visible);
             emit visible_changed(visible);
             emit replot();
             return;
