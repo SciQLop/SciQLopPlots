@@ -19,25 +19,6 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-// Python C-API for the conditional GIL release in ~DataProviderWorker below.
-// Python.h goes first: it sets libc feature macros that the standard headers
-// would otherwise define first (redefinition warnings). The `slots` guard is
-// still needed for unity builds, where a Qt-including .cpp can precede this
-// one in the same translation unit (Python's object.h has a `slots` member).
-#if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
-#pragma push_macro("slots")
-#undef slots
-#define _SQP_SLOTS_WAS_DEFINED
-#endif
-extern "C"
-{
-#include <Python.h>
-}
-#ifdef _SQP_SLOTS_WAS_DEFINED
-#pragma pop_macro("slots")
-#undef _SQP_SLOTS_WAS_DEFINED
-#endif
-
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include <iostream>
 #include "SciQLopPlots/Debug.hpp"
@@ -236,38 +217,15 @@ void DataProviderInterface::set_data(_NDdata new_state) noexcept
         Q_EMIT _state_changed();
 }
 
-namespace
-{
-// Releases the GIL while the worker thread is joined, iff this thread holds
-// it. Same PyEval_SaveThread/PyEval_RestoreThread mechanism as
-// DSP/python_module.cpp's GILReleaseScope, but conditional: this destructor
-// also runs from non-Python threads that never held the GIL, where
-// PyEval_SaveThread would be an error. Unblocking the join matters because a
-// worker blocked in PyGILState_Ensure would otherwise wait on a GIL the
-// joining (GUI) thread never drops -> deadlock at teardown.
-struct ConditionalGILRelease
-{
-    PyThreadState* m_save = nullptr;
-    ConditionalGILRelease()
-    {
-        if (PyGILState_Check())
-            m_save = PyEval_SaveThread();
-    }
-    ~ConditionalGILRelease()
-    {
-        if (m_save != nullptr)
-            PyEval_RestoreThread(m_save);
-    }
-    ConditionalGILRelease(const ConditionalGILRelease&) = delete;
-    ConditionalGILRelease& operator=(const ConditionalGILRelease&) = delete;
-};
-}
-
+// No join: the worker may be inside a long Python callback, and quit() only takes effect
+// once its event loop gets control back, which would freeze the GUI thread that destroys
+// us for as long as the callback lasts. The thread frees itself when it finishes, so it
+// must not be our child (a running QThread must not be deleted). Whoever owns the provider
+// disconnects its signals first, so a late result is dropped.
 DataProviderWorker::~DataProviderWorker()
 {
-    ConditionalGILRelease release_gil;
+    m_worker_thread->setParent(nullptr);
     m_worker_thread->quit();
-    m_worker_thread->wait();
 }
 
 void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
@@ -276,7 +234,16 @@ void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
     m_data_provider = data_provider;
     m_data_provider->moveToThread(m_worker_thread);
     connect(m_worker_thread, &QThread::finished, m_data_provider, &QObject::deleteLater);
-    connect(m_worker_thread, &QThread::finished, m_worker_thread, &QObject::deleteLater);
+}
+
+SimplePyCallablePipeline::~SimplePyCallablePipeline()
+{
+    QObject::disconnect(m_callable_wrapper, nullptr, this, nullptr);
+}
+
+RemoteDataPipeline::~RemoteDataPipeline()
+{
+    QObject::disconnect(m_provider, nullptr, this, nullptr);
 }
 
 SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable, QObject* parent)

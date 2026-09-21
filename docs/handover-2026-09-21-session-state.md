@@ -35,6 +35,10 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 - Whole-range opencode review + challenge (round 10): fixed the public show/hide_color_scale blind spot, pin lost when a colormap drives the scale, gradient dropped while the curve scale is off, `add_node` with a node from another thread. Left alone: descendants of an added node are not thread-checked; `has_colormap()` now means "colour scale visible".
 - **NeoQCP fix not pushed**: local branch `fix/legend-busy-repaint` (3711b86) in `subprojects/NeoQCP` makes the legend repaint when the busy symbol toggles (user report: busy flag stayed until the first click). Needs a push to SciQLop/NeoQCP (org repo, ask first) and a pin bump in `subprojects/NeoQCP.wrap` here.
 
+## Local, not pushed (as of 2026-09-21 evening)
+- `a75bbd5` + NeoQCP `0718c00` (branch `fix/visibility-repaint` in `subprojects/NeoQCP`, not pushed to the org repo): show/hide of a graph or multigraph component after a pan did not repaint the layer (stale GPU entries). Needs a NeoQCP push, then a pin bump here; do not push SciQLopPlots main before that (it uses `setComponentVisible`).
+- No-join teardown for SciQLop#137: `DataProviderWorker` no longer joins its thread; pipelines disconnect their provider; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads still running at aboutToQuit (SciQLopPlots#108). Not yet logged: `SciQLopCurve::clear_resampler` joins its resampler thread on the GUI thread (same family, `src/SciQLopCurve.cpp:71`).
+
 ## What to do next
 
 0. **Round 6 and 7 are done** (opencode reviewed `2cd1f3a`, challenged the fix plan, reviewed the fixes): gradient requests are now recorded by `ColorScaleController` also during colormap ownership and re-applied on reclaim; `PlotsModel::remove_rows_unchecked` detaches the z/y2 axis nodes; inspector gradient picks go through `plot.set_z_gradient`. Known and left: a colour scale left visible when the controller is disabled and a colormap goes (was never hidden before the controller either).

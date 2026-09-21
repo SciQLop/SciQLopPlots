@@ -124,6 +124,7 @@ public:
     {
         m_worker_thread = new QThread(this);
         m_worker_thread->setObjectName(QStringLiteral("dataProv"));
+        connect(m_worker_thread, &QThread::finished, m_worker_thread, &QObject::deleteLater);
         m_worker_thread->start();
     }
 
@@ -277,7 +278,8 @@ class SimplePyCallablePipeline : public QObject
 public:
     SimplePyCallablePipeline(GetDataPyCallable&& callable, QObject* parent = nullptr);
 
-    virtual ~SimplePyCallablePipeline() = default;
+    //! Cuts the provider off: a callback that returns after us delivers to nobody.
+    virtual ~SimplePyCallablePipeline();
 
     inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
     inline Q_SLOT void call(SciQLopPyBuffer x, SciQLopPyBuffer y) { m_worker->set_data(x, y); }
@@ -312,7 +314,7 @@ class RemoteDataPipeline : public QObject
 
 public:
     RemoteDataPipeline(QObject* parent = nullptr);
-    virtual ~RemoteDataPipeline() = default;
+    virtual ~RemoteDataPipeline();
 
     inline Q_SLOT void call(const SciQLopPlotRange& range) { m_worker->set_range(range); }
 
