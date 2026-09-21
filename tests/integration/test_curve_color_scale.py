@@ -10,11 +10,14 @@ See docs/colour-by-scalar-curves-vs-line-graphs.md.
 """
 import numpy as np
 import pytest
+from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QImage
 
 from SciQLopPlots import (
     ColorGradient,
     GraphType,
+    PlotsModel,
+    SciQLopMultiPlotPanel,
     SciQLopNDProjectionPlot,
     SciQLopPlot,
     SciQLopPlotRange,
@@ -168,7 +171,7 @@ class TestColormapKeepsItsScale:
 
 
 def _bar_hues(plot, tmp_path, name):
-    """Hues in the right quarter of the image: the colour bar."""
+    """Hues in the right fifth of the image: the colour bar."""
     plot.legend().set_visible(False)
     path = tmp_path / f"{name}.png"
     assert plot.save_png(str(path), 400, 300) is True
@@ -227,6 +230,67 @@ class TestColormapGoesAway:
                         timeout=3000)
         assert plot.z_axis().visible() is True
         assert plot.z_auto_range() is True
+
+
+class TestGradientSurvivesTheColormap:
+    def test_a_curve_gradient_asked_during_ownership_shows_when_the_colormap_goes(
+            self, qtbot, plot, tmp_path):
+        """The curve's request was dropped while the colormap owned the scale, so the
+        curves came back in the colormap's Jet."""
+        cmap = _colormap(qtbot, plot)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
+                        timeout=3000)
+        assert plot.z_axis().visible() is True
+        assert _bar_hues(plot, tmp_path, "gray") <= 2
+
+    def test_the_users_gradient_set_during_ownership_is_not_stomped(self, qtbot, plot, tmp_path):
+        cmap = _colormap(qtbot, plot)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.set_z_gradient(ColorGradient.Grayscale)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
+                        timeout=3000)
+        assert _bar_hues(plot, tmp_path, "gray") <= 2
+
+    def test_reclaiming_keeps_the_auto_range(self, qtbot, plot):
+        cmap = _colormap(qtbot, plot)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
+        process_events()
+        assert plot.z_auto_range() is True
+
+
+def _plot_children(panel, plot):
+    model = PlotsModel.instance()
+    for row in range(model.rowCount(QModelIndex())):
+        top = model.index(row, 0, QModelIndex())
+        if PlotsModel.object(top) is not panel:
+            continue
+        for prow in range(model.rowCount(top)):
+            pidx = model.index(prow, 0, top)
+            if PlotsModel.object(pidx) is plot:
+                return [PlotsModel.object(model.index(r, 0, pidx))
+                        for r in range(model.rowCount(pidx))]
+    raise AssertionError("plot not found in the inspector")
+
+
+class TestInspectorFollowsTheScale:
+    def test_the_colour_axes_leave_the_inspector_with_the_colormap(self, qtbot):
+        panel = SciQLopMultiPlotPanel()
+        qtbot.addWidget(panel)
+        plot = SciQLopPlot()
+        panel.add_plot(plot)
+        process_events()
+        cmap = _colormap(qtbot, plot)
+        process_events()
+        assert plot.z_axis() in _plot_children(panel, plot)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), plot.z_axis() not in _plot_children(panel, plot))[1],
+                        timeout=3000)
+        assert plot.y2_axis() not in _plot_children(panel, plot)
 
 
 class TestUserGradientBesideAColormap:

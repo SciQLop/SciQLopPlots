@@ -87,6 +87,9 @@ private:
     void hide();
     void rescale(const std::vector<Source>& coloured);
     void apply_two_stop();
+    void apply_gradient();
+    void reapply_gradient();
+    void remember(::ColorGradient gradient);
 
     SciQLopPlot* m_owner;
     Sources m_sources;
@@ -97,6 +100,7 @@ private:
     bool m_dying = false;
     bool m_had_colormap = false;
     bool m_gradient_chosen = false;
+    std::optional<::ColorGradient> m_preset;
     QColor m_start { 0, 0, 255 };
     QColor m_end { 255, 0, 0 };
 };

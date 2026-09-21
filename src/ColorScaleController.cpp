@@ -79,17 +79,19 @@ void ColorScaleController::set_auto_range(bool enabled)
 
 void ColorScaleController::request_gradient(::ColorGradient gradient)
 {
+    if (!m_enabled)
+        return;
+    remember(gradient);
     if (!foreign())
-        set_gradient(gradient);
+        apply_gradient();
 }
 
 void ColorScaleController::set_gradient(::ColorGradient gradient)
 {
     if (!m_enabled)
         return;
-    m_gradient_chosen = true;
-    if (auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(m_owner->z_axis()))
-        axis->set_color_gradient(gradient);
+    remember(gradient);
+    apply_gradient();
 }
 
 void ColorScaleController::set_gradient_colors(const QColor& start, const QColor& end)
@@ -98,8 +100,24 @@ void ColorScaleController::set_gradient_colors(const QColor& start, const QColor
         return;
     m_start = start;
     m_end = end;
+    m_preset.reset();
     m_gradient_chosen = true;
-    apply_two_stop();
+    apply_gradient();
+}
+
+void ColorScaleController::remember(::ColorGradient gradient)
+{
+    m_preset = gradient;
+    m_gradient_chosen = true;
+}
+
+//! The last gradient asked for wins, also when a colormap held the scale meanwhile.
+void ColorScaleController::apply_gradient()
+{
+    if (!m_preset)
+        return apply_two_stop();
+    if (auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(m_owner->z_axis()))
+        axis->set_color_gradient(*m_preset);
 }
 
 void ColorScaleController::apply_two_stop()
@@ -117,7 +135,7 @@ bool ColorScaleController::show()
     m_owner->show_color_scale();
     m_shown = true;
     if (!m_gradient_chosen)
-        apply_two_stop();
+        apply_gradient();
     return true;
 }
 
@@ -153,6 +171,7 @@ void ColorScaleController::refresh()
         // Its colormap is gone; the bar it left behind is ours to keep or to hide.
         m_had_colormap = false;
         m_shown = m_owner->color_scale()->visible();
+        reapply_gradient();
     }
     std::vector<Source> coloured;
     for (auto& source : m_sources())
@@ -169,6 +188,14 @@ void ColorScaleController::refresh()
         source.attach(m_owner->color_scale());
     if (m_auto_range)
         rescale(coloured);
+}
+
+//! The colormap left its own gradient on the scale. Not a user range change.
+void ColorScaleController::reapply_gradient()
+{
+    m_updating = true;
+    apply_gradient();
+    m_updating = false;
 }
 
 void ColorScaleController::rescale(const std::vector<Source>& coloured)

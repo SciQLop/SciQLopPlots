@@ -125,18 +125,21 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
     if (!parentNode || row < 0 || row + count > parentNode->children_count())
         return false;
 
-    // Non-deletable nodes (axes, components, ...) are never republished once
-    // detached from the tree (no connect_children), so removing their row
-    // here would permanently desync the inspector from the live plot even
-    // though the underlying object survives. Refuse the whole range rather
-    // than partially removing it, since callers always pass a single row.
+    // The user must not delete axes, components, ...: refuse the whole range
+    // rather than partially removing it, since callers always pass a single row.
     for (int i = row; i < row + count; ++i)
     {
         auto child = parentNode->child(i);
         if (child && !child->deletable())
             return false;
     }
+    remove_rows_unchecked(row, count, parent, parentNode);
+    return true;
+}
 
+void PlotsModel::remove_rows_unchecked(int row, int count, const QModelIndex& parent,
+                                       PlotsModelNode* parentNode)
+{
     QList<QPointer<QObject>> deferred_deletes;
 
     beginRemoveRows(parent, row, row + count - 1);
@@ -164,8 +167,6 @@ bool PlotsModel::removeRows(int row, int count, const QModelIndex& parent)
         else
             obj->deleteLater();
     }
-
-    return true;
 }
 
 void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj, int row)
@@ -259,7 +260,7 @@ void PlotsModel::removeChildByObject(PlotsModelNode* parent, QObject* obj)
         return;
     int row = parent->child_row_by_object(obj);
     if (row >= 0)
-        removeRows(row, 1, make_index(parent));
+        remove_rows_unchecked(row, 1, make_index(parent), parent);
 }
 
 void PlotsModel::moveChildByObject(PlotsModelNode* parent, QObject* obj, int dest_row)

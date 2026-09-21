@@ -194,6 +194,7 @@ void SciQLopNDProjectionCurves::_update_color_scale()
 
 void SciQLopNDProjectionCurves::_set_scale_gradient(::ColorGradient gradient)
 {
+    // Not request_z_gradient: projection panes never host a colormap, nothing to keep away.
     if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
         plot->set_z_gradient(gradient);
 }

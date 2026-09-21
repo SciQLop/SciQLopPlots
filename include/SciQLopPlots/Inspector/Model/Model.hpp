@@ -30,6 +30,10 @@ class PlotsModel : public QAbstractItemModel
     PlotsModelNode* m_rootNode;
 
     QModelIndex make_index(PlotsModelNode* node) const;
+    //! Detaches rows without the user-facing deletable() guard. A non-deletable
+    //! object (an axis the plot owns) is only detached from the tree, never deleted.
+    void remove_rows_unchecked(int row, int count, const QModelIndex& parent,
+                               PlotsModelNode* parentNode);
 
 public:
     PlotsModel(QObject* parent = nullptr);
