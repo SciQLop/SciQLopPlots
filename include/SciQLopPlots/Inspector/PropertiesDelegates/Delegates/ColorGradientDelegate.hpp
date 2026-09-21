@@ -36,6 +36,8 @@ public:
     virtual ~ColorGradientDelegate() = default;
 
     void setGradient(ColorGradient gradient);
+    //! The scale shows a gradient that is no preset: say so instead of naming a stale one.
+    void show_custom();
     ColorGradient gradient() const;
 
 

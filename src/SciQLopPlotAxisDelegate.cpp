@@ -97,7 +97,7 @@ void SciQLopPlotAxisDelegate::addWidgetWithLabel(QWidget *widget, const QString 
 //! colormap leaves. The delegate also echoes the axis' own gradient back: not a pick.
 static void choose_gradient(SciQLopPlotColorScaleAxis* axis, ColorGradient gradient)
 {
-    if (axis->color_gradient() == gradient)
+    if (!axis->shows_custom_gradient() && axis->color_gradient() == gradient)
         return;
     axis->set_color_gradient(gradient);
     auto* impl = axis->parent();
@@ -152,6 +152,10 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
                 [color_scale](ColorGradient gradient) { choose_gradient(color_scale, gradient); });
         connect(color_scale, &SciQLopPlotColorScaleAxis::color_gradient_changed,
                 color_scale_delegate, &ColorGradientDelegate::setGradient);
+        connect(color_scale, &SciQLopPlotColorScaleAxis::custom_gradient_set,
+                color_scale_delegate, &ColorGradientDelegate::show_custom);
+        if (color_scale->shows_custom_gradient())
+            color_scale_delegate->show_custom();
         addWidgetWithLabel(color_scale_delegate, "Color gradient");
     }
 

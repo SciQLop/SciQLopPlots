@@ -318,6 +318,7 @@ class SciQLopPlotColorScaleAxis : public SciQLopPlotAxis
     QPointer<QCPColorScale> m_axis;
     ColorGradient m_color_gradient = ColorGradient::Grayscale;
     bool m_color_gradient_set = false;
+    bool m_custom_gradient = false;
 #ifndef BINDINGS_H
     // Lets the owning colormap supply a custom rescale range (e.g. percentile
     // over visible data). Returning nullopt falls back to plain min/max.
@@ -370,6 +371,9 @@ public:
     bool log() const noexcept override;
     QString label() const noexcept override;
     ColorGradient color_gradient() const noexcept;
+    //! True while a gradient that is no preset shows: color_gradient() then only names
+    //! the last preset.
+    bool shows_custom_gradient() const noexcept { return m_custom_gradient; }
     Qt::Orientation orientation() const noexcept override;
     Qt::Axis axis() const noexcept override;
     Qt::AnchorPoint anchor() const noexcept override;
@@ -395,4 +399,5 @@ public:
 signals:
 #endif
     Q_SIGNAL void color_gradient_changed(ColorGradient gradient);
+    Q_SIGNAL void custom_gradient_set();
 };

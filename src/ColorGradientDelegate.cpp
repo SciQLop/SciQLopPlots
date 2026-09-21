@@ -24,6 +24,7 @@
 #include "magic_enum/magic_enum_utility.hpp"
 #include "qcustomplot.h"
 #include <QPainter>
+#include <QSignalBlocker>
 
 
 QIcon icon(ColorGradient gradient)
@@ -42,7 +43,11 @@ ColorGradientDelegate::ColorGradientDelegate(ColorGradient gradient, QWidget* pa
         : QComboBox(parent)
 {
     connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index)
-            { emit gradientChanged(this->itemData(index).value<ColorGradient>()); });
+            {
+                const auto data = this->itemData(index);
+                if (data.isValid())
+                    emit gradientChanged(data.value<ColorGradient>());
+            });
 
     magic_enum::enum_for_each<ColorGradient>(
         [this](ColorGradient gradient) {
@@ -56,6 +61,15 @@ void ColorGradientDelegate::setGradient(ColorGradient gradient)
     m_gradient = gradient;
     setCurrentIndex(findData(QVariant::fromValue(gradient)));
     emit gradientChanged(gradient);
+}
+
+void ColorGradientDelegate::show_custom()
+{
+    static const QString custom = "Custom";
+    QSignalBlocker blocker(this);
+    if (findText(custom) < 0)
+        addItem(custom);
+    setCurrentIndex(findText(custom));
 }
 
 ColorGradient ColorGradientDelegate::gradient() const

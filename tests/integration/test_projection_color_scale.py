@@ -9,8 +9,9 @@ from collections import Counter
 import numpy as np
 import pytest
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QComboBox
 
-from SciQLopPlots import ColorGradient, SciQLopNDProjectionPlot, SciQLopPlotRange
+from SciQLopPlots import ColorGradient, DelegateRegistry, SciQLopNDProjectionPlot, SciQLopPlotRange
 from conftest import process_events
 
 N = 300
@@ -221,6 +222,29 @@ class TestGradientChoice:
         proj.set_z_gradient(ColorGradient.Jet)
         process_events()
         assert _has_green(_pane_image(proj, tmp_path, "jet_again"))
+
+
+class TestInspectorComboFollowsTheGradient:
+    def test_a_two_stop_gradient_reads_custom_and_a_preset_can_be_picked_again(
+            self, qtbot, proj, orbit, tmp_path):
+        """The combo kept naming the last preset while the bar showed a two-stop ramp,
+        and picking that same preset did nothing."""
+        from PySide6.QtGui import QColor
+        graph = _graph(qtbot, proj, orbit)
+        graph.set_data(_three_n(orbit))
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        proj.set_z_gradient(ColorGradient.Jet)
+        delegate = DelegateRegistry.instance().create_delegate(proj.z_axis(), None)
+        qtbot.addWidget(delegate)
+        combo = next(c for c in delegate.findChildren(QComboBox)
+                     if c.metaObject().className() == "ColorGradientDelegate")
+        assert combo.currentText() == "Jet"
+        proj.set_time_color_gradient(QColor("green"), QColor("green"))
+        process_events()
+        assert combo.currentText() == "Custom"
+        combo.setCurrentIndex(combo.findText("Jet"))
+        process_events()
+        assert _has_green(_pane_image(proj, tmp_path, "jet_from_custom"))
 
 
 class TestScaleGoesAwayWithTheColour:

@@ -601,6 +601,7 @@ void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient)
     {
         m_color_gradient = gradient;
         m_color_gradient_set = true;
+        m_custom_gradient = false;
         QCPColorGradient new_gradient = to_qcp(gradient);
         new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
         m_axis->setGradient(new_gradient);
@@ -615,8 +616,10 @@ void SciQLopPlotColorScaleAxis::set_custom_gradient(const QCPColorGradient& grad
     if (m_axis.isNull())
         return;
     m_color_gradient_set = false;
+    m_custom_gradient = true;
     m_axis->setGradient(gradient);
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    Q_EMIT custom_gradient_set();
 }
 
 SciQLopPlotRange SciQLopPlotColorScaleAxis::range() const noexcept
