@@ -8,11 +8,11 @@ For a fresh session picking this up. Read this first, then the two other notes:
 
 | | |
 |---|---|
-| Branch | `main`, **31 commits ahead of `origin/main`, nothing pushed** |
+| Branch | `main`, pushed to the fork `origin` up to `ff5fa4a` (CI green on tests); 2 newer commits local |
 | HEAD | third review round fixes (gradient kept across a colormap, inspector drops the colour axes, inspector picks recorded) on top of `2cd1f3a` |
 | Tag | `v0.37.0` on HEAD, **local only** (it was moved several times; safe because never pushed) |
 | Version | 0.37.0 (`meson.build`, `SciQLopPlots/__init__.py`) |
-| Tests | `tests/integration`: **1133 passed, exit 0** |
+| Tests | `tests/integration`: **1143 passed, exit 0** |
 | Working tree | clean |
 | NeoQCP | untouched, pin unchanged |
 | SciQLop repo | never modified (user rule: do not touch it; reading is fine) |
@@ -28,6 +28,12 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 ## Also done after the colour work
 - `ProductsModel::remove_node(path)` (design challenged by opencode, tests first, 12 tests): path read like `node()`, queued onto the model thread, subtree removed, no pruning of empty parents, root and missing paths ignored, `ProductsView` suggestions refresh on removal too. The `ProductsModel`'s own completer list stays append-only (nothing reads it). Reviewed by opencode (round 9): no defect.
 - Backlog: `docs/backlog-2026-09-21.md` B1, a way for SciQLop to identify product kinds (virtual products, vectors, spectrograms) without SciQLopPlots implementing each.
+
+## After the push (2026-09-21 afternoon)
+- CI failure on the first push was a test problem (score-delegate test grabbed a hidden list); fixed in `ff5fa4a`, Tests green. Wheel builds were still running.
+- Tag `v0.37.0` is on the fork at the OLD commit `2f9e264`. User agreed to a force-push of the tag to the fork (never upstream) once we are done and ready.
+- Whole-range opencode review + challenge (round 10): fixed the public show/hide_color_scale blind spot, pin lost when a colormap drives the scale, gradient dropped while the curve scale is off, `add_node` with a node from another thread. Left alone: descendants of an added node are not thread-checked; `has_colormap()` now means "colour scale visible".
+- **NeoQCP fix not pushed**: local branch `fix/legend-busy-repaint` (3711b86) in `subprojects/NeoQCP` makes the legend repaint when the busy symbol toggles (user report: busy flag stayed until the first click). Needs a push to SciQLop/NeoQCP (org repo, ask first) and a pin bump in `subprojects/NeoQCP.wrap` here.
 
 ## What to do next
 
