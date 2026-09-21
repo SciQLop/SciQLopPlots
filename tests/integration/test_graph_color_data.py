@@ -159,6 +159,7 @@ class TestNaNInColorData:
         plain, gapped = SciQLopPlot(), SciQLopPlot()
         for p in (plain, gapped):
             qtbot.addWidget(p)
+        gapped.set_curve_color_scale_enabled(False)  # the colour bar would add ink
         _curve(qtbot, plain, spiral)
         colours = spiral[2].copy()
         colours[N // 2:] = np.nan

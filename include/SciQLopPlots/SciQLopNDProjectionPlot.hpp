@@ -26,6 +26,7 @@
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include <limits>
 
+class ColorScaleController;
 class SciQLopNDProjectionCurves;
 
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface
@@ -42,22 +43,15 @@ protected:
     bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
     bool m_enforcing_aspect = false;
-    bool m_z_auto_range = true;
     bool m_shared_legend = false;
-    bool m_updating_z = false;
-    //! Once the gradient was chosen, the default ramp no longer replaces it.
-    bool m_z_gradient_chosen = false;
-    QColor m_time_color_start { 0, 0, 255 };
-    QColor m_time_color_end { 255, 0, 0 };
+    ColorScaleController* m_scale = nullptr;
     QList<QCPItemEllipse*> m_time_markers;
     double m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     QPointer<SciQLopTheme> m_theme;
 
     Q_SLOT void _enforce_equal_aspect();
     void _ensure_marker_layer();
-    void _wire_color_scale(SciQLopPlot* owner);
-    void _apply_two_stop_z_gradient();
-    void _rescale_color_scale(const QList<SciQLopNDProjectionCurves*>& graphs);
+    void _setup_color_scale();
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -151,7 +145,7 @@ public:
     }
     //! While on (the default) the scale range follows the coloured data of all graphs;
     //! setting the range through z_axis() switches it off.
-    inline bool z_auto_range() const noexcept { return m_z_auto_range; }
+    bool z_auto_range() const noexcept;
     void set_z_auto_range(bool enabled);
 #ifndef BINDINGS_H
     //! For the graphs only: called when their colour scalar changes or they go away.
