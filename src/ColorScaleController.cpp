@@ -126,17 +126,17 @@ void ColorScaleController::apply_two_stop()
         axis->set_custom_gradient(SciQLopTimeColoredCurve::two_stop_gradient(m_start, m_end));
 }
 
-bool ColorScaleController::show()
+void ColorScaleController::show()
 {
     if (m_shown)
-        return true;
-    if (m_owner->color_scale()->visible())
-        return false;
-    m_owner->show_color_scale();
+        return;
+    // A bar shown by hand (public show_color_scale()) and no colormap: the curves
+    // are its only users, so adopt it. hosts_colormap() is checked before show().
+    if (!m_owner->color_scale()->visible())
+        m_owner->show_color_scale();
     m_shown = true;
     if (!m_gradient_chosen)
         apply_gradient();
-    return true;
 }
 
 void ColorScaleController::hide()
@@ -182,8 +182,7 @@ void ColorScaleController::refresh()
         hide();
         return;
     }
-    if (!show())
-        return;
+    show();
     for (const auto& source : coloured)
         source.attach(m_owner->color_scale());
     if (m_auto_range)

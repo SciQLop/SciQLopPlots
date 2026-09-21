@@ -243,6 +243,13 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
                                   Qt::QueuedConnection);
         return;
     }
+    // Qt refuses to parent across threads, which would leave the node listed but unowned.
+    if (obj->thread() != thread())
+    {
+        qWarning() << "ProductsModel::add_node: refusing" << obj->name()
+                   << "- it lives in another thread and can only be moved by that thread";
+        return;
+    }
     auto parent = m_rootNode;
     for (const auto& name : path)
     {

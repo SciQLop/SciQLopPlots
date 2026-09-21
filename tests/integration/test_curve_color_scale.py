@@ -107,6 +107,24 @@ class TestOneScaleForSeveralCurves:
         assert _range(plot) == (pytest.approx(0.0), pytest.approx(30.0))
 
 
+class TestScaleShownByHand:
+    def test_a_curve_uses_a_scale_that_was_already_shown(self, qtbot, plot):
+        """show_color_scale() is public: with the bar already up, the first coloured
+        curve was never attached to it and the range stayed at the axis' default."""
+        plot.show_color_scale()
+        _curve(qtbot, plot).set_color_data(np.linspace(2.0, 7.0, N), ColorGradient.Jet)
+        assert _range(plot) == (pytest.approx(2.0), pytest.approx(7.0))
+
+    def test_a_pinned_range_drives_a_curve_on_a_scale_shown_by_hand(self, qtbot, plot, tmp_path):
+        plot.show_color_scale()
+        curve = _curve(qtbot, plot)
+        curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        wide = _hues(_image(plot, tmp_path, "auto"))
+        plot.z_axis().set_range(SciQLopPlotRange(0.0, 300.0))
+        process_events()
+        assert _hues(_image(plot, tmp_path, "pinned")) < wide
+
+
 class TestScaleControls:
     def test_setting_the_range_pins_it(self, qtbot, plot):
         curve = _curve(qtbot, plot)
@@ -277,6 +295,20 @@ def _plot_children(panel, plot):
                 return [PlotsModel.object(model.index(r, 0, pidx))
                         for r in range(model.rowCount(pidx))]
     raise AssertionError("plot not found in the inspector")
+
+
+class TestPinSurvivesTheColormap:
+    def test_a_pinned_range_comes_back_when_the_colormap_goes(self, qtbot, plot):
+        curve = _curve(qtbot, plot)
+        curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.z_axis().set_range(SciQLopPlotRange(0.0, 50.0))
+        assert plot.z_auto_range() is False
+        cmap = _colormap(qtbot, plot)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
+        process_events()
+        assert plot.z_auto_range() is False
+        assert _range(plot) == (pytest.approx(0.0), pytest.approx(50.0))
 
 
 class TestInspectorFollowsTheScale:

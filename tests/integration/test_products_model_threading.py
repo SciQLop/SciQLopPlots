@@ -95,3 +95,17 @@ class TestAddNodeFromWorkerThread:
         assert model.rowCount() == n0
         assert ProductsModel.node([name]) is None
 
+
+    def test_node_built_on_a_worker_but_added_from_the_model_thread_is_refused(self, qtbot):
+        """Only the worker-thread call was checked: a node made off-thread and added on
+        the model thread was appended to the tree, but Qt refused to parent it, so the
+        model listed a node it did not own."""
+        model = ProductsModel.instance()
+        name = f"split_thread_{uuid.uuid4().hex[:8]}"
+        built = []
+        _run_in_worker(lambda: built.append(ProductsModelNode(name)))
+        n0 = model.rowCount()
+        model.add_node([], built[0])
+        _flush(20)
+        assert model.rowCount() == n0
+        assert ProductsModel.node([name]) is None

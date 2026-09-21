@@ -83,7 +83,7 @@ private:
     //! Lets go of the curves without hiding the scale, which a colormap now uses.
     void yield();
     void refresh();
-    bool show();
+    void show();
     void hide();
     void rescale(const std::vector<Source>& coloured);
     void apply_two_stop();
