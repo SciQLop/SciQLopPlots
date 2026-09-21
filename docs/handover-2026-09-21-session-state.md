@@ -12,7 +12,7 @@ For a fresh session picking this up. Read this first, then the two other notes:
 | HEAD | third review round fixes (gradient kept across a colormap, inspector drops the colour axes, inspector picks recorded) on top of `2cd1f3a` |
 | Tag | `v0.37.0` on HEAD, **local only** (it was moved several times; safe because never pushed) |
 | Version | 0.37.0 (`meson.build`, `SciQLopPlots/__init__.py`) |
-| Tests | `tests/integration`: **1143 passed, exit 0** |
+| Tests | `tests/integration`: **1147 passed, exit 0** |
 | Working tree | clean |
 | NeoQCP | untouched, pin unchanged |
 | SciQLop repo | never modified (user rule: do not touch it; reading is fine) |
@@ -35,9 +35,10 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 - Whole-range opencode review + challenge (round 10): fixed the public show/hide_color_scale blind spot, pin lost when a colormap drives the scale, gradient dropped while the curve scale is off, `add_node` with a node from another thread. Left alone: descendants of an added node are not thread-checked; `has_colormap()` now means "colour scale visible".
 - **NeoQCP fix not pushed**: local branch `fix/legend-busy-repaint` (3711b86) in `subprojects/NeoQCP` makes the legend repaint when the busy symbol toggles (user report: busy flag stayed until the first click). Needs a push to SciQLop/NeoQCP (org repo, ask first) and a pin bump in `subprojects/NeoQCP.wrap` here.
 
-## Local, not pushed (as of 2026-09-21 evening)
-- `a75bbd5` + NeoQCP `0718c00` (branch `fix/visibility-repaint` in `subprojects/NeoQCP`, not pushed to the org repo): show/hide of a graph or multigraph component after a pan did not repaint the layer (stale GPU entries). Needs a NeoQCP push, then a pin bump here; do not push SciQLopPlots main before that (it uses `setComponentVisible`).
-- No-join teardown for SciQLop#137: `DataProviderWorker` no longer joins its thread; pipelines disconnect their provider; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads still running at aboutToQuit (SciQLopPlots#108). Not yet logged: `SciQLopCurve::clear_resampler` joins its resampler thread on the GUI thread (same family, `src/SciQLopCurve.cpp:71`).
+## Evening changes (all reviewed by opencode, pushed to the fork)
+- NeoQCP (org main at `2259e0f`, pin bumped): show/hide of a graph or multigraph component after a pan repaints the layer; `setComponentVisible()`; a component re-shown after a cache rebuild is rebuilt; the legend group row and legend item text style changes repaint the legend; legend repaints when the busy symbol toggles.
+- No-join teardown for SciQLop#137 (`00f8057`): destroying a pipeline no longer waits for a running data callback; 4 tests in `test_pipeline_teardown_does_not_wait.py`. Deferred: threads running at aboutToQuit (SciQLopPlots#108). Not yet logged: `SciQLopCurve::clear_resampler` joins its resampler thread on the GUI thread (same family, `src/SciQLopCurve.cpp:71`).
+- Tag `v0.37.0` is on the fork at an OLD commit; the user agreed to a force-push to the fork (never upstream) once everything is green and we are done.
 
 ## What to do next
 
