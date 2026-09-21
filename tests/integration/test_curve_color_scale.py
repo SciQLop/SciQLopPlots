@@ -311,6 +311,80 @@ class TestPinSurvivesTheColormap:
         assert _range(plot) == (pytest.approx(0.0), pytest.approx(50.0))
 
 
+class TestPinAgainstAColormapThatDrivesTheScale:
+    def test_a_pin_survives_a_colormap_that_rescales_the_scale(self, qtbot, plot):
+        """A callable colormap delivers its data after it was added and then drives the
+        shared scale to its own range: the pin set before it was lost on reclaim."""
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.z_axis().set_range(SciQLopPlotRange(0.0, 50.0))
+
+        def data(start, stop):
+            x = np.linspace(start, stop, 50).astype(np.float64)
+            y = np.linspace(0, 5, 30).astype(np.float64)
+            return x, y, 100.0 + 10.0 * np.random.rand(30, 50)
+
+        cmap = plot.colormap(data)
+        plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
+        qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
+        process_events()
+        assert _range(plot) != (pytest.approx(0.0), pytest.approx(50.0)), "the colormap never drove the scale"
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
+        process_events()
+        assert plot.z_auto_range() is False
+        assert _range(plot) == (pytest.approx(0.0), pytest.approx(50.0))
+
+    def test_a_pin_survives_an_explicit_rescale_beside_a_colormap(self, qtbot, plot):
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.z_axis().set_range(SciQLopPlotRange(0.0, 50.0))
+        cmap = _colormap(qtbot, plot)
+        plot.z_axis().rescale()
+        process_events()
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
+        process_events()
+        assert _range(plot) == (pytest.approx(0.0), pytest.approx(50.0))
+
+
+class TestScaleShownAndHiddenByHand:
+    def test_a_gradient_picked_before_the_curve_shows_on_a_scale_shown_by_hand(
+            self, qtbot, plot, tmp_path):
+        plot.show_color_scale()
+        plot.set_z_gradient(ColorGradient.Grayscale)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        assert _bar_hues(plot, tmp_path, "gray") <= 2
+
+    def test_a_scale_shown_by_hand_goes_with_the_last_coloured_curve(self, qtbot, plot):
+        plot.show_color_scale()
+        curve = _curve(qtbot, plot)
+        curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        curve.set_color_data(np.array([]), ColorGradient.Jet)
+        process_events()
+        assert plot.z_axis().visible() is False
+
+    def test_a_scale_hidden_by_hand_comes_back_with_the_next_coloured_curve(self, qtbot, plot):
+        first = _curve(qtbot, plot)
+        first.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        plot.hide_color_scale()
+        assert plot.z_axis().visible() is False
+        second = _curve(qtbot, plot)
+        second.set_color_data(np.linspace(1.0, 4.0, N), ColorGradient.Jet)
+        process_events()
+        assert plot.z_axis().visible() is True
+        assert _range(plot) == (pytest.approx(0.0), pytest.approx(4.0))
+
+
+class TestGradientChosenWhileDisabled:
+    def test_a_gradient_set_while_the_curve_scale_is_off_applies_when_it_is_back(
+            self, qtbot, plot, tmp_path):
+        plot.set_curve_color_scale_enabled(False)
+        plot.set_z_gradient(ColorGradient.Grayscale)
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        plot.set_curve_color_scale_enabled(True)
+        process_events()
+        assert _bar_hues(plot, tmp_path, "gray") <= 2
+
+
 class TestInspectorFollowsTheScale:
     def test_the_colour_axes_leave_the_inspector_with_the_colormap(self, qtbot):
         panel = SciQLopMultiPlotPanel()

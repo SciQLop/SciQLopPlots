@@ -8,10 +8,13 @@ ColorScaleController::ColorScaleController(SciQLopPlot* owner, Sources sources, 
         : QObject(parent), m_owner(owner), m_sources(std::move(sources))
 {
     connect(owner->z_axis(), &SciQLopPlotAxisInterface::range_changed, this,
-            [this](const SciQLopPlotRange&)
+            [this](const SciQLopPlotRange& range)
             {
                 if (m_enabled && !m_updating && !foreign())
+                {
                     m_auto_range = false;
+                    m_pinned = range;
+                }
             });
     // Once the plot starts to go, its children are half destroyed: stay out of them.
     // (A plot whose destructor body deletes graphs calls quiesce() first.)
@@ -79,30 +82,26 @@ void ColorScaleController::set_auto_range(bool enabled)
 
 void ColorScaleController::request_gradient(::ColorGradient gradient)
 {
-    if (!m_enabled)
-        return;
     remember(gradient);
-    if (!foreign())
+    if (m_enabled && !foreign())
         apply_gradient();
 }
 
 void ColorScaleController::set_gradient(::ColorGradient gradient)
 {
-    if (!m_enabled)
-        return;
     remember(gradient);
-    apply_gradient();
+    if (m_enabled)
+        apply_gradient();
 }
 
 void ColorScaleController::set_gradient_colors(const QColor& start, const QColor& end)
 {
-    if (!m_enabled)
-        return;
     m_start = start;
     m_end = end;
     m_preset.reset();
     m_gradient_chosen = true;
-    apply_gradient();
+    if (m_enabled)
+        apply_gradient();
 }
 
 void ColorScaleController::remember(::ColorGradient gradient)
@@ -128,14 +127,13 @@ void ColorScaleController::apply_two_stop()
 
 void ColorScaleController::show()
 {
-    if (m_shown)
-        return;
-    // A bar shown by hand (public show_color_scale()) and no colormap: the curves
-    // are its only users, so adopt it. hosts_colormap() is checked before show().
+    // Someone may have shown or hidden the bar by hand (public show/hide_color_scale()):
+    // trust the bar, not m_shown. A bar shown by hand and no colormap is ours to use.
+    const bool fresh = !m_shown || !m_owner->color_scale()->visible();
     if (!m_owner->color_scale()->visible())
         m_owner->show_color_scale();
     m_shown = true;
-    if (!m_gradient_chosen)
+    if (fresh)
         apply_gradient();
 }
 
@@ -172,6 +170,7 @@ void ColorScaleController::refresh()
         m_had_colormap = false;
         m_shown = m_owner->color_scale()->visible();
         reapply_gradient();
+        restore_pin();
     }
     std::vector<Source> coloured;
     for (auto& source : m_sources())
@@ -187,6 +186,16 @@ void ColorScaleController::refresh()
         source.attach(m_owner->color_scale());
     if (m_auto_range)
         rescale(coloured);
+}
+
+//! The colormap may have driven the shared range while the curves had let go of it.
+void ColorScaleController::restore_pin()
+{
+    if (m_auto_range || !m_pinned)
+        return;
+    m_updating = true;
+    m_owner->z_axis()->set_range(*m_pinned);
+    m_updating = false;
 }
 
 //! The colormap left its own gradient on the scale. Not a user range change.

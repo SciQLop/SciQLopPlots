@@ -17,6 +17,7 @@
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QColor>
 #include <QObject>
@@ -89,6 +90,7 @@ private:
     void apply_two_stop();
     void apply_gradient();
     void reapply_gradient();
+    void restore_pin();
     void remember(::ColorGradient gradient);
 
     SciQLopPlot* m_owner;
@@ -101,6 +103,7 @@ private:
     bool m_had_colormap = false;
     bool m_gradient_chosen = false;
     std::optional<::ColorGradient> m_preset;
+    std::optional<SciQLopPlotRange> m_pinned;
     QColor m_start { 0, 0, 255 };
     QColor m_end { 255, 0, 0 };
 };
