@@ -12,9 +12,11 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QModelIndex
 from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QComboBox
 
 from SciQLopPlots import (
     ColorGradient,
+    DelegateRegistry,
     GraphType,
     PlotsModel,
     SciQLopMultiPlotPanel,
@@ -291,6 +293,39 @@ class TestInspectorFollowsTheScale:
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis() not in _plot_children(panel, plot))[1],
                         timeout=3000)
         assert plot.y2_axis() not in _plot_children(panel, plot)
+
+
+def _pick_in_inspector(qtbot, plot, gradient_name):
+    delegate = DelegateRegistry.instance().create_delegate(plot.z_axis(), None)
+    qtbot.addWidget(delegate)
+    combo = next(c for c in delegate.findChildren(QComboBox)
+                 if c.metaObject().className() == "ColorGradientDelegate")
+    combo.setCurrentIndex(combo.findText(gradient_name))
+    process_events()
+    return delegate
+
+
+class TestInspectorGradientIsRemembered:
+    def test_a_gradient_picked_in_the_inspector_survives_a_colormap(self, qtbot, plot, tmp_path):
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        delegate = _pick_in_inspector(qtbot, plot, "Grayscale")
+        assert _bar_hues(plot, tmp_path, "picked") <= 2
+        cmap = _colormap(qtbot, plot)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
+                        timeout=3000)
+        assert _bar_hues(plot, tmp_path, "after") <= 2
+        del delegate
+
+    def test_an_open_inspector_does_not_record_the_colormaps_own_gradient(self, qtbot, plot, tmp_path):
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        delegate = _pick_in_inspector(qtbot, plot, "Grayscale")
+        cmap = _colormap(qtbot, plot)
+        plot.remove_plottable(cmap)
+        qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
+                        timeout=3000)
+        assert _bar_hues(plot, tmp_path, "after") <= 2
+        del delegate
 
 
 class TestUserGradientBesideAColormap:

@@ -93,6 +93,18 @@ void SciQLopPlotAxisDelegate::addWidgetWithLabel(QWidget *widget, const QString 
     m_layout->addRow(layout);
 }
 
+//! The plot's controller must learn of a user's pick, or it would replace it when a
+//! colormap leaves. The delegate also echoes the axis' own gradient back: not a pick.
+static void choose_gradient(SciQLopPlotColorScaleAxis* axis, ColorGradient gradient)
+{
+    if (axis->color_gradient() == gradient)
+        return;
+    axis->set_color_gradient(gradient);
+    auto* impl = axis->parent();
+    if (auto* plot = qobject_cast<SciQLopPlot*>(impl ? impl->parent() : nullptr))
+        plot->set_z_gradient(gradient);
+}
+
 SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* object, QWidget* parent)
         : PropertyDelegateBase(object, parent)
 {
@@ -136,8 +148,8 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
     {
         auto* color_scale_delegate
             = new ColorGradientDelegate(color_scale->color_gradient(), this);
-        connect(color_scale_delegate, &ColorGradientDelegate::gradientChanged,
-                color_scale, &SciQLopPlotColorScaleAxis::set_color_gradient);
+        connect(color_scale_delegate, &ColorGradientDelegate::gradientChanged, color_scale,
+                [color_scale](ColorGradient gradient) { choose_gradient(color_scale, gradient); });
         connect(color_scale, &SciQLopPlotColorScaleAxis::color_gradient_changed,
                 color_scale_delegate, &ColorGradientDelegate::setGradient);
         addWidgetWithLabel(color_scale_delegate, "Color gradient");

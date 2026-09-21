@@ -8,11 +8,11 @@ For a fresh session picking this up. Read this first, then the two other notes:
 
 | | |
 |---|---|
-| Branch | `main`, **24 commits ahead of `origin/main`, nothing pushed** |
-| HEAD | `2cd1f3a fix(curves): second review round on the colour scale` |
+| Branch | `main`, **27 commits ahead of `origin/main`, nothing pushed** |
+| HEAD | third review round fixes (gradient kept across a colormap, inspector drops the colour axes, inspector picks recorded) on top of `2cd1f3a` |
 | Tag | `v0.37.0` on HEAD, **local only** (it was moved several times; safe because never pushed) |
 | Version | 0.37.0 (`meson.build`, `SciQLopPlots/__init__.py`) |
-| Tests | `tests/integration`: **1114 passed, exit 0** |
+| Tests | `tests/integration`: **1120 passed, exit 0** |
 | Working tree | clean |
 | NeoQCP | untouched, pin unchanged |
 | SciQLop repo | never modified (user rule: do not touch it; reading is fine) |
@@ -27,7 +27,8 @@ Issues #138, #141, #142 on SciQLop have up-to-date comments from me (plan, shipp
 
 ## What to do next
 
-1. **Decide with the user: one more opencode review round, or push.** Every round so far found real bugs (once a segfault introduced by my own fix). The last commit `2cd1f3a` touches the colormap-ownership logic again and has been reviewed by nobody. My recommendation was one more round. Run it with the workflow below, brief scope: `git diff 7f32124..HEAD`.
+0. **Round 6 and 7 are done** (opencode reviewed `2cd1f3a`, challenged the fix plan, reviewed the fixes): gradient requests are now recorded by `ColorScaleController` also during colormap ownership and re-applied on reclaim; `PlotsModel::remove_rows_unchecked` detaches the z/y2 axis nodes; inspector gradient picks go through `plot.set_z_gradient`. Known and left: a colour scale left visible when the controller is disabled and a colormap goes (was never hidden before the controller either).
+1. **Decide with the user: one more opencode review round, or push.** (The last round-7 commit's inspector fix is unreviewed.) Every round so far found real bugs (once a segfault introduced by my own fix). The last commit `2cd1f3a` touches the colormap-ownership logic again and has been reviewed by nobody. My recommendation was one more round. Run it with the workflow below, brief scope: `git diff 7f32124..HEAD`.
 2. **Push only on the user's explicit request** (global rule). Push `main` and the tag `v0.37.0` to the fork/origin the user names; check `git remote -v` first (a personal-username remote next to an org remote is the tell; never push a feature branch to the upstream org remote). Before opening any PR: `meson wrap update`, rebuild, rerun the full suite (user rule for meson projects).
 3. After pushing: comment on SciQLop #141/#142/#138 with the release link and the ownership/visibility notes. Nothing more until something changes.
 4. Optional, low priority, all listed in the API handover "Still open": nested-panel `set_plot_stretch`, legend/`H` visibility bypass, time marker following zoom (unchecked), quiver.
