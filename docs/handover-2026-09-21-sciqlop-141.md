@@ -8,7 +8,7 @@ Written 2026-09-21. Everything below is committed on `main` locally. **Nothing i
 |---|---|
 | Branch | `main`, ahead of `origin/main` (unpushed) |
 | Version | `0.37.0` (meson.build, `SciQLopPlots/__init__.py`) |
-| Tests | `tests/integration`: 1106 passed, exit 0 (run recipe below) |
+| Tests | `tests/integration`: 1110 passed, exit 0 (run recipe below) |
 | Reviews | 4 opencode review rounds over the range; findings fixed or answered in the commit messages |
 | NeoQCP | unchanged, pin untouched |
 
@@ -43,7 +43,7 @@ plot.z_axis().set_log(True); plot.z_axis().set_label("n [cm^-3]")
 plot.set_z_gradient(ColorGradient.Thermal); plot.set_z_auto_range(True)
 plot.set_curve_color_scale_enabled(False)   # old behaviour: own range and gradient, no scale
 ```
-The plot's own colour scale (the one colormaps use) now serves its coloured curves, with the same rules as a projection plot: shown while a curve carries a scalar, range follows all coloured curves until set through `z_axis()`, hidden when none does. A colormap on the plot keeps the scale to itself. **Behaviour change:** `set_color_data` on a curve now draws a colour bar. Why curves and not line graphs: `docs/colour-by-scalar-curves-vs-line-graphs.md`.
+The plot's own colour scale (the one colormaps use) now serves its coloured curves, with the same rules as a projection plot: shown while a curve carries a scalar, range follows all coloured curves until set through `z_axis()`, hidden when none does. A colormap on the plot keeps the scale to itself, whichever of the two came first: a colormap added after a curve took the scale takes it over, and the curves fall back to their own range and gradient. A hidden coloured graph does not count, so hiding the only one hides the bar. **Behaviour change:** `set_color_data` on a curve now draws a colour bar. Why curves and not line graphs: `docs/colour-by-scalar-curves-vs-line-graphs.md`.
 
 ### Follow the time marker (#142)
 `proj.time_marker_changed(t: float)` fires when the marker moves, `nan` when cleared, silent when unchanged. Nothing in this library moves the marker on cursor movement: that producer, and any throttling, are SciQLop's.
@@ -69,6 +69,7 @@ A `SciQLopCurvedLineItem(pane, start, stop, NoneTermination, Arrow, Coordinates.
 | Quiver plottable (#142) | SciQLopPlots | Deferred by choice. Depends on the shared scale, which now exists. |
 | `remove_graph` on `ProjectionPlot`, `color_by=`, `ColorBy`, `SpeasyVariable` returns, `Graph` colour properties, inspector/templates, `describe_panel` | SciQLop | `SciQLopPlotInterface.remove_plottable(graph)` exists here and deletes the graph. |
 | Layer `Depends`, `MarkerTime` producer, typed annotation renderer, arrow scale key | SciQLop | See #142. |
+| `set_plot_stretch` inside a nested panel | SciQLopPlots | It re-organizes only the top-level container, so a plot in a sub-panel keeps an even height. Fix: organize `plot->parentWidget()`'s container. Not done (low). |
 | Time marker follows zoom? | SciQLopPlots | `set_time_marker` stores pixel coordinates once; not checked whether they follow later zoom/pan. |
 | `SciQLopPlotColorScaleAxis` is not exposed to Python | SciQLopPlots | Registering it breaks `SciQLopColorMapBase`'s wrapper (abstract). Gradient goes through `proj.set_z_gradient` instead. |
 
@@ -93,6 +94,7 @@ One build or test invocation at a time against `build-venv`.
 - **Signals.** A new signal on a bound class must sit between `#ifdef BINDINGS_H` / `signals:` / `#endif` and a following `#ifdef BINDINGS_H` / `public:` / `#endif` (see `SciQLopPlotInterface.hpp` around line 517). A bare `Q_SIGNAL` among public members works in an incremental build but is exposed as a plain method after a clean regeneration.
 - **Do not register `SciQLopPlotColorScaleAxis`** in `bindings.xml` (see above).
 - **Rendering tests.** Count saturated pixels or crop, never total ink (axes, legend and the colour bar add pixels). `QRhiWidget.grab()` is black offscreen; use `save_png`. Run a new test against the build without the fix before trusting it: two "reproducers" here passed without it.
+- **Teardown.** Anything that reacts to `graph_list_changed` and walks the plot's children must go quiet once the plot is being destroyed (`ColorScaleController::m_dying`), or it touches half-destroyed graphs (segfault at the end of a test).
 - **`ls` is an alias** on this machine that prints the project root when its argument does not exist.
 
 ## Not verified

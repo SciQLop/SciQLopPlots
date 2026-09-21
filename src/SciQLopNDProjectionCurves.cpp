@@ -234,9 +234,10 @@ qreal SciQLopNDProjectionCurves::line_width() const
 
 void SciQLopNDProjectionCurves::set_visible(bool visible) noexcept
 {
-    const bool changed = this->visible() != visible;
+    const bool changed = !m_curves.isEmpty() && this->visible() != visible;
     for (auto* curve : std::as_const(m_curves))
         curve->set_visible(visible);
+    _update_color_scale();
     if (changed)
         Q_EMIT visible_changed(visible);
 }

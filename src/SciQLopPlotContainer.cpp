@@ -226,5 +226,6 @@ void SciQLopPlotContainer::organize_plots()
     const auto total_weight = std::accumulate(weights.cbegin(), weights.cend(), 0);
     for (int i = 0; i < _sizes.size(); ++i)
         _sizes[i] = total_height * weights[i] / total_weight;
+    _sizes.last() += total_height - std::accumulate(_sizes.cbegin(), _sizes.cend(), 0);
     setSizes(_sizes);
 }

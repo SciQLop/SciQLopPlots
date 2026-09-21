@@ -383,7 +383,7 @@ void SciQLopNDProjectionPlot::_setup_color_scale()
             for (auto* p : plottables())
                 if (auto* graph = qobject_cast<SciQLopNDProjectionCurves*>(p))
                     sources.push_back(
-                        { [graph] { return graph->has_color_values(); },
+                        { [graph] { return graph->visible() && graph->has_color_values(); },
                           [graph](bool log) { return graph->color_range(log); },
                           [graph](QCPColorScale* scale) { graph->attach_color_scale(scale); } });
             return sources;

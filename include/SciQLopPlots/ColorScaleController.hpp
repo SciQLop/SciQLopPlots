@@ -69,6 +69,10 @@ public:
     void update();
 
 private:
+    bool hosts_colormap() const;
+    bool foreign() const;
+    //! Lets go of the curves without hiding the scale, which a colormap now uses.
+    void yield();
     bool show();
     void hide();
     void rescale(const std::vector<Source>& coloured);
@@ -80,6 +84,7 @@ private:
     bool m_shown = false;
     bool m_auto_range = true;
     bool m_updating = false;
+    bool m_dying = false;
     bool m_gradient_chosen = false;
     QColor m_start { 0, 0, 255 };
     QColor m_end { 255, 0, 0 };

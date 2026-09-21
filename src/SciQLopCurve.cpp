@@ -320,6 +320,12 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
     Q_EMIT this->replot();
 }
 
+void SciQLopCurve::set_visible(bool visible) noexcept
+{
+    SQPQCPAbstractPlottableWrapper::set_visible(visible);
+    _notify_plot();
+}
+
 void SciQLopCurve::_notify_plot(std::optional<::ColorGradient> gradient)
 {
     auto* impl = qobject_cast<_impl::SciQLopPlot*>(parent());

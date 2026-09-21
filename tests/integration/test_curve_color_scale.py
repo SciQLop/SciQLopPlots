@@ -167,6 +167,79 @@ class TestColormapKeepsItsScale:
         assert _range(plot) == (100.0, 110.0)
 
 
+def _bar_hues(plot, tmp_path, name):
+    """Hues in the right quarter of the image: the colour bar."""
+    plot.legend().set_visible(False)
+    path = tmp_path / f"{name}.png"
+    assert plot.save_png(str(path), 400, 300) is True
+    img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
+    return len({img.pixelColor(x, y).hue() // 10
+                for y in range(img.height()) for x in range(int(img.width() * 0.8), img.width())
+                if img.pixelColor(x, y).saturation() > 100 and img.pixelColor(x, y).value() > 60})
+
+
+def _colormap(qtbot, plot):
+    x = np.linspace(0, 10, 50)
+    y = np.linspace(0, 5, 30)
+    z = 100.0 + 10.0 * np.linspace(0, 1, 30 * 50).reshape(30, 50)
+    cmap = plot.colormap(x, y, z)
+    qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
+    process_events()
+    return cmap
+
+
+class TestColormapOwnershipBothWays:
+    def test_a_curve_gradient_does_not_recolour_a_colormap(self, qtbot, plot, tmp_path):
+        """The gradient call used to reach the colormap's scale: the ownership
+        check only guarded the attach, not the gradient."""
+        _colormap(qtbot, plot)
+        before = _bar_hues(plot, tmp_path, "before")
+        assert before > 8
+        _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
+        process_events()
+        assert _bar_hues(plot, tmp_path, "after") == before
+
+    def test_a_colormap_added_after_a_curve_takes_the_scale_over(self, qtbot, plot):
+        """The controller used to keep treating the scale as its own once it had shown
+        it, so curve and colormap shared one scale and a range set for the colormap
+        pinned the curves' auto-range."""
+        curve = _curve(qtbot, plot)
+        curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        _colormap(qtbot, plot)
+        plot.z_axis().set_range(SciQLopPlotRange(100.0, 110.0))
+        assert plot.z_auto_range() is True
+        curve.set_color_data(np.linspace(0.0, 6.0, N), ColorGradient.Jet)
+        assert _range(plot) == (100.0, 110.0)
+
+
+class TestVisibilityFollowsTheScale:
+    def test_hiding_the_only_coloured_curve_hides_the_scale(self, qtbot, plot):
+        curve = _curve(qtbot, plot)
+        curve.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        assert plot.z_axis().visible() is True
+        curve.set_visible(False)
+        process_events()
+        assert plot.z_axis().visible() is False
+        curve.set_visible(True)
+        process_events()
+        assert plot.z_axis().visible() is True
+
+    def test_hiding_a_projection_graph_hides_the_shared_scale(self, qtbot):
+        proj = SciQLopNDProjectionPlot(3)
+        qtbot.addWidget(proj)
+        t = np.linspace(0, 2 * np.pi, N)
+        g = proj.parametric_curve([t, np.cos(t), np.sin(t), t], labels=["a", "b", "c"])
+        qtbot.waitUntil(lambda: not g.busy(), timeout=5000)
+        g.set_color_data(t, ColorGradient.Jet)
+        assert proj.z_axis().visible() is True
+        g.set_visible(False)
+        process_events()
+        assert proj.z_axis().visible() is False
+        g.set_visible(True)
+        process_events()
+        assert proj.z_axis().visible() is True
+
+
 class TestProjectionPanesStayQuiet:
     def test_a_projection_plot_still_has_exactly_one_scale(self, qtbot):
         proj = SciQLopNDProjectionPlot(3)

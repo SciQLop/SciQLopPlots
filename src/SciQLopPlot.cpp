@@ -733,7 +733,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
             for (auto* p : m_impl->sqp_plottables())
                 if (auto* curve = dynamic_cast<SciQLopCurve*>(p))
                     sources.push_back(
-                        { [curve] { return curve->has_color_values(); },
+                        { [curve] { return curve->visible() && curve->has_color_values(); },
                           [curve](bool log) { return curve->color_range(log); },
                           [curve](QCPColorScale* scale) { curve->set_color_scale(scale); } });
             return sources;
