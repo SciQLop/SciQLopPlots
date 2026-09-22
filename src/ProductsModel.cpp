@@ -225,7 +225,7 @@ QList<QStringList> ProductsModel::decode_mime_data(const QMimeData* mime_data)
     return data;
 }
 
-void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
+bool ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
 {
     // Filter models purge dangling nodes from synchronous begin/endRemoveRows
     // signals; emitted from another thread they would arrive queued, after
@@ -237,18 +237,18 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
         {
             qWarning() << "ProductsModel::add_node: refusing" << obj->name()
                        << "- it cannot be moved to the model thread (already parented?)";
-            return;
+            return false;
         }
         QMetaObject::invokeMethod(this, [this, path, obj] { add_node(path, obj); },
                                   Qt::QueuedConnection);
-        return;
+        return true;
     }
     // Qt refuses to parent across threads, which would leave the node listed but unowned.
     if (obj->thread() != thread())
     {
         qWarning() << "ProductsModel::add_node: refusing" << obj->name()
                    << "- it lives in another thread and can only be moved by that thread";
-        return;
+        return false;
     }
     auto parent = m_rootNode;
     for (const auto& name : path)
@@ -265,6 +265,7 @@ void ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
         }
     }
     _insert_node(obj, parent);
+    return true;
 }
 
 ProductsModelNode* ProductsModel::_resolve(const QStringList& path) const

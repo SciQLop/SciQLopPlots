@@ -75,8 +75,11 @@ public:
      * thread and inserted later, so node() and rowCount() only see it once the
      * model thread has processed events. A node that cannot be moved (it already
      * has a QObject parent) is refused with a warning.
+     *
+     * \return true if \a obj was inserted, or queued to be inserted on the model
+     * thread; false if it was refused. The caller keeps ownership on false.
      */
-    Q_SLOT void add_node(QStringList path, ProductsModelNode* obj);
+    Q_SLOT bool add_node(QStringList path, ProductsModelNode* obj);
 
     /*!
      * \brief remove_node Delete the node at \a path and everything below it.

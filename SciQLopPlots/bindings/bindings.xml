@@ -1046,9 +1046,12 @@
     <object-type name="ProductsView" parent-management="yes"/>
     <object-type name="ProductsModel" parent-management="yes">
         <modify-function signature="add_node(QStringList, ProductsModelNode*)">
-          <modify-argument index="2">
-            <parent index="this" action="add"/>
-          </modify-argument>
+          <inject-code class="target" position="end">
+              // %0 (cppResult) is scoped to the try-block exception-handling wraps calls
+              // in; %PYARG_0 (the already-converted Python bool) survives past it.
+              if (%PYARG_0 == Py_True)
+                  Shiboken::Object::setParent(%PYSELF, %PYARG_2);
+          </inject-code>
         </modify-function>
     </object-type>
     <object-type name="ProductsModelNode" parent-management="yes">
