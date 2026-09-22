@@ -117,7 +117,7 @@ class DataProviderWorker : public QObject
 {
     Q_OBJECT
     QThread* m_worker_thread;
-    DataProviderInterface* m_data_provider;
+    DataProviderInterface* m_data_provider = nullptr;
 
 public:
     DataProviderWorker(QObject* parent = nullptr) : QObject(parent)
@@ -134,21 +134,29 @@ public:
 
     inline Q_SLOT virtual void set_range(const SciQLopPlotRange& range)
     {
+        if (m_data_provider == nullptr)
+            return;
         m_data_provider->set_range(range);
     }
 
     inline Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     {
+        if (m_data_provider == nullptr)
+            return;
         m_data_provider->set_data(_2D_data { x, y });
     }
 
     inline Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
     {
+        if (m_data_provider == nullptr)
+            return;
         m_data_provider->set_data(_3D_data { x, y, z });
     }
 
     inline Q_SLOT virtual void set_data(QList<SciQLopPyBuffer> values)
     {
+        if (m_data_provider == nullptr)
+            return;
         m_data_provider->set_data(values);
     }
 };
