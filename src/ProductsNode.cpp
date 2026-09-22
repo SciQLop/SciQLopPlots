@@ -106,14 +106,3 @@ void ProductsModelNode::set_tooltip(const QString& tooltip)
     m_tooltip = tooltip;
 }
 
-QStringList ProductsModelNode::completions() const noexcept
-{
-    QStringList completions;
-    completions.append(this->name());
-    for (auto [key, value] : m_metadata.asKeyValueRange())
-    {
-        if (auto v = value.toString(); v.size() < 100)
-            completions.append(key + ": " + v);
-    }
-    return completions;
-}

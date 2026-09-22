@@ -34,24 +34,6 @@ QModelIndex ProductsModel::make_index(ProductsModelNode* node)
     return createIndex(parent_node->child_row(node), 0, node);
 }
 
-void ProductsModel::_add_to_completer(const QString& value)
-{
-    if (m_completer_model->stringList().contains(value))
-        return;
-    m_completer_model->insertRow(m_completer_model->rowCount());
-    m_completer_model->setData(m_completer_model->index(m_completer_model->rowCount() - 1), value);
-}
-
-void ProductsModel::_add_to_completer(ProductsModelNode* node)
-{
-    for (auto str : node->completions())
-        _add_to_completer(str);
-}
-
-// simplify: remove_node leaves m_completer_model alone. Its entries (name and "key: value"
-// strings) are shared between nodes, and pruning them means walking the whole tree (77k+
-// products). Nothing in this repo reads it; the search bar's own suggestions are rebuilt
-// by ProductsView on removal. Upgrade path: refcounted completer entries.
 void ProductsModel::_remove_child(ProductsModelNode* parent, int row)
 {
     beginRemoveRows(make_index(parent), row, row);
@@ -73,7 +55,6 @@ void ProductsModel::_insert_node(ProductsModelNode* node, ProductsModelNode* par
     }
     beginInsertRows(make_index(parent), parent->children_count(), parent->children_count());
     parent->add_child(node);
-    _add_to_completer(node);
     endInsertRows();
 }
 
@@ -94,7 +75,6 @@ void ProductsModel::_add_text_mime_data(QMimeData* mime_data, const QModelIndexL
 ProductsModel::ProductsModel(QObject* parent) : QAbstractItemModel(parent)
 {
     m_rootNode = new ProductsModelNode("root", {}, "", this);
-    m_completer_model = new QStringListModel(this);
 }
 
 QModelIndex ProductsModel::index(int row, int column, const QModelIndex& parent) const

@@ -24,7 +24,6 @@
 #include <QAbstractItemModel>
 #include <QMimeData>
 #include <QObject>
-#include <QStringListModel>
 
 inline constexpr auto PRODUCT_FILTER_ROLE = Qt::UserRole + 1;
 
@@ -32,12 +31,8 @@ class ProductsModel : public QAbstractItemModel
 {
     Q_OBJECT
     ProductsModelNode* m_rootNode;
-    QStringListModel* m_completer_model;
 
     QModelIndex make_index(ProductsModelNode* node);
-
-    void _add_to_completer(const QString& value);
-    void _add_to_completer(ProductsModelNode* node);
 
     void _insert_node(ProductsModelNode* node, ProductsModelNode* parent);
 
@@ -65,8 +60,6 @@ public:
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
     static QList<QStringList> decode_mime_data(const QMimeData* mime_data);
-
-    inline QStringListModel* completer_model() const { return m_completer_model; }
 
     /*!
      * \brief add_node Insert \a obj under \a path, replacing a same-named node.

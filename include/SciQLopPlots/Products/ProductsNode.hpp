@@ -126,8 +126,6 @@ public:
 
     inline const QString& raw_text() const noexcept { return m_raw_text; }
 
-    QStringList completions() const noexcept;
-
     inline ParameterType parameter_type() const noexcept { return m_parameter_type; }
 
     inline const QString& provider() const noexcept { return m_provider; }
