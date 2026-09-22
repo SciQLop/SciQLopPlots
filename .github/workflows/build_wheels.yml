@@ -142,7 +142,14 @@ jobs:
           # been blocked by this. Headless import only — no QApplication.
           # Command string contains no GitHub event data so it's not exposed
           # to expression-injection.
-          CIBW_TEST_COMMAND: python -c "import SciQLopPlots; print('SciQLopPlots', SciQLopPlots.__version__, 'imports OK')"
+          # Plus the quit-with-busy-workers check (#108): it is the one test whose
+          # outcome depends on the platform (process exit with worker threads still
+          # running), and the Tests workflow only runs on Linux. Offscreen, in
+          # subprocesses, needs only pytest.
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: >
+            python -c "import SciQLopPlots; print('SciQLopPlots', SciQLopPlots.__version__, 'imports OK')"
+            && pytest {project}/tests/integration/test_quit_with_busy_workers.py -v
 
       - uses: actions/upload-artifact@v7
         with:
