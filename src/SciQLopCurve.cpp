@@ -65,13 +65,16 @@ void SciQLopCurve::clear_curves(bool curve_already_removed)
     clear_plottables();
 }
 
+// No join: quit() only takes effect once the running resample returns, which would freeze
+// the GUI thread that destroys us for as long as it lasts (#109). The resampler and its
+// thread free themselves when the thread finishes; the late result goes nowhere.
 void SciQLopCurve::clear_resampler()
 {
-    disconnect(this->_resampler, &CurveResampler::setGraphData, this, &SciQLopCurve::_setCurveData);
+    disconnect(this->_resampler, nullptr, this, nullptr);
+    connect(this->_resampler_thread, &QThread::finished, this->_resampler, &QObject::deleteLater);
+    connect(this->_resampler_thread, &QThread::finished, this->_resampler_thread,
+            &QObject::deleteLater);
     this->_resampler_thread->quit();
-    this->_resampler_thread->wait();
-    delete this->_resampler;
-    delete this->_resampler_thread;
     this->_resampler = nullptr;
     this->_resampler_thread = nullptr;
 }
