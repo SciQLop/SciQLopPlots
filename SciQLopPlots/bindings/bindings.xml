@@ -1056,9 +1056,11 @@
     </object-type>
     <object-type name="ProductsModelNode" parent-management="yes">
         <modify-function signature="add_child(ProductsModelNode*)">
-          <modify-argument index="1">
-            <parent index="this" action="add"/>
-          </modify-argument>
+          <inject-code class="target" position="end">
+              // Same as add_node: %PYARG_0 outlives the try-block %0 is scoped to.
+              if (%PYARG_0 == Py_True)
+                  Shiboken::Object::setParent(%PYSELF, %PYARG_1);
+          </inject-code>
         </modify-function>
     </object-type>
 

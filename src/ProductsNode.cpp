@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include "SciQLopPlots/Icons/icons.hpp"
 #include "fmt/format.h"
+#include <QDebug>
 
 ProductsModelNode* ProductsModelNode::_root_node()
 {
@@ -64,10 +65,18 @@ ProductsModelNode::ProductsModelNode(const QString& name, const QString& provide
 // No silent same-name replacement here: structural changes on a node that is
 // already in the ProductsModel must be announced through the model
 // (begin/endRemoveRows) — _insert_node handles the re-publish case.
-void ProductsModelNode::add_child(ProductsModelNode* child)
+bool ProductsModelNode::add_child(ProductsModelNode* child)
 {
+    // Qt refuses to parent across threads, which would leave the child listed but unowned.
+    if (child->thread() != thread())
+    {
+        qWarning() << "ProductsModelNode::add_child: refusing" << child->name()
+                   << "- it lives in another thread than" << name();
+        return false;
+    }
     m_children.append(child);
     child->setParent(this);
+    return true;
 }
 
 QStringList ProductsModelNode::path()

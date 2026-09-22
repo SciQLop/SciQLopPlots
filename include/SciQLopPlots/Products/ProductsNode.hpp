@@ -94,7 +94,8 @@ public:
 
     inline QList<ProductsModelNode*> children_nodes() { return m_children; }
 
-    void add_child(ProductsModelNode* child);
+    //! False, and the caller keeps ownership, when \a child lives in another thread.
+    bool add_child(ProductsModelNode* child);
 
     QStringList path();
 
