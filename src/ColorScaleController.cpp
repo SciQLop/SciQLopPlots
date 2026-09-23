@@ -30,6 +30,18 @@ ColorScaleController::ColorScaleController(SciQLopPlot* owner, Sources sources, 
             });
 }
 
+std::vector<ColorScaleController::Source>
+ColorScaleController::sources_of(const QList<SciQLopPlottableInterface*>& plottables)
+{
+    std::vector<Source> sources;
+    for (auto* p : plottables)
+        if (auto* graph = qobject_cast<SciQLopGraphInterface*>(p))
+            sources.push_back({ [graph] { return graph->visible() && graph->has_color_values(); },
+                                [graph](bool log) { return graph->color_range(log); },
+                                [graph](QCPColorScale* scale) { graph->attach_color_scale(scale); } });
+    return sources;
+}
+
 //! The scale is a colormap's, not ours: it hosts one, or it was shown by someone else.
 bool ColorScaleController::foreign() const
 {

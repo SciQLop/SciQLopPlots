@@ -726,18 +726,7 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
 {
     m_impl = new _impl::SciQLopPlot(this);
     m_curve_scale = new ColorScaleController(
-        this,
-        [this]
-        {
-            std::vector<ColorScaleController::Source> sources;
-            for (auto* p : m_impl->sqp_plottables())
-                if (auto* curve = dynamic_cast<SciQLopCurve*>(p))
-                    sources.push_back(
-                        { [curve] { return curve->visible() && curve->has_color_values(); },
-                          [curve](bool log) { return curve->color_range(log); },
-                          [curve](QCPColorScale* scale) { curve->set_color_scale(scale); } });
-            return sources;
-        },
+        this, [this] { return ColorScaleController::sources_of(m_impl->sqp_plottables()); },
         this);
 
     this->m_time_axis = new SciQLopPlotDummyAxis(this);

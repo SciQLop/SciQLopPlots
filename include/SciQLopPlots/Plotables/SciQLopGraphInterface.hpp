@@ -37,12 +37,14 @@
 #include <QWidget>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 class SciQLopPlotAxisInterface;
+class QCPColorScale;
 class InspectorExtension;
 class InspectorExtensionHolder;
 
@@ -297,6 +299,18 @@ public:
         Q_UNUSED(visible_key_range);
         Q_UNUSED(out);
     }
+
+    //! Colour by a scalar, as the plot's shared colour scale sees it
+    //! (see ColorScaleController). Graphs that cannot be coloured keep these defaults.
+    virtual bool has_color_values() const { return false; }
+    //! Min/max of the finite colour values; only the positive ones when \a log.
+    virtual std::optional<std::pair<double, double>> color_range(bool log) const
+    {
+        Q_UNUSED(log);
+        return std::nullopt;
+    }
+    //! Follow \a scale; nullptr: back to the graph's own range and gradient.
+    virtual void attach_color_scale(QCPColorScale* scale) { Q_UNUSED(scale); }
 
     Q_SIGNAL void labels_changed(const QStringList& labels);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);

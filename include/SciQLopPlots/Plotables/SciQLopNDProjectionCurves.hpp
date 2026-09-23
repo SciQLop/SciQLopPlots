@@ -81,9 +81,9 @@ public:
     qreal line_width() const;
 #ifndef BINDINGS_H
     //! Called by the plot: every pane's curve follows the plot's one shared scale.
-    void attach_color_scale(QCPColorScale* scale);
-    bool has_color_values() const;
-    std::optional<std::pair<double, double>> color_range(bool log) const;
+    void attach_color_scale(QCPColorScale* scale) override;
+    bool has_color_values() const override;
+    std::optional<std::pair<double, double>> color_range(bool log) const override;
 #endif
 
     void set_time_color_enabled(bool enabled);

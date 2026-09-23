@@ -376,19 +376,7 @@ void SciQLopNDProjectionPlot::_setup_color_scale()
     for (auto* pane : m_plots)
         pane->set_curve_color_scale_enabled(false);
     m_scale = new ColorScaleController(
-        m_plots.last(),
-        [this]
-        {
-            std::vector<ColorScaleController::Source> sources;
-            for (auto* p : plottables())
-                if (auto* graph = qobject_cast<SciQLopNDProjectionCurves*>(p))
-                    sources.push_back(
-                        { [graph] { return graph->visible() && graph->has_color_values(); },
-                          [graph](bool log) { return graph->color_range(log); },
-                          [graph](QCPColorScale* scale) { graph->attach_color_scale(scale); } });
-            return sources;
-        },
-        this);
+        m_plots.last(), [this] { return ColorScaleController::sources_of(plottables()); }, this);
     connect(m_plots.last(), &SciQLopPlotInterface::z_axis_range_changed, this,
             &SciQLopPlotInterface::z_axis_range_changed);
 }

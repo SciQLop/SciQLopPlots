@@ -20,6 +20,7 @@
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QColor>
+#include <QList>
 #include <QObject>
 #include <functional>
 #include <optional>
@@ -27,6 +28,7 @@
 #include <vector>
 
 class QCPColorScale;
+class SciQLopPlottableInterface;
 class SciQLopPlot;
 
 /*!
@@ -55,6 +57,8 @@ public:
         std::function<void(QCPColorScale*)> attach;
     };
     using Sources = std::function<std::vector<Source>()>;
+    //! One source per graph among \a plottables (colormaps and others are skipped).
+    static std::vector<Source> sources_of(const QList<SciQLopPlottableInterface*>& plottables);
 
     ColorScaleController(SciQLopPlot* owner, Sources sources, QObject* parent = nullptr);
 
