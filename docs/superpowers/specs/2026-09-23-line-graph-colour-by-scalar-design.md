@@ -23,6 +23,9 @@ points: async L1 + synchronous L2 min/max decimation, adaptive sampling, GPU lin
    and members): anything compiled against NeoQCP must be rebuilt, which is the case for its only
    consumer (built from source through a meson wrap).
 5. No per-plottable state on shared RHI layers (NeoQCP rule).
+6. **Zero cost for single-colour graphs.** A graph without colour values runs exactly the code it
+   runs today: same algorithms (the indexed ones are a compile-time variant), no origin tables, the
+   same 3-float scatter instances and pipeline. Gated by a benchmark against the pinned `a4ad9f0`.
 
 ## NeoQCP
 
@@ -72,6 +75,10 @@ Invariant: `sourceIndices.size() == points.size()` on return, always.
 Rule for every level: **the index is appended in the same statement block as its point**, under the
 same condition. Never computed in a second pass.
 
+The indexed and plain versions of each algorithm are one template with a compile-time
+`bool WithIndices` parameter (`if constexpr` around every index statement). The plain
+instantiation is the code that runs today; the existing entry points call it.
+
 | Level | Where | Index |
 |---|---|---|
 | Raw source, full resolution | `linesToPixels` (`algorithms.h`) | `i`; `-1` for each inserted NaN gap marker and each NaN value marker |
@@ -81,12 +88,22 @@ same condition. Never computed in a second pass.
 | L2 | `resampleL2Multi` (`resampled-multi-datasource.h`) | per bin, the L1 row picked as min/max maps through L1's `origin`; the table has the same 2-per-bin, per-column layout as L2's `values` and is compacted **in lockstep** with the empty-bin compaction and the per-column shift |
 | L2 as a source | `QCPResampledMultiDataSource` | holds its composed `origin`; `getLinesIndexed` returns `origin[row]`; the key-gap marker its `getLines` inserts gets `-1`; value-NaN rows are skipped without a marker, exactly as `getLines` does |
 
-**The origin tables are always built**, coloured or not. The L1 transform is a stateless lambda and
-the L1 cache key is data-only (`sourceSize`, `columnCount`, `cachedKeyRange`), so a "build only
-while coloured" flag would need new plumbing and an L1 rebuild on first colouring (the usual order
-is `set_data` then `set_color_data`), contradicting "colour setters never touch L1/L2". Cost: one
-`int` per L1/L2 value (L1 is capped at 100k bins: about 6.4 MB at 8 columns, +50% on L1), plus two
-index stores per min/max update in the async binning. Measured in the first perf check.
+**The origin tables are built only for coloured graphs**, so a single-colour graph builds exactly
+what it builds today. Mechanism:
+
+- `MultiGraphResamplerCache` (the `std::any` the stateless L1 lambda already receives) gains
+  `bool wantOrigin`, and it joins the validity key (`sourceSize`, `columnCount`, `cachedKeyRange`,
+  **`wantOrigin`**). The L1 builder reads it from the cache and fills `origin` only when set.
+- The graph sets `wantOrigin` in its cache when colour values are first set on a graph whose L1 has
+  no origin, and resubmits the L1 job: **one** async L1 rebuild, the first time a graph is coloured
+  (usual order: `set_data`, then `set_color_data`). Until it lands, the graph draws uncoloured from
+  the old L1, exactly like any other pending L1 job. Later colour changes (values of the same length,
+  gradient, range, scale type) never touch L1/L2.
+- L2 is built from L1 on the GUI thread; it composes `origin` only when L1 has one.
+- Clearing the colour values leaves `wantOrigin` set (no rebuild churn when toggling); a new data
+  source that is uncoloured resets it.
+- Cost for coloured graphs only: one `int` per L1/L2 value (L1 is capped at 100k bins: about
+  6.4 MB at 8 columns, +50% on L1), two index stores per min/max update in the async binning.
 
 ### Drawing (`QCPMultiGraph::draw`)
 
@@ -146,19 +163,22 @@ scope:
   `useColorAxis` float in place, so the struct stays 32 bytes and std140-compatible. Modes: `0`
   sprite colour (today's default), `1` colormap lookup (today's `useColorAxis`, now per draw), `2`
   instance colour.
-- **Instance data**: `(x, y, colorValue)` becomes `(x, y, colorValue, r, g, b, a)`, 7 floats, colour
-  premultiplied. Every place hard-coded to 3 floats changes with it: `instanceOffset =
-  mStagingSize / 7`, the render binding offset `instanceOffset * 7 * sizeof(float)`, the
-  vertex-input stride, and a second instance attribute (`Float4` at `3 * sizeof(float)`).
-  `addScatter` keeps its signature and pads each point with a zero colour inside the layer, so its
-  callers (`QCPGraph2`, `QCPMultiGraph`) do not change. New
+- **Instance data stays 3 floats** `(x, y, colorValue)` in the existing instance buffer, with the
+  existing pipeline: uncoloured and colormap draws are unchanged, byte for byte.
+- **Coloured draws**: a second instance buffer holds one premultiplied `Float4` colour per marker,
+  and a second pipeline on the same layer declares both instance bindings (binding 1: the existing
+  `Float3`; binding 2: `Float4`). `DrawEntry` records whether it is coloured and its offset in the
+  colour buffer; `render` binds the matching pipeline and buffers per draw (setShaderResources
+  before setVertexInput, the Metal rule). Both pipelines share the SRB. The colour buffer is created
+  and uploaded only when a frame has coloured draws.
+- `addScatter` keeps its signature and behaviour. New
   `addScatterColored(std::span<const float> xy, std::span<const float> rgba, style, ...)`.
+- Shaders: a second vertex shader variant `scatter_colored.vert` reads the colour attribute and
+  forwards it; `scatter.frag` handles mode 2. The existing `scatter.vert` is unchanged.
 - **Mode 2 colour**: `fragColor = instanceColor * sprite.a`, with `instanceColor` premultiplied, so
   alpha is counted once. It uses the sprite as a shape mask: a marker whose pen differs from its
   brush is drawn in one colour. That is the intended look for coloured markers (pen = brush = the
   bucket colour, as on curves).
-- Shaders: `scatter.vert` forwards the instance colour; `scatter.frag` switches on `mode`.
-
 Not in scope, filed as a NeoQCP issue: the shared sprite (two graphs with different marker styles
 on one layer draw with the last style; a sprite atlas with per-draw UV rects would fix it) and the
 shared colormap texture (`QCPGraph2` with two different gradients on one layer). Per-draw `mode`
@@ -201,24 +221,29 @@ Feature branch from `upstream/main` (`a4ad9f0`). One commit per step, the listed
    the two virtuals with defaults, SoA and row-major overrides. Tests: index invariant; every
    `flushInterval` branch; NaN runs; key gaps; vertical key axis; the default implementation on a
    custom source equals the fast one.
-3. **Perf check 1**: `tests/perf/multigraph-perf.cpp`, 10M points, indexed vs plain raw paths. Stop
-   and rethink here if the index emission alone costs more than the budget allows.
-4. L1 origin (`binMinMaxMulti(Parallel)`), L2 composition and lockstep compaction, the
-   `QCPResampledMultiDataSource` indexed method. Tests: argmin/argmax per column; parallel equals
-   serial; L2 compaction with empty bins; key-gap marker is `-1`; L1 memory recorded.
+3. **Perf check 1**: `tests/perf/multigraph-perf.cpp`, 10M points. (a) Single-colour gate: every
+   existing scenario within noise (3%) of a build of the pinned `a4ad9f0`. (b) Indexed vs plain raw
+   paths. Stop and rethink if (a) fails or (b) costs more than the budget allows.
+4. L1 origin (`binMinMaxMulti(Parallel)`) behind `wantOrigin` in the cache and its validity key, L2
+   composition and lockstep compaction, the `QCPResampledMultiDataSource` indexed method. Tests:
+   argmin/argmax per column; parallel equals serial; L2 compaction with empty bins; key-gap marker
+   is `-1`; no origin built while `wantOrigin` is unset; toggling it rebuilds L1 once.
 5. Index-aware step and impulse transforms. Tests: the formulas above, per style.
-6. Colour API on `QCPMultiGraph`, LUT, `colorGeneration`, `setDataSource` keep-on-same-size.
-   Tests: setters do not rebuild L1/L2; LUT for linear, log and non-positive values; NaN; length
-   mismatch refused; same-size refresh keeps values.
+6. Colour API on `QCPMultiGraph`, LUT, `colorGeneration`, `setDataSource` keep-on-same-size, first
+   colouring requests the one origin rebuild. Tests: first colouring rebuilds L1 once, later colour
+   changes do not rebuild L1/L2; LUT for linear, log and non-positive values; NaN; length mismatch
+   refused; same-size refresh keeps values.
 7. Colour runs and GPU run extrusion with the coloured cache key. Tests: runs at bucket boundaries,
    gaps end runs; re-extrude on colour change, not on pan; uncoloured cache key unchanged.
-8. **Perf check 2**: coloured vs uncoloured pan and zoom, 10M points, target 1.5x.
+8. **Perf check 2**: the single-colour gate against `a4ad9f0` again, and coloured vs uncoloured pan
+   and zoom at 10M points, target 1.5x.
 9. CPU runs (export, dashed pens, impulses). Test: GPU and CPU produce the same runs.
-10. Scatter layer: per-draw `mode` and `halfSize`, 7-float instances, `addScatterColored`, mode 2
-    in the shader. Tests: coloured markers get their per-marker colours; a colormap draw and a plain
-    draw on one layer keep their own mode (fails today); two graphs with different marker sizes on
-    one layer keep their own size (fails today); uncoloured and `QCPGraph2` colormap markers
-    unchanged.
+10. Scatter layer: per-draw `mode` and `halfSize`, the colour instance buffer, the coloured
+    pipeline and `scatter_colored.vert`, `addScatterColored`, mode 2 in `scatter.frag`. Tests:
+    coloured markers get their per-marker colours; a colormap draw and a plain draw on one layer
+    keep their own mode (fails today); two graphs with different marker sizes on one layer keep
+    their own size (fails today); uncoloured and `QCPGraph2` colormap markers unchanged; no colour
+    buffer is created when a frame has no coloured draw.
 11. Coloured markers on `QCPMultiGraph` (GPU and QPainter fallback, pan offset). Test: markers
     follow the line on pan; a gap bucket skips its marker.
 12. Legend gradient icon, group legend rows.
