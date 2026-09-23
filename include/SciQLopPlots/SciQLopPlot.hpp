@@ -112,8 +112,6 @@ public:
 
     inline double scroll_factor() const noexcept { return m_scroll_factor; }
 
-    inline bool has_colormap() { return m_color_scale->visible(); }
-
     inline QCPColorScale* color_scale() const noexcept { return m_color_scale; }
 
     //! Puts the colour scale in the layout without a colormap. Idempotent.
@@ -421,7 +419,9 @@ public:
 
     SciQLopOverlay* overlay();
 
-    inline bool has_colormap() { return m_impl->has_colormap(); }
+    //! A colormap or a 2D histogram is on the plot. The colour scale can also be shown
+    //! for coloured curves: ask color_scale()->visible() for that.
+    bool has_colormap() const;
 
     inline QCPColorScale* color_scale() const noexcept { return m_impl->color_scale(); }
 

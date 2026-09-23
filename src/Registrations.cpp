@@ -114,7 +114,7 @@ void register_all_types()
             QList<QObject*> c;
             c.append(plot->x_axis());
             c.append(plot->y_axis());
-            if (plot->has_colormap()) {
+            if (plot->color_scale()->visible()) {
                 c.append(plot->z_axis());
                 c.append(plot->y2_axis());
             }
@@ -131,11 +131,11 @@ void register_all_types()
             return {
                 QObject::connect(plot, &SciQLopPlot::graph_list_changed, plot,
                     [plot, add, remove]() {
-                        // has_colormap() flips from false to true on the first
-                        // colormap/histogram add — re-publish the colormap axes
-                        // so they appear under the plot node (addNode is
-                        // idempotent), and take them out again when it flips back.
-                        if (plot->has_colormap())
+                        // The colour scale shows up with the first colormap,
+                        // histogram or coloured curve — re-publish its axes so
+                        // they appear under the plot node (addNode is
+                        // idempotent), and take them out again when it hides.
+                        if (plot->color_scale()->visible())
                         {
                             add(plot->z_axis(), -1);
                             add(plot->y2_axis(), -1);

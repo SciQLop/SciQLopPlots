@@ -79,7 +79,6 @@ public:
     void update();
 
 private:
-    bool hosts_colormap() const;
     bool foreign() const;
     //! Lets go of the curves without hiding the scale, which a colormap now uses.
     void yield();

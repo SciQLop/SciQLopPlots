@@ -40,7 +40,7 @@ void VPlotsAlign::_recompute_margins()
                 continue;
             int left_margin = ar->calculateAutoMargin(QCP::MarginSide::msLeft);
             int cmw = 0;
-            if (p->has_colormap())
+            if (p->color_scale()->visible())
             {
                 cmw = p->color_scale()->outerRect().width();
                 cmw += ar->calculateAutoMargin(QCP::MarginSide::msRight);
@@ -59,7 +59,7 @@ void VPlotsAlign::_recompute_margins()
                 || ar->rect().width() <= 0 || ar->rect().height() <= 0)
                 continue;
             int new_right_margin = std::max(0, p->width() - max_right_pos);
-            if (p->has_colormap())
+            if (p->color_scale()->visible())
             {
                 new_right_margin = std::max(0, new_right_margin - p->color_scale()->outerRect().width());
             }

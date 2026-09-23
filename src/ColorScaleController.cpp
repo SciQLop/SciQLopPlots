@@ -30,18 +30,10 @@ ColorScaleController::ColorScaleController(SciQLopPlot* owner, Sources sources, 
             });
 }
 
-bool ColorScaleController::hosts_colormap() const
-{
-    for (auto* plottable : m_owner->plottables())
-        if (dynamic_cast<SciQLopColorMapInterface*>(plottable))
-            return true;
-    return false;
-}
-
 //! The scale is a colormap's, not ours: it hosts one, or it was shown by someone else.
 bool ColorScaleController::foreign() const
 {
-    return hosts_colormap() || (!m_shown && m_owner->color_scale()->visible());
+    return m_owner->has_colormap() ||(!m_shown && m_owner->color_scale()->visible());
 }
 
 void ColorScaleController::yield()
@@ -151,14 +143,14 @@ void ColorScaleController::update()
         return;
     const bool was_visible = m_owner->color_scale()->visible();
     refresh();
-    // has_colormap() follows the scale's visibility: let the inspector republish its axes.
+    // The inspector lists the colour axes while the scale is visible: let it republish them.
     if (m_owner->color_scale()->visible() != was_visible)
         Q_EMIT m_owner->graph_list_changed();
 }
 
 void ColorScaleController::refresh()
 {
-    if (hosts_colormap())
+    if (m_owner->has_colormap())
     {
         m_had_colormap = true;
         yield();

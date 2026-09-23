@@ -494,3 +494,25 @@ class TestProjectionPanesStayQuiet:
         process_events()
         assert [proj.subplot(i).z_axis().visible() for i in range(3)] == [False, False, True]
         assert all(proj.subplot(i).curve_color_scale_enabled() is False for i in range(3))
+
+
+class TestHasColormapMeansAColormap:
+    """has_colormap() returned "the colour scale is visible", which a coloured curve
+    now also makes true (SciQLopPlots #112). It answers what its name says."""
+
+    def test_a_coloured_curve_shows_the_scale_but_is_no_colormap(self, qtbot, plot):
+        _curve(qtbot, plot).set_color_data(np.linspace(2.0, 7.0, N), ColorGradient.Jet)
+        assert plot.z_axis().visible() is True
+        assert plot.has_colormap() is False
+
+    def test_a_colormap_is_one_until_removed(self, qtbot, plot):
+        assert plot.has_colormap() is False
+        cmap = _colormap(qtbot, plot)
+        assert plot.has_colormap() is True
+        plot.remove_plottable(cmap)
+        process_events()
+        assert plot.has_colormap() is False
+
+    def test_a_histogram_is_one(self, qtbot, plot):
+        plot.add_histogram2d("h", 10, 10)
+        assert plot.has_colormap() is True

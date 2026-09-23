@@ -783,6 +783,13 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : SciQLopPlotInterface(parent)
     this->minimize_margins();
 }
 
+bool SciQLopPlot::has_colormap() const
+{
+    const auto all = plottables();
+    return std::any_of(all.cbegin(), all.cend(), [](SciQLopPlottableInterface* plottable)
+                       { return dynamic_cast<SciQLopColorMapInterface*>(plottable) != nullptr; });
+}
+
 SciQLopPlot::~SciQLopPlot()
 {
     m_curve_scale->quiesce();
