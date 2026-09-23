@@ -118,7 +118,7 @@ public:
      * \brief set_color_data Map \a values onto this plottable's colour through \a gradient.
      *
      * One value per data point. Implemented by SciQLopSingleLineGraph (scatter
-     * markers) and SciQLopCurve (curve segments and markers). Anything else
+     * markers), SciQLopLineGraph and SciQLopCurve (line segments and markers). Anything else
      * throws rather than dropping the data on the floor — a silent no-op here
      * used to look exactly like a working call.
      */

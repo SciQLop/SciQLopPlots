@@ -25,11 +25,23 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <plottables/plottable-multigraph.h>
+#include <QPointer>
 #include <QSignalBlocker>
+#include <memory>
+#include <optional>
+#include <vector>
 
 class SciQLopLineGraph : public SciQLopMultiGraphBase
 {
     Q_OBJECT
+
+    std::shared_ptr<const std::vector<double>> _color_values;
+    QCPColorGradient _color_gradient { QCPColorGradient::gpJet };
+    QPointer<QCPColorScale> _color_scale;
+
+    //! Range, scale type and gradient into the multigraph: the scale's, or the graph's own.
+    void push_color_mapping();
+
 protected:
     QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) override
     {
@@ -41,7 +53,29 @@ public:
                               SciQLopPlotAxis* value_axis,
                               const QStringList& labels = QStringList(),
                               QVariantMap metaData = {});
-    ~SciQLopLineGraph() override = default;
+    ~SciQLopLineGraph() override;
+
+    //! A refresh of another length drops the colour values (a same-length one keeps them).
+    Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
+    void set_visible(bool visible) noexcept override;
+
+    /*!
+     * \brief set_color_data Colour the line (every component) point by point.
+     * \param values One value per x sample, any numeric dtype. NaN leaves a gap. An empty
+     *        buffer turns the colouring back off.
+     * \throws std::invalid_argument if \a values does not match the number of x samples.
+     *
+     * On a plot the colour scale is the plot's, shared with its curves, so \a gradient also
+     * replaces an earlier plot.set_z_gradient(). A colormap on the plot keeps its own.
+     */
+    Q_SLOT void set_color_data(SciQLopPyBuffer values,
+                               ::ColorGradient gradient = ::ColorGradient::Jet) override;
+
+#ifndef BINDINGS_H
+    bool has_color_values() const override { return _color_values != nullptr; }
+    std::optional<std::pair<double, double>> color_range(bool log) const override;
+    void attach_color_scale(QCPColorScale* scale) override;
+#endif
 };
 
 class SciQLopLineGraphFunction : public SciQLopLineGraph,

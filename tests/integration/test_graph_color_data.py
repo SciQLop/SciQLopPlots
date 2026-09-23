@@ -230,10 +230,9 @@ class TestScatterColorData:
 class TestUnsupportedColorData:
     """Where per-point colour is not implemented, say so instead of no-op'ing."""
 
-    def test_multi_component_line_graph_reports_it_is_unsupported(
-            self, plot, sample_multicomponent_data):
-        x, y = sample_multicomponent_data
-        graph = plot.plot(x, y, graph_type=GraphType.Line)
+    def test_waterfall_reports_it_is_unsupported(self, plot, sample_multicomponent_data):
+        x, _ = sample_multicomponent_data
+        graph = plot.add_waterfall("w")
         with pytest.raises(RuntimeError, match="per-point colour"):
             graph.set_color_data(x, ColorGradient.Jet)
 
@@ -244,9 +243,9 @@ class TestUnsupportedColorData:
 
     def test_the_error_names_the_offending_type(self, plot,
                                                 sample_multicomponent_data):
-        x, y = sample_multicomponent_data
-        graph = plot.plot(x, y, graph_type=GraphType.Line)
-        with pytest.raises(RuntimeError, match="SciQLopLineGraph"):
+        x, _ = sample_multicomponent_data
+        graph = plot.add_waterfall("w")
+        with pytest.raises(RuntimeError, match="SciQLopWaterfallGraph"):
             graph.set_color_data(x, ColorGradient.Jet)
 
 
