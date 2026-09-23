@@ -101,24 +101,35 @@ class TestSetIconOnAPublishedNode:
         leaf.set_icon("test_icon_2")
 
 
+def _reicon_seconds(width):
+    """Publish one flat folder of `width` leaves, re-icon every leaf, return the time taken."""
+    model = ProductsModel.instance()
+    top, leaves = _publish(1, width)
+    _flush(20)
+    start = time.perf_counter()
+    for i, leaf in enumerate(leaves):
+        leaf.set_icon(f"test_icon_{(i + 1) % N_ICONS}")
+    _flush(20)
+    elapsed = time.perf_counter() - start
+    model.remove_node([top])
+    _flush()
+    return elapsed
+
+
 class TestIconsAtScale:
     """~100k nodes, 50 icons, a ProductsView open: re-iconing everything must stay cheap.
 
     One flat folder is the worst shape: finding a node's row was a linear scan of its
-    siblings, so re-iconing a whole folder cost O(width^2)."""
+    siblings, so re-iconing a whole folder cost O(width^2). The check is a scaling ratio,
+    not a time budget, so it holds on slow CI runners: 10x more leaves must cost about
+    10x more (linear), far from the 100x of the old quadratic scan."""
 
-    def test_reiconing_100k_published_nodes_stays_under_a_second(self, qtbot):
+    def test_reiconing_a_flat_folder_scales_linearly(self, qtbot):
         _register_icons()
-        model = ProductsModel.instance()
         view = ProductsView()
         qtbot.addWidget(view)
-        top, leaves = _publish(1, 100_000)
-        _flush(20)
-        start = time.perf_counter()
-        for i, leaf in enumerate(leaves):
-            leaf.set_icon(f"test_icon_{(i + 1) % N_ICONS}")
-        _flush(20)
-        elapsed = time.perf_counter() - start
-        model.remove_node([top])
-        _flush()
-        assert elapsed < 1.0, f"re-iconing 100k nodes took {elapsed:.2f}s"
+        small = _reicon_seconds(10_000)
+        large = _reicon_seconds(100_000)
+        assert large < 30 * small, (
+            f"re-iconing 100k leaves took {large:.2f}s vs {small:.3f}s for 10k "
+            f"({large / small:.0f}x; linear is ~10x, the old quadratic scan ~100x)")
