@@ -510,6 +510,8 @@ QVector<QPointF> linesToPixelsIndexed(const KC& keys, const VC& values, int begi
 }
 ```
 
+`optimizedLineDataMulti` gets no indexed variant: it is only reached through `getOptimizedLineDataAll`, which nothing in NeoQCP calls, and coloured graphs fetch per component anyway.
+
 Do the same for `optimizedLineData` (lines 292-504): move its body into
 `template <bool WithIndices, …> QVector<QPointF> detail::optimizedLineDataImpl(keys, values, begin, end, pixelWidth, keyAxis, valueAxis, precomputedGaps, QVector<int>* indices)`, keep `optimizedLineData` as a wrapper calling `<false>` with `nullptr`, and add `optimizedLineDataIndexed` calling `<true>` with `&indices`. Inside the impl, change exactly these places and nothing else:
 
@@ -860,7 +862,9 @@ void TestColorByScalar::l2OriginComposesThroughL1AndCompacts()
     vp.plotWidthPx = 100;   // 400 L2 bins, far fewer than the visible L1 rows
     const auto l2 = qcp::algo::resampleL2Multi(*l1, vp);
     QVERIFY(l2);
-    QVERIFY(l2->size() < 800);   // empty bins (the hole) were compacted away
+    // The hole leaves L1 bins whose values are NaN; L2 skips NaN rows, so the ~40 L2 bins
+    // covering only the hole receive no data and are compacted away (720 rows, not 800).
+    QVERIFY(l2->size() < 800);
 
     for (int c = 0; c < 2; ++c)
     {
@@ -908,7 +912,7 @@ Same treatment for `binMinMaxMultiParallel` (`detail::binMinMaxMultiParallelImpl
 ```
 (chunks own disjoint bin ranges, so the origin writes do not race).
 
-`buildL1CacheMulti` gains `bool withOrigin = false`, passes it to `binMinMaxMultiParallel`, and its early "cache still valid" return also requires the origin state to match:
+`buildL1CacheMulti` gains `bool withOrigin = false`, passes it to `binMinMaxMultiParallel`, and its early "cache still valid" return also requires the origin state to match. The request itself is not stored in `MultiGraphResamplerCache`: `extractL1Cache` (`plottable-l1-cache.h`) moves the cache out of the pipeline slot after every build, so a flag stored there would be lost. The graph owns it instead (a shared atomic its L1 lambda captures, Task 6); this check only keeps a stale origin-less cache from being reused when origin is wanted:
 ```cpp
     if (c && c->sourceSize == srcSize && c->columnCount == N
         && c->cachedKeyRange == fullKeyRange
@@ -1117,7 +1121,7 @@ printf 'feat(linestyle): index maps for the step and impulse transforms\n\nCo-Au
 
 **Files:**
 - Create: `src/plottables/plottable-color-mapper.h`
-- Modify: `src/plottables/plottable-multigraph.{h,cpp}`, `meson.build` (installed headers list: add `'src/plottables/plottable-color-mapper.h',` next to `plottable-multigraph.h`)
+- Modify: `src/plottables/plottable-multigraph.{h,cpp}` (NeoQCP has no installed-headers list: plain headers are found through the include directory, and only `Q_OBJECT` headers go in `neoqcp_moc_headers`, so the new header needs no `meson.build` change)
 - Test: `tests/auto/test-color-by-scalar/test-color-by-scalar.{h,cpp}`
 
 **Interfaces:**
@@ -1329,7 +1333,11 @@ public:
         return toBucket(log ? logPosition(v) : linearPosition(v));
     }
 
-    [[nodiscard]] QRgb color(int bucket) const { return mLut[bucket]; }
+    [[nodiscard]] QRgb color(int bucket) const
+    {
+        Q_ASSERT(bucket >= 0 && bucket < 256);   // callers skip kGap first
+        return mLut[bucket];
+    }
 
 private:
     double linearPosition(double v) const
@@ -1485,7 +1493,7 @@ Also make the existing cache-clearing places clear `mCachedIndices` with `mCache
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/plottables meson.build tests/auto/test-color-by-scalar
+git add src/plottables tests/auto/test-color-by-scalar
 printf 'feat(multigraph): colour values, gradient, range and scale type\n\nColour values are one scalar per key, shared by all components. The first\ncolouring asks the L1 pipeline for origin tables once; later colour changes\nonly bump a generation counter. A same-length data refresh keeps the values,\nany other length drops them. ColorScalarMapper turns a data index into one\nof 256 gradient colours.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\n' > /tmp/msg && git commit -F /tmp/msg
 ```
 
@@ -1495,7 +1503,7 @@ printf 'feat(multigraph): colour values, gradient, range and scale type\n\nColou
 
 **Files:**
 - Create: `src/plottables/plottable-color-runs.h`
-- Modify: `src/plottables/plottable-draw-utils.{h,cpp}`, `src/plottables/plottable-multigraph.cpp` (`draw`), `meson.build` (installed headers: add `plottable-color-runs.h`)
+- Modify: `src/plottables/plottable-draw-utils.{h,cpp}`, `src/plottables/plottable-multigraph.cpp` (`draw`)
 - Test: `tests/auto/test-color-by-scalar/test-color-by-scalar.{h,cpp}`
 
 **Interfaces:**
@@ -1510,8 +1518,10 @@ printf 'feat(multigraph): colour values, gradient, range and scale type\n\nColou
                         float penWidth, const ColorScalarMapper& mapper, std::vector<float>& out);
   bool needsColoredReextrusion(const ExtrusionCache& cache, bool freshLines,
                                float penWidth, quint64 colorGeneration);
+  // Builds the runs itself, only when it re-extrudes (or has no GPU layer): any reason to
+  // re-extrude (fresh lines, empty cache, pen width, colour generation) gets correct runs.
   void drawColoredPolylineCached(QCPPainter*, QCustomPlot*, QCPLayer*,
-                                 const QVector<QPointF>& points, const std::vector<ColorRun>& runs,
+                                 const QVector<QPointF>& points, const QVector<int>& indices,
                                  const ColorScalarMapper& mapper, const QPen& pen,
                                  const QPointF& gpuOffset, const QRect& clipRect,
                                  bool freshLines, ExtrusionCache& cache);
@@ -1716,7 +1726,7 @@ void drawColoredPolylineRuns(QCPPainter* painter, const QVector<QPointF>& points
 }
 
 void drawColoredPolylineCached(QCPPainter* painter, QCustomPlot* parentPlot, QCPLayer* layer,
-                               const QVector<QPointF>& points, const std::vector<ColorRun>& runs,
+                               const QVector<QPointF>& points, const QVector<int>& indices,
                                const ColorScalarMapper& mapper, const QPen& pen,
                                const QPointF& gpuOffset, const QRect& clipRect,
                                bool freshLines, ExtrusionCache& cache)
@@ -1727,7 +1737,8 @@ void drawColoredPolylineCached(QCPPainter* painter, QCustomPlot* parentPlot, QCP
                  && pen.style() == Qt::SolidLine)
         ? parentPlot->plottableRhiLayer(layer) : nullptr;
     if (!prl)
-        return drawColoredPolylineRuns(painter, points, runs, mapper, pen, gpuOffset);
+        return drawColoredPolylineRuns(painter, points, colorRuns(points, indices, mapper),
+                                       mapper, pen, gpuOffset);
 
     const double dpr = parentPlot->bufferDevicePixelRatio();
     const float penWidth = (pen.isCosmetic() || qFuzzyIsNull(pen.widthF()))
@@ -1735,7 +1746,7 @@ void drawColoredPolylineCached(QCPPainter* painter, QCustomPlot* parentPlot, QCP
         : qMax(1.0f, static_cast<float>(pen.widthF()));
     if (needsColoredReextrusion(cache, freshLines, penWidth, mapper.generation()))
     {
-        extrudeColorRuns(points, runs, penWidth, mapper, cache.vertices);
+        extrudeColorRuns(points, colorRuns(points, indices, mapper), penWidth, mapper, cache.vertices);
         cache.penWidth = penWidth;
         cache.colorGeneration = mapper.generation();
     }
@@ -1783,29 +1794,28 @@ void drawColoredPolylineCached(QCPPainter* painter, QCustomPlot* parentPlot, QCP
    ```cpp
             } else if (dataIdx) {
                 applyDefaultAntialiasingHint(painter);
-                const bool reextrude = isExportMode || needStyledLines
-                    || mExtrusionCaches[c].colorGeneration != mColor.generation();
-                std::vector<qcp::ColorRun> runs;
-                if (reextrude)
-                    runs = qcp::colorRuns(lines, lineIndices(*dataIdx), mColor);
                 if (!isExportMode)
-                    qcp::drawColoredPolylineCached(painter, mParentPlot, mLayer, lines, runs, mColor,
-                                                   activePen, gpuOffset, clipRect(),
-                                                   needFreshLines, mExtrusionCaches[c]);
+                    qcp::drawColoredPolylineCached(painter, mParentPlot, mLayer, lines,
+                                                   lineIndices(*dataIdx), mColor, activePen,
+                                                   gpuOffset, clipRect(), needFreshLines,
+                                                   mExtrusionCaches[c]);
                 else
-                    qcp::drawColoredPolylineRuns(painter, lines, runs, mColor, activePen, gpuOffset);
+                    qcp::drawColoredPolylineRuns(painter, lines,
+                                                 qcp::colorRuns(lines, lineIndices(*dataIdx), mColor),
+                                                 mColor, activePen, gpuOffset);
             } else {
    ```
-   with a protected helper (declared in `plottable-multigraph.h` next to `invalidateLines`) `QVector<int> lineIndices(const QVector<int>& dataIdx) const` that returns `dataIdx` for `lsLine` and `qcp::stepLeftIndices`/`stepRightIndices`/`stepCenterIndices`/`impulseIndices` for the step styles and impulse (mirror of the `switch` that builds `styledLines`). Note `needStyledLines` must now also be true when the coloured cache is stale: change its definition to
-   `const bool needStyledLines = needFreshLines || mExtrusionCaches[c].isEmpty() || (dataIdx && mExtrusionCaches[c].colorGeneration != mColor.generation());`
-   so `lines` holds the styled points whenever runs are rebuilt.
+   with a protected helper (declared in `plottable-multigraph.h` next to `invalidateLines`) `QVector<int> lineIndices(const QVector<int>& dataIdx) const` that returns `dataIdx` for `lsLine` and `qcp::stepLeftIndices`/`stepRightIndices`/`stepCenterIndices`/`impulseIndices` for the step styles and impulse (mirror of the `switch` that builds `styledLines`).
+   A coloured component always gets its styled points, because `drawColoredPolylineCached` may re-extrude for any reason (fresh lines, empty cache, pen width, colour generation) and must then see the styled geometry. Change the definition to
+   `const bool needStyledLines = needFreshLines || mExtrusionCaches[c].isEmpty() || dataIdx != nullptr;`
+   (a step transform over the decimated points — a few thousand — per coloured frame; uncoloured graphs keep today's condition).
 
 - [ ] **Step 6: Build and run the whole suite.** Expected: four new tests pass; all existing classes unchanged; exit 0. `coloredLineRendersTheGradient` goes through the export path (`toPixmap`), which is the QPainter runs path.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/plottables meson.build tests/auto/test-color-by-scalar
+git add src/plottables tests/auto/test-color-by-scalar
 printf 'feat(multigraph): draw lines coloured by a scalar\n\nA coloured graph fetches its lines with source indices, splits them into\nruns of equal colour (segment k -> k+1 takes the colour of point k+1) and\nextrudes each run with the existing extruder into one vertex buffer. The\ncoloured extrusion cache is keyed on pen width and a colour generation, so a\npan reuses it and a colour change rebuilds it. Uncoloured graphs take the\nunchanged path.\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\n' > /tmp/msg && git commit -F /tmp/msg
 ```
 
@@ -2362,7 +2372,7 @@ append both to the `embedded_shaders` `input:` list (after `scatter_frag_qsb`) a
         return false;
     }
 ```
-`invalidatePipeline` and the destructor delete `mColoredPipeline` and `mColorBuffer` (and reset `mColorBufferSize`).
+`invalidatePipeline` deletes `mColoredPipeline` (next to `mPipeline`). `mColorBuffer` lives exactly like `mInstanceBuffer`: `invalidatePipeline` leaves it alone and only the destructor deletes it — `invalidatePipeline` does not set `mDirty`, so a buffer deleted there would not be recreated until the next geometry change.
 
 In `uploadResources`, inside the "instance data changed" part (after the instance upload, still under `mDirty`), upload colours only when there are some:
 ```cpp

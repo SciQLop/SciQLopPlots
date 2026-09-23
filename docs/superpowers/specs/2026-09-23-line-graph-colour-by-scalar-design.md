@@ -52,7 +52,10 @@ void setColorScaleType(QCPAxis::ScaleType type);   // stLinear / stLogarithmic
   right for a scalar tied to the samples' position (time-like); a caller whose scalar is derived
   from the refreshed data (e.g. |B|) must re-send it after each refresh. Same semantics as curves.
 - The colour setters never touch the data or L1/L2: indices depend only on the data. They bump a
-  colour generation counter and invalidate the pixel-line and extrusion caches.
+  colour generation counter; the coloured extrusion cache is keyed on it, so the next frame
+  re-extrudes. The pixel lines and their indices do not depend on colours and stay cached; only
+  switching between coloured and uncoloured refetches them (the indices are fetched only while
+  coloured).
 
 `QCPAbstractMultiDataSource`: two new virtuals, new names (no overloads, so no name hiding in
 subclasses), with default implementations built on `keyAt`/`valueAt` so third-party subclasses
@@ -82,7 +85,7 @@ instantiation is the code that runs today; the existing entry points call it.
 | Level | Where | Index |
 |---|---|---|
 | Raw source, full resolution | `linesToPixels` (`algorithms.h`) | `i`; `-1` for each inserted NaN gap marker and each NaN value marker |
-| Raw source, adaptive | `optimizedLineData` / `optimizedLineDataMulti` (`algorithms.h`) | `flushInterval`: first sample, argmin, argmax, last sample, each emitted under exactly the same condition as its point; single-sample interval: that sample; the multi variant's closing point under its `!isnan` guard. The loops track argmin/argmax next to min/max |
+| Raw source, adaptive | `optimizedLineData` (`algorithms.h`) | `flushInterval`: first sample, argmin, argmax, last sample, each emitted under exactly the same condition as its point; single-sample interval: that sample. The loop tracks argmin/argmax next to min/max. (`optimizedLineDataMulti` needs no indexed variant: only `getOptimizedLineDataAll` reaches it, nothing calls that, and coloured graphs fetch per component.) |
 | SoA / row-major sources | `soa-multi-datasource.h`, `row-major-multi-datasource.h` | override both new virtuals with the templated algorithms (fast path) |
 | L1 | `binMinMaxMulti`, `binMinMaxMultiParallel` (`graph-resampler.h`) | `MultiColumnBinResult` gains `std::vector<int> origin`, same layout and stride as `values` (per column, 2 slots per bin: argmin, argmax); bin partitioning is disjoint per chunk, so no race |
 | L2 | `resampleL2Multi` (`resampled-multi-datasource.h`) | per bin, the L1 row picked as min/max maps through L1's `origin`; the table has the same 2-per-bin, per-column layout as L2's `values` and is compacted **in lockstep** with the empty-bin compaction and the per-column shift |
@@ -91,11 +94,13 @@ instantiation is the code that runs today; the existing entry points call it.
 **The origin tables are built only for coloured graphs**, so a single-colour graph builds exactly
 what it builds today. Mechanism:
 
-- `MultiGraphResamplerCache` (the `std::any` the stateless L1 lambda already receives) gains
-  `bool wantOrigin`, and it joins the validity key (`sourceSize`, `columnCount`, `cachedKeyRange`,
-  **`wantOrigin`**). The L1 builder reads it from the cache and fills `origin` only when set.
-- The graph sets `wantOrigin` in its cache when colour values are first set on a graph whose L1 has
-  no origin, and resubmits the L1 job: **one** async L1 rebuild, the first time a graph is coloured
+- The graph owns a `std::shared_ptr<std::atomic<bool>> wantOrigin`, captured by the L1 transform
+  lambda it installs; the lambda passes `wantOrigin->load()` to `buildL1CacheMulti`, which fills
+  `origin` only when asked. The flag cannot live in `MultiGraphResamplerCache` (the pipeline's
+  `std::any` slot): `extractL1Cache` moves the cache out after every build, so it would be lost.
+  `buildL1CacheMulti`'s "cache still valid" check also requires an origin when one is wanted.
+- The graph sets `wantOrigin` when colour values are first set on a graph whose L1 has no origin,
+  and resubmits the L1 job: **one** async L1 rebuild, the first time a graph is coloured
   (usual order: `set_data`, then `set_color_data`). Until it lands, the graph draws uncoloured from
   the old L1, exactly like any other pending L1 job. Later colour changes (values of the same length,
   gradient, range, scale type) never touch L1/L2.
@@ -158,11 +163,10 @@ whole layer, set by the last `addScatter` of the frame (`scatter-rhi-layer.cpp:9
 `:338-347`). Coloured markers need a colour per marker and a colour mode per draw. Only that is in
 scope:
 
-- **Per-draw `mode` and `halfSize`**: stored in `DrawEntry`, written into `PerDrawUniforms` per draw
-  (`halfSize` is already a per-draw uniform, filled from a layer-wide value). `mode` replaces the
-  `useColorAxis` float in place, so the struct stays 32 bytes and std140-compatible. Modes: `0`
-  sprite colour (today's default), `1` colormap lookup (today's `useColorAxis`, now per draw), `2`
-  instance colour.
+- **Per-draw `halfSize` and `useColorAxis`**: stored in `DrawEntry`, written into `PerDrawUniforms`
+  per draw (both are already per-draw uniforms, filled today from layer-wide values). The struct
+  keeps its 32 bytes and std140 layout. The instance colour is not a uniform mode: a coloured draw
+  uses its own pipeline (below).
 - **Instance data stays 3 floats** `(x, y, colorValue)` in the existing instance buffer, with the
   existing pipeline: uncoloured and colormap draws are unchanged, byte for byte.
 - **Coloured draws**: a second instance buffer holds one premultiplied `Float4` colour per marker,
@@ -173,15 +177,17 @@ scope:
   and uploaded only when a frame has coloured draws.
 - `addScatter` keeps its signature and behaviour. New
   `addScatterColored(std::span<const float> xy, std::span<const float> rgba, style, ...)`.
-- Shaders: a second vertex shader variant `scatter_colored.vert` reads the colour attribute and
-  forwards it; `scatter.frag` handles mode 2. The existing `scatter.vert` is unchanged.
-- **Mode 2 colour**: `fragColor = instanceColor * sprite.a`, with `instanceColor` premultiplied, so
+- Shaders: `scatter_colored.vert` reads the colour attribute and forwards it, and
+  `scatter_colored.frag` applies it. The existing `scatter.vert` and `scatter.frag` are unchanged:
+  a fragment shader shared with the plain pipeline would read a varying the plain vertex shader does
+  not write.
+- **Coloured marker colour**: `fragColor = instanceColor * sprite.a`, with `instanceColor` premultiplied, so
   alpha is counted once. It uses the sprite as a shape mask: a marker whose pen differs from its
   brush is drawn in one colour. That is the intended look for coloured markers (pen = brush = the
   bucket colour, as on curves).
 Not in scope, filed as a NeoQCP issue: the shared sprite (two graphs with different marker styles
 on one layer draw with the last style; a sprite atlas with per-draw UV rects would fix it) and the
-shared colormap texture (`QCPGraph2` with two different gradients on one layer). Per-draw `mode`
+shared colormap texture (`QCPGraph2` with two different gradients on one layer). Per-draw `useColorAxis`
 already fixes one direction of the latter: a plain draw no longer switches off a colormap draw on
 the same layer.
 
@@ -217,14 +223,15 @@ L2 bins when L2 is active, and the colormap / `mUseColorAxis` is layer-wide (las
 Feature branch from `upstream/main` (`a4ad9f0`). One commit per step, the listed tests fail first.
 
 1. `setLineStyle` invalidates the line cache. Test: changing the style re-draws.
-2. Index emission on the raw paths: `linesToPixels`, `optimizedLineData`, `optimizedLineDataMulti`,
+2. Index emission on the raw paths: `linesToPixels`, `optimizedLineData`,
    the two virtuals with defaults, SoA and row-major overrides. Tests: index invariant; every
    `flushInterval` branch; NaN runs; key gaps; vertical key axis; the default implementation on a
    custom source equals the fast one.
 3. **Perf check 1**: `tests/perf/multigraph-perf.cpp`, 10M points. (a) Single-colour gate: every
-   existing scenario within noise (3%) of a build of the pinned `a4ad9f0`. (b) Indexed vs plain raw
-   paths. Stop and rethink if (a) fails or (b) costs more than the budget allows.
-4. L1 origin (`binMinMaxMulti(Parallel)`) behind `wantOrigin` in the cache and its validity key, L2
+   existing scenario within noise (3%) of a build of the pinned `a4ad9f0`. Stop and rethink if it
+   fails. (The indexed path's own cost is measured in perf check 2, by the zoom pair, which
+   refetches indexed lines on every frame.)
+4. L1 origin (`binMinMaxMulti(Parallel)`) behind the graph's `wantOrigin` flag, L2
    composition and lockstep compaction, the `QCPResampledMultiDataSource` indexed method. Tests:
    argmin/argmax per column; parallel equals serial; L2 compaction with empty bins; key-gap marker
    is `-1`; no origin built while `wantOrigin` is unset; toggling it rebuilds L1 once.
@@ -235,11 +242,11 @@ Feature branch from `upstream/main` (`a4ad9f0`). One commit per step, the listed
    refused; same-size refresh keeps values.
 7. Colour runs and GPU run extrusion with the coloured cache key. Tests: runs at bucket boundaries,
    gaps end runs; re-extrude on colour change, not on pan; uncoloured cache key unchanged.
-8. **Perf check 2**: the single-colour gate against `a4ad9f0` again, and coloured vs uncoloured pan
-   and zoom at 10M points, target 1.5x.
+8. **Perf check 2**: the single-colour gate against `a4ad9f0` again, and coloured vs uncoloured
+   full redraw, pan and zoom at 10M points, target 1.5x.
 9. CPU runs (export, dashed pens, impulses). Test: GPU and CPU produce the same runs.
-10. Scatter layer: per-draw `mode` and `halfSize`, the colour instance buffer, the coloured
-    pipeline and `scatter_colored.vert`, `addScatterColored`, mode 2 in `scatter.frag`. Tests:
+10. Scatter layer: per-draw `useColorAxis` and `halfSize`, the colour instance buffer, the
+    coloured pipeline and `scatter_colored.{vert,frag}`, `addScatterColored`. Tests:
     coloured markers get their per-marker colours; a colormap draw and a plain draw on one layer
     keep their own mode (fails today); two graphs with different marker sizes on one layer keep
     their own size (fails today); uncoloured and `QCPGraph2` colormap markers unchanged; no colour
