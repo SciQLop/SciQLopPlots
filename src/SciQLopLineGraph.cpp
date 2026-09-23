@@ -46,12 +46,19 @@ SciQLopLineGraph::~SciQLopLineGraph()
 void SciQLopLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     SciQLopMultiGraphBase::set_data(std::move(x), std::move(y));
-    // Same rule as QCPMultiGraph::setDataSource, which drops its copy on its own.
-    if (_color_values && _color_values->size() != _x.flat_size())
+    if (!_color_values)
+        return;
+    // Same size rule as QCPMultiGraph::setDataSource, which drops its copy on its own.
+    if (_color_values->size() != _x.flat_size())
     {
         _color_values.reset();
         notify_color_scale();
+        return;
     }
+    // Staging a new source drops the values parked for the previous staged one:
+    // hand the kept values over again (same buffer, no copy).
+    if (_multiGraph)
+        _multiGraph->setColorValues(_color_values);
 }
 
 void SciQLopLineGraph::set_visible(bool visible) noexcept

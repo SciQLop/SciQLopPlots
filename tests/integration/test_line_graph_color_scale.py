@@ -55,12 +55,6 @@ def _colormap(qtbot, plot, x0=0.0):
     return cmap
 
 
-def _let_the_data_swap_land(qtbot):
-    """A refresh of a drawn graph is staged and swapped in by a debounced commit."""
-    qtbot.wait(500)
-    process_events()
-
-
 def _range(plot):
     r = plot.z_axis().range()
     return r.start(), r.stop()
@@ -238,28 +232,71 @@ class TestColormapWinsTheScale:
         assert plot.z_auto_range() is True
 
 
+def _fix_axes(plot, x=(-0.5, 6.8)):
+    plot.x_axis().set_range(SciQLopPlotRange(*x))
+    plot.y_axis().set_range(SciQLopPlotRange(-1.2, 1.2))
+
+
+def _ink_top(img):
+    rows = [y for y in range(img.height()) for x in range(img.width())
+            if img.pixelColor(x, y).saturation() > 100 and img.pixelColor(x, y).value() > 60]
+    return min(rows, default=img.height())
+
+
+def _drawn_with_fixed_axes(plot, tmp_path, name="first"):
+    process_events()
+    return _ink_top(_image(plot, tmp_path, name, rescale=False))
+
+
+def _wait_for_the_half_height_data(qtbot, plot, tmp_path, first_top):
+    """A refresh of a drawn graph is staged, then swapped in by a debounced commit.
+    The refreshed data is half as high: once its top is on screen, the swap has landed."""
+    qtbot.waitUntil(
+        lambda: (process_events(),
+                 _ink_top(_image(plot, tmp_path, "swap", rescale=False)) > first_top + 20)[1],
+        timeout=5000)
+
+
 class TestRefreshKeepsTheColours:
     def test_same_length_set_data_keeps_them(self, qtbot, plot, tmp_path):
         line = _line(qtbot, plot)
         line.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
-        process_events()
-        _image(plot, tmp_path, "first")
+        _fix_axes(plot)
+        first_top = _drawn_with_fixed_axes(plot, tmp_path)
         t = np.linspace(0, 2 * np.pi, N)
         line.set_data(t, 0.5 * _two_columns(t))
-        _let_the_data_swap_land(qtbot)
+        _wait_for_the_half_height_data(qtbot, plot, tmp_path, first_top)
         assert plot.z_axis().visible() is True
-        assert _hues(_image(plot, tmp_path, "refreshed")) > 8
+        assert _hues(_image(plot, tmp_path, "refreshed", rescale=False)) > 8
 
     def test_another_length_drops_them(self, qtbot, plot, tmp_path):
         line = _line(qtbot, plot)
         line.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
-        process_events()
-        _image(plot, tmp_path, "first")
+        _fix_axes(plot)
+        first_top = _drawn_with_fixed_axes(plot, tmp_path)
         t = np.linspace(0, 2 * np.pi, N // 2)
-        line.set_data(t, _two_columns(t))
-        _let_the_data_swap_land(qtbot)
+        line.set_data(t, 0.5 * _two_columns(t))
+        _wait_for_the_half_height_data(qtbot, plot, tmp_path, first_top)
         assert plot.z_axis().visible() is False
-        assert _hues(_image(plot, tmp_path, "dropped")) <= PLAIN_HUES
+        assert _hues(_image(plot, tmp_path, "dropped", rescale=False)) <= PLAIN_HUES
+
+    def test_colours_for_a_staged_refresh_survive_the_next_same_length_refresh(
+            self, qtbot, plot, tmp_path):
+        """A panning callable refreshes again before the swap lands. NeoQCP dropped the
+        values parked for the first staged source, while the graph kept its own copy:
+        the scale was shown and the line drawn uncoloured."""
+        line = _line(qtbot, plot)
+        line.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
+        _fix_axes(plot)
+        first_top = _drawn_with_fixed_axes(plot, tmp_path)
+        m = N // 2
+        t = np.linspace(0, 2 * np.pi, m)
+        line.set_data(t, 0.5 * _two_columns(t))
+        line.set_color_data(np.linspace(0.0, 3.0, m), ColorGradient.Jet)
+        line.set_data(t, 0.5 * _two_columns(t))
+        _wait_for_the_half_height_data(qtbot, plot, tmp_path, first_top)
+        assert plot.z_axis().visible() is True
+        assert _hues(_image(plot, tmp_path, "coloured", rescale=False)) > 8
 
     def test_a_same_length_callable_refresh_keeps_them(self, qtbot, plot, tmp_path):
         calls = []
@@ -267,19 +304,18 @@ class TestRefreshKeepsTheColours:
         def data(start, stop):
             calls.append((start, stop))
             x = np.linspace(start, stop, N).astype(np.float64)
-            return x, np.sin(x)
+            amplitude = 1.0 if len(calls) == 1 else 0.5
+            return x, amplitude * np.sin(x)
 
         line = plot.plot(data, graph_type=GraphType.Line, labels=["f"])
         plot.x_axis().set_range(SciQLopPlotRange(0.0, 6.0))
         qtbot.waitUntil(lambda: (process_events(), len(calls) > 0 and not line.busy())[1],
                         timeout=5000)
-        process_events()
         line.set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
-        process_events()
-        seen = len(calls)
+        _fix_axes(plot, x=(0.0, 6.0))
+        first_top = _drawn_with_fixed_axes(plot, tmp_path)
         plot.x_axis().set_range(SciQLopPlotRange(0.5, 6.5))
-        qtbot.waitUntil(lambda: (process_events(), len(calls) > seen and not line.busy())[1],
-                        timeout=5000)
-        _let_the_data_swap_land(qtbot)
+        _wait_for_the_half_height_data(qtbot, plot, tmp_path, first_top)
+        assert len(calls) > 1
         assert plot.z_axis().visible() is True
         assert _hues(_image(plot, tmp_path, "callable", rescale=False)) > 8
