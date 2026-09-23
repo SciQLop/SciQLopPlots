@@ -21,6 +21,33 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
+#include "SciQLopPlots/SciQLopPlot.hpp"
+
+namespace
+{
+SciQLopPlot* owning_plot(QObject* graph_parent)
+{
+    auto* impl = qobject_cast<_impl::SciQLopPlot*>(graph_parent);
+    return impl ? qobject_cast<SciQLopPlot*>(impl->parent()) : nullptr;
+}
+}
+
+void SQPQCPAbstractPlottableWrapper::notify_color_scale(std::optional<::ColorGradient> gradient)
+{
+    auto* plot = owning_plot(parent());
+    if (!plot)
+        return;
+    plot->update_curve_color_scale();
+    if (gradient)
+        plot->request_z_gradient(*gradient);
+}
+
+void SQPQCPAbstractPlottableWrapper::notify_color_scale_later()
+{
+    if (auto* plot = owning_plot(parent()))
+        QMetaObject::invokeMethod(plot, [plot] { plot->update_curve_color_scale(); },
+                                  Qt::QueuedConnection);
+}
 
 void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* component)
 {

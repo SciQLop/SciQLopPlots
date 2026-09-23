@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -32,4 +33,22 @@ auto dispatch_dtype(char format_code, F&& func)
             throw std::invalid_argument(msg);
         }
     }
+}
+
+// Copy any numeric buffer into a container of double, converting per its dtype.
+// SciQLopPyBuffer::data() is double-only and throws (→ std::terminate) on
+// float32/int buffers, which Speasy routinely produces.
+template <typename Container, typename Buffer>
+Container to_double_vector(const Buffer& buffer)
+{
+    Container out(buffer.flat_size());
+    dispatch_dtype(buffer.format_code(),
+                   [&](auto tag)
+                   {
+                       using V = typename decltype(tag)::type;
+                       const auto* src = static_cast<const V*>(buffer.raw_data());
+                       std::transform(src, src + buffer.flat_size(), out.begin(),
+                                      [](V v) { return static_cast<double>(v); });
+                   });
+    return out;
 }

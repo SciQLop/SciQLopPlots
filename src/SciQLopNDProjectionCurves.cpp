@@ -26,26 +26,6 @@
 
 #include <algorithm>
 
-namespace
-{
-// Copy any numeric PyBuffer to QVector<double>, converting per its dtype.
-// SciQLopPyBuffer::data() is double-only and throws (→ std::terminate) on
-// float32/int buffers, which Speasy routinely produces.
-QVector<double> to_double_vector(const SciQLopPyBuffer& buffer)
-{
-    QVector<double> out(static_cast<int>(buffer.flat_size()));
-    dispatch_dtype(buffer.format_code(),
-                   [&](auto tag)
-                   {
-                       using V = typename decltype(tag)::type;
-                       const auto* src = static_cast<const V*>(buffer.raw_data());
-                       std::transform(src, src + buffer.flat_size(), out.data(),
-                                      [](V v) { return static_cast<double>(v); });
-                   });
-    return out;
-}
-} // namespace
-
 SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
                                                      QList<SciQLopPlot*>& plots,
                                                      const QStringList& labels, QVariantMap metaData)
@@ -119,7 +99,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
                                   data_without_time[(i + 1) % curves_count]);
         }
         const auto& time_buf = data[0];
-        QVector<double> times = to_double_vector(time_buf);
+        QVector<double> times = to_double_vector<QVector<double>>(time_buf);
         for (auto* curve : std::as_const(m_curves))
             curve->set_time_values(times);
     }
@@ -129,7 +109,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
         {
             m_curves[i]->set_data(data[3 * i], data[3 * i + 1]);
             const auto& scalar_buf = data[3 * i + 2];
-            QVector<double> scalars = to_double_vector(scalar_buf);
+            QVector<double> scalars = to_double_vector<QVector<double>>(scalar_buf);
             m_curves[i]->set_color_values(scalars);
             m_curves[i]->set_time_color_enabled(!scalars.isEmpty());
         }

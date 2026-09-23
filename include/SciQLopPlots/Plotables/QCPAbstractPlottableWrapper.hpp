@@ -58,6 +58,13 @@ protected:
 
     void _register_component(SciQLopGraphComponent* component);
 
+#ifndef BINDINGS_H
+    //! Tells the plot to re-read its colour scale; a gradient is requested on it too.
+    void notify_color_scale(std::optional<::ColorGradient> gradient = std::nullopt);
+    //! Same, once this graph has left the plot's list: for destructors.
+    void notify_color_scale_later();
+#endif
+
 public:
     SQPQCPAbstractPlottableWrapper(const QString& prefix, QVariantMap metaData, QCustomPlot* parent)
             : SciQLopGraphInterface(prefix, metaData, parent)

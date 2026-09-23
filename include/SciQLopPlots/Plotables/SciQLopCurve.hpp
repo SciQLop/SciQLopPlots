@@ -89,11 +89,6 @@ public:
 
     virtual void set_visible(bool visible) noexcept override;
 
-private:
-    //! Tells the plot to re-read the colour scale; a gradient is applied to it too.
-    void _notify_plot(std::optional<::ColorGradient> gradient = std::nullopt);
-
-public:
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
     virtual QList<SciQLopPyBuffer> data() const noexcept override;

@@ -112,10 +112,7 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
 SciQLopCurve::~SciQLopCurve()
 {
     // Still listed among the plot's plottables here, so let it look again once we are gone.
-    auto* impl = qobject_cast<_impl::SciQLopPlot*>(parent());
-    if (auto* plot = impl ? qobject_cast<SciQLopPlot*>(impl->parent()) : nullptr)
-        QMetaObject::invokeMethod(plot, [plot] { plot->update_curve_color_scale(); },
-                                  Qt::QueuedConnection);
+    notify_color_scale_later();
     clear_curves();
     clear_resampler();
 }
@@ -319,25 +316,14 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_color_gradient(qcp_gradient);
-    _notify_plot(gradient);
+    notify_color_scale(gradient);
     Q_EMIT this->replot();
 }
 
 void SciQLopCurve::set_visible(bool visible) noexcept
 {
     SQPQCPAbstractPlottableWrapper::set_visible(visible);
-    _notify_plot();
-}
-
-void SciQLopCurve::_notify_plot(std::optional<::ColorGradient> gradient)
-{
-    auto* impl = qobject_cast<_impl::SciQLopPlot*>(parent());
-    auto* plot = impl ? qobject_cast<SciQLopPlot*>(impl->parent()) : nullptr;
-    if (!plot)
-        return;
-    plot->update_curve_color_scale();
-    if (gradient)
-        plot->request_z_gradient(*gradient);
+    notify_color_scale();
 }
 
 void SciQLopCurve::set_color_scale(QCPColorScale* scale)
@@ -386,16 +372,7 @@ void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradie
                 + std::to_string(_point_count) + "), got "
                 + std::to_string(values.flat_size()));
 
-        const auto n = static_cast<int>(values.flat_size());
-        colors.resize(n);
-        dispatch_dtype(values.format_code(),
-                       [&](auto tag)
-                       {
-                           using V = typename decltype(tag)::type;
-                           const auto* src = static_cast<const V*>(values.raw_data());
-                           std::transform(src, src + n, colors.begin(),
-                                          [](V v) { return static_cast<double>(v); });
-                       });
+        colors = to_double_vector<QVector<double>>(values);
     }
 
     const QCPColorGradient qcp_gradient { to_qcp(gradient) };
@@ -405,7 +382,7 @@ void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradie
 
     set_color_values(colors);
     set_time_color_enabled(!colors.isEmpty());
-    _notify_plot(colors.isEmpty() ? std::nullopt : std::optional { gradient });
+    notify_color_scale(colors.isEmpty() ? std::nullopt : std::optional { gradient });
     Q_EMIT this->replot();
 }
 
