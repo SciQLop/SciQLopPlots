@@ -86,6 +86,10 @@ public:
      */
     Q_SLOT void remove_node(QStringList path);
 
+    //! Tells the views that \a node's \a roles changed. Safe from any thread: the signal
+    //! is emitted on the model's thread, and dropped if the node is gone by then.
+    void node_data_changed(ProductsModelNode* node, const QList<int>& roles);
+
     static ProductsModelNode* node(const QStringList& path);
 
     inline static QString mime_type() { return "application/x-product"; }

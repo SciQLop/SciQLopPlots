@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include <QIODevice>
+#include <QPointer>
 #include <QDebug>
 #include <QThread>
 #include <qapplicationstatic.h>
@@ -32,6 +33,24 @@ QModelIndex ProductsModel::make_index(ProductsModelNode* node)
     if (parent_node == nullptr)
         return QModelIndex();
     return createIndex(parent_node->child_row(node), 0, node);
+}
+
+void ProductsModel::node_data_changed(ProductsModelNode* node, const QList<int>& roles)
+{
+    if (QThread::currentThread() != thread())
+    {
+        QMetaObject::invokeMethod(
+            this,
+            [this, guarded = QPointer<ProductsModelNode>(node), roles]
+            {
+                if (guarded)
+                    node_data_changed(guarded, roles);
+            },
+            Qt::QueuedConnection);
+        return;
+    }
+    const auto index = make_index(node);
+    Q_EMIT dataChanged(index, index, roles);
 }
 
 void ProductsModel::_remove_child(ProductsModelNode* parent, int row)

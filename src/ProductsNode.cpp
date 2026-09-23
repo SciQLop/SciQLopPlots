@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Products/ProductsNode.hpp"
+#include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Icons/icons.hpp"
 #include "fmt/format.h"
 #include <QDebug>
@@ -74,6 +75,7 @@ bool ProductsModelNode::add_child(ProductsModelNode* child)
                    << "- it lives in another thread than" << name();
         return false;
     }
+    child->m_row = m_children.size();
     m_children.append(child);
     child->setParent(this);
     return true;
@@ -93,7 +95,12 @@ QStringList ProductsModelNode::path()
 
 void ProductsModelNode::set_icon(const QString& name)
 {
+    if (m_icon == name)
+        return;
     m_icon = name;
+    // Published nodes hang under the model's root node, whose QObject parent is the model.
+    if (auto* model = qobject_cast<ProductsModel*>(_root_node()->parent()))
+        model->node_data_changed(this, { Qt::DecorationRole });
 }
 
 const QIcon& ProductsModelNode::icon()

@@ -23,6 +23,26 @@ ProductsFlatFilterModel::ProductsFlatFilterModel(ProductsModel* source, QObject*
     m_rebuild_timer->setSingleShot(true);
     connect(m_rebuild_timer, &QTimer::timeout, this, &ProductsFlatFilterModel::rebuild);
 
+    m_refresh_timer = new QTimer(this);
+    m_refresh_timer->setInterval(0);
+    m_refresh_timer->setSingleShot(true);
+    connect(m_refresh_timer, &QTimer::timeout, this,
+            [this]()
+            {
+                if (rowCount() > 0)
+                    Q_EMIT dataChanged(index(0), index(rowCount() - 1), m_changed_roles);
+                m_changed_roles.clear();
+            });
+    connect(m_source, &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex&, const QModelIndex&, const QList<int>& roles)
+            {
+                for (int role : roles)
+                    if (!m_changed_roles.contains(role))
+                        m_changed_roles.append(role);
+                if (!m_refresh_timer->isActive())
+                    m_refresh_timer->start();
+            });
+
     const auto schedule_rebuild = [this]() { m_rebuild_timer->start(); };
     connect(m_source, &QAbstractItemModel::rowsInserted, this, schedule_rebuild);
     connect(m_source, &QAbstractItemModel::rowsRemoved, this, schedule_rebuild);

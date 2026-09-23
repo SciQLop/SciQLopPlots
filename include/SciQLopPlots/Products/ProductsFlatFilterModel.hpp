@@ -73,6 +73,10 @@ class ProductsFlatFilterModel : public QAbstractListModel
     // rowsInserted once per product, and rebuilding per notification is
     // O(products^2). One rebuild per event-loop turn instead.
     QTimer* m_rebuild_timer;
+    // Same coalescing for source dataChanged (e.g. 100k icon changes): one
+    // whole-range dataChanged per event-loop turn, not a row lookup per change.
+    QTimer* m_refresh_timer;
+    QList<int> m_changed_roles;
 
     // Scratch state accumulated across batches; committed into
     // m_node_raw_signals/m_signal_maxes only once the whole corpus has

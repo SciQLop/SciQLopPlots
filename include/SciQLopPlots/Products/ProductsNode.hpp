@@ -37,6 +37,7 @@ class ProductsModelNode : public QObject
 {
     Q_OBJECT
     QList<ProductsModelNode*> m_children;
+    int m_row = -1; // index in the parent's m_children, kept by add_child/take_child
     ProductsModelNodeType m_node_type;
 
     ProductsModelNode* _root_node();
@@ -79,7 +80,11 @@ public:
         return nullptr;
     }
 
-    inline int child_row(ProductsModelNode* child) { return m_children.indexOf(child); }
+    //! O(1): views ask for rows constantly, and folders can hold ~100k products.
+    inline int child_row(ProductsModelNode* child)
+    {
+        return child->parent() == this ? child->m_row : -1;
+    }
 
     inline ProductsModelNode* take_child(int row)
     {
@@ -87,6 +92,8 @@ public:
             return nullptr;
         auto* child = m_children.takeAt(row);
         child->setParent(nullptr);
+        for (int i = row; i < m_children.size(); ++i)
+            m_children[i]->m_row = i;
         return child;
     }
 
