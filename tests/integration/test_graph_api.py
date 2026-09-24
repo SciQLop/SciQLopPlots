@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor
 
 from SciQLopPlots import (
     SciQLopPlot, SciQLopMultiPlotPanel, SciQLopGraphInterface,
-    SciQLopPlotRange, GraphType,
+    SciQLopPlotRange, GraphType, GraphLineStyle,
 )
 
 
@@ -125,6 +125,16 @@ class TestGraphProperties:
         g.component_list_changed.connect(lambda: changes.append(len(g.components())))
         g.set_data(x, np.column_stack([np.sin(x), np.cos(x)]))
         assert changes and changes[-1] == 2
+
+    def test_line_style_is_per_component(self, plot):
+        """Choosing NoLine for Bx in the inspector must leave By and Bz drawn,
+        as marker shapes already do."""
+        x = np.linspace(0.0, 10.0, 100)
+        g = plot.line(x, np.column_stack([np.sin(x), np.cos(x), np.sin(2 * x)]),
+                      labels=["Bx", "By", "Bz"])
+        g.component(0).set_line_style(GraphLineStyle.NoLine)
+        assert [g.component(i).line_style() for i in range(3)] == [
+            GraphLineStyle.NoLine, GraphLineStyle.Line, GraphLineStyle.Line]
 
     def test_components(self, plot, sample_data):
         x, y = sample_data

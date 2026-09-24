@@ -156,7 +156,8 @@ public:
                                  },
                                  [style](MultiGraphRef ref)
                                  {
-                                     ref.graph->setLineStyle(
+                                     ref.graph->setComponentLineStyle(
+                                         ref.componentIndex,
                                          static_cast<QCPMultiGraph::LineStyle>(
                                              static_cast<int>(to_qcp(style))));
                                  },
@@ -282,7 +283,9 @@ public:
                                         [](MultiGraphRef ref)
                                         {
                                             return from_qcp(static_cast<QCPGraph::LineStyle>(
-                                                static_cast<int>(ref.graph->lineStyle())));
+                                                static_cast<int>(
+                                                    ref.graph->component(ref.componentIndex)
+                                                        .lineStyle)));
                                         },
                                         [](std::monostate) { return GraphLineStyle::NoLine; } },
                               to_variant());
