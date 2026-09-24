@@ -351,25 +351,30 @@ public:
     }
 };
 
-// Wire a pipeline's new_data_* signals to graph->set_data, guarding against
-// exceptions escaping a queued connection (which would std::terminate). N picks
-// the arity: 2 -> new_data_2d, 3 -> new_data_3d, else new_data_nd.
+// Runs `apply` (a batch reaching the graph), guarding against exceptions escaping
+// a queued connection (which would std::terminate): a rejected batch is dropped.
+template <typename Apply>
+inline void apply_or_drop_batch(SciQLopPlottableInterface* g, Apply&& apply)
+{
+    try
+    {
+        apply();
+    }
+    catch (const std::exception& e)
+    {
+        qWarning() << "SciQLopPlots: dropping data batch from provider for"
+                   << g->objectName() << ":" << e.what();
+    }
+}
+
+// Wire a pipeline's new_data_* signals to graph->set_data, dropping a batch that
+// throws. N picks the arity: 2 -> new_data_2d, 3 -> new_data_3d, else new_data_nd.
 template <typename Pipeline>
 inline QList<QMetaObject::Connection>
 connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* graph, int N)
 {
     const auto drop_bad_batch = [](SciQLopPlottableInterface* g, auto&&... buffers)
-    {
-        try
-        {
-            g->set_data(std::forward<decltype(buffers)>(buffers)...);
-        }
-        catch (const std::exception& e)
-        {
-            qWarning() << "SciQLopPlots: dropping data batch from provider for"
-                       << g->objectName() << ":" << e.what();
-        }
-    };
+    { apply_or_drop_batch(g, [&] { g->set_data(std::forward<decltype(buffers)>(buffers)...); }); };
     QList<QMetaObject::Connection> conns;
     switch (N)
     {
@@ -390,6 +395,17 @@ connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* gr
             break;
     }
     return conns;
+}
+
+// Wire a pipeline's new_data_colored to graph->set_data_and_color, dropping a batch
+// that throws. Only for graphs that know what to do with a colour axis.
+template <typename Pipeline, typename Graph>
+inline QMetaObject::Connection connect_pipeline_colored_data_to_graph(Pipeline* pipeline,
+                                                                      Graph* graph)
+{
+    return QObject::connect(pipeline, &Pipeline::new_data_colored, graph,
+        [graph](const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color)
+        { apply_or_drop_batch(graph, [&] { graph->set_data_and_color(data, color); }); });
 }
 
 class SciQLopFunctionGraph

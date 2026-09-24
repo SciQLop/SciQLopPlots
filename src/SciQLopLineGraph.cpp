@@ -67,19 +67,22 @@ void SciQLopLineGraph::set_visible(bool visible) noexcept
     notify_color_scale();
 }
 
-void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
+void SciQLopLineGraph::check_color_length(const SciQLopPyBuffer& values,
+                                          std::size_t samples) const
 {
-    const bool colouring = values.is_valid() && values.flat_size() > 0;
-    const std::size_t samples = _x.is_valid() ? _x.flat_size() : 0;
-    if (colouring && values.flat_size() != samples)
+    const std::size_t count = values.is_valid() ? values.flat_size() : 0;
+    if (count > 0 && count != samples)
         throw std::invalid_argument(
             "LineGraph.set_color_data: expected one colour value per x sample ("
-            + std::to_string(samples) + "), got " + std::to_string(values.flat_size()));
+            + std::to_string(samples) + "), got " + std::to_string(count));
+}
 
+void SciQLopLineGraph::apply_color_values(const SciQLopPyBuffer& values)
+{
+    const bool colouring = values.is_valid() && values.flat_size() > 0;
     _color_values = colouring ? std::make_shared<const std::vector<double>>(
                                     to_double_vector<std::vector<double>>(values))
                               : nullptr;
-    _color_gradient = QCPColorGradient(to_qcp(gradient));
     if (_multiGraph)
     {
         if (_color_values)
@@ -88,7 +91,40 @@ void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gr
             _multiGraph->clearColorValues();
     }
     push_color_mapping();
-    notify_color_scale(colouring ? std::optional { gradient } : std::nullopt);
+}
+
+void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
+{
+    check_color_length(values, _x.is_valid() ? _x.flat_size() : 0);
+    _gradient_preset = gradient;
+    _color_gradient = QCPColorGradient(to_qcp(gradient));
+    apply_color_values(values);
+    notify_color_scale(_color_values ? std::optional { gradient } : std::nullopt);
+}
+
+void SciQLopLineGraph::set_color_gradient(::ColorGradient gradient)
+{
+    _gradient_preset = gradient;
+    _color_gradient = QCPColorGradient(to_qcp(gradient));
+    push_color_mapping();
+    if (_color_values)
+        notify_color_scale(gradient);
+}
+
+void SciQLopLineGraph::set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                                          const SciQLopPyBuffer& color)
+{
+    if (data.size() != 2)
+        throw std::invalid_argument("LineGraph: a coloured batch needs [x, y], got "
+                                    + std::to_string(data.size()) + " buffers");
+    check_color_length(color, data[0].is_valid() ? data[0].flat_size() : 0);
+    const bool was_coloured = _color_values != nullptr;
+    set_data(data[0], data[1]);
+    apply_color_values(color);
+    // Only when the colouring switches on: the plot's scale keeps the last gradient
+    // asked for, so asking on every refresh would undo a gradient picked on the plot.
+    notify_color_scale(_color_values && !was_coloured ? std::optional { _gradient_preset }
+                                                      : std::nullopt);
 }
 
 std::optional<std::pair<double, double>> SciQLopLineGraph::color_range(bool log) const
@@ -165,6 +201,7 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
     : SciQLopLineGraph{parent, key_axis, value_axis, labels, metaData}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
+    connect_pipeline_colored_data_to_graph(m_pipeline, this);
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
 
@@ -175,5 +212,9 @@ SciQLopLineGraphRemote::SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotA
     : SciQLopLineGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
     , SciQLopRemoteGraph(this, 2)
 {
+    // After the data connection, so busy clears once the batch has reached the graph.
+    m_connections << connect_pipeline_colored_data_to_graph(m_pipeline, this);
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_colored, this,
+                                      [this]() { set_busy(false); });
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
