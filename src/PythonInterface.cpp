@@ -543,6 +543,18 @@ std::size_t SciQLopPyBuffer::flat_size() const
 // overloads via PyAutoScopedGIL). Failures surface as a Python RuntimeWarning
 // (via PyErr_WarnEx) so users can see, at the Python level, why their plot
 // is empty; we also keep the qWarning for non-Python-facing logs.
+inline void _warn_dropped_batch(const std::string& why)
+{
+    qWarning() << "[GetDataPyCallable] dropping data provider result:" << why.c_str();
+    const std::string msg = "SciQLopPlots data provider returned " + why + " (dropping batch)";
+    // PyErr_WarnEx returns -1 if the warning is upgraded to an exception by
+    // Python's warning filters. In that case clear it so the next callable
+    // invocation starts with a clean error state — the C++-side recovery
+    // is the same either way.
+    if (PyErr_WarnEx(PyExc_RuntimeWarning, msg.c_str(), 1) < 0)
+        PyErr_Clear();
+}
+
 inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
 {
     std::vector<SciQLopPyBuffer> data;
@@ -568,20 +580,38 @@ inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
     }
     catch (const std::exception& e)
     {
-        qWarning() << "[GetDataPyCallable] dropping data provider result:" << e.what();
-        const std::string msg
-            = std::string("SciQLopPlots data provider returned an unsupported buffer "
-                          "(dropping batch): ")
-            + e.what();
-        // PyErr_WarnEx returns -1 if the warning is upgraded to an exception by
-        // Python's warning filters. In that case clear it so the next callable
-        // invocation starts with a clean error state — the C++-side recovery
-        // is the same either way.
-        if (PyErr_WarnEx(PyExc_RuntimeWarning, msg.c_str(), 1) < 0)
-            PyErr_Clear();
+        _warn_dropped_batch(std::string("an unsupported buffer: ") + e.what());
         data.clear();
     }
     return data;
+}
+
+// A plain list/tuple, or {"data": [...], "color": c} for a batch that carries its
+// own colour axis. The dict names the colour, so nothing is guessed from the
+// number of buffers.
+inline SciQLopPyDataBatch _collect_batch(PyObject* res)
+{
+    if (!PyDict_Check(res))
+        return { _collect_buffers(res), {} };
+    PyObject* data = PyDict_GetItemString(res, "data"); // borrowed
+    PyObject* color = PyDict_GetItemString(res, "color"); // borrowed
+    if (data == nullptr || color == nullptr)
+    {
+        _warn_dropped_batch("a dict without both 'data' and 'color' keys");
+        return {};
+    }
+    auto buffers = _collect_buffers(data);
+    if (buffers.empty())
+        return {};
+    try
+    {
+        return { std::move(buffers), SciQLopPyBuffer(color) };
+    }
+    catch (const std::exception& e)
+    {
+        _warn_dropped_batch(std::string("an unsupported colour buffer: ") + e.what());
+        return {};
+    }
 }
 
 struct _GetDataPyCallable_impl
@@ -608,9 +638,9 @@ struct _GetDataPyCallable_impl
         this->_is_valid = PyCallable_Check(obj);
     }
 
-    inline std::vector<SciQLopPyBuffer> get_data(double lower, double upper)
+    inline SciQLopPyDataBatch get_data(double lower, double upper)
     {
-        std::vector<SciQLopPyBuffer> data;
+        SciQLopPyDataBatch data;
         if (_is_valid)
         {
             auto scoped_gil = PyAutoScopedGIL();
@@ -627,7 +657,7 @@ struct _GetDataPyCallable_impl
             Py_DECREF(args);
             if (res != nullptr)
             {
-                data = _collect_buffers(res);
+                data = _collect_batch(res);
                 Py_DECREF(res);
             }
             else
@@ -799,7 +829,7 @@ void GetDataPyCallable::release()
     }
 }
 
-std::vector<SciQLopPyBuffer> GetDataPyCallable::get_data(double lower, double upper)
+SciQLopPyDataBatch GetDataPyCallable::get_data(double lower, double upper)
 {
     if (this->_impl)
         return this->_impl->get_data(lower, upper);

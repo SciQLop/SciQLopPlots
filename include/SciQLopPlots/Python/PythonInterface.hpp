@@ -354,6 +354,14 @@ inline auto size(const ArrayViewBase& v)
 
 struct _GetDataPyCallable_impl;
 
+//! A callback's buffers, plus its colour axis when it returned {"data": [...], "color": c}
+//! (an invalid buffer otherwise).
+struct SciQLopPyDataBatch
+{
+    std::vector<SciQLopPyBuffer> data;
+    SciQLopPyBuffer color;
+};
+
 struct GetDataPyCallable
 {
 private:
@@ -379,7 +387,7 @@ public:
 
     void release();
 
-    std::vector<SciQLopPyBuffer> get_data(double lower, double upper);
+    SciQLopPyDataBatch get_data(double lower, double upper);
     std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y);
     std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
 };

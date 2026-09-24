@@ -28,7 +28,7 @@ void DataProviderInterface::_threaded_update()
 {
     SciQLopPlotRange range;
     bool do_range = false;
-    std::variant<std::monostate, _2D_data, _3D_data, _NDdata> data;
+    _PendingData data;
     bool do_data = false;
     {
         QMutexLocker lock(&m_mutex);
@@ -82,6 +82,14 @@ void DataProviderInterface::_notify_new_data(const QList<SciQLopPyBuffer> &data)
     }
 }
 
+void DataProviderInterface::_notify_new_data(const _Colored_data& batch)
+{
+    if (!batch.color.is_valid())
+        _notify_new_data(batch.data);
+    else if (!batch.data.isEmpty())
+        Q_EMIT new_data_colored(batch.data, batch.color);
+}
+
 void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_range)
 {
     bool force;
@@ -92,7 +100,7 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
     }
     if (!force && new_range == m_current_range)
         return;
-    auto r = get_data(new_range.start(), new_range.stop());
+    auto r = fetch(new_range.start(), new_range.stop());
     m_current_range = new_range;
     _notify_new_data(r);
 }
@@ -116,6 +124,12 @@ void DataProviderInterface::_data_based_update(const _3D_data& new_data)
 void DataProviderInterface::_data_based_update(const _NDdata &new_data)
 {
     _notify_new_data(get_data(new_data));
+}
+
+// Pushed as-is: a coloured batch is already final (only the remote channel sends one).
+void DataProviderInterface::_data_based_update(const _Colored_data& new_data)
+{
+    _notify_new_data(new_data);
 }
 
 
@@ -169,12 +183,12 @@ void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 // The data setters wake on their OWN pending flag only, independently of a
 // pending range fetch — so a range fetch in flight no longer suppresses the
 // data wake-up (and vice-versa). Consecutive data calls still coalesce.
-void DataProviderInterface::set_data(_2D_data new_state) noexcept
+void DataProviderInterface::_queue_data(_PendingData new_state) noexcept
 {
     bool should_emit = false;
     {
         QMutexLocker lock(&m_mutex);
-        m_next_data = new_state;
+        m_next_data = std::move(new_state);
         if (!m_data_pending)
         {
             m_data_pending = true;
@@ -183,38 +197,26 @@ void DataProviderInterface::set_data(_2D_data new_state) noexcept
     }
     if (should_emit)
         Q_EMIT _state_changed();
+}
+
+void DataProviderInterface::set_data(_2D_data new_state) noexcept
+{
+    _queue_data(std::move(new_state));
 }
 
 void DataProviderInterface::set_data(_3D_data new_state) noexcept
 {
-    bool should_emit = false;
-    {
-        QMutexLocker lock(&m_mutex);
-        m_next_data = new_state;
-        if (!m_data_pending)
-        {
-            m_data_pending = true;
-            should_emit = true;
-        }
-    }
-    if (should_emit)
-        Q_EMIT _state_changed();
+    _queue_data(std::move(new_state));
 }
 
 void DataProviderInterface::set_data(_NDdata new_state) noexcept
 {
-    bool should_emit = false;
-    {
-        QMutexLocker lock(&m_mutex);
-        m_next_data = new_state;
-        if (!m_data_pending)
-        {
-            m_data_pending = true;
-            should_emit = true;
-        }
-    }
-    if (should_emit)
-        Q_EMIT _state_changed();
+    _queue_data(std::move(new_state));
+}
+
+void DataProviderInterface::set_data(_Colored_data new_state) noexcept
+{
+    _queue_data(std::move(new_state));
 }
 
 // No join: the worker may be inside a long Python callback, and quit() only takes effect
@@ -258,6 +260,8 @@ SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable,
         &SimplePyCallablePipeline::new_data_3d);
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_nd, this,
         &SimplePyCallablePipeline::new_data_nd);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::new_data_colored, this,
+        &SimplePyCallablePipeline::new_data_colored);
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::pipeline_idle, this,
         &SimplePyCallablePipeline::pipeline_idle);
 }
@@ -275,6 +279,8 @@ RemoteDataPipeline::RemoteDataPipeline(QObject* parent) : QObject(parent)
             &RemoteDataPipeline::new_data_3d);
     connect(m_provider, &RemoteDataProvider::new_data_nd, this,
             &RemoteDataPipeline::new_data_nd);
+    connect(m_provider, &RemoteDataProvider::new_data_colored, this,
+            &RemoteDataPipeline::new_data_colored);
     connect(m_provider, &RemoteDataProvider::pipeline_idle, this,
             &RemoteDataPipeline::pipeline_idle);
 }

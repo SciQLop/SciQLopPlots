@@ -46,6 +46,15 @@ struct _3D_data
 
 using _NDdata = QList<SciQLopPyBuffer>;
 
+//! Buffers plus the colour axis that travels with them (invalid when there is none).
+struct _Colored_data
+{
+    _NDdata data;
+    SciQLopPyBuffer color;
+};
+
+using _PendingData = std::variant<std::monostate, _2D_data, _3D_data, _NDdata, _Colored_data>;
+
 class DataProviderInterface : public QObject
 {
     Q_OBJECT
@@ -54,7 +63,7 @@ class DataProviderInterface : public QObject
     // each other (each is serviced; neither is dropped). A single shared slot
     // used to let the second caller clobber the first and suppress its wake-up.
     SciQLopPlotRange m_next_range;
-    std::variant<std::monostate, _2D_data, _3D_data, _NDdata> m_next_data;
+    _PendingData m_next_data;
     SciQLopPlotRange m_current_range;
     QTimer* m_rate_limit_timer;
     QMutex m_mutex;
@@ -68,11 +77,14 @@ class DataProviderInterface : public QObject
     Q_SLOT void _threaded_update();
 
     void _notify_new_data(const QList<SciQLopPyBuffer>& data);
+    void _notify_new_data(const _Colored_data& batch);
 
     void _range_based_update(const SciQLopPlotRange& new_range);
     void _data_based_update(const _2D_data& new_data);
     void _data_based_update(const _3D_data& new_data);
     void _data_based_update(const _NDdata& new_data);
+    void _data_based_update(const _Colored_data& new_data);
+    void _queue_data(_PendingData new_data) noexcept;
 
 
     inline Q_SLOT void _start_timer()
@@ -103,6 +115,8 @@ signals:
     Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
     Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
+    //! A batch that names its colour axis: one colour value per sample of data[0].
+    Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
     Q_SIGNAL void pipeline_idle();
 
 protected:
@@ -110,7 +124,17 @@ protected:
     void set_data(_2D_data new_data) noexcept;
     void set_data(_3D_data new_data) noexcept;
     void set_data(_NDdata new_data) noexcept;
+    void set_data(_Colored_data new_data) noexcept;
     friend class DataProviderWorker;
+
+#ifndef BINDINGS_H
+    // Declared last and hidden from shiboken (it does not know _Colored_data), like
+    // collect_visible_values: the range fetch, with the colour axis when the source has one.
+    virtual _Colored_data fetch(double lower, double upper)
+    {
+        return { get_data(lower, upper), {} };
+    }
+#endif
 };
 
 class DataProviderWorker : public QObject
@@ -159,6 +183,13 @@ public:
             return;
         m_data_provider->set_data(values);
     }
+
+    inline Q_SLOT virtual void set_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color)
+    {
+        if (m_data_provider == nullptr)
+            return;
+        m_data_provider->set_data(_Colored_data { std::move(data), std::move(color) });
+    }
 };
 
 
@@ -201,7 +232,7 @@ public:
     inline virtual QList<SciQLopPyBuffer> get_data(double lower, double upper) override
     {
         auto cb = _snapshot_callable();
-        return cb ? _to_qlist(cb->get_data(lower, upper)) : QList<SciQLopPyBuffer> {};
+        return cb ? _to_qlist(cb->get_data(lower, upper).data) : QList<SciQLopPyBuffer> {};
     }
 
     inline virtual QList<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override
@@ -232,6 +263,18 @@ public:
         // Copy (Python incref) happens here, OUTSIDE the mutex — never mutex→GIL.
         return cb ? *cb : GetDataPyCallable();
     }
+
+#ifndef BINDINGS_H
+protected:
+    inline _Colored_data fetch(double lower, double upper) override
+    {
+        auto cb = _snapshot_callable();
+        if (!cb)
+            return {};
+        auto batch = cb->get_data(lower, upper);
+        return { _to_qlist(std::move(batch.data)), std::move(batch.color) };
+    }
+#endif
 };
 
 
@@ -307,6 +350,7 @@ signals:
     Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
     Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
+    Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
     Q_SIGNAL void pipeline_idle();
 };
 
@@ -338,6 +382,11 @@ public:
     {
         m_worker->set_data(std::move(values));
     }
+    //! \a data as set_data would take it, plus one colour value per sample of data[0].
+    inline Q_SLOT void set_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color)
+    {
+        m_worker->set_data_colored(std::move(data), std::move(color));
+    }
 
     inline void invalidate_cache() { m_provider->invalidate_cache(); }
 
@@ -349,5 +398,6 @@ signals:
     Q_SIGNAL void new_data_3d(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
     Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
+    Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
     Q_SIGNAL void pipeline_idle();
 };
