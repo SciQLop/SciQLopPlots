@@ -25,6 +25,8 @@
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
                                                      QList<SciQLopPlot*>& plots,
@@ -52,6 +54,7 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
         : SciQLopNDProjectionCurves { parent, plots, labels, metaData }
         , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
+    connect_pipeline_colored_data_to_graph(m_pipeline, this);
     // Fetch for the range the plot already has, like the other function graphs:
     // the panel applies its time range before the graph exists, so waiting for the
     // next change would leave the graph empty until someone pans.
@@ -126,6 +129,29 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
     {
         DEBUG_MESSAGE("Invalid data size");
     }
+}
+
+void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                                                   const SciQLopPyBuffer& color)
+{
+    if (data.size() != m_curves.size() + 1)
+        throw std::invalid_argument("Projection: a coloured batch needs [t, d0..d"
+                                    + std::to_string(m_curves.size() - 1) + "], got "
+                                    + std::to_string(data.size()) + " buffers");
+    const std::size_t samples = data[0].is_valid() ? data[0].flat_size() : 0;
+    const std::size_t count = color.is_valid() ? color.flat_size() : 0;
+    if (count > 0 && count != samples)
+        throw std::invalid_argument("Projection: expected one colour value per time sample ("
+                                    + std::to_string(samples) + "), got "
+                                    + std::to_string(count));
+    set_data(data);
+    const auto values = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
+    for (auto* curve : std::as_const(m_curves))
+    {
+        curve->set_color_values(values);
+        curve->set_time_color_enabled(!values.isEmpty());
+    }
+    _update_color_scale();
 }
 
 void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
