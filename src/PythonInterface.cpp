@@ -325,6 +325,20 @@ PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
 */
 
 
+// GIL held, after a contiguous PyObject_GetBuffer failed: does obj export a strided view?
+static bool _is_strided_buffer(PyObject* obj)
+{
+    PyErr_Clear();
+    Py_buffer view;
+    if (PyObject_GetBuffer(obj, &view, PyBUF_STRIDES | PyBUF_FORMAT) != 0)
+    {
+        PyErr_Clear();
+        return false;
+    }
+    PyBuffer_Release(&view);
+    return true;
+}
+
 struct _PyBuffer_impl
 {
     Py_buffer buffer = { 0 };
@@ -365,6 +379,10 @@ struct _PyBuffer_impl
                     this->is_valid = false;
                 }
             }
+            else if (_is_strided_buffer(obj))
+                throw std::runtime_error(
+                    "array is not contiguous (a strided or reversed view): pass "
+                    "numpy.ascontiguousarray(a) or a.copy()");
         }
         if (!this->is_valid)
             throw std::runtime_error(
