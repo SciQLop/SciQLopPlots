@@ -48,6 +48,9 @@ class SciQLopLineGraph : public SciQLopMultiGraphBase
     void check_color_length(const SciQLopPyBuffer& values, std::size_t samples) const;
     //! One value per x sample, or an empty/invalid buffer to turn the colouring off.
     void apply_color_values(const SciQLopPyBuffer& values);
+    void store_color_values(const SciQLopPyBuffer& values);
+    //! The stored values (or none) and their mapping into the multigraph.
+    void push_color_values();
 
 protected:
     QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) override

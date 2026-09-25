@@ -27,6 +27,8 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <utility>
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                    SciQLopPlotAxis* value_axis, const QStringList& labels,
@@ -78,13 +80,23 @@ void SciQLopLineGraph::check_color_length(const SciQLopPyBuffer& values,
             + std::to_string(samples) + "), got " + std::to_string(count));
 }
 
-void SciQLopLineGraph::apply_color_values(const SciQLopPyBuffer& values)
+void SciQLopLineGraph::store_color_values(const SciQLopPyBuffer& values)
 {
     const bool colouring = values.is_valid() && values.flat_size() > 0;
     _color_values = colouring ? std::make_shared<const std::vector<double>>(
                                     to_double_vector<std::vector<double>>(values))
                               : nullptr;
     _color_buffer = colouring ? values : SciQLopPyBuffer {};
+}
+
+void SciQLopLineGraph::apply_color_values(const SciQLopPyBuffer& values)
+{
+    store_color_values(values);
+    push_color_values();
+}
+
+void SciQLopLineGraph::push_color_values()
+{
     if (_multiGraph)
     {
         if (_color_values)
@@ -121,8 +133,21 @@ void SciQLopLineGraph::set_data_and_color(const QList<SciQLopPyBuffer>& data,
                                     + std::to_string(data.size()) + " buffers");
     check_color_length(color, data[0].is_valid() ? data[0].flat_size() : 0);
     const bool was_coloured = _color_values != nullptr;
-    set_data(data[0], data[1]);
-    apply_color_values(color);
+    // Colours first: set_data then finds them as long as the new x and keeps them.
+    // The other way round it drops the old ones, which hides the plot's scale until
+    // the new ones show it again.
+    auto previous = std::pair { _color_values, _color_buffer };
+    store_color_values(color);
+    try
+    {
+        set_data(data[0], data[1]);
+    }
+    catch (...)
+    {
+        std::tie(_color_values, _color_buffer) = std::move(previous);
+        throw;
+    }
+    push_color_values();
     // Only a gradient given explicitly, and only when the colouring switches on: the
     // plot's scale keeps the last gradient asked for, so asking on every refresh would
     // undo a gradient picked on the plot.
