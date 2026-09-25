@@ -153,6 +153,15 @@ def _patch_sciqlop_plot(cls):
 
     def plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
         graph_type = graph_type or GraphType.Line
+        # Only colormaps and 2D histograms take name= natively (#114).
+        takes_name = graph_type in (GraphType.ColorMap, GraphType.Histogram2D) or len(args) == 3
+        graph = _plot(self, *args, name=name if takes_name else None, labels=labels,
+                      colors=colors, graph_type=graph_type, **kwargs)
+        if name is not None and not takes_name:
+            graph.set_name(name)
+        return graph
+
+    def _plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
         kwargs = _merge_kwargs(kwargs, name=name, labels=labels, colors=colors)
         if (graph_type == GraphType.ParametricCurve) and (len(args) in (1, 2, 4)) and not callable(args[0]):
             _reject_waterfall_kwargs(kwargs, graph_type)
