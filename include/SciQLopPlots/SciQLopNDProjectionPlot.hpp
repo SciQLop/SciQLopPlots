@@ -133,6 +133,7 @@ public:
     void set_z_gradient_colors(const QColor& start, const QColor& end);
     //! Preset gradient of the shared scale.
     void set_z_gradient(::ColorGradient gradient);
+    ::ColorGradient z_gradient() const noexcept;
 
     /*!
      * \brief z_axis The plot's one colour scale, shared by every pane and graph.

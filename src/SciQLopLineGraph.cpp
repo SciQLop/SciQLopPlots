@@ -52,6 +52,7 @@ void SciQLopLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     if (_color_values->size() != _x.flat_size())
     {
         _color_values.reset();
+        _color_buffer = {};
         notify_color_scale();
         return;
     }
@@ -83,6 +84,7 @@ void SciQLopLineGraph::apply_color_values(const SciQLopPyBuffer& values)
     _color_values = colouring ? std::make_shared<const std::vector<double>>(
                                     to_double_vector<std::vector<double>>(values))
                               : nullptr;
+    _color_buffer = colouring ? values : SciQLopPyBuffer {};
     if (_multiGraph)
     {
         if (_color_values)

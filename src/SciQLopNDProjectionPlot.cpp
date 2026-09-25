@@ -400,6 +400,12 @@ void SciQLopNDProjectionPlot::set_z_gradient(::ColorGradient gradient)
         m_scale->set_gradient(gradient);
 }
 
+::ColorGradient SciQLopNDProjectionPlot::z_gradient() const noexcept
+{
+    const auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(z_axis());
+    return axis ? axis->color_gradient() : ::ColorGradient::Jet;
+}
+
 bool SciQLopNDProjectionPlot::z_auto_range() const noexcept
 {
     return m_scale && m_scale->auto_range();

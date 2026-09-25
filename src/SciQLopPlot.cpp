@@ -1353,6 +1353,12 @@ void SciQLopPlot::set_z_gradient(::ColorGradient gradient)
     m_curve_scale->set_gradient(gradient);
 }
 
+::ColorGradient SciQLopPlot::z_gradient() const noexcept
+{
+    const auto* axis = qobject_cast<SciQLopPlotColorScaleAxis*>(z_axis());
+    return axis ? axis->color_gradient() : ::ColorGradient::Jet;
+}
+
 void SciQLopPlot::request_z_gradient(::ColorGradient gradient)
 {
     m_curve_scale->request_gradient(gradient);

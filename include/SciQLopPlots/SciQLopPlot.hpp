@@ -440,6 +440,8 @@ public:
     bool z_auto_range() const noexcept;
     void set_z_auto_range(bool enabled);
     void set_z_gradient(::ColorGradient gradient);
+    //! The gradient the plot's colour scale shows (a colormap's, or the coloured curves').
+    ::ColorGradient z_gradient() const noexcept;
 #ifndef BINDINGS_H
     //! For the curves only: called when their colour scalar changes or they go away.
     void update_curve_color_scale();
