@@ -163,7 +163,15 @@ enum class ColorGradient
     Polar,
     Spectrum,
     Jet,
-    Hues
+    Hues,
+    // Appended: the values above are stable.
+    Viridis,
+    Cividis,
+    Magma,
+    Inferno,
+    Plasma,
+    Turbo,
+    Coolwarm
 };
 Q_DECLARE_METATYPE(ColorGradient);
 

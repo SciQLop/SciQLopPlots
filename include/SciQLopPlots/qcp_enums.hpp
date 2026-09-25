@@ -138,7 +138,7 @@ inline GraphLineStyle from_qcp(QCPGraph::LineStyle style)
     }
 }
 
-inline ColorGradient from_qcp(QCPColorGradient::GradientPreset gradient)
+constexpr ColorGradient from_qcp(QCPColorGradient::GradientPreset gradient)
 {
     switch (gradient)
     {
@@ -166,13 +166,27 @@ inline ColorGradient from_qcp(QCPColorGradient::GradientPreset gradient)
             return ColorGradient::Jet;
         case QCPColorGradient::gpHues:
             return ColorGradient::Hues;
+        case QCPColorGradient::gpViridis:
+            return ColorGradient::Viridis;
+        case QCPColorGradient::gpCividis:
+            return ColorGradient::Cividis;
+        case QCPColorGradient::gpMagma:
+            return ColorGradient::Magma;
+        case QCPColorGradient::gpInferno:
+            return ColorGradient::Inferno;
+        case QCPColorGradient::gpPlasma:
+            return ColorGradient::Plasma;
+        case QCPColorGradient::gpTurbo:
+            return ColorGradient::Turbo;
+        case QCPColorGradient::gpCoolwarm:
+            return ColorGradient::Coolwarm;
         default:
             return ColorGradient::Jet;
     }
 }
 
 
-inline QCPColorGradient::GradientPreset to_qcp(ColorGradient gradient)
+constexpr QCPColorGradient::GradientPreset to_qcp(ColorGradient gradient)
 {
     switch (gradient)
     {
@@ -200,10 +214,35 @@ inline QCPColorGradient::GradientPreset to_qcp(ColorGradient gradient)
             return QCPColorGradient::gpJet;
         case ColorGradient::Hues:
             return QCPColorGradient::gpHues;
+        case ColorGradient::Viridis:
+            return QCPColorGradient::gpViridis;
+        case ColorGradient::Cividis:
+            return QCPColorGradient::gpCividis;
+        case ColorGradient::Magma:
+            return QCPColorGradient::gpMagma;
+        case ColorGradient::Inferno:
+            return QCPColorGradient::gpInferno;
+        case ColorGradient::Plasma:
+            return QCPColorGradient::gpPlasma;
+        case ColorGradient::Turbo:
+            return QCPColorGradient::gpTurbo;
+        case ColorGradient::Coolwarm:
+            return QCPColorGradient::gpCoolwarm;
         default:
             return QCPColorGradient::gpJet;
     }
 }
+
+// Every ColorGradient has its own NeoQCP preset: a missing case would fall back to Jet.
+static_assert(
+    []
+    {
+        for (const auto gradient : magic_enum::enum_values<ColorGradient>())
+            if (from_qcp(to_qcp(gradient)) != gradient)
+                return false;
+        return true;
+    }(),
+    "to_qcp/from_qcp do not round-trip every ColorGradient");
 
 
 inline LineTermination from_qcp(QCPLineEnding::EndingStyle termination)
