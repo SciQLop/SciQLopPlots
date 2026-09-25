@@ -99,7 +99,10 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
         m_force_next_update = false;
     }
     if (!force && new_range == m_current_range)
+    {
+        Q_EMIT request_ended();
         return;
+    }
     auto r = fetch(new_range.start(), new_range.stop());
     m_current_range = new_range;
     _notify_new_data(r);
@@ -123,13 +126,20 @@ void DataProviderInterface::_data_based_update(const _3D_data& new_data)
 
 void DataProviderInterface::_data_based_update(const _NDdata &new_data)
 {
-    _notify_new_data(get_data(new_data));
+    const auto result = get_data(new_data);
+    if (result.isEmpty())
+        Q_EMIT request_ended();
+    else
+        _notify_new_data(result);
 }
 
 // Pushed as-is: a coloured batch is already final (only the remote channel sends one).
 void DataProviderInterface::_data_based_update(const _Colored_data& new_data)
 {
-    _notify_new_data(new_data);
+    if (new_data.data.isEmpty())
+        Q_EMIT request_ended();
+    else
+        _notify_new_data(new_data);
 }
 
 
@@ -281,6 +291,8 @@ RemoteDataPipeline::RemoteDataPipeline(QObject* parent) : QObject(parent)
             &RemoteDataPipeline::new_data_nd);
     connect(m_provider, &RemoteDataProvider::new_data_colored, this,
             &RemoteDataPipeline::new_data_colored);
+    connect(m_provider, &RemoteDataProvider::request_ended, this,
+            &RemoteDataPipeline::request_ended);
     connect(m_provider, &RemoteDataProvider::pipeline_idle, this,
             &RemoteDataPipeline::pipeline_idle);
 }

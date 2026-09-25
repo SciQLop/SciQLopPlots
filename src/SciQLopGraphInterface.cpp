@@ -193,6 +193,9 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     // A coloured batch reaches every graph (set_data_and_color), whatever its arity.
     m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_colored,
                                       this->as_graph, clear_busy);
+    // A request that ends without data: request_done(), an empty answer, a range held.
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::request_ended,
+                                      this->as_graph, clear_busy);
     switch (N)
     {
         case 2:

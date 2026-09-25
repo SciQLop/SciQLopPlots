@@ -117,6 +117,8 @@ signals:
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
     //! A batch that names its colour axis: one colour value per sample of data[0].
     Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
+    //! A request ended with no data to deliver: an empty answer, or a range already held.
+    Q_SIGNAL void request_ended();
     Q_SIGNAL void pipeline_idle();
 
 protected:
@@ -390,6 +392,13 @@ public:
 
     inline void invalidate_cache() { m_provider->invalidate_cache(); }
 
+    /*!
+     * \brief request_done Ends the request in flight without data (the worker failed,
+     *        had nothing, or answered something the graph cannot take): the graph stops
+     *        showing itself busy.
+     */
+    inline Q_SLOT void request_done() { Q_EMIT request_ended(); }
+
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
@@ -399,5 +408,7 @@ signals:
     Q_SIGNAL void new_data_2d(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
     Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
+    //! A request ended with no data to deliver, see request_done().
+    Q_SIGNAL void request_ended();
     Q_SIGNAL void pipeline_idle();
 };
