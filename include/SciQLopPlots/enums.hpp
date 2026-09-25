@@ -206,3 +206,12 @@ enum class OverlayPosition
     Right
 };
 Q_DECLARE_METATYPE(OverlayPosition);
+
+//! Not an API: sets the kind shiboken gives the global enums above, see bindings.xml.
+namespace SciQLopEnumKindAnchor
+{
+enum class Kind
+{
+    Int
+};
+}

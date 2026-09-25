@@ -13,20 +13,43 @@
     <primitive-type name="std::size_t"/>
     <primitive-type name="long"/>
     <rejection class="SciQLop*" function-name="plot" />
-    <enum-type name="GraphType"/>
-    <enum-type name="WaterfallOffsetMode"/>
-    <enum-type name="PlotType"/>
-    <enum-type name="AxisType"/>
-    <enum-type name="GraphMarkerShape"/>
-    <enum-type name="GraphLineStyle"/>
-    <enum-type name="ColorGradient"/>
-    <enum-type name="ProductsModelNodeType"/>
-    <enum-type name="ParameterType"/>
-    <enum-type name="Coordinates"/>
-    <enum-type name="LineTermination"/>
-    <enum-type name="OverlayLevel"/>
-    <enum-type name="OverlaySizeMode"/>
-    <enum-type name="OverlayPosition"/>
+    <enum-type name="GraphType" python-type="IntEnum"/>
+    <enum-type name="WaterfallOffsetMode" python-type="IntEnum"/>
+    <enum-type name="PlotType" python-type="IntEnum"/>
+    <enum-type name="AxisType" python-type="IntEnum"/>
+    <enum-type name="GraphMarkerShape" python-type="IntEnum"/>
+    <enum-type name="GraphLineStyle" python-type="IntEnum"/>
+    <enum-type name="ColorGradient" python-type="IntEnum"/>
+    <enum-type name="ProductsModelNodeType" python-type="IntEnum"/>
+    <enum-type name="ParameterType" python-type="IntEnum"/>
+    <enum-type name="Coordinates" python-type="IntEnum"/>
+    <enum-type name="LineTermination" python-type="IntEnum"/>
+    <enum-type name="OverlayLevel" python-type="IntEnum"/>
+    <enum-type name="OverlaySizeMode" python-type="IntEnum"/>
+    <enum-type name="OverlayPosition" python-type="IntEnum"/>
+    <!-- libshiboken ignores python-type for global enums: it gives them the kind of
+         whichever class enum was created last in the process (a function-static in
+         sbkenum.cpp createEnumForPython), usually one of PySide's Flags, created when a
+         lazy PySide class gets loaded while this module initialises. So: load PySide's
+         lazy classes first, then create this IntEnum; the global enums follow it.
+         The module does not exist yet at this point: the anchor type goes into a
+         throwaway module, kept alive because shiboken keeps a borrowed name from it.
+         simplify: resolving every lazy class of the three modules costs ~60 ms at import
+         when nothing did it before; drop all of this once shiboken honours python-type
+         for global enums. -->
+    <namespace-type name="SciQLopEnumKindAnchor">
+        <enum-type name="Kind" python-type="IntEnum"/>
+    </namespace-type>
+    <inject-code class="target" position="beginning">
+        for (const char *pyside_module : {"PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets"})
+        {
+            Shiboken::AutoDecRef loaded(Shiboken::Module::import(pyside_module));
+            if (!loaded.isNull())
+                Shiboken::Module::resolveLazyClasses(loaded.object());
+        }
+        static PyObject *enumKindAnchorModule = PyModule_New("SciQLopPlotsBindings_enum_kind_anchor");
+        init_SciQLopPlotsBindingsSciQLopEnumKindAnchor(enumKindAnchorModule);
+    </inject-code>
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
 
@@ -1044,10 +1067,10 @@
     <value-type name="MatchResult"/>
     <object-type name="SubsequenceMatcher"/>
 
-    <enum-type name="ScoreMergeStrategy"/>
+    <enum-type name="ScoreMergeStrategy" python-type="IntEnum"/>
     <object-type name="ScoreMerger"/>
 
-    <enum-type name="QueryTokenKind"/>
+    <enum-type name="QueryTokenKind" python-type="IntEnum"/>
     <value-type name="QueryToken"/>
     <value-type name="QueryFilter"/>
     <value-type name="Query"/>
