@@ -386,6 +386,26 @@ void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradie
     Q_EMIT this->replot();
 }
 
+void SciQLopCurve::set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                                      const SciQLopPyBuffer& color)
+{
+    if (data.size() != 2)
+        throw std::invalid_argument("Curve: a coloured batch needs [x, y], got "
+                                    + std::to_string(data.size()) + " buffers");
+    const std::size_t samples = data[0].is_valid() ? data[0].flat_size() : 0;
+    const std::size_t count = color.is_valid() ? color.flat_size() : 0;
+    if (count > 0 && count != samples)
+        throw std::invalid_argument("Curve: expected one colour value per data point ("
+                                    + std::to_string(samples) + "), got "
+                                    + std::to_string(count));
+    set_data(data[0], data[1]);
+    const auto colors = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
+    set_color_values(colors);
+    set_time_color_enabled(!colors.isEmpty());
+    notify_color_scale();
+    Q_EMIT this->replot();
+}
+
 QVariant SciQLopCurve::position_at_time(double t) const
 {
     if (!m_components.isEmpty())

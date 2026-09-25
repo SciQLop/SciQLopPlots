@@ -114,6 +114,14 @@ public:
     void set_time_color_gradient(const QColor& start, const QColor& end);
     //! Preset gradient for the scalar colouring, without touching the colour values.
     void set_color_gradient(::ColorGradient gradient);
+
+    /*!
+     * \brief set_data_and_color A batch that carries its colour axis: \a data is [x, y],
+     *        \a color one value per data point.
+     * \throws std::invalid_argument before touching the curve if the batch is malformed.
+     */
+    void set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                            const SciQLopPyBuffer& color) override;
 #ifndef BINDINGS_H
     //! Follow a scale shared with other curves instead of the curve's own range and gradient.
     void set_color_scale(QCPColorScale* scale);

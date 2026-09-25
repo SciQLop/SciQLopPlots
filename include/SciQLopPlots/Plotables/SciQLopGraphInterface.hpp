@@ -62,6 +62,7 @@ protected:
     // so auto-naming of components must not derive from it — only from a name
     // the caller actually set via set_name().
     bool m_user_named = false;
+    bool m_warned_dropped_colour = false;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
@@ -113,6 +114,16 @@ public:
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) { WARN_ABSTRACT_METHOD; };
 
     Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& values) { WARN_ABSTRACT_METHOD; }
+
+    /*!
+     * \brief set_data_and_color A batch that carries its colour axis: \a data as set_data
+     *        takes it, \a color one value per sample of data[0].
+     *
+     * Graphs that can draw a colour axis override this. The others keep the data, drop
+     * the colour and warn once.
+     */
+    virtual void set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                                    const SciQLopPyBuffer& color);
 
     /*!
      * \brief set_color_data Map \a values onto this plottable's colour through \a gradient.
@@ -369,6 +380,7 @@ inline void apply_or_drop_batch(SciQLopPlottableInterface* g, Apply&& apply)
 
 // Wire a pipeline's new_data_* signals to graph->set_data, dropping a batch that
 // throws. N picks the arity: 2 -> new_data_2d, 3 -> new_data_3d, else new_data_nd.
+// new_data_colored always goes to graph->set_data_and_color.
 template <typename Pipeline>
 inline QList<QMetaObject::Connection>
 connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* graph, int N)
@@ -394,18 +406,10 @@ connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* gr
                 { drop_bad_batch(g, values); });
             break;
     }
+    conns << QObject::connect(pipeline, &Pipeline::new_data_colored, graph,
+        [g = graph](const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color)
+        { apply_or_drop_batch(g, [&] { g->set_data_and_color(data, color); }); });
     return conns;
-}
-
-// Wire a pipeline's new_data_colored to graph->set_data_and_color, dropping a batch
-// that throws. Only for graphs that know what to do with a colour axis.
-template <typename Pipeline, typename Graph>
-inline QMetaObject::Connection connect_pipeline_colored_data_to_graph(Pipeline* pipeline,
-                                                                      Graph* graph)
-{
-    return QObject::connect(pipeline, &Pipeline::new_data_colored, graph,
-        [graph](const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color)
-        { apply_or_drop_batch(graph, [&] { graph->set_data_and_color(data, color); }); });
 }
 
 class SciQLopFunctionGraph

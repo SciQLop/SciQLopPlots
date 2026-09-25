@@ -203,7 +203,6 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
     : SciQLopLineGraph{parent, key_axis, value_axis, labels, metaData}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    connect_pipeline_colored_data_to_graph(m_pipeline, this);
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
 
@@ -214,9 +213,5 @@ SciQLopLineGraphRemote::SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotA
     : SciQLopLineGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
     , SciQLopRemoteGraph(this, 2)
 {
-    // After the data connection, so busy clears once the batch has reached the graph.
-    m_connections << connect_pipeline_colored_data_to_graph(m_pipeline, this);
-    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_colored, this,
-                                      [this]() { set_busy(false); });
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }

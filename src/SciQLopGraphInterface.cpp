@@ -51,6 +51,30 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
     }
 }
 
+void SciQLopPlottableInterface::set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                                                   const SciQLopPyBuffer& color)
+{
+    Q_UNUSED(color);
+    if (!m_warned_dropped_colour)
+    {
+        qWarning() << "SciQLopPlots:" << objectName()
+                   << "cannot draw a colour axis: showing its data without the colour";
+        m_warned_dropped_colour = true;
+    }
+    switch (data.size())
+    {
+        case 2:
+            set_data(data[0], data[1]);
+            break;
+        case 3:
+            set_data(data[0], data[1], data[2]);
+            break;
+        default:
+            set_data(data);
+            break;
+    }
+}
+
 void SciQLopPlottableInterface::add_inspector_extension(InspectorExtension* extension)
 {
     m_extension_holder->add(extension);
@@ -166,6 +190,9 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     // Clear busy on the same arity the data path is wired for, so a mismatched
     // signal can never drop busy without data having reached the graph.
     const auto clear_busy = [g = this->as_graph]() { g->set_busy(false); };
+    // A coloured batch reaches every graph (set_data_and_color), whatever its arity.
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_colored,
+                                      this->as_graph, clear_busy);
     switch (N)
     {
         case 2:

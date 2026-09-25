@@ -54,7 +54,6 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
         : SciQLopNDProjectionCurves { parent, plots, labels, metaData }
         , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
-    connect_pipeline_colored_data_to_graph(m_pipeline, this);
     // Fetch for the range the plot already has, like the other function graphs:
     // the panel applies its time range before the graph exists, so waiting for the
     // next change would leave the graph empty until someone pans.

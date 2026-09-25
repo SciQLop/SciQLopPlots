@@ -77,15 +77,14 @@ public:
     //! Preset gradient for the scalar colouring, e.g. of the `3n` data layout.
     void set_color_gradient(::ColorGradient gradient);
 
-#ifndef BINDINGS_H
     /*!
      * \brief set_data_and_color A batch that carries its colour axis: \a data is the
      *        `n+1` layout [t, d0..dn-1] (time values kept for the marker), \a color one
      *        value per time sample, shared by every pane through the plot's scale.
      * \throws std::invalid_argument before touching the curves if the batch is malformed.
      */
-    void set_data_and_color(const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color);
-#endif
+    void set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                            const SciQLopPyBuffer& color) override;
 
     void set_line_width(qreal width);
     qreal line_width() const;

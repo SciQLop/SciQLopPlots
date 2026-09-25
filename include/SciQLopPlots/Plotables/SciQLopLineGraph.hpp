@@ -89,14 +89,13 @@ public:
     //! the one drawn.
     ::ColorGradient color_gradient() const noexcept { return _gradient_preset; }
 
-#ifndef BINDINGS_H
     /*!
      * \brief set_data_and_color A batch that carries its colour axis: \a data is [x, y],
      *        \a color one value per x sample, drawn with the stored gradient.
      * \throws std::invalid_argument before touching the graph if the batch is malformed.
      */
-    void set_data_and_color(const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color);
-#endif
+    void set_data_and_color(const QList<SciQLopPyBuffer>& data,
+                            const SciQLopPyBuffer& color) override;
 
 #ifndef BINDINGS_H
     bool has_color_values() const override { return _color_values != nullptr; }
