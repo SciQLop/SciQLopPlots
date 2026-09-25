@@ -312,11 +312,13 @@ void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& en
 
 void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
 {
+    _gradient_preset = gradient;
     const QCPColorGradient qcp_gradient { to_qcp(gradient) };
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_color_gradient(qcp_gradient);
-    notify_color_scale(gradient);
+    // Like line graphs: an uncoloured curve does not touch the plot's scale yet.
+    notify_color_scale(has_color_values() ? std::optional { gradient } : std::nullopt);
     Q_EMIT this->replot();
 }
 
@@ -375,6 +377,7 @@ void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradie
         colors = to_double_vector<QVector<double>>(values);
     }
 
+    _gradient_preset = gradient;
     const QCPColorGradient qcp_gradient { to_qcp(gradient) };
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
@@ -398,11 +401,13 @@ void SciQLopCurve::set_data_and_color(const QList<SciQLopPyBuffer>& data,
         throw std::invalid_argument("Curve: expected one colour value per data point ("
                                     + std::to_string(samples) + "), got "
                                     + std::to_string(count));
+    const bool was_coloured = has_color_values();
     set_data(data[0], data[1]);
     const auto colors = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
     set_color_values(colors);
     set_time_color_enabled(!colors.isEmpty());
-    notify_color_scale();
+    // Same rule as line graphs: the explicit gradient, only when the colouring switches on.
+    notify_color_scale(!colors.isEmpty() && !was_coloured ? _gradient_preset : std::nullopt);
     Q_EMIT this->replot();
 }
 

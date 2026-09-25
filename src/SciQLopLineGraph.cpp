@@ -123,10 +123,10 @@ void SciQLopLineGraph::set_data_and_color(const QList<SciQLopPyBuffer>& data,
     const bool was_coloured = _color_values != nullptr;
     set_data(data[0], data[1]);
     apply_color_values(color);
-    // Only when the colouring switches on: the plot's scale keeps the last gradient
-    // asked for, so asking on every refresh would undo a gradient picked on the plot.
-    notify_color_scale(_color_values && !was_coloured ? std::optional { _gradient_preset }
-                                                      : std::nullopt);
+    // Only a gradient given explicitly, and only when the colouring switches on: the
+    // plot's scale keeps the last gradient asked for, so asking on every refresh would
+    // undo a gradient picked on the plot.
+    notify_color_scale(_color_values && !was_coloured ? _gradient_preset : std::nullopt);
 }
 
 std::optional<std::pair<double, double>> SciQLopLineGraph::color_range(bool log) const

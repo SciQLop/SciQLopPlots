@@ -38,7 +38,8 @@ class SciQLopLineGraph : public SciQLopMultiGraphBase
     std::shared_ptr<const std::vector<double>> _color_values;
     //! What _color_values was made from, handed back as is by color_data().
     SciQLopPyBuffer _color_buffer;
-    ::ColorGradient _gradient_preset = ::ColorGradient::Jet;
+    //! Only a gradient given explicitly: without one, the plot's gradient wins.
+    std::optional<::ColorGradient> _gradient_preset;
     QCPColorGradient _color_gradient { QCPColorGradient::gpJet };
     QPointer<QCPColorScale> _color_scale;
 
@@ -87,7 +88,10 @@ public:
     SciQLopPyBuffer color_data() const noexcept { return _color_values ? _color_buffer : SciQLopPyBuffer {}; }
     //! The gradient given to this graph, Jet when none was. On a plot, plot.z_gradient() is
     //! the one drawn.
-    ::ColorGradient color_gradient() const noexcept { return _gradient_preset; }
+    ::ColorGradient color_gradient() const noexcept
+    {
+        return _gradient_preset.value_or(::ColorGradient::Jet);
+    }
 
     /*!
      * \brief set_data_and_color A batch that carries its colour axis: \a data is [x, y],

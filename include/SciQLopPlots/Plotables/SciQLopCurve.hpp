@@ -45,6 +45,8 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     std::size_t _point_count = 0;
 
     Q_OBJECT
+    //! Only a gradient given explicitly: without one, the plot's gradient wins.
+    std::optional<::ColorGradient> _gradient_preset;
 
 protected:
     // True while the resampler owes us a setGraphData emission. SciQLopCurveFunction
