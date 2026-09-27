@@ -52,6 +52,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
     this->layer(LayersNames::ColorMap)->setMode(QCPLayer::lmBuffered);
     this->layer(LayersNames::ColorMap)->setVisible(true);
     setSkipReplotsWhenHidden(true);
+    // Tick labels drawn from cached pixmaps (NeoQCP TestTickLabelCache pins the behaviour);
+    // each sits on the nearest device pixel, up to half a pixel from where drawText would.
+    setPlottingHint(QCP::phCacheLabels, true);
     this->setFocusPolicy(Qt::StrongFocus);
     this->grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren);
     this->grabGesture(Qt::PanGesture, Qt::DontStartGestureOnChildren);
