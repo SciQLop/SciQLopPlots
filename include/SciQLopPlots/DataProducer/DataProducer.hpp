@@ -66,10 +66,11 @@ class DataProviderInterface : public QObject
     _PendingData m_next_data;
     SciQLopPlotRange m_current_range;
     QTimer* m_rate_limit_timer;
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
     bool m_range_pending = false;
     bool m_data_pending = false;
     bool m_force_next_update = false;
+    double m_prefetch_margin = 0.;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void _state_changed();
@@ -80,6 +81,7 @@ class DataProviderInterface : public QObject
     void _notify_new_data(const _Colored_data& batch);
 
     void _range_based_update(const SciQLopPlotRange& new_range);
+    bool _is_loaded(const SciQLopPlotRange& view, double margin) const;
     void _data_based_update(const _2D_data& new_data);
     void _data_based_update(const _3D_data& new_data);
     void _data_based_update(const _NDdata& new_data);
@@ -106,6 +108,14 @@ public:
 
     void invalidate_cache();
 
+    /*!
+     * \brief set_prefetch_margin Range fetches ask for the view widened by \a margin times
+     *        its span on each side, and a view inside the loaded range is not fetched again.
+     *        0 (the default) fetches exactly each new view. Only for providers whose answer
+     *        does not depend on the requested span, or a zoom-in keeps the coarser data.
+     */
+    void set_prefetch_margin(double margin);
+    double prefetch_margin() const;
 
 
 #ifdef BINDINGS_H
@@ -343,6 +353,8 @@ public:
     inline GetDataPyCallable callable() const { return m_callable_wrapper->callable(); }
 
     inline void invalidate_cache() { m_callable_wrapper->invalidate_cache(); }
+    inline void set_prefetch_margin(double margin) { m_callable_wrapper->set_prefetch_margin(margin); }
+    inline double prefetch_margin() const { return m_callable_wrapper->prefetch_margin(); }
 
 
 #ifdef BINDINGS_H
@@ -391,6 +403,8 @@ public:
     }
 
     inline void invalidate_cache() { m_provider->invalidate_cache(); }
+    inline void set_prefetch_margin(double margin) { m_provider->set_prefetch_margin(margin); }
+    inline double prefetch_margin() const { return m_provider->prefetch_margin(); }
 
     /*!
      * \brief request_done Ends the request in flight without data (the worker failed,

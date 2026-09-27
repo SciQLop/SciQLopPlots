@@ -478,6 +478,10 @@ public:
     }
 
     inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
+
+    //! See DataProviderInterface::set_prefetch_margin.
+    inline void set_prefetch_margin(double margin) noexcept { m_pipeline->set_prefetch_margin(margin); }
+    inline double prefetch_margin() const noexcept { return m_pipeline->prefetch_margin(); }
 };
 
 // Mixin that binds a RemoteDataPipeline to a graph. Sibling of SciQLopFunctionGraph.
@@ -507,6 +511,10 @@ public:
     inline RemoteDataPipeline* remote_channel() const noexcept { return m_pipeline; }
 
     inline void invalidate_pipeline_cache() noexcept { m_pipeline->invalidate_cache(); }
+
+    //! See DataProviderInterface::set_prefetch_margin.
+    inline void set_prefetch_margin(double margin) noexcept { m_pipeline->set_prefetch_margin(margin); }
+    inline double prefetch_margin() const noexcept { return m_pipeline->prefetch_margin(); }
 
     inline bool remote_busy() const noexcept { return m_busy; }
     inline void set_remote_busy(bool busy) noexcept { m_busy = busy; }

@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include "SciQLopPlots/Debug.hpp"
 
@@ -90,21 +92,29 @@ void DataProviderInterface::_notify_new_data(const _Colored_data& batch)
         Q_EMIT new_data_colored(batch.data, batch.color);
 }
 
+bool DataProviderInterface::_is_loaded(const SciQLopPlotRange& view, double margin) const
+{
+    return margin > 0. ? m_current_range.contains(view) : view == m_current_range;
+}
+
 void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_range)
 {
     bool force;
+    double margin;
     {
         QMutexLocker lock(&m_mutex);
         force = m_force_next_update;
         m_force_next_update = false;
+        margin = m_prefetch_margin;
     }
-    if (!force && new_range == m_current_range)
+    if (!force && _is_loaded(new_range, margin))
     {
         Q_EMIT request_ended();
         return;
     }
-    auto r = fetch(new_range.start(), new_range.stop());
-    m_current_range = new_range;
+    const auto wanted = margin > 0. ? new_range * (1. + 2. * margin) : new_range;
+    auto r = fetch(wanted.start(), wanted.stop());
+    m_current_range = wanted;
     _notify_new_data(r);
 }
 
@@ -112,6 +122,18 @@ void DataProviderInterface::invalidate_cache()
 {
     QMutexLocker lock(&m_mutex);
     m_force_next_update = true;
+}
+
+void DataProviderInterface::set_prefetch_margin(double margin)
+{
+    QMutexLocker lock(&m_mutex);
+    m_prefetch_margin = std::isfinite(margin) ? std::max(0., margin) : 0.;
+}
+
+double DataProviderInterface::prefetch_margin() const
+{
+    QMutexLocker lock(&m_mutex);
+    return m_prefetch_margin;
 }
 
 void DataProviderInterface::_data_based_update(const _2D_data& new_data)
