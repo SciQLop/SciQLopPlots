@@ -32,6 +32,9 @@ def test_zoomed_out_log_z_colormap_shows_the_geometric_mean(plot, tmp_path, qtbo
         img = QImage(str(path))
         return img.pixelColor(img.width() // 3, img.height() // 2)
 
+    # The log switch and the range change each start a resample; an export taken
+    # while one runs has no picture yet, so wait for the last one to land.
+    qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
     qtbot.waitUntil(lambda: centre_colour().name() != "#ffffff", timeout=3000)
     c = centre_colour()
     assert c.red() < 200 and c.green() > 200, (c.red(), c.green(), c.blue())

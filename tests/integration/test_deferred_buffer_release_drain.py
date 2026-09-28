@@ -20,6 +20,7 @@ enough to make this reliable — no thread-pool timing luck required, unlike
 the colormap resample pipeline).
 """
 import sys
+import threading
 import time
 
 import numpy as np
@@ -28,7 +29,11 @@ import pytest
 from SciQLopPlots import SciQLopPlot, SciQLopPlotRange
 
 
+_slow_callable_entered = threading.Event()
+
+
 def _slow_callable(start, stop):
+    _slow_callable_entered.set()
     time.sleep(0.2)  # releases the GIL: gives the main thread a window to
                       # swap the callable while this fetch is still in flight
     x = np.linspace(start, stop, 8, dtype=np.float64)
@@ -48,9 +53,12 @@ def test_worker_thread_callable_release_drains_without_further_api_calls(qtbot):
     baseline_refcount = sys.getrefcount(_slow_callable)
 
     g = plot.line(_slow_callable)
+    _slow_callable_entered.clear()
     g.set_range(SciQLopPlotRange(0.0, 100.0))  # worker snapshots _slow_callable
 
-    qtbot.wait(20)  # let the worker thread enter the callable's sleep
+    # The worker is inside the callable's sleep (a fixed wait was too short on a
+    # loaded machine); the fetch runs on the worker's own event loop.
+    assert _slow_callable_entered.wait(5.0)
 
     g.set_callable(_fast_callable)  # drops the main thread's own reference;
                                      # the worker's in-flight snapshot is now

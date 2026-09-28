@@ -79,16 +79,15 @@ class TestColorMapBusy:
         cmap.set_busy(True)
         assert cmap.busy() is True
 
-    def test_set_busy_on_empty_colormap(self, plot):
-        """Colormap without data has no pipeline activity."""
+    def test_set_busy_on_empty_colormap(self, plot, qtbot):
+        """Once its resample is done, a colormap's busy flag is the one it is given."""
         cmap = plot.plot(
             np.array([0.0, 1.0]),
             np.array([0.0, 1.0]),
             np.zeros((2, 2)),
         )
-        # Let the pipeline settle
-        for _ in range(10):
-            QApplication.processEvents()
+        # A fixed number of event-loop turns is not enough on a loaded machine.
+        qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
         cmap.set_busy(True)
         assert cmap.busy() is True
         cmap.set_busy(False)
