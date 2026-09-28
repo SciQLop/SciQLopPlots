@@ -8,6 +8,7 @@ instead of killing the whole suite.
 """
 import subprocess
 import sys
+import tempfile
 import textwrap
 
 SCRIPT = textwrap.dedent("""
@@ -29,6 +30,8 @@ SCRIPT = textwrap.dedent("""
 
 
 def test_deleting_a_plot_with_a_theme_it_parents():
+    # Neutral cwd: `python -c` puts the cwd on sys.path, and from the repo root the
+    # source package (no compiled bindings) would shadow the built one.
     run = subprocess.run([sys.executable, "-c", SCRIPT], capture_output=True, text=True,
-                         timeout=60)
+                         timeout=60, cwd=tempfile.gettempdir())
     assert run.returncode == 0 and "survived" in run.stdout, run.stderr[-2000:]
