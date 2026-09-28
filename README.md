@@ -110,6 +110,8 @@ For callback-driven data, the plot invokes a Python callable with `(start, stop)
 
 ## Quick start
 
+The **[user guide](docs/user-guide.md)** walks through everything below and more: plot types, live data, time series, panels, overlays, pipelines and export. Every example in it is tested.
+
 ```bash
 pip install SciQLopPlots
 ```
@@ -150,10 +152,10 @@ plot = SciQLopPlot()
 graph = plot.plot(lambda start, stop: ..., labels=["signal"])
 
 # Axis range changes automatically feed a transform, which pushes data to the graph
-plot.x_axis.on.range >> get_data >> graph.on.data
+plot.x_axis().on.range >> get_data >> graph.on.data
 
 # Direct property forwarding (no transform)
-span.on.range >> plot.x_axis.on.range
+span.on.range >> plot.x_axis().on.range
 
 # Chain multiple steps
 source.on.range >> transform >> target.on.data
