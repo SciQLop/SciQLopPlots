@@ -43,8 +43,33 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
         auto curve = qobject_cast<SciQLopCurve*>(
             plots[i]->parametric_curve(SciQLopPyBuffer(), SciQLopPyBuffer(), { labels[i] }));
         if (curve)
+        {
             m_curves.append(curve);
+            connect(curve, &SciQLopPlottableInterface::busy_changed, this,
+                    &SciQLopNDProjectionCurves::_report_busy);
+        }
     }
+}
+
+bool SciQLopNDProjectionCurves::busy() const noexcept
+{
+    return m_fetching
+        || std::ranges::any_of(m_curves, [](const SciQLopCurve* c) { return c->busy(); });
+}
+
+void SciQLopNDProjectionCurves::set_busy(bool busy) noexcept
+{
+    m_fetching = busy;
+    _report_busy();
+}
+
+void SciQLopNDProjectionCurves::_report_busy()
+{
+    const bool now = busy();
+    if (now == m_reported_busy)
+        return;
+    m_reported_busy = now;
+    Q_EMIT busy_changed(now);
 }
 
 SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent,

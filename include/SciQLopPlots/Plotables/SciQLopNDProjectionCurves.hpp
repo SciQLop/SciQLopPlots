@@ -39,8 +39,11 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 {
     Q_OBJECT
     QList<SciQLopCurve*> m_curves;
+    bool m_fetching = false;
+    bool m_reported_busy = false;
 
     void _update_color_scale();
+    void _report_busy();
     void _set_scale_gradient(::ColorGradient gradient);
 
 
@@ -56,6 +59,10 @@ public:
 
     virtual void set_visible(bool visible) noexcept override;
     virtual bool visible() const noexcept override;
+
+    //! A fetch in flight, or a pane still resampling its data.
+    virtual bool busy() const noexcept override;
+    virtual void set_busy(bool busy) noexcept override;
 
     //! One component per pane, in pane order.
     virtual QList<SciQLopGraphComponentInterface*> components() const noexcept override;
