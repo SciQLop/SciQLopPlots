@@ -784,6 +784,15 @@ bool SciQLopPlot::has_colormap() const
 
 SciQLopPlot::~SciQLopPlot()
 {
+    // A theme parented to this plot dies with its children, after m_impl: its destroyed()
+    // handler (set_theme) would then call into a deleted widget. Qt only drops our
+    // connections in ~QObject, too late for that.
+    if (m_theme)
+    {
+        disconnect(m_theme, nullptr, this, nullptr);
+        if (m_theme->qcp_theme())
+            disconnect(m_theme->qcp_theme(), nullptr, this, nullptr);
+    }
     m_curve_scale->quiesce();
     while (plottables().size() > 0)
     {
