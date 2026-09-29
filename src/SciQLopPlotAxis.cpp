@@ -121,16 +121,8 @@ void SciQLopPlotAxis::set_log(bool log) noexcept
             // Block signals during scale type + ticker change to prevent
             // rangeChanged from triggering margin recomputation with stale tick vectors
             const QSignalBlocker blocker(m_axis);
-            if (log)
-            {
-                m_axis->setScaleType(QCPAxis::stLogarithmic);
-                m_axis->setTicker(QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-            }
-            else
-            {
-                m_axis->setScaleType(QCPAxis::stLinear);
-                m_axis->setTicker(QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
-            }
+            m_axis->setScaleType(log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+            m_axis->setTicker(make_ticker(log));
         }
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT log_changed(log);
@@ -468,6 +460,35 @@ void SciQLopPlotAxis::rescale() noexcept
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
 
+void SciQLopPlotAxis::set_tick_labels(const QMap<double, QString>& labels) noexcept
+{
+    if (is_time_axis())
+    {
+        qWarning() << "Text tick labels are not supported on a time axis";
+        return;
+    }
+    auto* axis = qcp_axis();
+    if (!axis || labels == m_tick_labels)
+        return;
+    m_tick_labels = labels;
+    axis->setTicker(make_ticker(log()));
+    axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    Q_EMIT tick_labels_changed(labels);
+}
+
+QSharedPointer<QCPAxisTicker> SciQLopPlotAxis::make_ticker(bool log) const
+{
+    if (!m_tick_labels.isEmpty())
+    {
+        auto ticker = QSharedPointer<QCPAxisTickerText>::create();
+        ticker->setTicks(m_tick_labels);
+        return ticker;
+    }
+    if (log)
+        return QSharedPointer<QCPAxisTickerLog>::create();
+    return QSharedPointer<QCPAxisTicker>::create();
+}
+
 QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
 {
     return m_axis.data();
@@ -566,18 +587,8 @@ void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
             // Block signals during scale type + ticker change to prevent
             // rangeChanged from triggering margin recomputation with stale tick vectors
             const QSignalBlocker blocker(m_axis.data()->axis());
-            if (log)
-            {
-                m_axis->setDataScaleType(QCPAxis::stLogarithmic);
-                m_axis.data()->axis()->setTicker(
-                    QSharedPointer<QCPAxisTickerLog>(new QCPAxisTickerLog));
-            }
-            else
-            {
-                m_axis->setDataScaleType(QCPAxis::stLinear);
-                m_axis.data()->axis()->setTicker(
-                    QSharedPointer<QCPAxisTicker>(new QCPAxisTicker));
-            }
+            m_axis->setDataScaleType(log ? QCPAxis::stLogarithmic : QCPAxis::stLinear);
+            m_axis.data()->axis()->setTicker(make_ticker(log));
         }
         update_number_precision();  // log -> clean powers, linear -> adaptive
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);

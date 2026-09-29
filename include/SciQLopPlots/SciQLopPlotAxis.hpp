@@ -26,12 +26,15 @@
 #include "SciQLopPlots/enums.hpp"
 #include <QColor>
 #include <QFont>
+#include <QMap>
+#include <QSharedPointer>
 #include <QObject>
 #include <QPointer>
 #include <functional>
 #include <memory>
 #include <optional>
 class QCPAxis;
+class QCPAxisTicker;
 class QCPColorGradient;
 class QCPColorScale;
 namespace _impl { class SciQLopPlot; }
@@ -120,6 +123,22 @@ public:
     {
         Q_UNUSED(color);
         WARN_ABSTRACT_METHOD;
+    }
+
+    //! Text labels at fixed values (e.g. timeline lanes) instead of numbers.
+    //! An empty map goes back to automatic ticks. Not available on time axes.
+    inline virtual void set_tick_labels(const QMap<double, QString>& labels) noexcept
+    {
+        Q_UNUSED(labels);
+        WARN_ABSTRACT_METHOD;
+    }
+
+    inline void clear_tick_labels() noexcept { set_tick_labels({}); }
+
+    inline virtual QMap<double, QString> tick_labels() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
     }
 
     inline virtual void set_selected(bool selected) noexcept
@@ -244,6 +263,7 @@ signals:
     Q_SIGNAL void label_color_changed(const QColor& color);
     Q_SIGNAL void tick_label_font_changed(const QFont& font);
     Q_SIGNAL void tick_label_color_changed(const QColor& color);
+    Q_SIGNAL void tick_labels_changed(const QMap<double, QString>& labels);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void inspector_extensions_changed();
 };
@@ -271,7 +291,14 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     bool m_suppress_range_signals = false;
     double m_autoscale_percentile_low = 0.;
     double m_autoscale_percentile_high = 100.;
+    QMap<double, QString> m_tick_labels;
     friend class _impl::SciQLopPlot;
+
+protected:
+#ifndef BINDINGS_H
+    //! The ticker to install: the fixed text labels if any, else log or linear.
+    QSharedPointer<QCPAxisTicker> make_ticker(bool log) const;
+#endif
 
 public:
     explicit SciQLopPlotAxis(QCPAxis* axis, QObject* parent = nullptr, bool is_time_axis = false,
@@ -292,6 +319,8 @@ public:
     void set_label_color(const QColor& color) noexcept override;
     void set_tick_label_font(const QFont& font) noexcept override;
     void set_tick_label_color(const QColor& color) noexcept override;
+    void set_tick_labels(const QMap<double, QString>& labels) noexcept override;
+    QMap<double, QString> tick_labels() const noexcept override { return m_tick_labels; }
     void set_selected(bool selected) noexcept override;
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
