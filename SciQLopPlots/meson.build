@@ -38,6 +38,16 @@ python3_dep = python3.dependency(embed:false)
 # stable ABI in Python 3.11. Everything linked into the modules must agree on it.
 py_limited_api = '3.11'
 py_limited_api_args = ['-DPy_LIMITED_API=0x030B0000']
+# Shiboken's headers need two typedefs that CPython 3.11 keeps out of the limited
+# API: supply them when building with 3.11 (see the header).
+if python3.language_version().version_compare('<3.12')
+    limited_api_compat = meson.current_source_dir() / 'bindings' / 'limited_api_311_compat.h'
+    if meson.get_compiler('cpp').get_argument_syntax() == 'msvc'
+        py_limited_api_args += ['/FI' + limited_api_compat]
+    else
+        py_limited_api_args += ['-include', limited_api_compat]
+    endif
+endif
 
 qt_modules = ['QtCore','QtGui','QtWidgets']
 
