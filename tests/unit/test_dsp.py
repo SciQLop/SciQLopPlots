@@ -571,6 +571,16 @@ class TestReduceAxes:
         assert y_r.shape == (len(t), shape[0])
         assert_allclose(y_r, y_ref, atol=1e-12)
 
+    def test_shape_and_axes_accept_any_iterable(self, particle_dist):
+        t, y, shape = particle_dist
+        _, y_r = reduce_axes(t, y, (n for n in shape), iter([1, 2]), op='sum')
+        assert_allclose(y_r, y.reshape(len(t), *shape).sum(axis=(2, 3)), atol=1e-12)
+
+    def test_shape_must_be_a_sequence(self, particle_dist):
+        t, y, _ = particle_dist
+        with pytest.raises(TypeError, match="shape must be a sequence"):
+            reduce_axes(t, y, 42, (1,), op='sum')
+
     def test_sum_single_axis(self, particle_dist):
         t, y, shape = particle_dist
         _, y_r = reduce_axes(t, y, shape, (2,), op='sum')

@@ -113,31 +113,14 @@
     </primitive-type>
 
     <value-type name="SciQLopPlotRange">
-        <extra-includes>
-          <include file-name="datetime.h" location="global"/>
-        </extra-includes>
         <add-function signature="datetime_start" >
             <inject-code class="target" position="end">
-                if (!PyDateTimeAPI)
-                    PyDateTime_IMPORT;
-                PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->start());
-                PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
-                Py_DECREF(floatObj);
-                PyObject *result = PyDateTime_FromTimestamp(timeTuple);
-                Py_DECREF(timeTuple);
-                return result;
+                return datetime_from_timestamp(%CPPSELF->start());
             </inject-code>
         </add-function>
         <add-function signature="datetime_stop" >
             <inject-code class="target" position="end">
-                if (!PyDateTimeAPI)
-                    PyDateTime_IMPORT;
-                PyObject *floatObj = PyFloat_FromDouble(%CPPSELF->stop());
-                PyObject *timeTuple = Py_BuildValue("(O)", floatObj);
-                Py_DECREF(floatObj);
-                PyObject *result = PyDateTime_FromTimestamp(timeTuple);
-                Py_DECREF(timeTuple);
-                return result;
+                return datetime_from_timestamp(%CPPSELF->stop());
             </inject-code>
         </add-function>
         <add-function signature="__len__" >
@@ -164,7 +147,7 @@
                 }
                 if(PyFloat_Check(_value))
                 {
-                    (*%CPPSELF)[_i] = PyFloat_AS_DOUBLE(_value);
+                    (*%CPPSELF)[_i] = PyFloat_AsDouble(_value);
                     return 0;
                 }
                 else

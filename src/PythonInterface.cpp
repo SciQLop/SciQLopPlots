@@ -21,9 +21,16 @@
 ----------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <cstdio>
 #include <numeric>
 #include <stdexcept>
 #include <string_view>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 #if defined(slots) && (defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__))
 #pragma push_macro("slots")
@@ -178,11 +185,44 @@ static void _enqueue_buffer_release(Py_buffer buf)
     _schedule_pending_drain();
 }
 
-// Check if the current thread already holds the GIL.
-// Uses PyGILState_Check which returns 1 if GIL is held by current thread.
+using GilCheckFn = int (*)();
+
+// PyGILState_Check is public C API but not part of the stable ABI we build
+// against (abi3). Every CPython since 3.4 exports it, so it is looked up in the
+// running interpreter. Needs no GIL: it may run first on any thread.
+static GilCheckFn _find_gil_check()
+{
+#ifdef _WIN32
+    // We link python3.dll, which forwards to the interpreter's own DLL
+    // (python3XY.dll, python3XY_d.dll, ...). The address of a dllimport function
+    // is read from the import table, so it lies in that DLL whatever its name.
+    // simplify: untested on Windows here, so the usual release name is tried
+    // too; if both miss, callers take their safe path (see below).
+    HMODULE python = nullptr;
+    GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+                           | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                       reinterpret_cast<LPCWSTR>(&PyGILState_Ensure), &python);
+    FARPROC check = python ? GetProcAddress(python, "PyGILState_Check") : nullptr;
+    if (!check)
+    {
+        char dll[16];
+        std::snprintf(dll, sizeof dll, "python3%d.dll", static_cast<int>((Py_Version >> 16) & 0xFF));
+        if (HMODULE named = GetModuleHandleA(dll))
+            check = GetProcAddress(named, "PyGILState_Check");
+    }
+    return reinterpret_cast<GilCheckFn>(check);
+#else
+    return reinterpret_cast<GilCheckFn>(dlsym(RTLD_DEFAULT, "PyGILState_Check"));
+#endif
+}
+
+// Whether the current thread already holds the GIL. Without the check this says
+// "no": _dec_ref then defers, and _inc_ref takes PyGILState_Ensure, which is
+// safe even on a thread that already holds the GIL.
 static bool _current_thread_holds_gil()
 {
-    return PyGILState_Check() == 1;
+    static const GilCheckFn gil_check = _find_gil_check();
+    return gil_check && gil_check() == 1;
 }
 
 inline void _inc_ref(PyObject* obj)
@@ -784,6 +824,21 @@ void GetDataPyCallable::share(const GetDataPyCallable& other)
     {
         this->_impl = new _GetDataPyCallable_impl(other.py_object());
     }
+}
+
+PyObject* datetime_from_timestamp(double timestamp)
+{
+    // Through Python: the datetime C API is not part of the stable ABI.
+    PyObject* module = PyImport_ImportModule("datetime");
+    if (!module)
+        return nullptr;
+    PyObject* datetime_type = PyObject_GetAttrString(module, "datetime");
+    Py_DECREF(module);
+    if (!datetime_type)
+        return nullptr;
+    PyObject* result = PyObject_CallMethod(datetime_type, "fromtimestamp", "d", timestamp);
+    Py_DECREF(datetime_type);
+    return result;
 }
 
 GetDataPyCallable::GetDataPyCallable(PyObject* obj)

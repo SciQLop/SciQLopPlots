@@ -131,6 +131,9 @@ jobs:
           # identifier) and no 'pp*' (PyPy is behind the `enable` option, so it
           # is never built unless asked for). Both were dead selectors that
           # cibuildwheel warned about on every run.
+          # The wheel is abi3 (requires-python >= 3.11): cibuildwheel builds it
+          # once, for cp311, then installs and tests that same wheel on every
+          # later Python instead of rebuilding.
           CIBW_SKIP: "*-win32 *i686 *39-* *musllinux* *314t*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}

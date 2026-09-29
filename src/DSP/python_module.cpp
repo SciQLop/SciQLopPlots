@@ -39,6 +39,7 @@
 #include <cstring>
 #include <exception>
 #include <limits>
+#include <optional>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -301,6 +302,30 @@ struct ZeroCopyOutput
 };
 
 // ── Validation helpers ───────────────────────────────────────────────────
+
+// Reads any iterable of ints; nullopt with a Python error set on failure.
+static std::optional<std::vector<long>> as_long_vector(PyObject* obj, const char* what)
+{
+    PyObject* list = PySequence_List(obj);
+    if (!list)
+    {
+        if (PyErr_ExceptionMatches(PyExc_TypeError))
+            PyErr_Format(PyExc_TypeError, "%s must be a sequence", what);
+        return std::nullopt;
+    }
+    std::vector<long> values(static_cast<std::size_t>(PyList_Size(list)));
+    for (std::size_t i = 0; i < values.size(); ++i)
+    {
+        values[i] = PyLong_AsLong(PyList_GetItem(list, static_cast<Py_ssize_t>(i)));
+        if (values[i] == -1 && PyErr_Occurred())
+        {
+            Py_DECREF(list);
+            return std::nullopt;
+        }
+    }
+    Py_DECREF(list);
+    return values;
+}
 
 bool check_xy_sizes(XArray& x, YArray& y)
 {
@@ -1020,7 +1045,7 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
                 Py_DECREF(list);
                 return static_cast<PyObject*>(nullptr);
             }
-            PyList_SET_ITEM(list, static_cast<Py_ssize_t>(i), tuple);
+            PyList_SetItem(list, static_cast<Py_ssize_t>(i), tuple);
         }
         return list;
     });
@@ -1124,7 +1149,7 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
                 Py_DECREF(list);
                 return static_cast<PyObject*>(nullptr);
             }
-            PyList_SET_ITEM(list, static_cast<Py_ssize_t>(i), tuple);
+            PyList_SetItem(list, static_cast<Py_ssize_t>(i), tuple);
         }
         return list;
     });
@@ -1360,24 +1385,17 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     if (!check_xy_sizes(x, y))
         return nullptr;
 
-    // Parse shape tuple
-    PyObject* shape_seq = PySequence_Fast(shape_obj, "shape must be a sequence");
-    if (!shape_seq)
+    const auto dims = as_long_vector(shape_obj, "shape");
+    if (!dims)
         return nullptr;
-    const auto ndim = static_cast<std::size_t>(PySequence_Fast_GET_SIZE(shape_seq));
+    const std::size_t ndim = dims->size();
     std::vector<std::size_t> shape(ndim);
     std::size_t prod = 1;
     for (std::size_t i = 0; i < ndim; ++i)
     {
-        const auto dim = PyLong_AsLong(PySequence_Fast_GET_ITEM(shape_seq, i));
-        if (dim == -1 && PyErr_Occurred())
-        {
-            Py_DECREF(shape_seq);
-            return nullptr;
-        }
+        const long dim = (*dims)[i];
         if (dim <= 0)
         {
-            Py_DECREF(shape_seq);
             PyErr_Format(PyExc_ValueError, "shape dims must be positive, got %ld at index %zu",
                          dim, i);
             return nullptr;
@@ -1385,13 +1403,11 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         shape[i] = static_cast<std::size_t>(dim);
         if (prod > std::numeric_limits<std::size_t>::max() / shape[i])
         {
-            Py_DECREF(shape_seq);
             PyErr_SetString(PyExc_ValueError, "prod(shape) overflows");
             return nullptr;
         }
         prod *= shape[i];
     }
-    Py_DECREF(shape_seq);
 
     if (static_cast<npy_intp>(prod) != y.ncols)
     {
@@ -1400,31 +1416,23 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         return nullptr;
     }
 
-    // Parse axes tuple
-    PyObject* axes_seq = PySequence_Fast(axes_obj, "axes must be a sequence");
-    if (!axes_seq)
+    const auto requested_axes = as_long_vector(axes_obj, "axes");
+    if (!requested_axes)
         return nullptr;
-    const auto n_axes = static_cast<std::size_t>(PySequence_Fast_GET_SIZE(axes_seq));
+    const std::size_t n_axes = requested_axes->size();
     std::vector<std::size_t> axes(n_axes);
     for (std::size_t i = 0; i < n_axes; ++i)
     {
-        auto axis = PyLong_AsLong(PySequence_Fast_GET_ITEM(axes_seq, i));
-        if (axis == -1 && PyErr_Occurred())
-        {
-            Py_DECREF(axes_seq);
-            return nullptr;
-        }
+        long axis = (*requested_axes)[i];
         if (axis < 0)
             axis += static_cast<long>(ndim); // numpy-style negative indexing
         if (axis < 0 || static_cast<std::size_t>(axis) >= ndim)
         {
-            Py_DECREF(axes_seq);
             PyErr_Format(PyExc_ValueError, "axis %ld out of range for ndim = %zu", axis, ndim);
             return nullptr;
         }
         axes[i] = static_cast<std::size_t>(axis);
     }
-    Py_DECREF(axes_seq);
 
     const auto op = parse_reduce_op(op_str);
 
