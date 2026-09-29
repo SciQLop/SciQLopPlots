@@ -458,14 +458,8 @@ class TestColorMapAutoScaleYLivesOnY2Axis(unittest.TestCase):
     def test_colormap_delegate_has_no_auto_scale_y(self):
         delegate = make_delegate_for(self.cmap)
         try:
-            # Any QCheckBox outside the Contours group would be the auto_scale_y
-            # leftover. We expect zero.
-            contours = find_group(delegate, 'Contours')
-            in_contours = set(contours.findChildren(QCheckBox)) if contours else set()
-            outside = [cb for cb in delegate.findChildren(QCheckBox)
-                       if cb not in in_contours]
-            self.assertEqual(
-                outside, [],
+            self.assertIsNone(
+                self._auto_scale_check(delegate),
                 "ColorMap product node must NOT carry the Auto scale Y checkbox — "
                 "the Y Axis 2 node owns it"
             )

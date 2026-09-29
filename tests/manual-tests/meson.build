@@ -15,7 +15,7 @@ examples = [
 foreach example : examples
     test('examples_' + example['name'],
         python3,
-        args: [example['source']],
+        args: [meson.current_source_dir() + '/run_example.py', example['source']],
         env: ['PYTHONPATH=' + meson.project_build_root()],
         suite: 'manual',
     )
