@@ -57,6 +57,7 @@ protected:
     QList<QPointer<SciQLopGraphComponent>> m_components;
 
     void _register_component(SciQLopGraphComponent* component);
+    void _forget_destroyed_components();
 
 #ifndef BINDINGS_H
     //! Tells the plot to re-read its colour scale; a gradient is requested on it too.
@@ -75,9 +76,8 @@ public:
 
     inline void clear_plottables()
     {
-        for (auto component : m_components)
+        for (auto component : std::exchange(m_components, {}))
             delete component;
-        m_components.clear();
     }
 
     const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept

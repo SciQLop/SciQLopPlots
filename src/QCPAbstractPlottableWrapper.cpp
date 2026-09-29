@@ -54,7 +54,18 @@ void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* 
     m_components.append(component);
     connect(component, &SciQLopGraphComponent::replot, this,
             &SQPQCPAbstractPlottableWrapper::replot);
+    // Connected before the inspector model sees the component, so this runs
+    // before the model removes its row and the tree re-selects this graph.
+    connect(component, &QObject::destroyed, this,
+            &SQPQCPAbstractPlottableWrapper::_forget_destroyed_components);
     Q_EMIT this->component_list_changed();
+}
+
+void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
+{
+    // destroyed() fires after Qt has nulled the QPointer to the dying component.
+    if (m_components.removeIf([](const auto& c) { return c.isNull(); }) > 0)
+        Q_EMIT this->component_list_changed();
 }
 
 void SQPQCPAbstractPlottableWrapper::set_visible(bool visible) noexcept
