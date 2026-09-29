@@ -304,7 +304,7 @@ struct ZeroCopyOutput
 // ── Validation helpers ───────────────────────────────────────────────────
 
 // Reads any iterable of ints; nullopt with a Python error set on failure.
-static std::optional<std::vector<long>> as_long_vector(PyObject* obj, const char* what)
+std::optional<std::vector<long>> as_long_vector(PyObject* obj, const char* what)
 {
     PyObject* list = PySequence_List(obj);
     if (!list)

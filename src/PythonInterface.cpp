@@ -753,11 +753,11 @@ void GetDataPyCallable::share(const GetDataPyCallable& other)
 PyObject* datetime_from_timestamp(double timestamp)
 {
     // Through Python: the datetime C API is not part of the stable ABI.
-    PyObject* module = PyImport_ImportModule("datetime");
-    if (!module)
+    PyObject* datetime_module = PyImport_ImportModule("datetime");
+    if (!datetime_module)
         return nullptr;
-    PyObject* datetime_type = PyObject_GetAttrString(module, "datetime");
-    Py_DECREF(module);
+    PyObject* datetime_type = PyObject_GetAttrString(datetime_module, "datetime");
+    Py_DECREF(datetime_module);
     if (!datetime_type)
         return nullptr;
     PyObject* result = PyObject_CallMethod(datetime_type, "fromtimestamp", "d", timestamp);
