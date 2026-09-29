@@ -82,6 +82,11 @@ public:
             _multiGraph->setBusy(busy);
     }
 
+    //! A key step larger than this many times the smaller neighbouring step breaks
+    //! the lines (default 1.5). 0 turns gap detection off, e.g. for step or state data.
+    void set_gap_threshold(double threshold);
+    double gap_threshold() const noexcept;
+
     void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
     SciQLopPlotAxisInterface* x_axis() const noexcept override { return _keyAxis; }

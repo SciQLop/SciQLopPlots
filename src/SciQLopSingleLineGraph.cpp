@@ -209,6 +209,19 @@ void SciQLopSingleLineGraph::collect_visible_values(const SciQLopPlotRange& visi
     catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }
 }
 
+void SciQLopSingleLineGraph::set_gap_threshold(double threshold)
+{
+    if (!_graph)
+        return;
+    _graph->setGapThreshold(threshold);
+    Q_EMIT this->replot();
+}
+
+double SciQLopSingleLineGraph::gap_threshold() const noexcept
+{
+    return _graph ? _graph->gapThreshold() : qcp::algo::kDefaultGapThreshold;
+}
+
 void SciQLopSingleLineGraph::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     apply_axis(_keyAxis, axis, [this](auto* a) { if (_graph) _graph->setKeyAxis(a); });

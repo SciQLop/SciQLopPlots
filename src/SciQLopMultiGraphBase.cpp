@@ -214,6 +214,19 @@ void SciQLopMultiGraphBase::collect_visible_values(const SciQLopPlotRange& visib
     catch (const std::invalid_argument&) { /* unsupported dtype — skip */ }
 }
 
+void SciQLopMultiGraphBase::set_gap_threshold(double threshold)
+{
+    if (!_multiGraph)
+        return;
+    _multiGraph->setGapThreshold(threshold);
+    Q_EMIT this->replot();
+}
+
+double SciQLopMultiGraphBase::gap_threshold() const noexcept
+{
+    return _multiGraph ? _multiGraph->gapThreshold() : qcp::algo::kDefaultGapThreshold;
+}
+
 void SciQLopMultiGraphBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     apply_axis(_keyAxis, axis, [this](auto* a) { if (_multiGraph) _multiGraph->setKeyAxis(a); });
