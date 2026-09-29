@@ -391,3 +391,7 @@ public:
     std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y);
     std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
 };
+
+//! datetime.datetime.fromtimestamp(timestamp): a new reference, or nullptr with a
+//! Python error set. The GIL must be held.
+PyObject* datetime_from_timestamp(double timestamp);

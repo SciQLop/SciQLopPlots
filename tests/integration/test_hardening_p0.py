@@ -128,6 +128,12 @@ class TestP1_3_DatetimeRefLeak:
         # Allow small variance but not 1000+ leaked refs
         assert after - before < 50
 
+    def test_datetime_values_are_local_datetimes(self):
+        import datetime
+        r = SciQLopPlotRange(1000000.5, 2000000.25)
+        assert r.datetime_start() == datetime.datetime.fromtimestamp(1000000.5)
+        assert r.datetime_stop() == datetime.datetime.fromtimestamp(2000000.25)
+
     def test_datetime_stop_no_leak(self):
         r = SciQLopPlotRange(1000000.0, 2000000.0)
         gc.collect()

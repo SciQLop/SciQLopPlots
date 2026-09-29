@@ -34,6 +34,10 @@ python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
                                                       f'shiboken@pyside_version@_generator',
                                                       'numpy'])
 python3_dep = python3.dependency(embed:false)
+# One abi3 wheel per platform: the buffer protocol we read arrays with joined the
+# stable ABI in Python 3.11. Everything linked into the modules must agree on it.
+py_limited_api = '3.11'
+py_limited_api_args = ['-DPy_LIMITED_API=0x030B0000']
 
 qt_modules = ['QtCore','QtGui','QtWidgets']
 
@@ -183,6 +187,10 @@ bindings_lib = static_library('sciqlopplots_bindings_impl',
         sciqlopplots_bindings_src + shiboken_generator_out + ['../src/PythonInterface.cpp'],
         dependencies : [python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, fmt_dep, magic_enum_dep],
         include_directories : includes,
+        cpp_args: py_limited_api_args,
+        # Only PyInit_ must be exported (PyMODINIT_FUNC marks it); abi3audit fails
+        # the wheel on shiboken's exported "Python*" converter functions.
+        gnu_symbol_visibility: 'inlineshidden',
         override_options: ['unity=off'],
 )
 
@@ -300,12 +308,13 @@ sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep, dsp_dep] + optional_deps,
         link_whole: [bindings_lib],
         cpp_args: cpp_args,
+        limited_api: py_limited_api,
         subdir : 'SciQLopPlots',
         install: true,
         include_directories : includes,
         extra_files: extra_files + sciqlopplots_python_sources +
                      sciqlopplots_bindings_headers + headers +
-                     ['bindings/snippets.cpp', 'bindings/helper_scripts/shiboken-gen.py']
+                     ['bindings/helper_scripts/shiboken-gen.py']
 )
 
 python3.install_sources(sciqlopplots_python_sources, pure: false, subdir: 'SciQLopPlots')
@@ -321,6 +330,7 @@ sciqlop_dsp_ext = python3.extension_module('_sciqlop_dsp',
     include_directories: [includes],
     cpp_args: ['-I' + numpy_inc],
     dependencies: [python3_dep, dsp_dep],
+    limited_api: py_limited_api,
     subdir: 'SciQLopPlots',
     install: true,
 )
