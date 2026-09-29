@@ -128,8 +128,10 @@ class TestIconsAtScale:
         _register_icons()
         view = ProductsView()
         qtbot.addWidget(view)
-        small = _reicon_seconds(10_000)
-        large = _reicon_seconds(100_000)
+        # Best of 3, as timeit advises: one GC pause or busy core in the small run
+        # would otherwise inflate the ratio.
+        small = min(_reicon_seconds(10_000) for _ in range(3))
+        large = min(_reicon_seconds(100_000) for _ in range(3))
         assert large < 30 * small, (
             f"re-iconing 100k leaves took {large:.2f}s vs {small:.3f}s for 10k "
             f"({large / small:.0f}x; linear is ~10x, the old quadratic scan ~100x)")
