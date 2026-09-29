@@ -58,13 +58,14 @@ if 'linux' in platform.system().lower():
     #            gcc_found = True
     #            shiboken_constant_args += ['--compiler=g++']
     #            break
-    try:
-        llvm_dir = subprocess.run(['llvm-config', '--prefix'], check=True, stdout=subprocess.PIPE)
-        if llvm_dir.returncode == 0:
-            llvm_dir = llvm_dir.stdout.decode().strip()
-            env['LLVM_INSTALL_DIR'] = llvm_dir
-    except FileNotFoundError:
-        pass
+    # An explicit LLVM_INSTALL_DIR wins: some distros (Fedora) ship llvm-config's
+    # prefix apart from the clang resource headers shiboken needs (stddef.h).
+    if 'LLVM_INSTALL_DIR' not in env:
+        try:
+            llvm_dir = subprocess.run(['llvm-config', '--prefix'], check=True, stdout=subprocess.PIPE)
+            env['LLVM_INSTALL_DIR'] = llvm_dir.stdout.decode().strip()
+        except FileNotFoundError:
+            pass
 
 cmd = [args.shiboken, args.input_header, args.input_xml ] + shiboken_constant_args + cpp_flags(args.build_directory, args.ref_build_target) + [ f'--typesystem-paths={args.typesystem_paths}', f'--output-directory={args.output_directory}']
 
