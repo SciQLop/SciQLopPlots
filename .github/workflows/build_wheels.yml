@@ -55,6 +55,15 @@ jobs:
           - os: windows-latest
             arch: x86_64
             qt_host: windows
+            qt_arch: win64_msvc2022_64
+            qt_dir: msvc2022_64
+            msvc_arch: amd64
+          - os: windows-11-arm
+            arch: ARM64
+            qt_host: windows_arm64
+            qt_arch: win64_msvc2022_arm64
+            qt_dir: msvc2022_arm64
+            msvc_arch: arm64
           - os: macos-15-intel  # Intel
             arch: x86_64
             qt_host: mac
@@ -66,7 +75,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
         with:
-          arch: amd64
+          arch: ${{ matrix.msvc_arch }}
       - name: Cache Qt
         uses: actions/cache@v6
         with:
@@ -97,12 +106,12 @@ jobs:
           PYSIDE_VERSION: ${{ env.PYSIDE_VERSION }}
           QT_VERSION: ${{ env.QT_VERSION }}
           PIP_EXTRA_INDEX_URL: ${{ env.PIP_EXTRA_INDEX_URL }}
-          CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin;$PATH" CC="sccache cl" CXX="sccache cl"
+          CIBW_ENVIRONMENT_WINDOWS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} PATH="${GITHUB_WORKSPACE}\\Qt\\${{ env.QT_VERSION }}\\${{ matrix.qt_dir }}\\bin;$PATH" CC="sccache cl" CXX="sccache cl"
           CIBW_ENVIRONMENT_MACOS: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} MACOSX_DEPLOYMENT_TARGET='13.3' PATH=/usr/lib/ccache:${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/macos/bin:$PATH
           CIBW_ENVIRONMENT_LINUX: PYSIDE_VERSION=${{ env.PYSIDE_VERSION }} PIP_EXTRA_INDEX_URL=${{ env.PIP_EXTRA_INDEX_URL }} CC="ccache gcc" CXX="ccache g++" CCACHE_DIR=${{ env.GITHUB_WORKSPACE }}/.ccache PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/bin:$PATH LD_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}/${{ matrix.qt_dir }}/lib:$LD_LIBRARY_PATH
           CIBW_BEFORE_BUILD_WINDOWS: >
             pip install delvewheel "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master"
-            && if not exist "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}" aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt windows desktop ${{ env.QT_VERSION }} win64_msvc2022_64 -m qtshadertools
+            && if not exist "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}" aqt install-qt -O ${{ env.GITHUB_WORKSPACE }}\\Qt ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }} ${{ matrix.qt_arch }} -m qtshadertools
           CIBW_BEFORE_BUILD_MACOS: >
             pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master"
             && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" mac desktop ${{ env.QT_VERSION }} -m qtshadertools
@@ -121,7 +130,7 @@ jobs:
           # one PySide6 loads in-process (mirrors the Linux auditwheel excludes).
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
             delvewheel repair -w {dest_dir}
-            --add-path "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}\\msvc2022_64\\bin"
+            --add-path "${{ env.GITHUB_WORKSPACE }}\\Qt\\${{ env.QT_VERSION }}\\${{ matrix.qt_dir }}\\bin"
             --include "msvcp140.dll;msvcp140_1.dll;msvcp140_2.dll;vcruntime140.dll;vcruntime140_1.dll;concrt140.dll"
             --exclude "Qt6Core.dll;Qt6Gui.dll;Qt6Widgets.dll;Qt6Svg.dll;Qt6PrintSupport.dll;Qt6OpenGL.dll;Qt6OpenGLWidgets.dll;pyside6.abi3.dll;shiboken6.abi3.dll;pyside6qml.abi3.dll"
             {wheel}
