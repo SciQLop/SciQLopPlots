@@ -482,6 +482,9 @@ public:
     //! See DataProviderInterface::set_prefetch_margin.
     inline void set_prefetch_margin(double margin) noexcept { m_pipeline->set_prefetch_margin(margin); }
     inline double prefetch_margin() const noexcept { return m_pipeline->prefetch_margin(); }
+    //! See DataProviderInterface::set_prefetch_budget_bytes.
+    inline void set_prefetch_budget_bytes(double bytes) noexcept { m_pipeline->set_prefetch_budget_bytes(bytes); }
+    inline double prefetch_budget_bytes() const noexcept { return m_pipeline->prefetch_budget_bytes(); }
 };
 
 // Mixin that binds a RemoteDataPipeline to a graph. Sibling of SciQLopFunctionGraph.
@@ -515,6 +518,9 @@ public:
     //! See DataProviderInterface::set_prefetch_margin.
     inline void set_prefetch_margin(double margin) noexcept { m_pipeline->set_prefetch_margin(margin); }
     inline double prefetch_margin() const noexcept { return m_pipeline->prefetch_margin(); }
+    //! See DataProviderInterface::set_prefetch_budget_bytes.
+    inline void set_prefetch_budget_bytes(double bytes) noexcept { m_pipeline->set_prefetch_budget_bytes(bytes); }
+    inline double prefetch_budget_bytes() const noexcept { return m_pipeline->prefetch_budget_bytes(); }
 
     inline bool remote_busy() const noexcept { return m_busy; }
     inline void set_remote_busy(bool busy) noexcept { m_busy = busy; }

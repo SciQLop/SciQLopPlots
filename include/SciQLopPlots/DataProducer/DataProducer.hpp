@@ -71,6 +71,9 @@ class DataProviderInterface : public QObject
     bool m_data_pending = false;
     bool m_force_next_update = false;
     double m_prefetch_margin = 0.;
+    double m_prefetch_budget_bytes = 0.;
+    // Worker thread only, like m_current_range: bytes per key unit of the last data delivered.
+    double m_bytes_per_key = 0.;
 
 #ifndef BINDINGS_H
     Q_SIGNAL void _state_changed();
@@ -79,6 +82,7 @@ class DataProviderInterface : public QObject
 
     void _notify_new_data(const QList<SciQLopPyBuffer>& data);
     void _notify_new_data(const _Colored_data& batch);
+    void _record_density(std::size_t bytes);
 
     void _range_based_update(const SciQLopPlotRange& new_range);
     bool _is_loaded(const SciQLopPlotRange& view, double margin) const;
@@ -116,6 +120,14 @@ public:
      */
     void set_prefetch_margin(double margin);
     double prefetch_margin() const;
+
+    /*!
+     * \brief set_prefetch_budget_bytes Caps the whole widened fetch at \a bytes, estimated
+     *        from the density of the previous one: a dense product zoomed out gets a smaller
+     *        margin, or none. The view itself is always fetched. 0 (the default) is unlimited.
+     */
+    void set_prefetch_budget_bytes(double bytes);
+    double prefetch_budget_bytes() const;
 
 
 #ifdef BINDINGS_H
@@ -355,6 +367,8 @@ public:
     inline void invalidate_cache() { m_callable_wrapper->invalidate_cache(); }
     inline void set_prefetch_margin(double margin) { m_callable_wrapper->set_prefetch_margin(margin); }
     inline double prefetch_margin() const { return m_callable_wrapper->prefetch_margin(); }
+    inline void set_prefetch_budget_bytes(double bytes) { m_callable_wrapper->set_prefetch_budget_bytes(bytes); }
+    inline double prefetch_budget_bytes() const { return m_callable_wrapper->prefetch_budget_bytes(); }
 
 
 #ifdef BINDINGS_H
@@ -405,6 +419,8 @@ public:
     inline void invalidate_cache() { m_provider->invalidate_cache(); }
     inline void set_prefetch_margin(double margin) { m_provider->set_prefetch_margin(margin); }
     inline double prefetch_margin() const { return m_provider->prefetch_margin(); }
+    inline void set_prefetch_budget_bytes(double bytes) { m_provider->set_prefetch_budget_bytes(bytes); }
+    inline double prefetch_budget_bytes() const { return m_provider->prefetch_budget_bytes(); }
 
     /*!
      * \brief request_done Ends the request in flight without data (the worker failed,

@@ -22,8 +22,33 @@
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iostream>
+#include <numeric>
 #include "SciQLopPlots/Debug.hpp"
+
+namespace
+{
+std::size_t byte_size(const QList<SciQLopPyBuffer>& buffers)
+{
+    return std::transform_reduce(buffers.cbegin(), buffers.cend(), std::size_t { 0 },
+                                 std::plus<> {}, [](const SciQLopPyBuffer& b)
+                                 { return b.is_valid() ? b.flat_size() * b.item_size() : 0; });
+}
+
+// The margin cut so the whole fetch fits in budget bytes; the view itself is always fetched.
+double margin_within_budget(double margin, double budget, double bytes_per_key, double view_span)
+{
+    if (budget <= 0. || bytes_per_key <= 0. || view_span <= 0.)
+        return margin;
+    return std::clamp((budget / (bytes_per_key * view_span) - 1.) / 2., 0., margin);
+}
+
+double non_negative_or_zero(double v)
+{
+    return std::isfinite(v) ? std::max(0., v) : 0.;
+}
+}
 
 
 void DataProviderInterface::_threaded_update()
@@ -68,8 +93,17 @@ void DataProviderInterface::_threaded_update()
         Q_EMIT pipeline_idle();
 }
 
+// Remote data lands here long after its request: m_current_range is still the range asked for.
+void DataProviderInterface::_record_density(std::size_t bytes)
+{
+    // An empty answer (a data gap) says nothing about the product's density.
+    if (const double span = m_current_range.size(); bytes > 0 && span > 0.)
+        m_bytes_per_key = static_cast<double>(bytes) / span;
+}
+
 void DataProviderInterface::_notify_new_data(const QList<SciQLopPyBuffer> &data)
 {
+    _record_density(byte_size(data));
     if (data.size() == 2)
     {
         Q_EMIT new_data_2d(data[0], data[1]);
@@ -89,7 +123,10 @@ void DataProviderInterface::_notify_new_data(const _Colored_data& batch)
     if (!batch.color.is_valid())
         _notify_new_data(batch.data);
     else if (!batch.data.isEmpty())
+    {
+        _record_density(byte_size(batch.data) + byte_size({ batch.color }));
         Q_EMIT new_data_colored(batch.data, batch.color);
+    }
 }
 
 bool DataProviderInterface::_is_loaded(const SciQLopPlotRange& view, double margin) const
@@ -101,18 +138,21 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
 {
     bool force;
     double margin;
+    double budget;
     {
         QMutexLocker lock(&m_mutex);
         force = m_force_next_update;
         m_force_next_update = false;
         margin = m_prefetch_margin;
+        budget = m_prefetch_budget_bytes;
     }
     if (!force && _is_loaded(new_range, margin))
     {
         Q_EMIT request_ended();
         return;
     }
-    const auto wanted = margin > 0. ? new_range * (1. + 2. * margin) : new_range;
+    const double widening = margin_within_budget(margin, budget, m_bytes_per_key, new_range.size());
+    const auto wanted = widening > 0. ? new_range * (1. + 2. * widening) : new_range;
     auto r = fetch(wanted.start(), wanted.stop());
     m_current_range = wanted;
     _notify_new_data(r);
@@ -127,13 +167,25 @@ void DataProviderInterface::invalidate_cache()
 void DataProviderInterface::set_prefetch_margin(double margin)
 {
     QMutexLocker lock(&m_mutex);
-    m_prefetch_margin = std::isfinite(margin) ? std::max(0., margin) : 0.;
+    m_prefetch_margin = non_negative_or_zero(margin);
 }
 
 double DataProviderInterface::prefetch_margin() const
 {
     QMutexLocker lock(&m_mutex);
     return m_prefetch_margin;
+}
+
+void DataProviderInterface::set_prefetch_budget_bytes(double bytes)
+{
+    QMutexLocker lock(&m_mutex);
+    m_prefetch_budget_bytes = non_negative_or_zero(bytes);
+}
+
+double DataProviderInterface::prefetch_budget_bytes() const
+{
+    QMutexLocker lock(&m_mutex);
+    return m_prefetch_budget_bytes;
 }
 
 void DataProviderInterface::_data_based_update(const _2D_data& new_data)
