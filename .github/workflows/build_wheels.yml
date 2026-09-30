@@ -96,6 +96,16 @@ jobs:
           path: .ccache
           key: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: ccache-wheels-${{ matrix.os }}-${{ matrix.arch }}-
+      # shiboken6_generator bundles libclang 19.1. The runner's newer LLVM headers
+      # (arm_neon.h) do not parse with it on ARM64, so hand it matching ones.
+      - name: Install LLVM 19 headers for shiboken (Windows ARM64)
+        if: matrix.os == 'windows-11-arm'
+        shell: pwsh
+        run: |
+          $v = "19.1.7"
+          Invoke-WebRequest "https://github.com/llvm/llvm-project/releases/download/llvmorg-$v/LLVM-$v-woa64.exe" -OutFile llvm.exe
+          Start-Process -Wait -FilePath .\llvm.exe -ArgumentList "/S", "/D=C:\llvm19"
+          "LLVM_INSTALL_DIR=C:\llvm19" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Forward GITHUB_WORKSPACE env var
         shell: bash
         run: |
