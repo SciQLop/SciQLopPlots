@@ -5,6 +5,10 @@ cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
+# NeoQCP's draw/resample zones feed the SciQLopPlots tracer (and Tracy when enabled).
+meson.override_dependency('neoqcp-profiling-hook', declare_dependency(
+    include_directories: include_directories('../include'),
+    compile_args: ['-DNEOQCP_PROFILING_HOOK=<SciQLopPlots/Profiling.hpp>']))
 NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
                                                     'unity=on',
                                                     'with_tests=false',
