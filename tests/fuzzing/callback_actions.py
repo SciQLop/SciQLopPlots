@@ -115,7 +115,7 @@ def add_flaky_callback_spectrogram(panel, model, plot_index):
 
 @ui_action(
     precondition=lambda model: model.has_graphs,
-    bundles={"plot_index": "plot_indices_with_graphs"},
+    bundles={"plot_index": "plot_indices"},
     narrate="Swapped the callable on a function graph in plot {plot_index}",
     # Pure callable swap — does not change graph count
     model_update=lambda model, plot_index: None,
