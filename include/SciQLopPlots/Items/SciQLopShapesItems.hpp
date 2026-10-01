@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
+
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -216,6 +218,7 @@ public:
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
             : SciQLopPolygonItemInterface { plot }
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
         if (plot == nullptr)
             throw std::invalid_argument("plot is nullptr");
         else
@@ -228,6 +231,7 @@ public:
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
             : SciQLopPolygonItemInterface { plot }
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
         if (plot == nullptr)
             throw std::invalid_argument("plot is nullptr");
         else
@@ -240,6 +244,7 @@ public:
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
             : SciQLopPolygonItemInterface { plot }
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
         if (plot == nullptr)
             throw std::invalid_argument("plot is nullptr");
         else
@@ -252,6 +257,7 @@ public:
 
     inline void set_visible(bool visible) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
         qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 
@@ -272,11 +278,13 @@ public:
 
     inline virtual void set_pen(const QPen& pen) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_pen(pen));
         qptr_apply(m_item, [pen](auto&& item) { item->setPen(pen); });
     }
 
     inline virtual void set_brush(const QBrush& brush) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_brush(brush));
         qptr_apply(m_item, [brush](auto&& item) { item->setBrush(brush); });
     }
 
@@ -287,6 +295,7 @@ public:
 
     inline void set_position(const QPointF& pos) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_position(pos));
         qptr_apply(m_item, [pos](auto&& item) { item->setPosition(pos); });
     }
 
@@ -302,11 +311,13 @@ public:
 
     inline void set_tool_tip(const QString& toolTip) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(toolTip));
         qptr_apply(m_item, [toolTip](auto&& item) { item->setToolTip(toolTip); });
     }
 
     inline void set_color(const QColor& color) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
         auto p = pen();
         p.setColor(color);
         set_pen(p);
@@ -316,6 +327,7 @@ public:
 
     inline void set_line_width(double width) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
         auto p = pen();
         p.setWidthF(width);
         set_pen(p);
@@ -325,6 +337,7 @@ public:
 
     inline void set_line_style(Qt::PenStyle style) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
         auto p = pen();
         p.setStyle(style);
         set_pen(p);
@@ -347,6 +360,7 @@ public:
                           const QString& toolTip = "")
             : SciQLopLineItemInterface { plot }
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopCurvedLineItem");
         if (plot == nullptr)
             throw std::invalid_argument("plot is nullptr");
         else
@@ -358,6 +372,7 @@ public:
 
     inline void set_visible(bool visible) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
         qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 
@@ -378,10 +393,15 @@ public:
 
     inline void set_start_position(const QPointF& pos) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_start_position(pos));
         qptr_apply(m_item, [pos](auto&& item) { item->setStartPos(pos); });
     }
 
-    inline void set_stop_position(const QPointF& pos) noexcept { m_item->setStopPos(pos); }
+    inline void set_stop_position(const QPointF& pos) noexcept
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_stop_position(pos));
+        m_item->setStopPos(pos);
+    }
 
     [[nodiscard]] inline LineTermination start_termination() const noexcept
     {
@@ -395,11 +415,13 @@ public:
 
     inline void set_start_termination(LineTermination termination) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_start_termination(termination));
         qptr_apply(m_item, [termination](auto&& item) { item->setStartTermination(termination); });
     }
 
     inline void set_stop_termination(LineTermination termination) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_stop_termination(termination));
         qptr_apply(m_item, [termination](auto&& item) { item->setStopTermination(termination); });
     }
 
@@ -415,16 +437,19 @@ public:
 
     inline void set_start_dir_position(const QPointF& pos) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_start_dir_position(pos));
         qptr_apply(m_item, [pos](auto&& item) { item->setStartDirPos(pos); });
     }
 
     inline void set_stop_dir_position(const QPointF& pos) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_stop_dir_position(pos));
         qptr_apply(m_item, [pos](auto&& item) { item->setStopDirPos(pos); });
     }
 
     inline void set_color(const QColor& color) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
         qptr_apply(m_item, [color](auto&& item) { item->setColor(color); });
     }
 
@@ -435,6 +460,7 @@ public:
 
     inline void set_line_width(double width) override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
         qptr_apply(m_item, [width](auto&& item) { item->setWidth(width); });
     }
 
@@ -445,6 +471,7 @@ public:
 
     inline void set_line_style(Qt::PenStyle style) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
         qptr_apply(m_item,
                    [style](auto&& item)
                    {

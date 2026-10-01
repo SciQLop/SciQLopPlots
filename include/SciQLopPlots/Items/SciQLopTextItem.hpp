@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
+
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -89,6 +91,7 @@ public:
     SciQLopTextItem(SciQLopPlot* plot, const QString& text, const QPointF& position,
                     bool movable = false, Coordinates coordinates = Coordinates::Pixels)
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopTextItem");
         if (plot == nullptr)
             throw std::runtime_error("Plot is null");
         else
@@ -99,6 +102,7 @@ public:
 
     inline void set_visible(bool visible) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
         qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 
@@ -109,6 +113,7 @@ public:
 
     virtual inline void set_position(const QPointF& pos) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_position(pos));
         qptr_apply(m_item, [pos](auto& item) { item->setPosition(pos); });
     }
 
@@ -119,6 +124,7 @@ public:
 
     void set_text(const QString& text)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_text(text));
         qptr_apply(m_item, [text](auto& item) { item->setText(text); });
     }
 
@@ -129,6 +135,7 @@ public:
 
     void set_color(const QColor& color)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
         qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
     }
 
@@ -139,6 +146,7 @@ public:
 
     void set_font_size(double size)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_font_size(size));
         qptr_apply(m_item,
                    [size](auto& item)
                    {
@@ -155,6 +163,7 @@ public:
 
     void set_font_color(const QColor& color)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_font_color(color));
         qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
     }
 
@@ -165,6 +174,7 @@ public:
 
     void set_font(const QFont& font)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_font(font));
         qptr_apply(m_item, [font](auto& item) { item->setFont(font); });
     }
 
@@ -175,6 +185,7 @@ public:
 
     void set_font_family(const QString& family)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_font_family(family));
         qptr_apply(m_item,
                    [family](auto& item)
                    {

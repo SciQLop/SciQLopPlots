@@ -20,7 +20,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 
 #include "../Items/SciQLopVerticalSpan.hpp"
 #include "SciQLopMultiPlotObject.hpp"
@@ -52,7 +54,7 @@ public:
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
                            QColor color = QColor(100, 100, 100), bool read_only = false,
                            bool visible = true, const QString tool_tip = "", QString id = "")
-            : SciQLopMultiPlotObject(panel)
+            : SciQLopMultiPlotObject(SciQLopPlots::on_owner_thread(panel, "MultiPlotsVerticalSpan"))
     {
         _horizontal_range = horizontal_range;
         _color = color;
@@ -89,6 +91,7 @@ public:
 
     inline void set_color(const QColor& color)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
         if (_color != color)
         {
             for (auto span : _spans)
@@ -108,6 +111,7 @@ public:
 
     inline void set_visible(bool visible)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
         if (_visible != visible)
         {
             for (auto span : _spans)
@@ -123,6 +127,7 @@ public:
 
     inline void set_tool_tip(const QString& tool_tip)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
         if (_tool_tip != tool_tip)
         {
             for (auto span : _spans)
@@ -138,6 +143,7 @@ public:
 
     inline void set_read_only(bool read_only)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
         if (_read_only != read_only)
         {
             for (auto span : _spans)
@@ -173,7 +179,9 @@ class MultiPlotsVSpanCollection : public SciQLopMultiPlotObject
     void updateVisibleSpans(const SciQLopPlotRange& horizontal_range);
 
 public:
-    MultiPlotsVSpanCollection(SciQLopMultiPlotPanel* panel) : SciQLopMultiPlotObject(panel)
+    MultiPlotsVSpanCollection(SciQLopMultiPlotPanel* panel)
+            : SciQLopMultiPlotObject(
+                  SciQLopPlots::on_owner_thread(panel, "MultiPlotsVSpanCollection"))
     {
         updatePlotList(panel->plots());
         connect(panel, &SciQLopMultiPlotPanel::time_range_changed, this,

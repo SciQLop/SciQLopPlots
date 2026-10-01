@@ -83,9 +83,11 @@ SciQLopPlotRange impl::RectangularSpan::value_range() const noexcept
 }
 
 SciQLopRectangularSpan::SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRange key_range,
-    SciQLopPlotRange value_range, QColor color, bool read_only, bool visible,
-    const QString& tool_tip)
-        : SciQLopMovableItemInterface { plot }
+                                               SciQLopPlotRange value_range, QColor color,
+                                               bool read_only, bool visible,
+                                               const QString& tool_tip)
+        : SciQLopMovableItemInterface { SciQLopPlots::on_owner_thread(plot,
+                                                                      "SciQLopRectangularSpan") }
         , _impl { new impl::RectangularSpan { plot->qcp_plot(), key_range, value_range, true } }
         , _base { static_cast<impl::SpanBase*>(_impl.data()) }
 {

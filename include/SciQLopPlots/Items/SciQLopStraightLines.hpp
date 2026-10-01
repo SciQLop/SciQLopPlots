@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
+
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -164,6 +166,7 @@ public:
                         Coordinates coordinates = Coordinates::Data,
                         Qt::Orientation orientation = Qt::Orientation::Vertical)
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopStraightLine");
         m_line = new StraightLine(plot->qcp_plot(), position, movable, coordinates, orientation);
         connect(m_line, &StraightLine::moved, this, &SciQLopStraightLine::position_changed);
     }
@@ -179,6 +182,7 @@ public:
 
     inline void set_color(const QColor& color)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
         if (!m_line.isNull())
             this->m_line->set_color(color);
     }
@@ -190,8 +194,9 @@ public:
         return {};
     }
 
-    void inline set_line_width(double width)
+    inline void set_line_width(double width)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
         if (!m_line.isNull())
             this->m_line->set_line_width(width);
     }
@@ -205,6 +210,7 @@ public:
 
     inline void set_line_style(Qt::PenStyle style)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
         if (!m_line.isNull())
             this->m_line->set_line_style(style);
     }
@@ -218,24 +224,28 @@ public:
 
     inline void set_min_value(double min)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_min_value(min));
         if (!m_line.isNull())
             m_line->set_min_value(min);
     }
 
     inline void clear_min_value()
     {
+        SCIQLOP_ON_OWNER_THREAD(clear_min_value());
         if (!m_line.isNull())
             m_line->clear_min_value();
     }
 
     inline void set_max_value(double max)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_max_value(max));
         if (!m_line.isNull())
             m_line->set_max_value(max);
     }
 
     inline void clear_max_value()
     {
+        SCIQLOP_ON_OWNER_THREAD(clear_max_value());
         if (!m_line.isNull())
             m_line->clear_max_value();
     }

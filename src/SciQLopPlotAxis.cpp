@@ -24,13 +24,14 @@
 #include "SciQLopPlots/PercentileMath.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Tracing.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "qcustomplot.h"
 #include <algorithm>
+#include <cmath>
 #include <plottables/plottable-colormap2.h>
 #include <plottables/plottable-histogram2d.h>
-#include <cmath>
 #include <vector>
 
 SciQLopPlotRange SciQLopPlotAxisInterface::clamp_range(const SciQLopPlotRange& range) const noexcept
@@ -48,11 +49,13 @@ SciQLopPlotRange SciQLopPlotAxisInterface::clamp_range(const SciQLopPlotRange& r
 
 void SciQLopPlotAxisInterface::set_max_range_size(double max_size) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_max_range_size(max_size));
     m_max_range_size = max_size > 0.0 ? max_size : std::numeric_limits<double>::infinity();
 }
 
 void SciQLopPlotAxisInterface::set_min_range_size(double min_size) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_min_range_size(min_size));
     m_min_range_size = min_size > 0.0 ? min_size : 0.0;
 }
 
@@ -89,6 +92,7 @@ SciQLopPlotAxis::SciQLopPlotAxis(QCPAxis* axis, QObject* parent, bool is_time_ax
 
 void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_range(range));
     if (!m_axis.isNull() && range.is_valid())
     {
         auto clamped = clamp_range(range);
@@ -105,6 +109,7 @@ void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
 
 void SciQLopPlotAxis::set_visible(bool visible) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
     if (!m_axis.isNull() && m_axis->visible() != visible)
     {
         m_axis->setVisible(visible);
@@ -115,6 +120,7 @@ void SciQLopPlotAxis::set_visible(bool visible) noexcept
 
 void SciQLopPlotAxis::set_log(bool log) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_log(log));
     if (!m_axis.isNull() && (m_axis->scaleType() == QCPAxis::stLogarithmic) != log)
     {
         {
@@ -131,6 +137,7 @@ void SciQLopPlotAxis::set_log(bool log) noexcept
 
 void SciQLopPlotAxis::set_label(const QString& label) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_label(label));
     if (!m_axis.isNull() && m_axis->label() != label)
     {
         m_axis->setLabel(label);
@@ -141,6 +148,7 @@ void SciQLopPlotAxis::set_label(const QString& label) noexcept
 
 void SciQLopPlotAxis::set_selected(bool selected) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
     if (!m_axis.isNull() && (this->selected() != selected))
     {
         if (selected)
@@ -155,6 +163,7 @@ void SciQLopPlotAxis::set_selected(bool selected) noexcept
 
 void SciQLopPlotAxis::set_tick_labels_visible(bool visible) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_tick_labels_visible(visible));
     if (!m_axis.isNull() && m_axis->tickLabels() != visible)
     {
         m_axis->setTickLabels(visible);
@@ -175,6 +184,7 @@ void SciQLopPlotAxis::set_tick_labels_visible(bool visible) noexcept
 
 void SciQLopPlotAxis::set_label_font(const QFont& font) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_label_font(font));
     if (!m_axis.isNull() && m_axis->labelFont() != font)
     {
         m_axis->setLabelFont(font);
@@ -185,6 +195,7 @@ void SciQLopPlotAxis::set_label_font(const QFont& font) noexcept
 
 void SciQLopPlotAxis::set_label_color(const QColor& color) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_label_color(color));
     if (!m_axis.isNull() && m_axis->labelColor() != color)
     {
         m_axis->setLabelColor(color);
@@ -195,6 +206,7 @@ void SciQLopPlotAxis::set_label_color(const QColor& color) noexcept
 
 void SciQLopPlotAxis::set_tick_label_font(const QFont& font) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_tick_label_font(font));
     if (!m_axis.isNull() && m_axis->tickLabelFont() != font)
     {
         m_axis->setTickLabelFont(font);
@@ -205,6 +217,7 @@ void SciQLopPlotAxis::set_tick_label_font(const QFont& font) noexcept
 
 void SciQLopPlotAxis::set_tick_label_color(const QColor& color) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_tick_label_color(color));
     if (!m_axis.isNull() && m_axis->tickLabelColor() != color)
     {
         m_axis->setTickLabelColor(color);
@@ -317,6 +330,7 @@ bool SciQLopPlotAxis::selected() const noexcept
 
 void SciQLopPlotAxis::set_autoscale_percentile_low(double percentile) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_autoscale_percentile_low(percentile));
     if (std::isnan(percentile))
         return;
     m_autoscale_percentile_low = std::clamp(percentile, 0., 100.);
@@ -324,6 +338,7 @@ void SciQLopPlotAxis::set_autoscale_percentile_low(double percentile) noexcept
 
 void SciQLopPlotAxis::set_autoscale_percentile_high(double percentile) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_autoscale_percentile_high(percentile));
     if (std::isnan(percentile))
         return;
     m_autoscale_percentile_high = std::clamp(percentile, 0., 100.);
@@ -462,6 +477,7 @@ void SciQLopPlotAxis::rescale() noexcept
 
 void SciQLopPlotAxis::set_tick_labels(const QMap<double, QString>& labels) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_tick_labels(labels));
     if (is_time_axis())
     {
         qWarning() << "Text tick labels are not supported on a time axis";
@@ -496,6 +512,7 @@ QCPAxis* SciQLopPlotAxis::qcp_axis() const noexcept
 
 void SciQLopPlotDummyAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_range(range));
     auto clamped = clamp_range(range);
     if (m_range != clamped)
     {
@@ -555,6 +572,7 @@ void SciQLopPlotColorScaleAxis::update_number_precision() noexcept
 
 void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_range(range));
     // Note: unlike SciQLopPlotAxis::set_range, this never populates
     // m_last_valid_range, so the base class's clamp/revert logic
     // (min_range_size/max_range_size) would silently fail to apply here if
@@ -571,6 +589,7 @@ void SciQLopPlotColorScaleAxis::set_range(const SciQLopPlotRange& range) noexcep
 
 void SciQLopPlotColorScaleAxis::set_visible(bool visible) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
     if (!m_axis.isNull() && m_axis->visible() != visible)
     {
         m_axis->setVisible(visible);
@@ -581,6 +600,7 @@ void SciQLopPlotColorScaleAxis::set_visible(bool visible) noexcept
 
 void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_log(log));
     if (!m_axis.isNull() && (m_axis->dataScaleType() == QCPAxis::stLogarithmic) != log)
     {
         {
@@ -598,6 +618,7 @@ void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
 
 void SciQLopPlotColorScaleAxis::set_label(const QString& label) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_label(label));
     if (!m_axis.isNull() && m_axis->label() != label)
     {
         m_axis->setLabel(label);
@@ -608,6 +629,7 @@ void SciQLopPlotColorScaleAxis::set_label(const QString& label) noexcept
 
 void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
     if (!m_axis.isNull() && (!m_color_gradient_set || m_color_gradient != gradient))
     {
         m_color_gradient = gradient;
@@ -624,6 +646,7 @@ void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient)
 
 void SciQLopPlotColorScaleAxis::set_custom_gradient(const QCPColorGradient& gradient) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_custom_gradient(gradient));
     if (m_axis.isNull())
         return;
     m_color_gradient_set = false;

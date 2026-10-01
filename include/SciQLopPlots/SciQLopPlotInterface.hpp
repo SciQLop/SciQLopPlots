@@ -20,12 +20,14 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+
 #include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotLegendInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
 #include <QFrame>
@@ -412,16 +414,19 @@ public:
 
     virtual void remove_plottable(SciQLopPlottableInterface* plottable)
     {
+        SCIQLOP_ON_OWNER_THREAD_WITH(plottable, remove_plottable(plottable));
         delete plottable;
     }
 
     virtual void remove_plottable(int index)
     {
+        SCIQLOP_ON_OWNER_THREAD(remove_plottable(index));
         delete plottable(index);
     }
 
     virtual void remove_plottable(const QString& name)
     {
+        SCIQLOP_ON_OWNER_THREAD(remove_plottable(name));
         delete plottable(name);
     }
 

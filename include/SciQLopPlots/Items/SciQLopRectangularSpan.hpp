@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
+
 #include "SciQLopSpanBase.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/helpers.hpp"
@@ -82,11 +84,16 @@ public:
 
     inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
 
-    inline void set_visible(bool visible) noexcept override { _base.set_visible(visible); }
+    inline void set_visible(bool visible) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
+        _base.set_visible(visible);
+    }
     inline bool visible() const noexcept override { return _base.visible(); }
 
     inline void set_key_range(const SciQLopPlotRange& range) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_key_range(range));
         qptr_apply(_impl, [range](auto& item) { item->set_key_range(range); });
     }
 
@@ -97,6 +104,7 @@ public:
 
     inline void set_value_range(const SciQLopPlotRange& range) noexcept
     {
+        SCIQLOP_ON_OWNER_THREAD(set_value_range(range));
         qptr_apply(_impl, [range](auto& item) { item->set_value_range(range); });
     }
 
@@ -105,25 +113,53 @@ public:
         return qptr_apply_or(_impl, [](auto& item) { return item->value_range(); });
     }
 
-    inline void set_color(const QColor& color) { _base.set_color(color); }
+    inline void set_color(const QColor& color)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_color(color));
+        _base.set_color(color);
+    }
     [[nodiscard]] inline QColor color() const { return _base.color(); }
 
-    inline void set_borders_color(const QColor& color) { _base.set_borders_color(color); }
+    inline void set_borders_color(const QColor& color)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
+        _base.set_borders_color(color);
+    }
     [[nodiscard]] inline QColor borders_color() const noexcept { return _base.borders_color(); }
 
-    inline void set_line_width(double width) { _base.set_line_width(width); }
+    inline void set_line_width(double width)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
+        _base.set_line_width(width);
+    }
     [[nodiscard]] inline double line_width() const noexcept { return _base.line_width(); }
 
-    inline void set_line_style(Qt::PenStyle style) { _base.set_line_style(style); }
+    inline void set_line_style(Qt::PenStyle style)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
+        _base.set_line_style(style);
+    }
     [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
 
-    inline void set_selected(bool selected) { _base.set_selected(selected); }
+    inline void set_selected(bool selected)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
+        _base.set_selected(selected);
+    }
     [[nodiscard]] inline bool selected() const noexcept { return _base.selected(); }
 
-    inline void set_read_only(bool read_only) { _base.set_read_only(read_only); }
+    inline void set_read_only(bool read_only)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
+        _base.set_read_only(read_only);
+    }
     [[nodiscard]] inline bool read_only() const noexcept { return _base.read_only(); }
 
-    inline void set_tool_tip(const QString& tool_tip) noexcept override { _base.set_tool_tip(tool_tip); }
+    inline void set_tool_tip(const QString& tool_tip) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+        _base.set_tool_tip(tool_tip);
+    }
     [[nodiscard]] inline QString tool_tip() const noexcept override { return _base.tool_tip(); }
 
     inline void replot() override { _base.replot(); }

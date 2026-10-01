@@ -90,6 +90,7 @@ void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
 
 void MultiPlotsVerticalSpan::set_selected(bool selected)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
     if (_selected != selected)
     {
         for (auto span : _spans)
@@ -105,6 +106,7 @@ void MultiPlotsVerticalSpan::set_selected(bool selected)
 
 void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_range(horizontal_range));
     if (horizontal_range != _horizontal_range)
     {
         for (auto span : _spans)
@@ -142,6 +144,7 @@ void MultiPlotsVSpanCollection::updateVisibleSpans(const SciQLopPlotRange& horiz
 
 void MultiPlotsVSpanCollection::delete_span(const QString &id)
 {
+    SCIQLOP_ON_OWNER_THREAD(delete_span(id));
     auto vspan = span(id);
     if (vspan)
     {
@@ -153,6 +156,7 @@ QPointer<MultiPlotsVerticalSpan>
 MultiPlotsVSpanCollection::create_span(SciQLopPlotRange horizontal_range, QColor color,
                                         bool read_only, const QString tool_tip, const QString id)
 {
+    SciQLopPlots::require_owner_thread(this, "MultiPlotsVSpanCollection::create_span");
     auto p = panel();
     MultiPlotsVerticalSpan* vspan = new MultiPlotsVerticalSpan(
         p, horizontal_range, color, read_only, horizontal_range.intersects(p->time_axis_range()),
@@ -165,6 +169,7 @@ MultiPlotsVSpanCollection::create_span(SciQLopPlotRange horizontal_range, QColor
 
 void MultiPlotsVSpanCollection::delete_span(QPointer<MultiPlotsVerticalSpan> vspan)
 {
+    SCIQLOP_ON_OWNER_THREAD(delete_span(vspan));
     _spans.removeAll(vspan);
     delete vspan;
 }

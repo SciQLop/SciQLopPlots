@@ -142,9 +142,9 @@ void impl::VerticalSpan::select_upper_border(bool selected)
 }
 
 SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
-    QColor color, bool read_only, bool visible, const QString& tool_tip,
-    Coordinates coordinates)
-        : SciQLopRangeItemInterface { plot }
+                                         QColor color, bool read_only, bool visible,
+                                         const QString& tool_tip, Coordinates coordinates)
+        : SciQLopRangeItemInterface { SciQLopPlots::on_owner_thread(plot, "SciQLopVerticalSpan") }
         , _impl { new impl::VerticalSpan { plot->qcp_plot(), horizontal_range, coordinates, true } }
         , _base { static_cast<impl::SpanBase*>(_impl.data()) }
 {

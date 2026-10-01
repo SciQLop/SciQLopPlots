@@ -32,14 +32,15 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
-#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
-#include "SciQLopPlots/constants.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
 #include "SciQLopPlots/MultiPlots/VPlotsAlign.hpp"
 #include "SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
+#include "SciQLopPlots/constants.hpp"
 
 #include <cpp_utils/containers/algorithms.hpp>
 
@@ -113,18 +114,21 @@ void SciQLopMultiPlotPanel::replot(bool immediate)
 
 void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface* panel)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(panel, add_panel(panel));
     _container->addWidget(panel);
     Q_EMIT panel_added(panel);
 }
 
 void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface* panel)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(panel, insert_panel(index, panel));
     _container->insertWidget(index, panel);
     Q_EMIT panel_added(panel);
 }
 
 void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface* panel)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(panel, remove_panel(panel));
     _container->removeWidget(panel, true);
     Q_EMIT panel_removed(panel);
 }
@@ -133,11 +137,13 @@ void SciQLopMultiPlotPanel::move_panel(int from, int to) { }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(plot, add_plot(plot));
     _container->add_plot(plot);
 }
 
 void SciQLopMultiPlotPanel::remove_plot(SciQLopPlotInterface* plot)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(plot, remove_plot(plot));
     _container->remove_plot(plot);
 }
 
@@ -169,21 +175,25 @@ void SciQLopMultiPlotPanel::export_paint(QPainter* painter, const QRect& target,
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(plot, insert_plot(index, plot));
     _container->insert_plot(index, plot);
 }
 
 void SciQLopMultiPlotPanel::move_plot(int from, int to)
 {
+    SCIQLOP_ON_OWNER_THREAD(move_plot(from, to));
     _container->move_plot(from, to);
 }
 
 void SciQLopMultiPlotPanel::move_plot(SciQLopPlotInterface* plot, int to)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(plot, move_plot(plot, to));
     _container->move_plot(plot, to);
 }
 
 void SciQLopMultiPlotPanel::clear()
 {
+    SCIQLOP_ON_OWNER_THREAD(clear());
     _container->clear();
 }
 
@@ -244,6 +254,7 @@ void SciQLopMultiPlotPanel::removeWidget(QWidget* widget)
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::create_plot(int index, PlotType plot_type)
 {
+    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::create_plot");
     SciQLopPlotInterface* plot = nullptr;
     switch (plot_type)
     {

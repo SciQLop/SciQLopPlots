@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
+
 #include "SciQLopPlotItem.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -98,6 +100,7 @@ public:
                       bool movable = false, Coordinates coordinates = Coordinates::Pixels)
             : SciQLopBoundingRectItemInterface(plot)
     {
+        SciQLopPlots::require_owner_thread(plot, "SciQLopPixmapItem");
         if (plot == nullptr)
             throw std::invalid_argument("plot cannot be nullptr");
         else
@@ -108,6 +111,7 @@ public:
 
     inline void set_visible(bool visible) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
         qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 

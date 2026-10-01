@@ -73,8 +73,9 @@ void impl::HorizontalSpan::select_upper_border(bool selected)
 }
 
 SciQLopHorizontalSpan::SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
-    QColor color, bool read_only, bool visible, const QString& tool_tip)
-        : SciQLopRangeItemInterface { plot }
+                                             QColor color, bool read_only, bool visible,
+                                             const QString& tool_tip)
+        : SciQLopRangeItemInterface { SciQLopPlots::on_owner_thread(plot, "SciQLopHorizontalSpan") }
         , _impl { new impl::HorizontalSpan { plot->qcp_plot(), vertical_range, true } }
         , _base { static_cast<impl::SpanBase*>(_impl.data()) }
 {

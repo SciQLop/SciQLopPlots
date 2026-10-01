@@ -129,6 +129,7 @@ Qt::PenStyle StraightLine::line_style() const
 
 void SciQLopStraightLine::set_position(double pos)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_position(pos));
     if (!m_line.isNull())
         m_line->set_position(pos);
 }
