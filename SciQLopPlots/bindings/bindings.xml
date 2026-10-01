@@ -658,10 +658,10 @@
                 <rename to="colors"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="plot_type"/>
+                <rename to="marker"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="marker"/>
+                <rename to="plot_type"/>
             </modify-argument>
             <modify-argument index="7">
                 <rename to="index"/>
@@ -749,10 +749,10 @@
                 <rename to="colors"/>
             </modify-argument>
             <modify-argument index="4">
-                <rename to="plot_type"/>
+                <rename to="marker"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="marker"/>
+                <rename to="plot_type"/>
             </modify-argument>
             <modify-argument index="6">
                 <rename to="sync_with"/>
