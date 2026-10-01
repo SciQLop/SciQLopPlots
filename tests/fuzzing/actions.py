@@ -78,6 +78,12 @@ def _bind_kwargs(fn: Callable, kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if k in params}
 
 
+def _refers_to_removed_plot(kwargs: dict[str, Any], model: PlotModel) -> bool:
+    """Bundles keep every index an action returned, even once that plot is removed."""
+    index = kwargs.get("plot_index")
+    return index is not None and index >= model.plot_count
+
+
 def run_action(fn: Callable, panel, model: PlotModel, story: Story, **kwargs) -> Any:
     meta: ActionMeta = fn._ui_meta
 
@@ -209,6 +215,8 @@ class ActionRegistry:
 
                 def make_rule_method(fn, fn_meta):
                     def rule_method(self, **kwargs):
+                        if _refers_to_removed_plot(kwargs, self._model):
+                            return None
                         result = run_action(
                             fn, self.__class__.panel,
                             self._model, self._story, **kwargs,
