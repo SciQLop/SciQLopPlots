@@ -455,6 +455,7 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
     </object-type>
 
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes"/>
@@ -538,6 +539,12 @@
     <object-type name="SciQLopHistogram2D" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
+    </object-type>
+    <object-type name="SciQLopTimeline" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="SciQLopTimeline(QCustomPlot*,QCPLaneLayout*,SciQLopPlotAxis*,QVariantMap)" remove="all"/>
+        <modify-function signature="set_intervals_coded(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer,const QStringList&amp;,SciQLopPyBuffer,const QStringList&amp;,const QStringList&amp;,SciQLopPyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="rename_lane(const QString&amp;,const QString&amp;)" exception-handling="auto-on"/>
     </object-type>
 
     <object-type name="SciQLopFunctionGraph" parent-management="no"/>

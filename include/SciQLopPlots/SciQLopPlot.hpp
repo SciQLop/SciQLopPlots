@@ -24,6 +24,7 @@
 #include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
 #include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
@@ -107,6 +108,8 @@ public:
                                                  bool y_bins_log = false);
     SciQLopHistogram2DRemote* add_remote_histogram2d(const QString& name, int x_bins = 100,
                                                       int y_bins = 100);
+
+    SciQLopTimeline* add_timeline(QCPLaneLayout* layout);
 
     inline void set_scroll_factor(double factor) noexcept { m_scroll_factor = factor; }
 
@@ -263,6 +266,7 @@ protected:
     int m_color_palette_index = 0;
     bool m_auto_scale = false;
     bool m_equal_aspect_ratio = false;
+    QPointer<QCPLaneLayout> m_lane_layout;
 
 
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
@@ -392,6 +396,11 @@ public:
                                                  const QString& name, int x_bins = 100,
                                                  int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
+
+    SciQLopTimeline* add_timeline(int lane_height = 14);
+#ifndef BINDINGS_H
+    QCPLaneLayout* lane_layout();
+#endif
 
     SciQLopWaterfallGraph* add_waterfall(const QString& name,
                                          const QStringList& labels = {},

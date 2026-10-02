@@ -23,6 +23,7 @@
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -178,6 +179,13 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;
+}
+
+SciQLopTimeline* SciQLopPlot::add_timeline(QCPLaneLayout* layout)
+{
+    auto* timeline = new SciQLopTimeline(this, layout, this->m_axes[1]);
+    _register_plottable_wrapper(timeline);
+    return timeline;
 }
 
 SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable,
@@ -824,6 +832,22 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
         _connect_callable_sync(hist, nullptr);
     }
     return hist;
+}
+
+QCPLaneLayout* SciQLopPlot::lane_layout()
+{
+    if (!m_lane_layout)
+        m_lane_layout = new QCPLaneLayout(this);
+    return m_lane_layout;
+}
+
+SciQLopTimeline* SciQLopPlot::add_timeline(int lane_height)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopPlot::add_timeline");
+    auto* layout = lane_layout();
+    if (layout->laneNames().isEmpty())
+        layout->setLaneHeight(lane_height);
+    return m_impl->add_timeline(layout);
 }
 
 SciQLopWaterfallGraph* SciQLopPlot::add_waterfall(const QString& name, const QStringList& labels,

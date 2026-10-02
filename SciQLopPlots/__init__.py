@@ -364,3 +364,51 @@ for _graph_cls in (SciQLopPlotsBindings.SciQLopSingleLineGraph,
                    SciQLopPlotsBindings.SciQLopNDProjectionCurves):
     _graph_cls.set_color_data = _validate_color_data(_graph_cls.set_color_data)
 
+
+# --- SciQLopTimeline.set_intervals(...): numpy-friendly front end for
+# set_intervals_coded(), which only takes float64 buffers plus a first-seen
+# name table per categorical column (lane, category).
+import numpy as np
+
+
+def _epoch_seconds(values):
+    a = np.asarray(values)
+    if np.issubdtype(a.dtype, np.datetime64):
+        return a.astype("datetime64[ns]").astype(np.int64) / 1e9
+    return np.ascontiguousarray(a, dtype=np.float64)
+
+
+def _first_seen_codes(values, n):
+    if values is None:
+        return np.zeros(n, dtype=np.float64), [""]
+    a = np.asarray(values).astype(str)
+    unique, first, inverse = np.unique(a, return_index=True, return_inverse=True)
+    order = np.argsort(first)
+    rank = np.empty_like(order)
+    rank[order] = np.arange(len(order))
+    return rank[inverse].astype(np.float64), [str(u) for u in unique[order]]
+
+
+def _check_intervals(start, stop, columns):
+    if any(len(c) != len(start) for c in [stop, *columns] if c is not None):
+        raise ValueError("start, stop, lane, category, label and ids must have the same length")
+    if np.isnan(start).any() or np.isnan(stop).any():
+        raise ValueError("start and stop must not contain NaN")
+    if (stop < start).any():
+        raise ValueError("stop must not be before start")
+
+
+def _set_intervals(self, start, stop=None, lane=None, category=None, label=None, ids=None):
+    start = _epoch_seconds(start)
+    stop = start.copy() if stop is None else _epoch_seconds(stop)
+    _check_intervals(start, stop, [lane, category, label, ids])
+    lane_codes, lane_names = _first_seen_codes(lane, len(start))
+    category_codes, category_names = _first_seen_codes(category, len(start))
+    ids = np.arange(len(start), dtype=np.float64) if ids is None else np.ascontiguousarray(ids, dtype=np.float64)
+    labels = [] if label is None else [str(s) for s in label]
+    self.set_intervals_coded(start, stop, lane_codes, lane_names, category_codes, category_names,
+                             labels, ids)
+
+
+SciQLopTimeline.set_intervals = _set_intervals
+
