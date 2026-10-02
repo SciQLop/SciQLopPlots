@@ -38,6 +38,7 @@ Out of scope (later spec):
 - Callback data source `f(start, stop) -> intervals`.
 - SciQLop / speasy catalog mapping.
 - Curves drawn inside a single lane, value-coloured bars, dependency arrows.
+- Per-category legend entries: the plottable gets one plain legend icon for now.
 
 ## Architecture
 
@@ -106,8 +107,8 @@ Shared by every `QCPIntervals` in one axis rect.
 
 - Lane strings → indices in the plot's lane layout; unknown names are appended in
   first-seen order. Two timelines using the same name share that lane.
-- Category strings → indices; colours come from a palette shared across the panel, so
-  a category has the same colour in every plot. `set_category_colors` overrides.
+- Category strings → indices; colours come from a process-wide palette, so a category
+  has the same colour in every plot, in every panel. `set_category_colors` overrides.
 - `ids` default to `0..n-1`. Signals always report these ids, never row indices.
 - Times accept epoch floats or `datetime64`.
 - Validation raises `ValueError`: columns of different lengths, `stop < start`, NaN in
@@ -127,8 +128,9 @@ Shared by every `QCPIntervals` in one axis rect.
 
 ### Cache
 
-- Vertices are rebuilt only when data, axis range, plot size, layout or colours change.
-  A pan alone reuses the buffer with a GPU offset, like the line graphs.
+- Vertices are rebuilt when data, axis range, plot size, layout or colours change. The
+  merge bounds a rebuild to the visible rows. GPU-offset reuse on pan is the upgrade
+  path.
 - The "needs rebuild" decision is one predicate, used by the draw code and covered by
   its own unit test. (The 2026-10-02 step-line selection bug came from two places
   deciding this separately.)
@@ -166,9 +168,11 @@ Shared by every `QCPIntervals` in one axis rect.
 |---|---|---|
 | Body | select | select, drag to move; vertical drag changes lane if `change_lane` |
 | Edge | select | resize |
-| Empty lane | rubber band / pan | create if `create`, else rubber band / pan |
+| Empty lane | Shift+drag for rubber band, else pan | create if `create`, else Shift+drag for rubber band, else pan |
 
 - Ctrl-click toggles a bar in the selection.
+- Rubber band is Shift+drag on empty lane space, handled by `QCPIntervals` itself.
+  QCustomPlot's selection-rect mode is not enabled: it steals every press.
 - `QCPIntervals` implements `QCPPlottableInterface1D`, so rect selection reaches it via
   `selectTestRect` (as `QCPMultiGraph` does).
 
@@ -198,7 +202,8 @@ strip = ts_plot.add_timeline(lane_height=12)   # on a regular time-series plot: 
 
 tl.set_intervals(start, stop, lane=lanes,
                  category=None, label=None, ids=None)
-tl.lanes = ["MSA", "MPPE", "MGF"]              # reorder / hide / rename, shared per plot
+tl.lanes = ["MSA", "MPPE", "MGF"]              # sets order and visibility, shared per plot
+tl.rename_lane("MSA", "MSA_HI")                # renames a lane in place
 tl.set_category_colors({"LM": "#f59e0b"})
 
 tl.editable = True                             # default False
@@ -208,7 +213,7 @@ tl.snap_to = "edges"                           # or seconds, or None
 tl.intervals_changed.connect(cb)               # [(id, start, stop, lane), ...]
 tl.interval_created.connect(cb)                # (start, stop, lane)
 tl.delete_requested.connect(cb)                # [ids]
-tl.selection_changed.connect(cb)               # [ids]
+tl.selected_intervals_changed.connect(cb)      # [ids]
 tl.hovered.connect(cb)                         # id, or -1 when leaving
 ```
 
@@ -250,11 +255,13 @@ SciQLopPlots (Python, `tests/integration`):
 
 ## Delivery
 
-Three local branches, each with green NeoQCP and SciQLopPlots suites:
+One branch per repo, `feat/interval-timeline`, with three checkpoints, each leaving
+both the NeoQCP and SciQLopPlots suites green:
 
 1. **Draw** — `QCPIntervals`, `QCPLaneLayout`, both placements, categories, labels,
    Python `set_intervals` / `lanes` / colours.
-2. **Identity** — ids, hover, selection, rubber band, `selection_changed`, `hovered`.
+2. **Identity** — ids, hover, selection, rubber band, `selected_intervals_changed`,
+   `hovered`.
 3. **Edit** — gestures, snapping, keyboard, edit signals.
 
 Then one release. NeoQCP is pushed before the SciQLopPlots wrap pin is bumped.
