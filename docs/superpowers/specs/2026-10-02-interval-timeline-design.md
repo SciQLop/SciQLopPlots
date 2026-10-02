@@ -48,7 +48,7 @@ Two layers, following the `QCPMultiGraph` / `SciQLopLineGraph` split.
   Owns data columns, GPU drawing, hit testing, rect selection, the drag state machine.
   Works only with integer lanes, categories and ids.
 - **SciQLopPlots** — `SciQLopTimeline` (plotable wrapper). Maps lane and category strings
-  to indices, owns the panel-wide category palette, converts times, exposes the Python
+  to indices, owns the process-wide category palette, converts times, exposes the Python
   API and signals with the user's ids.
 
 No new plot class. `panel.add_timeline()` creates a `SciQLopTimeSeriesPlot` configured
@@ -109,10 +109,12 @@ Shared by every `QCPIntervals` in one axis rect.
   first-seen order. Two timelines using the same name share that lane.
 - Category strings → indices; colours come from a process-wide palette, so a category
   has the same colour in every plot, in every panel. `set_category_colors` overrides.
+- Both lanes and categories cross into C++ as integer codes plus their unique names.
 - `ids` default to `0..n-1`. Signals always report these ids, never row indices.
 - Times accept epoch floats or `datetime64`.
 - Validation raises `ValueError`: columns of different lengths, `stop < start`, NaN in
-  `start` or `stop`.
+  `start` or `stop`. The check lives in the Python `set_intervals` wrapper; C++
+  re-checks and throws `std::invalid_argument` (surfaces as `RuntimeError`).
 
 ## Drawing
 
@@ -192,6 +194,8 @@ Shared by every `QCPIntervals` in one axis rect.
 - Arrow keys nudge the selection by the snap step, or by one pixel's worth of time when
   there is no step. Each nudge emits `intervals_changed`.
 - Delete emits `delete_requested(ids)` when `delete` is in `edit_modes`.
+- Keyboard goes through a new `QCPAbstractPlottable::keyPress(QKeyEvent*)` virtual,
+  called by `QCustomPlot::keyPressEvent`.
 
 ## Python API
 
