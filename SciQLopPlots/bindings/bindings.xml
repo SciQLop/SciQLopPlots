@@ -919,6 +919,7 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="add_timeline(int,int)" exception-handling="auto-on"/>
         <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool,Qt::Orientation)">
             <modify-argument index="2">
                 <rename to="synchronize_x"/>

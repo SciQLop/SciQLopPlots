@@ -26,6 +26,7 @@
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
 #include <QGridLayout>
+#include <QPair>
 #include <QPointer>
 #include <QScrollArea>
 #include <QUuid>
@@ -37,6 +38,7 @@ class SciQLopTheme;
 
 class SciQLopPlotContainer;
 class SciQLopPlot;
+class SciQLopTimeline;
 class PlaceHolderManager;
 class QCPItemVSpan;
 class QCPAbstractItem;
@@ -250,6 +252,12 @@ public:
     void removeWidget(QWidget* widget);
 
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
+
+    //! A compact time-series plot with lane names on its y axis (see
+    //! SciQLopPlot::configure_as_timeline), plus the timeline plottable to feed via
+    //! set_intervals().
+    QPair<SciQLopPlotInterface*, SciQLopTimeline*> add_timeline(int lane_height = 14,
+                                                                 int index = -1);
 
 
     void set_x_axis_range(const SciQLopPlotRange& range) Q_DECL_OVERRIDE;

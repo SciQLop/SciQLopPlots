@@ -4,7 +4,7 @@ import threading
 import numpy as np
 import pytest
 
-from SciQLopPlots import SciQLopTimeSeriesPlot, SciQLopTimeline
+from SciQLopPlots import SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline
 from conftest import process_events
 
 
@@ -98,3 +98,48 @@ def test_set_intervals_from_a_worker_thread_is_queued(ts_plot, qtbot):
     t.start()
     t.join()
     qtbot.waitUntil(lambda: tl.count() == 1, timeout=2000)
+
+
+def _panel_timeline(panel, lanes=("MSA", "MPPE", "MGF")):
+    plot, tl = panel.add_timeline()
+    tl.set_intervals([0] * len(lanes), [10] * len(lanes), lane=list(lanes))
+    process_events()
+    return plot, tl
+
+
+def test_panel_add_timeline_returns_a_time_series_plot(panel):
+    plot, tl = _panel_timeline(panel)
+    assert isinstance(plot, SciQLopTimeSeriesPlot)
+    assert isinstance(tl, SciQLopTimeline)
+
+
+def test_timeline_plot_shows_lane_names_on_its_y_axis(panel):
+    plot, _ = _panel_timeline(panel)
+    assert list(plot.y_axis().tick_labels().values()) == ["MSA", "MPPE", "MGF"]
+
+
+def test_timeline_plot_height_is_lanes_times_lane_height(panel, qtbot):
+    plot, tl = _panel_timeline(panel)
+    panel.show()
+    qtbot.waitUntil(lambda: plot.minimumHeight() == plot.maximumHeight(), timeout=2000)
+    h3 = plot.height()
+    tl.set_intervals([0] * 4, [1] * 4, lane=["MSA", "MPPE", "MGF", "MAG"])
+    qtbot.waitUntil(lambda: plot.height() == h3 + 14, timeout=2000)
+
+
+def test_timeline_plot_follows_the_panel_time_axis(panel):
+    panel.plot(np.linspace(0, 100, 10), np.zeros(10))
+    plot, _ = _panel_timeline(panel)
+    panel.set_time_axis_range(SciQLopPlotRange(20, 30))
+    process_events()
+    r = plot.x_axis().range()
+    assert (r.start(), r.stop()) == (20, 30)
+
+
+def test_line_graph_on_a_timeline_plot_uses_the_right_axis(panel):
+    plot, _ = _panel_timeline(panel)
+    graph = plot.plot(np.linspace(0, 10, 10), np.linspace(0, 1, 10))
+    process_events()
+    assert graph.y_axis() == plot.y2_axis()
+    assert plot.y2_axis().visible()
+    assert list(plot.y_axis().tick_labels().values()) == ["MSA", "MPPE", "MGF"]

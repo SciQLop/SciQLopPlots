@@ -402,6 +402,10 @@ public:
     QCPLaneLayout* lane_layout();
 #endif
 
+    //! Puts the plot into "lanes" mode for panel.add_timeline(): horizontal-only
+    //! drag/zoom, lane names as y tick labels, fixed height tracking the layout.
+    void configure_as_timeline(int lane_height = 14);
+
     SciQLopWaterfallGraph* add_waterfall(const QString& name,
                                          const QStringList& labels = {},
                                          const QList<QColor>& colors = {});
@@ -537,6 +541,8 @@ public:
 
 private:
     Q_SLOT void _enforce_equal_aspect();
+    Q_SLOT void _update_timeline_geometry();
+    Q_SLOT void _move_graphs_to_right_axis();
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)

@@ -274,6 +274,14 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::create_plot(int index, PlotType plo
     return plot;
 }
 
+QPair<SciQLopPlotInterface*, SciQLopTimeline*> SciQLopMultiPlotPanel::add_timeline(int lane_height,
+                                                                                   int index)
+{
+    auto* plot = qobject_cast<SciQLopPlot*>(create_plot(index, ::PlotType::TimeSeries));
+    plot->configure_as_timeline(lane_height);
+    return { plot, plot->add_timeline(lane_height) };
+}
+
 void SciQLopMultiPlotPanel::set_x_axis_range(const SciQLopPlotRange& range)
 {
     _container->set_x_axis_range(range);

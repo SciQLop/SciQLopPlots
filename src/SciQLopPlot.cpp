@@ -33,6 +33,7 @@
 
 #include <QFileInfo>
 #include <QSignalBlocker>
+#include <algorithm>
 #include <cmath>
 #include <cpp_utils/containers/algorithms.hpp>
 #include <limits>
@@ -848,6 +849,55 @@ SciQLopTimeline* SciQLopPlot::add_timeline(int lane_height)
     if (layout->laneNames().isEmpty())
         layout->setLaneHeight(lane_height);
     return m_impl->add_timeline(layout);
+}
+
+void SciQLopPlot::configure_as_timeline(int lane_height)
+{
+    auto* layout = lane_layout();
+    layout->setLaneHeight(lane_height);
+    layout->setPlacement(QCPLaneLayout::plLanes);
+    m_impl->axisRect()->setRangeDrag(Qt::Horizontal);
+    m_impl->axisRect()->setRangeZoom(Qt::Horizontal);
+    connect(layout, &QCPLaneLayout::changed, this, &SciQLopPlot::_update_timeline_geometry);
+    connect(m_impl, &QCustomPlot::afterLayout, this, &SciQLopPlot::_update_timeline_geometry);
+    connect(this, &SciQLopPlotInterface::graph_list_changed, this,
+            &SciQLopPlot::_move_graphs_to_right_axis);
+    _update_timeline_geometry();
+}
+
+//! On a timeline plot the left axis holds lanes; any other plottable goes to the right axis.
+void SciQLopPlot::_move_graphs_to_right_axis()
+{
+    for (auto* p : plottables())
+        if (!qobject_cast<SciQLopTimeline*>(p) && p->y_axis() == y_axis())
+        {
+            p->set_y_axis(y2_axis());
+            y2_axis()->set_visible(true);
+        }
+}
+
+void SciQLopPlot::_update_timeline_geometry()
+{
+    auto* layout = lane_layout();
+    const int lanes = std::max(1, layout->visibleLaneCount());
+    m_impl->yAxis->setRangeReversed(true);
+    m_impl->yAxis->setRange(0, lanes);
+    QMap<double, QString> labels;
+    const QStringList order = layout->displayOrder();
+    for (int i = 0; i < order.size(); ++i)
+        labels[i + 0.5] = order[i];
+    if (y_axis()->tick_labels() != labels)
+        y_axis()->set_tick_labels(labels);
+    // Before the plot's first real QCP layout pass (e.g. while it isn't shown yet),
+    // axisRect()->height() is still 0: computing "overhead" from that would latch
+    // a bogus fixed height. afterLayout() re-runs this once there's a real rect to
+    // measure, so it's safe to just wait for that.
+    if (m_impl->axisRect()->height() <= 0)
+        return;
+    const int overhead = height() - m_impl->axisRect()->height();
+    const int wanted = layout->totalHeight() + overhead;
+    if (layout->visibleLaneCount() > 0 && height() != wanted)
+        setFixedHeight(wanted);
 }
 
 SciQLopWaterfallGraph* SciQLopPlot::add_waterfall(const QString& name, const QStringList& labels,
