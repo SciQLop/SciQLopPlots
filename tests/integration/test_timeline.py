@@ -122,6 +122,13 @@ def test_panel_add_timeline_returns_a_time_series_plot(panel):
     assert isinstance(tl, SciQLopTimeline)
 
 
+def test_second_timeline_keeps_the_panel_lane_height(panel):
+    plot, tl = panel.add_timeline(lane_height=20)
+    second = plot.add_timeline()
+    assert second.lane_height() == 20
+    assert tl.lane_height() == 20
+
+
 def test_timeline_plot_shows_lane_names_on_its_y_axis(panel):
     plot, _ = _panel_timeline(panel)
     assert list(plot.y_axis().tick_labels().values()) == ["MSA", "MPPE", "MGF"]

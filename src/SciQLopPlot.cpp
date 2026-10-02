@@ -852,10 +852,10 @@ QCPLaneLayout* SciQLopPlot::lane_layout()
 SciQLopTimeline* SciQLopPlot::add_timeline(int lane_height)
 {
     SciQLopPlots::require_owner_thread(this, "SciQLopPlot::add_timeline");
-    auto* layout = lane_layout();
-    if (layout->laneNames().isEmpty())
-        layout->setLaneHeight(lane_height);
-    return m_impl->add_timeline(layout);
+    // The first timeline on a plot sets the shared lane height; later ones join it.
+    if (!m_lane_layout)
+        lane_layout()->setLaneHeight(lane_height);
+    return m_impl->add_timeline(lane_layout());
 }
 
 void SciQLopPlot::configure_as_timeline(int lane_height)
