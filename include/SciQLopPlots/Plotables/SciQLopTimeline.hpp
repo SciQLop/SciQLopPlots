@@ -74,6 +74,16 @@ public:
     void select_ids(const QList<qint64>& ids);
     QPointF pixel_of(double key, const QString& lane) const;
 
+    bool editable() const;
+    void set_editable(bool editable);
+    QStringList edit_modes() const;
+    void set_edit_modes(const QStringList& names);
+    void set_snap_edges();
+    void set_snap_step(double seconds);
+    void clear_snap();
+    QString snap_mode() const;
+    double snap_step() const;
+
 #ifndef BINDINGS_H
     QCPIntervals* intervals() const { return _intervals; }
     qint64 id_of_row(int row) const { return _intervals->columns().ids[row]; }
@@ -86,4 +96,7 @@ signals:
     Q_SIGNAL void lanes_changed();
     Q_SIGNAL void hovered(qint64 id);
     Q_SIGNAL void selected_intervals_changed(QList<qint64> ids);
+    Q_SIGNAL void intervals_changed(const QVariantList& edits);
+    Q_SIGNAL void interval_created(double start, double stop, const QString& lane);
+    Q_SIGNAL void delete_requested(const QList<qint64>& ids);
 };

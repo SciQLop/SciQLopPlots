@@ -412,3 +412,39 @@ def _set_intervals(self, start, stop=None, lane=None, category=None, label=None,
 
 SciQLopTimeline.set_intervals = _set_intervals
 
+
+# --- SciQLopTimeline editing API: `editable`, `edit_modes` and `snap_to`
+# properties over the C++ getters/setters captured below before being
+# replaced.
+_EDIT_MODES = {"move", "resize", "change_lane", "create", "delete"}
+_edit_modes_get = SciQLopTimeline.edit_modes
+_editable_get = SciQLopTimeline.editable
+
+
+def _set_edit_modes(self, modes):
+    unknown = set(modes) - _EDIT_MODES
+    if unknown:
+        raise ValueError(f"unknown edit modes: {sorted(unknown)}; expected {sorted(_EDIT_MODES)}")
+    self.set_edit_modes(sorted(modes))
+
+
+def _get_snap_to(self):
+    mode = self.snap_mode()
+    return {"edges": "edges", "step": self.snap_step()}.get(mode)
+
+
+def _set_snap_to(self, value):
+    if value is None:
+        self.clear_snap()
+    elif value == "edges":
+        self.set_snap_edges()
+    elif isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+        self.set_snap_step(float(value))
+    else:
+        raise ValueError("snap_to must be 'edges', a positive number of seconds, or None")
+
+
+SciQLopTimeline.edit_modes = property(lambda self: set(_edit_modes_get(self)), _set_edit_modes)
+SciQLopTimeline.editable = property(_editable_get, SciQLopTimeline.set_editable)
+SciQLopTimeline.snap_to = property(_get_snap_to, _set_snap_to)
+

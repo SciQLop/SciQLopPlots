@@ -21,9 +21,16 @@
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include <QMouseEvent>
+#include <algorithm>
 #include <stdexcept>
 
 namespace {
+
+const std::pair<const char*, QCPIntervals::EditMode> edit_mode_names[] = {
+    { "move", QCPIntervals::emMove },     { "resize", QCPIntervals::emResize },
+    { "change_lane", QCPIntervals::emChangeLane }, { "create", QCPIntervals::emCreate },
+    { "delete", QCPIntervals::emDelete },
+};
 
 std::vector<double> doubles(const SciQLopPyBuffer& b)
 {
@@ -68,6 +75,20 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
                 emit selected_intervals_changed(selected_ids());
                 emit selection_changed(selected());
             });
+    connect(_intervals, &QCPIntervals::intervalsEdited, this,
+            [this](const QVector<QCPIntervalEdit>& edits)
+            {
+                QVariantList out;
+                const QStringList names = _layout->laneNames();
+                for (const auto& e : edits)
+                    out.append(QVariant(QVariantList { e.id, e.start, e.stop, names.value(e.lane) }));
+                emit intervals_changed(out);
+            });
+    connect(_intervals, &QCPIntervals::intervalCreated, this,
+            [this](double start, double stop, int lane)
+            { emit interval_created(start, stop, _layout->laneNames().value(lane)); });
+    connect(_intervals, &QCPIntervals::deleteRequested, this,
+            [this](const QVector<qint64>& ids) { emit delete_requested(QList<qint64>(ids)); });
     _apply_palette();
 }
 
@@ -223,3 +244,68 @@ QPointF SciQLopTimeline::pixel_of(double key, const QString& lane) const
 {
     return _intervals->pixelOf(key, _layout->laneNames().indexOf(lane));
 }
+
+bool SciQLopTimeline::editable() const { return _intervals && _intervals->editable(); }
+
+void SciQLopTimeline::set_editable(bool editable)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_editable(editable));
+    _intervals->setEditable(editable);
+}
+
+QStringList SciQLopTimeline::edit_modes() const
+{
+    QStringList names;
+    for (const auto& [name, mode] : edit_mode_names)
+        if (_intervals->editModes() & mode)
+            names.append(name);
+    return names;
+}
+
+void SciQLopTimeline::set_edit_modes(const QStringList& names)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_edit_modes(names));
+    QCPIntervals::EditModes modes;
+    for (const auto& name : names)
+    {
+        const auto it = std::ranges::find_if(edit_mode_names,
+                                             [&](const auto& m) { return name == m.first; });
+        if (it == std::end(edit_mode_names))
+            throw std::invalid_argument("unknown edit mode: " + name.toStdString());
+        modes |= it->second;
+    }
+    _intervals->setEditModes(modes);
+}
+
+void SciQLopTimeline::set_snap_edges()
+{
+    SCIQLOP_ON_OWNER_THREAD(set_snap_edges());
+    _intervals->setSnap(QCPIntervals::snEdges);
+}
+
+void SciQLopTimeline::set_snap_step(double seconds)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_snap_step(seconds));
+    _intervals->setSnap(QCPIntervals::snStep, seconds);
+}
+
+void SciQLopTimeline::clear_snap()
+{
+    SCIQLOP_ON_OWNER_THREAD(clear_snap());
+    _intervals->setSnap(QCPIntervals::snNone);
+}
+
+QString SciQLopTimeline::snap_mode() const
+{
+    switch (_intervals->snapMode())
+    {
+        case QCPIntervals::snEdges:
+            return "edges";
+        case QCPIntervals::snStep:
+            return "step";
+        default:
+            return "none";
+    }
+}
+
+double SciQLopTimeline::snap_step() const { return _intervals->snapStep(); }

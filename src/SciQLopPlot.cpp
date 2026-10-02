@@ -28,6 +28,7 @@
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <layoutelements/layoutelement-legend-group.h>
+#include <plottables/plottable-intervals.h>
 #include <plottables/plottable-multigraph.h>
 #include <theme.h>
 
@@ -524,6 +525,12 @@ bool SciQLopPlot::_update_mouse_cursor(QMouseEvent* event)
         this->setCursor(sciItem->cursor(event));
         return true;
     }
+    if (auto* intervals = qobject_cast<QCPIntervals*>(plottableAt(event->pos(), false)))
+        if (const auto shape = intervals->cursorAt(event->pos()))
+        {
+            this->setCursor(*shape);
+            return true;
+        }
     this->setCursor(Qt::ArrowCursor);
     return false;
 }
