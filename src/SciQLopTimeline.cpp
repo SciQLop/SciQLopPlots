@@ -106,9 +106,8 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
 {
     SCIQLOP_ON_OWNER_THREAD(set_intervals_coded(start, stop, lane_codes, lane_names,
                                                 category_codes, category_names, labels, ids));
-    QVector<int> lane_table, category_table;
-    for (const auto& name : lane_names)
-        lane_table.append(_layout->laneIndex(name));
+    const QVector<int> lane_table = _layout->laneIndices(lane_names);
+    QVector<int> category_table;
     for (const auto& name : category_names)
         category_table.append(CategoryPalette::instance().index(name));
     qcp::intervals::Columns columns;

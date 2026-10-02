@@ -22,6 +22,14 @@ def test_set_intervals_counts_and_lanes_in_first_seen_order(ts_plot):
     assert tl.lanes == ["MSA", "MGF"]
 
 
+def test_new_lanes_notify_once_per_set_intervals(ts_plot):
+    tl = _strip(ts_plot)
+    seen = []
+    tl.lanes_changed.connect(lambda: seen.append(1))
+    tl.set_intervals([0, 1, 2], [1, 2, 3], lane=["A", "B", "C"])
+    assert len(seen) == 1
+
+
 def test_datetime64_times_are_epoch_seconds(ts_plot):
     tl = _strip(ts_plot)
     start = np.array(["2026-01-01T00:00:00"], dtype="datetime64[ns]")
