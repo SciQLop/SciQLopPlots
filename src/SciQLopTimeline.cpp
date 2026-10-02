@@ -20,6 +20,7 @@
 #include "SciQLopPlots/Plotables/CategoryPalette.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
+#include <QMouseEvent>
 #include <stdexcept>
 
 namespace {
@@ -58,6 +59,15 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
             &SciQLopTimeline::_apply_palette);
     connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::lanes_changed);
     connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::replot);
+    connect(plot, &QCustomPlot::mouseMove, this, &SciQLopTimeline::_update_hover);
+    plot->installEventFilter(this);
+    connect(_intervals, qOverload<const QCPDataSelection&>(&QCPAbstractPlottable::selectionChanged),
+            this,
+            [this](const QCPDataSelection&)
+            {
+                emit selected_intervals_changed(selected_ids());
+                emit selection_changed(selected());
+            });
     _apply_palette();
 }
 
@@ -155,4 +165,61 @@ SciQLopPlotAxisInterface* SciQLopTimeline::y_axis() const noexcept
     return _layout && _layout->placement() == QCPLaneLayout::plLanes
                ? static_cast<SciQLopPlotAxisInterface*>(_y_axis)
                : nullptr;
+}
+
+void SciQLopTimeline::_update_hover(QMouseEvent* event)
+{
+    const auto hit = _intervals->hitTest(event->pos());
+    _set_hovered(hit.row >= 0 ? id_of_row(hit.row) : -1);
+}
+
+void SciQLopTimeline::_set_hovered(qint64 id)
+{
+    if (id == _hovered)
+        return;
+    _hovered = id;
+    emit hovered(id);
+}
+
+bool SciQLopTimeline::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::Leave)
+        _set_hovered(-1);
+    return SciQLopPlottableInterface::eventFilter(watched, event);
+}
+
+QList<qint64> SciQLopTimeline::selected_ids() const
+{
+    return _intervals ? QList<qint64>(_intervals->selectedIds()) : QList<qint64>();
+}
+
+// simplify: linear scan per id; use a QSet when callers select thousands.
+void SciQLopTimeline::select_ids(const QList<qint64>& ids)
+{
+    SCIQLOP_ON_OWNER_THREAD(select_ids(ids));
+    const auto& all = _intervals->columns().ids;
+    QVector<int> rows;
+    for (int row = 0; row < static_cast<int>(all.size()); ++row)
+        if (ids.contains(all[row]))
+            rows.append(row);
+    _intervals->setSelectedRows(rows);
+    emit replot();
+}
+
+bool SciQLopTimeline::selected() const noexcept { return _intervals && _intervals->selected(); }
+
+void SciQLopTimeline::set_selected(bool selected) noexcept
+{
+    SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
+    QVector<int> rows;
+    if (selected)
+        for (int row = 0; row < count(); ++row)
+            rows.append(row);
+    _intervals->setSelectedRows(rows);
+    emit replot();
+}
+
+QPointF SciQLopTimeline::pixel_of(double key, const QString& lane) const
+{
+    return _intervals->pixelOf(key, _layout->laneNames().indexOf(lane));
 }

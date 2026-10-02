@@ -143,3 +143,55 @@ def test_line_graph_on_a_timeline_plot_uses_the_right_axis(panel):
     assert graph.y_axis() == plot.y2_axis()
     assert plot.y2_axis().visible()
     assert list(plot.y_axis().tick_labels().values()) == ["MSA", "MPPE", "MGF"]
+
+
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QWidget
+
+
+def _canvas(plot):
+    return next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+
+
+def _two_bar_strip(ts_plot, qtbot):
+    ts_plot.show()
+    qtbot.waitExposed(ts_plot)
+    tl = ts_plot.add_timeline()
+    tl.set_intervals([10, 60], [40, 90], lane=["A", "B"], ids=[7, 8])
+    ts_plot.x_axis().set_range(SciQLopPlotRange(0, 100))
+    process_events()
+    return tl
+
+
+def _at(tl, key, lane):
+    p = tl.pixel_of(key, lane)
+    return QPoint(round(p.x()), round(p.y()))
+
+
+def test_hover_reports_the_user_id(ts_plot, qtbot):
+    tl = _two_bar_strip(ts_plot, qtbot)
+    seen = []
+    tl.hovered.connect(seen.append)
+    QTest.mouseMove(_canvas(ts_plot), _at(tl, 25, "A"))
+    qtbot.waitUntil(lambda: seen and seen[-1] == 7, timeout=2000)
+    QTest.mouseMove(_canvas(ts_plot), _at(tl, 50, "A"))
+    qtbot.waitUntil(lambda: seen[-1] == -1, timeout=2000)
+
+
+def test_click_selection_reports_ids(ts_plot, qtbot):
+    tl = _two_bar_strip(ts_plot, qtbot)
+    seen = []
+    tl.selected_intervals_changed.connect(seen.append)
+    QTest.mouseClick(_canvas(ts_plot), Qt.LeftButton, Qt.NoModifier, _at(tl, 75, "B"))
+    qtbot.waitUntil(lambda: seen and seen[-1] == [8], timeout=2000)
+    assert tl.selected_ids() == [8]
+
+
+def test_select_ids_round_trips(ts_plot, qtbot):
+    tl = _two_bar_strip(ts_plot, qtbot)
+    tl.select_ids([8, 7])
+    assert sorted(tl.selected_ids()) == [7, 8]
+    assert tl.selected()
+    tl.set_selected(False)
+    assert tl.selected_ids() == []

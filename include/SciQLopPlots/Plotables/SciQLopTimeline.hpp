@@ -26,6 +26,7 @@
 #include <plottables/plottable-intervals.h>
 
 class SciQLopPlotAxis;
+class QMouseEvent;
 
 class SciQLopTimeline : public SciQLopPlottableInterface
 {
@@ -33,8 +34,14 @@ class SciQLopTimeline : public SciQLopPlottableInterface
     QPointer<QCPIntervals> _intervals;
     QPointer<QCPLaneLayout> _layout;
     SciQLopPlotAxis* _y_axis;
+    qint64 _hovered = -1;
 
     void _apply_palette();
+#ifndef BINDINGS_H
+    void _update_hover(QMouseEvent* event);
+    void _set_hovered(qint64 id);
+    bool eventFilter(QObject* watched, QEvent* event) override;
+#endif
 
 public:
     SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQLopPlotAxis* yAxis,
@@ -60,6 +67,12 @@ public:
     void set_visible(bool visible) noexcept override;
     bool visible() const noexcept override;
     SciQLopPlotAxisInterface* y_axis() const noexcept override;
+    bool selected() const noexcept override;
+    void set_selected(bool selected) noexcept override;
+
+    QList<qint64> selected_ids() const;
+    void select_ids(const QList<qint64>& ids);
+    QPointF pixel_of(double key, const QString& lane) const;
 
 #ifndef BINDINGS_H
     QCPIntervals* intervals() const { return _intervals; }
@@ -71,4 +84,6 @@ public:
 signals:
 #endif
     Q_SIGNAL void lanes_changed();
+    Q_SIGNAL void hovered(qint64 id);
+    Q_SIGNAL void selected_intervals_changed(QList<qint64> ids);
 };
