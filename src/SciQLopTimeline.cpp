@@ -191,7 +191,7 @@ SciQLopPlotAxisInterface* SciQLopTimeline::y_axis() const noexcept
 void SciQLopTimeline::_update_hover(QMouseEvent* event)
 {
     const auto hit = _intervals->hitTest(event->pos());
-    _set_hovered(hit.row >= 0 ? id_of_row(hit.row) : -1);
+    _set_hovered(hit.row >= 0 && _intervals->realVisibility() ? id_of_row(hit.row) : -1);
 }
 
 void SciQLopTimeline::_set_hovered(qint64 id)
