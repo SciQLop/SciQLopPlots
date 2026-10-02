@@ -419,6 +419,78 @@ note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), False, Coordinates.Data
 - On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time.
 - `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
 
+## Interval timelines
+
+A timeline shows intervals — events, instrument modes, catalog entries — as coloured bars on named lanes. `panel.add_timeline()` gives a compact, dedicated plot for them:
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopMultiPlotPanel
+
+panel = SciQLopMultiPlotPanel(synchronize_time=True)
+plot, tl = panel.add_timeline(lane_height=14)
+
+start = np.array([0, 3600, 9000], dtype=np.float64)
+stop = np.array([1800, 7200, 10800], dtype=np.float64)
+tl.set_intervals(start, stop, lane=["MSA", "MGF", "MSA"],
+                 category=["LM", "survey", "burst"],
+                 label=["low mass", "survey mode", "burst mode"])
+tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
+```
+
+- `panel.add_timeline(lane_height=14)` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed.
+- `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
+- `tl.lanes()`, `tl.set_lanes([...])` (reorder or hide a lane) and `tl.rename_lane(old, new)` edit the lane layout; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.
+
+A timeline also works as a strip on a regular plot, stacked next to the data:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopTimeSeriesPlot
+
+plot = SciQLopTimeSeriesPlot()
+t = np.linspace(0, 10000, 2000)
+plot.plot(t, np.sin(t / 500), labels=["signal"])
+
+strip = plot.add_timeline(lane_height=12)
+strip.set_intervals([500, 4000], [3000, 6000], lane=["quiet", "quiet"], category=["ok", "ok"])
+```
+
+A line graph added to a timeline plot goes to the right y axis automatically, so the lane names on the left stay readable.
+
+Make a timeline editable to build or adjust a plan by hand, and write edits back into your own data:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopTimeSeriesPlot
+
+plot = SciQLopTimeSeriesPlot()
+tl = plot.add_timeline()
+
+plan = {"start": np.array([0.0, 3600.0]), "stop": np.array([1800.0, 7200.0]),
+        "lane": ["A", "B"], "ids": np.array([1, 2])}
+tl.set_intervals(**plan)
+
+tl.editable = True
+tl.edit_modes = {"move", "resize", "change_lane"}
+tl.snap_to = 60   # snap drags to the nearest minute; also "edges" or None
+
+def apply_edits(edits):
+    by_id = {i: (new_start, new_stop, new_lane) for i, new_start, new_stop, new_lane in edits}
+    for row, interval_id in enumerate(plan["ids"]):
+        if interval_id in by_id:
+            plan["start"][row], plan["stop"][row], plan["lane"][row] = by_id[interval_id]
+    tl.set_intervals(**plan)   # the single source of truth stays in sync
+
+tl.intervals_changed.connect(apply_edits)
+```
+
+- `tl.editable = True` turns on mouse editing. `edit_modes` picks which gestures are allowed (default `{"move", "resize"}`); add `"change_lane"` to let a drag move an interval to another lane, `"create"` to draw new ones on empty lane space, `"delete"` to wire the Delete key to `delete_requested`.
+- Shift+drag on empty lane space makes a rubber-band selection; Ctrl-click toggles one interval; arrow keys nudge the selection; Escape cancels a drag in progress.
+- `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` and `tl.delete_requested` report new and deleted intervals the same way.
+- `tl.hovered` gives the hovered interval's id (or `-1`); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
+
 ## Reactive pipelines
 
 Plot objects expose some properties under `.on`. Connect them with `>>` to build live links, optionally through a function.

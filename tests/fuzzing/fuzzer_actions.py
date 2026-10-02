@@ -4,6 +4,7 @@ from tests.fuzzing.plot_actions import (
 )
 from tests.fuzzing.panel_actions import add_nested_panel, remove_nested_panel
 from tests.fuzzing.graph_actions import add_line_graph, add_colormap, set_graph_data
+from tests.fuzzing.timeline_actions import add_timeline_strip
 from tests.fuzzing.item_actions import (
     add_vertical_span, add_multi_plot_span, add_span_burst, add_per_plot_span_burst,
 )
@@ -24,7 +25,7 @@ FUZZER_ACTIONS = [
     # Panel lifecycle
     add_nested_panel, remove_nested_panel,
     # Static graphs
-    add_line_graph, add_colormap, set_graph_data,
+    add_line_graph, add_colormap, set_graph_data, add_timeline_strip,
     add_vertical_span, add_multi_plot_span, add_span_burst, add_per_plot_span_burst,
     set_axis_range, toggle_y_log_scale,
     # Callback-based graphs (SciQLop-style)
