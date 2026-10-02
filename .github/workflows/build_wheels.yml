@@ -70,7 +70,7 @@ jobs:
           - os: macos-15-intel  # Intel
             arch: x86_64
             qt_host: mac
-          - os: macos-15 # Apple Silicon
+          - os: macos-latest # Apple Silicon; follows GitHub's current macOS, no migration per release
             arch: arm64
             qt_host: mac
     steps:
