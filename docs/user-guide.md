@@ -441,7 +441,7 @@ tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
 
 - `panel.add_timeline(lane_height=14)` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
-- `tl.lanes()`, `tl.set_lanes([...])` (reorder or hide a lane) and `tl.rename_lane(old, new)` edit the lane layout; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.
+- `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
 

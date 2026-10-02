@@ -19,7 +19,7 @@ def test_set_intervals_counts_and_lanes_in_first_seen_order(ts_plot):
     tl.set_intervals([0, 10, 20], [5, 15, 25], lane=["MSA", "MGF", "MSA"])
     process_events()
     assert tl.count() == 3
-    assert tl.lanes() == ["MSA", "MGF"]
+    assert tl.lanes == ["MSA", "MGF"]
 
 
 def test_datetime64_times_are_epoch_seconds(ts_plot):
@@ -51,8 +51,8 @@ def test_two_timelines_on_one_plot_share_lanes_by_name(ts_plot):
     plan.set_intervals([0], [1], lane=["MSA"])
     catalog.set_intervals([0], [1], lane=["events"])
     catalog.set_intervals([0], [1], lane=["MSA"])
-    assert plan.lanes() == ["MSA", "events"]
-    assert catalog.lanes() == plan.lanes()
+    assert plan.lanes == ["MSA", "events"]
+    assert catalog.lanes == plan.lanes
 
 
 def test_category_colour_is_the_same_everywhere(qtbot):
@@ -72,9 +72,18 @@ def test_lanes_setter_reorders_hides_and_rename(ts_plot):
     tl = _strip(ts_plot)
     tl.set_intervals([0, 0], [1, 1], lane=["A", "B"])
     tl.set_lanes(["B"])
-    assert tl.lanes() == ["B"]
+    assert tl.lanes == ["B"]
     assert tl.rename_lane("B", "Bee")
-    assert tl.lanes() == ["Bee"]
+    assert tl.lanes == ["Bee"]
+
+
+def test_assigning_lanes_hides_the_missing_ones(ts_plot):
+    tl = _strip(ts_plot)
+    tl.set_intervals([0, 0], [1, 1], lane=["A", "B"])
+    tl.lanes = ["B"]
+    assert "lanes" not in vars(tl)
+    assert tl.lanes == ["B"]
+    assert ts_plot.add_timeline().lanes == ["B"]
 
 
 def test_add_timeline_off_the_gui_thread_raises(ts_plot):

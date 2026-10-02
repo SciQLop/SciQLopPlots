@@ -413,12 +413,13 @@ def _set_intervals(self, start, stop=None, lane=None, category=None, label=None,
 SciQLopTimeline.set_intervals = _set_intervals
 
 
-# --- SciQLopTimeline editing API: `editable`, `edit_modes` and `snap_to`
+# --- SciQLopTimeline `lanes` and editing API (`editable`, `edit_modes`, `snap_to`):
 # properties over the C++ getters/setters captured below before being
 # replaced.
 _EDIT_MODES = {"move", "resize", "change_lane", "create", "delete"}
 _edit_modes_get = SciQLopTimeline.edit_modes
 _editable_get = SciQLopTimeline.editable
+_lanes_get = SciQLopTimeline.lanes
 
 
 def _set_edit_modes(self, modes):
@@ -447,4 +448,5 @@ def _set_snap_to(self, value):
 SciQLopTimeline.edit_modes = property(lambda self: set(_edit_modes_get(self)), _set_edit_modes)
 SciQLopTimeline.editable = property(_editable_get, SciQLopTimeline.set_editable)
 SciQLopTimeline.snap_to = property(_get_snap_to, _set_snap_to)
+SciQLopTimeline.lanes = property(_lanes_get, SciQLopTimeline.set_lanes)
 
