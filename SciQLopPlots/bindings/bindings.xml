@@ -1022,7 +1022,16 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="position() const" rename="_position"/>
+        <modify-function signature="color() const" rename="_color"/>
+        <modify-function signature="line_width() const" rename="_line_width"/>
+        <modify-function signature="visible() const" rename="_visible"/>
+        <modify-function signature="read_only() const" rename="_read_only"/>
         <property name="position" type="double" get="position" set="set_position" generate-getsetdef="yes"/>
+        <property name="color" type="QColor" get="color" set="set_color" generate-getsetdef="yes"/>
+        <property name="line_width" type="double" get="line_width" set="set_line_width" generate-getsetdef="yes"/>
+        <property name="visible" type="bool" get="visible" set="set_visible" generate-getsetdef="yes"/>
+        <property name="tooltip" type="QString" get="tool_tip" set="set_tool_tip" generate-getsetdef="yes"/>
+        <property name="read_only" type="bool" get="read_only" set="set_read_only" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="MultiPlotsVSpanCollection" parent-management="yes">
         <modify-function signature="create_span(SciQLopPlotRange,QColor,bool,QString,QString)">

@@ -58,7 +58,7 @@ class TestMultiPlotsVerticalLine:
     def test_read_only_lines_are_not_movable(self, panel, sample_data):
         _two_plot_panel(panel, sample_data)
         vline = MultiPlotsVerticalLine(panel, 3.0, read_only=True)
-        assert vline.read_only()
+        assert vline.read_only
         assert not any(line.movable() for line in _lines(panel))
         vline.set_read_only(False)
         assert all(line.movable() for line in _lines(panel))
@@ -112,3 +112,54 @@ class TestMultiPlotsVerticalLine:
         vline.set_read_only(True)
         vline.set_tool_tip("x")
         assert all(line.position == 5.0 for line in _lines(panel))
+
+    def test_python_properties_reach_every_line(self, panel, sample_data):
+        _two_plot_panel(panel, sample_data)
+        vline = MultiPlotsVerticalLine(panel, 3.0)
+        vline.color = QColor(255, 0, 0)
+        vline.line_width = 3.0
+        vline.visible = False
+        vline.read_only = True
+        vline.tooltip = "cursor"
+        for line in _lines(panel):
+            assert line.color().red() == 255
+            assert line.line_width() == 3.0
+            assert not line.visible()
+            assert not line.movable()
+            assert line.tool_tip() == "cursor"
+
+    def test_moving_any_line_moves_all(self, panel, sample_data):
+        _two_plot_panel(panel, sample_data)
+        vline = MultiPlotsVerticalLine(panel, 3.0)
+        _lines(panel)[-1].position = 7.0
+        assert vline.position == 7.0
+        assert all(line.position == 7.0 for line in _lines(panel))
+
+    def test_adding_a_plot_does_not_emit(self, panel, sample_data):
+        x, y = sample_data
+        panel.line(x, y)
+        vline = MultiPlotsVerticalLine(panel, 3.0)
+        received = []
+        vline.position_changed.connect(received.append)
+        panel.line(x, y)
+        assert received == []
+
+    def test_remove_plot_drops_only_its_line(self, qtbot, panel, sample_data):
+        _two_plot_panel(panel, sample_data)
+        vline = MultiPlotsVerticalLine(panel, 3.0)
+        kept = panel.plot_at(1)
+        panel.remove_plot(panel.plot_at(0))
+        qtbot.wait(100)
+        assert len(kept.findChildren(SciQLopVerticalLine)) == 1
+        vline.position = 5.0
+        assert kept.findChildren(SciQLopVerticalLine)[0].position == 5.0
+
+    def test_panel_destruction_with_live_line(self, qtbot, sample_data):
+        from SciQLopPlots import SciQLopMultiPlotPanel
+        panel = SciQLopMultiPlotPanel()
+        _two_plot_panel(panel, sample_data)
+        vline = MultiPlotsVerticalLine(panel, 3.0)
+        destroyed = []
+        vline.destroyed.connect(lambda: destroyed.append(True))
+        panel.deleteLater()
+        qtbot.waitUntil(lambda: destroyed == [True], timeout=1000)
