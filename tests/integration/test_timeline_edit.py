@@ -1,6 +1,7 @@
 """Issue #123: editing intervals reports through signals."""
 import threading
 
+import numpy as np
 import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
@@ -97,6 +98,17 @@ def test_snap_to_round_trips(editable):
     assert tl.snap_to is None
     with pytest.raises(ValueError):
         tl.snap_to = "sometimes"
+
+
+def test_snap_to_external_times(editable):
+    """#125: snap to orbit events (periapsis, boundary crossings, ...)."""
+    _, tl = editable
+    tl.snap_to = [62.0, 5.0]
+    assert tl.snap_to == [5.0, 62.0]
+    tl.snap_to = np.array(["1970-01-01T00:01:00", "1970-01-01T00:00:30"], dtype="datetime64[ns]")
+    assert tl.snap_to == [30.0, 60.0]
+    with pytest.raises(ValueError):
+        tl.snap_to = []
 
 
 def test_cursor_shows_resize_over_an_edge(editable, qtbot):

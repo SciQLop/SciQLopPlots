@@ -379,3 +379,56 @@ def test_timeline_above_a_shown_plot_gets_its_natural_height(panel, qtbot, qtlog
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0 and plot.height() == plot.minimumHeight(),
                     timeout=2000)
     assert not [r for r in qtlog.records if "Negative sizes" in r.message]
+
+
+# --- #125: overlapping intervals.
+
+def test_overlap_round_trips_and_rejects_unknown(ts_plot):
+    tl = _strip(ts_plot)
+    assert isinstance(type(tl).overlap, property)
+    assert tl.overlap == "draw"
+    for mode in ("stack", "forbid", "draw"):
+        tl.overlap = mode
+        assert tl.overlap == mode
+    with pytest.raises(ValueError, match="stack"):
+        tl.overlap = "merge"
+
+
+def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
+    plot, tl = panel.add_timeline()
+    # MPPE runs three modes at once; MGF one.
+    tl.set_intervals([0, 5, 8, 0], [10, 20, 30, 10], lane=["MPPE", "MPPE", "MPPE", "MGF"],
+                     category=["BASE", "HKM", "LM", "BASE"])
+    panel.show()
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
+    flat = plot.minimumHeight()
+    tl.overlap = "stack"
+    qtbot.waitUntil(lambda: plot.minimumHeight() == flat + 2 * tl.lane_height(), timeout=2000)
+    # Names sit in the middle of their lane's rows: MPPE spans rows 0..3, MGF row 3..4.
+    assert plot.y_axis().tick_labels() == {1.5: "MPPE", 3.5: "MGF"}
+
+
+def test_interval_returns_what_a_hover_needs(ts_plot):
+    """#125: hovered(id) only carries the id; interval(id) gives the rest."""
+    tl = _strip(ts_plot)
+    tl.set_intervals([0, 100], [60, 160], lane=["MPPE", "MGF"], category=["LM", "BASE"],
+                     label=["low mass", "base"], ids=[7, 9])
+    assert tl.interval(9) == {"id": 9, "start": 100.0, "stop": 160.0, "duration": 60.0,
+                              "lane": "MGF", "category": "BASE", "label": "base"}
+    assert tl.interval(42) is None
+
+
+def test_closing_a_panel_with_a_stacked_timeline_does_not_crash(qtbot):
+    """Tearing a timeline down changed the lane layout, which made the dying plot report a
+    new natural height to its half-destroyed container (SIGSEGV in QSplitter::sizes)."""
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    panel.resize(1000, 600)
+    panel.show()
+    panel.plot(np.linspace(0, 100, 10), np.zeros(10))
+    plot, tl = panel.add_timeline(index=0)
+    tl.set_intervals([0, 5], [10, 20], lane=["A", "A"])
+    tl.overlap = "stack"
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
+    panel.deleteLater()
+    qtbot.wait(50)

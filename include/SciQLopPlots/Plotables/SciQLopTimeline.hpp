@@ -73,6 +73,8 @@ public:
     QList<qint64> selected_ids() const;
     void select_ids(const QList<qint64>& ids);
     QPointF pixel_of(double key, const QString& lane) const;
+    //! id, start, stop, duration, lane, category and label of interval \a id; empty if unknown.
+    QVariantMap interval_info(qint64 id) const;
 
     bool editable() const;
     void set_editable(bool editable);
@@ -81,11 +83,18 @@ public:
     void set_snap_edges();
     void set_snap_step(double seconds);
     void clear_snap();
+    //! Snap dragged edges to these times only (epoch seconds), e.g. orbit events.
+    void set_snap_times(const QList<double>& times);
+    QList<double> snap_times() const;
     QString snap_mode() const;
     double snap_step() const;
     //! "wave" (logic-analyzer look, the default) or "bars"; other names are ignored.
     QString style() const;
     void set_style(const QString& name);
+    //! "draw" (overlaps drawn over each other), "stack" (sub-rows) or "forbid" (edits stop at
+    //! the neighbouring block); other names are ignored.
+    QString overlap() const;
+    void set_overlap(const QString& mode);
 
 #ifndef BINDINGS_H
     QCPIntervals* intervals() const { return _intervals; }

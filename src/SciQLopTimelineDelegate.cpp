@@ -35,6 +35,7 @@ SciQLopTimelineDelegate::SciQLopTimelineDelegate(SciQLopTimeline* object, QWidge
         : PropertyDelegateBase(object, parent)
 {
     add_style_row(object);
+    add_overlap_row(object);
     add_lane_height_row(object);
     add_editing_rows(object);
     add_snap_rows(object);
@@ -52,6 +53,21 @@ void SciQLopTimelineDelegate::add_style_row(SciQLopTimeline* tl)
             {
                 if (auto* t = timeline())
                     t->set_style(name);
+            });
+}
+
+void SciQLopTimelineDelegate::add_overlap_row(SciQLopTimeline* tl)
+{
+    auto* overlap = new QComboBox;
+    overlap->setObjectName("overlap");
+    overlap->addItems({ "draw", "stack", "forbid" });
+    overlap->setCurrentText(tl->overlap());
+    m_layout->addRow("Overlaps", overlap);
+    connect(overlap, &QComboBox::currentTextChanged, this,
+            [this](const QString& mode)
+            {
+                if (auto* t = timeline())
+                    t->set_overlap(mode);
             });
 }
 
@@ -111,6 +127,8 @@ void SciQLopTimelineDelegate::add_snap_rows(SciQLopTimeline* tl)
     m_snap = new QComboBox;
     m_snap->setObjectName("snap");
     m_snap->addItems({ "none", "edges", "step" });
+    if (tl->snap_mode() == "times")
+        m_snap->addItem("times"); // set from code (snap_to=[...]); kept as is here
     m_snap->setCurrentText(tl->snap_mode());
     m_layout->addRow("Snap", m_snap);
 
@@ -138,6 +156,6 @@ void SciQLopTimelineDelegate::apply_snap()
         t->set_snap_edges();
     else if (mode == "step")
         t->set_snap_step(m_snapStep->value());
-    else
+    else if (mode == "none")
         t->clear_snap();
 }

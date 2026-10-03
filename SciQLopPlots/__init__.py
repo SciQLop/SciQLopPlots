@@ -431,18 +431,25 @@ def _set_edit_modes(self, modes):
 
 def _get_snap_to(self):
     mode = self.snap_mode()
+    if mode == "times":
+        return list(self.snap_times())
     return {"edges": "edges", "step": self.snap_step()}.get(mode)
 
 
 def _set_snap_to(self, value):
-    if value is None:
+    if isinstance(value, (list, tuple, np.ndarray)):
+        if len(value) == 0:
+            raise ValueError("snap_to times must not be empty")
+        self.set_snap_times([float(t) for t in _epoch_seconds(value).ravel()])
+    elif value is None:
         self.clear_snap()
     elif value == "edges":
         self.set_snap_edges()
     elif isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
         self.set_snap_step(float(value))
     else:
-        raise ValueError("snap_to must be 'edges', a positive number of seconds, or None")
+        raise ValueError("snap_to must be 'edges', a positive number of seconds, "
+                         "a non-empty list of times, or None")
 
 
 SciQLopTimeline.edit_modes = property(lambda self: set(_edit_modes_get(self)), _set_edit_modes)
@@ -462,4 +469,17 @@ def _set_style(self, name):
 
 
 SciQLopTimeline.style = property(_style_get, _set_style)
+
+_OVERLAP_MODES = ("draw", "stack", "forbid")
+_overlap_get = SciQLopTimeline.overlap
+
+
+def _set_overlap(self, mode):
+    if mode not in _OVERLAP_MODES:
+        raise ValueError(f"overlap must be one of {_OVERLAP_MODES}, not {mode!r}")
+    self.set_overlap(mode)
+
+
+SciQLopTimeline.overlap = property(_overlap_get, _set_overlap)
+SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 

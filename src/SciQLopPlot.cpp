@@ -811,6 +811,11 @@ SciQLopPlot::~SciQLopPlot()
         if (m_theme->qcp_theme())
             disconnect(m_theme->qcp_theme(), nullptr, this, nullptr);
     }
+    // Deleting a timeline changes the lane layout; reacting to it here would report a natural
+    // height to a container that may itself be mid-destruction.
+    if (m_lane_layout)
+        disconnect(m_lane_layout, nullptr, this, nullptr);
+    disconnect(m_impl, &QCustomPlot::afterLayout, this, &SciQLopPlot::_update_timeline_geometry);
     m_curve_scale->quiesce();
     while (plottables().size() > 0)
     {
@@ -907,13 +912,12 @@ void SciQLopPlot::_update_timeline_geometry()
     const int top = timeline_top_margin(m_impl->yAxis, layout->laneHeight());
     if (m_impl->plotLayout()->margins().top() != top)
         m_impl->plotLayout()->setMargins(QMargins(0, top, 0, 0));
-    const int lanes = std::max(1, layout->visibleLaneCount());
+    // The y axis counts rows: a lane with stacked overlaps spans several.
     m_impl->yAxis->setRangeReversed(true);
-    m_impl->yAxis->setRange(0, lanes);
+    m_impl->yAxis->setRange(0, std::max(1, layout->totalRows()));
     QMap<double, QString> labels;
-    const QStringList order = layout->displayOrder();
-    for (int i = 0; i < order.size(); ++i)
-        labels[i + 0.5] = order[i];
+    for (int lane : layout->displayLanes())
+        labels[layout->laneCentreRow(lane)] = layout->laneNames()[lane];
     if (y_axis()->tick_labels() != labels)
         y_axis()->set_tick_labels(labels);
     // Before the plot's first real QCP layout pass (e.g. while it isn't shown yet),

@@ -89,3 +89,12 @@ def test_delegate_sets_the_snap(panel, qtbot):
     assert tl.snap_to == 60
     combo.setCurrentText("none")
     assert tl.snap_to is None
+
+
+def test_delegate_sets_the_overlap_mode(panel, qtbot):
+    _, tl = _timeline(panel)
+    delegate = _delegate(tl, qtbot)
+    combo = _named(delegate, QComboBox, "overlap")
+    assert combo.currentText() == "draw"
+    combo.setCurrentText("forbid")
+    assert tl.overlap == "forbid"

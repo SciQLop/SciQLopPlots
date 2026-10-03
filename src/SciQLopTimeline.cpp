@@ -17,6 +17,7 @@
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
+#include <array>
 #include "SciQLopPlots/Plotables/CategoryPalette.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
@@ -127,6 +128,25 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
 }
 
 int SciQLopTimeline::count() const { return _intervals ? _intervals->rowCount() : 0; }
+
+QVariantMap SciQLopTimeline::interval_info(qint64 id) const
+{
+    const auto rows = _intervals->rowsWithIds({ id });
+    if (rows.isEmpty())
+        return {};
+    const int row = rows.first();
+    const auto& c = _intervals->columns();
+    const QStringList& categories = CategoryPalette::instance().names;
+    return {
+        { "id", id },
+        { "start", c.start[row] },
+        { "stop", c.stop[row] },
+        { "duration", c.stop[row] - c.start[row] },
+        { "lane", _layout->laneNames().value(c.lane[row]) },
+        { "category", categories.value(c.category[row]) },
+        { "label", c.labels.value(row) },
+    };
+}
 QStringList SciQLopTimeline::lanes() const { return _layout->displayOrder(); }
 
 void SciQLopTimeline::set_lanes(const QStringList& lanes)
@@ -165,7 +185,10 @@ QColor SciQLopTimeline::category_color(const QString& category) const
 void SciQLopTimeline::_apply_palette()
 {
     if (_intervals)
+    {
         _intervals->setCategoryColors(CategoryPalette::instance().colors);
+        _intervals->setCategoryNames(CategoryPalette::instance().names);
+    }
     emit replot();
 }
 
@@ -305,12 +328,54 @@ QString SciQLopTimeline::snap_mode() const
             return "edges";
         case QCPIntervals::snStep:
             return "step";
+        case QCPIntervals::snTimes:
+            return "times";
         default:
             return "none";
     }
 }
 
 double SciQLopTimeline::snap_step() const { return _intervals->snapStep(); }
+
+void SciQLopTimeline::set_snap_times(const QList<double>& times)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_snap_times(times));
+    _intervals->setSnapTimes(std::vector<double>(times.cbegin(), times.cend()));
+}
+
+QList<double> SciQLopTimeline::snap_times() const
+{
+    const auto& times = _intervals->snapTimes();
+    return QList<double>(times.cbegin(), times.cend());
+}
+
+namespace
+{
+const std::array<std::pair<const char*, QCPIntervals::OverlapMode>, 3> kOverlapModes { {
+    { "draw", QCPIntervals::omDraw },
+    { "stack", QCPIntervals::omStack },
+    { "forbid", QCPIntervals::omForbid },
+} };
+}
+
+QString SciQLopTimeline::overlap() const
+{
+    for (const auto& [name, mode] : kOverlapModes)
+        if (mode == _intervals->overlapMode())
+            return name;
+    return "draw";
+}
+
+void SciQLopTimeline::set_overlap(const QString& mode)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_overlap(mode));
+    for (const auto& [name, value] : kOverlapModes)
+        if (mode == name)
+        {
+            _intervals->setOverlapMode(value);
+            emit replot();
+        }
+}
 
 QString SciQLopTimeline::style() const
 {

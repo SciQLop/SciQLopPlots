@@ -462,7 +462,8 @@ tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
 - `panel.add_timeline()` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed. `lane_height` (22 px by default) is a minimum: make the plot taller and the lanes grow with it. `panel.organize_plots()` gives timeline plots their natural height and shares the rest.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
 - Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = "bars"` switches to plain bars.
-- `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.
+- `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back. The legend lists the categories in use, each with its colour.
+- `tl.overlap` decides what happens when intervals of one lane overlap: `"draw"` (the default) draws them over each other, `"stack"` puts them in sub-rows (the lane grows by one row per sub-row, which suits an instrument running several modes at once), and `"forbid"` makes edits stop at the neighbouring block's edge so they never overlap.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
 
@@ -495,7 +496,7 @@ tl.set_intervals(**plan)
 
 tl.editable = True
 tl.edit_modes = {"move", "resize", "change_lane"}
-tl.snap_to = 60   # snap drags to the nearest minute; also "edges" or None
+tl.snap_to = 60   # snap drags to the nearest minute; also "edges", a list of times, or None
 
 def apply_edits(edits):
     by_id = {i: (new_start, new_stop, new_lane) for i, new_start, new_stop, new_lane in edits}
@@ -510,7 +511,8 @@ tl.intervals_changed.connect(apply_edits)
 - `tl.editable = True` turns on mouse editing. `edit_modes` picks which gestures are allowed (default `{"move", "resize"}`); add `"change_lane"` to let a drag move an interval to another lane, `"create"` to draw new ones on empty lane space, `"delete"` to wire the Delete key to `delete_requested`.
 - Shift+drag on empty lane space makes a rubber-band selection; Ctrl-click toggles one interval; arrow keys nudge the selection; Escape cancels a drag in progress.
 - `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` fires with `(start, stop, lane_name)` when an interval is drawn on empty lane space; `tl.delete_requested` fires with the list of selected ids when Delete or Backspace is pressed. Neither changes the data: add or drop the intervals in your arrays and call `set_intervals` again.
-- `tl.hovered` gives the hovered interval's id (or `-1`); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
+- `tl.snap_to = [t1, t2, ...]` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events.
+- `tl.hovered` gives the hovered interval's id (or `-1`), and `tl.interval(id)` its details as a dict: `id`, `start`, `stop`, `duration`, `lane`, `category` and `label` (`None` for an unknown id); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
 
 ## Reactive pipelines
 
