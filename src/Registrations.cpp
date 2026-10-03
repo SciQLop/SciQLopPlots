@@ -43,6 +43,7 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTimelineDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTextItemDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp"
@@ -247,6 +248,15 @@ void register_all_types()
         },
     });
 
+    types.register_type<SciQLopTimeline>({
+        .children = [](QObject*) -> QList<QObject*> { return {}; },
+        .connect_children = nullptr,
+        .set_selected = [](QObject* obj, bool s) {
+            if (auto t = qobject_cast<SciQLopTimeline*>(obj))
+                t->set_selected(s);
+        },
+    });
+
     types.register_type<SciQLopTextItem>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
@@ -278,6 +288,7 @@ void register_all_types()
     delegates.register_type<SciQLopColorMapBaseDelegate>();
     delegates.register_type<SciQLopColorMapDelegate>();
     delegates.register_type<SciQLopWaterfallDelegate>();
+    delegates.register_type<SciQLopTimelineDelegate>();
     delegates.register_type<SciQLopHistogram2DDelegate>();
     delegates.register_type<SciQLopPlotAxisDelegate>();
     delegates.register_type<SciQLopTextItemDelegate>();

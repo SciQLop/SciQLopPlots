@@ -63,6 +63,8 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
         , _y_axis(yAxis)
 {
     _intervals->setStyle(QCPIntervals::stWave);
+    if (objectName().isEmpty())
+        setObjectName("timeline");
     connect(&CategoryPalette::instance(), &CategoryPalette::changed, this,
             &SciQLopTimeline::_apply_palette);
     connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::lanes_changed);
