@@ -416,8 +416,22 @@ threshold = SciQLopHorizontalLine(plot, 0.5)
 note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), False, Coordinates.Data)
 ```
 
-- On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time.
+- On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
 - `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
+
+`MultiPlotsVerticalLine` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
+
+```python
+from PySide6.QtGui import QColor
+from SciQLopPlots import MultiPlotsVerticalLine
+
+cursor = MultiPlotsVerticalLine(panel, t0, tool_tip="cursor")
+cursor.position_changed.connect(lambda t: print("cursor at", t))
+cursor.position = t1           # moves it on every plot
+cursor.color = QColor("red")   # also line_width, visible, read_only, tooltip
+```
+
+Dragging the line on any plot moves it on all of them, and `position_changed` fires once per move. With `read_only=True` the user can't drag it.
 
 ## Interval timelines
 
