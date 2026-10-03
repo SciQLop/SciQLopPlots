@@ -3,6 +3,7 @@ import threading
 
 import numpy as np
 import pytest
+from PySide6.QtGui import QColor
 
 from SciQLopPlots import SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline
 from conftest import process_events
@@ -230,3 +231,56 @@ def test_select_ids_round_trips(ts_plot, qtbot):
     assert tl.selected()
     tl.set_selected(False)
     assert tl.selected_ids() == []
+
+
+# --- Issue #127: lane names must sit on their bars, at any plot height.
+
+def _rgb(path):
+    from PySide6.QtGui import QImage
+    img = QImage(str(path)).convertToFormat(QImage.Format.Format_RGB32)
+    raw = np.frombuffer(img.constBits(), np.uint8).reshape(img.height(), img.bytesPerLine() // 4, 4)
+    return raw[:, :img.width(), 2::-1].astype(int)  # BGRA -> RGB
+
+
+def _row_clusters(mask_rows):
+    rows = np.flatnonzero(mask_rows)
+    if rows.size == 0:
+        return []
+    groups = np.split(rows, np.flatnonzero(np.diff(rows) > 1) + 1)
+    return [g.mean() for g in groups]
+
+
+def _label_and_bar_centres(path):
+    rgb = _rgb(path)
+    saturated = (rgb.max(axis=2) - rgb.min(axis=2)) > 60
+    ink = rgb.sum(axis=2) < 300
+    bar_rows = saturated.any(axis=1)
+    lanes_end = np.flatnonzero(bar_rows).max() + 2  # below the last bar: time axis labels
+    labels = _row_clusters(ink[:lanes_end, :20].any(axis=1))  # lane names reach the left edge
+    return labels, _row_clusters(bar_rows)
+
+
+@pytest.fixture
+def staircase(panel, qtbot):
+    lanes = [f"lane_{i}" for i in range(6)]
+    panel.resize(1000, 600)
+    panel.show()
+    plot, tl = panel.add_timeline(lane_height=18)
+    start = np.arange(6) * 1.5e4
+    tl.set_intervals(start, start + 1.2e4, lane=lanes, category=["bar"] * 6)
+    # Category colours are process-wide; pin a saturated one so other tests can't change it.
+    tl.set_category_colors({"bar": QColor(220, 40, 40)})
+    plot.x_axis().set_range(SciQLopPlotRange(0, 1e5))
+    qtbot.waitUntil(lambda: plot.minimumHeight() == plot.maximumHeight(), timeout=2000)
+    qtbot.wait(100)
+    return plot
+
+
+@pytest.mark.parametrize("height", [None, 300], ids=["natural", "taller"])
+def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
+    path = tmp_path / "timeline.png"
+    assert staircase.save_png(str(path), 1000, height or staircase.height())
+    labels, bars = _label_and_bar_centres(path)
+    assert len(bars) == 6
+    assert len(labels) == 6, f"lane names at rows {labels}, bars at {bars}"
+    assert np.allclose(labels, bars, atol=3), f"lane names at rows {labels}, bars at {bars}"

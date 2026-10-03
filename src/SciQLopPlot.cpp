@@ -24,6 +24,8 @@
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
+
+#include <QFontMetrics>
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/constants.hpp"
@@ -883,9 +885,24 @@ void SciQLopPlot::_move_graphs_to_right_axis()
         }
 }
 
+//! Room above the first lane for half a lane-name label: an outside tick label the widget border
+//! would clip is not drawn at all, so without it the top lane loses its name.
+static int timeline_top_margin(const QCPAxis* axis, int lane_height)
+{
+    const int label_height = QFontMetrics(axis->tickLabelFont()).height();
+    return std::max(0, (label_height - lane_height + 1) / 2 + 1);
+}
+
 void SciQLopPlot::_update_timeline_geometry()
 {
+    // An export lays the plot out at the export size (toPixmap sets a temporary viewport);
+    // measuring that layout would resize the live widget in the middle of the export.
+    if (m_impl->viewport() != m_impl->rect())
+        return;
     auto* layout = lane_layout();
+    const int top = timeline_top_margin(m_impl->yAxis, layout->laneHeight());
+    if (m_impl->plotLayout()->margins().top() != top)
+        m_impl->plotLayout()->setMargins(QMargins(0, top, 0, 0));
     const int lanes = std::max(1, layout->visibleLaneCount());
     m_impl->yAxis->setRangeReversed(true);
     m_impl->yAxis->setRange(0, lanes);
