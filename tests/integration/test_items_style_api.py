@@ -1,7 +1,7 @@
 """Tests for the uniform style API across all drawing primitives."""
 import pytest
-from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (
@@ -147,6 +147,47 @@ class TestStraightLineStyle:
         ]:
             vl.set_line_style(style)
             assert vl.line_style() == style
+
+
+class _PaintCounter(QObject):
+    """Counts paint requests. A buffered layer repaints without a full replot,
+    so afterReplot() never fires for an item restyle."""
+
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+
+    def eventFilter(self, obj, event):
+        if event.type() in (QEvent.Type.UpdateRequest, QEvent.Type.Paint):
+            self.count += 1
+        return False
+
+
+def _watch_paints(plot):
+    qcp = next(w for w in plot.findChildren(QWidget)
+               if w.metaObject().indexOfSignal("afterReplot()") >= 0)
+    counter = _PaintCounter()
+    qcp.installEventFilter(counter)
+    return counter
+
+
+@pytest.mark.parametrize("restyle", [
+    lambda line: line.set_color(QColor("red")),
+    lambda line: line.set_line_width(4.0),
+    lambda line: line.set_line_style(Qt.PenStyle.DashLine),
+    lambda line: line.set_visible(False),
+], ids=["color", "line_width", "line_style", "visible"])
+def test_straight_line_restyle_repaints(qtbot, restyle):
+    """A restyled line used to keep its old look until something else replotted."""
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    plot.resize(400, 300)
+    plot.show()
+    line = SciQLopVerticalLine(plot, 5.0)
+    qtbot.wait(300)
+    paints = _watch_paints(plot)
+    restyle(line)
+    qtbot.waitUntil(lambda: paints.count > 0, timeout=1000)
 
 
 class TestVerticalSpanStyle:

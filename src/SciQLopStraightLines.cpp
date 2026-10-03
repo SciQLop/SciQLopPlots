@@ -96,6 +96,7 @@ void StraightLine::set_color(const QColor &color)
     auto pen = this->pen();
     pen.setColor(color);
     this->setPen(pen);
+    this->replot();
 }
 
 QColor StraightLine::color() const
@@ -108,6 +109,7 @@ void StraightLine::set_line_width(double width)
     auto pen = this->pen();
     pen.setWidthF(width);
     this->setPen(pen);
+    this->replot();
 }
 
 double StraightLine::line_width() const
@@ -120,6 +122,7 @@ void StraightLine::set_line_style(Qt::PenStyle style)
     auto pen = this->pen();
     pen.setStyle(style);
     this->setPen(pen);
+    this->replot();
 }
 
 Qt::PenStyle StraightLine::line_style() const
