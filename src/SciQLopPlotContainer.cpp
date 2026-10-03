@@ -54,6 +54,14 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
         connect(
             plot, &SciQLopPlotInterface::destroyed, this, [this, plot]() { remove_plot(plot); },
             Qt::QueuedConnection);
+        // A timeline follows its natural height until the user makes it taller.
+        if (auto* sp = qobject_cast<SciQLopPlot*>(plot))
+            connect(sp, &SciQLopPlot::natural_height_changed, this,
+                    [this, sp](int previous, int natural)
+                    {
+                        if (previous == 0 || sp->height() <= previous)
+                            set_widget_height(sp, natural);
+                    });
     }
     else if (auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(widget))
     {
@@ -214,18 +222,56 @@ void SciQLopPlotContainer::remove_behavior(const QString& type_name)
     }
 }
 
+namespace
+{
+//! Timeline plots (Minimum policy) keep their natural height; the others share the rest.
+bool keeps_natural_height(const QWidget* w)
+{
+    return w->sizePolicy().verticalPolicy() == QSizePolicy::Minimum;
+}
+
+//! Heights for \a total pixels: a widget with a \a natural height gets it, the others share
+//! what is left by \a weights. If the natural heights leave no room, everyone shares equally.
+QList<int> distribute(int total, const QList<int>& natural, const QList<int>& weights)
+{
+    if (total <= 0)
+        return QList<int>(natural.size(), 0);
+    const int reserved = std::accumulate(natural.cbegin(), natural.cend(), 0);
+    const int total_weight = std::accumulate(weights.cbegin(), weights.cend(), 0);
+    if (total_weight == 0 || reserved >= total)
+        return distribute(total, QList<int>(natural.size(), 0), QList<int>(natural.size(), 1));
+    QList<int> heights;
+    for (int i = 0; i < natural.size(); ++i)
+        heights.append(natural[i] + (total - reserved) * weights[i] / total_weight);
+    heights.last() += total - std::accumulate(heights.cbegin(), heights.cend(), 0);
+    return heights;
+}
+}
+
+void SciQLopPlotContainer::set_widget_height(QWidget* widget, int height)
+{
+    auto heights = sizes();
+    const int i = indexOf(widget);
+    if (i < 0 || heights.size() < 2)
+        return;
+    const int total = std::accumulate(heights.cbegin(), heights.cend(), 0);
+    QList<int> natural(heights.size(), 0), weights(heights);
+    natural[i] = height;
+    weights[i] = 0;
+    setSizes(distribute(total, natural, weights));
+}
+
 void SciQLopPlotContainer::organize_plots()
 {
-    auto _sizes = sizes();
-    if (std::empty(_sizes))
-        return; // nothing to organize -- and the division below would be by zero
-    const auto total_height = std::accumulate(std::cbegin(_sizes), std::cend(_sizes), 0);
-    QList<int> weights;
-    for (int i = 0; i < _sizes.size(); ++i)
-        weights.append(std::max(1, static_cast<int>(widget(i)->sizePolicy().verticalStretch())));
-    const auto total_weight = std::accumulate(weights.cbegin(), weights.cend(), 0);
-    for (int i = 0; i < _sizes.size(); ++i)
-        _sizes[i] = total_height * weights[i] / total_weight;
-    _sizes.last() += total_height - std::accumulate(_sizes.cbegin(), _sizes.cend(), 0);
-    setSizes(_sizes);
+    const auto current = sizes();
+    if (current.isEmpty())
+        return;
+    QList<int> natural, weights;
+    for (int i = 0; i < current.size(); ++i)
+    {
+        const bool keeps = keeps_natural_height(widget(i));
+        natural.append(keeps ? widget(i)->sizeHint().height() : 0);
+        weights.append(keeps ? 0 : std::max(1, int(widget(i)->sizePolicy().verticalStretch())));
+    }
+    setSizes(distribute(std::accumulate(current.cbegin(), current.cend(), 0), natural, weights));
 }

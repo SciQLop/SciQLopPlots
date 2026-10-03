@@ -397,14 +397,14 @@ public:
                                                  int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
 
-    SciQLopTimeline* add_timeline(int lane_height = 14);
+    SciQLopTimeline* add_timeline(int lane_height = 22);
 #ifndef BINDINGS_H
     QCPLaneLayout* lane_layout();
 #endif
 
     //! Puts the plot into "lanes" mode for panel.add_timeline(): horizontal-only
     //! drag/zoom, lane names as y tick labels, fixed height tracking the layout.
-    void configure_as_timeline(int lane_height = 14);
+    void configure_as_timeline(int lane_height = 22);
 
     SciQLopWaterfallGraph* add_waterfall(const QString& name,
                                          const QStringList& labels = {},
@@ -539,10 +539,20 @@ public:
     bool save_bmp(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0) override;
 
+    //! A timeline plot asks for its lanes' natural height; other plots keep QFrame's hint.
+    QSize sizeHint() const override;
+
+#ifndef BINDINGS_H
+Q_SIGNALS:
+    //! A timeline plot's natural height changed; \a previous is 0 the first time.
+    void natural_height_changed(int previous, int natural);
+#endif
+
 private:
     Q_SLOT void _enforce_equal_aspect();
     Q_SLOT void _update_timeline_geometry();
     Q_SLOT void _move_graphs_to_right_axis();
+    int m_timeline_natural_height = 0;
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)

@@ -256,7 +256,7 @@ public:
     //! A compact time-series plot with lane names on its y axis (see
     //! SciQLopPlot::configure_as_timeline), plus the timeline plottable to feed via
     //! set_intervals().
-    QPair<SciQLopPlotInterface*, SciQLopTimeline*> add_timeline(int lane_height = 14,
+    QPair<SciQLopPlotInterface*, SciQLopTimeline*> add_timeline(int lane_height = 22,
                                                                  int index = -1);
 
 

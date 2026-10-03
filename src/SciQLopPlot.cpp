@@ -867,6 +867,10 @@ void SciQLopPlot::configure_as_timeline(int lane_height)
     layout->setPlacement(QCPLaneLayout::plLanes);
     m_impl->axisRect()->setRangeDrag(Qt::Horizontal);
     m_impl->axisRect()->setRangeZoom(Qt::Horizontal);
+    // Minimum: the hint (the lanes' natural height) is the least it needs; it may grow.
+    auto policy = sizePolicy();
+    policy.setVerticalPolicy(QSizePolicy::Minimum);
+    setSizePolicy(policy);
     connect(layout, &QCPLaneLayout::changed, this, &SciQLopPlot::_update_timeline_geometry);
     connect(m_impl, &QCustomPlot::afterLayout, this, &SciQLopPlot::_update_timeline_geometry);
     connect(this, &SciQLopPlotInterface::graph_list_changed, this,
@@ -919,9 +923,24 @@ void SciQLopPlot::_update_timeline_geometry()
     if (m_impl->axisRect()->height() <= 0)
         return;
     const int overhead = height() - m_impl->axisRect()->height();
-    const int wanted = layout->totalHeight() + overhead;
-    if (layout->visibleLaneCount() > 0 && height() != wanted)
-        setFixedHeight(wanted);
+    const int natural = layout->totalHeight() + overhead;
+    // The natural height is a floor, not a fixed size: a taller plot spreads its lanes
+    // (QCPLaneLayout gives each an equal share of the axis rect in a lanes plot).
+    if (layout->visibleLaneCount() > 0 && natural != m_timeline_natural_height)
+    {
+        const int previous = std::exchange(m_timeline_natural_height, natural);
+        setMinimumHeight(natural);
+        updateGeometry();
+        emit natural_height_changed(previous, natural);
+    }
+}
+
+QSize SciQLopPlot::sizeHint() const
+{
+    const QSize hint = SciQLopPlotInterface::sizeHint();
+    if (m_timeline_natural_height > 0)
+        return { hint.width(), m_timeline_natural_height };
+    return hint;
 }
 
 SciQLopWaterfallGraph* SciQLopPlot::add_waterfall(const QString& name, const QStringList& labels,

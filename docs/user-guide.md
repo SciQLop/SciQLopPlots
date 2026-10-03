@@ -449,7 +449,7 @@ from PySide6.QtGui import QColor
 from SciQLopPlots import SciQLopMultiPlotPanel
 
 panel = SciQLopMultiPlotPanel(synchronize_time=True)
-plot, tl = panel.add_timeline(lane_height=14)
+plot, tl = panel.add_timeline()
 
 start = np.array([0, 3600, 9000], dtype=np.float64)
 stop = np.array([1800, 7200, 10800], dtype=np.float64)
@@ -459,7 +459,7 @@ tl.set_intervals(start, stop, lane=["MSA", "MGF", "MSA"],
 tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
 ```
 
-- `panel.add_timeline(lane_height=14)` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed.
+- `panel.add_timeline()` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed. `lane_height` (22 px by default) is a minimum: make the plot taller and the lanes grow with it. `panel.organize_plots()` gives timeline plots their natural height and shares the rest.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
 - Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = "bars"` switches to plain bars.
 - `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.

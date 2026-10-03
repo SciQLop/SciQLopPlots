@@ -146,10 +146,10 @@ def test_timeline_plot_shows_lane_names_on_its_y_axis(panel):
 def test_timeline_plot_height_is_lanes_times_lane_height(panel, qtbot):
     plot, tl = _panel_timeline(panel)
     panel.show()
-    qtbot.waitUntil(lambda: plot.minimumHeight() == plot.maximumHeight(), timeout=2000)
-    h3 = plot.height()
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
+    h3 = plot.minimumHeight()
     tl.set_intervals([0] * 4, [1] * 4, lane=["MSA", "MPPE", "MGF", "MAG"])
-    qtbot.waitUntil(lambda: plot.height() == h3 + 14, timeout=2000)
+    qtbot.waitUntil(lambda: plot.minimumHeight() == h3 + tl.lane_height(), timeout=2000)
 
 
 def test_timeline_plot_follows_the_panel_time_axis(panel):
@@ -271,7 +271,7 @@ def staircase(panel, qtbot):
     # Category colours are process-wide; pin a saturated one so other tests can't change it.
     tl.set_category_colors({"bar": QColor(220, 40, 40)})
     plot.x_axis().set_range(SciQLopPlotRange(0, 1e5))
-    qtbot.waitUntil(lambda: plot.minimumHeight() == plot.maximumHeight(), timeout=2000)
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     qtbot.wait(100)
     return plot
 
@@ -279,7 +279,7 @@ def staircase(panel, qtbot):
 @pytest.mark.parametrize("height", [None, 300], ids=["natural", "taller"])
 def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
     path = tmp_path / "timeline.png"
-    assert staircase.save_png(str(path), 1000, height or staircase.height())
+    assert staircase.save_png(str(path), 1000, height or staircase.minimumHeight())
     labels, bars = _label_and_bar_centres(path)
     assert len(bars) == 6
     assert len(labels) == 6, f"lane names at rows {labels}, bars at {bars}"
@@ -304,3 +304,61 @@ def test_timeline_style_round_trips(ts_plot):
 def test_unknown_timeline_style_raises(ts_plot):
     with pytest.raises(ValueError, match="wave"):
         _strip(ts_plot).style = "gantt"
+
+
+# --- Readable default lane height; lanes grow with a taller timeline plot.
+
+def test_default_lane_height_is_readable(panel, ts_plot):
+    _, tl = panel.add_timeline()
+    assert tl.lane_height() == 22
+    assert ts_plot.add_timeline().lane_height() == 22
+
+
+def _splitter(panel):
+    from PySide6.QtWidgets import QSplitter
+    return panel.findChild(QSplitter)
+
+
+def test_timeline_plot_has_a_natural_height_but_can_grow(staircase):
+    natural = staircase.minimumHeight()
+    assert staircase.sizeHint().height() == natural
+    assert staircase.maximumHeight() > natural
+
+
+def test_lanes_fill_a_taller_timeline_plot(staircase, panel, qtbot, tmp_path):
+    natural = staircase.minimumHeight()
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    splitter = _splitter(panel)
+    total = sum(splitter.sizes())
+    splitter.setSizes([natural + 120, total - natural - 120])
+    qtbot.waitUntil(lambda: staircase.height() == natural + 120, timeout=2000)
+    qtbot.wait(100)
+    path = tmp_path / "taller.png"
+    assert staircase.save_png(str(path), 1000, staircase.height())
+    labels, bars = _label_and_bar_centres(path)
+    assert len(bars) == 6
+    assert np.diff(bars).mean() > 18 + 15, f"lanes did not grow: bars at {bars}"
+    assert np.allclose(labels, bars, atol=3), f"lane names at rows {labels}, bars at {bars}"
+
+
+def test_organize_plots_keeps_the_timeline_at_its_natural_height(staircase, panel, qtbot):
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    _splitter(panel).setSizes([300, 100, 100])
+    qtbot.wait(50)
+    panel.organize_plots()
+    # The natural height is read now: only the bottom plot keeps its time labels.
+    qtbot.waitUntil(lambda: staircase.height() == staircase.minimumHeight(), timeout=2000)
+    others = _splitter(panel).sizes()[1:]
+    assert abs(others[0] - others[1]) <= 1
+
+
+def test_a_timeline_added_among_plots_starts_at_its_natural_height(panel, qtbot):
+    panel.resize(1000, 600)
+    panel.show()
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    plot, tl = panel.add_timeline(index=0)
+    tl.set_intervals([0, 10], [5, 15], lane=["A", "B"])
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0 and plot.height() == plot.minimumHeight(),
+                    timeout=2000)

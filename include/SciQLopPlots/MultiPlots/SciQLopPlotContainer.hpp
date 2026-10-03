@@ -195,6 +195,8 @@ public:
     void remove_behavior(const QString& type_name) Q_DECL_OVERRIDE;
 
     void organize_plots();
+    //! Gives \a widget \a height pixels, taken from or given to the others in proportion.
+    void set_widget_height(QWidget* widget, int height);
 
     inline virtual QList<QColor> color_palette() const noexcept override { return _color_palette; }
 
