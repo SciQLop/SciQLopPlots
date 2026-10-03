@@ -222,6 +222,47 @@ public:
         return Qt::SolidLine;
     }
 
+    inline void set_visible(bool visible)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
+        if (!m_line.isNull())
+        {
+            m_line->setVisible(visible);
+            m_line->replot();
+        }
+    }
+
+    [[nodiscard]] inline bool visible() const
+    {
+        return !m_line.isNull() && m_line->visible();
+    }
+
+    inline void set_movable(bool movable)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
+        if (!m_line.isNull())
+            m_line->setMovable(movable);
+    }
+
+    [[nodiscard]] inline bool movable() const
+    {
+        return !m_line.isNull() && m_line->movable();
+    }
+
+    inline void set_tool_tip(const QString& tool_tip)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+        if (!m_line.isNull())
+            m_line->setToolTip(tool_tip);
+    }
+
+    [[nodiscard]] inline QString tool_tip() const
+    {
+        if (!m_line.isNull())
+            return m_line->tooltip();
+        return {};
+    }
+
     inline void set_min_value(double min)
     {
         SCIQLOP_ON_OWNER_THREAD(set_min_value(min));

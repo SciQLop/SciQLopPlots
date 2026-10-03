@@ -1006,6 +1006,24 @@
         <property name="read_only" type="bool" get="read_only" set="set_read_only" generate-getsetdef="yes"/>
         <property name="id" type="QString" get="id" generate-getsetdef="yes"/>
     </object-type>
+    <object-type name="MultiPlotsVerticalLine" parent-management="yes">
+        <modify-function signature="MultiPlotsVerticalLine(SciQLopMultiPlotPanel*,double,QColor,bool,bool,QString)">
+            <modify-argument index="3">
+                <rename to="color"/>
+            </modify-argument>
+            <modify-argument index="4">
+                <rename to="read_only"/>
+            </modify-argument>
+            <modify-argument index="5">
+                <rename to="visible"/>
+            </modify-argument>
+            <modify-argument index="6">
+                <rename to="tool_tip"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="position() const" rename="_position"/>
+        <property name="position" type="double" get="position" set="set_position" generate-getsetdef="yes"/>
+    </object-type>
     <object-type name="MultiPlotsVSpanCollection" parent-management="yes">
         <modify-function signature="create_span(SciQLopPlotRange,QColor,bool,QString,QString)">
           <modify-argument index="2">

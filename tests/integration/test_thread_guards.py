@@ -14,6 +14,7 @@ from PySide6.QtGui import QBrush, QColor, QFont, QPen, QPixmap
 from conftest import process_events
 from SciQLopPlots import (
     LineTermination,
+    MultiPlotsVerticalLine,
     MultiPlotsVerticalSpan,
     MultiPlotsVSpanCollection,
     SciQLopCurvedLineItem,
@@ -122,6 +123,9 @@ CASES = (
         ("vline", "color", RED),
         ("vline", "line_width", 7.0),
         ("vline", "line_style", Qt.PenStyle.DashLine),
+        ("vline", "visible", False),
+        ("vline", "movable", True),
+        ("vline", "tool_tip", "off-thread"),
         ("hline", "position", 4.5),
     ]
 )
@@ -222,6 +226,35 @@ def test_multi_plot_span_setter_lands_on_gui_thread(vspans, prop, value):
     assert _get(span, prop) == before, "applied on the calling thread"
     _settle()
     assert _get(span, prop) == value
+
+
+MULTI_LINE_CASES = [
+    ("position", 5.0),
+    ("color", RED),
+    ("line_width", 7.0),
+    ("read_only", True),
+    ("tool_tip", "off-thread"),
+    ("visible", False),
+]
+
+
+@pytest.mark.parametrize("prop,value", MULTI_LINE_CASES, ids=[f"set_{p}" for p, _ in MULTI_LINE_CASES])
+def test_multi_plot_line_setter_lands_on_gui_thread(panel, prop, value):
+    panel.create_plot()
+    vline = MultiPlotsVerticalLine(panel, 3.0)
+    _settle()
+    before = _get(vline, prop)
+    assert before != value
+    _in_thread(lambda: getattr(vline, "set_" + prop)(value))
+    assert _get(vline, prop) == before, "applied on the calling thread"
+    _settle()
+    assert _get(vline, prop) == value
+
+
+def test_multi_plot_line_constructor_refuses_off_thread(panel):
+    panel.create_plot()
+    out = _in_thread(lambda: MultiPlotsVerticalLine(panel, 3.0))
+    assert isinstance(out.get("error"), RuntimeError)
 
 
 def test_delete_span_lands_on_gui_thread(vspans):
