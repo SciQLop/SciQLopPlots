@@ -422,12 +422,18 @@ note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), False, Coordinates.Data
 `MultiPlotsVerticalLine` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
 ```python
+import numpy as np
 from PySide6.QtGui import QColor
-from SciQLopPlots import MultiPlotsVerticalLine
+from SciQLopPlots import SciQLopMultiPlotPanel, MultiPlotsVerticalLine
 
-cursor = MultiPlotsVerticalLine(panel, t0, tool_tip="cursor")
+panel = SciQLopMultiPlotPanel()
+x = np.linspace(0, 10, 1000)
+panel.plot(x, np.sin(x), labels=["sin"])
+panel.plot(x, np.cos(x), labels=["cos"])
+
+cursor = MultiPlotsVerticalLine(panel, 2.0, tool_tip="cursor")
 cursor.position_changed.connect(lambda t: print("cursor at", t))
-cursor.position = t1           # moves it on every plot
+cursor.position = 5.0          # moves it on every plot
 cursor.color = QColor("red")   # also line_width, visible, read_only, tooltip
 ```
 
