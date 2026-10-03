@@ -470,16 +470,22 @@ def _set_style(self, name):
 
 SciQLopTimeline.style = property(_style_get, _set_style)
 
-_OVERLAP_MODES = ("draw", "stack", "forbid")
-_overlap_get = SciQLopTimeline.overlap
+_STACK_MODES = (None, "time", "category")
+_stack_get = SciQLopTimeline.stack
+_forbid_overlap_get = SciQLopTimeline.forbid_overlap
+_category_order_get = SciQLopTimeline.category_order
 
 
-def _set_overlap(self, mode):
-    if mode not in _OVERLAP_MODES:
-        raise ValueError(f"overlap must be one of {_OVERLAP_MODES}, not {mode!r}")
-    self.set_overlap(mode)
+def _set_stack(self, mode):
+    if mode not in _STACK_MODES:
+        raise ValueError(f"stack must be one of {_STACK_MODES}, not {mode!r}")
+    self.set_stack(mode or "")
 
 
-SciQLopTimeline.overlap = property(_overlap_get, _set_overlap)
+SciQLopTimeline.stack = property(lambda self: _stack_get(self) or None, _set_stack)
+SciQLopTimeline.forbid_overlap = property(lambda self: bool(_forbid_overlap_get(self)),
+                                          lambda self, v: self.set_forbid_overlap(bool(v)))
+SciQLopTimeline.category_order = property(lambda self: list(_category_order_get(self)),
+                                          lambda self, names: self.set_category_order(list(names)))
 SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 

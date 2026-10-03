@@ -35,7 +35,7 @@ SciQLopTimelineDelegate::SciQLopTimelineDelegate(SciQLopTimeline* object, QWidge
         : PropertyDelegateBase(object, parent)
 {
     add_style_row(object);
-    add_overlap_row(object);
+    add_stacking_rows(object);
     add_lane_height_row(object);
     add_editing_rows(object);
     add_snap_rows(object);
@@ -56,18 +56,29 @@ void SciQLopTimelineDelegate::add_style_row(SciQLopTimeline* tl)
             });
 }
 
-void SciQLopTimelineDelegate::add_overlap_row(SciQLopTimeline* tl)
+void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
 {
-    auto* overlap = new QComboBox;
-    overlap->setObjectName("overlap");
-    overlap->addItems({ "draw", "stack", "forbid" });
-    overlap->setCurrentText(tl->overlap());
-    m_layout->addRow("Overlaps", overlap);
-    connect(overlap, &QComboBox::currentTextChanged, this,
+    auto* stack = new QComboBox;
+    stack->setObjectName("stack");
+    stack->addItems({ "none", "time", "category" });
+    stack->setCurrentText(tl->stack().isEmpty() ? "none" : tl->stack());
+    m_layout->addRow("Stack overlaps", stack);
+    connect(stack, &QComboBox::currentTextChanged, this,
             [this](const QString& mode)
             {
                 if (auto* t = timeline())
-                    t->set_overlap(mode);
+                    t->set_stack(mode == "none" ? QString() : mode);
+            });
+
+    auto* forbid = new QCheckBox("Forbid overlaps");
+    forbid->setObjectName("forbid_overlap");
+    forbid->setChecked(tl->forbid_overlap());
+    m_layout->addRow("", forbid);
+    connect(forbid, &QCheckBox::toggled, this,
+            [this](bool on)
+            {
+                if (auto* t = timeline())
+                    t->set_forbid_overlap(on);
             });
 }
 

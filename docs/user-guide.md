@@ -463,11 +463,13 @@ tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
 - Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = "bars"` switches to plain bars.
 - `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back. The legend lists the categories in use, each with its colour.
-- `tl.overlap` decides what happens when intervals of one lane overlap:
-  - `"draw"` (the default) draws them over each other.
-  - `"stack"` puts them in sub-rows, which suits an instrument running several modes at once. Each sub-row is a full `lane_height`, so a lane with 4 overlapping modes is 4 rows tall. For about 70 rows on a 1080 px screen, use `lane_height=14`; below about 12 px, labels no longer fit in their bars.
-  - `"forbid"` makes edits stop at the neighbouring block's edge so they never overlap. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
-- Timelines show up in the inspector, as "timeline" or their name (`tl.set_name(...)`). Their properties panel sets the style, overlap mode, lane height, editing and snapping.
+- Overlapping intervals in one lane:
+  - `tl.stack = None` (the default) draws them over each other.
+  - `tl.stack = "time"` puts each in the first free sub-row; good for overlapping events.
+  - `tl.stack = "category"` gives each category its own fixed sub-row, named at its start, so an instrument's modes keep their rows from one orbit to the next. `tl.category_order = ["BASE", "HKM", "LM"]` sets the row order; categories left out follow, first seen first.
+  - Each sub-row is a full `lane_height`, so a lane with 4 modes is 4 rows tall. For about 70 rows on a 1080 px screen, use `lane_height=14`; below about 12 px, labels no longer fit in their bars.
+  - `tl.forbid_overlap = True` makes edits stop at the neighbouring block in the same row, so they never overlap: the same lane, or the same lane and category with `stack="category"`. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
+- Timelines show up in the inspector, as "timeline" or their name (`tl.set_name(...)`). Their properties panel sets the style, stacking, forbidden overlaps, lane height, editing and snapping.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
 

@@ -383,15 +383,20 @@ def test_timeline_above_a_shown_plot_gets_its_natural_height(panel, qtbot, qtlog
 
 # --- #125: overlapping intervals.
 
-def test_overlap_round_trips_and_rejects_unknown(ts_plot):
+def test_stack_and_forbid_round_trip_and_reject_unknown(ts_plot):
     tl = _strip(ts_plot)
-    assert isinstance(type(tl).overlap, property)
-    assert tl.overlap == "draw"
-    for mode in ("stack", "forbid", "draw"):
-        tl.overlap = mode
-        assert tl.overlap == mode
-    with pytest.raises(ValueError, match="stack"):
-        tl.overlap = "merge"
+    for name in ("stack", "forbid_overlap", "category_order"):
+        assert isinstance(getattr(type(tl), name), property), name
+    assert tl.stack is None and tl.forbid_overlap is False and tl.category_order == []
+    for mode in ("time", "category", None):
+        tl.stack = mode
+        assert tl.stack == mode
+    with pytest.raises(ValueError, match="category"):
+        tl.stack = "merge"
+    tl.forbid_overlap = True
+    assert tl.forbid_overlap is True
+    tl.category_order = ["LM", "BASE"]
+    assert tl.category_order == ["LM", "BASE"]
 
 
 def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
@@ -402,10 +407,22 @@ def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
     panel.show()
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     flat = plot.minimumHeight()
-    tl.overlap = "stack"
+    tl.stack = "time"
     qtbot.waitUntil(lambda: plot.minimumHeight() == flat + 2 * tl.lane_height(), timeout=2000)
     # Names sit in the middle of their lane's rows: MPPE spans rows 0..3, MGF row 3..4.
     assert plot.y_axis().tick_labels() == {1.5: "MPPE", 3.5: "MGF"}
+
+
+def test_category_stack_gives_each_mode_a_row(panel, qtbot):
+    """Tohban: one fixed sub-row per mode, in a chosen order, even when they never overlap."""
+    plot, tl = panel.add_timeline()
+    tl.set_intervals([0, 40, 80], [30, 70, 90], lane=["MPPE"] * 3, category=["LM", "BASE", "LM"])
+    panel.show()
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
+    flat = plot.minimumHeight()
+    tl.category_order = ["BASE", "HKM", "LM"]   # HKM is not used: ignored
+    tl.stack = "category"
+    qtbot.waitUntil(lambda: plot.minimumHeight() == flat + tl.lane_height(), timeout=2000)
 
 
 def test_interval_returns_what_a_hover_needs(ts_plot):

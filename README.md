@@ -13,7 +13,7 @@ A high-performance scientific plotting library built on C++20/Qt6 with Python bi
 - **Multiple plot types** — time series (line graphs), spectrograms (color maps), 2D histograms, parametric curves, N-D projection curves, waterfall plots
 - **Interactive** — pan, zoom, data-driven callbacks, vertical/horizontal/rectangular spans, tracers, straight lines, text, shapes, pixmaps
 - **Multi-plot panels** — synchronized axes, aligned margins, drag-and-drop from product trees
-- **Interval timelines** — events and instrument modes as bars on named lanes, drawn like a logic analyzer's wave view; overlaps stacked or forbidden; editable with the mouse
+- **Interval timelines** — events and instrument modes as bars on named lanes, drawn like a logic analyzer's wave view; overlaps stacked by time or category, or forbidden; editable with the mouse
 - **Reactive pipelines** — connect plot properties with `>>` to build live data flows
 - **Export** — PDF (vector), PNG, JPG, BMP for both individual plots and panels
 - **Busy indicator** — visual feedback when data is loading or being processed

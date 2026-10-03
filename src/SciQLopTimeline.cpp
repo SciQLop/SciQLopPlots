@@ -123,6 +123,7 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
         columns.ids.push_back(static_cast<qint64>(id));
     columns.labels = labels;
     _intervals->setData(std::move(columns));
+    _apply_category_order(); // new names may now have palette indices
     _apply_palette();
     emit replot();
 }
@@ -351,30 +352,56 @@ QList<double> SciQLopTimeline::snap_times() const
 
 namespace
 {
-const std::array<std::pair<const char*, QCPIntervals::OverlapMode>, 3> kOverlapModes { {
-    { "draw", QCPIntervals::omDraw },
-    { "stack", QCPIntervals::omStack },
-    { "forbid", QCPIntervals::omForbid },
+const std::array<std::pair<const char*, QCPIntervals::StackMode>, 3> kStackModes { {
+    { "", QCPIntervals::skNone },
+    { "time", QCPIntervals::skTime },
+    { "category", QCPIntervals::skCategory },
 } };
 }
 
-QString SciQLopTimeline::overlap() const
+QString SciQLopTimeline::stack() const
 {
-    for (const auto& [name, mode] : kOverlapModes)
-        if (mode == _intervals->overlapMode())
+    for (const auto& [name, mode] : kStackModes)
+        if (mode == _intervals->stackMode())
             return name;
-    return "draw";
+    return {};
 }
 
-void SciQLopTimeline::set_overlap(const QString& mode)
+void SciQLopTimeline::set_stack(const QString& mode)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_overlap(mode));
-    for (const auto& [name, value] : kOverlapModes)
+    SCIQLOP_ON_OWNER_THREAD(set_stack(mode));
+    for (const auto& [name, value] : kStackModes)
         if (mode == name)
         {
-            _intervals->setOverlapMode(value);
+            _intervals->setStackMode(value);
             emit replot();
         }
+}
+
+void SciQLopTimeline::set_category_order(const QStringList& names)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_category_order(names));
+    _category_order = names;
+    _apply_category_order();
+    emit replot();
+}
+
+//! Names to palette indices; a name no data has used yet has no index and is skipped until then.
+void SciQLopTimeline::_apply_category_order()
+{
+    std::vector<int> order;
+    for (const auto& name : _category_order)
+        if (const int index = CategoryPalette::instance().names.indexOf(name); index >= 0)
+            order.push_back(index);
+    _intervals->setCategoryOrder(std::move(order));
+}
+
+bool SciQLopTimeline::forbid_overlap() const { return _intervals->forbidOverlap(); }
+
+void SciQLopTimeline::set_forbid_overlap(bool forbid)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_forbid_overlap(forbid));
+    _intervals->setForbidOverlap(forbid);
 }
 
 QString SciQLopTimeline::style() const

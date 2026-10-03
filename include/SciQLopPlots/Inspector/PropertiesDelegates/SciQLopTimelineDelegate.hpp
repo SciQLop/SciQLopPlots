@@ -41,7 +41,7 @@ class SciQLopTimelineDelegate : public PropertyDelegateBase
     QDoubleSpinBox* m_snapStep = nullptr;
 
     void add_style_row(SciQLopTimeline* tl);
-    void add_overlap_row(SciQLopTimeline* tl);
+    void add_stacking_rows(SciQLopTimeline* tl);
     void add_lane_height_row(SciQLopTimeline* tl);
     void add_editing_rows(SciQLopTimeline* tl);
     void add_snap_rows(SciQLopTimeline* tl);

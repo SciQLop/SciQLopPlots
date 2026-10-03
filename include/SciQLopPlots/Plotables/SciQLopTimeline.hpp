@@ -35,6 +35,9 @@ class SciQLopTimeline : public SciQLopPlottableInterface
     QPointer<QCPLaneLayout> _layout;
     SciQLopPlotAxis* _y_axis;
     qint64 _hovered = -1;
+    QStringList _category_order;
+
+    void _apply_category_order();
 
     void _apply_palette();
 #ifndef BINDINGS_H
@@ -91,10 +94,16 @@ public:
     //! "wave" (logic-analyzer look, the default) or "bars"; other names are ignored.
     QString style() const;
     void set_style(const QString& name);
-    //! "draw" (overlaps drawn over each other), "stack" (sub-rows) or "forbid" (edits stop at
-    //! the neighbouring block); other names are ignored.
-    QString overlap() const;
-    void set_overlap(const QString& mode);
+    //! Sub-rows for overlaps: "" (none), "time" (first free sub-row) or "category" (one fixed
+    //! sub-row per category); other names are ignored.
+    QString stack() const;
+    void set_stack(const QString& mode);
+    //! Category names stacked first, in this order; the others follow, first seen first.
+    QStringList category_order() const { return _category_order; }
+    void set_category_order(const QStringList& names);
+    //! Edits stop at the neighbouring block in the same row instead of overlapping it.
+    bool forbid_overlap() const;
+    void set_forbid_overlap(bool forbid);
 
 #ifndef BINDINGS_H
     QCPIntervals* intervals() const { return _intervals; }
