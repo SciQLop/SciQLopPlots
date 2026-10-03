@@ -998,6 +998,11 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="range() const" rename="_range"/>
+        <modify-function signature="color() const" rename="_color"/>
+        <modify-function signature="visible() const" rename="_visible"/>
+        <modify-function signature="selected() const" rename="_selected"/>
+        <modify-function signature="read_only() const" rename="_read_only"/>
+        <modify-function signature="id() const" rename="_id"/>
         <property name="range" type="SciQLopPlotRange" get="range" set="set_range" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="color" set="set_color" generate-getsetdef="yes"/>
         <property name="visible" type="bool" get="visible" set="set_visible" generate-getsetdef="yes"/>

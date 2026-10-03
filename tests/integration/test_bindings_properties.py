@@ -13,9 +13,6 @@ import SciQLopPlots.SciQLopPlotsBindings as bindings
 
 _XML = pathlib.Path(__file__).parents[2] / "SciQLopPlots" / "bindings" / "bindings.xml"
 
-# simplify: renaming these getters breaks `span.color()` callers (SciQLop); decide first.
-_KNOWN_DEAD = {f"MultiPlotsVerticalSpan.{n}" for n in ("color", "visible", "selected", "read_only", "id")}
-
 
 def _declared_properties():
     root = ET.parse(_XML).getroot()
@@ -24,14 +21,8 @@ def _declared_properties():
             for p in t.findall("property")]
 
 
-def _params():
-    for cls, prop in _declared_properties():
-        marks = [pytest.mark.xfail(reason="getter shadows the property", strict=True)] \
-            if f"{cls}.{prop}" in _KNOWN_DEAD else []
-        yield pytest.param(cls, prop, marks=marks, id=f"{cls}.{prop}")
-
-
-@pytest.mark.parametrize("cls,prop", _params())
+@pytest.mark.parametrize("cls,prop", _declared_properties(),
+                         ids=[f"{c}.{p}" for c, p in _declared_properties()])
 def test_property_is_a_descriptor(cls, prop):
     klass = getattr(bindings, cls)
     descriptor = next(c.__dict__[prop] for c in klass.__mro__ if prop in c.__dict__)

@@ -25,13 +25,13 @@ void MultiPlotsVerticalSpan::select_lower_border(bool selected)
 {
     if (_lower_border_selected != selected)
     {
+        _lower_border_selected = selected;
         for (auto span : _spans)
         {
             if (span)
                 span->select_lower_border(selected);
         }
         replotAll();
-        _lower_border_selected = selected;
     }
 }
 
@@ -39,13 +39,13 @@ void MultiPlotsVerticalSpan::select_upper_border(bool selected)
 {
     if (_upper_border_selected != selected)
     {
+        _upper_border_selected = selected;
         for (auto span : _spans)
         {
             if (span)
                 span->select_upper_border(selected);
         }
         replotAll();
-        _upper_border_selected = selected;
     }
 }
 
@@ -93,13 +93,13 @@ void MultiPlotsVerticalSpan::set_selected(bool selected)
     SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
     if (_selected != selected)
     {
+        _selected = selected;
         for (auto span : _spans)
         {
             if (span)
                 span->set_selected(selected);
         }
         replotAll();
-        _selected = selected;
         Q_EMIT selection_changed(selected);
     }
 }
@@ -109,12 +109,12 @@ void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     SCIQLOP_ON_OWNER_THREAD(set_range(horizontal_range));
     if (horizontal_range != _horizontal_range)
     {
+        _horizontal_range = horizontal_range;
         for (auto span : _spans)
         {
             if (span)
                 span->set_range(horizontal_range);
         }
-        _horizontal_range = horizontal_range;
         Q_EMIT range_changed(horizontal_range);
     }
 }

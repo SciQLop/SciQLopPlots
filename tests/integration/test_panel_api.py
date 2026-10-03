@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor
 from SciQLopPlots import (
     SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
     SciQLopPlotRange, SciQLopGraphInterface, PlotType,
-    MultiPlotsVerticalSpan,
+    MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopVerticalSpan,
 )
 from conftest import force_gc
 
@@ -174,9 +174,9 @@ class TestMultiPlotsVerticalSpan:
         span = MultiPlotsVerticalSpan(
             panel, SciQLopPlotRange(0.0, 1.0),
         )
-        assert span.visible()
+        assert span.visible
         span.set_visible(False)
-        assert not span.visible()
+        assert not span.visible
 
     def test_color(self, panel, sample_data):
         x, y = sample_data
@@ -185,7 +185,7 @@ class TestMultiPlotsVerticalSpan:
         span = MultiPlotsVerticalSpan(
             panel, SciQLopPlotRange(0.0, 1.0), color,
         )
-        assert span.color().red() == 255
+        assert span.color.red() == 255
 
     def test_delete_no_crash(self, panel, sample_data):
         x, y = sample_data
@@ -240,3 +240,53 @@ class TestPanelOrganizePlots:
         panel.add_plot(SciQLopPlot())
         panel.add_plot(SciQLopPlot())
         qtbot.keyClick(panel, Qt.Key_O)
+
+
+class TestMultiPlotsVerticalSpanProperties:
+    """Since the REFAC-05 getter rename, these assignments only set Python attributes."""
+
+    def test_properties_reach_cpp(self, panel, sample_data):
+        x, y = sample_data
+        panel.line(x, y)
+        collection = MultiPlotsVSpanCollection(panel)
+        span = collection.create_span(SciQLopPlotRange(0.0, 1.0), id="event")
+        span.color = QColor(255, 0, 0)
+        span.visible = False
+        span.selected = True
+        span.read_only = True
+        # Shiboken reuses one Python wrapper per C++ object, so reading the
+        # properties back would see the Python attributes; ask the per-plot items.
+        [item] = panel.plot_at(0).findChildren(SciQLopVerticalSpan)
+        assert item.color().red() == 255
+        assert item.visible() is False
+        assert item.selected() is True
+        assert item.read_only() is True
+        assert span.id == "event"
+
+    def test_selected_through_collection_handle(self, panel, sample_data):
+        """SciQLop's catalog overlay selects an event with `collection.span(id).selected = True`."""
+        x, y = sample_data
+        panel.line(x, y)
+        collection = MultiPlotsVSpanCollection(panel)
+        collection.create_span(SciQLopPlotRange(0.0, 1.0), id="event")
+        received = []
+        collection.span("event").selection_changed.connect(received.append)
+        collection.span("event").selected = True
+        assert received == [True]
+        assert collection.span("event").selected is True
+
+    @pytest.mark.parametrize("change", [
+        ("selection_changed", lambda span: span.set_selected(True)),
+        ("range_changed", lambda span: span.set_range(SciQLopPlotRange(3.0, 4.0))),
+    ], ids=["selected", "range"])
+    def test_change_emits_once_with_several_plots(self, panel, sample_data, change):
+        """Each per-plot span echoes the change back; it must not emit again."""
+        x, y = sample_data
+        panel.line(x, y)
+        panel.line(x, y)
+        span = MultiPlotsVerticalSpan(panel, SciQLopPlotRange(0.0, 1.0))
+        signal, act = change
+        received = []
+        getattr(span, signal).connect(received.append)
+        act(span)
+        assert len(received) == 1
