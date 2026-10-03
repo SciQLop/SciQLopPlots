@@ -450,3 +450,16 @@ SciQLopTimeline.editable = property(_editable_get, SciQLopTimeline.set_editable)
 SciQLopTimeline.snap_to = property(_get_snap_to, _set_snap_to)
 SciQLopTimeline.lanes = property(_lanes_get, SciQLopTimeline.set_lanes)
 
+
+_TIMELINE_STYLES = ("wave", "bars")
+_style_get = SciQLopTimeline.style
+
+
+def _set_style(self, name):
+    if name not in _TIMELINE_STYLES:
+        raise ValueError(f"style must be one of {_TIMELINE_STYLES}, not {name!r}")
+    self.set_style(name)
+
+
+SciQLopTimeline.style = property(_style_get, _set_style)
+

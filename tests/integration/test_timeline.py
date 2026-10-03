@@ -284,3 +284,23 @@ def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
     assert len(bars) == 6
     assert len(labels) == 6, f"lane names at rows {labels}, bars at {bars}"
     assert np.allclose(labels, bars, atol=3), f"lane names at rows {labels}, bars at {bars}"
+
+
+# --- Issue #126: wave-view style.
+
+def test_timeline_defaults_to_the_wave_style(ts_plot):
+    assert _strip(ts_plot).style == "wave"
+
+
+def test_timeline_style_round_trips(ts_plot):
+    tl = _strip(ts_plot)
+    assert isinstance(type(tl).style, property)  # else assigning only sets a Python attribute
+    tl.style = "bars"
+    assert tl.style == "bars"
+    tl.style = "wave"
+    assert tl.style == "wave"
+
+
+def test_unknown_timeline_style_raises(ts_plot):
+    with pytest.raises(ValueError, match="wave"):
+        _strip(ts_plot).style = "gantt"

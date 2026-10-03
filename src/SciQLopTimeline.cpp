@@ -62,6 +62,7 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
         , _layout(layout)
         , _y_axis(yAxis)
 {
+    _intervals->setStyle(QCPIntervals::stWave);
     connect(&CategoryPalette::instance(), &CategoryPalette::changed, this,
             &SciQLopTimeline::_apply_palette);
     connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::lanes_changed);
@@ -308,3 +309,17 @@ QString SciQLopTimeline::snap_mode() const
 }
 
 double SciQLopTimeline::snap_step() const { return _intervals->snapStep(); }
+
+QString SciQLopTimeline::style() const
+{
+    return _intervals->style() == QCPIntervals::stWave ? "wave" : "bars";
+}
+
+void SciQLopTimeline::set_style(const QString& name)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_style(name));
+    if (name != "wave" && name != "bars")
+        return;
+    _intervals->setStyle(name == "wave" ? QCPIntervals::stWave : QCPIntervals::stBars);
+    emit replot();
+}

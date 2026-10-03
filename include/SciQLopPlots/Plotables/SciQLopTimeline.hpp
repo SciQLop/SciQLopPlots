@@ -83,6 +83,9 @@ public:
     void clear_snap();
     QString snap_mode() const;
     double snap_step() const;
+    //! "wave" (logic-analyzer look, the default) or "bars"; other names are ignored.
+    QString style() const;
+    void set_style(const QString& name);
 
 #ifndef BINDINGS_H
     QCPIntervals* intervals() const { return _intervals; }

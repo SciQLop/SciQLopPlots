@@ -461,6 +461,7 @@ tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
 
 - `panel.add_timeline(lane_height=14)` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
+- Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = "bars"` switches to plain bars.
 - `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
