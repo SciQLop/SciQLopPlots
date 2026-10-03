@@ -923,6 +923,10 @@ void SciQLopPlot::_update_timeline_geometry()
     if (m_impl->axisRect()->height() <= 0)
         return;
     const int overhead = height() - m_impl->axisRect()->height();
+    // Right after the plot is inserted in a panel it can be 0 px tall while its axis rect
+    // still has the previous layout's height: wait for the next layout to measure.
+    if (overhead < 0)
+        return;
     const int natural = layout->totalHeight() + overhead;
     // The natural height is a floor, not a fixed size: a taller plot spreads its lanes
     // (QCPLaneLayout gives each an equal share of the axis rect in a lanes plot).

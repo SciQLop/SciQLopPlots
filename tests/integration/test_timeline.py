@@ -362,3 +362,20 @@ def test_a_timeline_added_among_plots_starts_at_its_natural_height(panel, qtbot)
     tl.set_intervals([0, 10], [5, 15], lane=["A", "B"])
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0 and plot.height() == plot.minimumHeight(),
                     timeout=2000)
+
+
+def test_timeline_above_a_shown_plot_gets_its_natural_height(panel, qtbot, qtlog):
+    """SciQLop: a timeline inserted above a plot in a shown panel ended up 0 px tall.
+
+    Measured right after insertion, the plot was 0 px tall but its axis rect still had
+    its old height, so the "natural height" came out negative.
+    """
+    panel.resize(1000, 600)
+    panel.show()
+    panel.plot(np.linspace(0, 1e5, 100), np.zeros(100))
+    qtbot.wait(100)
+    plot, tl = panel.add_timeline(index=0)
+    tl.set_intervals([0, 10], [5, 15], lane=["A", "B"])
+    qtbot.waitUntil(lambda: plot.minimumHeight() > 0 and plot.height() == plot.minimumHeight(),
+                    timeout=2000)
+    assert not [r for r in qtlog.records if "Negative sizes" in r.message]
