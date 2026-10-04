@@ -153,6 +153,13 @@ QVariantMap SciQLopTimeline::interval_info(qint64 id) const
         { "label", c.labels.value(row) },
     };
 }
+qint64 SciQLopTimeline::_interval_at(double x, double y) const
+{
+    const int row = _intervals->hitTest(QPointF(x, y)).row;
+    const auto& ids = _intervals->columns().ids;
+    return row >= 0 && row < static_cast<int>(ids.size()) ? ids[row] : -1;
+}
+
 QStringList SciQLopTimeline::lanes() const { return _layout->displayOrder(); }
 
 void SciQLopTimeline::set_lanes(const QStringList& lanes)

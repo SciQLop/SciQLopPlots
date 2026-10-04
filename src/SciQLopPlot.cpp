@@ -1088,6 +1088,11 @@ double SciQLopPlot::crosshair_key() const
     return m_impl->crosshair()->current_key();
 }
 
+QString SciQLopPlot::crosshair_text() const
+{
+    return m_impl->crosshair()->tooltip_text();
+}
+
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
 {
     if (m_theme)

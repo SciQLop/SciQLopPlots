@@ -48,6 +48,7 @@ public:
     void hide();
 
     double current_key() const { return m_current_key; }
+    QString tooltip_text() const;
     void replot();
 
     void apply_theme(const QCPTheme* theme);

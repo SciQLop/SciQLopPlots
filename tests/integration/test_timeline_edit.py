@@ -3,9 +3,10 @@ import threading
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QWidget
 
 from SciQLopPlots import SciQLopPlotRange
 from conftest import process_events
@@ -149,3 +150,38 @@ def test_set_editable_from_a_worker_is_queued(editable, qtbot):
     t.start()
     t.join()
     qtbot.waitUntil(lambda: not tl.editable, timeout=2000)
+
+
+def test_interval_at_finds_the_block_under_a_pixel(editable):
+    _, tl = editable
+    p = tl.pixel_of(25, "A")
+    assert tl.interval_at(p.x(), p.y()) == 7
+    p = tl.pixel_of(75, "B")
+    assert tl.interval_at(p.x(), p.y()) == 8
+    p = tl.pixel_of(50, "A")
+    assert tl.interval_at(p.x(), p.y()) is None
+
+
+def _hover(canvas, p):
+    pos = QPointF(p)
+    QApplication.sendEvent(canvas, QMouseEvent(QEvent.MouseMove, pos, canvas.mapToGlobal(pos),
+                                               Qt.NoButton, Qt.NoButton, Qt.NoModifier))
+
+
+def test_crosshair_tooltip_describes_the_hovered_interval(editable):
+    plot, tl = editable
+    tl.set_intervals([10], [40], lane=["A"], category=["BASE"], label=["burst"], ids=[7])
+    plot.set_crosshair_enabled(True)
+    process_events()
+    _hover(_canvas(plot), tl.pixel_of(25, "A"))
+    text = plot.crosshair_text()
+    assert "burst" in text and "BASE" in text
+    assert "1970-01-01 00:00:10" in text and "1970-01-01 00:00:40" in text
+
+
+def test_crosshair_tooltip_times_are_utc_like_the_axis(editable):
+    plot, tl = editable
+    plot.set_crosshair_enabled(True)
+    process_events()
+    _hover(_canvas(plot), tl.pixel_of(25, "A"))
+    assert "1970-01-01 00:00:2" in plot.crosshair_text()

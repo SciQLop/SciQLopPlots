@@ -488,4 +488,5 @@ SciQLopTimeline.forbid_overlap = property(lambda self: bool(_forbid_overlap_get(
 SciQLopTimeline.category_order = property(lambda self: list(_category_order_get(self)),
                                           lambda self, names: self.set_category_order(list(names)))
 SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
+SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 

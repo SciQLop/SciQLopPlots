@@ -387,6 +387,11 @@ public:
      */
     double crosshair_key() const;
 
+    /*!
+     * \brief crosshair_text Plain text of the crosshair tooltip, empty when hidden.
+     */
+    QString crosshair_text() const;
+
     void minimize_margins() override;
 
     SciQLopHistogram2D* add_histogram2d(const QString& name, int x_bins = 100,

@@ -78,6 +78,8 @@ public:
     QPointF pixel_of(double key, const QString& lane) const;
     //! id, start, stop, duration, lane, category and label of interval \a id; empty if unknown.
     QVariantMap interval_info(qint64 id) const;
+    // Id of the interval under a widget pixel, -1 for none; Python's interval_at gives None.
+    qint64 _interval_at(double x, double y) const;
 
     bool editable() const;
     void set_editable(bool editable);

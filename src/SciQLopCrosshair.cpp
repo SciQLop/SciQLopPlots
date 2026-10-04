@@ -20,27 +20,74 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
+#include "SciQLopPlots/Plotables/CategoryPalette.hpp"
 #include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
+#include <plottables/plottable-intervals.h>
 #include <axis/axistickerdatetime.h>
 #include <theme.h>
 #include <data-locator.h>
 #include <plottables/plottable-multigraph.h>
-#include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <cmath>
-#include <ctime>
+#include <QDateTime>
+#include <QTextDocumentFragment>
+#include <QTimeZone>
+#include <optional>
 
 namespace
 {
-std::tm to_local_tm(std::time_t t)
+// The ticker's zone, so the tooltip reads like the axis (UTC on time-series plots).
+QTimeZone ticker_zone(const QCPAxisTickerDateTime& ticker)
 {
-    std::tm tm {};
-#ifdef _WIN32
-    localtime_s(&tm, &t);
-#else
-    localtime_r(&t, &tm);
-#endif
-    return tm;
+    switch (ticker.dateTimeSpec())
+    {
+        case Qt::UTC:
+            return QTimeZone::UTC;
+        case Qt::TimeZone:
+            return ticker.timeZone();
+        default:
+            return QTimeZone::LocalTime;
+    }
+}
+
+// Microsecond resolution — needed for high-rate data (e.g. 100 ksps).
+// Nanosecond would exceed double-precision on a Unix-epoch double.
+// Floor-divide (not truncate-toward-zero) so pre-1970 keys land on the
+// right second: e.g. us=-1_500_000 should give sec=-2 + frac=500_000,
+// not sec=-1 + frac=500_000 which would render "23:59:59.5" instead
+// of "23:59:58.5".
+QString format_datetime(double key, const QTimeZone& zone, bool micro)
+{
+    const auto us = std::llround(key * 1'000'000.0);
+    const long long sec = (us >= 0) ? us / 1'000'000 : -((-us + 999'999) / 1'000'000);
+    const auto text = QDateTime::fromSecsSinceEpoch(sec, zone).toString("yyyy-MM-dd HH:mm:ss");
+    if (!micro)
+        return text;
+    return text + QString(".%1").arg(us - sec * 1'000'000, 6, 10, QChar('0'));
+}
+
+QString format_key(double key, const std::optional<QTimeZone>& zone)
+{
+    return zone ? format_datetime(key, *zone, false) : QString::number(key, 'g', 6);
+}
+
+QString interval_line(const QCPIntervals* intervals, const QPointF& pixelPos,
+                      const std::optional<QTimeZone>& zone)
+{
+    const int row = intervals->hitTest(pixelPos).row;
+    if (row < 0)
+        return {};
+    const auto& c = intervals->columns();
+    const QString lane = intervals->laneLayout()->laneNames().value(c.lane[row]);
+    const QString category = CategoryPalette::instance().names.value(c.category[row]);
+    const QString label = c.labels.value(row);
+    QString what = label.isEmpty() ? category : label;
+    if (!label.isEmpty() && !category.isEmpty() && category != label)
+        what += QString(" (%1)").arg(category);
+    return QString("<span style='color:%1;'>&#9632;</span> %2: <b>%3</b> %4 &rarr; %5<br/>")
+        .arg(intervals->categoryColor(c.category[row]).name(), lane.toHtmlEscaped(),
+             what.toHtmlEscaped(), format_key(c.start[row], zone),
+             format_key(c.stop[row], zone));
 }
 }
 
@@ -202,33 +249,24 @@ SciQLopWaterfallGraph* find_waterfall_wrapper(QCPWaterfallGraph* raw)
 }
 }
 
+QString SciQLopCrosshair::tooltip_text() const
+{
+    return m_tooltip->visible() ? QTextDocumentFragment::fromHtml(m_tooltip->html()).toPlainText()
+                                : QString();
+}
+
 QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos) const
 {
     QCPDataLocator locator;
     const bool havePixel = !std::isnan(pixelPos.x()) && !std::isnan(pixelPos.y());
 
     QString header;
-    if (auto datetime_ticker = m_plot->xAxis->ticker().dynamicCast<QCPAxisTickerDateTime>();
-        !datetime_ticker.isNull())
+    std::optional<QTimeZone> zone;
+    if (auto ticker = m_plot->xAxis->ticker().dynamicCast<QCPAxisTickerDateTime>(); !ticker.isNull())
+        zone = ticker_zone(*ticker);
+    if (zone)
     {
-        // Microsecond resolution — needed for high-rate data (e.g. 100 ksps).
-        // Nanosecond would exceed double-precision on a Unix-epoch double.
-        // Format via std::tm so fmt's %S prints exactly 2 whole-seconds digits
-        // (formatting a time_point would promote to system_clock::duration's
-        // resolution and emit trailing zeros). Local time matches the default
-        // QCPAxisTickerDateTime spec (Qt::LocalTime).
-        // Floor-divide (not truncate-toward-zero) so pre-1970 keys land on the
-        // right second: e.g. us=-1_500_000 should give sec=-2 + frac=500_000,
-        // not sec=-1 + frac=500_000 which would render "23:59:59.5" instead
-        // of "23:59:58.5".
-        const auto us = std::llround(key * 1'000'000.0);
-        const long long sec_ll = (us >= 0) ? us / 1'000'000
-                                           : -((-us + 999'999) / 1'000'000);
-        const auto sec_part = static_cast<std::time_t>(sec_ll);
-        const auto frac_us = static_cast<long>(us - sec_ll * 1'000'000);
-        const std::tm tm = to_local_tm(sec_part);
-        header = QString::fromStdString(
-            fmt::format("{:%Y-%m-%d %H:%M:%S}.{:06d}", tm, frac_us));
+        header = format_datetime(key, *zone, true);
     }
     else
     {
@@ -241,6 +279,13 @@ QString SciQLopCrosshair::build_tooltip_html(double key, const QPointF& pixelPos
         auto* plottable = m_plot->plottable(i);
         if (!plottable->visible())
             continue;
+
+        if (auto* intervals = qobject_cast<QCPIntervals*>(plottable))
+        {
+            if (havePixel)
+                lines += interval_line(intervals, pixelPos, zone);
+            continue;
+        }
 
         auto* keyAxis = plottable->keyAxis();
         auto* valueAxis = plottable->valueAxis();
