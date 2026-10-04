@@ -26,6 +26,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include <QAbstractItemModel>
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -119,4 +120,28 @@ void PropertyDelegateBase::rebuild_inspector_extensions()
         connect(ext, &InspectorExtension::invalidated, this,
                 &PropertyDelegateBase::rebuild_inspector_extensions, Qt::UniqueConnection);
     }
+}
+
+static void refit_combo(QComboBox* combo)
+{
+    const auto fm = combo->fontMetrics();
+    int widest = 0;
+    for (int i = 0; i < combo->count(); ++i)
+        widest = std::max(widest, fm.horizontalAdvance(combo->itemText(i)));
+    // Same rule as SciQLop's fit_combo_to_content: on macOS a text-only combo is
+    // sized below its text, so floor it at the widest item + icon, arrow and frame.
+    combo->setMinimumWidth(widest + combo->iconSize().width() + 3 * fm.horizontalAdvance('M'));
+}
+
+void PropertyDelegateBase::fit_combo_to_content(QComboBox* combo)
+{
+    refit_combo(combo);
+    auto* model = combo->model();
+    auto refit = [combo] { refit_combo(combo); };
+    connect(model, &QAbstractItemModel::rowsInserted, combo, refit);
+    connect(model, &QAbstractItemModel::rowsRemoved, combo, refit);
+    connect(model, &QAbstractItemModel::modelReset, combo, refit);
+    connect(model, &QAbstractItemModel::dataChanged, combo, refit);
+    combo->setToolTip(combo->currentText());
+    connect(combo, &QComboBox::currentTextChanged, combo, &QComboBox::setToolTip);
 }

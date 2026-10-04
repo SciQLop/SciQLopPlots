@@ -41,6 +41,7 @@ SciQLopWaterfallDelegate::SciQLopWaterfallDelegate(SciQLopWaterfallGraph* object
     m_modeCombo->addItem("Uniform", QVariant::fromValue(WaterfallOffsetMode::Uniform));
     m_modeCombo->addItem("Custom", QVariant::fromValue(WaterfallOffsetMode::Custom));
     m_modeCombo->setCurrentIndex(object->offset_mode() == WaterfallOffsetMode::Uniform ? 0 : 1);
+    fit_combo_to_content(m_modeCombo);
     offsetsForm->addRow("Mode", m_modeCombo);
 
     m_spacingSpin = new QDoubleSpinBox(offsetsBox);

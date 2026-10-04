@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <QComboBox>
 #include <QLabel>
 #include <QObject>
 #include <QPointer>
@@ -56,6 +57,7 @@ public:
 
 protected:
     void append_inspector_extensions();
+    static void fit_combo_to_content(QComboBox* combo);
 
 private:
     void rebuild_inspector_extensions();

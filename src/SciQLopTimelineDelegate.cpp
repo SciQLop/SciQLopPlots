@@ -47,6 +47,7 @@ void SciQLopTimelineDelegate::add_style_row(SciQLopTimeline* tl)
     style->setObjectName("style");
     style->addItems({ "wave", "bars" });
     style->setCurrentText(tl->style());
+    fit_combo_to_content(style);
     m_layout->addRow("Style", style);
     connect(style, &QComboBox::currentTextChanged, this,
             [this](const QString& name)
@@ -62,6 +63,7 @@ void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
     stack->setObjectName("stack");
     stack->addItems({ "none", "time", "category" });
     stack->setCurrentText(tl->stack().isEmpty() ? "none" : tl->stack());
+    fit_combo_to_content(stack);
     m_layout->addRow("Stack overlaps", stack);
     connect(stack, &QComboBox::currentTextChanged, this,
             [this](const QString& mode)
@@ -141,6 +143,7 @@ void SciQLopTimelineDelegate::add_snap_rows(SciQLopTimeline* tl)
     if (tl->snap_mode() == "times")
         m_snap->addItem("times"); // set from code (snap_to=[...]); kept as is here
     m_snap->setCurrentText(tl->snap_mode());
+    fit_combo_to_content(m_snap);
     m_layout->addRow("Snap", m_snap);
 
     m_snapStep = new QDoubleSpinBox;

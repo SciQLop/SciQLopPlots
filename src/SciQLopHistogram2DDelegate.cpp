@@ -78,6 +78,7 @@ SciQLopHistogram2DDelegate::SciQLopHistogram2DDelegate(SciQLopHistogram2D* objec
     normCombo->addItem("None", 0);            // QCPHistogram2D::nNone
     normCombo->addItem("Per-column", 1);      // QCPHistogram2D::nColumn
     normCombo->setCurrentIndex(normCombo->findData(object->normalization()));
+    fit_combo_to_content(normCombo);
     m_layout->addRow("Normalization", normCombo);
     connect(normCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [normCombo, object](int)

@@ -102,3 +102,23 @@ def test_delegate_sets_stacking_and_forbid(panel, qtbot):
     assert tl.stack is None
     _named(delegate, QCheckBox, "forbid_overlap").setChecked(True)
     assert tl.forbid_overlap is True
+
+
+def test_delegate_combos_fit_their_widest_item(panel, qtbot):
+    # macOS shrinks a text-only combo below its text; the icon-less timeline combos need a floor.
+    _, tl = _timeline(panel)
+    delegate = _delegate(tl, qtbot)
+    for name in ("style", "stack", "snap"):
+        combo = _named(delegate, QComboBox, name)
+        fm = combo.fontMetrics()
+        widest = max(fm.horizontalAdvance(combo.itemText(i)) for i in range(combo.count()))
+        assert combo.minimumWidth() > widest, name
+
+
+def test_delegate_combos_show_their_value_as_tooltip(panel, qtbot):
+    _, tl = _timeline(panel)
+    delegate = _delegate(tl, qtbot)
+    combo = _named(delegate, QComboBox, "stack")
+    assert combo.toolTip() == "none"
+    combo.setCurrentText("category")
+    assert combo.toolTip() == "category"
