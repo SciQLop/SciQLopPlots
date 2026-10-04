@@ -89,8 +89,13 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
                 emit intervals_changed(out);
             });
     connect(_intervals, &QCPIntervals::intervalCreated, this,
-            [this](double start, double stop, int lane)
-            { emit interval_created(start, stop, _layout->laneNames().value(lane)); });
+            [this](double start, double stop, int lane, int category)
+            {
+                const QString laneName = _layout->laneNames().value(lane);
+                emit interval_created(start, stop, laneName);
+                emit interval_created_in(start, stop, laneName,
+                                         CategoryPalette::instance().names.value(category));
+            });
     connect(_intervals, &QCPIntervals::deleteRequested, this,
             [this](const QVector<qint64>& ids) { emit delete_requested(QList<qint64>(ids)); });
     _apply_palette();

@@ -60,6 +60,28 @@ def test_create_reports_lane_name(editable):
     assert seen and seen[0][2] == "A"
 
 
+def test_create_in_a_category_row_reports_the_category(editable):
+    """With stack="category", a block drawn in the BASE row is a BASE window."""
+    plot, tl = editable
+    tl.set_intervals([10, 60], [40, 90], lane=["A", "A"], category=["LM", "BASE"], ids=[7, 8])
+    tl.category_order = ["BASE", "LM"]
+    tl.stack = "category"
+    tl.edit_modes = {"create"}
+    process_events()
+    seen, plain = [], []
+    tl.interval_created_in.connect(lambda *a: seen.append(a))
+    tl.interval_created.connect(lambda *a: plain.append(a))
+    half = tl.lane_height() // 2
+    base_row = QPoint(0, -half)  # lane A: BASE row above LM row
+    _drag(_canvas(plot), _at(tl, 45, "A") + base_row, _at(tl, 55, "A") + base_row)
+    assert seen and seen[0][2:] == ("A", "BASE")
+    assert plain and plain[0][2] == "A"   # the released 3-argument signal still fires
+    tl.stack = None
+    process_events()
+    _drag(_canvas(plot), _at(tl, 45, "A"), _at(tl, 55, "A"))
+    assert seen[-1][3] == ""                # no category rows: no category
+
+
 def test_delete_key_requests_ids(editable):
     plot, tl = editable
     tl.edit_modes = {"delete"}

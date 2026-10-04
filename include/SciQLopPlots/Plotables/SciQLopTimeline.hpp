@@ -119,5 +119,8 @@ signals:
     Q_SIGNAL void selected_intervals_changed(QList<qint64> ids);
     Q_SIGNAL void intervals_changed(const QVariantList& edits);
     Q_SIGNAL void interval_created(double start, double stop, const QString& lane);
+    //! Same, with the category of the row it was drawn in (stack="category"), else "".
+    Q_SIGNAL void interval_created_in(double start, double stop, const QString& lane,
+                                      const QString& category);
     Q_SIGNAL void delete_requested(const QList<qint64>& ids);
 };
