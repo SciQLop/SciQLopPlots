@@ -251,6 +251,27 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         }
     }
 
+    // Value axes only, like the percentile group below: key axes are never padded.
+    if (auto* concrete = as_type<SciQLopPlotAxis>(m_object);
+        concrete && !ax->is_time_axis() && this->color_scale() == nullptr
+        && ax->orientation() == Qt::Vertical)
+    {
+        auto* margin = new QDoubleSpinBox(this);
+        margin->setObjectName("autoscale_margin");
+        margin->setRange(0., 50.);
+        margin->setDecimals(1);
+        margin->setSuffix(" %");
+        margin->setToolTip("Space left on each side of the data by autoscale");
+        margin->setValue(concrete->autoscale_margin() * 100.);
+        m_layout->addRow("Autoscale margin", margin);
+        connect(margin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+                [this](double percent)
+                {
+                    if (auto* a = as_type<SciQLopPlotAxis>(m_object))
+                        a->set_autoscale_margin(percent / 100.);
+                });
+    }
+
     // Robust autoscale percentile: clamp the rescale range to a percentile of
     // the visible data, so a single outlier doesn't blow up the y-axis. Only
     // shown on **vertical** value axes — the rescale code pools graphs whose

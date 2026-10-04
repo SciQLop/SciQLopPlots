@@ -344,6 +344,47 @@ void SciQLopPlotAxis::set_autoscale_percentile_high(double percentile) noexcept
     m_autoscale_percentile_high = std::clamp(percentile, 0., 100.);
 }
 
+void SciQLopPlotAxis::set_autoscale_margin(double fraction) noexcept
+{
+    SCIQLOP_ON_OWNER_THREAD(set_autoscale_margin(fraction));
+    if (std::isnan(fraction))
+        return;
+    m_autoscale_margin = std::clamp(fraction, 0., 0.5);
+}
+
+static QCPRange padded(const QCPRange& r, double margin, bool log)
+{
+    if (margin <= 0. || !QCPRange::validRange(r))
+        return r;
+    if (log)
+    {
+        const double factor = std::pow(r.upper / r.lower, margin);
+        return QCPRange(r.lower / factor, r.upper * factor);
+    }
+    const double pad = r.size() * margin;
+    return QCPRange(r.lower - pad, r.upper + pad);
+}
+
+// Colormaps and histograms fill the axis edge to edge (matplotlib's "sticky
+// edges"): padding would show empty bands around the image.
+static bool has_image(const QCPAxis* axis)
+{
+    const auto plottables = axis->plottables();
+    return std::any_of(plottables.cbegin(), plottables.cend(), [](QCPAbstractPlottable* p)
+                       { return p->realVisibility() && p->interface1D() == nullptr; });
+}
+
+void SciQLopPlotAxis::set_padded_range(double lower, double upper, bool pad)
+{
+    pad = pad && !has_image(m_axis);
+    // Route through set_range so clamp_range, m_last_valid_range, and the queued
+    // replot stay consistent with manual range changes (avoids the rangeChanged
+    // lambda reverting the new range when it exceeds m_max_range_size).
+    const bool is_log = m_axis->scaleType() == QCPAxis::stLogarithmic;
+    const auto p = padded(QCPRange(lower, upper), pad ? m_autoscale_margin : 0., is_log);
+    set_range(SciQLopPlotRange(p.lower, p.upper, _is_time_axis));
+}
+
 void SciQLopPlotAxis::rescale() noexcept
 {
     if (m_axis.isNull())
@@ -421,16 +462,15 @@ void SciQLopPlotAxis::rescale() noexcept
                     if (found)
                         unioned.expand(extent);
                 }
-                // Route through set_range so clamp_range, m_last_valid_range,
-                // and the queued replot stay consistent with manual range
-                // changes (avoids the rangeChanged lambda reverting the new
-                // range when it exceeds m_max_range_size).
-                set_range(SciQLopPlotRange(unioned.lower, unioned.upper, _is_time_axis));
+                set_padded_range(unioned.lower, unioned.upper, !_is_time_axis);
                 return;
             }
         }
     }
 
+    // A key axis is never padded: a wider key range fetches more data, which
+    // rescales again, so the range would grow on every batch.
+    bool is_key_axis = false;
     for (auto* plottable : m_axis->plottables())
     {
         if (!plottable->realVisibility())
@@ -439,6 +479,7 @@ void SciQLopPlotAxis::rescale() noexcept
         QCPRange plottableRange;
         if (plottable->keyAxis() == m_axis)
         {
+            is_key_axis = true;
             plottableRange = plottable->getKeyRange(found, signDomain);
         }
         else
@@ -464,12 +505,7 @@ void SciQLopPlotAxis::rescale() noexcept
             newRange.lower = center - m_axis->range().size() / 2.0;
             newRange.upper = center + m_axis->range().size() / 2.0;
         }
-        // Route through set_range (not m_axis->setRange directly) so clamp_range
-        // and m_last_valid_range stay consistent: with a max/min range-size limit
-        // configured, a direct setRange makes the rangeChanged handler see
-        // clamped != requested and revert to the old range, so 'm' silently does
-        // nothing. Mirrors the percentile path above.
-        set_range(SciQLopPlotRange(newRange.lower, newRange.upper, _is_time_axis));
+        set_padded_range(newRange.lower, newRange.upper, !_is_time_axis && !is_key_axis);
         return;
     }
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);

@@ -62,5 +62,6 @@ def test_rescale_fits_all_data(qtbot, request, plot_fixture, kind, how):
     p = request.getfixturevalue(plot_fixture)
     make, (lo, hi) = GRAPHS[kind]
     r = _y_after_rescale(qtbot, p, make, RESCALES[how])
-    assert r.start() == pytest.approx(lo, abs=5)
-    assert r.stop() == pytest.approx(hi, abs=5)
+    pad = (hi - lo) * p.y_axis().autoscale_margin()
+    assert r.start() == pytest.approx(lo - pad, abs=5)
+    assert r.stop() == pytest.approx(hi + pad, abs=5)

@@ -367,6 +367,7 @@ print(r.start(), r.stop(), r.size())
 ```
 
 - `plot.rescale_axes()` fits every axis to the data.
+- Rescaling leaves a 5% margin on each side of a value axis, so ticks at the data's ends (0/1 flags, enum levels) keep their labels. `axis.set_autoscale_margin(0.1)` changes it at runtime (0 to 0.5; in decades on a log axis), and so does the axis's inspector panel. Time axes, key axes and axes holding a colormap or histogram are never padded.
 - `axis.set_min_range_size(s)` / `set_max_range_size(s)` limit how far a user can zoom.
 
 ## Colours, names and themes

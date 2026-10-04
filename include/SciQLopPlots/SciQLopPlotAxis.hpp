@@ -291,8 +291,10 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     bool m_suppress_range_signals = false;
     double m_autoscale_percentile_low = 0.;
     double m_autoscale_percentile_high = 100.;
+    double m_autoscale_margin = 0.05;
     QMap<double, QString> m_tick_labels;
     friend class _impl::SciQLopPlot;
+    void set_padded_range(double lower, double upper, bool pad);
 
 protected:
 #ifndef BINDINGS_H
@@ -309,6 +311,11 @@ public:
     void set_autoscale_percentile_high(double percentile) noexcept;
     inline double autoscale_percentile_low() const noexcept { return m_autoscale_percentile_low; }
     inline double autoscale_percentile_high() const noexcept { return m_autoscale_percentile_high; }
+    //! Fraction of the data span left free on each side by rescale() (decades on a log
+    //! axis), so ticks at the data extremes keep their labels. Clamped to [0, 0.5];
+    //! time and key axes, and axes holding a colormap or histogram, are never padded.
+    void set_autoscale_margin(double fraction) noexcept;
+    inline double autoscale_margin() const noexcept { return m_autoscale_margin; }
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
