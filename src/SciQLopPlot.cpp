@@ -1161,10 +1161,9 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
     {
         case GraphType::Line:
         case GraphType::Scatter:
-            if (y.ndim() <= 1 || y.size(1) == 1)
-                plottable = m_impl->add_plottable<SciQLopSingleLineGraph>(labels, metaData);
-            else
-                plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
+            // One column too (#113): a one-component multigraph colours its line by a scalar,
+            // SciQLopSingleLineGraph only its markers.
+            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);

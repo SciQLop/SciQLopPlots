@@ -30,5 +30,5 @@ def test_neoqcp_draw_and_resample_zones_are_traced(plot, qtbot, tmp_path):
         tracing.disable()
 
     names = _zone_names(trace_path)
-    assert "buildL1Cache" in names
-    assert "QCPGraph2::draw" in names
+    assert "buildL1CacheMulti" in names
+    assert "QCPMultiGraph::draw" in names

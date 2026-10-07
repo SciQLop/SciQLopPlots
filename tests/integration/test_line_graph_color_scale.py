@@ -319,3 +319,18 @@ class TestRefreshKeepsTheColours:
         assert len(calls) > 1
         assert plot.z_axis().visible() is True
         assert _hues(_image(plot, tmp_path, "callable", rescale=False)) > 8
+
+
+class TestOneColumnLine:
+    """plot(x, y) with a 1-D y used to build a SciQLopSingleLineGraph, whose
+    set_color_data only tinted scatter markers: a plain line stayed plain (#113)."""
+
+    def test_colour_data_draws_the_gradient_and_the_scale(self, qtbot, plot, tmp_path):
+        t = np.linspace(0, 2 * np.pi, N)
+        g = plot.plot(t, np.sin(t), labels=["s"])
+        process_events()
+        g.set_color_data(np.linspace(2.0, 7.0, N), ColorGradient.Jet)
+        process_events()
+        assert plot.z_axis().visible() is True
+        assert _range(plot) == (pytest.approx(2.0), pytest.approx(7.0))
+        assert _hues(_image(plot, tmp_path, "one_column")) > 8
