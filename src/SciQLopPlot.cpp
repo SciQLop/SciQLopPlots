@@ -1180,6 +1180,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
     {
         plottable->set_data(std::move(x), std::move(y));
         _configure_plotable(plottable, labels, colors, graph_type, marker);
+        // set_data's first-batch request_rescale fired before _configure_plotable
+        // connected it. Rescale now rather than queued, so a range the caller
+        // sets right after plot() wins.
+        rescale_axes();
     }
     return plottable;
 }

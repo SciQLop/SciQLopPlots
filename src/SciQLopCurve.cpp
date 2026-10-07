@@ -57,6 +57,7 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
     _resampler_busy = false;
     set_busy(false);
     Q_EMIT this->replot();
+    check_first_data(data.isEmpty() ? 0 : data.front().size());
     Q_EMIT data_changed();
 }
 
