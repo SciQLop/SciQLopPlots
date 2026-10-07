@@ -26,7 +26,7 @@ from SciQLopPlots import SciQLopGraphInterface
 DOCS = pathlib.Path(__file__).resolve().parent
 GUIDE = DOCS / "user-guide.md"
 SHOT = re.compile(r"```python\n((?:(?!```).)*)```\s*\n!\[[^\]]*\]\(([^)]+)\)", flags=re.S)
-SIZES = {"SciQLopMultiPlotPanel": (800, 600)}
+SIZES = {"SciQLopMultiPlotPanel": (800, 600), "SciQLopNDProjectionPlot": (900, 320)}
 DEFAULT_SIZE = (800, 400)
 
 

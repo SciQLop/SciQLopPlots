@@ -166,6 +166,8 @@ cmap.set_y_log_scale(True)
 cmap.set_z_log_scale(True)
 ```
 
+![A spectrogram on log y and colour scales](images/colormap.png)
+
 `z` has one row per `x` value and one column per `y` value. `y` may also have `z`'s shape, when the y channels change over time (a varying energy table, for example).
 
 On a log colour scale, pixels that cover several samples are averaged in log space. So zoomed-out spectrograms look like the zoomed-in ones.
@@ -292,6 +294,8 @@ graph = plot.plot(x, np.sin(x), labels=["sin"])
 graph.set_color_data(np.cos(x), ColorGradient.Plasma)   # one value per x sample
 ```
 
+![A sine coloured by cosine, with its colour scale](images/color-data.png)
+
 The plot shows a colour scale for it. Pass an empty array to go back to a plain line.
 
 A data function can send the colour values with each batch:
@@ -309,8 +313,6 @@ graph = plot.plot(speed_coloured, labels=["position"])
 graph.set_color_gradient(ColorGradient.Turbo)
 plot.x_axis().set_range(0, 20)
 ```
-
-![A sine coloured by a third quantity, with its colour scale](images/color-data.png)
 
 ## Time series
 
@@ -608,6 +610,8 @@ proj = SciQLopNDProjectionPlot(3)
 orbit = proj.add_reference_curve([t, x, y, z], label="orbit")   # [time, dims...]
 proj.set_axis_labels(["X", "Y", "Z"])
 ```
+
+![Three 2-D projections of an orbit](images/nd-projection.png)
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
 
