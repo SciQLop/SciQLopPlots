@@ -29,7 +29,7 @@
 class ColorScaleController;
 class SciQLopNDProjectionCurves;
 
-class SciQLopNDProjectionPlot : public SciQLopPlotInterface
+class SciQLopNDProjectionPlot : public SciQLopPlotInterface, public SciQLopExportable
 {
     Q_OBJECT
 
@@ -183,4 +183,16 @@ public:
 
     void set_theme(SciQLopTheme* theme) override;
     inline SciQLopTheme* theme() const override { return m_theme; }
+
+    void export_paint(QPainter* painter, const QRect& target, SciQLopExportTarget kind) override;
+
+    bool save(const QString& filename, int width = 0, int height = 0, double scale = 1.0,
+              int quality = -1) override;
+    bool save_pdf(const QString& filename, int width = 0, int height = 0) override;
+    bool save_png(const QString& filename, int width = 0, int height = 0, double scale = 1.0,
+                  int quality = -1) override;
+    bool save_jpg(const QString& filename, int width = 0, int height = 0, double scale = 1.0,
+                  int quality = -1) override;
+    bool save_bmp(const QString& filename, int width = 0, int height = 0,
+                  double scale = 1.0) override;
 };

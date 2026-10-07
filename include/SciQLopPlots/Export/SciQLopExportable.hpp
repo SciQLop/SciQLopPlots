@@ -21,8 +21,10 @@
 ----------------------------------------------------------------------------*/
 
 #pragma once
+#include <QList>
 #include <QPainter>
 #include <QRect>
+#include <QString>
 
 class QWidget;
 
@@ -55,3 +57,15 @@ public:
 // renders plain widgets (labels, matplotlib Qt canvases, ...) for free.
 void export_widget(QWidget* w, QPainter* painter, const QRect& target,
                    SciQLopExportTarget kind);
+
+// Paint each of `children` into its share of `target`, mapped from its geometry in `parent`.
+void export_children(const QWidget* parent, const QList<QWidget*>& children, QPainter* painter,
+                     const QRect& target, SciQLopExportTarget kind);
+
+// Save a widget, with every plot inside it, to a file. A size of 0 keeps the widget's.
+bool save_widget_pdf(QWidget* w, const QString& filename, int width, int height);
+bool save_widget_raster(QWidget* w, const QString& filename, const char* format, int width,
+                        int height, double scale, int quality);
+// The format follows the extension: pdf, png, jpg/jpeg or bmp.
+bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
+                 int quality);

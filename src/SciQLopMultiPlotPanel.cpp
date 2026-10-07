@@ -44,9 +44,7 @@
 
 #include <cpp_utils/containers/algorithms.hpp>
 
-#include <QFileInfo>
 #include <QPainter>
-#include <QPdfWriter>
 
 SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x,
                                              bool synchronize_time, Qt::Orientation orientation)
@@ -579,90 +577,31 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
 
 bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int height)
 {
-    const int totalW = (width > 0) ? width : _container->width();
-    const int totalH = (height > 0) ? height : _container->height();
-    if (totalW <= 0 || totalH <= 0)
-        return false;
-
-    QPdfWriter writer(filename);
-    writer.setPageSize(QPageSize(QSizeF(totalW, totalH), QPageSize::Point));
-    writer.setPageMargins(QMarginsF(0, 0, 0, 0));
-    writer.setResolution(72);
-
-    QCPPainter painter(&writer);
-    if (!painter.isActive())
-        return false;
-    painter.setMode(QCPPainter::pmVectorized);
-    painter.setMode(QCPPainter::pmNoCaching);
-
-    export_widget(_container, &painter, QRect(0, 0, totalW, totalH),
-                  SciQLopExportTarget::Vector);
-    painter.end();
-    return true;
-}
-
-static bool _save_panel_raster(QWidget* container, const QString& filename,
-                               const char* format, int width, int height,
-                               double scale, int quality)
-{
-    if (!container)
-        return false;
-
-    const auto fullSize = container->sizeHint().expandedTo(container->size());
-    const int targetW = (width > 0) ? width : static_cast<int>(fullSize.width() * scale);
-    const int targetH = (height > 0) ? height : static_cast<int>(fullSize.height() * scale);
-    if (targetW <= 0 || targetH <= 0)
-        return false;
-
-    QPixmap pixmap(targetW, targetH);
-    // Fill with the widget background so inter-plot gaps/margins match the
-    // themed background (the previous QWidget::render path painted it), rather
-    // than leaving them transparent.
-    pixmap.fill(container->palette().color(container->backgroundRole()));
-
-    QCPPainter painter(&pixmap);
-    if (!painter.isActive())
-        return false;
-    export_widget(container, &painter, QRect(0, 0, targetW, targetH),
-                  SciQLopExportTarget::Raster);
-    painter.end();
-
-    if (pixmap.isNull())
-        return false;
-    return pixmap.save(filename, format, quality);
+    return save_widget_pdf(_container, filename, width, height);
 }
 
 bool SciQLopMultiPlotPanel::save_png(const QString& filename, int width, int height,
                                      double scale, int quality)
 {
-    return _save_panel_raster(_container, filename, "PNG", width, height, scale, quality);
+    return save_widget_raster(_container, filename, "PNG", width, height, scale, quality);
 }
 
 bool SciQLopMultiPlotPanel::save_jpg(const QString& filename, int width, int height,
                                      double scale, int quality)
 {
-    return _save_panel_raster(_container, filename, "JPG", width, height, scale, quality);
+    return save_widget_raster(_container, filename, "JPG", width, height, scale, quality);
 }
 
 bool SciQLopMultiPlotPanel::save_bmp(const QString& filename, int width, int height,
                                      double scale)
 {
-    return _save_panel_raster(_container, filename, "BMP", width, height, scale, -1);
+    return save_widget_raster(_container, filename, "BMP", width, height, scale, -1);
 }
 
 bool SciQLopMultiPlotPanel::save(const QString& filename, int width, int height,
                                  double scale, int quality)
 {
-    auto ext = QFileInfo(filename).suffix().toLower();
-    if (ext == "pdf")
-        return save_pdf(filename, width, height);
-    if (ext == "png")
-        return save_png(filename, width, height, scale, quality);
-    if (ext == "jpg" || ext == "jpeg")
-        return save_jpg(filename, width, height, scale, quality);
-    if (ext == "bmp")
-        return save_bmp(filename, width, height, scale);
-    return false;
+    return save_widget(_container, filename, width, height, scale, quality);
 }
 
 void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)

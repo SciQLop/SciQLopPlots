@@ -422,3 +422,38 @@ void SciQLopNDProjectionPlot::update_color_scale()
     if (m_scale)
         m_scale->update();
 }
+
+void SciQLopNDProjectionPlot::export_paint(QPainter* painter, const QRect& target,
+                                           SciQLopExportTarget kind)
+{
+    export_children(this, QList<QWidget*>(m_plots.cbegin(), m_plots.cend()), painter, target, kind);
+}
+
+bool SciQLopNDProjectionPlot::save(const QString& filename, int width, int height, double scale,
+                                   int quality)
+{
+    return save_widget(this, filename, width, height, scale, quality);
+}
+
+bool SciQLopNDProjectionPlot::save_pdf(const QString& filename, int width, int height)
+{
+    return save_widget_pdf(this, filename, width, height);
+}
+
+bool SciQLopNDProjectionPlot::save_png(const QString& filename, int width, int height,
+                                       double scale, int quality)
+{
+    return save_widget_raster(this, filename, "PNG", width, height, scale, quality);
+}
+
+bool SciQLopNDProjectionPlot::save_jpg(const QString& filename, int width, int height,
+                                       double scale, int quality)
+{
+    return save_widget_raster(this, filename, "JPG", width, height, scale, quality);
+}
+
+bool SciQLopNDProjectionPlot::save_bmp(const QString& filename, int width, int height,
+                                       double scale)
+{
+    return save_widget_raster(this, filename, "BMP", width, height, scale, -1);
+}
