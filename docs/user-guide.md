@@ -48,6 +48,8 @@ plot.show()
 app.exec()
 ```
 
+![A sine wave on a single plot](images/first-plot.png)
+
 Three things to know:
 
 1. **A `QApplication` must exist first.** Create it once, before any plot. Qt needs it for every widget.
@@ -129,6 +131,8 @@ graph = plot.plot(x, y, labels=["sin", "cos", "sin 2x"],
                   colors=[QColorConstants.Red, QColorConstants.Blue, QColorConstants.DarkGreen])
 ```
 
+![Three lines with a legend](images/lines.png)
+
 A 2-D `y` gives one line per column. `labels` names them in the legend, and `colors` sets their colours. Both are optional.
 
 ### Scatter
@@ -142,6 +146,8 @@ rng = np.random.default_rng(0)
 x = np.sort(rng.uniform(0, 10, 500))
 plot.plot(x, np.sin(x) + rng.normal(0, 0.1, 500), graph_type=GraphType.Scatter, labels=["noisy"])
 ```
+
+![Noisy samples drawn as markers](images/scatter.png)
 
 ### Colour maps (spectrograms)
 
@@ -179,6 +185,8 @@ plot.plot(r * np.sin(t), r * np.cos(t), graph_type=GraphType.ParametricCurve, la
 plot.rescale_axes()
 ```
 
+![A butterfly-shaped parametric curve](images/parametric-curve.png)
+
 ### Waterfall
 
 Stacks each column of `y` with an offset, for channel stacks or seismic-style record sections:
@@ -198,6 +206,8 @@ wf = plot.plot(t, y, graph_type=GraphType.Waterfall,
 wf.set_gain(2.0)   # change it later; the plot follows
 ```
 
+![Eight stacked traces](images/waterfall.png)
+
 ### 2-D histograms
 
 Bins scattered points into a density map:
@@ -214,6 +224,8 @@ hist.set_data(x, y)
 plot.x_axis().set_range(-4, 4)
 plot.y_axis().set_range(-2, 2)
 ```
+
+![A 2-D density histogram](images/histogram2d.png)
 
 ## Live data: plot a function
 
@@ -233,6 +245,8 @@ plot = SciQLopPlot()
 graph = plot.plot(get_data, labels=["sin", "cos"])
 plot.x_axis().set_range(0, 100)   # triggers a call with (0, 100)
 ```
+
+![Two lines computed by a data function](images/data-function.png)
 
 What the function may return:
 
@@ -296,6 +310,8 @@ graph.set_color_gradient(ColorGradient.Turbo)
 plot.x_axis().set_range(0, 20)
 ```
 
+![A sine coloured by a third quantity, with its colour scale](images/color-data.png)
+
 ## Time series
 
 For time on the x axis, use seconds since 1970-01-01 UTC (Unix time) as `float64`. Then ask for a time series plot: the x axis shows dates and times.
@@ -308,9 +324,13 @@ from SciQLopPlots import SciQLopTimeSeriesPlot, SciQLopPlotRange
 start = datetime(2025, 4, 12, tzinfo=timezone.utc).timestamp()
 t = start + np.arange(0, 86400, 4.5)                       # one day, 4.5 s cadence
 plot = SciQLopTimeSeriesPlot()
-plot.plot(t, np.sin(2 * np.pi * (t - start) / 3600), labels=["hourly wave"])
 plot.x_axis().set_range(SciQLopPlotRange(start, start + 3 * 3600))   # first 3 hours
+plot.plot(t, np.sin(2 * np.pi * (t - start) / 3600), labels=["hourly wave"])
 ```
+
+![A time series plot with a date axis](images/time-series.png)
+
+A time series plot never moves its time axis by itself: you choose the time range. It fits the y axis to the data in that range, so set the range first, or call `plot.y_axis().rescale()` after changing it.
 
 With NumPy `datetime64` data, convert first: `t = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
 
@@ -339,6 +359,8 @@ start = datetime(2025, 4, 12, tzinfo=timezone.utc).timestamp()
 panel.set_time_axis_range(start, start + 6 * 3600)   # every plot follows
 ```
 
+![Two time series plots stacked in a panel](images/panel.png)
+
 - On a panel, **`plot()` returns `(plot, graph)`**: the new plot and the graph in it.
 - **`synchronize_time=True`** links the time axes of time series plots. **`synchronize_x=True`** links plain x axes instead.
 - `panel.plot_at(i)`, `panel.plots()` and `panel.plot_count()` give access to the plots.
@@ -366,6 +388,8 @@ r = plot.x_axis().range()
 print(r.start(), r.stop(), r.size())
 ```
 
+![Labelled axes, log y](images/axes.png)
+
 - `plot.rescale_axes()` fits every axis to the data.
 - Rescaling leaves a 5% margin on each side of a value axis, so ticks at the data's ends (0/1 flags, enum levels) keep their labels. `axis.set_autoscale_margin(0.1)` changes it at runtime (0 to 0.5; in decades on a log axis), and so does the axis's inspector panel. Time axes, key axes and axes holding a colormap or histogram are never padded.
 - `axis.set_min_range_size(s)` / `set_max_range_size(s)` limit how far a user can zoom.
@@ -382,11 +406,13 @@ x = np.linspace(0, 10, 100)
 graph = plot.plot(x, np.column_stack([np.sin(x), np.cos(x)]), labels=["a", "b"])
 
 graph.set_labels(["sine", "cosine"])                   # legend names
-graph.set_colors([QColorConstants.Magenta, QColorConstants.Black])
+graph.set_colors([QColorConstants.Magenta, QColorConstants.Cyan])
 graph.set_name("trig")                                 # the graph's own name
 plot.set_theme(SciQLopTheme.dark(plot))                # or SciQLopTheme.light(plot)
 plot.set_z_gradient(ColorGradient.Cividis)             # gradient for colour-coded data
 ```
+
+![A plot with the dark theme](images/dark-theme.png)
 
 Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma and Turbo (perceptually uniform, colour-blind friendly), Coolwarm (diverging), plus the classic Jet, Hot, Cold, Grayscale, Spectrum, Thermal, Polar, Hues, Candy, Ion, Night and Geography.
 
@@ -417,6 +443,8 @@ threshold = SciQLopHorizontalLine(plot, 0.5)
 note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), False, Coordinates.Data)
 ```
 
+![A span, a threshold line and a text label](images/overlays.png)
+
 - On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
 - `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
 
@@ -438,6 +466,8 @@ cursor.position = 5.0          # moves it on every plot
 cursor.color = QColor("red")   # also line_width, visible, read_only, tooltip
 ```
 
+![A red cursor line across two plots](images/panel-cursor.png)
+
 Dragging the line on any plot moves it on all of them, and `position_changed` fires once per move. With `read_only=True` the user can't drag it.
 
 ## Interval timelines
@@ -458,7 +488,10 @@ tl.set_intervals(start, stop, lane=["MSA", "MGF", "MSA"],
                  category=["LM", "survey", "burst"],
                  label=["low mass", "survey mode", "burst mode"])
 tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
+panel.set_time_axis_range(0, 12000)
 ```
+
+![An interval timeline with two lanes](images/timeline.png)
 
 - `panel.add_timeline()` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed. `lane_height` (22 px by default) is a minimum: make the plot taller and the lanes grow with it. `panel.organize_plots()` gives timeline plots their natural height and shares the rest.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
@@ -479,12 +512,15 @@ import numpy as np
 from SciQLopPlots import SciQLopTimeSeriesPlot
 
 plot = SciQLopTimeSeriesPlot()
+plot.x_axis().set_range(0, 10000)
 t = np.linspace(0, 10000, 2000)
 plot.plot(t, np.sin(t / 500), labels=["signal"])
 
 strip = plot.add_timeline(lane_height=12)
 strip.set_intervals([500, 4000], [3000, 6000], lane=["quiet", "quiet"], category=["ok", "ok"])
 ```
+
+![A timeline strip under a signal](images/timeline-strip.png)
 
 In a strip, lanes keep their `lane_height` and the lane names sit on a small background chip, so the data and the bars never cover them. A line graph added to a timeline plot goes to the right y axis automatically, so the lane names on the left stay readable.
 

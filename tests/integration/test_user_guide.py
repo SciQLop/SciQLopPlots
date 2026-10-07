@@ -30,6 +30,12 @@ def test_the_guide_has_snippets():
     assert len(SNIPPETS) >= 15
 
 
+def test_every_screenshot_exists():
+    images = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", GUIDE.read_text())
+    assert images
+    assert [i for i in images if not (GUIDE.parent / i).is_file()] == []
+
+
 @pytest.mark.parametrize("code", SNIPPETS, ids=[_first_line(c)[:40] for c in SNIPPETS])
 def test_snippet_runs(code, qtbot, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
