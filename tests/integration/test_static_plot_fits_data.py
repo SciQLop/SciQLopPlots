@@ -26,3 +26,19 @@ def test_range_set_after_plot_is_kept(plot, qtbot):
     plot.x_axis().set_range(12, 13)
     qtbot.wait(100)
     assert (plot.x_axis().range().start(), plot.x_axis().range().stop()) == (12, 13)
+
+
+def test_static_colormap_fits_its_data(plot, qtbot):
+    ys = np.logspace(0, 3, 16)
+    cmap = plot.plot(x, ys, np.ones((x.size, ys.size)))
+    qtbot.wait(100)
+    xr, yr = plot.x_axis().range(), cmap.y_axis().range()
+    assert xr.start() <= 10 and xr.stop() >= 20
+    assert yr.stop() >= 1000
+
+
+def test_waterfall_fits_its_offsets(plot, qtbot):
+    traces = np.column_stack([np.sin(x)] * 8)
+    plot.plot(x, traces, graph_type=GraphType.Waterfall, offsets=2.5)
+    qtbot.wait(100)
+    assert plot.y_axis().range().stop() >= 7 * 2.5

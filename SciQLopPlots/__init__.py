@@ -176,8 +176,10 @@ def _patch_sciqlop_plot(cls):
             if graph_type == GraphType.Waterfall:
                 _reject_histogram2d_kwargs(kwargs, graph_type)
                 wf_kwargs = _pop_waterfall_kwargs(kwargs)
-                wf = cls.waterfall(self, *args, **kwargs)
-                return _apply_waterfall_kwargs(wf, **wf_kwargs)
+                wf = _apply_waterfall_kwargs(cls.waterfall(self, *args, **kwargs), **wf_kwargs)
+                # plot() fitted the axes before the offsets were applied.
+                self.rescale_axes()
+                return wf
             if graph_type == GraphType.Histogram2D:
                 _reject_waterfall_kwargs(kwargs, graph_type)
                 return cls.histogram2d(self, *args, **kwargs)

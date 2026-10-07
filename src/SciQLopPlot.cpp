@@ -1211,6 +1211,9 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
         throw;
     }
     _configure_color_map(cm, y_log_scale, z_log_scale);
+    // Same as the line path: the first-batch request_rescale fired before
+    // _configure_color_map connected it.
+    rescale_axes();
     return cm;
 }
 
