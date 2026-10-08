@@ -18,17 +18,17 @@ Uses **Meson** with `meson-python` as the Python build backend.
 > Never build against (or `cp .so` into) the SciQLop runtime venv during dev.
 
 ```bash
-# One-time: dedicated in-tree venv (Qt/PySide6 6.11.1, meson pinned to 1.10.2)
+# One-time: dedicated in-tree venv (Qt/PySide6 6.11.2, meson pinned to 1.10.2)
 cd /var/home/jeandet/Documents/prog/SciQLopPlots
 uv venv .venv --python 3.13
 VIRTUAL_ENV=$(pwd)/.venv uv pip install \
-  pyside6==6.11.1 shiboken6==6.11.1 shiboken6-generator==6.11.1 \
+  pyside6==6.11.2 shiboken6==6.11.2 shiboken6-generator==6.11.2 \
   numpy meson==1.10.2 ninja meson-python pytest pytest-qt scipy
 
-# Every build: Qt MUST be on PATH (6.11.1 first, 6.11.0 after it for `qsb`)
+# Every build: Qt MUST be on PATH (6.11.2 includes `qsb`)
 VENV=$(pwd)/.venv
-export PATH="$VENV/bin:/home/jeandet/Qt/6.11.1/gcc_64/bin:/home/jeandet/Qt/6.11.0/gcc_64/bin:$PATH"
-export PKG_CONFIG_PATH="/home/jeandet/Qt/6.11.1/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PATH="$VENV/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:$PATH"
+export PKG_CONFIG_PATH="/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH"
 $VENV/bin/meson setup build-venv --buildtype=debugoptimized   # first time only
 $VENV/bin/meson compile -C build-venv
 
@@ -60,7 +60,7 @@ For iterative development use the `build-venv` recipe above and `cp build-venv/S
 ### Build Dependencies
 
 - Qt6 (Core, Widgets, Gui, Svg, PrintSupport, OpenGL)
-- PySide6 == 6.11.0 and matching shiboken6/shiboken6_generator
+- PySide6 == 6.11.2 and matching shiboken6/shiboken6_generator (exactly what PySide6-QtAds requires)
 - Python >= 3.10, < 3.15
 - numpy
 - OpenGL
