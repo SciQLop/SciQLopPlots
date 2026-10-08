@@ -132,7 +132,9 @@ jobs:
             dnf install -y /usr/lib64/libxkbcommon.so.0 /usr/lib64/libxslt.so.1 llvm15-devel clang15 ccache
             && alternatives --install /usr/bin/llvm-config llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64 100
             && alternatives --set llvm-config /usr/lib64/llvm15/bin/llvm-config-15-64
-            && pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master" && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }} -m qtshadertools
+            && /opt/python/cp314-cp314/bin/pip install "aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@master" && [ -d "${{ env.GITHUB_WORKSPACE }}/Qt/${{ env.QT_VERSION }}" ] || /opt/python/cp314-cp314/bin/aqt install-qt -O "${{ env.GITHUB_WORKSPACE }}/Qt" ${{ matrix.qt_host }} desktop ${{ env.QT_VERSION }} -m qtshadertools
+          # aqt runs on Python 3.14: it tries zipfile before py7zr, and older zipfile.is_zipfile()
+          # takes some Qt .7z archives for zips (6.11.2 qttools on linux_arm64), then fails to open them.
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.11 --exclude libshiboken6.abi3.so.6.11 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.11 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
