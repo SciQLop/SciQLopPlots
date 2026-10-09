@@ -3,7 +3,7 @@ from . import SciQLopPlotsBindings
 from .SciQLopPlotsBindings import (GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
                                     SciQLopGraphInterface, AxisType, SciQLopPlotRange, SciQLopNDProjectionPlot)
 from .SciQLopPlotsBindings import *
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import traceback
 
 import sys
@@ -373,11 +373,64 @@ for _graph_cls in (SciQLopPlotsBindings.SciQLopSingleLineGraph,
 import numpy as np
 
 
+def _datetime64_seconds(a):
+    ns = a.astype("datetime64[ns]")
+    return np.where(np.isnat(ns), np.nan, ns.astype(np.int64) / 1e9)
+
+
 def _epoch_seconds(values):
     a = np.asarray(values)
     if np.issubdtype(a.dtype, np.datetime64):
-        return a.astype("datetime64[ns]").astype(np.int64) / 1e9
+        return _datetime64_seconds(a)
     return np.ascontiguousarray(a, dtype=np.float64)
+
+
+# --- Time ranges take datetime64 (any unit), datetime, date and ISO strings, all
+# meaning UTC (SciQLop#150). Left to shiboken, a datetime64 went through float()
+# (nanoseconds, or a TypeError for coarser units), and a datetime through QDateTime,
+# which drops its zone and reads it in the machine's local time.
+def _epoch_second(value):
+    if isinstance(value, np.datetime64):
+        return float(_datetime64_seconds(value))
+    if isinstance(value, datetime):
+        return (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).timestamp()
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day, tzinfo=timezone.utc).timestamp()
+    if isinstance(value, str):
+        try:
+            return _epoch_second(datetime.fromisoformat(value))
+        except ValueError:
+            return value  # the C++ parser takes its own formats, and raises on garbage
+    return value
+
+
+def _is_date(value):
+    return isinstance(value, (np.datetime64, date, str))
+
+
+def _accept_dates_in_range(init):
+    @functools.wraps(init)
+    def wrapper(self, *args, **kwargs):
+        if len(args) == 2 and any(map(_is_date, args)):
+            seconds = [_epoch_second(a) for a in args]
+            if not any(isinstance(s, str) for s in seconds):
+                return init(self, *seconds, True, **kwargs)
+        return init(self, *args, **kwargs)
+    return wrapper
+
+
+def _accept_dates(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        return func(self, *map(_epoch_second, args), **kwargs)
+    return wrapper
+
+
+SciQLopPlotRange.__init__ = _accept_dates_in_range(SciQLopPlotRange.__init__)
+for _cls in [c for c in vars(SciQLopPlotsBindings).values() if isinstance(c, type)]:
+    for _name in ("set_range", "set_time_range", "set_x_axis_range", "set_time_axis_range"):
+        if _name in _cls.__dict__:
+            setattr(_cls, _name, _accept_dates(_cls.__dict__[_name]))
 
 
 def _first_seen_codes(values, n):

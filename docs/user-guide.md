@@ -336,6 +336,8 @@ A time series plot never moves its time axis by itself: you choose the time rang
 
 With NumPy `datetime64` data, convert first: `t = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
 
+Time ranges are more lenient than data. `SciQLopPlotRange(start, stop)`, `axis.set_range`, `plot.set_time_range` and `panel.set_time_axis_range` also take `np.datetime64` (any unit), `datetime`, `date` or an ISO string. All of them mean UTC: a `datetime` without a time zone counts as UTC, not local time.
+
 ## Several plots in a panel
 
 `SciQLopMultiPlotPanel` stacks plots vertically and keeps their x (or time) axes in sync. It's the usual layout for comparing several quantities over the same time range.
