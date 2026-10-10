@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import pytest
+from PySide6.QtCore import QDateTime, QTimeZone
 
 from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlotRange, SciQLopTimeSeriesPlot
 
@@ -27,6 +28,8 @@ INPUTS = {
     "date": (date(2030, 1, 1), date(2030, 1, 2)),
     "ISO string with offset": ("2030-01-01T01:00:00+01:00", "2030-01-02T01:00:00+01:00"),
     "ISO string": ("2030-01-01T00:00:00", "2030-01-02"),
+    "QDateTime": (QDateTime.fromSecsSinceEpoch(int(START), QTimeZone.UTC),
+                  QDateTime.fromSecsSinceEpoch(int(STOP), QTimeZone.UTC)),
     "epoch seconds": (START, STOP),
 }
 
@@ -74,4 +77,18 @@ def test_panel_set_time_axis_range(qtbot):
     panel.plot(np.array([START, STOP]), np.array([0.0, 1.0]))
     panel.set_time_axis_range(np.datetime64("2030-01-01", "s"), np.datetime64("2030-01-02", "s"))
     r = panel.time_axis_range()
+    assert (r.start(), r.stop()) == (START, STOP)
+
+
+@pytest.mark.parametrize("bad", ["not a date", object()], ids=["garbage string", "object"])
+def test_bad_values_raise_and_leave_the_range_alone(qtbot, bad):
+    """The two-argument setters convert in the bindings: a bad value used to throw a C++
+    exception outside the call's try block and abort the process."""
+    plot = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(plot)
+    plot.x_axis().set_range(START, STOP)
+    for setter in (plot.x_axis().set_range, plot.set_time_range):
+        with pytest.raises(TypeError, match="expected a number or a date"):
+            setter(bad, STOP)
+    r = plot.x_axis().range()
     assert (r.start(), r.stop()) == (START, STOP)

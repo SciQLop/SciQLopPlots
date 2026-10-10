@@ -395,3 +395,13 @@ public:
 //! datetime.datetime.fromtimestamp(timestamp): a new reference, or nullptr with a
 //! Python error set. The GIL must be held.
 PyObject* datetime_from_timestamp(double timestamp);
+
+//! Seconds since 1970-01-01 UTC for a number or a date (datetime64, datetime, date, ISO
+//! string), through SciQLopPlots._epoch_second. The GIL must be held. Anything else sets
+//! a Python TypeError and returns NaN: no C++ exception, since binding conversions run
+//! outside the call's try block, where a throw would terminate the process.
+double epoch_seconds_from_py(PyObject* value);
+
+//! The buffer behind a Python argument: empty for None. Anything that is not a numeric
+//! buffer sets a Python TypeError and returns an empty buffer. The GIL must be held.
+SciQLopPyBuffer buffer_from_py(PyObject* value);

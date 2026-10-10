@@ -345,28 +345,6 @@ for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", 
             _accept_ptr_handle(getattr(SciQLopMultiPlotPanel, _method)))
 
 
-# --- set_color_data(values, gradient): unmask the buffer error.
-#
-# Shiboken converts `values` before `gradient`. When the buffer conversion
-# rejects the array it sets a Python error, and the enum converter then runs
-# with that error already pending and reports "SystemError: bad argument to
-# internal function" instead — burying the real cause. Validating the buffer
-# first, in Python, keeps the useful TypeError.
-def _validate_color_data(func):
-    @functools.wraps(func)
-    def wrapper(self, values, *args, **kwargs):
-        if values is not None:
-            SciQLopPlotsBindings.validate_buffer(values, "values")
-        return func(self, values, *args, **kwargs)
-    return wrapper
-
-
-for _graph_cls in (SciQLopPlotsBindings.SciQLopSingleLineGraph,
-                   SciQLopPlotsBindings.SciQLopCurve,
-                   SciQLopPlotsBindings.SciQLopNDProjectionCurves):
-    _graph_cls.set_color_data = _validate_color_data(_graph_cls.set_color_data)
-
-
 # --- SciQLopTimeline.set_intervals(...): numpy-friendly front end for
 # set_intervals_coded(), which only takes float64 buffers plus a first-seen
 # name table per categorical column (lane, category).
@@ -392,6 +370,8 @@ def _epoch_seconds(values):
 def _epoch_second(value):
     if isinstance(value, np.datetime64):
         return float(_datetime64_seconds(value))
+    if isinstance(value, QtCore.QDateTime):
+        return value.toMSecsSinceEpoch() / 1000.0
     if isinstance(value, datetime):
         return (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).timestamp()
     if isinstance(value, date):
@@ -405,7 +385,7 @@ def _epoch_second(value):
 
 
 def _is_date(value):
-    return isinstance(value, (np.datetime64, date, str))
+    return isinstance(value, (np.datetime64, date, str, QtCore.QDateTime))
 
 
 def _accept_dates_in_range(init):
@@ -419,18 +399,7 @@ def _accept_dates_in_range(init):
     return wrapper
 
 
-def _accept_dates(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        return func(self, *map(_epoch_second, args), **kwargs)
-    return wrapper
-
-
 SciQLopPlotRange.__init__ = _accept_dates_in_range(SciQLopPlotRange.__init__)
-for _cls in [c for c in vars(SciQLopPlotsBindings).values() if isinstance(c, type)]:
-    for _name in ("set_range", "set_time_range", "set_x_axis_range", "set_time_axis_range"):
-        if _name in _cls.__dict__:
-            setattr(_cls, _name, _accept_dates(_cls.__dict__[_name]))
 
 
 def _first_seen_codes(values, n):

@@ -210,6 +210,19 @@
     </object-type>
     <object-type name="SQPQCPAbstractPlottableWrapper" parent-management="yes"/>
     <object-type name="SciQLopPlottableInterface" parent-management="yes">
+        <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
+            <!-- Converted here, after the gradient, not by a Python wrapper (connect() must keep
+                 finding the slot): a buffer error left pending broke the enum conversion into
+                 "SystemError: bad argument to internal function". -->
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    SciQLopPyBuffer %out = buffer_from_py(%PYARG_1);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="add_inspector_extension(InspectorExtension*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
@@ -439,6 +452,26 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
+        <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,
+             not by a Python wrapper: connect() must keep finding the C++ slot. -->
+        <modify-function signature="set_range(double,double)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_1);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+            <modify-argument index="2">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_2);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="add_inspector_extension(InspectorExtension*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
@@ -458,7 +491,30 @@
         <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
     </object-type>
 
-    <object-type name="SciQLopTimeSeriesPlot" parent-management="yes"/>
+    <object-type name="SciQLopTimeSeriesPlot" parent-management="yes">
+        <!-- datetimes go through the PyObject overload below: QDateTime would read them as local time. -->
+        <modify-function signature="set_time_range(const QDateTime&amp;,const QDateTime&amp;)" remove="all"/>
+        <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,
+             not by a Python wrapper: connect() must keep finding the C++ slot. -->
+        <modify-function signature="set_time_range(double,double)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_1);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+            <modify-argument index="2">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_2);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
         <modify-function signature="subplot(int)const">
             <modify-argument index="return">
@@ -485,8 +541,12 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
+                // This code replaces the call, and with it the base class's conversion rule.
+                const SciQLopPyBuffer values = buffer_from_py(%PYARG_1);
+                if (PyErr_Occurred())
+                    return nullptr;
                 try {
-                    %CPPSELF.%FUNCTION_NAME(%1, %2);
+                    %CPPSELF.%FUNCTION_NAME(values, %2);
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
                     return nullptr;
@@ -520,8 +580,12 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
+                // This code replaces the call, and with it the base class's conversion rule.
+                const SciQLopPyBuffer values = buffer_from_py(%PYARG_1);
+                if (PyErr_Occurred())
+                    return nullptr;
                 try {
-                    %CPPSELF.%FUNCTION_NAME(%1, %2);
+                    %CPPSELF.%FUNCTION_NAME(values, %2);
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
                     return nullptr;
@@ -568,8 +632,12 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
+                // This code replaces the call, and with it the base class's conversion rule.
+                const SciQLopPyBuffer values = buffer_from_py(%PYARG_1);
+                if (PyErr_Occurred())
+                    return nullptr;
                 try {
-                    %CPPSELF.%FUNCTION_NAME(%1, %2);
+                    %CPPSELF.%FUNCTION_NAME(values, %2);
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
                     return nullptr;
@@ -920,6 +988,46 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <!-- datetimes go through the PyObject overload below: QDateTime would read them as local time. -->
+        <modify-function signature="set_time_axis_range(const QDateTime&amp;,const QDateTime&amp;)" remove="all"/>
+        <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,
+             not by a Python wrapper: connect() must keep finding the C++ slot. -->
+        <modify-function signature="set_x_axis_range(double,double)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_1);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+            <modify-argument index="2">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_2);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="set_time_axis_range(double,double)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_1);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+            <modify-argument index="2">
+                <replace-type modified-type="PyObject"/>
+                <conversion-rule class="native">
+                    double %out = epoch_seconds_from_py(%PYARG_2);
+                    if (PyErr_Occurred())
+                        return {};
+                </conversion-rule>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="add_timeline(int,int)" exception-handling="auto-on"/>
         <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool,Qt::Orientation)">
             <modify-argument index="2">

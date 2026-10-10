@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 #include <stdexcept>
 #include <string_view>
@@ -748,6 +749,46 @@ void GetDataPyCallable::share(const GetDataPyCallable& other)
     {
         this->_impl = new _GetDataPyCallable_impl(other.py_object());
     }
+}
+
+SciQLopPyBuffer buffer_from_py(PyObject* value)
+{
+    if (value == Py_None)
+        return {};
+    if (!PyObject_CheckBuffer(value))
+    {
+        PyErr_SetString(PyExc_TypeError, "expected a NumPy array or a buffer, or None");
+        return {};
+    }
+    try
+    {
+        return SciQLopPyBuffer(value);
+    }
+    catch (const std::runtime_error& e)
+    {
+        PyErr_SetString(PyExc_TypeError, e.what());
+        return {};
+    }
+}
+
+double epoch_seconds_from_py(PyObject* value)
+{
+    PyObject* module = PyImport_ImportModule("SciQLopPlots");
+    PyObject* seconds = module ? PyObject_CallMethod(module, "_epoch_second", "O", value) : nullptr;
+    Py_XDECREF(module);
+    const double result = seconds ? PyFloat_AsDouble(seconds) : -1.0;
+    Py_XDECREF(seconds);
+    if (result == -1.0 && PyErr_Occurred())
+    {
+        PyErr_Clear();
+        PyObject* repr = PyObject_Repr(value);
+        const char* text = repr ? PyUnicode_AsUTF8AndSize(repr, nullptr) : nullptr;
+        std::string message = std::string("expected a number or a date, not ") + (text ? text : "?");
+        Py_XDECREF(repr);
+        PyErr_SetString(PyExc_TypeError, message.c_str());
+        return std::nan("");
+    }
+    return result;
 }
 
 PyObject* datetime_from_timestamp(double timestamp)
