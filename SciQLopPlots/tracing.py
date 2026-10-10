@@ -114,7 +114,7 @@ def traced(name: Optional[str] = None, cat: str = ""):
 class session:
     """Context manager that enables tracing for the duration of a `with` block.
 
-    Example (e.g. from the SciQLop Jupyter console wrapping a slow operation):
+    Example (e.g. from the SciQLop Jupyter console wrapping a slow operation)::
 
         from SciQLopPlots import tracing
         with tracing.session("/tmp/slow_pan.json"):

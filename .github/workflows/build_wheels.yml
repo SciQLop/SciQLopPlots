@@ -201,6 +201,21 @@ jobs:
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
 
+  rebuild_docs:
+    needs: [upload_pypi]
+    runs-on: ubuntu-latest
+    # Read the Docs built the release docs at tag time, before these wheels were on PyPI
+    steps:
+      - name: Rebuild the docs against the new release
+        env:
+          RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
+        run: |
+          if [ -z "$RTD_TOKEN" ]; then echo "::warning::RTD_TOKEN secret not set, docs not rebuilt"; exit 0; fi
+          for version in stable latest; do
+            curl -fsS -X POST -H "Authorization: Token $RTD_TOKEN" \
+              "https://readthedocs.org/api/v3/projects/sciqlopplots/versions/$version/builds/"
+          done
+
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest

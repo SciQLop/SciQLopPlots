@@ -14,6 +14,7 @@ pip install SciQLopPlots
 :maxdepth: 2
 
 user-guide
+api
 ```
 
 Source code, issues and releases: [github.com/SciQLop/SciQLopPlots](https://github.com/SciQLop/SciQLopPlots).

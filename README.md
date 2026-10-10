@@ -2,6 +2,7 @@
 [![C++20](https://img.shields.io/badge/Language-C++20-blue.svg)]()
 [![PyPi](https://img.shields.io/pypi/v/sciqlopplots.svg)](https://pypi.python.org/pypi/sciqlopplots)
 [![Coverage](https://codecov.io/gh/SciQLop/SciQLopPlots/coverage.svg?branch=main)](https://codecov.io/gh/SciQLop/SciQLopPlots/branch/main)
+[![Documentation](https://readthedocs.org/projects/sciqlopplots/badge/?version=latest)](https://sciqlopplots.readthedocs.io/en/latest/)
 
 # SciQLopPlots
 
@@ -111,7 +112,7 @@ For callback-driven data, the plot invokes a Python callable with `(start, stop)
 
 ## Quick start
 
-The **[user guide](docs/user-guide.md)** walks through everything below and more: plot types, live data, time series, panels, overlays, pipelines and export. Every example in it is tested.
+The **[user guide](https://sciqlopplots.readthedocs.io/en/latest/user-guide.html)** walks through everything below and more: plot types, live data, time series, panels, overlays, pipelines and export. Every example in it is tested. The **[API reference](https://sciqlopplots.readthedocs.io/en/latest/api.html)** lists every class and method.
 
 ```bash
 pip install SciQLopPlots
