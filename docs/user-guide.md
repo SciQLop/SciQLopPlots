@@ -16,6 +16,7 @@ This guide goes from a first plot to live data, multi-plot panels, overlays and 
 - [Axes](#axes)
 - [Colours, names and themes](#colours-names-and-themes)
 - [Overlays: spans, lines and text](#overlays-spans-lines-and-text)
+- [Interval timelines](#interval-timelines)
 - [Reactive pipelines](#reactive-pipelines)
 - [N-D projections](#n-d-projections)
 - [Export](#export)
