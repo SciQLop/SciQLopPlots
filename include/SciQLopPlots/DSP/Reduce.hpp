@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 namespace sqp::dsp
@@ -44,6 +45,30 @@ enum class ReduceOp
 
 namespace detail
 {
+    // Start value of a min/max: NaN for floats, so a set of only NaN gives NaN
+    // instead of the start value itself.
+    template <typename T>
+    constexpr T extreme_start(T int_start)
+    {
+        if constexpr (std::is_floating_point_v<T>)
+            return std::numeric_limits<T>::quiet_NaN();
+        else
+            return int_start;
+    }
+
+    // Whether `candidate` replaces `current` as the min/max; `current` may still be
+    // the NaN start value.
+    template <typename T>
+    bool replaces_extreme(T candidate, T current, ReduceOp op)
+    {
+        if constexpr (std::is_floating_point_v<T>)
+        {
+            if (std::isnan(current))
+                return true;
+        }
+        return (op == ReduceOp::Min) ? candidate < current : candidate > current;
+    }
+
     template <typename T>
     T reduce_row(const T* row, std::size_t n_cols, ReduceOp op)
     {
@@ -86,7 +111,7 @@ namespace detail
             }
             case ReduceOp::Min:
             {
-                T val = std::numeric_limits<T>::max();
+                T val = extreme_start<T>(std::numeric_limits<T>::max());
                 for (std::size_t j = 0; j < n_cols; ++j)
                 {
                     if constexpr (std::is_floating_point_v<T>)
@@ -94,14 +119,14 @@ namespace detail
                         if (std::isnan(row[j]))
                             continue;
                     }
-                    if (row[j] < val)
+                    if (replaces_extreme(row[j], val, ReduceOp::Min))
                         val = row[j];
                 }
                 return val;
             }
             case ReduceOp::Max:
             {
-                T val = std::numeric_limits<T>::lowest();
+                T val = extreme_start<T>(std::numeric_limits<T>::lowest());
                 for (std::size_t j = 0; j < n_cols; ++j)
                 {
                     if constexpr (std::is_floating_point_v<T>)
@@ -109,7 +134,7 @@ namespace detail
                         if (std::isnan(row[j]))
                             continue;
                     }
-                    if (row[j] > val)
+                    if (replaces_extreme(row[j], val, ReduceOp::Max))
                         val = row[j];
                 }
                 return val;
@@ -247,17 +272,22 @@ namespace detail
         {
             case ReduceOp::Min:
                 for (std::size_t i = 0; i < spec.out_size; ++i)
-                    out[i] = std::numeric_limits<T>::max();
+                    out[i] = extreme_start<T>(std::numeric_limits<T>::max());
                 break;
             case ReduceOp::Max:
                 for (std::size_t i = 0; i < spec.out_size; ++i)
-                    out[i] = std::numeric_limits<T>::lowest();
+                    out[i] = extreme_start<T>(std::numeric_limits<T>::lowest());
                 break;
             default:
                 for (std::size_t i = 0; i < spec.out_size; ++i)
                     out[i] = T(0);
                 break;
         }
+
+        // A mean divides by the values it kept, NaN skipped, like reduce_row.
+        thread_local std::vector<std::size_t> kept;
+        if (op == ReduceOp::Mean)
+            kept.assign(spec.out_size, 0);
 
         // Single pass: scatter-accumulate
         for (std::size_t flat = 0; flat < spec.n_cols; ++flat)
@@ -272,15 +302,15 @@ namespace detail
             switch (op)
             {
                 case ReduceOp::Sum:
-                case ReduceOp::Mean:
                     out[oi] += val;
                     break;
-                case ReduceOp::Min:
-                    if (val < out[oi])
-                        out[oi] = val;
+                case ReduceOp::Mean:
+                    out[oi] += val;
+                    ++kept[oi];
                     break;
+                case ReduceOp::Min:
                 case ReduceOp::Max:
-                    if (val > out[oi])
+                    if (replaces_extreme(val, out[oi], op))
                         out[oi] = val;
                     break;
                 case ReduceOp::Norm:
@@ -292,9 +322,10 @@ namespace detail
         // Post-process
         if (op == ReduceOp::Mean)
         {
-            const auto divisor = static_cast<double>(spec.red_size);
             for (std::size_t i = 0; i < spec.out_size; ++i)
-                out[i] = static_cast<T>(static_cast<double>(out[i]) / divisor);
+                out[i] = (kept[i] > 0)
+                    ? static_cast<T>(static_cast<double>(out[i]) / static_cast<double>(kept[i]))
+                    : T(0);
         }
         else if (op == ReduceOp::Norm)
         {
