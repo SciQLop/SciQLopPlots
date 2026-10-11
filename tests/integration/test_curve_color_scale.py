@@ -189,6 +189,20 @@ class TestColormapKeepsItsScale:
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
         assert _range(plot) == (100.0, 110.0)
 
+    # A colour range set by hand survives a gradient change. The colormap's data spans
+    # 100..110, so 102..104 tells "kept" from "reset to the data" apart.
+    def test_a_gradient_change_keeps_the_range_set_by_hand(self, qtbot, plot):
+        x = np.linspace(0, 10, 50)
+        y = np.linspace(0, 5, 30)
+        z = 100.0 + 10.0 * np.linspace(0, 1, 30 * 50).reshape(30, 50)
+        cmap = plot.colormap(x, y, z)
+        qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
+        process_events()
+        plot.z_axis().set_range(SciQLopPlotRange(102.0, 104.0))
+        cmap.set_gradient(ColorGradient.Viridis)
+        process_events()
+        assert _range(plot) == (102.0, 104.0)
+
 
 def _bar_hues(plot, tmp_path, name):
     """Hues in the right fifth of the image: the colour bar."""

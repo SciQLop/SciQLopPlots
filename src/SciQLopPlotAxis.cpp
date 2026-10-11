@@ -673,8 +673,7 @@ void SciQLopPlotColorScaleAxis::set_color_gradient(const ColorGradient gradient)
         m_custom_gradient = false;
         QCPColorGradient new_gradient = to_qcp(gradient);
         new_gradient.setNanHandling(QCPColorGradient::nhTransparent);
-        m_axis->setGradient(new_gradient);
-        m_axis->rescaleDataRange(true);
+        m_axis->setGradient(new_gradient); // the data range stays: a gradient is not a rescale
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT color_gradient_changed(gradient);
     }
@@ -761,24 +760,9 @@ void SciQLopPlotColorScaleAxis::rescale() noexcept
                 return;
             }
         }
-        // QCPColorScale::rescaleDataRange only finds QCPColorMap, not QCPColorMap2/QCPHistogram2D.
-        auto* plot = m_axis->parentPlot();
-        for (int i = 0; i < plot->plottableCount(); ++i)
-        {
-            if (auto* cm2 = qobject_cast<QCPColorMap2*>(plot->plottable(i));
-                cm2 && cm2->colorScale() == m_axis.data())
-            {
-                cm2->rescaleDataRange(true);
-            }
-            else if (auto* hist = qobject_cast<QCPHistogram2D*>(plot->plottable(i));
-                     hist && hist->colorScale() == m_axis.data())
-            {
-                hist->rescaleDataRange(true);
-            }
-        }
-        // Also try the legacy path for any QCPColorMap instances
+        // Every map attached to the scale (classic, QCPColorMap2, QCPHistogram2D), visible ones only.
         m_axis->rescaleDataRange(true);
-        plot->replot(QCustomPlot::rpQueuedReplot);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     }
 }
 
