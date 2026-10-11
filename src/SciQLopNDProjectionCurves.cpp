@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -70,6 +71,9 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
                     &SciQLopNDProjectionCurves::_report_busy);
             connect(curve, qOverload<>(&SciQLopGraphInterface::data_changed), this,
                     qOverload<>(&SciQLopGraphInterface::data_changed));
+            // A pane can go first (the whole plot torn down): forget its curve then.
+            connect(curve, &QObject::destroyed, this,
+                    [this, curve] { m_curves.removeOne(curve); });
         }
     }
 }
@@ -245,6 +249,7 @@ void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
 
 SciQLopNDProjectionCurves::~SciQLopNDProjectionCurves()
 {
+    qDeleteAll(std::exchange(m_curves, {}));
     // Still listed among the plot's plottables here, so let it look again once we are gone.
     if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
         QMetaObject::invokeMethod(plot, [plot] { plot->update_color_scale(); },

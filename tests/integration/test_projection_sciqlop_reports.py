@@ -109,3 +109,10 @@ def test_marker_follows_the_axes(proj, qtbot, tmp_path):
         proj.subplot(i).y_axis().set_range(100.0, 200.0)
     qtbot.wait(50)
     assert red_pixels(proj, tmp_path) == 0
+
+
+def test_removing_a_projection_removes_its_curve_from_every_pane(proj):
+    graph = proj.add_reference_curve([t, X, Y, Z])
+    proj.remove_plottable(graph)
+    assert pane_plottables(proj) == [0, 0, 0]
+    assert proj.plottables() == []
