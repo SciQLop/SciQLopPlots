@@ -25,7 +25,8 @@ jobs:
 
       - name: Run unit tests
         working-directory: tests/unit
-        run: PYTHONPATH=../../SciQLopPlots pytest -v --ignore=test_dsp.py
+        # test_dsp*.py import the compiled module: they run in integration-tests.
+        run: PYTHONPATH=../../SciQLopPlots pytest -v --ignore-glob='test_dsp*.py'
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -71,7 +72,7 @@ jobs:
           pip install scipy
 
       - name: Run DSP unit tests
-        run: pytest tests/unit/test_dsp.py -v
+        run: pytest tests/unit/test_dsp*.py -v
 
       - name: Run integration tests
         env:
