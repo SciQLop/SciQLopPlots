@@ -48,10 +48,23 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 
 
 public:
+    //! \throws std::invalid_argument if \a labels is neither empty nor one per plot.
     explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
     virtual ~SciQLopNDProjectionCurves() override;
 
+    /*!
+     * \brief set_data One batch for every pane: [t, d0..dn-1] (n+1 buffers, time kept
+     *        for the marker), n (x, y) pairs (2n), or n (x, y, colour) triples (3n).
+     * \throws std::invalid_argument for any other buffer count.
+     */
     Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& data) override;
+    //! \throws std::invalid_argument unless \a buffers is a valid batch size for \a panes.
+    static void check_batch_size(qsizetype panes, qsizetype buffers);
+
+    //! Also renames every pane's legend entry: a projection is one curve.
+    virtual void set_name(const QString& name) noexcept override;
+    //! One legend label per pane.
+    virtual QStringList labels() const noexcept override;
     virtual void set_selected(bool selected) noexcept override;
     virtual  bool selected() const noexcept override;
 

@@ -28,27 +28,65 @@
 #include <stdexcept>
 #include <string>
 
+namespace
+{
+// One legend label per pane; none given means every pane shows the graph's name.
+QStringList pane_labels(qsizetype panes, const QStringList& labels, const QString& fallback)
+{
+    if (labels.isEmpty())
+        return QStringList(panes, fallback);
+    if (labels.size() != panes)
+        throw std::invalid_argument("Projection: expected " + std::to_string(panes)
+                                    + " labels, one per pane, got "
+                                    + std::to_string(labels.size()));
+    return labels;
+}
+} // namespace
+
+void SciQLopNDProjectionCurves::check_batch_size(qsizetype panes, qsizetype buffers)
+{
+    if (buffers != panes + 1 && buffers != 2 * panes && buffers != 3 * panes)
+        throw std::invalid_argument("Projection: expected [t, d0..d" + std::to_string(panes - 1)
+                                    + "] (" + std::to_string(panes + 1) + " buffers), or "
+                                    + std::to_string(2 * panes) + " or "
+                                    + std::to_string(3 * panes) + " buffers, got "
+                                    + std::to_string(buffers));
+}
+
 SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
                                                      QList<SciQLopPlot*>& plots,
                                                      const QStringList& labels, QVariantMap metaData)
         : SciQLopGraphInterface("Projection",metaData, parent)
 {
-    if (plots.size() != labels.size())
-    {
-        DEBUG_MESSAGE("Invalid input size");
-        return;
-    }
+    const auto names = pane_labels(plots.size(), labels, objectName());
     for (int i = 0; i < plots.size(); ++i)
     {
         auto curve = qobject_cast<SciQLopCurve*>(
-            plots[i]->parametric_curve(SciQLopPyBuffer(), SciQLopPyBuffer(), { labels[i] }));
+            plots[i]->parametric_curve(SciQLopPyBuffer(), SciQLopPyBuffer(), { names[i] }));
         if (curve)
         {
             m_curves.append(curve);
             connect(curve, &SciQLopPlottableInterface::busy_changed, this,
                     &SciQLopNDProjectionCurves::_report_busy);
+            connect(curve, qOverload<>(&SciQLopGraphInterface::data_changed), this,
+                    qOverload<>(&SciQLopGraphInterface::data_changed));
         }
     }
+}
+
+void SciQLopNDProjectionCurves::set_name(const QString& name) noexcept
+{
+    SciQLopGraphInterface::set_name(name);
+    for (auto* component : components())
+        component->set_name(name);
+}
+
+QStringList SciQLopNDProjectionCurves::labels() const noexcept
+{
+    QStringList names;
+    for (auto* component : components())
+        names.append(component->name());
+    return names;
 }
 
 bool SciQLopNDProjectionCurves::busy() const noexcept
@@ -116,6 +154,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
         DEBUG_MESSAGE("Need at least 2 curves for projection");
         return;
     }
+    check_batch_size(curves_count, data.size());
 
     if (data.size() == curves_count + 1)
     {
@@ -142,16 +181,12 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
         }
         _update_color_scale();
     }
-    else if (data.size() == 2 * curves_count)
+    else
     {
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
             m_curves[i]->set_data(data[2 * i], data[2 * i + 1]);
         }
-    }
-    else
-    {
-        DEBUG_MESSAGE("Invalid data size");
     }
 }
 

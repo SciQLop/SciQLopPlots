@@ -42,16 +42,25 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
 
     connect(this, &SciQLopPlot::time_axis_range_changed, graph,
             &SciQLopNDProjectionCurvesFunction::set_range);
-    Q_EMIT graph_list_changed();
-    return graph;
+    return _adopt(graph);
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<SciQLopPyBuffer>& data,
                                                           QStringList labels, QList<QColor> colors,
                                                           GraphType graph_type, GraphMarkerShape marker, QVariantMap metaData)
 {
-    SciQLopGraphInterface* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels,metaData);
+    SciQLopNDProjectionCurves::check_batch_size(m_plots.size(), data.size());
+    auto* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels, metaData);
     graph->set_data(data);
+    return _adopt(graph);
+}
+
+SciQLopGraphInterface* SciQLopNDProjectionPlot::_adopt(SciQLopGraphInterface* graph)
+{
+    // Curve data lands asynchronously, after the resampler: a marker set earlier
+    // has no position yet, so it is placed again whenever data arrives.
+    connect(graph, qOverload<>(&SciQLopGraphInterface::data_changed), this,
+            &SciQLopNDProjectionPlot::_place_time_markers);
     Q_EMIT graph_list_changed();
     return graph;
 }
@@ -209,8 +218,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     if (color.isValid())
         graph->set_colors(QList<QColor>(n, color));
 
-    Q_EMIT graph_list_changed();
-    return graph;
+    return _adopt(graph);
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::add_model_curve(
@@ -230,8 +238,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_model_curve(
     if (color.isValid())
         graph->set_colors(QList<QColor>(n, color));
 
-    Q_EMIT graph_list_changed();
-    return graph;
+    return _adopt(graph);
 }
 
 void SciQLopNDProjectionPlot::set_linked_crosshairs(bool enabled) noexcept
@@ -270,11 +277,13 @@ void SciQLopNDProjectionPlot::_ensure_marker_layer()
         auto* layer = qcp->layer("markers");
         layer->setMode(QCPLayer::lmBuffered);
 
-        auto* marker = new QCPItemEllipse(qcp);
+        // A tracer sits at plot coordinates with a fixed pixel size, so it follows
+        // rescales, layout changes and exports at another size.
+        auto* marker = new QCPItemTracer(qcp);
+        marker->setStyle(QCPItemTracer::tsCircle);
+        marker->setSize(10);
         marker->setPen(QPen(Qt::black, 2));
         marker->setBrush(QBrush(Qt::red));
-        marker->topLeft->setType(QCPItemPosition::ptAbsolute);
-        marker->bottomRight->setType(QCPItemPosition::ptAbsolute);
         marker->setVisible(false);
         marker->setLayer(layer);
         m_time_markers.append(marker);
@@ -292,26 +301,30 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
     const bool changed = m_time_marker_key != t;
     m_time_marker_key = t;
     _ensure_marker_layer();
+    _place_time_markers();
 
+    if (changed)
+        Q_EMIT time_marker_changed(t);
+}
+
+void SciQLopNDProjectionPlot::_place_time_markers()
+{
+    if (m_time_markers.isEmpty())
+        return;
     for (auto* marker : m_time_markers)
         marker->setVisible(false);
 
-    for (auto* p : plottables())
+    if (!std::isnan(m_time_marker_key))
     {
-        if (auto* proj = qobject_cast<SciQLopNDProjectionCurves*>(p))
+        for (auto* p : plottables())
         {
-            auto positions = proj->positions_at_time(t);
+            const auto positions
+                = qobject_cast<SciQLopNDProjectionCurves*>(p)->positions_at_time(m_time_marker_key);
             for (int i = 0; i < positions.size() && i < m_time_markers.size(); ++i)
             {
                 if (positions[i].isValid())
                 {
-                    const auto pt = positions[i].value<QPointF>();
-                    auto* qcp = m_plots[i]->qcp_plot();
-                    const double px = qcp->xAxis->coordToPixel(pt.x());
-                    const double py = qcp->yAxis->coordToPixel(pt.y());
-                    const double r = 5.0;
-                    m_time_markers[i]->topLeft->setCoords(px - r, py - r);
-                    m_time_markers[i]->bottomRight->setCoords(px + r, py + r);
+                    m_time_markers[i]->position->setCoords(positions[i].value<QPointF>());
                     m_time_markers[i]->setVisible(true);
                 }
             }
@@ -320,9 +333,6 @@ void SciQLopNDProjectionPlot::set_time_marker(double t)
 
     for (auto* plot : m_plots)
         plot->qcp_plot()->layer("markers")->replot();
-
-    if (changed)
-        Q_EMIT time_marker_changed(t);
 }
 
 void SciQLopNDProjectionPlot::clear_time_marker()

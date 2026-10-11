@@ -102,6 +102,21 @@ def _apply_waterfall_kwargs(result, offsets=None, normalize=True, gain=1.0):
     return result
 
 
+def _projection_buffers(args):
+    """The one list the projection binding takes: [t, d0, d1, ...].
+
+    Accepts that list itself, (t, d0, d1, ...) or (t, values) with one column per dimension.
+    """
+    import numpy as np
+    if len(args) == 1:
+        return args[0]
+    if len(args) == 2 and np.ndim(args[1]) == 2:
+        t, values = args
+        values = np.asarray(values)
+        return [t, *(np.ascontiguousarray(values[:, i]) for i in range(values.shape[1]))]
+    return list(args)
+
+
 _WATERFALL_KWARGS = ("offsets", "normalize", "gain")
 
 
@@ -158,7 +173,8 @@ def _patch_sciqlop_plot(cls):
         graph = _plot(self, *args, name=name if takes_name else None, labels=labels,
                       colors=colors, graph_type=graph_type, **kwargs)
         if name is not None and not takes_name:
-            graph.set_name(name)
+            # Panels return (plot, graph).
+            (graph[1] if isinstance(graph, tuple) else graph).set_name(name)
         return graph
 
     def _plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
@@ -168,7 +184,7 @@ def _patch_sciqlop_plot(cls):
             _reject_histogram2d_kwargs(kwargs, graph_type)
             plot_type = kwargs.pop("plot_type", None)
             if plot_type == PlotType.Projections:
-                return cls.projection(self, *args, **kwargs)
+                return cls.projection(self, _projection_buffers(args), **kwargs)
             return cls.parametric_curve(self, *args, **kwargs)
         if len(args) == 1:
             return plot_func(self, *args, graph_type=graph_type, **kwargs)

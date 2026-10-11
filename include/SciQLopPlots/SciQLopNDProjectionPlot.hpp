@@ -45,12 +45,14 @@ protected:
     bool m_enforcing_aspect = false;
     bool m_shared_legend = false;
     ColorScaleController* m_scale = nullptr;
-    QList<QCPItemEllipse*> m_time_markers;
+    QList<QCPItemTracer*> m_time_markers;
     double m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     QPointer<SciQLopTheme> m_theme;
 
     Q_SLOT void _enforce_equal_aspect();
     void _ensure_marker_layer();
+    void _place_time_markers();
+    SciQLopGraphInterface* _adopt(SciQLopGraphInterface* graph);
     void _setup_color_scale();
 
     virtual SciQLopGraphInterface*

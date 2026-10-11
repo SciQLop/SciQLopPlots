@@ -34,6 +34,8 @@
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
+
+#include <memory>
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
@@ -419,13 +421,14 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels,
                                  QList<QColor> colors, GraphMarkerShape marker, int index, QVariantMap metaData)
 {
-    auto* plot = new SciQLopNDProjectionPlot();
+    // Built before it joins the panel, so data the curve rejects leaves no empty plot behind.
+    auto plot = std::make_unique<SciQLopNDProjectionPlot>();
+    auto* graph = plot->parametric_curve(values, labels, colors, marker, metaData);
     if (index == -1)
-        add_plot(plot);
+        add_plot(plot.get());
     else
-        insert_plot(index, plot);
-
-    return { plot, plot->parametric_curve(values, labels, colors,marker, metaData) };
+        insert_plot(index, plot.get());
+    return { plot.release(), graph };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
