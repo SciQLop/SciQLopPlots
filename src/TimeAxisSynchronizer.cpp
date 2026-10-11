@@ -23,12 +23,18 @@
 
 #include "SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp"
 
+#include <QSplitter>
+
 void TimeAxisSynchronizer::_display_x_axis_only_last_plot()
 {
+    // Only a vertical stack shares one time axis at its bottom; side by side, every
+    // plot needs its own.
+    const auto* container = qobject_cast<QSplitter*>(parent());
+    const bool stacked = !container || container->orientation() == Qt::Vertical;
     auto ts_plots = only_sciqlop_timeserieplots(_plots);
     for (auto& plot : ts_plots)
     {
-        plot->x_axis()->set_tick_labels_visible(false);
+        plot->x_axis()->set_tick_labels_visible(!stacked);
     }
     if (!ts_plots.isEmpty())
     {

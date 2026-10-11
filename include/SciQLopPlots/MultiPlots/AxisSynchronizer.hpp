@@ -23,6 +23,8 @@
 
 #include "SciQLopPlotCollection.hpp"
 
+#include <QPointer>
+
 class SciQLopPlotPanelInterface;
 
 class AxisSynchronizer : public SciQLopPlotCollectionBehavior
@@ -33,6 +35,8 @@ protected:
     SciQLopPlotRange _last_range;
     AxisType m_sync_axis = AxisType::XAxis;
     bool m_propagating = false;
+    //! Time-synchronised child panels: they follow this range as plots do.
+    QList<QPointer<SciQLopPlotPanelInterface>> _panels;
 
 
 public:

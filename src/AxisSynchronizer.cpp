@@ -58,6 +58,7 @@ void AxisSynchronizer::panelAdded(SciQLopPlotPanelInterface* panel)
 {
     if (this->m_sync_axis == AxisType::TimeAxis)
     {
+        _panels.append(panel);
         panel->set_time_axis_range(_last_range);
         connect(panel, &SciQLopPlotPanelInterface::time_range_changed, this,
                 &AxisSynchronizer::set_axis_range);
@@ -67,8 +68,11 @@ void AxisSynchronizer::panelAdded(SciQLopPlotPanelInterface* panel)
 void AxisSynchronizer::panelRemoved(SciQLopPlotPanelInterface* panel)
 {
     if (this->m_sync_axis == AxisType::TimeAxis)
+    {
+        _panels.removeAll(panel);
         disconnect(panel, &SciQLopPlotPanelInterface::time_range_changed, this,
                    &AxisSynchronizer::set_axis_range);
+    }
 }
 
 void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
@@ -84,6 +88,9 @@ void AxisSynchronizer::set_axis_range(const SciQLopPlotRange& range)
             _set_axis_range(range, plot, m_sync_axis);
         }
     }
+    for (const auto& panel : std::as_const(_panels))
+        if (!panel.isNull())
+            panel->set_time_axis_range(range);
     m_propagating = false;
     emit range_changed(range);
 }
