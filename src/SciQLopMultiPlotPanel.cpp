@@ -294,10 +294,13 @@ const SciQLopPlotRange& SciQLopMultiPlotPanel::x_axis_range() const
 
 void SciQLopMultiPlotPanel::set_time_axis_range(const SciQLopPlotRange& range)
 {
-    // Through the synchroniser even with plots present: it is what reaches child panels,
-    // and it keeps the range for plots added later.
-    if (auto* time_axis_synchronizer = ::behavior<TimeAxisSynchronizer>(_container))
-        time_axis_synchronizer->set_axis_range(range);
+    // With plots, their axes' range_changed reaches the synchroniser with the range they
+    // actually took (a zoom limit clamps it), which it then gives to child panels and to
+    // this panel. Without plots (none yet, or only child panels) nothing would echo, so it
+    // is driven directly.
+    if (_container->plots().isEmpty())
+        if (auto* time_axis_synchronizer = ::behavior<TimeAxisSynchronizer>(_container))
+            time_axis_synchronizer->set_axis_range(range);
     _container->set_time_axis_range(range);
 }
 
