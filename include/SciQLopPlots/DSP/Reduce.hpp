@@ -107,7 +107,7 @@ namespace detail
                 }
                 return (count > 0) ? static_cast<T>(static_cast<double>(acc)
                                                      / static_cast<double>(count))
-                                   : T(0);
+                                   : missing_value<T>();
             }
             case ReduceOp::Min:
             {
@@ -325,7 +325,7 @@ namespace detail
             for (std::size_t i = 0; i < spec.out_size; ++i)
                 out[i] = (kept[i] > 0)
                     ? static_cast<T>(static_cast<double>(out[i]) / static_cast<double>(kept[i]))
-                    : T(0);
+                    : missing_value<T>();
         }
         else if (op == ReduceOp::Norm)
         {

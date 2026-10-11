@@ -35,9 +35,3 @@ def test_reduce_axes_mean_skips_nan_like_reduce(axes):
     y = np.array([[1.0, np.nan, 3.0, 5.0]])               # (2, 2): [[1, nan], [3, 5]]
     out = dsp.reduce_axes(T1, y, (2, 2), axes, op="mean")[1][0]
     np.testing.assert_allclose(out, np.nanmean(y.reshape(2, 2), axis=axes[0]))
-
-
-def test_reduce_axes_mean_of_only_nan_is_zero_on_both_paths():
-    y = np.array([[np.nan, np.nan, np.nan, np.nan]])
-    for axes in [(1,), (0,)]:
-        np.testing.assert_array_equal(dsp.reduce_axes(T1, y, (2, 2), axes, op="mean")[1][0], [0.0, 0.0])

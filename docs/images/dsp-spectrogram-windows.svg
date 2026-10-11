@@ -76,7 +76,7 @@ text { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px
 <path class="line" d="M114.0 201.0 V196.0 H171.0 V201.0"/>
 <text class="ts c" x="142.5" y="212.0">overlap</text>
 <text class="ts" x="60.0" y="238.0">Each window gives one spectrum, stamped at its centre sample (the vertical tick).</text>
-<text class="ts" x="60.0" y="254.0">hop = window_size − overlap.  overlap=0, the default, means half a window.</text>
+<text class="ts" x="60.0" y="254.0">hop = window_size − overlap.  The default, None, means half a window.</text>
 <path class="arrow" d="M449.0 110.0 L510.0 110.0"/>
 <rect x="520" y="134" width="15" height="15" fill="#dbeafe"/>
 <rect x="520" y="118" width="15" height="15" fill="#93c5fd"/>

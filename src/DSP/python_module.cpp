@@ -139,7 +139,9 @@ struct YArray
             return false;
 
         dtype = PyArray_TYPE(arr);
-        if (dtype != NPY_DOUBLE && dtype != NPY_FLOAT && dtype != NPY_INT32)
+        if (!is_kernel_dtype(dtype) && is_real_number(arr) && !cast_to_double())
+            return false;
+        if (!is_kernel_dtype(dtype))
         {
             PyErr_SetString(
                 PyExc_TypeError, "Array dtype must be float64, float32, or int32");
@@ -152,6 +154,29 @@ struct YArray
         nrows = PyArray_DIM(arr, 0);
         ncols = (PyArray_NDIM(arr) > 1) ? PyArray_DIM(arr, 1) : 1;
         return true;
+    }
+
+    static bool is_kernel_dtype(int t)
+    {
+        return t == NPY_DOUBLE || t == NPY_FLOAT || t == NPY_INT32;
+    }
+
+    static bool is_real_number(PyArrayObject* a)
+    {
+        return PyArray_ISINTEGER(a) || PyArray_ISBOOL(a) || PyArray_ISFLOAT(a);
+    }
+
+    // Kernels exist for three types only; any other real type (int64 above all,
+    // NumPy's default integer) is computed in float64, like NumPy's own reductions.
+    bool cast_to_double()
+    {
+        auto* converted = reinterpret_cast<PyArrayObject*>(
+            PyArray_FROMANY(reinterpret_cast<PyObject*>(arr), NPY_DOUBLE, 1, 2,
+                NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED | NPY_ARRAY_FORCECAST));
+        Py_DECREF(reinterpret_cast<PyObject*>(arr));
+        arr = converted;
+        dtype = NPY_DOUBLE;
+        return arr != nullptr;
     }
 
 
@@ -1068,7 +1093,7 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     PyObject* y_obj = nullptr;
     Py_ssize_t col = 0;
     Py_ssize_t window_size = 256;
-    Py_ssize_t overlap = 0;
+    PyObject* overlap_obj = Py_None;
     double gap_factor = 3.0;
     const char* window_str = "hann";
 
@@ -1076,8 +1101,12 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
     static const char* kwlist[]
         = { "x", "y", "col", "window_size", "overlap", "gap_factor", "window", "has_gaps", nullptr };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|nnndsp", const_cast<char**>(kwlist),
-            &x_obj, &y_obj, &col, &window_size, &overlap, &gap_factor, &window_str, &has_gaps))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|nnOdsp", const_cast<char**>(kwlist),
+            &x_obj, &y_obj, &col, &window_size, &overlap_obj, &gap_factor, &window_str, &has_gaps))
+        return nullptr;
+    const Py_ssize_t overlap
+        = (overlap_obj == Py_None) ? window_size / 2 : PyNumber_AsSsize_t(overlap_obj, nullptr);
+    if (overlap == -1 && PyErr_Occurred())
         return nullptr;
 
     XArray x;
@@ -1506,7 +1535,8 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 #define SQDSP_DOC_Y                                                                            \
     "y : array_like, shape (n,) or (n, k)\n"                                                   \
     "    Values: one row per time, one column per component.\n"                                \
-    "    float64, float32 or int32; other types raise TypeError.\n"
+    "    float64, float32 and int32 are kept; other integer and float types are\n"     \
+    "    computed as float64.\n"
 #define SQDSP_DOC_GAPS                                                                         \
     "gap_factor : float, default 3.0\n"                                                        \
     "    A step longer than gap_factor times the median step of x is a gap. Must be > 0.\n"    \
@@ -1527,7 +1557,8 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 #define SQDSP_DOC_OP                                                                           \
     "op : {'sum', 'mean', 'min', 'max', 'norm'}\n"                                            \
     "    norm is the square root of the sum of squares. NaN values are skipped. Only\n"      \
-    "    NaN gives NaN for min and max, 0 for the others. Other names raise ValueError.\n"
+    "    NaN gives NaN for mean, min and max, 0 for sum and norm, like np.nansum.\n"      \
+    "    Other names raise ValueError.\n"
 
 // clang-format off
 PyMethodDef methods[] = {
@@ -1634,7 +1665,7 @@ PyMethodDef methods[] = {
 
     {"spectrogram", reinterpret_cast<PyCFunction>(dsp_spectrogram),
      METH_VARARGS | METH_KEYWORDS,
-     "spectrogram($module, x, y, col=0, window_size=256, overlap=0, gap_factor=3.0, "
+     "spectrogram($module, x, y, col=0, window_size=256, overlap=None, gap_factor=3.0, "
      "window='hann', has_gaps=True)\n--\n\n"
      "Power spectra of sliding windows over one column, for each segment.\n\n"
      "Each window gives ``|FFT / N|^2``, stamped at the time of its centre sample.\n\n"
@@ -1644,9 +1675,9 @@ PyMethodDef methods[] = {
      "    Column of y to analyse.\n"
      "window_size : int, default 256\n"
      "    Samples per window. At least 2. Segments shorter than this give empty arrays.\n"
-     "overlap : int, default 0\n"
-     "    Samples shared by neighbouring windows, below window_size. 0 means half a\n"
-     "    window.\n"
+     "overlap : int or None, default None\n"
+     "    Samples shared by neighbouring windows, from 0 to window_size - 1. None means\n"
+     "    half a window.\n"
      SQDSP_DOC_GAPS SQDSP_DOC_WINDOW "\n"
      "Returns\n-------\n"
      "list of (t, f, power)\n"
@@ -1672,7 +1703,7 @@ PyMethodDef methods[] = {
      "rolling_mean($module, x, y, window, gap_factor=3.0, has_gaps=True)\n--\n\n"
      "Mean over a sliding window centred on each sample.\n\n"
      "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
-     "samples are skipped; a window of only NaN gives 0.\n\n"
+     "samples are skipped; a window of only NaN gives NaN (0 for int32).\n\n"
      "Parameters\n----------\n"
      SQDSP_DOC_X SQDSP_DOC_Y
      "window : int\n"
@@ -1686,7 +1717,7 @@ PyMethodDef methods[] = {
      "Sample standard deviation (divided by n - 1) over a sliding window centred on\n"
      "each sample.\n\n"
      "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
-     "samples are skipped; a window of only NaN gives 0.\n\n"
+     "samples are skipped; a window with fewer than two values gives NaN (0 for int32).\n\n"
      "Parameters\n----------\n"
      SQDSP_DOC_X SQDSP_DOC_Y
      "window : int\n"
@@ -1700,7 +1731,7 @@ PyMethodDef methods[] = {
      "--\n\n"
      "Percentile over a sliding window centred on each sample. q=50 is a rolling median.\n\n"
      "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
-     "samples are skipped; unlike rolling_mean, a window of only NaN gives NaN.\n\n"
+     "samples are skipped; a window of only NaN gives NaN.\n\n"
      "Parameters\n----------\n"
      SQDSP_DOC_X SQDSP_DOC_Y
      "window : int\n"

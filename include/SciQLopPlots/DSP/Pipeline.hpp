@@ -26,11 +26,23 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <span>
+#include <type_traits>
 #include <vector>
 
 namespace sqp::dsp
 {
+
+// What a result holds where there is no value: NaN, or 0 for integers, which have none.
+template <typename T>
+constexpr T missing_value()
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return std::numeric_limits<T>::quiet_NaN();
+    else
+        return T { 0 };
+}
 
 template <typename T = double>
 struct TimeSeries
@@ -93,13 +105,7 @@ namespace detail
                 const double gap_t
                     = (segments[s - 1].x.back() + segments[s].x.front()) * 0.5;
                 result.x.push_back(gap_t);
-                for (std::size_t c = 0; c < n_cols; ++c)
-                {
-                    if constexpr (std::is_floating_point_v<T>)
-                        result.y.push_back(std::numeric_limits<T>::quiet_NaN());
-                    else
-                        result.y.push_back(T { 0 });
-                }
+                result.y.insert(result.y.end(), n_cols, missing_value<T>());
             }
             result.x.insert(result.x.end(), segments[s].x.begin(), segments[s].x.end());
             result.y.insert(result.y.end(), segments[s].y.begin(), segments[s].y.end());

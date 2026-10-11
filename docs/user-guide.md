@@ -649,7 +649,7 @@ Every function takes the same two arrays:
 
 ![x is a 1-D array of n times, y has n rows and k columns; reduce turns y into one value per row](images/dsp-layout.svg)
 
-`y` must be `float64`, `float32` or `int32`. Other types raise `TypeError`. That includes `int64`, NumPy's default integer: convert it first, with `y.astype(np.float64)`.
+`y` keeps its type when it is `float64`, `float32` or `int32`. Other integer and float types, `int64` included, are computed as `float64`, and the result is `float64`.
 
 `datetime64` times are not converted for you either. Use seconds: `x = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
 
@@ -773,7 +773,7 @@ The magnitude is `|FFT| / N`, one-sided. A sine of amplitude A peaks at A/2 with
 
 ![Spectrogram windows of window_size samples, overlapping by overlap samples, each giving one spectrum](images/dsp-spectrogram-windows.svg)
 
-`overlap` is how many samples two neighbouring windows share. Its default, 0, means half a window: there is no way to ask for windows that do not overlap. The power is `|FFT / N|²`.
+`overlap` is how many samples two neighbouring windows share. 0 means windows that touch without overlapping. The default, `None`, means half a window. The power is `|FFT / N|²`.
 
 Each result is `(t, f, power)`, and `power` has shape `(len(t), len(f))`. That is what a colour map takes, so it plots directly:
 
@@ -832,11 +832,11 @@ plot.y_axis().set_range(-1.5, 5.5)
 
 ![Spiky data, its rolling mean pulled up by the spikes, its rolling median following the signal](images/dsp-rolling.png)
 
-When a window holds only NaN, `rolling_percentile` gives NaN. `rolling_mean` and `rolling_std` give 0.
+When a window holds only NaN, all three give NaN. `rolling_std` also gives NaN when only one value is left, like `np.nanstd(..., ddof=1)`.
 
 ### Reductions
 
-`reduce(x, y, op)` combines the columns of each row into one value. `op` is `"sum"`, `"mean"`, `"min"`, `"max"` or `"norm"` (the square root of the sum of squares). NaN values are skipped. A row of only NaN gives NaN for `"min"` and `"max"`, and 0 for the others.
+`reduce(x, y, op)` combines the columns of each row into one value. `op` is `"sum"`, `"mean"`, `"min"`, `"max"` or `"norm"` (the square root of the sum of squares). NaN values are skipped. A row of only NaN gives NaN for `"mean"`, `"min"` and `"max"`. It gives 0 for `"sum"` and `"norm"`, like `np.nansum`.
 
 `reduce_axes` does the same for data whose columns hide several dimensions. A particle instrument, for example, may store 32 energies × 16 angles × 8 angles as 4096 columns per time. Give the shape, and the axes to reduce:
 
@@ -895,7 +895,7 @@ assert np.isnan(filled[3]) and filled[1] == 2.0
 
 - **Check names.** An unknown `window` or `op` raises `ValueError` and lists the valid ones.
 - **Call it from a thread.** The functions release Python's global lock while they compute, so a worker thread can filter while the interface stays responsive.
-- **Mind empty windows.** Over only NaN, means, standard deviations, sums and norms give 0; percentiles, minimums and maximums give NaN. Mask those rows if 0 is a meaningful value for you.
+- **Mind empty windows.** Over only NaN, sums and norms give 0, like `np.nansum`. Everything else gives NaN. With `int32` data, which has no NaN, those places hold 0.
 - **Sort `x`.** The functions don't check that times increase. Unsorted times give wrong results, without an error.
 
 ## Export

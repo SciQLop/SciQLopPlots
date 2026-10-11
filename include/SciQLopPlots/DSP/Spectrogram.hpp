@@ -31,6 +31,7 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace sqp::dsp
@@ -145,16 +146,16 @@ namespace detail
 
 // Compute spectrogram for each segment, for a given column.
 // window_size: FFT window length in samples.
-// overlap: number of overlapping samples (0 = window_size/2).
+// overlap: number of samples two neighbouring windows share (none = window_size/2).
 template <typename T = double>
 auto spectrogram(
     const std::vector<Segment<T>>& segments,
     std::size_t col = 0,
     std::size_t window_size = 256,
-    std::size_t overlap = 0,
+    std::optional<std::size_t> overlap = std::nullopt,
     WindowType window = WindowType::Hann) -> std::vector<SpectrogramResult<T>>
 {
-    const std::size_t hop = (overlap == 0) ? window_size / 2 : window_size - overlap;
+    const std::size_t hop = window_size - overlap.value_or(window_size / 2);
 
     std::vector<SpectrogramResult<T>> results(segments.size());
     // Segments are processed sequentially here because each segment's windows

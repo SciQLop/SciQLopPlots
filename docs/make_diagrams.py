@@ -174,7 +174,7 @@ def spectrogram_windows():
     body += [bracket(px(hop) - 6, px(size - 1) + 6, 196, "overlap", below=True)]
     body += [text(px(0), 238, "Each window gives one spectrum, stamped at its centre "
                   "sample (the vertical tick).", "ts")]
-    body += [text(px(0), 254, "hop = window_size − overlap.  overlap=0, the default, "
+    body += [text(px(0), 254, "hop = window_size − overlap.  The default, None, "
                   "means half a window.", "ts")]
 
     gx, gy, cell = 520, 70, 16

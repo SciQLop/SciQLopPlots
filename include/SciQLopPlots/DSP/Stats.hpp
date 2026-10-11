@@ -127,10 +127,7 @@ namespace detail
 
         if (buf.empty())
         {
-            if constexpr (std::is_floating_point_v<T>)
-                return std::numeric_limits<T>::quiet_NaN();
-            else
-                return T { 0 };
+            return missing_value<T>();
         }
 
         const double idx = q / 100.0 * static_cast<double>(buf.size() - 1);
@@ -185,7 +182,7 @@ namespace detail
             sum += static_cast<double>(val);
             ++count;
         }
-        out[0] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : T { 0 };
+        out[0] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : missing_value<T>();
 
         for (std::size_t i = 1; i < n_rows; ++i)
         {
@@ -227,7 +224,7 @@ namespace detail
                 }
             }
 
-            out[i] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : T { 0 };
+            out[i] = (count > 0) ? static_cast<T>(sum / static_cast<double>(count)) : missing_value<T>();
         }
     }
 
@@ -277,10 +274,7 @@ namespace detail
         {
             if (win.empty())
             {
-                if constexpr (std::is_floating_point_v<T>)
-                    return std::numeric_limits<T>::quiet_NaN();
-                else
-                    return T { 0 };
+                return missing_value<T>();
             }
             const double idx = q / 100.0 * static_cast<double>(win.size() - 1);
             const auto lo = static_cast<std::size_t>(idx);
@@ -358,7 +352,7 @@ namespace detail
             }
             else
             {
-                out[i] = T { 0 };
+                out[i] = missing_value<T>();
             }
         };
 
