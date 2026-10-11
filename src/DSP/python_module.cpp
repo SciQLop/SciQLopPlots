@@ -33,6 +33,7 @@
 #include <SciQLopPlots/DSP/DSP.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -41,6 +42,7 @@
 #include <limits>
 #include <optional>
 #include <span>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -473,30 +475,37 @@ PyObject* apply_stage(
 
 // ── Enum parsers ─────────────────────────────────────────────────────────────
 
-sqp::dsp::WindowType parse_window_type(const char* s)
-{
-    if (std::strcmp(s, "hamming") == 0)
-        return sqp::dsp::WindowType::Hamming;
-    if (std::strcmp(s, "blackman") == 0)
-        return sqp::dsp::WindowType::Blackman;
-    if (std::strcmp(s, "flattop") == 0)
-        return sqp::dsp::WindowType::FlatTop;
-    if (std::strcmp(s, "rectangular") == 0)
-        return sqp::dsp::WindowType::Rectangular;
-    return sqp::dsp::WindowType::Hann;
-}
+template <typename Enum, std::size_t N>
+using NameTable = std::array<std::pair<const char*, Enum>, N>;
 
-sqp::dsp::ReduceOp parse_reduce_op(const char* s)
+constexpr NameTable<sqp::dsp::WindowType, 5> window_names { {
+    { "hann", sqp::dsp::WindowType::Hann },
+    { "hamming", sqp::dsp::WindowType::Hamming },
+    { "blackman", sqp::dsp::WindowType::Blackman },
+    { "flattop", sqp::dsp::WindowType::FlatTop },
+    { "rectangular", sqp::dsp::WindowType::Rectangular },
+} };
+
+constexpr NameTable<sqp::dsp::ReduceOp, 5> reduce_op_names { {
+    { "sum", sqp::dsp::ReduceOp::Sum },
+    { "mean", sqp::dsp::ReduceOp::Mean },
+    { "min", sqp::dsp::ReduceOp::Min },
+    { "max", sqp::dsp::ReduceOp::Max },
+    { "norm", sqp::dsp::ReduceOp::Norm },
+} };
+
+// nullopt with a ValueError set, listing the valid names, when `name` is not one of them.
+template <typename Enum, std::size_t N>
+std::optional<Enum> parse_name(const char* name, const NameTable<Enum, N>& table, const char* what)
 {
-    if (std::strcmp(s, "mean") == 0)
-        return sqp::dsp::ReduceOp::Mean;
-    if (std::strcmp(s, "min") == 0)
-        return sqp::dsp::ReduceOp::Min;
-    if (std::strcmp(s, "max") == 0)
-        return sqp::dsp::ReduceOp::Max;
-    if (std::strcmp(s, "norm") == 0)
-        return sqp::dsp::ReduceOp::Norm;
-    return sqp::dsp::ReduceOp::Sum;
+    for (const auto& [candidate, value] : table)
+        if (std::strcmp(name, candidate) == 0)
+            return value;
+    std::string valid;
+    for (const auto& [candidate, value] : table)
+        valid += (valid.empty() ? "" : ", ") + std::string(candidate);
+    PyErr_Format(PyExc_ValueError, "unknown %s '%s', expected one of: %s", what, name, valid.c_str());
+    return std::nullopt;
 }
 
 // ── Module functions ─────────────────────────────────────────────────────────
@@ -989,7 +998,9 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
     if (!check_min_rows(x, 2, "fft"))
         return nullptr;
 
-    auto win = parse_window_type(window_str);
+    const auto win = parse_name(window_str, window_names, "window");
+    if (!win)
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -1012,7 +1023,7 @@ PyObject* dsp_fft(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
                 .median_dt = dt,
             });
         }
-        results = sqp::dsp::fft(segments, win);
+        results = sqp::dsp::fft(segments, *win);
         SQDSP_GIL_RELEASE_END
 
         PyObject* list = PyList_New(static_cast<Py_ssize_t>(results.size()));
@@ -1093,7 +1104,9 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         return nullptr;
     }
 
-    auto win = parse_window_type(window_str);
+    const auto win = parse_name(window_str, window_names, "window");
+    if (!win)
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -1116,7 +1129,7 @@ PyObject* dsp_spectrogram(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
             });
         }
         results = sqp::dsp::spectrogram(segments, static_cast<std::size_t>(col),
-            static_cast<std::size_t>(window_size), static_cast<std::size_t>(overlap), win);
+            static_cast<std::size_t>(window_size), static_cast<std::size_t>(overlap), *win);
         SQDSP_GIL_RELEASE_END
 
         PyObject* list = PyList_New(static_cast<Py_ssize_t>(results.size()));
@@ -1340,6 +1353,9 @@ PyObject* dsp_reduce(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         return nullptr;
     if (!check_xy_sizes(x, y) || !check_gap_factor(gap_factor))
         return nullptr;
+    const auto op = parse_name(op_str, reduce_op_names, "op");
+    if (!op)
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -1350,15 +1366,14 @@ PyObject* dsp_reduce(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
                 return static_cast<PyObject*>(nullptr);
             const auto nrows = static_cast<std::size_t>(y.nrows);
             const auto ncols = static_cast<std::size_t>(y.ncols);
-            const auto op = parse_reduce_op(op_str);
             SQDSP_GIL_RELEASE_BEGIN
             for (std::size_t row = 0; row < nrows; ++row)
                 out.y_ptr[row] = sqp::dsp::detail::reduce_row(
-                    &y.typed_data<T>()[row * ncols], ncols, op);
+                    &y.typed_data<T>()[row * ncols], ncols, *op);
             SQDSP_GIL_RELEASE_END
             return out.to_tuple();
         }
-        auto stage = sqp::dsp::reduce<T>(parse_reduce_op(op_str));
+        auto stage = sqp::dsp::reduce<T>(*op);
         return apply_stage<T>(x, y, gap_factor, has_gaps, stage);
     });
 }
@@ -1434,7 +1449,9 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         axes[i] = static_cast<std::size_t>(axis);
     }
 
-    const auto op = parse_reduce_op(op_str);
+    const auto op = parse_name(op_str, reduce_op_names, "op");
+    if (!op)
+        return nullptr;
 
     return dispatch(y.dtype, [&]<typename T>() -> PyObject*
     {
@@ -1468,7 +1485,7 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
         SQDSP_GIL_RELEASE_BEGIN
         sqp::dsp::parallel_for(nrows, [&](std::size_t row) {
             sqp::dsp::detail::reduce_axes_row(
-                &y.typed_data<T>()[row * prod], spec, op, &y_out_ptr[row * spec.out_size]);
+                &y.typed_data<T>()[row * prod], spec, *op, &y_out_ptr[row * spec.out_size]);
         });
         SQDSP_GIL_RELEASE_END
 
@@ -1481,93 +1498,253 @@ PyObject* dsp_reduce_axes(PyObject* /*self*/, PyObject* args, PyObject* kwargs)
 
 // ── Module definition ────────────────────────────────────────────────────────
 
+// Docstrings start with a text signature ("name($module, ...)\n--\n\n"): it gives
+// inspect.signature, help() and Sphinx the real parameters of these C functions.
+#define SQDSP_DOC_X                                                                            \
+    "x : array_like, shape (n,)\n"                                                             \
+    "    Sample times, in seconds, increasing. Converted to float64.\n"
+#define SQDSP_DOC_Y                                                                            \
+    "y : array_like, shape (n,) or (n, k)\n"                                                   \
+    "    Values: one row per time, one column per component.\n"                                \
+    "    float64, float32 or int32; other types raise TypeError.\n"
+#define SQDSP_DOC_GAPS                                                                         \
+    "gap_factor : float, default 3.0\n"                                                        \
+    "    A step longer than gap_factor times the median step of x is a gap. Must be > 0.\n"    \
+    "has_gaps : bool, default True\n"                                                          \
+    "    False skips the gap search and treats the data as one segment: faster, and no\n"     \
+    "    gap rows are added. Use it for regularly sampled data.\n"
+#define SQDSP_DOC_TIME_SERIES_RETURN                                                           \
+    "Returns\n"                                                                                \
+    "-------\n"                                                                                \
+    "x_out : ndarray of float64\n"                                                             \
+    "    The times, plus one row at the middle of each gap.\n"                                 \
+    "y_out : ndarray\n"                                                                        \
+    "    Same type and number of columns as y. Each segment is processed on its own,\n"      \
+    "    and gap rows hold NaN (0 for int32).\n"
+#define SQDSP_DOC_WINDOW                                                                       \
+    "window : {'hann', 'hamming', 'blackman', 'flattop', 'rectangular'}, default 'hann'\n"   \
+    "    Taper applied before the transform. Other names raise ValueError.\n"
+#define SQDSP_DOC_OP                                                                           \
+    "op : {'sum', 'mean', 'min', 'max', 'norm'}\n"                                            \
+    "    norm is the square root of the sum of squares. NaN values are skipped. Only\n"      \
+    "    NaN gives NaN for min and max, 0 for the others. Other names raise ValueError.\n"
+
 // clang-format off
 PyMethodDef methods[] = {
     {"split_segments", reinterpret_cast<PyCFunction>(dsp_split_segments),
      METH_VARARGS | METH_KEYWORDS,
-     "split_segments(x, y, gap_factor=3.0) -> list[(start, end)]\n"
-     "Detect data gaps and return segment index ranges."},
+     "split_segments($module, x, y, gap_factor=3.0)\n--\n\n"
+     "Find the gaps in x and return the row ranges between them.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "gap_factor : float, default 3.0\n"
+     "    A step longer than gap_factor times the median step of x is a gap. Must be > 0.\n\n"
+     "Returns\n-------\n"
+     "list of (int, int)\n"
+     "    One (start, end) pair per segment, end excluded: y[start:end].\n"},
 
     {"interpolate_nan", reinterpret_cast<PyCFunction>(dsp_interpolate_nan),
      METH_VARARGS | METH_KEYWORDS,
-     "interpolate_nan(x, y, max_consecutive=1) -> y_out\n"
-     "Linearly interpolate isolated NaN runs (up to max_consecutive).\n"
-     "Preserves input dtype (float64/float32; no-op for int32)."},
+     "interpolate_nan($module, x, y, max_consecutive=1)\n--\n\n"
+     "Fill short runs of NaN by linear interpolation in x.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "max_consecutive : int, default 1\n"
+     "    Longest run of NaN to fill. Longer runs, and runs at either end, stay NaN.\n\n"
+     "Returns\n-------\n"
+     "ndarray\n"
+     "    A copy of y, same type and shape. int32 data is returned unchanged.\n"},
 
     {"resample", reinterpret_cast<PyCFunction>(dsp_resample),
      METH_VARARGS | METH_KEYWORDS,
-     "resample(x, y, gap_factor=3.0, target_dt=0.0) -> (x_out, y_out)\n"
-     "Resample to uniform grid per segment. Preserves y dtype."},
+     "resample($module, x, y, gap_factor=3.0, target_dt=0.0, has_gaps=True)\n--\n\n"
+     "Put each segment on a regular time grid, by linear interpolation.\n\n"
+     "Each segment's grid starts at its first sample.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y SQDSP_DOC_GAPS
+     "target_dt : float, default 0.0\n"
+     "    Grid step, in seconds. 0 uses the median step of x. A grid of more than\n"
+     "    100 million samples raises ValueError.\n\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"fir_filter", reinterpret_cast<PyCFunction>(dsp_fir_filter),
      METH_VARARGS | METH_KEYWORDS,
-     "fir_filter(x, y, coeffs, gap_factor=3.0) -> (x_out, y_out)\n"
-     "FIR filter per segment. coeffs auto-converted to match y dtype."},
+     "fir_filter($module, x, y, coeffs, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Apply a causal FIR filter to each segment.\n\n"
+     "The output is delayed by (len(coeffs) - 1) / 2 samples for a symmetric filter.\n"
+     "Use filtfilt for a filter without delay.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "coeffs : array_like, shape (n_taps,)\n"
+     "    Filter taps. Must have the same type as y, else TypeError.\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"iir_sos", reinterpret_cast<PyCFunction>(dsp_iir_sos),
      METH_VARARGS | METH_KEYWORDS,
-     "iir_sos(x, y, sos, gap_factor=3.0) -> (x_out, y_out)\n"
-     "IIR filter per segment. sos: (n_sections, 6) SOS matrix.\n"
-     "SOS auto-converted to match y dtype."},
+     "iir_sos($module, x, y, sos, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Apply a causal IIR filter, given as second-order sections, to each segment.\n\n"
+     "Use sosfiltfilt for a filter without delay.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "sos : array_like, shape (n_sections, 6)\n"
+     "    One row [b0, b1, b2, a0, a1, a2] per section, as scipy.signal.butter(...,\n"
+     "    output='sos') returns. Must have the same type as y, else TypeError.\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"filtfilt", reinterpret_cast<PyCFunction>(dsp_filtfilt),
      METH_VARARGS | METH_KEYWORDS,
-     "filtfilt(x, y, coeffs, gap_factor=3.0, has_gaps=True) -> (x_out, y_out)\n"
-     "Zero-phase FIR filter (forward-backward). Equivalent to scipy.signal.filtfilt."},
+     "filtfilt($module, x, y, coeffs, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Apply a FIR filter forward then backward: zero phase, no delay.\n\n"
+     "Matches scipy.signal.filtfilt (odd padding), edges included.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "coeffs : array_like, shape (n_taps,)\n"
+     "    Filter taps. Must have the same type as y, else TypeError.\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"sosfiltfilt", reinterpret_cast<PyCFunction>(dsp_sosfiltfilt),
      METH_VARARGS | METH_KEYWORDS,
-     "sosfiltfilt(x, y, sos, gap_factor=3.0, has_gaps=True) -> (x_out, y_out)\n"
-     "Zero-phase IIR filter (forward-backward SOS). Equivalent to scipy.signal.sosfiltfilt."},
+     "sosfiltfilt($module, x, y, sos, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Apply an IIR filter forward then backward: zero phase, no delay.\n\n"
+     "Matches scipy.signal.sosfiltfilt, edges included.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "sos : array_like, shape (n_sections, 6)\n"
+     "    One row [b0, b1, b2, a0, a1, a2] per section, as scipy.signal.butter(...,\n"
+     "    output='sos') returns. Must have the same type as y, else TypeError.\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"fft", reinterpret_cast<PyCFunction>(dsp_fft),
      METH_VARARGS | METH_KEYWORDS,
-     "fft(x, y, gap_factor=3.0, window='hann') -> list[(freqs, magnitude)]\n"
-     "Per-segment FFT. Magnitude preserves y dtype; freqs always float64."},
+     "fft($module, x, y, gap_factor=3.0, window='hann', has_gaps=True)\n--\n\n"
+     "Magnitude spectrum of each segment.\n\n"
+     "The magnitude is ``|FFT| / N``, one-sided: a sine of amplitude A peaks at A/2 with\n"
+     "the rectangular window, A/4 with Hann. The sampling rate is 1 / median step of x,\n"
+     "so frequencies are in hertz when x is in seconds.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y SQDSP_DOC_GAPS SQDSP_DOC_WINDOW "\n"
+     "Returns\n-------\n"
+     "list of (freqs, magnitude)\n"
+     "    One pair per segment. freqs is float64, shape (N // 2 + 1,). magnitude has\n"
+     "    y's type, one row per frequency and y's columns.\n"},
 
     {"spectrogram", reinterpret_cast<PyCFunction>(dsp_spectrogram),
      METH_VARARGS | METH_KEYWORDS,
-     "spectrogram(x, y, col=0, window_size=256, overlap=0, gap_factor=3.0, window='hann')\n"
-     "  -> list[(t, f, power)]\n"
-     "Per-segment spectrogram. Power preserves y dtype; t/f always float64."},
+     "spectrogram($module, x, y, col=0, window_size=256, overlap=0, gap_factor=3.0, "
+     "window='hann', has_gaps=True)\n--\n\n"
+     "Power spectra of sliding windows over one column, for each segment.\n\n"
+     "Each window gives ``|FFT / N|^2``, stamped at the time of its centre sample.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "col : int, default 0\n"
+     "    Column of y to analyse.\n"
+     "window_size : int, default 256\n"
+     "    Samples per window. At least 2. Segments shorter than this give empty arrays.\n"
+     "overlap : int, default 0\n"
+     "    Samples shared by neighbouring windows, below window_size. 0 means half a\n"
+     "    window.\n"
+     SQDSP_DOC_GAPS SQDSP_DOC_WINDOW "\n"
+     "Returns\n-------\n"
+     "list of (t, f, power)\n"
+     "    One triple per segment. t and f are float64. power has y's type and shape\n"
+     "    (len(t), len(f)): what a colour map plot takes.\n"},
 
     {"column_percentile", reinterpret_cast<PyCFunction>(dsp_column_percentile),
      METH_VARARGS | METH_KEYWORDS,
-     "column_percentile(y, q=50.0) -> np.ndarray\n"
-     "Per-column percentile down the time axis; one value per column.\n"
-     "q=50 is the median. NaN values are excluded; an all-NaN column gives NaN.\n"
-     "Matches np.nanpercentile's default 'linear' interpolation. Preserves y dtype.\n"
-     "Takes no x and returns no time axis: time is reduced away."},
+     "column_percentile($module, y, q=50.0)\n--\n\n"
+     "Percentile of each column, down the time axis.\n\n"
+     "Matches np.nanpercentile(y, q, axis=0): NaN values are skipped, a column of only\n"
+     "NaN gives NaN. A quick background estimate for a spectrogram.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_Y
+     "q : float, default 50.0\n"
+     "    Percentile, from 0 to 100. 50 is the median.\n\n"
+     "Returns\n-------\n"
+     "ndarray, shape (k,)\n"
+     "    One value per column, y's type.\n"},
 
     {"rolling_mean", reinterpret_cast<PyCFunction>(dsp_rolling_mean),
      METH_VARARGS | METH_KEYWORDS,
-     "rolling_mean(x, y, window, gap_factor=3.0) -> (x_out, y_out)\n"
-     "Gap-aware rolling mean. Preserves y dtype."},
+     "rolling_mean($module, x, y, window, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Mean over a sliding window centred on each sample.\n\n"
+     "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
+     "samples are skipped; a window of only NaN gives 0.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "window : int\n"
+     "    Window length in samples, not seconds. From 1 to len(x).\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"rolling_std", reinterpret_cast<PyCFunction>(dsp_rolling_std),
      METH_VARARGS | METH_KEYWORDS,
-     "rolling_std(x, y, window, gap_factor=3.0) -> (x_out, y_out)\n"
-     "Gap-aware rolling standard deviation. Preserves y dtype."},
+     "rolling_std($module, x, y, window, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Sample standard deviation (divided by n - 1) over a sliding window centred on\n"
+     "each sample.\n\n"
+     "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
+     "samples are skipped; a window of only NaN gives 0.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "window : int\n"
+     "    Window length in samples, not seconds. From 1 to len(x).\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"rolling_percentile", reinterpret_cast<PyCFunction>(dsp_rolling_percentile),
      METH_VARARGS | METH_KEYWORDS,
-     "rolling_percentile(x, y, window, q=50.0, gap_factor=3.0, has_gaps=True)"
-     " -> (x_out, y_out)\n"
-     "Gap-aware centered rolling percentile; q=50 is the median. Preserves y dtype.\n"
-     "Unlike rolling_mean, an all-NaN window yields NaN rather than 0."},
+     "rolling_percentile($module, x, y, window, q=50.0, gap_factor=3.0, has_gaps=True)\n"
+     "--\n\n"
+     "Percentile over a sliding window centred on each sample. q=50 is a rolling median.\n\n"
+     "The window shrinks near the ends of each segment and never crosses a gap. NaN\n"
+     "samples are skipped; unlike rolling_mean, a window of only NaN gives NaN.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "window : int\n"
+     "    Window length in samples, not seconds. From 1 to len(x).\n"
+     "q : float, default 50.0\n"
+     "    Percentile, from 0 to 100.\n"
+     SQDSP_DOC_GAPS "\n"
+     SQDSP_DOC_TIME_SERIES_RETURN},
 
     {"reduce", reinterpret_cast<PyCFunction>(dsp_reduce),
      METH_VARARGS | METH_KEYWORDS,
-     "reduce(x, y, op, gap_factor=3.0) -> (x_out, y_out)\n"
-     "Reduce columns to 1. Preserves y dtype."},
+     "reduce($module, x, y, op, gap_factor=3.0, has_gaps=True)\n--\n\n"
+     "Combine the columns of each row into one value.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y SQDSP_DOC_OP SQDSP_DOC_GAPS "\n"
+     "Returns\n-------\n"
+     "x_out : ndarray of float64\n"
+     "    The times, plus one row at the middle of each gap.\n"
+     "y_out : ndarray, shape (len(x_out),)\n"
+     "    y's type. Gap rows hold NaN (0 for int32).\n"},
 
     {"reduce_axes", reinterpret_cast<PyCFunction>(dsp_reduce_axes),
      METH_VARARGS | METH_KEYWORDS,
-     "reduce_axes(x, y, shape, axes, op='sum', has_gaps=False) -> (x_out, y_out)\n"
-     "Reduce arbitrary axes within each row.\n"
-     "shape: tuple decomposing n_cols (e.g. (32, 16, 8) for energy x theta x phi).\n"
-     "axes: tuple of axes to reduce (e.g. (1, 2) to sum over angles).\n"
-     "Output has prod(kept_shape) columns."},
+     "reduce_axes($module, x, y, shape, axes, op='sum', has_gaps=True)\n--\n\n"
+     "Reduce some of the dimensions packed in the columns of each row.\n\n"
+     "Example: 32 energies x 16 x 8 angles stored as 4096 columns; shape=(32, 16, 8)\n"
+     "and axes=(1, 2) sum over the angles and leave 32 columns, one per energy.\n"
+     "Columns are read in C order: the last axis changes fastest. No gap rows are\n"
+     "added, and has_gaps has no effect.\n\n"
+     "Parameters\n----------\n"
+     SQDSP_DOC_X SQDSP_DOC_Y
+     "shape : sequence of int\n"
+     "    The dimensions of one row. Their product must equal the number of columns.\n"
+     "axes : sequence of int\n"
+     "    The dimensions to reduce. Negative values count from the end.\n"
+     SQDSP_DOC_OP
+     "has_gaps : bool, default True\n"
+     "    Ignored.\n\n"
+     "Returns\n-------\n"
+     "x_out : ndarray of float64\n"
+     "    x, unchanged.\n"
+     "y_out : ndarray\n"
+     "    y's type, one column per combination of the kept dimensions; 1-D when\n"
+     "    only one is left.\n"},
 
     {nullptr, nullptr, 0, nullptr},
 };
