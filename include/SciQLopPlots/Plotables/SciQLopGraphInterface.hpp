@@ -243,14 +243,8 @@ signals:
     protected:
     bool _got_first_data = false;
 
-    void check_first_data(std::size_t n)
-    {
-        if (!_got_first_data && n > 0)
-        {
-            _got_first_data = true;
-            Q_EMIT request_rescale();
-        }
-    }
+    void check_first_data(std::size_t n);
+    bool data_off_view() const;
 
     Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<SciQLopPyBuffer>, m_data, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };

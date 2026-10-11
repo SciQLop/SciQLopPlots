@@ -272,6 +272,11 @@ protected:
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
 
     void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
+    //! rescale_axes() once every graph shows its latest batch: NeoQCP stages new data
+    //! on a rendered graph and swaps it in later, and a rescale before that fits the
+    //! data being replaced.
+    void _rescale_axes_once_data_shown();
+    bool m_rescale_waiting_for_data = false;
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
     {

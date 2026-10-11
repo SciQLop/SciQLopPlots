@@ -678,12 +678,40 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         [this]()
         {
             if (this->m_auto_scale)
-                this->rescale_axes();
+                this->_rescale_axes_once_data_shown();
         },
         Qt::QueuedConnection);
     connect(
         plottable, &SciQLopGraphInterface::request_rescale, this,
-        [this]() { this->rescale_axes(); }, Qt::QueuedConnection);
+        [this]() { this->_rescale_axes_once_data_shown(); }, Qt::QueuedConnection);
+}
+
+void SciQLopPlot::_rescale_axes_once_data_shown()
+{
+    const auto data_pending = [impl = static_cast<QCustomPlot*>(m_impl)]()
+    {
+        for (int i = 0; i < impl->plottableCount(); ++i)
+            if (impl->plottable(i)->hasPendingData())
+                return true;
+        return false;
+    };
+    if (!data_pending())
+    {
+        rescale_axes();
+        return;
+    }
+    if (std::exchange(m_rescale_waiting_for_data, true))
+        return;
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = connect(m_impl, &QCustomPlot::afterReplot, this,
+                    [this, conn, data_pending]()
+                    {
+                        if (data_pending())
+                            return;
+                        QObject::disconnect(*conn);
+                        m_rescale_waiting_for_data = false;
+                        rescale_axes();
+                    });
 }
 
 void SciQLopPlot::_apply_component_style(SciQLopGraphInterface* plottable,
@@ -1251,7 +1279,7 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
             [this, skip_first_batch_data_changed_rescale]()
             {
                 *skip_first_batch_data_changed_rescale = true;
-                this->rescale_axes();
+                this->_rescale_axes_once_data_shown();
             },
             Qt::QueuedConnection);
         connect(
@@ -1264,7 +1292,7 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
                     return;
                 }
                 if (this->m_auto_scale)
-                    this->rescale_axes();
+                    this->_rescale_axes_once_data_shown();
             },
             Qt::QueuedConnection);
     }

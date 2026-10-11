@@ -51,6 +51,28 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
     }
 }
 
+void SciQLopPlottableInterface::check_first_data(std::size_t n)
+{
+    // The first-data rescale fits what is visible, so a batch outside the view (a
+    // stale fetch landing after a pan) must not use it up.
+    if (!_got_first_data && n > 0 && !data_off_view())
+    {
+        _got_first_data = true;
+        Q_EMIT request_rescale();
+    }
+}
+
+bool SciQLopPlottableInterface::data_off_view() const
+{
+    if (m_data_range.is_null())
+        return false;
+    const auto* axis = x_axis();
+    if (!axis)
+        return false;
+    const auto view = axis->range();
+    return !view.is_null() && !view.intersects(m_data_range);
+}
+
 void SciQLopPlottableInterface::set_data_and_color(const QList<SciQLopPyBuffer>& data,
                                                    const SciQLopPyBuffer& color)
 {
