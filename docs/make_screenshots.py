@@ -12,10 +12,13 @@ Each snippet runs in a fresh namespace, like in tests/integration/test_user_guid
 Its first top-level widget is exported with save_png. Run it headless, then look at
 every picture before committing it:
 
-    QT_QPA_PLATFORM=offscreen PYTHONPATH=build-venv python docs/make_screenshots.py
+    QT_QPA_PLATFORM=offscreen PYTHONPATH=build-venv python docs/make_screenshots.py [name ...]
+
+With names, only the images whose path contains one of them are redone.
 """
 import pathlib
 import re
+import sys
 import time
 
 from PySide6.QtGui import QImage
@@ -69,12 +72,15 @@ def screenshot(app, code, path):
     namespace.clear()
 
 
-def main():
+def main(only):
+    """Regenerate every screenshot, or only those whose path contains one of `only`."""
     app = QApplication.instance() or QApplication([])
     for code, image in SHOT.findall(GUIDE.read_text()):
+        if only and not any(name in image for name in only):
+            continue
         screenshot(app, code, DOCS / image)
         print("wrote", image)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

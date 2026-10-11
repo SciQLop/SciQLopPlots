@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 244" width="760" height="244" role="img" aria-label="A centred rolling window that shrinks at edges and stops at gaps">
+<style>
+.bg { fill: #ffffff; stroke: #d0d7de; }
+text { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1f2328; }
+.ts { font-size: 11px; fill: #59636e; }
+.tb { font-weight: 600; }
+.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; }
+.c { text-anchor: middle; }
+.r { text-anchor: end; }
+.axis { stroke: #8c959f; stroke-width: 1; }
+.line { stroke: #59636e; stroke-width: 1.5; fill: none; }
+.dash { stroke-dasharray: 4 3; }
+.arrow { stroke: #59636e; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.blue { fill: #dbeafe; stroke: #2563eb; }
+.orange { fill: #fef3c7; stroke: #d97706; }
+.green { fill: #d1fae5; stroke: #059669; }
+.red { fill: #fee2e2; stroke: #dc2626; }
+.violet { fill: #ede9fe; stroke: #7c3aed; }
+.grey { fill: #f6f8fa; stroke: #8c959f; }
+.dot-blue { fill: #2563eb; }
+.dot-orange { fill: #d97706; }
+.dot-grey { fill: #8c959f; }
+.nan { fill: #ffffff; stroke: #dc2626; stroke-width: 2; }
+.stroke-blue { stroke: #2563eb; stroke-width: 2; fill: none; }
+.stroke-orange { stroke: #d97706; stroke-width: 2; fill: none; }
+.stroke-green { stroke: #059669; stroke-width: 2; fill: none; }
+.stroke-red { stroke: #dc2626; stroke-width: 2; fill: none; }
+.text-blue { fill: #2563eb; font-weight: 600; }
+.text-orange { fill: #b45309; font-weight: 600; }
+.text-green { fill: #047857; font-weight: 600; }
+.text-red { fill: #dc2626; font-weight: 600; }
+.text-violet { fill: #6d28d9; font-weight: 600; }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker></defs>
+<rect class="bg" x="0.5" y="0.5" width="759" height="243" rx="8"/>
+<text class="mono" x="20.0" y="34.0">rolling_mean(x, y, window=5)</text>
+<path class="axis" d="M58.0 70.0 L498.0 70.0"/>
+<path class="axis" d="M542.0 70.0 L674.0 70.0"/>
+<text class="ts c text-red" x="520.0" y="74.0">gap</text>
+<circle class="dot-blue" cx="80.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="124.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="168.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="212.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="256.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="300.0" cy="70.0" r="4.5"/>
+<circle class="nan" cx="344.0" cy="70.0" r="5"/>
+<circle class="dot-blue" cx="388.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="432.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="476.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="564.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="608.0" cy="70.0" r="4.5"/>
+<circle class="dot-blue" cx="652.0" cy="70.0" r="4.5"/>
+<text class="ts c text-red" x="344.0" y="52.0">NaN</text>
+<rect class="blue" x="154.0" y="104.0" width="204.0" height="22.0" rx="11"/>
+<circle class="dot-blue" cx="256.0" cy="115.0" r="3.5"/>
+<text class="r text-blue" x="662.0" y="120.0">centred on the sample: 2 before, 2 after</text>
+<rect class="orange" x="66.0" y="138.0" width="116.0" height="22.0" rx="11"/>
+<circle class="dot-grey" cx="80.0" cy="149.0" r="3.5"/>
+<text class="r text-orange" x="662.0" y="154.0">shrinks at the start and end</text>
+<rect class="green" x="330.0" y="172.0" width="160.0" height="22.0" rx="11"/>
+<circle class="dot-grey" cx="432.0" cy="183.0" r="3.5"/>
+<text class="r text-green" x="662.0" y="188.0">stops at a gap</text>
+<text class="ts c" x="380.0" y="226.0">NaN samples inside a window are skipped: the mean is taken over the remaining samples.</text>
+</svg>

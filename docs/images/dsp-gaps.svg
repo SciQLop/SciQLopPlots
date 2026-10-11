@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 368" width="760" height="368" role="img" aria-label="Gap handling: split at gaps, process each segment, join with a NaN row">
+<style>
+.bg { fill: #ffffff; stroke: #d0d7de; }
+text { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1f2328; }
+.ts { font-size: 11px; fill: #59636e; }
+.tb { font-weight: 600; }
+.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; }
+.c { text-anchor: middle; }
+.r { text-anchor: end; }
+.axis { stroke: #8c959f; stroke-width: 1; }
+.line { stroke: #59636e; stroke-width: 1.5; fill: none; }
+.dash { stroke-dasharray: 4 3; }
+.arrow { stroke: #59636e; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.blue { fill: #dbeafe; stroke: #2563eb; }
+.orange { fill: #fef3c7; stroke: #d97706; }
+.green { fill: #d1fae5; stroke: #059669; }
+.red { fill: #fee2e2; stroke: #dc2626; }
+.violet { fill: #ede9fe; stroke: #7c3aed; }
+.grey { fill: #f6f8fa; stroke: #8c959f; }
+.dot-blue { fill: #2563eb; }
+.dot-orange { fill: #d97706; }
+.dot-grey { fill: #8c959f; }
+.nan { fill: #ffffff; stroke: #dc2626; stroke-width: 2; }
+.stroke-blue { stroke: #2563eb; stroke-width: 2; fill: none; }
+.stroke-orange { stroke: #d97706; stroke-width: 2; fill: none; }
+.stroke-green { stroke: #059669; stroke-width: 2; fill: none; }
+.stroke-red { stroke: #dc2626; stroke-width: 2; fill: none; }
+.text-blue { fill: #2563eb; font-weight: 600; }
+.text-orange { fill: #b45309; font-weight: 600; }
+.text-green { fill: #047857; font-weight: 600; }
+.text-red { fill: #dc2626; font-weight: 600; }
+.text-violet { fill: #6d28d9; font-weight: 600; }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker></defs>
+<rect class="bg" x="0.5" y="0.5" width="759" height="367" rx="8"/>
+<text class="tb" x="20.0" y="34.0">1. Input</text>
+<path class="axis" d="M56.5 86.0 L704.5 86.0"/>
+<circle class="dot-blue" cx="70.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="97.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="124.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="151.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="178.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="205.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="232.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="259.0" cy="86.0" r="4.5"/>
+<circle class="dot-blue" cx="286.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="475.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="502.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="529.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="556.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="583.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="610.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="637.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="664.0" cy="86.0" r="4.5"/>
+<circle class="dot-orange" cx="691.0" cy="86.0" r="4.5"/>
+<path class="line" d="M70.0 65.0 V70.0 H97.0 V65.0"/>
+<text class="ts c" x="83.5" y="62.0">median Δt</text>
+<path class="stroke-red" d="M286.0 65.0 V70.0 H475.0 V65.0"/>
+<text class="ts c" x="380.5" y="62.0">Δt &gt; gap_factor × median Δt  →  a gap</text>
+<text class="tb" x="20.0" y="140.0">2. Split at gaps</text>
+<rect class="blue" x="58.0" y="152.0" width="240.0" height="34.0" rx="6"/>
+<text class="c text-blue" x="178.0" y="174.0">segment 1</text>
+<rect class="orange" x="463.0" y="152.0" width="240.0" height="34.0" rx="6"/>
+<text class="c text-orange" x="583.0" y="174.0">segment 2</text>
+<text class="ts c" x="380.0" y="208.0">Each segment is processed on its own, in parallel: no filter or window reaches across a gap.</text>
+<text class="tb" x="20.0" y="246.0">3. Output</text>
+<polyline class="stroke-blue" points="70.0,302.0 97.0,294.8 124.0,288.4 151.0,283.5 178.0,280.6 205.0,280.1 232.0,282.0 259.0,286.1 286.0,291.9"/>
+<circle class="dot-blue" cx="70.0" cy="302.0" r="3.5"/>
+<circle class="dot-blue" cx="97.0" cy="294.8" r="3.5"/>
+<circle class="dot-blue" cx="124.0" cy="288.4" r="3.5"/>
+<circle class="dot-blue" cx="151.0" cy="283.5" r="3.5"/>
+<circle class="dot-blue" cx="178.0" cy="280.6" r="3.5"/>
+<circle class="dot-blue" cx="205.0" cy="280.1" r="3.5"/>
+<circle class="dot-blue" cx="232.0" cy="282.0" r="3.5"/>
+<circle class="dot-blue" cx="259.0" cy="286.1" r="3.5"/>
+<circle class="dot-blue" cx="286.0" cy="291.9" r="3.5"/>
+<polyline class="stroke-orange" points="475.0,323.1 502.0,319.9 529.0,314.7 556.0,308.1 583.0,300.9 610.0,293.8 637.0,287.5 664.0,282.9 691.0,280.4"/>
+<circle class="dot-orange" cx="475.0" cy="323.1" r="3.5"/>
+<circle class="dot-orange" cx="502.0" cy="319.9" r="3.5"/>
+<circle class="dot-orange" cx="529.0" cy="314.7" r="3.5"/>
+<circle class="dot-orange" cx="556.0" cy="308.1" r="3.5"/>
+<circle class="dot-orange" cx="583.0" cy="300.9" r="3.5"/>
+<circle class="dot-orange" cx="610.0" cy="293.8" r="3.5"/>
+<circle class="dot-orange" cx="637.0" cy="287.5" r="3.5"/>
+<circle class="dot-orange" cx="664.0" cy="282.9" r="3.5"/>
+<circle class="dot-orange" cx="691.0" cy="280.4" r="3.5"/>
+<circle class="nan" cx="380.5" cy="302.0" r="6"/>
+<text class="ts c" x="380.5" y="340.0">one NaN row at the midpoint</text>
+<text class="ts c" x="380.5" y="354.0">breaks the plotted line</text>
+</svg>

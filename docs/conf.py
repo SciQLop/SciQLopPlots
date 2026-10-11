@@ -11,7 +11,7 @@ version = release = re.search(
     (Path(__file__).parent.parent / "SciQLopPlots" / "__init__.py").read_text(),
 ).group(1)
 
-extensions = ["myst_parser", "sphinx.ext.autodoc"]
+extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 source_suffix = {".md": "markdown"}
 myst_heading_anchors = 3
 

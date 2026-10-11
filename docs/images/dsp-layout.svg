@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" width="760" height="220" role="img" aria-label="y is n rows by k columns; reduce combines the columns of each row">
+<style>
+.bg { fill: #ffffff; stroke: #d0d7de; }
+text { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1f2328; }
+.ts { font-size: 11px; fill: #59636e; }
+.tb { font-weight: 600; }
+.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; }
+.c { text-anchor: middle; }
+.r { text-anchor: end; }
+.axis { stroke: #8c959f; stroke-width: 1; }
+.line { stroke: #59636e; stroke-width: 1.5; fill: none; }
+.dash { stroke-dasharray: 4 3; }
+.arrow { stroke: #59636e; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.blue { fill: #dbeafe; stroke: #2563eb; }
+.orange { fill: #fef3c7; stroke: #d97706; }
+.green { fill: #d1fae5; stroke: #059669; }
+.red { fill: #fee2e2; stroke: #dc2626; }
+.violet { fill: #ede9fe; stroke: #7c3aed; }
+.grey { fill: #f6f8fa; stroke: #8c959f; }
+.dot-blue { fill: #2563eb; }
+.dot-orange { fill: #d97706; }
+.dot-grey { fill: #8c959f; }
+.nan { fill: #ffffff; stroke: #dc2626; stroke-width: 2; }
+.stroke-blue { stroke: #2563eb; stroke-width: 2; fill: none; }
+.stroke-orange { stroke: #d97706; stroke-width: 2; fill: none; }
+.stroke-green { stroke: #059669; stroke-width: 2; fill: none; }
+.stroke-red { stroke: #dc2626; stroke-width: 2; fill: none; }
+.text-blue { fill: #2563eb; font-weight: 600; }
+.text-orange { fill: #b45309; font-weight: 600; }
+.text-green { fill: #047857; font-weight: 600; }
+.text-red { fill: #dc2626; font-weight: 600; }
+.text-violet { fill: #6d28d9; font-weight: 600; }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker></defs>
+<rect class="bg" x="0.5" y="0.5" width="759" height="219" rx="8"/>
+<text class="tb" x="20.0" y="30.0">Arrays</text>
+<rect class="grey" x="60.0" y="60.0" width="60.0" height="110.0" rx="2"/>
+<text class="mono c" x="90.0" y="50.0">x</text>
+<text class="mono c" x="219.0" y="50.0">y</text>
+<text class="ts c" x="90.0" y="75.0">t0</text>
+<rect class="blue" x="150.0" y="60.0" width="44.0" height="20.0" rx="2"/>
+<rect class="orange" x="196.0" y="60.0" width="44.0" height="20.0" rx="2"/>
+<rect class="green" x="242.0" y="60.0" width="44.0" height="20.0" rx="2"/>
+<text class="ts c" x="90.0" y="97.0">t1</text>
+<rect class="blue" x="150.0" y="82.0" width="44.0" height="20.0" rx="2"/>
+<rect class="orange" x="196.0" y="82.0" width="44.0" height="20.0" rx="2"/>
+<rect class="green" x="242.0" y="82.0" width="44.0" height="20.0" rx="2"/>
+<text class="ts c" x="90.0" y="119.0">t2</text>
+<rect class="blue" x="150.0" y="104.0" width="44.0" height="20.0" rx="2"/>
+<rect class="orange" x="196.0" y="104.0" width="44.0" height="20.0" rx="2"/>
+<rect class="green" x="242.0" y="104.0" width="44.0" height="20.0" rx="2"/>
+<text class="ts c" x="90.0" y="141.0">t3</text>
+<rect class="blue" x="150.0" y="126.0" width="44.0" height="20.0" rx="2"/>
+<rect class="orange" x="196.0" y="126.0" width="44.0" height="20.0" rx="2"/>
+<rect class="green" x="242.0" y="126.0" width="44.0" height="20.0" rx="2"/>
+<text class="ts c" x="90.0" y="163.0">t4</text>
+<rect class="blue" x="150.0" y="148.0" width="44.0" height="20.0" rx="2"/>
+<rect class="orange" x="196.0" y="148.0" width="44.0" height="20.0" rx="2"/>
+<rect class="green" x="242.0" y="148.0" width="44.0" height="20.0" rx="2"/>
+<text class="ts c" x="219.0" y="190.0">shape (n, k): one row per time,</text>
+<text class="ts c" x="219.0" y="204.0">one column per component</text>
+<text class="ts c" x="90.0" y="190.0">shape (n,)</text>
+<text class="ts c" x="90.0" y="204.0">float64 s</text>
+<path class="arrow" d="M304.0 115.0 L520.0 115.0"/>
+<text class="mono c" x="412.0" y="105.0">reduce(x, y, "norm")</text>
+<rect class="violet" x="530.0" y="60.0" width="60.0" height="110.0" rx="2"/>
+<text class="mono c" x="560.0" y="50.0">y_out</text>
+<text class="ts c" x="560.0" y="190.0">shape (n,)</text>
+<text class="ts" x="608.0" y="90.0">one value per row:</text>
+<text class="ts" x="608.0" y="106.0">sum, mean, min,</text>
+<text class="ts" x="608.0" y="122.0">max, or norm</text>
+<text class="ts" x="608.0" y="138.0">= √(Σ y²)</text>
+</svg>

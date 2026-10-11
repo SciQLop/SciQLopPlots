@@ -19,6 +19,7 @@ This guide goes from a first plot to live data, multi-plot panels, overlays and 
 - [Interval timelines](#interval-timelines)
 - [Reactive pipelines](#reactive-pipelines)
 - [N-D projections](#n-d-projections)
+- [Signal processing](#signal-processing)
 - [Export](#export)
 - [Performance tips](#performance-tips)
 - [Troubleshooting](#troubleshooting)
@@ -617,6 +618,285 @@ proj.set_axis_labels(["X", "Y", "Z"])
 ![Three 2-D projections of an orbit](images/nd-projection.png)
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
+
+## Signal processing
+
+`SciQLopPlots.dsp` filters, transforms and summarises time series. It works on plain NumPy arrays and needs no plot and no `QApplication`.
+
+It is built for real measurements:
+
+- **Gaps are handled for you.** Data is split where samples are missing, and each piece is processed on its own.
+- **It is fast.** The work runs in C++, on several threads, with Python's global lock released. Other Python threads keep running meanwhile.
+- **Types are kept.** `float32` data gives `float32` results.
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+t = np.arange(0, 600, 0.5)                          # seconds, one sample every 0.5 s
+b = np.column_stack([np.sin(t / 30), np.cos(t / 30), 0.2 * np.sin(t / 5)])   # 3 components
+
+t_out, magnitude = dsp.reduce(t, b, "norm")         # |B| at each time
+assert magnitude.shape == t.shape
+```
+
+### Arrays in, arrays out
+
+Every function takes the same two arrays:
+
+- **`x`**: the sample times, a 1-D array of seconds. It is converted to `float64`. It must increase.
+- **`y`**: the values. Either 1-D, or 2-D with one row per time and one column per component: shape `(n, k)`, like the `plot()` functions take.
+
+![x is a 1-D array of n times, y has n rows and k columns; reduce turns y into one value per row](images/dsp-layout.svg)
+
+`y` must be `float64`, `float32` or `int32`. Other types raise `TypeError`. That includes `int64`, NumPy's default integer: convert it first, with `y.astype(np.float64)`.
+
+`datetime64` times are not converted for you either. Use seconds: `x = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
+
+Most functions return a new `(x, y)` pair. The spectral ones return one result per segment (see [Spectra](#spectra)).
+
+### Gaps
+
+Instruments miss samples: a telemetry drop, a calibration pause, a data hole. A filter or a rolling window that runs straight across such a hole mixes data from both sides. That gives values that never existed.
+
+So the functions first look for gaps:
+
+1. They take the median time step of `x`.
+2. A step longer than `gap_factor` times the median (3 by default) is a gap.
+3. The data is split there into segments, and each segment is processed on its own.
+4. The results are joined back, with one row of NaN at each gap, stamped at the middle of the gap. A plot breaks its line on a NaN, so the hole stays visible.
+
+![Gap handling: samples split at a gap, each segment processed alone, outputs joined with a NaN row](images/dsp-gaps.svg)
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+t = np.r_[np.arange(0, 100.0), np.arange(200, 300.0)]   # a 100 s hole in 1 s data
+y = np.sin(t / 10)
+
+assert dsp.split_segments(t, y) == [(0, 100), (100, 200)]   # [start, end) row ranges
+
+t_out, smooth = dsp.rolling_mean(t, y, 5)
+assert len(t_out) == len(t) + 1                     # one extra row: the NaN at the gap
+assert t_out[100] == 149.5 and np.isnan(smooth[100])
+```
+
+Two parameters control this:
+
+- **`gap_factor`** (default 3): how many median steps make a gap. Raise it for jittery sampling, lower it to catch shorter holes.
+- **`has_gaps=False`**: skip the search and treat the data as one segment. Use it when you know the sampling is regular: it saves time on large arrays, and no NaN row is added.
+
+`int32` values have no NaN. Their gap rows hold 0 instead.
+
+### Filters
+
+Four filters, in two pairs:
+
+| Function | Filter | Phase |
+|---|---|---|
+| `fir_filter(x, y, coeffs)` | FIR, from its taps | causal: delays the signal |
+| `filtfilt(x, y, coeffs)` | FIR, run forward then backward | zero phase: no delay |
+| `iir_sos(x, y, sos)` | IIR, as second-order sections | causal: delays the signal |
+| `sosfiltfilt(x, y, sos)` | IIR, run forward then backward | zero phase: no delay |
+
+`filtfilt` and `sosfiltfilt` give the same results as `scipy.signal.filtfilt` and `scipy.signal.sosfiltfilt`, edges included. Use them to clean data you then look at. Use the causal pair when the output must only depend on the past, as in a real-time filter.
+
+The coefficients must have the same type as `y`. With `float32` data, pass `coeffs.astype(np.float32)`.
+
+Here a 0.5 Hz wave is buried in noise. A 101-tap low-pass FIR, built with NumPy alone, removes the noise. `fir_filter` lags by half the filter, 50 samples (0.5 s). `filtfilt` does not lag.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot, dsp
+
+fs = 100.0                                          # samples per second
+t = np.arange(0, 20, 1 / fs)
+rng = np.random.default_rng(0)
+raw = np.sin(2 * np.pi * 0.5 * t) + 0.5 * rng.standard_normal(t.size)
+
+taps = 101                                          # windowed-sinc low-pass at 2 Hz
+n = np.arange(taps) - (taps - 1) / 2
+coeffs = np.sinc(2 * 2.0 / fs * n) * np.hamming(taps)
+coeffs /= coeffs.sum()
+
+_, causal = dsp.fir_filter(t, raw, coeffs)
+_, zero_phase = dsp.filtfilt(t, raw, coeffs)
+
+plot = SciQLopPlot()
+plot.plot(t, raw, labels=["raw"])
+plot.plot(t, causal, labels=["fir_filter: delayed"])
+plot.plot(t, zero_phase, labels=["filtfilt: aligned"])
+plot.x_axis().set_range(2, 8)
+plot.y_axis().set_range(-2.5, 2.5)
+```
+
+![A noisy wave, its causal FIR output lagging behind, and its zero-phase output on top of the wave](images/dsp-filters.png)
+
+For IIR filters, design the sections with SciPy:
+
+```python
+import numpy as np
+from scipy import signal
+from SciQLopPlots import dsp
+
+t = np.arange(0, 20, 0.01)
+raw = np.sin(2 * np.pi * 0.5 * t) + 0.3 * np.sin(2 * np.pi * 20 * t)
+
+sos = signal.butter(4, 2.0, fs=100, output="sos")   # 4th-order low-pass at 2 Hz
+_, smooth = dsp.sosfiltfilt(t, raw, sos)
+```
+
+`sos` has one row per section, `[b0, b1, b2, a0, a1, a2]`: the format SciPy returns.
+
+### Spectra
+
+`fft` and `spectrogram` turn time into frequency. Frequencies are in hertz when `x` is in seconds: the sampling rate comes from the median time step.
+
+They return a **list, with one result per segment**. A spectrum across a gap would be meaningless, so each segment gets its own.
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+t = np.arange(0, 10, 0.01)                          # 100 Hz
+y = 2 * np.sin(2 * np.pi * 5 * t)                   # amplitude 2, at 5 Hz
+
+[(freqs, magnitude)] = dsp.fft(t, y, window="rectangular")    # one segment, one result
+assert np.isclose(freqs[magnitude.argmax()], 5.0)
+assert np.isclose(magnitude.max(), 1.0)             # amplitude / 2
+```
+
+The magnitude is `|FFT| / N`, one-sided. A sine of amplitude A peaks at A/2 with `window="rectangular"`, and lower with a tapered window: A/4 with `"hann"`, the default. The windows are `"hann"`, `"hamming"`, `"blackman"`, `"flattop"` and `"rectangular"`. For 2-D `y`, `magnitude` has one column per component.
+
+`spectrogram` cuts one column of `y` (`col`, 0 by default) into windows of `window_size` samples. Each window gives one power spectrum, stamped at the time of its centre sample.
+
+![Spectrogram windows of window_size samples, overlapping by overlap samples, each giving one spectrum](images/dsp-spectrogram-windows.svg)
+
+`overlap` is how many samples two neighbouring windows share. Its default, 0, means half a window: there is no way to ask for windows that do not overlap. The power is `|FFT / N|²`.
+
+Each result is `(t, f, power)`, and `power` has shape `(len(t), len(f))`. That is what a colour map takes, so it plots directly:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot, ColorGradient, dsp
+
+fs = 100.0
+t = np.arange(0, 120, 1 / fs)
+rng = np.random.default_rng(1)
+y = np.sin(2 * np.pi * (1 + 0.15 * t) * t) + 0.3 * rng.standard_normal(t.size)   # rising tone
+
+[(st, f, power)] = dsp.spectrogram(t, y, window_size=256, overlap=192)
+
+plot = SciQLopPlot()
+spectrum = plot.plot(st, f, power, name="power")
+spectrum.set_gradient(ColorGradient.Viridis)
+spectrum.set_z_log_scale(True)
+```
+
+![A spectrogram of a tone rising from 1 Hz to over 30 Hz](images/dsp-spectrogram.png)
+
+A segment shorter than `window_size` gives empty arrays.
+
+### Rolling statistics
+
+`rolling_mean`, `rolling_std` and `rolling_percentile` slide a window along the time axis. `window` counts **samples**, not seconds: with one sample every 4 s, `window=15` covers one minute.
+
+The window is centred on each sample. It shrinks near the ends of each segment instead of padding, and it never crosses a gap. NaN samples inside it are skipped.
+
+![A rolling window centred on a sample, shrinking at the edges, stopping at a gap, skipping NaN samples](images/dsp-rolling-window.svg)
+
+The output has the input's times, plus the gap rows. `rolling_std` is the sample standard deviation (divided by n − 1).
+
+`rolling_percentile` with `q=50`, the rolling median, ignores spikes that drag a mean away:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot, dsp
+
+t = np.arange(0, 600, 1.0)
+rng = np.random.default_rng(2)
+y = np.sin(t / 60) + 0.1 * rng.standard_normal(t.size)
+y[rng.choice(t.size, 25, replace=False)] += 4       # spikes
+
+_, mean = dsp.rolling_mean(t, y, 31)
+_, median = dsp.rolling_percentile(t, y, 31, q=50)
+
+plot = SciQLopPlot()
+plot.plot(t, y, labels=["data with spikes"])
+plot.plot(t, mean, labels=["rolling mean"])
+plot.plot(t, median, labels=["rolling median"])
+plot.x_axis().set_range(0, 600)
+plot.y_axis().set_range(-1.5, 5.5)
+```
+
+![Spiky data, its rolling mean pulled up by the spikes, its rolling median following the signal](images/dsp-rolling.png)
+
+When a window holds only NaN, `rolling_percentile` gives NaN. `rolling_mean` and `rolling_std` give 0.
+
+### Reductions
+
+`reduce(x, y, op)` combines the columns of each row into one value. `op` is `"sum"`, `"mean"`, `"min"`, `"max"` or `"norm"` (the square root of the sum of squares). NaN values are skipped. A row of only NaN gives NaN for `"min"` and `"max"`, and 0 for the others.
+
+`reduce_axes` does the same for data whose columns hide several dimensions. A particle instrument, for example, may store 32 energies × 16 angles × 8 angles as 4096 columns per time. Give the shape, and the axes to reduce:
+
+![reduce_axes: 12 columns read as 4 energies by 3 angles; summing over angles leaves 4 columns](images/dsp-reduce-axes.svg)
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+t = np.arange(10.0)
+counts = np.ones((10, 32 * 16 * 8), dtype=np.float32)      # energy × theta × phi per row
+
+_, energy_spectrum = dsp.reduce_axes(t, counts, shape=(32, 16, 8), axes=(1, 2), op="sum")
+assert energy_spectrum.shape == (10, 32)                   # one column per energy
+assert energy_spectrum[0, 0] == 16 * 8
+```
+
+Columns are read in C order, NumPy's default: the last axis changes fastest. `reduce_axes` adds no gap rows.
+
+`column_percentile(y, q)` goes the other way: it reduces **time** away and keeps the columns. It is a quick background estimate for a spectrogram:
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+rng = np.random.default_rng(3)
+power = rng.exponential(1.0, size=(500, 64))        # 500 times × 64 frequencies
+background = dsp.column_percentile(power, q=10)      # one value per frequency
+cleaned = power - background                         # broadcasts over the rows
+assert background.shape == (64,)
+```
+
+It skips NaN, and matches `np.nanpercentile`.
+
+### Resampling and missing values
+
+`resample(x, y, target_dt=...)` puts each segment on a regular grid, by linear interpolation. The grid starts at the segment's first sample. Without `target_dt`, the step is the median step of `x`.
+
+`interpolate_nan(x, y, max_consecutive=1)` fills short runs of NaN by linear interpolation between their neighbours. Runs longer than `max_consecutive`, and runs at either end, stay NaN.
+
+```python
+import numpy as np
+from SciQLopPlots import dsp
+
+t = np.array([0.0, 1.0, 2.5, 4.0])
+y = np.array([0.0, 1.0, 2.5, 4.0])
+t_reg, y_reg = dsp.resample(t, y, target_dt=1.0)
+assert list(t_reg) == [0.0, 1.0, 2.0, 3.0, 4.0]
+
+y = np.array([1.0, np.nan, 3.0, np.nan, np.nan, 6.0])
+filled = dsp.interpolate_nan(np.arange(6.0), y)                # runs of 1 only
+assert np.isnan(filled[3]) and filled[1] == 2.0
+```
+
+### Good to know
+
+- **Check names.** An unknown `window` or `op` raises `ValueError` and lists the valid ones.
+- **Call it from a thread.** The functions release Python's global lock while they compute, so a worker thread can filter while the interface stays responsive.
+- **Mind empty windows.** Over only NaN, means, standard deviations, sums and norms give 0; percentiles, minimums and maximums give NaN. Mask those rows if 0 is a meaningful value for you.
+- **Sort `x`.** The functions don't check that times increase. Unsorted times give wrong results, without an error.
 
 ## Export
 

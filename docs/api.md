@@ -12,6 +12,15 @@ Signatures come from the compiled bindings; methods inherited from Qt are left o
    :imported-members:
 ```
 
+## Signal processing
+
+See the [user guide](user-guide.md#signal-processing) for how gaps, windows and reductions work.
+
+```{eval-rst}
+.. automodule:: SciQLopPlots.dsp
+   :members:
+```
+
 ## Tracing
 
 ```{eval-rst}
