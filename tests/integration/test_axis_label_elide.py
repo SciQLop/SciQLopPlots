@@ -30,3 +30,20 @@ def test_long_y_label_stays_within_its_axis(qtbot, tmp_path):
     img_height = QImage(path).height()
     assert min(rows) > 2 and max(rows) < img_height - 3, (min(rows), max(rows), img_height)
     assert plot.y_axis().label() == LONG
+
+
+def test_long_colour_scale_label_stays_within_its_bar(qtbot, tmp_path):
+    """Same on the colour scale axis: a short spectrogram's z label from CDF metadata."""
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    x, y = np.arange(100.0), np.logspace(1, 4, 16)
+    plot.plot(x, y, np.random.rand(100, 16), name="spec")
+    plot.z_axis().set_label("DEF_omni [keV/(cm^2 s sr keV)] " * 3)
+    path = str(tmp_path / "zlabel.png")
+    assert plot.save_png(path, 600, 150)
+
+    width = QImage(path).width()
+    rows = _ink_rows(path, range(width - 20, width))   # the rotated z label, at the right edge
+    assert rows, "label not drawn"
+    img_height = QImage(path).height()
+    assert min(rows) > 2 and max(rows) < img_height - 3, (min(rows), max(rows), img_height)
