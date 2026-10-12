@@ -199,7 +199,7 @@ def test_hover_reports_the_user_id(ts_plot, qtbot):
     seen = []
     tl.hovered.connect(seen.append)
     QTest.mouseMove(_canvas(ts_plot), _at(tl, 25, "A"))
-    qtbot.waitUntil(lambda: seen and seen[-1] == 7, timeout=2000)
+    qtbot.waitUntil(lambda: bool(seen) and seen[-1] == 7, timeout=2000)
     QTest.mouseMove(_canvas(ts_plot), _at(tl, 50, "A"))
     qtbot.waitUntil(lambda: seen[-1] == -1, timeout=2000)
 
@@ -209,7 +209,7 @@ def test_hidden_timeline_reports_no_hover(ts_plot, qtbot):
     seen = []
     tl.hovered.connect(seen.append)
     QTest.mouseMove(_canvas(ts_plot), _at(tl, 25, "A"))
-    qtbot.waitUntil(lambda: seen and seen[-1] == 7, timeout=2000)
+    qtbot.waitUntil(lambda: bool(seen) and seen[-1] == 7, timeout=2000)
     tl.set_visible(False)
     QTest.mouseMove(_canvas(ts_plot), _at(tl, 26, "A"))
     qtbot.waitUntil(lambda: seen[-1] == -1, timeout=2000)
@@ -220,7 +220,7 @@ def test_click_selection_reports_ids(ts_plot, qtbot):
     seen = []
     tl.selected_intervals_changed.connect(seen.append)
     QTest.mouseClick(_canvas(ts_plot), Qt.LeftButton, Qt.NoModifier, _at(tl, 75, "B"))
-    qtbot.waitUntil(lambda: seen and seen[-1] == [8], timeout=2000)
+    qtbot.waitUntil(lambda: bool(seen) and seen[-1] == [8], timeout=2000)
     assert tl.selected_ids() == [8]
 
 
