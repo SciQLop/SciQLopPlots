@@ -274,6 +274,12 @@ public:
     SciQLopPyBuffer(const SciQLopPyBuffer& other);
     SciQLopPyBuffer(SciQLopPyBuffer&& other) noexcept;
     explicit SciQLopPyBuffer(PyObject* obj);
+#ifdef __EMSCRIPTEN__
+    // A browser build has no Python: the buffer owns a copy of a JavaScript typed array.
+    // format is a buffer-protocol code ('d', 'f', ...), the bytes are C-contiguous.
+    SciQLopPyBuffer(std::vector<unsigned char> bytes, char format, std::size_t item_size,
+                    std::vector<std::size_t> shape);
+#endif
 
     ~SciQLopPyBuffer();
 

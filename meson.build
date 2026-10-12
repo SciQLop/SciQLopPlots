@@ -27,15 +27,23 @@ endif
 
 cpp = meson.get_compiler('cpp')
 
-subdir('src/DSP')
+subdir('src')
 
-subdir('SciQLopPlots')
+# A browser build (Qt for WebAssembly, see wasm/meson.build) makes the JavaScript module
+# only: no Python there, so no bindings, DSP module or tests.
+if host_machine.system() == 'emscripten'
+    subdir('wasm')
+else
+    subdir('src/DSP')
 
-# Off for wheel builds (see pyproject.toml): nothing under tests/ is installed,
-# and test_resampler_locking is an executable, so it links libpython through
-# python3.dependency(embed: true) -- which manylinux images don't ship, failing
-# the wheel build at link time even though the wheel itself needs none of this.
-if get_option('with_tests')
-    subdir('tests')
+    subdir('SciQLopPlots')
+
+    # Off for wheel builds (see pyproject.toml): nothing under tests/ is installed,
+    # and test_resampler_locking is an executable, so it links libpython through
+    # python3.dependency(embed: true) -- which manylinux images don't ship, failing
+    # the wheel build at link time even though the wheel itself needs none of this.
+    if get_option('with_tests')
+        subdir('tests')
+    endif
 endif
 

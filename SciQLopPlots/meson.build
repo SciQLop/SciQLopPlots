@@ -1,19 +1,4 @@
-qtmod = import(qt_sdk)
-qtdeps = dependency(qt_sdk, modules : ['Core','Widgets','Gui','Svg','PrintSupport', 'OpenGL'])
-
-cpp_utils_dep = dependency('cpp_utils', fallback : ['cpp_utils', 'cpp_utils_dep'], default_options: [f'with_tests=false'])
-hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
-fmt_dep = dependency('fmt', static:true)
 gl_dep = dependency('gl')
-# NeoQCP's draw/resample zones feed the SciQLopPlots tracer (and Tracy when enabled).
-meson.override_dependency('neoqcp-profiling-hook', declare_dependency(
-    include_directories: include_directories('../include'),
-    compile_args: ['-DNEOQCP_PROFILING_HOOK=<SciQLopPlots/Profiling.hpp>']))
-NeoQCP_dep = dependency('NeoQCP', default_options: ['tracy_enable=@0@'.format(get_option('tracy_enable')),
-                                                    'unity=on',
-                                                    'with_tests=false',
-                                                    ])
-magic_enum_dep = dependency('magic_enum', static:true)
 
 qmake_possible_names = ['qmake-qt6','qmake6','qmake']
 pyside_version = '6'
@@ -78,116 +63,10 @@ subdir('bindings/SciQLopPlotsBindings')
 
 shiboken_dep = declare_dependency(compile_args: shiboken_build_flags, link_args: shiboken_link_flags)
 
-moc_headers = [
-    'bindings/_QCustomPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/helpers.hpp',
-    project_source_root + '/include/SciQLopPlots/Debug.hpp',
-    project_source_root + '/include/SciQLopPlots/Profiling.hpp',
-    project_source_root + '/include/SciQLopPlots/unique_names_factory.hpp',
-    project_source_root + '/include/SciQLopPlots/enums.hpp',
-    project_source_root + '/include/SciQLopPlots/qcp_enums.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotRange.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotInterface.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotLegendInterface.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotLegend.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopTimeSeriesPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopNDProjectionPlot.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopPlotAxis.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotObject.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/AxisSynchronizer.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/XAxisSynchronizer.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/TimeAxisSynchronizer.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/CrosshairSynchronizer.hpp',
-    project_source_root + '/include/SciQLopPlots/MultiPlots/VPlotsAlign.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphInterface.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopGraphComponent.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp',
-    project_source_root + '/include/SciQLopPlots/ColorScaleController.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopCurve.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopLineGraph.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMapBase.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopColorMap.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopHistogram2D.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/SciQLopTimeline.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/CategoryPalette.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/AbstractResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Plotables/Resamplers/SciQLopCurveResampler.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopHorizontalSpan.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopRectangularSpan.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopPlotItem.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopCrosshair.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopPixmapItem.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopStraightLines.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopShapesItems.hpp',
-    project_source_root + '/include/SciQLopPlots/Items/SciQLopTextItem.hpp',
-    project_source_root + '/include/SciQLopPlots/DataProducer/DataProducer.hpp',
-    project_source_root + '/include/SciQLopPlots/DragNDrop/PlotDragNDropCallback.hpp',
-    project_source_root + '/include/SciQLopPlots/DragNDrop/PlaceHolderManager.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Model/Model.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/Model/Node.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/View/TreeView.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/View/InspectorView.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertyDelegateBase.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/InspectorExtension.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopMultiPlotPanelDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesPanel.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/View/PropertiesView.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/BooleanDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/FontDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LineDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/LegendDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/ColorGradientDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/Delegates/MarkerDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTextItemDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapBaseDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopColorMapDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTimelineDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Inspector/PropertiesDelegates/SciQLopGraphComponentDelegate.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/ProductsModel.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/ProductsNode.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/ProductsView.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/ProductsTreeFilterModel.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/ProductsFlatFilterModel.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/QueryHighlighter.hpp',
-    project_source_root + '/include/SciQLopPlots/Products/QueryLineEdit.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopOverlay.hpp',
-    project_source_root + '/include/SciQLopPlots/SciQLopTheme.hpp',
-    project_source_root + '/include/SciQLopPlots/Icons/icons.hpp'
-]
+moc_headers = ['bindings/_QCustomPlot.hpp'] + sciqlopplots_moc_headers
 
 moc_sources = []
-headers = moc_headers + \
-         [project_source_root+'/include/SciQLopPlots/Python/PythonInterface.hpp',
-         project_source_root+'/include/SciQLopPlots/Python/Views.hpp',
-         project_source_root+'/include/SciQLopPlots/Python/Validation.hpp',
-         project_source_root+'/include/SciQLopPlots/Python/MatchedBuffers.hpp',
-         project_source_root+'/include/SciQLopPlots/Python/SafeSlot.hpp',
-         project_source_root+'/include/SciQLopPlots/constants.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/SubsequenceMatcher.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/ScoreMerge.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/QueryParser.hpp',
-         project_source_root+'/include/SciQLopPlots/Products/ScoreSignalRegistry.hpp']
+headers = moc_headers + sciqlopplots_headers
 
 includes = include_directories(['../include'])
 
@@ -196,7 +75,7 @@ moc_files = qtmod.compile_moc(
                             sources : moc_sources,
                             include_directories : includes)
 
-resources_files = qtmod.compile_resources(sources : ['../resources/resources.qrc'])
+resources_files = qtmod.compile_resources(sources : sciqlopplots_resources)
 
 # Shiboken-generated sources and PythonInterface.cpp must be compiled
 # without unity: PySide6 headers reference protected enums that error
@@ -212,101 +91,7 @@ bindings_lib = static_library('sciqlopplots_bindings_impl',
         override_options: ['unity=off'],
 )
 
-sources = moc_files \
-        + resources_files \
-        + [
-            '../src/Profiling.cpp',
-            '../src/Tracing.cpp',
-            '../src/SciQLopPlotInterface.cpp',
-            '../src/SciQLopPlot.cpp',
-            '../src/SciQLopPlotLegend.cpp',
-            '../src/SciQLopTimeSeriesPlot.cpp',
-            '../src/SciQLopNDProjectionPlot.cpp',
-            '../src/SciQLopPlotAxis.cpp',
-            '../src/SciQLopTheme.cpp',
-            '../src/SciQLopPlotCollection.cpp',
-            '../src/AxisSynchronizer.cpp',
-            '../src/XAxisSynchronizer.cpp',
-            '../src/TimeAxisSynchronizer.cpp',
-            '../src/CrosshairSynchronizer.cpp',
-            '../src/VPlotsAlign.cpp',
-            '../src/SciQLopMultiPlotObject.cpp',
-            '../src/SciQLopMultiPlotPanel.cpp',
-            '../src/SciQLopPlotContainer.cpp',
-            '../src/Export/SciQLopExportable.cpp',
-            '../src/MultiPlotsVSpan.cpp',
-            '../src/MultiPlotsVLine.cpp',
-            '../src/SciQLopPixmapItem.cpp',
-            '../src/SciQLopShapesItems.cpp',
-            '../src/SciQLopTextItem.cpp',
-            '../src/SciQLopGraphInterface.cpp',
-            '../src/SciQLopGraphComponentInterface.cpp',
-            '../src/SciQLopGraphComponent.cpp',
-            '../src/QCPAbstractPlottableWrapper.cpp',
-            '../src/SciQLopPlotItem.cpp',
-            '../src/SpanBase.cpp',
-            '../src/SciQLopSpanBase.cpp',
-            '../src/SciQLopVerticalSpan.cpp',
-            '../src/SciQLopHorizontalSpan.cpp',
-            '../src/SciQLopRectangularSpan.cpp',
-            '../src/SciQLopLineGraph.cpp',
-            '../src/SciQLopMultiGraphBase.cpp',
-            '../src/SciQLopWaterfallGraph.cpp',
-            '../src/SciQLopSingleLineGraph.cpp',
-            '../src/SciQLopTimeColoredCurve.cpp',
-            '../src/ColorScaleController.cpp',
-            '../src/SciQLopCurve.cpp',
-            '../src/SciQLopNDProjectionCurves.cpp',
-            '../src/SciQLopColorMapBase.cpp',
-            '../src/SciQLopColorMap.cpp',
-            '../src/SciQLopHistogram2D.cpp',
-            '../src/SciQLopTimeline.cpp',
-            '../src/AbstractResampler.cpp',
-            '../src/SciQLopCurveResampler.cpp',
-            '../src/SciQLopCrosshair.cpp',
-            '../src/SciQLopStraightLines.cpp',
-            '../src/DataProducer.cpp',
-            '../src/Model.cpp',
-            '../src/Node.cpp',
-            '../src/TypeRegistry.cpp',
-            '../src/DelegateRegistry.cpp',
-            '../src/Registrations.cpp',
-            '../src/TreeView.cpp',
-            '../src/InspectorView.cpp',
-            '../src/PropertyDelegateBase.cpp',
-            '../src/SciQLopMultiPlotPanelDelegate.cpp',
-            '../src/PropertiesPanel.cpp',
-            '../src/PropertiesView.cpp',
-            '../src/BooleanDelegate.cpp',
-            '../src/SciQLopPlotDelegate.cpp',
-            '../src/LegendDelegate.cpp',
-            '../src/SciQLopGraphDelegate.cpp',
-            '../src/SciQLopColorMapBaseDelegate.cpp',
-            '../src/SciQLopColorMapDelegate.cpp',
-            '../src/SciQLopHistogram2DDelegate.cpp',
-            '../src/SciQLopWaterfallDelegate.cpp',
-            '../src/SciQLopTimelineDelegate.cpp',
-            '../src/SciQLopGraphComponentDelegate.cpp',
-            '../src/SciQLopPlotAxisDelegate.cpp',
-            '../src/SciQLopTextItemDelegate.cpp',
-            '../src/InspectorExtensionDelegate.cpp',
-            '../src/ColorDelegate.cpp',
-            '../src/FontDelegate.cpp',
-            '../src/LineDelegate.cpp',
-            '../src/MarkerDelegate.cpp',
-            '../src/ColorGradientDelegate.cpp',
-            '../src/ProductsModel.cpp',
-            '../src/ProductsNode.cpp',
-            '../src/ScoreSignalRegistry.cpp',
-            '../src/QueryParser.cpp',
-            '../src/ProductsTreeFilterModel.cpp',
-            '../src/ProductsFlatFilterModel.cpp',
-            '../src/QueryHighlighter.cpp',
-            '../src/QueryLineEdit.cpp',
-            '../src/ProductsView.cpp',
-            '../src/ProductsScoreDelegate.cpp',
-            '../src/icons.cpp'
-        ]
+sources = moc_files + resources_files + sciqlopplots_sources
 
 cpp_args = []
 
