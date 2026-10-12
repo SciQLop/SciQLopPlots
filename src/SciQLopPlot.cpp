@@ -86,6 +86,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
+    auto* vertical_margins = new QCPMarginGroup(this);
+    axisRect()->setMarginGroup(QCP::msTop | QCP::msBottom, vertical_margins);
+    m_color_scale->setMarginGroup(QCP::msTop | QCP::msBottom, vertical_margins);
     // Number format + precision are managed adaptively by SciQLopPlotColorScaleAxis
     // (precision 0 here would render closely-spaced linear ticks all identical).
 
