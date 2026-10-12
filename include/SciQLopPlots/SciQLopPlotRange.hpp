@@ -51,7 +51,8 @@ inline double str_date_to_double(const QString& str)
         auto second = _capture_or_default(match, "second", 0);
         auto millisecond = _capture_or_default(match, "millisecond", 0);
         QDateTime date(QDate(year, month, day), QTime(hour, minute, second, millisecond));
-        date.setTimeZone(QTimeZone::utc());
+        // Not QTimeZone::utc(): Qt for WebAssembly is built without the timezone feature.
+        date.setTimeZone(QTimeZone::UTC);
         return date.toSecsSinceEpoch();
     }
     return std::nan("");
