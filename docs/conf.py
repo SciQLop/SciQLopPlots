@@ -16,7 +16,7 @@ source_suffix = {".md": "markdown"}
 myst_heading_anchors = 3
 
 # docs/ also holds internal notes (plans, backlogs, reviews): publish only the pages below.
-_published = {"index.md", "user-guide.md", "api.md"}
+_published = {"index.md", "user-guide.md", "api.md", "javascript.md"}
 exclude_patterns = ["_build"] + [
     str(p.relative_to(Path(__file__).parent))
     for p in Path(__file__).parent.rglob("*.md")
