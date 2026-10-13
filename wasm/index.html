@@ -49,8 +49,8 @@
         window.spz = spz;   // for the console
         const started = performance.now();
         spz.setTimeRange(t0, t0 + day);   // first: a new plot fits its y axis to the data in view
-        spz.line(...lineData(spz, 1_000_000), ['Bx', 'By', 'Bz']);
-        spz.colormap(...spectrogramData(spz, 20_000, 64), 'spectrogram', true, true);
+        spz.line(spz.addPlot(), ...lineData(spz, 1_000_000), ['Bx', 'By', 'Bz']);
+        spz.colormap(spz.addPlot(), ...spectrogramData(spz, 20_000, 64), 'spectrogram', true, true);
         spz.onTimeRangeChanged((start, stop) => {
           status.textContent = `${new Date(start * 1000).toISOString()} → ${new Date(stop * 1000).toISOString()}`;
         });
