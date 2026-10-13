@@ -75,7 +75,7 @@ moc_files = qtmod.compile_moc(
                             sources : moc_sources,
                             include_directories : includes)
 
-resources_files = qtmod.compile_resources(sources : sciqlopplots_resources)
+resources_files = qtmod.compile_resources(sources : sciqlopplots_resources + sciqlopplots_logos)
 
 # Shiboken-generated sources and PythonInterface.cpp must be compiled
 # without unity: PySide6 headers reference protected enums that error

@@ -12,6 +12,9 @@ auto dispatch_dtype(char format_code, F&& func)
     {
         case 'f': return func(std::type_identity<float> {});
         case 'd': return func(std::type_identity<double> {});
+#ifndef __EMSCRIPTEN__
+        // JavaScript only hands over Float64Array/Float32Array: on wasm, the other dtypes would
+        // only grow the module (two-buffer calls nest dispatches: 144 instantiations each).
         case 'b': return func(std::type_identity<int8_t> {});
         case 'B': return func(std::type_identity<uint8_t> {});
         case 'h': return func(std::type_identity<int16_t> {});
@@ -22,6 +25,7 @@ auto dispatch_dtype(char format_code, F&& func)
         case 'L': return func(std::type_identity<unsigned long> {});
         case 'q': return func(std::type_identity<long long> {});
         case 'Q': return func(std::type_identity<unsigned long long> {});
+#endif
         default:
         {
             std::string msg = "Unsupported numpy dtype format code: '";

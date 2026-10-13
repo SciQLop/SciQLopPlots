@@ -222,4 +222,6 @@ sciqlopplots_sources = files(
 )
 
 sciqlopplots_resources = files('../resources/resources.qrc')
+# Application logos the plot widgets never load; the wasm build leaves them out.
+sciqlopplots_logos = files('../resources/logos.qrc')
 sciqlopplots_includes = include_directories('../include')

@@ -14,10 +14,10 @@ qt_wasm = run_command(qmake, '-query', 'QT_INSTALL_PREFIX', check: true).stdout(
 
 # Qt is static here, and meson links only its module archives: the bundled libraries, the
 # resource objects and the plugins come from Qt's .prl files, as Qt's CMake does.
+# Image formats: the embedded icons are SVG and PNG (built into QtGui), nothing else.
 qt_static_link = run_command(python3, files('qt_static_link.py'), qt_wasm,
     'Svg', 'PrintSupport', 'Widgets', 'OpenGL', 'Gui', 'Core',
-    '--plugins', 'platforms/qwasm', 'imageformats/qgif', 'imageformats/qico',
-    'imageformats/qjpeg', 'imageformats/qsvg', 'iconengines/qsvgicon',
+    '--plugins', 'platforms/qwasm', 'imageformats/qsvg', 'iconengines/qsvgicon',
     check: true).stdout().strip().split('\n')
 
 # What qt_add_executable sets for a wasm target: the page's qtloader.js calls

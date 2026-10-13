@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/SciQLop.png</file>
+        <file>icons/MPL.png</file>
+        <file>icons/QCP.png</file>
+        <file>icons/Python-logo-notext.png</file>
+        <file>icons/Jupyter_logo.png</file>
+        <file>icons/JupyterConsole.png</file>
+        <file>icons/logo_speasy.png</file>
+        <file>icons/NASA.jpg</file>
+        <file>icons/amda.png</file>
+        <file>icons/Cluster_mission_logo_pillars.jpg</file>
+        <file>icons/plot_panel_128.png</file>
+    </qresource>
+</RCC>
