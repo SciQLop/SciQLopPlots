@@ -264,9 +264,14 @@ SciQLopPlotInterface* SciQLopMultiPlotPanel::create_plot(int index, PlotType plo
         case ::PlotType::TimeSeries:
             plot = new SciQLopTimeSeriesPlot();
             break;
+        case ::PlotType::Projections:
+            plot = new SciQLopNDProjectionPlot();
+            break;
         default:
             break;
     }
+    if (!plot)
+        return nullptr;
     if (index == -1)
         add_plot(plot);
     else
