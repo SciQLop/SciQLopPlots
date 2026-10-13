@@ -75,11 +75,13 @@ jobs:
         run: wasm/build_site.sh build-wasm _site
       - name: Browser tests (Firefox)
         run: xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site test-shots
+      - name: Browser tests, served like GitHub Pages (coi-serviceworker, first visit)
+        run: COI_HEADERS=0 xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site test-shots-coi
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: wasm-test-screenshots
-          path: test-shots/*.png
+          path: test-shots*/*.png
 
       - name: Pack
         run: |

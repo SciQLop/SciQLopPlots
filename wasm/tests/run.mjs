@@ -22,8 +22,10 @@ const server = createServer((req, res) => {
   const path = join(site, normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)));
   try {
     const body = readFileSync(path.endsWith('/') ? join(path, 'index.html') : path);
-    res.writeHead(200, { 'Content-Type': types[extname(path)] ?? 'application/octet-stream',
-      'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' });
+    // COI_HEADERS=0 serves like GitHub Pages: no headers, coi-serviceworker.js has to add them.
+    const isolation = process.env.COI_HEADERS === '0' ? {}
+      : { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' };
+    res.writeHead(200, { 'Content-Type': types[extname(path)] ?? 'application/octet-stream', ...isolation });
     res.end(body);
   } catch {
     res.writeHead(404).end();

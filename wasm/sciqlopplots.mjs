@@ -227,8 +227,12 @@ export class SciQLopPlots {
 
 // base: where sciqlopplots.js, .wasm and qtloader.js are (default: next to this module).
 export async function load({ base = moduleBase } = {}) {
-  if (!globalThis.crossOriginIsolated)
+  if (!globalThis.crossOriginIsolated) {
+    // On a first visit coi-serviceworker.js installs itself, then reloads the page: wait for
+    // that reload rather than fail on the page that is about to go away.
+    await new Promise((resolve) => setTimeout(resolve, 4000));
     throw new Error('SciQLopPlots needs a cross-origin isolated page (COOP/COEP headers or coi-serviceworker.js)');
+  }
   if (!globalThis.qtLoad) await loadScript(base + 'qtloader.js');
   if (!globalThis.sciqlopplots_entry) await loadScript(base + 'sciqlopplots.js');
   // Qt starts on a screen of its own; panels get theirs in panel().
