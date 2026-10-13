@@ -86,6 +86,9 @@ SciQLopPlot::SciQLopPlot(QWidget* parent) : QCustomPlot { parent }
 
     m_color_scale = new QCPColorScale(this);
     m_color_scale->setVisible(false);
+    // Its default 6 px top/bottom minimum keeps a bar off the widget border without a margin
+    // group; in this group it would reach every plot's margins, colour bar or not.
+    m_color_scale->setMinimumMargins(QMargins(0, 0, 0, 0));
     auto* vertical_margins = new QCPMarginGroup(this);
     axisRect()->setMarginGroup(QCP::msTop | QCP::msBottom, vertical_margins);
     m_color_scale->setMarginGroup(QCP::msTop | QCP::msBottom, vertical_margins);

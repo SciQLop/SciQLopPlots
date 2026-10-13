@@ -61,3 +61,24 @@ def test_spectrogram_above_a_line_has_no_extra_band(qtbot, tmp_path):
         below_axis.append(img.height() - 1 - _lowest_dark_row(img, p.width() // 3))
     line_gap, map_gap = below_axis
     assert abs(map_gap - line_gap) <= 2, f"{map_gap} px under the spectrogram, {line_gap} under a line"
+
+
+def test_upper_plots_of_a_panel_end_at_their_axis(qtbot, tmp_path):
+    """Plots stacked in a panel should sit tight: with its time labels hidden, a plot needs
+    no room under its x axis. The colour scale's default 6 px minimum margins (meant for a
+    scale used without a margin group) reached every plot through the group, even plots
+    without a colour bar."""
+    from SciQLopPlots import SciQLopMultiPlotPanel, PlotType
+    panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+    qtbot.addWidget(panel)
+    panel.resize(1200, 700)
+    panel.show()
+    t = np.linspace(1.6e9, 1.6e9 + 1e5, 500)
+    upper, _ = panel.plot(t, np.sin(t), plot_type=PlotType.TimeSeries)
+    panel.plot(t, np.cos(t), plot_type=PlotType.TimeSeries)
+    qtbot.wait(300)
+    path = str(tmp_path / "upper.png")
+    assert upper.save_png(path)
+    img = QImage(path)
+    below_axis = img.height() - 1 - _lowest_dark_row(img, upper.width() // 3)
+    assert below_axis <= 2, f"{below_axis} px under the x axis of an upper plot"
