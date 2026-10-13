@@ -83,6 +83,28 @@ class TestComponentCountFollowsTheData:
         qtbot.waitUntil(lambda: graph.plottable_count() == 2, timeout=5000)
 
 
+class TestComponentsExistRightAway:
+    """Styling a graph right after creating it must find its components: SciQLop sets a
+    pen per component (line_style=) straight after plot(). An unlabelled curve used to
+    get its components only when the resampler's queued result came back."""
+
+    @pytest.mark.parametrize("columns", [1, 2])
+    def test_unlabelled_curve_has_its_components_when_plot_returns(
+            self, plot, spiral, columns):
+        x, y = spiral
+        values = y if columns == 1 else np.column_stack([y] * columns)
+        graph = plot.plot(x, values, graph_type=GraphType.ParametricCurve)
+        assert len(graph.components()) == columns
+
+    def test_set_data_sizes_the_components_at_once(self, qtbot, plot, spiral):
+        x, y = spiral
+        graph = plot.plot(x, y, graph_type=GraphType.ParametricCurve)
+        graph.set_data(x, np.column_stack([y, y, y]))
+        assert len(graph.components()) == 3
+        qtbot.waitUntil(lambda: not graph.busy(), timeout=5000)
+        assert len(graph.components()) == 3
+
+
 class TestUnlabelledCurveActuallyDraws:
     def test_it_renders_as_much_as_a_labelled_curve(self, qtbot, spiral, tmp_path):
         unlabelled, labelled = SciQLopPlot(), SciQLopPlot()

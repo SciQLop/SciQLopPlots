@@ -151,6 +151,10 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         if (components > 0 && y.flat_size() != x.flat_size() * components)
             throw std::invalid_argument(
                 "y must hold exactly one column per curve component");
+        // Size an unlabelled curve now, not when the queued resampled batch arrives:
+        // callers style components right after creating the graph. line_count stays 0.
+        if (components == 0 && x.flat_size() > 0)
+            _sync_component_count(static_cast<int>(y.flat_size() / x.flat_size()));
     }
     _point_count = x.is_valid() ? x.flat_size() : 0;
     // The resampler early-returns without emitting setGraphData when x is
