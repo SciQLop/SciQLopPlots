@@ -11,7 +11,7 @@
 </head>
 <body>
   <pre id="status">running</pre>
-  <div id="a" class="panel"></div><div id="b" class="panel"></div>
+  <div id="a" class="panel"></div><div id="b" class="panel"></div><div id="c" class="panel"></div>
   <script type="module">
     import { load, Graph, ColorMap, Span } from '../sciqlopplots.mjs';
 
@@ -78,6 +78,20 @@
       const [start, stop] = span.range;
       assert(near(start, t[30]) && near(stop, t[50]), `range ${start}, ${stop}`);
       assert(seen && near(seen[0], t[30]), `event ${seen}`);
+    });
+    await check('CSS colours (a translucent span is not black)', async () => {
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, t.map(() => 0), { colors: ['hsl(120, 100%, 25%)'] });
+      panel.addSpan(t[n / 4], t[3 * n / 4], { color: 'rgba(255, 0, 0, 0.25)' });
+      await frame();
+      const image = await createImageBitmap(panel.export('png', { width: 400, height: 300 }));
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const g = canvas.getContext('2d');
+      g.drawImage(image, 0, 0);
+      const [r, gr, b] = g.getImageData(image.width / 2, image.height / 4, 1, 1).data;
+      throws(() => panel.addSpan(t[0], t[1], { color: 'not a colour' }), 'an invalid colour');
+      panel.remove();
+      assert(r > 200 && gr > 120 && gr < 240 && b > 120 && b < 240, `span pixel rgb(${r}, ${gr}, ${b})`);
     });
     await check('export png', async () => {
       const blob = a.export('png');

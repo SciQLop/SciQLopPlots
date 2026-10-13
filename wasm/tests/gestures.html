@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SciQLopPlots gesture tests</title>
+  <script src="../coi-serviceworker.js"></script>
+  <style>body { margin: 0; } #plots { position: absolute; left: 0; top: 0; width: 800px; height: 400px; }</style>
+</head>
+<body>
+  <div id="plots"></div>
+  <!-- Real input comes from wasm/tests/run.mjs (window.inputRequest): trusted events, as a
+       trackpad, a mouse or fingers on a phone send them. -->
+  <script type="module">
+    import { load } from '../sciqlopplots.mjs';
+
+    const results = [];
+    const check = async (name, fn) => {
+      console.info(`step: ${name}`);
+      try { await fn(); results.push({ name, ok: true }); }
+      catch (e) { results.push({ name, ok: false, error: String(e?.message ?? e) }); }
+    };
+    const assert = (cond, what) => { if (!cond) throw new Error(what); };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    async function input(actions) {
+      const done = window.inputDone || 0;
+      window.inputRequest = actions;
+      while ((window.inputDone || 0) === done) await sleep(50);
+      await sleep(400);
+    }
+
+    const spz = await load();
+    const n = 20_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+    const t = Float64Array.from({ length: n }, (_, i) => t0 + i);
+    const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+    const plot = panel.addPlot();
+    plot.line(t, t.map((_, i) => Math.sin(i / 500)));
+    await sleep(800);
+
+    const x0 = 400, y0 = 200;   // the middle of the plot
+    const span = () => { const [a, b] = panel.timeRange; return b - a; };
+    const reset = async () => { panel.setTimeRange(t[0], t[n - 1]); plot.setAxis('y', { range: [-1.5, 1.5] }); await sleep(300); };
+    const wheel = (scrolls) => ({ type: 'wheel', id: 'wheel', actions: scrolls.map((s) =>
+      ({ type: 'scroll', x: x0, y: y0, deltaX: s.dx ?? 0, deltaY: s.dy ?? 0, duration: 16 })) });
+    const pause = (count) => Array.from({ length: count }, () => ({ type: 'pause' }));
+
+    await check('trackpad pinch (Ctrl+wheel) zooms time with the pinch', async () => {
+      await reset();
+      const before = span();
+      // Browsers send a pinch as Ctrl+wheel; each event means a scale of exp(-deltaY / 100).
+      const scrolls = Array.from({ length: 10 }, () => ({ dy: -10 }));
+      await input([
+        { type: 'key', id: 'keyboard', actions: [{ type: 'keyDown', value: '' }, ...pause(scrolls.length), { type: 'keyUp', value: '' }] },
+        { type: 'wheel', id: 'wheel', actions: [{ type: 'pause' }, ...wheel(scrolls).actions, { type: 'pause' }] },
+      ]);
+      const ratio = span() / before;
+      assert(ratio > 0.25 && ratio < 0.5, `span ratio ${ratio.toFixed(3)}, a 100 px pinch should zoom ~2.7x (0.37)`);
+    });
+
+    await check('swipe (wheel without Ctrl) pans in time', async () => {
+      await reset();
+      const [start] = panel.timeRange, before = span();
+      await input([wheel([{ dx: 200 }])]);
+      const [after] = panel.timeRange;
+      assert(Math.abs(span() / before - 1) < 0.01, `span changed: ${span() / before}`);
+      assert(Math.abs(after - start) > before * 0.01, `start moved by ${after - start}`);
+    });
+
+    await check('two-finger pinch zooms time by the finger ratio, not y', async () => {
+      await reset();
+      const before = span(), [ylo, yhi] = plot.axisRange('y');
+      const finger = (id, from, to) => ({ type: 'pointer', id, parameters: { pointerType: 'touch' }, actions: [
+        { type: 'pointerMove', x: from, y: y0 }, { type: 'pointerDown', button: 0 },
+        ...Array.from({ length: 10 }, (_, k) => ({ type: 'pointerMove', x: Math.round(from + (to - from) * (k + 1) / 10), y: y0, duration: 16 })),
+        { type: 'pointerUp', button: 0 }] });
+      await input([finger('finger1', x0 - 50, x0 - 100), finger('finger2', x0 + 50, x0 + 100)]);
+      const ratio = span() / before, [ylo2, yhi2] = plot.axisRange('y');
+      assert(ratio > 0.4 && ratio < 0.6, `span ratio ${ratio.toFixed(3)}, fingers twice as far apart should halve it`);
+      assert(Math.abs(ylo2 - ylo) < 1e-9 && Math.abs(yhi2 - yhi) < 1e-9, `y range changed: ${ylo2}, ${yhi2}`);
+    });
+
+    await check('one-finger drag pans in time', async () => {
+      await reset();
+      const [start] = panel.timeRange;
+      await input([{ type: 'pointer', id: 'finger1', parameters: { pointerType: 'touch' }, actions: [
+        { type: 'pointerMove', x: x0, y: y0 }, { type: 'pointerDown', button: 0 },
+        ...Array.from({ length: 10 }, (_, k) => ({ type: 'pointerMove', x: x0 - 20 * (k + 1), y: y0, duration: 16 })),
+        { type: 'pointerUp', button: 0 }] }]);
+      const [after] = panel.timeRange;
+      assert(after > start, `start did not move right (dragging left shows later times): ${after - start}`);
+    });
+
+    window.testResult = results;
+  </script>
+</body>
+</html>

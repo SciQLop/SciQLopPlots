@@ -28,6 +28,8 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <cmath>
+#include <cstdio>
 #include <map>
 #include <numeric>
 
@@ -105,6 +107,32 @@ QString qstring(val v)
     return QString::fromStdString(v.as<std::string>());
 }
 
+// A CSS colour (name, #rgb, #rrggbbaa, rgb(), rgba(), hsl(), ...), parsed by the browser:
+// QColor reads neither rgb()/rgba() nor #rrggbbaa (it takes #aarrggbb), and an unparsed colour
+// draws opaque black.
+QColor css_color(const std::string& css)
+{
+    static val context = val::global("document")
+                             .call<val>("createElement", val("canvas"))
+                             .call<val>("getContext", val("2d"));
+    // fillStyle ignores what it cannot parse: two different sentinels tell an invalid colour.
+    const auto normalized = [&](const char* sentinel)
+    {
+        context.set("fillStyle", sentinel);
+        context.set("fillStyle", css);
+        return context["fillStyle"].as<std::string>();
+    };
+    const auto color = normalized("#000000");
+    if (color != normalized("#ffffff"))
+        throw std::invalid_argument("SciQLopPlots: not a CSS colour: " + css);
+    // The browser gives "#rrggbb" for opaque colours, "rgba(r, g, b, a)" otherwise.
+    int r = 0, g = 0, b = 0;
+    double a = 1.;
+    if (std::sscanf(color.c_str(), "rgba(%d, %d, %d, %lf)", &r, &g, &b, &a) == 4)
+        return QColor(r, g, b, int(std::lround(a * 255)));
+    return QColor(QString::fromStdString(color));
+}
+
 QStringList string_list(val strings)
 {
     QStringList list;
@@ -117,7 +145,7 @@ QList<QColor> color_list(val colors)
 {
     QList<QColor> list;
     for (const auto& s : emscripten::vecFromJSArray<std::string>(colors))
-        list.append(QColor(QString::fromStdString(s)));
+        list.append(css_color(s));
     return list;
 }
 
@@ -355,7 +383,7 @@ void set_theme(int panel_id, std::string base, val colors)
     auto* theme = base == "dark" ? SciQLopTheme::dark(panel) : SciQLopTheme::light(panel);
     for (const auto& [name, setter] : theme_colors)
         if (auto color = option(colors, name.c_str()); !color.isUndefined())
-            (theme->*setter)(QColor(qstring(color)));
+            (theme->*setter)(css_color(color.as<std::string>()));
     if (auto* previous = panel->theme())
         previous->deleteLater();
     panel->set_theme(theme);
@@ -364,6 +392,26 @@ void set_theme(int panel_id, std::string base, val colors)
     for (auto role : { QPalette::WindowText, QPalette::Text, QPalette::ButtonText })
         palette.setColor(role, theme->foreground());
     panel->setPalette(palette);
+}
+
+// A pinch over a panel, in the panel's coordinates: zooms the time axis of the plot under it by
+// factor (> 1 zooms out), keeping the time under x_from under x_to, as SciQLop's pinch does.
+void pinch_time(int panel_id, double x_from, double x_to, double y, double factor)
+{
+    auto* panel = get<SciQLopMultiPlotPanel>(panel_id);
+    QWidget* widget = panel->childAt(QPoint(int(x_to), int(y)));
+    while (widget && !qobject_cast<QCustomPlot*>(widget))
+        widget = widget->parentWidget();
+    auto* plot = qobject_cast<QCustomPlot*>(widget);
+    if (!plot || !(factor > 0) || !std::isfinite(factor))
+        return;
+    const auto from = plot->mapFrom(panel, QPointF(x_from, y)).x();
+    const auto to = plot->mapFrom(panel, QPointF(x_to, y)).x();
+    auto* axis = plot->xAxis;
+    const double anchor = axis->pixelToCoord(from);
+    axis->scaleRange(factor, anchor);
+    axis->moveRange(anchor - axis->pixelToCoord(to));
+    plot->replot(QCustomPlot::rpQueuedReplot);
 }
 
 void clear(int panel)
@@ -376,7 +424,7 @@ int add_span(int panel, double start, double stop, val options)
 {
     return keep(new MultiPlotsVerticalSpan(
         get<SciQLopMultiPlotPanel>(panel), SciQLopPlotRange(start, stop, true),
-        QColor(qstring(option(options, "color", val("rgba(100, 100, 220, 0.25)")))),
+        css_color(option(options, "color", val("rgba(100, 100, 220, 0.25)")).as<std::string>()),
         option(options, "readOnly", val(false)).as<bool>(), true,
         qstring(option(options, "tooltip", val("")))));
 }
@@ -466,6 +514,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("timeRange", &time_range);
     function("setTheme", &set_theme);
     function("clear", &clear);
+    function("pinchTime", &pinch_time);
     function("addSpan", &add_span);
     function("setSpanRange", &set_span_range);
     function("spanRange", &span_range);

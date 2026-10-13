@@ -9,10 +9,12 @@ import { extname, join, normalize } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const [site, outdir = mkdtempSync(join(tmpdir(), 'sciqlopplots-tests-'))] = process.argv.slice(2);
-// Test pages publish window.testResult; gallery pages pass when they log no error.
-const galleryPages = ['getting-started', 'spectrogram', 'data-on-demand', 'spans-and-export',
-  'several-panels', 'ten-million-points'].map((name) => `gallery/${name}.html`);
-const pages = process.env.PAGES?.split(',') ?? ['tests/api.html', 'tests/legacy.html', 'index.html', ...galleryPages];
+// Test pages publish window.testResult; gallery pages (the index's links) pass when they log
+// no error. THUMBS=<dir> also saves a picture of each gallery page's first .plots element.
+const galleryPages = [...readFileSync(join(site, 'index.html'), 'utf8').matchAll(/href="(gallery\/[\w-]+\.html)"/g)]
+  .map((match) => match[1]);
+const pages = process.env.PAGES?.split(',')
+  ?? ['tests/api.html', 'tests/legacy.html', 'tests/gestures.html', 'index.html', ...galleryPages];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.wasm': 'application/wasm', '.png': 'image/png', '.css': 'text/css', '.json': 'application/json' };
@@ -76,8 +78,29 @@ const send = (method, params = {}, ms = 30000) => new Promise((resolve) => {
 await send('session.new', { capabilities: {} });
 const context = (await send('browsingContext.getTree')).result.contexts[0].context;
 await send('session.subscribe', { events: ['log.entryAdded'] });
+// PHONE=1: a phone-sized viewport (the gesture page needs the desktop size).
+if (process.env.PHONE)
+  await send('browsingContext.setViewport', { context, viewport: { width: 390, height: 844 }, devicePixelRatio: 3 });
 const evaluate = async (expression) => (await send('script.evaluate',
   { expression, target: { context }, awaitPromise: false })).result?.result?.value;
+
+// A page asks for real (trusted) input by setting window.inputRequest to a list of WebDriver
+// BiDi input sources (mouse, wheel, two touch pointers...); the runner performs it and clears it.
+async function performRequestedInput() {
+  const json = await evaluate('window.inputRequest ? JSON.stringify(window.inputRequest) : ""');
+  if (!json) return;
+  await send('input.performActions', { context, actions: JSON.parse(json) });
+  await send('input.releaseActions', { context });
+  await evaluate('window.inputRequest = null, window.inputDone = (window.inputDone || 0) + 1');
+}
+
+async function saveThumbnail(page) {
+  const box = JSON.parse(await evaluate(
+    "JSON.stringify((({ x, y, width, height }) => ({ x, y, width, height }))(document.querySelector('.plots').getBoundingClientRect()))"));
+  const data = (await send('browsingContext.captureScreenshot', { context, clip: { type: 'box', ...box } })).result?.data;
+  mkdirSync(process.env.THUMBS, { recursive: true });
+  if (data) writeFileSync(join(process.env.THUMBS, page.replace(/^gallery\/|\.html$/g, '') + '.png'), Buffer.from(data, 'base64'));
+}
 
 let failures = 0;
 for (const page of pages) {
@@ -86,14 +109,17 @@ for (const page of pages) {
   let result;
   if (page.startsWith('tests/')) {
     for (let i = 0; i < 240 && !result; i++) {
+      await performRequestedInput();
       const json = await evaluate('window.testResult ? JSON.stringify(window.testResult) : ""');
       if (json) result = JSON.parse(json); else await sleep(500);
     }
     await sleep(1000);
   } else {
     await sleep(8000);
-    const errors = logs.filter((l) => l.startsWith('[error]'));
+    // Fonts Firefox's own start page fetches fail without network: not the page's errors.
+    const errors = logs.filter((l) => l.startsWith('[error]') && !/^\[error\] downloadable font: .*source: https:\/\/(?!127\.0\.0\.1)/.test(l));
     result = [{ name: 'no error logged', ok: errors.length === 0, error: errors[0] }];
+    if (process.env.THUMBS && page.startsWith('gallery/')) await saveThumbnail(page);
   }
   const shot = (await send('browsingContext.captureScreenshot', { context })).result?.data;
   if (shot) writeFileSync(join(outdir, page.replace(/\W/g, '_') + '.png'), Buffer.from(shot, 'base64'));

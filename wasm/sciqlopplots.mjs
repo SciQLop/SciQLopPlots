@@ -142,12 +142,68 @@ export class Span extends Handle {
   }
 }
 
+// Pinch zooms time as in SciQLop, around the fingers: a trackpad pinch arrives as Ctrl+wheel
+// (each event a scale of exp(deltaY / 100), the browsers' convention), a phone pinch as two touch
+// pointers. Both are caught on the panel's element before Qt sees them: Qt's own handling zooms
+// in fixed wheel steps, and has no two-finger pinch in the browser.
+function installPinch(lib, panel) {
+  const element = panel.element;
+  let pinch = null;          // { distance, middle } of the last two-finger step
+  let dragging = null;       // the touch pointer Qt is dragging with: { target, event }
+  const local = (x, y) => {
+    const r = element.getBoundingClientRect();
+    return [x - r.left, y - r.top];
+  };
+  const geometry = (touches) => {
+    const [[ax, ay], [bx, by]] = [touches[0], touches[1]].map((t) => local(t.clientX, t.clientY));
+    return { distance: Math.hypot(bx - ax, by - ay), middle: [(ax + bx) / 2, (ay + by) / 2] };
+  };
+  const swallow = (event) => { event.stopPropagation(); event.preventDefault(); };
+
+  element.addEventListener('wheel', (event) => {
+    if (!event.isTrusted || !event.ctrlKey) return;
+    swallow(event);
+    const [x, y] = local(event.clientX, event.clientY);
+    const lines = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 33 : 1;
+    lib.m.pinchTime(panel.id, x, x, y, Math.exp(event.deltaY * lines / 100));
+  }, { capture: true, passive: false });
+
+  // Fingers are read from touch events (one per finger change, with every touch); Qt reads
+  // pointer events, which it must not see during a pinch.
+  element.addEventListener('touchstart', (event) => {
+    if (!event.isTrusted || event.touches.length < 2 || pinch) return;
+    pinch = geometry(event.touches);
+    // Qt is dragging with the first finger: release it, or that drag would undo the zoom.
+    if (dragging) dragging.target.dispatchEvent(new PointerEvent('pointerup', dragging.event));
+    dragging = null;
+  }, { capture: true, passive: true });
+  element.addEventListener('touchmove', (event) => {
+    if (!event.isTrusted || !pinch || event.touches.length < 2) return;
+    const step = geometry(event.touches);
+    lib.m.pinchTime(panel.id, pinch.middle[0], step.middle[0], step.middle[1],
+                    pinch.distance / step.distance);
+    pinch = step;
+  }, { capture: true, passive: true });
+  const touchEnd = (event) => { if (event.touches.length === 0) pinch = null; };
+  element.addEventListener('touchend', touchEnd, true);
+  element.addEventListener('touchcancel', touchEnd, true);
+
+  for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'])
+    element.addEventListener(type, (event) => {
+      if (!event.isTrusted || event.pointerType !== 'touch') return;
+      if (pinch) return swallow(event);
+      if (type === 'pointerdown') dragging = { target: event.composedPath()[0], event };
+      else if (type !== 'pointermove') dragging = null;
+    }, true);
+}
+
 const exportTypes = { png: 'image/png', jpg: 'image/jpeg', pdf: 'application/pdf' };
 
 export class Panel extends Handle {
   constructor(lib, id, element) {
     super(lib, id);
     this.element = element;
+    installPinch(lib, this);
   }
 
   // Plots stack vertically and share the time axis. Set the time range first: a new plot
@@ -229,8 +285,10 @@ export class SciQLopPlots {
 export async function load({ base = moduleBase } = {}) {
   if (!globalThis.crossOriginIsolated) {
     // On a first visit coi-serviceworker.js installs itself, then reloads the page: wait for
-    // that reload rather than fail on the page that is about to go away.
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    // that reload rather than fail on the page that is about to go away. Installing it can
+    // take seconds on a slow device; without it no reload comes, so fail at once.
+    const coiPending = [...document.scripts].some((s) => /coi-serviceworker(\.min)?\.js$/.test(s.src));
+    if (coiPending) await new Promise((resolve) => setTimeout(resolve, 15000));
     throw new Error('SciQLopPlots needs a cross-origin isolated page (COOP/COEP headers or coi-serviceworker.js)');
   }
   if (!globalThis.qtLoad) await loadScript(base + 'qtloader.js');
