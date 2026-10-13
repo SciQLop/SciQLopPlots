@@ -10,8 +10,10 @@
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
+#include "SciQLopPlots/SciQLopTheme.hpp"
 
 #include <QApplication>
+#include <QPalette>
 #include <QPointer>
 
 #include <emscripten/bind.h>
@@ -29,12 +31,22 @@ SciQLopMultiPlotPanel* panel = nullptr;
 std::vector<QPointer<SciQLopPlotInterface>> plots;
 std::vector<QPointer<SciQLopPlottableInterface>> plottables;
 
-// Buffer-protocol format code and item size of each typed array kind.
+// Buffer-protocol format code and item size of each typed array kind; the only dtypes
+// dispatch_dtype handles on wasm.
 const std::map<std::string, std::pair<char, std::size_t>> typed_array_formats {
-    { "Float64Array", { 'd', 8 } }, { "Float32Array", { 'f', 4 } },
-    { "Int32Array", { 'i', 4 } },   { "Uint32Array", { 'I', 4 } },
-    { "Int16Array", { 'h', 2 } },   { "Uint16Array", { 'H', 2 } },
-    { "Int8Array", { 'b', 1 } },    { "Uint8Array", { 'B', 1 } },
+    { "Float64Array", { 'd', 8 } },
+    { "Float32Array", { 'f', 4 } },
+};
+
+// Theme colours a page can set, by their JavaScript name.
+const std::map<std::string, void (SciQLopTheme::*)(const QColor&)> theme_colors {
+    { "background", &SciQLopTheme::set_background },
+    { "foreground", &SciQLopTheme::set_foreground },
+    { "grid", &SciQLopTheme::set_grid },
+    { "subGrid", &SciQLopTheme::set_sub_grid },
+    { "selection", &SciQLopTheme::set_selection },
+    { "legendBackground", &SciQLopTheme::set_legend_background },
+    { "legendBorder", &SciQLopTheme::set_legend_border },
 };
 
 SciQLopPyBuffer buffer_from_array(val array, val shape)
@@ -116,6 +128,30 @@ void set_time_range(double start, double stop)
     panel->set_time_axis_range(start, stop);
 }
 
+// The theme colours the plots; the palette, the panel's widgets around them.
+void apply_palette(const SciQLopTheme* theme)
+{
+    QPalette palette(theme->background());   // derives the shades splitters and frames use
+    palette.setColor(QPalette::Base, theme->background());
+    for (auto role : { QPalette::WindowText, QPalette::Text, QPalette::ButtonText })
+        palette.setColor(role, theme->foreground());
+    qApp->setPalette(palette);
+    panel->setPalette(palette);
+}
+
+// base: "light" or "dark"; colors: any of theme_colors' names, as CSS colour strings.
+void set_theme(std::string base, val colors)
+{
+    auto* theme = base == "dark" ? SciQLopTheme::dark(panel) : SciQLopTheme::light(panel);
+    for (const auto& [name, setter] : theme_colors)
+        if (colors.hasOwnProperty(name.c_str()))
+            (theme->*setter)(QColor(QString::fromStdString(colors[name].as<std::string>())));
+    if (auto* previous = panel->theme())
+        previous->deleteLater();
+    panel->set_theme(theme);
+    apply_palette(theme);
+}
+
 void on_time_range_changed(val callback)
 {
     QObject::connect(panel, &SciQLopPlotPanelInterface::time_range_changed, panel,
@@ -144,6 +180,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     emscripten::function("setColormapData", &set_colormap_data);
     emscripten::function("setYLog", &set_y_log);
     emscripten::function("setYLabel", &set_y_label);
+    emscripten::function("setTheme", &set_theme);
     emscripten::function("setTimeRange", &set_time_range);
     emscripten::function("onTimeRangeChanged", &on_time_range_changed);
     emscripten::function("clear", &clear);
@@ -153,6 +190,11 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
     panel = new SciQLopMultiPlotPanel(nullptr, false, true);
+    // Qt for wasm wraps a framed window in an HTML frame with a light grey background, which
+    // shows through the gaps between plots.
+    panel->setWindowFlag(Qt::FramelessWindowHint);
+    panel->setAutoFillBackground(true);
+    panel->setFrameShape(QFrame::NoFrame);   // the page draws its own border
     panel->setWindowState(Qt::WindowFullScreen);
     panel->show();
     return app.exec();
