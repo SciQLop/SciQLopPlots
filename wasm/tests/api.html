@@ -90,6 +90,8 @@
       throws(() => spz.m.on(plot.id, 'nope', () => {}), 'unknown event');
       throws(() => spz.m.addPlot(123456), 'unknown id');
       throws(() => plot.colormap(t, channels, z.subarray(1)), 'z not n * m');
+      throws(() => spz.m.Buffer.fromArray(new Float64Array(10), [100]), 'a shape larger than the array');
+      throws(() => spz.m.Buffer.fromArray(new Float64Array(10), [5, 3]), 'a 2-D shape that does not match');
     });
     await check('remove', async () => {
       span.remove();

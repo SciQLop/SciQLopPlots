@@ -145,7 +145,7 @@ jobs:
             mkdir -p "site/v$version"
             tar xzf "$archive" -C "site/v$version" --strip-components=1
           done
-          if [ "${{ github.event_name }}" = push ]; then
+          if [ "${{ github.event_name }}" != release ]; then   # main, or a manual run
             mkdir -p site/dev && tar xzf current/*.tar.gz -C site/dev --strip-components=1
           fi
           latest=$(gh release list --repo "$REPO" --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // ""')

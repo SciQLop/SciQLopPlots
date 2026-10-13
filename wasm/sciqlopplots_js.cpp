@@ -29,6 +29,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include <map>
+#include <numeric>
 
 using emscripten::val;
 
@@ -62,11 +63,17 @@ SciQLopPyBuffer buffer_from_array(val array, val shape)
     const auto format = typed_array_formats.find(kind);
     if (format == typed_array_formats.end())
         throw std::invalid_argument("Buffer.fromArray: unsupported array type " + kind);
+    // The buffer reads as many items as its shape says: a shape larger than the array would
+    // read past it.
+    const auto dims = emscripten::vecFromJSArray<std::size_t>(shape);
+    const auto items = std::accumulate(dims.begin(), dims.end(), std::size_t { 1 },
+                                       std::multiplies<> {});
+    if (dims.empty() || items != array["length"].as<std::size_t>())
+        throw std::invalid_argument("Buffer.fromArray: shape does not match the array's length");
     const auto bytes = val::global("Uint8Array")
                            .new_(array["buffer"], array["byteOffset"], array["byteLength"]);
     return SciQLopPyBuffer(emscripten::convertJSArrayToNumberVector<unsigned char>(bytes),
-                           format->second.first, format->second.second,
-                           emscripten::vecFromJSArray<std::size_t>(shape));
+                           format->second.first, format->second.second, dims);
 }
 
 int keep(QObject* object)
