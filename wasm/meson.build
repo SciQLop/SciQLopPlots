@@ -4,7 +4,7 @@
 # From the repository root:
 #   source ~/emsdk/emsdk_env.sh                      # Emscripten 4.0.7 for Qt 6.11
 #   printf "[constants]\nqt_wasm = '%s'\n" ~/Qt/6.11.2/wasm_multithread > qt.ini
-#   meson setup build-wasm --cross-file qt.ini --cross-file wasm/emscripten.ini
+#   meson setup build-wasm --cross-file qt.ini --cross-file wasm/emscripten.ini --buildtype=minsize
 #   meson compile -C build-wasm sciqlopplots
 #   (cd build-wasm/wasm && python3 ../../wasm/serve.py 8766)   # http://127.0.0.1:8766/
 
