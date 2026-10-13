@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data on demand · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Data on demand</h1><p class="lead">The page computes data for whatever time range is in view: pan or zoom and the panel asks for more through timeRangeChanged.</p></header>
+  <main>
+    <div id="plots" class="plots"></div>
+    <p id="status"></p>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      // Stands in for a web service: a signal with detail at every scale, 4000 samples per view.
+      function fetchData(start, stop) {
+        const n = 4000, t = new Float64Array(n), v = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+          t[i] = start + (stop - start) * i / (n - 1);
+          v[i] = [1, 10, 100, 1000, 10000].reduce((s, k) => s + Math.sin(t[i] / (k * 60)) / Math.sqrt(k), 0);
+        }
+        return [t, v];
+      }
+
+      const spz = await load();
+      const day = 86400, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t0, t0 + day] });
+      const graph = panel.addPlot().line(...fetchData(t0, t0 + day), { labels: ['signal'] });
+
+      let pending = null;   // refetch once per burst of pan/zoom events
+      panel.on('timeRangeChanged', (start, stop) => {
+        cancelAnimationFrame(pending);
+        pending = requestAnimationFrame(() => {
+          graph.setData(...fetchData(start, stop));
+          document.querySelector('#status').textContent =
+            `${new Date(start * 1000).toISOString()} → ${new Date(stop * 1000).toISOString()}`;
+        });
+      });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

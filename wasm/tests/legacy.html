@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SciQLopPlots first API</title>
+  <script src="../coi-serviceworker.js"></script>
+  <style>body { margin: 0; } #screen { width: 800px; height: 500px; }</style>
+</head>
+<body>
+  <pre id="status">running</pre>
+  <div id="screen"></div>
+  <!-- The flat API as speasy_proxy's plot view calls it: qtLoad directly, one panel. -->
+  <script src="../sciqlopplots.js"></script>
+  <script src="../qtloader.js"></script>
+  <script>
+    (async () => {
+      const results = [];
+      const check = (name, fn) => {
+        try { fn(); results.push({ name, ok: true }); }
+        catch (e) { results.push({ name, ok: false, error: String(e?.message ?? e) }); }
+      };
+      const base = new URL('..', location.href).href;
+      const spz = await qtLoad({
+        locateFile: (file) => base + file,
+        qt: { entryFunction: window.sciqlopplots_entry, containerElements: [document.querySelector('#screen')] },
+      });
+      const t0 = Date.UTC(2020, 0, 1) / 1000, n = 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i);
+      const v = Float64Array.from({ length: n * 3 }, (_, k) => Math.sin(k / 30));
+      const f = Float64Array.from({ length: 16 }, (_, j) => 10 + j);
+      const z = Float64Array.from({ length: n * 16 }, (_, k) => 1 + (k % 16));
+      const buffers = (...arrays) => arrays.map(([a, s]) => spz.Buffer.fromArray(a, s));
+      let ranges = [], plot, id, cm;
+      check('setTheme', () => spz.setTheme('dark', { background: '#101010' }));
+      check('onTimeRangeChanged', () => spz.onTimeRangeChanged((a, b) => ranges.push([a, b])));
+      check('setTimeRange', () => spz.setTimeRange(t[0], t[n - 1]));
+      check('addPlot + y axis', () => { plot = spz.addPlot(); spz.setYLog(plot, false); spz.setYLabel(plot, 'B'); });
+      check('line + setLineData', () => {
+        const [x, y] = buffers([t, [n]], [v, [n, 3]]);
+        id = spz.line(plot, x, y, ['x', 'y', 'z']);
+        spz.setLineData(id, x, y);
+        x.delete(); y.delete();
+      });
+      check('colormap + setColormapData', () => {
+        const [x, y, zz] = buffers([t, [n]], [f, [16]], [z, [n, 16]]);
+        cm = spz.colormap(spz.addPlot(), x, y, zz, 'spec', true, true);
+        spz.setColormapData(cm, x, y, zz);
+        x.delete(); y.delete(); zz.delete();
+      });
+      check('time range event', () => { if (!ranges.length) throw new Error('no timeRangeChanged'); });
+      check('clear', () => spz.clear());
+      window.testResult = results;
+      const failed = results.filter((r) => !r.ok);
+      document.querySelector('#status').textContent = failed.length
+        ? `FAILED ${failed.length}/${results.length}\n` + failed.map((r) => `${r.name}: ${r.error}`).join('\n')
+        : `PASSED ${results.length}`;
+    })();
+  </script>
+</body>
+</html>

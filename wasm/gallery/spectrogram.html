@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spectrogram · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Spectrogram</h1><p class="lead">A line above a log/log spectrogram on a shared time axis, with a choice of colour gradients.</p></header>
+  <main>
+    <div class="controls">Gradient
+      <select id="gradient"><option>Jet</option><option>Viridis</option><option>Plasma</option><option>Inferno</option><option>Turbo</option></select>
+    </div>
+    <div id="plots" class="plots"></div>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 20_000, m = 48, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 4);
+      const energy = Float64Array.from({ length: m }, (_, j) => 5 * 1.2 ** j);   // channels, eV
+      // flux[i * m + j]: time i, channel j (row-major); a peak drifting through the energies
+      const flux = new Float64Array(n * m);
+      for (let i = 0; i < n; i++) {
+        const peak = m / 2 + 12 * Math.sin(i / 1500);
+        for (let j = 0; j < m; j++) flux[i * m + j] = 1e6 * Math.exp(-((j - peak) ** 2) / 18) + 10;
+      }
+      const density = t.map((_, i) => 5 + 3 * Math.sin(i / 1500) + Math.random() * 0.3);
+
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      const top = panel.addPlot();
+      top.line(t, density, { labels: ['N'] });
+      top.setAxis('y', { label: 'N [cm⁻³]' });
+
+      const bottom = panel.addPlot();
+      let spectrogram = bottom.colormap(t, energy, flux, { name: 'flux', yLog: true, zLog: true });
+      bottom.setAxis('y', { label: 'Energy [eV]' });
+
+      document.querySelector('#gradient').addEventListener('change', (e) => {
+        spectrogram.remove();
+        spectrogram = bottom.colormap(t, energy, flux, { name: 'flux', yLog: true, zLog: true, gradient: e.target.value });
+      });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

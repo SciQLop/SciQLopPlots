@@ -1,12 +1,14 @@
-# SciQLopPlots for the browser (Qt for WebAssembly): a JavaScript module, sciqlopplots.js +
-# .wasm, driven from a page through the API in sciqlopplots_js.cpp. index.html is a demo.
+# SciQLopPlots for the browser (Qt for WebAssembly): sciqlopplots.js + .wasm, the embind layer
+# in sciqlopplots_js.cpp, wrapped by the ES module sciqlopplots.mjs (the API pages use).
 #
 # From the repository root:
 #   source ~/emsdk/emsdk_env.sh                      # Emscripten 4.0.7 for Qt 6.11
 #   printf "[constants]\nqt_wasm = '%s'\n" ~/Qt/6.11.2/wasm_multithread > qt.ini
 #   meson setup build-wasm --cross-file qt.ini --cross-file wasm/emscripten.ini --buildtype=minsize
-#   meson compile -C build-wasm sciqlopplots
-#   (cd build-wasm/wasm && python3 ../../wasm/serve.py 8766)   # http://127.0.0.1:8766/
+#   meson compile -C build-wasm
+#   wasm/build_site.sh build-wasm _site               # library + gallery + tests
+#   (cd _site && python3 ../wasm/serve.py 8766)       # http://127.0.0.1:8766/
+#   xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site   # browser tests
 
 python3 = find_program('python3')
 qmake = find_program('qmake6', 'qmake')
@@ -48,8 +50,8 @@ executable('sciqlopplots',
     include_directories: sciqlopplots_includes,
     dependencies: [qtdeps, NeoQCP_dep, cpp_utils_dep, hedley_dep, fmt_dep, magic_enum_dep,
                     thread_pool_dep],
+    cpp_args: '-DSCIQLOPPLOTS_VERSION="@0@"'.format(meson.project_version()),
     link_args: qt_static_link + emscripten_link_args)
 
 fs = import('fs')
 fs.copyfile(qt_wasm / 'plugins/platforms/qtloader.js')
-fs.copyfile('index.html')

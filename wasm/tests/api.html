@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SciQLopPlots API tests</title>
+  <script src="../coi-serviceworker.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    .panel { width: 600px; height: 400px; display: inline-block; vertical-align: top; }
+  </style>
+</head>
+<body>
+  <pre id="status">running</pre>
+  <div id="a" class="panel"></div><div id="b" class="panel"></div>
+  <script type="module">
+    import { load, Graph, ColorMap, Span } from '../sciqlopplots.mjs';
+
+    const results = [];
+    const check = async (name, fn) => {
+      console.info(`step: ${name}`);
+      try { await fn(); results.push({ name, ok: true }); }
+      catch (e) { results.push({ name, ok: false, error: String(e?.message ?? e) }); }
+    };
+    const assert = (cond, what) => { if (!cond) throw new Error(what); };
+    const near = (a, b) => Math.abs(a - b) < 1e-6 * Math.max(1, Math.abs(b));
+    const throws = (fn, what) => { try { fn(); } catch { return; } throw new Error(`${what} did not throw`); };
+    const frame = () => new Promise((r) => setTimeout(r, 50));
+
+    const t0 = Date.UTC(2020, 0, 1) / 1000, n = 2000;
+    const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 60);
+    const sin = t.map((_, i) => Math.sin(i / 50)), cos = t.map((_, i) => Math.cos(i / 50));
+    const channels = Float64Array.from({ length: 32 }, (_, j) => 10 * 1.2 ** j);
+    const z = Float64Array.from({ length: n * 32 }, (_, k) => 1 + 1e3 * Math.exp(-(((k % 32) - 16) ** 2) / 20));
+
+    let spz, a, b, plot, graph, map, span;
+    await check('load', async () => { spz = await load(); });
+    await check('version', () => assert(/^\d+\.\d+\.\d+/.test(spz.version), `version ${spz.version}`));
+    await check('two panels', () => {
+      a = spz.panel(document.querySelector('#a'), { timeRange: [t[0], t[n - 1]] });
+      b = spz.panel(document.querySelector('#b'), { theme: 'dark', timeRange: [t[0], t[n - 1]] });
+      assert(a.id !== b.id, 'distinct ids');
+    });
+    await check('time range', () => {
+      const [start, stop] = a.timeRange;
+      assert(near(start, t[0]) && near(stop, t[n - 1]), `got ${start}, ${stop}`);
+    });
+    await check('line of 2 columns', () => {
+      plot = a.addPlot();
+      graph = plot.line(t, [sin, cos], { labels: ['sin', 'cos'], colors: ['red', '#0a0'] });
+      assert(graph instanceof Graph, 'a Graph');
+    });
+    await check('one-column line from a number array', () => b.addPlot().line(Array.from(t), Array.from(sin)));
+    await check('scatter', () => plot.scatter(t, cos));
+    await check('colormap with log axes', () => {
+      map = b.addPlot().colormap(t, channels, z, { name: 'spec', yLog: true, zLog: true, gradient: 'Viridis' });
+      assert(map instanceof ColorMap, 'a ColorMap');
+    });
+    await check('setData', () => { graph.setData(t, [cos, sin]); map.setData(t, channels, z); });
+    await check('axis range', () => {
+      plot.setAxis('y', { range: [-2, 3], label: 'B [nT]' });
+      const [lo, hi] = plot.axisRange('y');
+      assert(near(lo, -2) && near(hi, 3), `got ${lo}, ${hi}`);
+    });
+    await check('timeRangeChanged', async () => {
+      let seen;
+      a.on('timeRangeChanged', (start, stop) => { seen = [start, stop]; });
+      a.setTimeRange(t[10], t[100]);
+      await frame();
+      assert(seen && near(seen[0], t[10]) && near(seen[1], t[100]), `got ${seen}`);
+    });
+    await check('span', async () => {
+      span = a.addSpan(t[20], t[40], { color: 'rgba(255, 0, 0, 0.3)', tooltip: 'event' });
+      assert(span instanceof Span, 'a Span');
+      let seen;
+      span.on('rangeChanged', (start, stop) => { seen = [start, stop]; });
+      span.setRange(t[30], t[50]);
+      await frame();
+      const [start, stop] = span.range;
+      assert(near(start, t[30]) && near(stop, t[50]), `range ${start}, ${stop}`);
+      assert(seen && near(seen[0], t[30]), `event ${seen}`);
+    });
+    await check('export png', async () => {
+      const blob = a.export('png');
+      const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+      assert(blob.type === 'image/png' && blob.size > 1000, `${blob.type} ${blob.size}`);
+      assert(head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47, 'PNG signature');
+    });
+    await check('errors are exceptions', () => {
+      throws(() => plot.colormap(t, channels, z, { gradient: 'NoSuchGradient' }), 'unknown gradient');
+      throws(() => spz.m.on(plot.id, 'nope', () => {}), 'unknown event');
+      throws(() => spz.m.addPlot(123456), 'unknown id');
+      throws(() => plot.colormap(t, channels, z.subarray(1)), 'z not n * m');
+    });
+    await check('remove', async () => {
+      span.remove();
+      graph.remove();
+      plot.remove();
+      await frame();
+      throws(() => graph.setData(t, sin), 'a removed graph');
+    });
+    await check('remove a panel', async () => {
+      b.remove();
+      await frame();
+      throws(() => b.addPlot(), 'a removed panel');
+      const c = spz.panel(document.querySelector('#b'), { timeRange: [t[0], t[n - 1]] });
+      c.addPlot().line(t, sin);
+    });
+
+    window.testResult = results;
+    const failed = results.filter((r) => !r.ok);
+    document.querySelector('#status').textContent = failed.length
+      ? `FAILED ${failed.length}/${results.length}\n` + failed.map((r) => `${r.name}: ${r.error}`).join('\n')
+      : `PASSED ${results.length}`;
+  </script>
+</body>
+</html>

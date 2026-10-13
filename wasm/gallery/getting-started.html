@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Getting started</h1><p class="lead">One panel, one plot, a three-component line. Drag to pan, wheel to zoom (Ctrl+wheel zooms the y axis).</p></header>
+  <main>
+    <div id="plots" class="plots"></div>
+    <p id="status">Loading…</p>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 100_000, t0 = Date.UTC(2020, 0, 1) / 1000, dt = 1;   // seconds since 1970, UTC
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * dt);
+      const bx = t.map((_, i) => 10 * Math.sin(i / 2000));
+      const by = t.map((_, i) => 10 * Math.cos(i / 2000));
+      const bz = t.map((_, i) => 3 * Math.sin(i / 300) + Math.random());
+
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      const plot = panel.addPlot();
+      plot.line(t, [bx, by, bz], { labels: ['Bx', 'By', 'Bz'] });
+      plot.setAxis('y', { label: 'B [nT]' });
+      document.querySelector('#status').textContent = `SciQLopPlots ${spz.version}`;
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

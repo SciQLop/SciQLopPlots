@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ten million points · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Ten million points</h1><p class="lead">SciQLopPlots resamples on worker threads: a 10M-point line pans and zooms smoothly.</p></header>
+  <main>
+    <div id="plots" class="plots"></div>
+    <p id="status">Generating 10,000,000 points…</p>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 10_000_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = new Float64Array(n), v = new Float64Array(n);
+      for (let i = 0, walk = 0; i < n; i++) {
+        walk += Math.random() - 0.5;
+        t[i] = t0 + i * 0.1;
+        v[i] = walk + 20 * Math.sin(i / 1e5);
+      }
+      const started = performance.now();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, v, { labels: ['random walk'] });
+      document.querySelector('#status').textContent =
+        `10M points handed over in ${Math.round(performance.now() - started)} ms. Zoom in: details stay sharp.`;
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

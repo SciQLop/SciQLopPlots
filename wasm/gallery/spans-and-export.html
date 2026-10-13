@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spans and export · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Spans and export</h1><p class="lead">Vertical spans across every plot: drag them, resize them by the edges, listen to their changes. Export the panel as PNG or PDF.</p></header>
+  <main>
+    <div class="controls">
+      <button id="add">Add a span</button>
+      <button id="png">Export PNG</button>
+      <button id="pdf">Export PDF</button>
+    </div>
+    <div id="plots" class="plots"></div>
+    <p id="status">Drag a span, or drag its edges.</p>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 50_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 2);
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, t.map((_, i) => Math.sin(i / 700)), { labels: ['a'] });
+      panel.addPlot().line(t, t.map((_, i) => Math.cos(i / 900)), { labels: ['b'], colors: ['#d62728'] });
+
+      const status = document.querySelector('#status');
+      const show = (start, stop) => status.textContent =
+        `span: ${new Date(start * 1000).toISOString()} → ${new Date(stop * 1000).toISOString()}`;
+      const addSpan = (start, stop, color) =>
+        panel.addSpan(start, stop, { color, tooltip: 'an event' }).on('rangeChanged', show);
+
+      addSpan(t[10_000], t[16_000], 'rgba(42, 111, 219, 0.25)');
+      document.querySelector('#add').onclick = () => {
+        const [start, stop] = panel.timeRange, width = (stop - start) / 10;
+        const from = start + Math.random() * (stop - start - width);
+        addSpan(from, from + width, 'rgba(214, 39, 40, 0.25)');
+      };
+
+      const download = (blob, name) => Object.assign(document.createElement('a'),
+        { href: URL.createObjectURL(blob), download: name }).click();
+      document.querySelector('#png').onclick = () => download(panel.export('png'), 'panel.png');
+      document.querySelector('#pdf').onclick = () => download(panel.export('pdf'), 'panel.pdf');
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

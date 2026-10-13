@@ -1,0 +1,115 @@
+// node wasm/tests/run.mjs <site-dir> [outdir]: runs the test pages of a site made by
+// build_site.sh in Firefox (WebDriver BiDi), prints each check, saves a screenshot per page
+// in outdir and exits 1 when a check fails.
+// Firefox needs a display for WebGL 2: run it under `xvfb-run -a -s "-screen 0 1400x1000x24"`.
+import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { extname, join, normalize } from 'node:path';
+import { tmpdir } from 'node:os';
+
+const [site, outdir = mkdtempSync(join(tmpdir(), 'sciqlopplots-tests-'))] = process.argv.slice(2);
+// Test pages publish window.testResult; gallery pages pass when they log no error.
+const galleryPages = ['getting-started', 'spectrogram', 'data-on-demand', 'spans-and-export',
+  'several-panels', 'ten-million-points'].map((name) => `gallery/${name}.html`);
+const pages = process.env.PAGES?.split(',') ?? ['tests/api.html', 'tests/legacy.html', 'index.html', ...galleryPages];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
+  '.wasm': 'application/wasm', '.png': 'image/png', '.css': 'text/css', '.json': 'application/json' };
+
+// The headers threads need (coi-serviceworker.js stands in for them on GitHub Pages).
+const server = createServer((req, res) => {
+  const path = join(site, normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)));
+  try {
+    const body = readFileSync(path.endsWith('/') ? join(path, 'index.html') : path);
+    res.writeHead(200, { 'Content-Type': types[extname(path)] ?? 'application/octet-stream',
+      'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' });
+    res.end(body);
+  } catch {
+    res.writeHead(404).end();
+  }
+});
+await new Promise((r) => server.listen(0, '127.0.0.1', r));
+const origin = `http://127.0.0.1:${server.address().port}`;
+
+const port = 9000 + Math.floor(Math.random() * 1000);
+const profile = join(outdir, 'profile');
+mkdirSync(profile, { recursive: true });
+writeFileSync(join(profile, 'user.js'), ['webgl.force-enabled', 'webgl.enable-webgl2']
+  .map((k) => `user_pref("${k}", true);`).concat('user_pref("webgl.disabled", false);').join('\n'));
+const firefox = spawn(process.env.FIREFOX ?? 'firefox', ['--no-remote', '--profile', profile,
+  `--remote-debugging-port=${port}`, '--width=1400', '--height=1000'],
+  { stdio: 'ignore', env: { ...process.env, LIBGL_ALWAYS_SOFTWARE: '1', MOZ_DISABLE_CONTENT_SANDBOX: '1' } });
+
+async function connect() {
+  for (let i = 0; i < 100; i++) {
+    try {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/session`);
+      await new Promise((ok, ko) => { ws.addEventListener('open', ok); ws.addEventListener('error', ko); });
+      return ws;
+    } catch { await sleep(300); }
+  }
+  throw new Error('Firefox did not start');
+}
+
+const ws = await connect();
+let lastId = 0;
+const pending = new Map(), logs = [];
+ws.addEventListener('message', (e) => {
+  const m = JSON.parse(e.data);
+  if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+  if (m.method === 'log.entryAdded') {
+    const frames = m.params.stackTrace?.callFrames ?? [];
+    logs.push(`[${m.params.level}] ${m.params.text}` + ((m.params.level === 'error' || /Context is lost/.test(m.params.text)) && frames.length
+      ? '\n' + frames.slice(0, 25).map((f) => `      at ${f.functionName} (${f.url.split('/').pop()}:${f.lineNumber})`).join('\n') : ''));
+  }
+});
+const send = (method, params = {}, ms = 30000) => new Promise((resolve) => {
+  const id = ++lastId;
+  pending.set(id, resolve);
+  ws.send(JSON.stringify({ id, method, params }));
+  setTimeout(() => { if (pending.delete(id)) resolve({ error: `timeout: ${method}` }); }, ms);
+});
+
+await send('session.new', { capabilities: {} });
+const context = (await send('browsingContext.getTree')).result.contexts[0].context;
+await send('session.subscribe', { events: ['log.entryAdded'] });
+const evaluate = async (expression) => (await send('script.evaluate',
+  { expression, target: { context }, awaitPromise: false })).result?.result?.value;
+
+let failures = 0;
+for (const page of pages) {
+  logs.length = 0;
+  await send('browsingContext.navigate', { context, url: `${origin}/${page}`, wait: 'complete' });
+  let result;
+  if (page.startsWith('tests/')) {
+    for (let i = 0; i < 240 && !result; i++) {
+      const json = await evaluate('window.testResult ? JSON.stringify(window.testResult) : ""');
+      if (json) result = JSON.parse(json); else await sleep(500);
+    }
+    await sleep(1000);
+  } else {
+    await sleep(8000);
+    const errors = logs.filter((l) => l.startsWith('[error]'));
+    result = [{ name: 'no error logged', ok: errors.length === 0, error: errors[0] }];
+  }
+  const shot = (await send('browsingContext.captureScreenshot', { context })).result?.data;
+  if (shot) writeFileSync(join(outdir, page.replace(/\W/g, '_') + '.png'), Buffer.from(shot, 'base64'));
+  console.log(`${page}:`);
+  if (!result) {
+    failures++;
+    console.log('  no result (the page did not finish)\n' + logs.slice(-20).map((l) => '  ' + l).join('\n'));
+    continue;
+  }
+  for (const r of result) {
+    if (!r.ok) failures++;
+    console.log(`  ${r.ok ? 'ok  ' : 'FAIL'} ${r.name}${r.ok ? '' : ': ' + r.error}`);
+  }
+  const errors = process.env.ALL_LOGS ? logs : logs.filter((l) => l.startsWith('[error]'));
+  if (errors.length) console.log(errors.slice(0, 10).map((l) => '  ' + l).join('\n'));
+}
+console.log(`screenshots in ${outdir}`);
+await send('session.end');
+firefox.kill();
+server.close();
+process.exit(failures ? 1 : 0);

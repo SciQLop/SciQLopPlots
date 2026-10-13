@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Several panels · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Several panels</h1><p class="lead">One module, several panels on a page, each in its own element with its own theme and time range.</p></header>
+  <main>
+    <div class="row">
+      <div id="light" class="plots"></div>
+      <div id="dark" class="plots"></div>
+    </div>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 20_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 10);
+      const wave = (period) => t.map((_, i) => Math.sin(i / period) + 0.1 * Math.random());
+
+      const light = spz.panel(document.querySelector('#light'), { timeRange: [t[0], t[n - 1]] });
+      light.addPlot().line(t, [wave(800), wave(1300)], { labels: ['u', 'v'] });
+
+      const dark = spz.panel(document.querySelector('#dark'), {
+        theme: { base: 'dark', colors: { background: '#11151c' } },
+        timeRange: [t[0], t[n / 4]],
+      });
+      dark.addPlot().scatter(t, wave(200), { labels: ['w'], colors: ['#ffb000'] });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

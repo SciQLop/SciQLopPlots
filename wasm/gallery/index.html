@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SciQLopPlots gallery</title>
+  <link rel="stylesheet" href="gallery/style.css">
+</head>
+<body>
+  <header>
+    <h1>SciQLopPlots in the browser</h1>
+    <p class="lead">Fast, interactive time-series plots — lines, scatters and spectrograms — from
+      <a href="https://github.com/SciQLop/SciQLopPlots">SciQLopPlots</a> compiled to WebAssembly.
+      <a href="https://sciqlopplots.readthedocs.io/en/latest/javascript.html">Documentation</a>.</p>
+  </header>
+  <main>
+    <div class="cards">
+      <a class="card" href="gallery/getting-started.html"><h2>Getting started</h2><p>One panel, a three-component line.</p></a>
+      <a class="card" href="gallery/spectrogram.html"><h2>Spectrogram</h2><p>Log/log colour map under a line, gradients.</p></a>
+      <a class="card" href="gallery/data-on-demand.html"><h2>Data on demand</h2><p>Refetch for the range in view after a pan or zoom.</p></a>
+      <a class="card" href="gallery/spans-and-export.html"><h2>Spans and export</h2><p>Draggable spans with events; PNG and PDF export.</p></a>
+      <a class="card" href="gallery/several-panels.html"><h2>Several panels</h2><p>Panels side by side, light and dark themes.</p></a>
+      <a class="card" href="gallery/ten-million-points.html"><h2>Ten million points</h2><p>Resampled on worker threads.</p></a>
+    </div>
+  </main>
+  <footer>Use it from your page: <code>import { load } from '<span id="here"></span>sciqlopplots.mjs'</code></footer>
+  <script>document.querySelector('#here').textContent = new URL('.', location.href).href;</script>
+</body>
+</html>
