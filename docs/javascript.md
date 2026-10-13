@@ -66,7 +66,19 @@ It must be served from your own site, at or above the page's folder.
 </html>
 ```
 
-Drag or scroll to pan in time, Ctrl+scroll to zoom in time, Shift+scroll to zoom the y axis.
+Drag or scroll to pan in time, pinch (or Ctrl+scroll) to zoom in time, Shift+scroll to zoom the y axis.
+
+## Gestures
+
+| Input | Effect |
+|---|---|
+| Drag, scroll, swipe on a trackpad, one finger on a phone | pans in time |
+| Pinch on a trackpad or a phone, Ctrl+scroll | zooms in time around the fingers or the pointer |
+| Shift+scroll | zooms the y axis |
+| Drag a span, or its edges | moves or resizes it |
+| Select a span, then Delete or Backspace | asks to delete it (`deleteRequested`) |
+
+The gallery pages are laid out for phones too: the plots follow their element's size.
 
 ## Concepts
 
@@ -80,6 +92,8 @@ Drag or scroll to pan in time, Ctrl+scroll to zoom in time, Shift+scroll to zoom
 - **Data** is a typed array (`Float64Array` or `Float32Array`) or a plain number array.
   Several components are given as an array of columns: `[bx, by, bz]`.
   The library copies the data: changing the array afterwards changes nothing until `setData`.
+- **Colours** are CSS colours: names, `#rgb`, `#rrggbbaa`, `rgb()`, `rgba()`, `hsl()`, …
+  An invalid colour throws.
 - **Your page owns the data.**
   After a pan or a zoom the panel emits `timeRangeChanged`; fetch what is in view and call `setData`.
   See the [data on demand](https://sciqlop.github.io/SciQLopPlots/latest/gallery/data-on-demand.html) example.
@@ -106,7 +120,7 @@ Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
 | `timeRange` | `[start, stop]` in view. |
 | `on('timeRangeChanged', (start, stop) => …)` | Called after every pan or zoom. |
-| `setTheme(base, colors)` | `base`: `'light'` or `'dark'`. `colors` (optional, CSS colours): `background`, `foreground`, `grid`, `subGrid`, `selection`, `legendBackground`, `legendBorder`. |
+| `setTheme(base, colors)` | `base`: `'light'` or `'dark'`. `colors` (optional, any CSS colour): `background`, `foreground`, `grid`, `subGrid`, `selection`, `legendBackground`, `legendBorder`. |
 | `addSpan(start, stop, { color, readOnly, tooltip })` | A `Span` across every plot. |
 | `export(format, { width, height })` | A `Blob` of the panel: `'png'` (default), `'jpg'` or `'pdf'`. Width and height default to the panel's size. |
 | `clear()` | Removes every plot. |

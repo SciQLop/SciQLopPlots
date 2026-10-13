@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A spacecraft crossing · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>A spacecraft crossing</h1><p class="lead">A SciQLop-style view of a spacecraft leaving the magnetosphere: magnetic field, density and an ion spectrogram on one time axis, the crossing marked with a span.</p></header>
+  <main>
+    <div id="plots" class="plots tall"></div>
+    <p class="hint">Pinch or Ctrl+scroll to zoom in time, drag or scroll to pan.</p>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      // Synthetic but shaped like the real thing: inside, the field is strong and steady and the
+      // plasma hot and thin; outside, the field turns and drops, the plasma is dense and cooler.
+      const n = 20_000, dt = 4, t0 = Date.UTC(2025, 3, 14, 6) / 1000, crossing = n * 0.55;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * dt);
+      const outside = (i) => 1 / (1 + Math.exp(-(i - crossing) / 150));   // 0 inside, 1 outside
+      const noise = (a) => a * (Math.random() - 0.5);
+      const bx = t.map((_, i) => 40 * (1 - outside(i)) - 5 * outside(i) + noise(3));
+      const by = t.map((_, i) => 10 * Math.sin(i / 900) + 15 * outside(i) + noise(3));
+      const bz = t.map((_, i) => 25 * (1 - outside(i)) - 10 * outside(i) + noise(4));
+      const bt = t.map((_, i) => Math.hypot(bx[i], by[i], bz[i]));
+      const density = t.map((_, i) => 0.5 + 15 * outside(i) * (1 + 0.3 * Math.sin(i / 300)) + Math.abs(noise(1)));
+
+      const m = 32, energy = Float64Array.from({ length: m }, (_, j) => 10 * 1.3 ** j);   // 10 eV .. 30 keV
+      const flux = new Float64Array(n * m);
+      for (let i = 0; i < n; i++) {
+        const peak = Math.log(4000) * (1 - outside(i)) + Math.log(300) * outside(i);   // hot inside
+        for (let j = 0; j < m; j++)
+          flux[i * m + j] = 1e7 * Math.exp(-((Math.log(energy[j]) - peak) ** 2) / 1.2) * (0.6 + 0.8 * Math.random()) + 1e3;
+      }
+
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      const field = panel.addPlot();
+      field.line(t, [bx, by, bz, bt], { labels: ['Bx', 'By', 'Bz', '|B|'], colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#222'] });
+      field.setAxis('y', { label: 'B GSE [nT]' });
+      const plasma = panel.addPlot();
+      plasma.line(t, density, { labels: ['N'] });
+      plasma.setAxis('y', { label: 'N [cm⁻³]', log: true });
+      const ions = panel.addPlot();
+      ions.colormap(t, energy, flux, { name: 'ion flux', yLog: true, zLog: true, gradient: 'Turbo' });
+      ions.setAxis('y', { label: 'Energy [eV]' });
+      ions.setAxis('z', { label: 'flux [cm⁻² s⁻¹ sr⁻¹ eV⁻¹]' });
+
+      panel.addSpan(t[Math.round(crossing - 400)], t[Math.round(crossing + 400)],
+                    { color: 'rgba(255, 170, 0, 0.25)', tooltip: 'magnetopause crossing' });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Spans and export</h1><p class="lead">Vertical spans across every plot: drag them, resize them by the edges, listen to their changes. Export the panel as PNG or PDF.</p></header>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Spans and export</h1><p class="lead">Vertical spans across every plot: drag them, resize them by the edges, select one and press Delete. Export the panel as PNG or PDF.</p></header>
   <main>
     <div class="controls">
       <button id="add">Add a span</button>
@@ -30,8 +30,14 @@
       const status = document.querySelector('#status');
       const show = (start, stop) => status.textContent =
         `span: ${new Date(start * 1000).toISOString()} → ${new Date(stop * 1000).toISOString()}`;
-      const addSpan = (start, stop, color) =>
-        panel.addSpan(start, stop, { color, tooltip: 'an event' }).on('rangeChanged', show);
+      let count = 0;
+      const addSpan = (start, stop, color) => {
+        count++;
+        const span = panel.addSpan(start, stop, { color, tooltip: 'an event: select it and press Delete to remove it' });
+        span.on('rangeChanged', show)
+            .on('deleteRequested', () => { span.remove(); status.textContent = `${--count} span(s)`; });
+        status.textContent = `${count} span(s)`;
+      };
 
       addSpan(t[10_000], t[16_000], 'rgba(42, 111, 219, 0.25)');
       document.querySelector('#add').onclick = () => {

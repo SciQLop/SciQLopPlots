@@ -35,7 +35,7 @@
         cancelAnimationFrame(pending);
         pending = requestAnimationFrame(() => {
           graph.setData(...fetchData(start, stop));
-          document.querySelector('#status').textContent =
+          document.querySelector('#status').textContent = `4000 fresh points for ` +
             `${new Date(start * 1000).toISOString()} → ${new Date(stop * 1000).toISOString()}`;
         });
       });

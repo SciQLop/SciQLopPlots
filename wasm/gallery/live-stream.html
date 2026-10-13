@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live stream · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Live stream</h1><p class="lead">New samples arrive ten times a second; the view follows the last five minutes. Pause, then pan back through what came in.</p></header>
+  <main>
+    <div class="controls">
+      <button id="toggle">Pause</button>
+      <span id="status"></span>
+    </div>
+    <div id="plots" class="plots"></div>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const rate = 10, window_ = 5 * 60;   // samples per second, seconds in view
+      const t = [], a = [], b = [];
+      let phase = 0;
+      const sample = (time) => {
+        phase += 0.02;
+        t.push(time); a.push(Math.sin(phase) + 0.2 * Math.random()); b.push(Math.cos(phase / 3) * 0.8);
+      };
+      const now = () => Date.now() / 1000;
+      for (let k = window_ * rate; k > 0; k--) sample(now() - k / rate);
+
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [now() - window_, now()] });
+      const plot = panel.addPlot();
+      const graph = plot.line(t, [a, b], { labels: ['signal', 'reference'] });
+      plot.setAxis('y', { range: [-1.5, 1.5] });
+
+      let live = true;
+      document.querySelector('#toggle').onclick = (e) => {
+        live = !live;
+        e.target.textContent = live ? 'Pause' : 'Resume';
+      };
+      setInterval(() => sample(now()), 1000 / rate);
+      // Redraw twice a second: new data is drawn after a short settle window, and a plot that is
+      // busy for longer than half a second shows it by fading.
+      setInterval(() => {
+        if (!live) return;
+        graph.setData(t, [a, b]);
+        panel.setTimeRange(now() - window_, now());
+        document.querySelector('#status').textContent = `${t.length.toLocaleString()} samples`;
+      }, 500);
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

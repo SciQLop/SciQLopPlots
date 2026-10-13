@@ -6,7 +6,9 @@ header { padding-top: 24px; }
 header a { color: var(--accent); text-decoration: none; }
 h1 { margin: 4px 0 4px; font-size: 26px; }
 p.lead { margin: 0 0 16px; color: var(--muted); }
-.plots { height: 480px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.plots { height: 480px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; touch-action: none; }
+.plots.tall { height: 640px; }
+.plots.short { height: 240px; }
 .row { display: flex; gap: 12px; }
 .row > .plots { flex: 1; min-width: 0; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; color: var(--muted); }
@@ -20,3 +22,24 @@ pre.source { background: var(--code); border: 1px solid var(--border); border-ra
 .card p { margin: 0; color: var(--muted); font-size: 14px; }
 footer { color: var(--muted); font-size: 13px; padding-bottom: 24px; }
 code { background: var(--code); padding: 1px 4px; border-radius: 3px; }
+.hint { font-size: 13px; color: var(--muted); }
+table.events { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; }
+table.events td, table.events th { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+table.events tr { cursor: pointer; }
+table.events tr:hover, table.events tr.selected { background: #eef3fc; }
+.card img { display: block; width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: var(--code); }
+
+/* Phones: shorter plots, panels stacked, nothing wider than the screen. */
+@media (max-width: 700px) {
+  header, main, footer { padding: 0 12px; }
+  header { padding-top: 14px; }
+  h1 { font-size: 21px; }
+  p.lead { font-size: 14px; }
+  .plots { height: 62vh; }
+  .plots.tall { height: 80vh; }
+  .plots.short { height: 32vh; }
+  .row { flex-direction: column; }
+  .row > .plots { flex: none; }   /* stacked, each keeps its own height */
+  pre.source { font-size: 12px; }
+  .cards { grid-template-columns: 1fr; }
+}

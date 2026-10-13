@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event catalogue · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Event catalogue</h1><p class="lead">A list of events as spans: click a row to zoom on it, drag a span to edit its interval, select a span and press Delete to remove it.</p></header>
+  <main>
+    <div id="plots" class="plots"></div>
+    <table class="events"><thead><tr><th>Event</th><th>Start</th><th>Stop</th></tr></thead><tbody id="rows"></tbody></table>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const n = 100_000, t0 = Date.UTC(2021, 5, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 3);
+      const bursts = [0.12, 0.31, 0.47, 0.66, 0.85];   // where the bursts are, as fractions of the day
+      const v = t.map((_, i) => bursts.reduce((s, c) => s + 3 * Math.exp(-(((i / n - c) * 80) ** 2)), 0) + 0.3 * Math.random());
+
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, v, { labels: ['wave power'] });
+
+      const time = (s) => new Date(s * 1000).toISOString().slice(5, 16).replace('T', ' ');   // MM-DD hh:mm UTC
+      const rows = document.querySelector('#rows');
+      bursts.forEach((c, k) => {
+        const half = 0.012 * (t[n - 1] - t[0]), mid = t[0] + c * (t[n - 1] - t[0]);
+        const span = panel.addSpan(mid - half, mid + half, { color: 'rgba(42, 111, 219, 0.22)', tooltip: `burst ${k + 1}` });
+        const row = rows.insertRow();
+        const show = (a, b) => { row.innerHTML = `<td>burst ${k + 1}</td><td>${time(a)}</td><td>${time(b)}</td>`; };
+        show(...span.range);
+        row.onclick = () => { const [a, b] = span.range, pad = (b - a) * 2; panel.setTimeRange(a - pad, b + pad); };
+        span.on('rangeChanged', show)
+            .on('selectionChanged', (selected) => row.classList.toggle('selected', selected))
+            .on('deleteRequested', () => { span.remove(); row.remove(); });
+      });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

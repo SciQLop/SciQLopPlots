@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Themes · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Themes</h1><p class="lead">Light, dark, or your own colours: set on a panel at any time, as CSS colours.</p></header>
+  <main>
+    <div class="controls">
+      <button data-theme="light">Light</button>
+      <button data-theme="dark">Dark</button>
+      <button data-theme="solarized">Solarized</button>
+      <button data-theme="paper">Paper</button>
+    </div>
+    <div id="plots" class="plots"></div>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const themes = {
+        light: ['light', {}],
+        dark: ['dark', {}],
+        solarized: ['dark', { background: '#002b36', foreground: '#93a1a1', grid: '#0b4553', subGrid: '#063642', legendBackground: '#073642', legendBorder: '#586e75' }],
+        paper: ['light', { background: '#fbf8f1', foreground: '#3b3326', grid: '#e4dccb', legendBackground: '#fffdf7' }],
+      };
+
+      const n = 30_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 5);
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, [t.map((_, i) => Math.sin(i / 900)), t.map((_, i) => Math.cos(i / 1300))], { labels: ['u', 'v'] });
+      const m = 24, f = Float64Array.from({ length: m }, (_, j) => 1 + j);
+      panel.addPlot().colormap(t, f, Float64Array.from({ length: n * m }, (_, k) => 1 + Math.sin((k % m) / 3 + Math.floor(k / m) / 2000) ** 2), { gradient: 'Viridis' });
+
+      for (const button of document.querySelectorAll('[data-theme]'))
+        button.onclick = () => panel.setTheme(...themes[button.dataset.theme]);
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>

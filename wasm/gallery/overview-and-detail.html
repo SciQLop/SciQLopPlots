@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overview and detail · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Overview and detail</h1><p class="lead">Two panels: drag or resize the span on the overview, the detail panel follows; pan or zoom the detail panel, the span follows.</p></header>
+  <main>
+    <div id="overview" class="plots short"></div>
+    <p class="hint">Overview: the whole day. Drag the span, or its edges.</p>
+    <div id="detail" class="plots"></div>
+    <script type="module">
+      import { load } from '../sciqlopplots.mjs';
+
+      const n = 200_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 0.432);   // one day
+      const v = new Float64Array(n);
+      for (let i = 0, walk = 0; i < n; i++) v[i] = walk += Math.random() - 0.5;
+
+      const spz = await load();
+      const overview = spz.panel(document.querySelector('#overview'), { timeRange: [t[0], t[n - 1]] });
+      overview.addPlot().line(t, v, { labels: ['day'] });
+      const start = t[n * 0.4], stop = t[n * 0.5];
+      const detail = spz.panel(document.querySelector('#detail'), { timeRange: [start, stop] });
+      detail.addPlot().line(t, v, { labels: ['detail'], colors: ['#d62728'] });
+
+      // Each side sets the other only when it differs, so the two never loop on each other.
+      const same = ([a, b], [c, d]) => Math.abs(a - c) + Math.abs(b - d) < 1e-6;
+      const span = overview.addSpan(start, stop, { color: 'rgba(214, 39, 40, 0.2)', tooltip: 'detail view' });
+      span.on('rangeChanged', (a, b) => { if (!same(detail.timeRange, [a, b])) detail.setTimeRange(a, b); });
+      detail.on('timeRangeChanged', (a, b) => { if (!same(span.range, [a, b])) span.setRange(a, b); });
+    </script>
+  </main>
+  <script src="show-source.js" defer></script>
+</body>
+</html>
