@@ -145,8 +145,8 @@ Errors (an unknown gradient, a removed object, data of the wrong size) are throw
 
 ## Limits
 
-- **Size**: about 17 MB of WebAssembly, 5 MB once compressed (servers send it brotli or gzip compressed).
-  Browsers cache it across pages.
+- **Size**: 16 MB of WebAssembly: 4.6 MB sent brotli-compressed, 6 MB gzip-compressed
+  (GitHub Pages compresses it). Browsers cache it across pages.
 - **Browsers**: it needs WebGL 2 and shared-memory workers (SharedArrayBuffer), which recent Firefox, Chrome, Edge and Safari have. The tests run in Firefox.
 - **Data types**: `Float64Array` and `Float32Array` (other arrays are converted to `Float64Array`).
 - Fonts are the ones bundled with Qt; page CSS does not style the plots.
