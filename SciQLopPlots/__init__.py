@@ -193,8 +193,9 @@ def _patch_sciqlop_plot(cls):
                 _reject_histogram2d_kwargs(kwargs, graph_type)
                 wf_kwargs = _pop_waterfall_kwargs(kwargs)
                 wf = _apply_waterfall_kwargs(cls.waterfall(self, *args, **kwargs), **wf_kwargs)
-                # plot() fitted the axes before the offsets were applied.
-                self.rescale_axes()
+                # plot() fitted the axes before the offsets were applied. On a panel, refit
+                # only the new plot: a panel-wide rescale would undo the other plots' zoom.
+                (wf[0] if isinstance(wf, tuple) else self).rescale_axes()
                 return wf
             if graph_type == GraphType.Histogram2D:
                 _reject_waterfall_kwargs(kwargs, graph_type)

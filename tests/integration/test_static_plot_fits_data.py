@@ -42,3 +42,23 @@ def test_waterfall_fits_its_offsets(plot, qtbot):
     plot.plot(x, traces, graph_type=GraphType.Waterfall, offsets=2.5)
     qtbot.wait(100)
     assert plot.y_axis().range().stop() >= 7 * 2.5
+
+
+def test_panel_waterfall_fits_its_offsets_only_in_its_plot(panel, qtbot):
+    zoomed, _ = panel.plot(x, y)
+    zoomed.y_axis().set_range(-3.5, -3.4)
+    wf_plot, _ = panel.plot(x, np.column_stack([np.sin(x)] * 8),
+                            graph_type=GraphType.Waterfall, offsets=2.5)
+    qtbot.wait(100)
+    assert wf_plot.y_axis().range().stop() >= 7 * 2.5
+    assert (zoomed.y_axis().range().start(), zoomed.y_axis().range().stop()) == (-3.5, -3.4)
+
+
+def test_panel_rescale_axes_fits_every_plot(panel, qtbot):
+    plots = [panel.plot(x, y + k)[0] for k in range(2)]
+    qtbot.wait(100)
+    for p in plots:
+        p.y_axis().set_range(100, 101)
+    panel.rescale_axes()
+    for k, p in enumerate(plots):
+        assert p.y_axis().range().start() < k

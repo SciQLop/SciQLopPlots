@@ -169,6 +169,13 @@ public:
 
     inline virtual void replot(bool immediate = false) { WARN_ABSTRACT_METHOD; }
 
+    inline virtual void rescale_axes()
+    {
+        for (const auto& plot : plots())
+            if (plot)
+                plot->rescale_axes();
+    }
+
     inline virtual void add_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
     inline virtual void insert_plot(int index, SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
     inline virtual void remove_plot(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
