@@ -1,0 +1,163 @@
+name: WebAssembly
+
+# The browser library: built and tested on every push, attached to each release as
+# sciqlopplots-wasm-<version>.tar.gz, and published on GitHub Pages:
+#   /v<version>/  every release, /latest/  the newest release, /dev/  main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: '6.11.2'
+  EMSDK_VERSION: '4.0.7'   # the version Qt 6.11's wasm binaries are built with
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'   # aqt misreads Qt's archives on Python <= 3.13
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'       # the test driver uses Node's built-in WebSocket
+      - name: Install build tools
+        run: pip install aqtinstall meson ninja
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: qt-${{ env.QT_VERSION }}-wasm-multithread
+      - name: Install Qt (host tools + wasm)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          aqt install-qt -O "$PWD/Qt" linux desktop ${{ env.QT_VERSION }} linux_gcc_64 -m qtshadertools
+          aqt install-qt -O "$PWD/Qt" all_os wasm ${{ env.QT_VERSION }} wasm_multithread
+      - name: Install the host Qt tools' system libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 xvfb
+
+      - name: Cache Emscripten
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}
+      - name: Install Emscripten
+        if: steps.cache-emsdk.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install "$EMSDK_VERSION"
+          "$HOME/emsdk/emsdk" activate "$EMSDK_VERSION"
+
+      - name: Build
+        run: |
+          source "$HOME/emsdk/emsdk_env.sh"
+          printf "[constants]\nqt_wasm = '%s'\n" "$PWD/Qt/${{ env.QT_VERSION }}/wasm_multithread" > qt.ini
+          export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
+          meson setup build-wasm --cross-file qt.ini --cross-file wasm/emscripten.ini --buildtype=minsize
+          meson compile -C build-wasm
+      - id: version
+        run: echo "version=$(meson introspect --projectinfo build-wasm | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble the library, gallery and tests
+        run: wasm/build_site.sh build-wasm _site
+      - name: Browser tests (Firefox)
+        run: xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site test-shots
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-test-screenshots
+          path: test-shots/*.png
+
+      - name: Pack
+        run: |
+          name=sciqlopplots-wasm-${{ steps.version.outputs.version }}
+          cp -r _site "$name"
+          tar czf "$name.tar.gz" "$name"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sciqlopplots-wasm
+          path: sciqlopplots-wasm-*.tar.gz
+
+  release-asset:
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sciqlopplots-wasm
+      - run: gh release upload "$TAG" sciqlopplots-wasm-*.tar.gz --clobber --repo "$REPO"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+
+  pages:
+    needs: build
+    if: github.repository_owner == 'SciQLop' && (github.event_name == 'release' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sciqlopplots-wasm
+          path: current
+      # Every deploy replaces the whole site, so it is rebuilt from all released tarballs.
+      - name: Lay out every version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p site releases
+          for tag in $(gh release list --repo "$REPO" --exclude-drafts --limit 200 --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --repo "$REPO" --pattern 'sciqlopplots-wasm-*.tar.gz' --dir releases 2>/dev/null || true
+          done
+          # the release that triggered this run may not have its asset uploaded yet
+          if [ "${{ github.event_name }}" = release ]; then cp current/*.tar.gz releases/; fi
+          for archive in releases/*.tar.gz; do
+            [ -e "$archive" ] || continue
+            version=$(basename "$archive" .tar.gz); version=${version#sciqlopplots-wasm-}
+            mkdir -p "site/v$version"
+            tar xzf "$archive" -C "site/v$version" --strip-components=1
+          done
+          if [ "${{ github.event_name }}" = push ]; then
+            mkdir -p site/dev && tar xzf current/*.tar.gz -C site/dev --strip-components=1
+          fi
+          latest=$(gh release list --repo "$REPO" --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // ""')
+          if [ -n "$latest" ] && [ -d "site/${latest}" ]; then
+            cp -r "site/${latest}" site/latest
+          else
+            cp -r site/dev site/latest 2>/dev/null || cp -r "$(ls -d site/v* | sort -V | tail -1)" site/latest
+          fi
+          printf '<!doctype html><meta http-equiv="refresh" content="0; url=latest/"><a href="latest/">SciQLopPlots gallery</a>\n' > site/index.html
+          ls site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
