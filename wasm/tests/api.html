@@ -159,6 +159,21 @@
       await frame();
       throws(() => graph.setData(t, sin), 'a removed graph');
     });
+    await check('a new plot can take the place of a removed one', async () => {
+      // The removed plot's clean-up was queued with its address; a plot made before it ran
+      // could get that address and be deleted with it, under the page.
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      const pause = () => new Promise((r) => setTimeout(r, Math.random() * 20));
+      for (let i = 0; i < 40; i++) {
+        const p = panel.addPlot();
+        const line = p.line(t, [sin, cos]);
+        await pause();
+        line.remove();
+        p.remove();
+        await pause();
+      }
+      panel.remove();
+    });
     await check('remove a panel', async () => {
       b.remove();
       await frame();

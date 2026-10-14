@@ -51,9 +51,11 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
         emit plot_list_changed(plots());
         emit plot_added(plot);
         emit plot_inserted(plot, index);
+        // A destroyed plot has already left the splitter. Not remove_plot(plot): by the time
+        // a queued call runs, a new plot may live at that address, and it would be deleted.
         connect(
-            plot, &SciQLopPlotInterface::destroyed, this, [this, plot]() { remove_plot(plot); },
-            Qt::QueuedConnection);
+            plot, &SciQLopPlotInterface::destroyed, this,
+            [this]() { emit plot_list_changed(plots()); }, Qt::QueuedConnection);
         // A timeline follows its natural height until the user makes it taller.
         if (auto* sp = qobject_cast<SciQLopPlot*>(plot))
             connect(sp, &SciQLopPlot::natural_height_changed, this,
