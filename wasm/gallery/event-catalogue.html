@@ -12,7 +12,7 @@
   <main>
     <div id="plots" class="plots"></div>
     <table class="events"><thead><tr><th>Event</th><th>Start</th><th>Stop</th></tr></thead><tbody id="rows"></tbody></table>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const n = 100_000, t0 = Date.UTC(2021, 5, 1) / 1000;
@@ -39,6 +39,6 @@
       });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

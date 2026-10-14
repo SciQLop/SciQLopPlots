@@ -12,7 +12,7 @@
   <main>
     <div id="plots" class="plots"></div>
     <p id="status">Generating 10,000,000 points…</p>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const spz = await load();
@@ -30,6 +30,6 @@
         `10M points handed over in ${Math.round(performance.now() - started)} ms. Zoom in: details stay sharp.`;
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

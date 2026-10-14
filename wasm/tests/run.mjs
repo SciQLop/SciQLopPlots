@@ -14,7 +14,7 @@ const [site, outdir = mkdtempSync(join(tmpdir(), 'sciqlopplots-tests-'))] = proc
 const galleryPages = [...readFileSync(join(site, 'index.html'), 'utf8').matchAll(/href="(gallery\/[\w-]+\.html)"/g)]
   .map((match) => match[1]);
 const pages = process.env.PAGES?.split(',')
-  ?? ['tests/api.html', 'tests/legacy.html', 'tests/gestures.html', 'index.html', ...galleryPages];
+  ?? ['tests/api.html', 'tests/legacy.html', 'tests/gestures.html', 'tests/editor.html', 'index.html', ...galleryPages];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.wasm': 'application/wasm', '.png': 'image/png', '.css': 'text/css', '.json': 'application/json' };
@@ -78,9 +78,14 @@ const send = (method, params = {}, ms = 30000) => new Promise((resolve) => {
 await send('session.new', { capabilities: {} });
 const context = (await send('browsingContext.getTree')).result.contexts[0].context;
 await send('session.subscribe', { events: ['log.entryAdded'] });
-// PHONE=1: a phone-sized viewport (the gesture page needs the desktop size).
+// PHONE=1: a phone-sized viewport (the gesture page needs the desktop size). VIEWPORT=WxH: any
+// other size, e.g. a tall one to see a whole page in its screenshot.
 if (process.env.PHONE)
   await send('browsingContext.setViewport', { context, viewport: { width: 390, height: 844 }, devicePixelRatio: 3 });
+else if (process.env.VIEWPORT) {
+  const [width, height] = process.env.VIEWPORT.split('x').map(Number);
+  await send('browsingContext.setViewport', { context, viewport: { width, height } });
+}
 const evaluate = async (expression) => (await send('script.evaluate',
   { expression, target: { context }, awaitPromise: false })).result?.result?.value;
 

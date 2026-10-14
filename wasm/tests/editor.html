@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SciQLopPlots gallery editor tests</title>
+  <script src="../coi-serviceworker.js"></script>
+  <style>.plots { width: 600px; height: 300px; }</style>
+</head>
+<body>
+  <main>
+    <div id="plots" class="plots"></div>
+    <script type="text/plain" id="example">
+      import { load } from '../sciqlopplots.mjs';
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'));
+      panel.addPlot();
+      window.runs = (window.runs ?? 0) + 1;
+      const run = window.runs;
+      setInterval(() => { window.lastTickFrom = run; }, 20);
+    </script>
+  </main>
+  <script type="module">
+    const results = [];
+    const check = async (name, fn) => {
+      console.info(`step: ${name}`);
+      try { await fn(); results.push({ name, ok: true }); }
+      catch (e) { results.push({ name, ok: false, error: String(e?.message ?? e) }); }
+    };
+    const assert = (cond, what) => { if (!cond) throw new Error(what); };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const screens = () => document.querySelectorAll('#plots > #qt-shadow-container').length;
+
+    const exampleCode = document.querySelector('#example').textContent;   // the editor takes it out
+
+    // A shared link: its code must wait for Run.
+    const shared = 'window.sharedRan = true;';
+    location.hash = 'code=' + encodeURIComponent(btoa(shared));
+    await import('../gallery/editor.js');
+    const { galleryEditor: ed } = window;
+
+    await check('code from a link does not run by itself', () => {
+      assert(!window.sharedRan, 'the shared code ran');
+      assert(!ed.ui.notice.hidden, 'no notice');
+    });
+    await check('Run runs it', async () => {
+      await ed.run();
+      assert(window.sharedRan, 'did not run');
+      assert(ed.ui.notice.hidden, 'notice still shown');
+    });
+    await check('example with a relative import runs', async () => {
+      ed.setCode(exampleCode);
+      await ed.run();
+      assert(window.runs === 1, `runs ${window.runs}`);
+      assert(screens() === 1, `${screens()} Qt screens in #plots`);
+    });
+    await check('a new run replaces the panel and stops the old timers', async () => {
+      await ed.run();
+      await sleep(100);
+      assert(window.runs === 2, `runs ${window.runs}`);
+      assert(screens() === 1, `${screens()} Qt screens in #plots`);
+      window.lastTickFrom = 0;
+      await sleep(100);
+      assert(window.lastTickFrom === 2, `ticks from run ${window.lastTickFrom}`);
+    });
+    await check('errors show under the editor', async () => {
+      ed.setCode('throw new Error("boom")');
+      const log = console.error;
+      console.error = () => {};   // expected here; the runner fails a page on logged errors
+      await ed.run();
+      console.error = log;
+      assert(!ed.ui.error.hidden && ed.ui.error.textContent.includes('boom'), ed.ui.error.textContent);
+    });
+    window.testResult = results;
+  </script>
+</body>
+</html>

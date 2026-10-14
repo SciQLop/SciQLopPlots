@@ -11,6 +11,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
+#include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 
@@ -319,6 +320,94 @@ int scatter(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val op
     return keep(graph);
 }
 
+// An x/y curve drawn in data order (x need not grow): a trajectory, a model outline.
+int curve(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val options)
+{
+    auto* graph = get<SciQLopPlotInterface>(plot)->parametric_curve(x, y);
+    style_graph(graph, options);
+    return keep(graph);
+}
+
+void hold_ranges(SciQLopNDProjectionPlot* projection, val ranges)
+{
+    const auto pairs = projection->dimension_pairs();
+    for (int i = 0; i < projection->subplot_count(); ++i)
+    {
+        auto* pane = projection->subplot(i);
+        pane->set_fit_first_data(false);
+        const auto range = [&](int dim) { return SciQLopPlotRange(ranges[dim][0].as<double>(), ranges[dim][1].as<double>()); };
+        pane->x_axis()->set_range(range(pairs[i].first));
+        pane->y_axis()->set_range(range(pairs[i].second));
+    }
+}
+
+void set_legend_visible(int plot, bool visible)
+{
+    if (auto* legend = get<SciQLopPlotInterface>(plot)->legend())
+        legend->set_visible(visible);
+}
+
+// A row of 2-D projections of a 3-D trajectory, added to the panel's stack.
+// options: pairs ([[x, y], ...] dimension indices, one per pane; default [[0,1],[1,2],[2,0]]),
+// labels (the three dimension names), equalAspect (default true), ranges (a fixed [min, max] per
+// dimension instead of fitting the first data; same spans keep equal aspect in data units).
+int add_projection(int panel, val options)
+{
+    auto* projection = dynamic_cast<SciQLopNDProjectionPlot*>(
+        get<SciQLopMultiPlotPanel>(panel)->create_plot(-1, PlotType::Projections));
+    if (auto pairs = option(options, "pairs"); !pairs.isUndefined())
+    {
+        QList<QPair<int, int>> list;
+        for (int i = 0; i < pairs["length"].as<int>(); ++i)
+            list.append({ pairs[i][0].as<int>(), pairs[i][1].as<int>() });
+        projection->set_dimension_pairs(list);
+    }
+    if (auto labels = option(options, "labels"); !labels.isUndefined())
+        projection->set_axis_labels(string_list(labels));
+    projection->set_equal_aspect_ratio(option(options, "equalAspect", val(true)).as<bool>());
+    if (auto ranges = option(options, "ranges"); !ranges.isUndefined())
+        hold_ranges(projection, ranges);
+    return keep(projection);
+}
+
+int projection_pane(int projection, int index)
+{
+    auto* pane = get<SciQLopNDProjectionPlot>(projection)->subplot(index);
+    if (!pane)
+        throw std::out_of_range("SciQLopPlots: no pane " + std::to_string(index));
+    return keep(pane);
+}
+
+// t: times, then one buffer per dimension. options: name, timeColors (default true: the curve
+// fades along time). set_time_marker follows it.
+int trajectory(int projection, const SciQLopPyBuffer& t, const SciQLopPyBuffer& x,
+               const SciQLopPyBuffer& y, const SciQLopPyBuffer& z, val options)
+{
+    auto* plot = get<SciQLopNDProjectionPlot>(projection);
+    auto* graph = plot->parametric_curve(QList<SciQLopPyBuffer> { t, x, y, z });
+    // Plot-wide, and it only reaches curves that exist: so after this one is made.
+    plot->set_time_color_enabled(option(options, "timeColors", val(true)).as<bool>());
+    if (auto name = option(options, "name"); !name.isUndefined())
+        graph->set_name(qstring(name));
+    return keep(graph);
+}
+
+// A static 3-D curve (a model), projected on every pane like the trajectory.
+int reference_curve(int projection, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
+                    const SciQLopPyBuffer& z, val options)
+{
+    const auto color = option(options, "color");
+    return keep(get<SciQLopNDProjectionPlot>(projection)->add_reference_curve(
+        { x, y, z }, qstring(option(options, "name", val(""))),
+        color.isUndefined() ? QColor() : css_color(color.as<std::string>())));
+}
+
+// NaN clears the markers.
+void set_time_marker(int projection, double t)
+{
+    get<SciQLopNDProjectionPlot>(projection)->set_time_marker(t);
+}
+
 // options: name, yLog, zLog, gradient (a ColorGradient name, e.g. "Jet", "Viridis").
 int colormap_with(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                   const SciQLopPyBuffer& z, val options)
@@ -475,8 +564,9 @@ val span_range(int span)
     return result;
 }
 
-// Events: a panel's "timeRangeChanged" (start, stop); a span's "rangeChanged" (start, stop),
-// "selectionChanged" (selected) and "deleteRequested" ().
+// Events: a panel's "timeRangeChanged" (start, stop); a plot's "cursorTimeChanged" (time, NaN
+// when the mouse leaves); a span's "rangeChanged" (start, stop), "selectionChanged" (selected)
+// and "deleteRequested" ().
 void on(int id, std::string event, val callback)
 {
     auto* object = get<QObject>(id);
@@ -491,6 +581,10 @@ void on(int id, std::string event, val callback)
     else if (span && event == "selectionChanged")
         QObject::connect(span, &MultiPlotsVerticalSpan::selection_changed, span,
                          [callback](bool selected) { callback(selected); });
+    else if (auto* plot = dynamic_cast<SciQLopPlotInterface*>(object); plot
+             && event == "cursorTimeChanged")
+        QObject::connect(plot, &SciQLopPlotInterface::cursor_time_changed, plot,
+                         [callback](double t) { callback(t); });
     else if (span && event == "deleteRequested")
         QObject::connect(span, &MultiPlotsVerticalSpan::delete_requested, span,
                          [callback]() { callback(); });
@@ -536,6 +630,13 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("addPlot", &add_plot);
     function("line", &line);
     function("scatter", &scatter);
+    function("curve", &curve);
+    function("setLegendVisible", &set_legend_visible);
+    function("addProjection", &add_projection);
+    function("projectionPane", &projection_pane);
+    function("trajectory", &trajectory);
+    function("referenceCurve", &reference_curve);
+    function("setTimeMarker", &set_time_marker);
     function("colormap", &colormap_with);
     function("colormap", &colormap);
     function("setData", &set_data_xy);

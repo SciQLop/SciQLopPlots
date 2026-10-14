@@ -13,7 +13,7 @@
     <div id="plots" class="plots"></div>
     <p id="status">Loading…</p>
     <p class="hint">On a phone: drag with one finger to pan, pinch to zoom in time.</p>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const spz = await load();
@@ -30,6 +30,6 @@
       document.querySelector('#status').textContent = `SciQLopPlots ${spz.version}`;
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

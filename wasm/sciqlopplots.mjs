@@ -134,6 +134,51 @@ export class Plot extends Handle {
   axisRange(which) {
     return this.lib.m.axisRange(this.id, which);
   }
+
+  // A curve drawn in the order of its points, so x need not grow: an orbit, a model outline.
+  curve(x, y, options = {}) {
+    return new Graph(this.lib, this.withBuffers([columnsOf(x), columnsOf(y)],
+      (xb, yb) => this.lib.m.curve(this.id, xb, yb, options)));
+  }
+
+  setLegendVisible(visible) {
+    this.lib.m.setLegendVisible(this.id, visible);
+  }
+
+  // event: 'cursorTimeChanged' (time under the mouse, NaN once it leaves).
+  on(event, callback) {
+    this.lib.m.on(this.id, event, callback);
+    return this;
+  }
+}
+
+// Side-by-side 2-D projections of a 3-D trajectory, one row of a panel.
+export class Projection extends Handle {
+  // The i-th pane, a Plot: add model outlines to it with curve().
+  pane(index) {
+    return new Plot(this.lib, this.lib.m.projectionPane(this.id, index));
+  }
+
+  // t: times; x, y, z: positions. options: name, timeColors (default true: coloured along time).
+  trajectory(t, x, y, z, options = {}) {
+    return new Graph(this.lib, this.withBuffers([t, x, y, z].map(columnsOf),
+      (...b) => this.lib.m.trajectory(this.id, ...b, options)));
+  }
+
+  // A static 3-D curve, projected on every pane. options: name, color (CSS).
+  referenceCurve(x, y, z, options = {}) {
+    return new Graph(this.lib, this.withBuffers([x, y, z].map(columnsOf),
+      (...b) => this.lib.m.referenceCurve(this.id, ...b, options)));
+  }
+
+  // Marks the trajectory at time t on every pane; NaN (or clearTimeMarker()) removes it.
+  setTimeMarker(t) {
+    this.lib.m.setTimeMarker(this.id, seconds(t));
+  }
+
+  clearTimeMarker() {
+    this.lib.m.setTimeMarker(this.id, Number.NaN);
+  }
 }
 
 export class Span extends Handle {
@@ -226,6 +271,13 @@ export class Panel extends Handle {
     return new Plot(this.lib, this.lib.m.addPlot(this.id));
   }
 
+  // A row of projections. options: pairs (one [x, y] of dimension indices per pane, default
+  // [[0, 1], [1, 2], [2, 0]]), labels (the dimension names), equalAspect (default true: square
+  // panes), ranges (a fixed [min, max] per dimension; equal spans give equal units on both axes).
+  addProjection(options = {}) {
+    return new Projection(this.lib, this.lib.m.addProjection(this.id, options));
+  }
+
   setTimeRange(start, stop) {
     this.lib.m.setTimeRange(this.id, seconds(start), seconds(stop));
   }
@@ -296,8 +348,17 @@ export class SciQLopPlots {
   }
 }
 
+const loaded = new Map();
+
 // base: where sciqlopplots.js, .wasm and qtloader.js are (default: next to this module).
-export async function load({ base = moduleBase } = {}) {
+// Qt starts once per page, so later calls share the first one's instance.
+export function load({ base = moduleBase } = {}) {
+  if (!loaded.has(base))
+    loaded.set(base, start(base).catch((error) => { loaded.delete(base); throw error; }));
+  return loaded.get(base);
+}
+
+async function start(base) {
   if (!globalThis.crossOriginIsolated) {
     // On a first visit coi-serviceworker.js installs itself, then reloads the page: wait for
     // that reload rather than fail on the page that is about to go away. Installing it can

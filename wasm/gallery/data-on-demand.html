@@ -12,7 +12,7 @@
   <main>
     <div id="plots" class="plots"></div>
     <p id="status"></p>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       // Stands in for a web service: a signal with detail at every scale, 4000 samples per view.
@@ -41,6 +41,6 @@
       });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

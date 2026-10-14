@@ -14,7 +14,7 @@
       <select id="gradient"><option>Jet</option><option>Viridis</option><option>Plasma</option><option>Inferno</option><option>Turbo</option></select>
     </div>
     <div id="plots" class="plots"></div>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const spz = await load();
@@ -44,6 +44,6 @@
       });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

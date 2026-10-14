@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>An orbit through a dipole · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>An orbit through a dipole</h1><p class="lead">Two turns of an elliptical orbit through Earth's dipole field: the field along the orbit in time, and the orbit itself in three projections with dipole field lines. Hover the time series to follow the spacecraft on its orbit.</p></header>
+  <main>
+    <div id="series" class="plots"></div>
+    <div id="orbit" class="plots projection"></div>
+    <p id="status" class="hint">Hover the time series: the marker follows the spacecraft.</p>
+    <script type="text/plain" id="example">
+      import { load } from '../sciqlopplots.mjs';
+
+      // A 1.5 x 12 Earth radii orbit, inclined 60°, positions from Kepler's equation.
+      const Re = 6371.2, mu = 398600.4418;                         // km, km³/s²
+      const perigee = 1.5, apogee = 12, inclination = 60 * Math.PI / 180, perigeeArgument = -2.4, node = 0.6;
+      const a = (perigee + apogee) / 2, e = (apogee - perigee) / (apogee + perigee), b = a * Math.sqrt(1 - e * e);
+      const period = 2 * Math.PI * Math.sqrt((a * Re) ** 3 / mu);  // seconds
+      const n = 4000, t0 = Date.UTC(2024, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 2 * period / n);
+
+      function position(time) {
+        const meanAnomaly = 2 * Math.PI * (time - t0) / period;
+        let E = meanAnomaly;
+        for (let k = 0; k < 10; k++) E -= (E - e * Math.sin(E) - meanAnomaly) / (1 - e * Math.cos(E));
+        const [u, v] = [a * (Math.cos(E) - e), b * Math.sin(E)];   // in the orbit plane
+        const [c, s] = [Math.cos(perigeeArgument), Math.sin(perigeeArgument)];
+        const [xo, yo] = [u * c - v * s, u * s + v * c];
+        const [xi, yi, zi] = [xo, yo * Math.cos(inclination), yo * Math.sin(inclination)];   // tilt the plane
+        return [xi * Math.cos(node) - yi * Math.sin(node), xi * Math.sin(node) + yi * Math.cos(node), zi];
+      }
+
+      // Earth's dipole, moment along -Z: 30 000 nT at the equator on the ground.
+      function dipole([x, y, z]) {
+        const r = Math.hypot(x, y, z), k = 30000 / r ** 5;
+        return [-3 * k * x * z, -3 * k * y * z, k * (r * r - 3 * z * z)];
+      }
+
+      const pos = Array.from(t, position);
+      const field = pos.map(dipole);
+      const column = (rows, j) => Float64Array.from(rows, (row) => row[j]);
+      const [x, y, z] = [0, 1, 2].map((j) => column(pos, j));
+      const [bx, by, bz] = [0, 1, 2].map((j) => column(field, j));
+      const bt = bx.map((_, i) => Math.hypot(bx[i], by[i], bz[i]));
+      const r = x.map((_, i) => Math.hypot(x[i], y[i], z[i]));
+
+      const spz = await load();
+      const series = spz.panel(document.querySelector('#series'), { timeRange: [t[0], t[n - 1]] });
+      const magnitude = series.addPlot();
+      magnitude.setAxis('y', { label: '|B| [nT]', log: true });   // log before the data: it fits on it
+      magnitude.line(t, bt, { labels: ['|B|'], colors: ['#222'] });
+      const components = series.addPlot();
+      components.line(t, [bx, by, bz], { labels: ['Bx', 'By', 'Bz'] });
+      components.setAxis('y', { label: 'B [nT]' });
+      const distance = series.addPlot();
+      distance.line(t, r, { labels: ['r'] });
+      distance.setAxis('y', { label: 'r [Re]' });
+
+      const orbit = spz.panel(document.querySelector('#orbit'));
+      // Same span on every axis, so a circle stays round.
+      const projection = orbit.addProjection({
+        pairs: [[0, 1], [0, 2], [1, 2]], labels: ['X [Re]', 'Y [Re]', 'Z [Re]'],
+        ranges: [[-13, 13], [-13, 13], [-13, 13]],
+      });
+      for (const pane of [0, 1, 2]) projection.pane(pane).setLegendVisible(false);
+
+      // Field lines r = L cos²(latitude), in the two meridian panes; Earth in all three.
+      const arc = (count, from, to) => Float64Array.from({ length: count }, (_, i) => from + (to - from) * i / (count - 1));
+      for (const L of [2, 4, 6, 8, 10, 12]) {
+        const edge = Math.acos(Math.sqrt(1 / L)), lat = arc(80, -edge, edge);
+        const rho = lat.map((l) => L * Math.cos(l) ** 3), height = lat.map((l) => L * Math.cos(l) ** 2 * Math.sin(l));
+        for (const pane of [1, 2])
+          for (const side of [1, -1])
+            projection.pane(pane).curve(rho.map((v) => side * v), height, { colors: ['#b8bec9'] });
+      }
+      const around = arc(90, 0, 2 * Math.PI);
+      for (const pane of [0, 1, 2])
+        projection.pane(pane).curve(around.map(Math.cos), around.map(Math.sin), { colors: ['#2a6fdb'], name: 'Earth' });
+      projection.trajectory(t, x, y, z, { name: 'orbit' });
+
+      const status = document.querySelector('#status');
+      for (const plot of [magnitude, components, distance])
+        plot.on('cursorTimeChanged', (time) => {
+          if (Number.isNaN(time)) return projection.clearTimeMarker();
+          projection.setTimeMarker(time);
+          const i = Math.min(n - 1, Math.max(0, Math.round((time - t0) / (t[1] - t[0]))));
+          status.textContent = `${new Date(time * 1000).toISOString().slice(0, 19)}  r = ${r[i].toFixed(2)} Re  |B| = ${bt[i].toFixed(0)} nT`;
+        });
+    </script>
+  </main>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

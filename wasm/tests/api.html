@@ -116,6 +116,28 @@
       element.style.width = element.style.height = '';
       assert(Math.abs(width - 800) < 2 && Math.abs(height - 500) < 2, `canvas ${width}x${height}, element 800x500`);
     });
+    await check('projection: trajectory, model curves, pane curve, time marker', async () => {
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      const series = panel.addPlot();
+      series.line(t, sin);
+      series.on('cursorTimeChanged', () => {});
+      const proj = panel.addProjection({ pairs: [[0, 1], [0, 2], [1, 2]], labels: ['X', 'Y', 'Z'] });
+      const x = t.map((_, i) => 10 * Math.cos(i / 300)), y = t.map((_, i) => 10 * Math.sin(i / 300)), zz = t.map(() => 1);
+      proj.trajectory(t, x, y, zz, { name: 'orbit' });
+      proj.referenceCurve([0, 5, 10], [0, 1, 2], [0, 0, 0], { name: 'model', color: 'crimson' });
+      const theta = Float64Array.from({ length: 50 }, (_, i) => -Math.PI / 2 + i * Math.PI / 49);
+      proj.pane(1).curve(theta.map((a) => 11 * Math.cos(a)), theta.map((a) => 11 * Math.sin(a)), { colors: ['gray'] });
+      proj.setTimeMarker(t[n / 2]);
+      proj.clearTimeMarker();
+      const pane0 = proj.pane(0);
+      const fitted = () => { const [lo, hi] = pane0.axisRange('x'); return lo < -9 && hi > 9; };
+      for (let i = 0; i < 60 && !fitted(); i++) await frame();   // fits once the curves are resampled
+      const [x0, x1] = pane0.axisRange('x');
+      throws(() => panel.addProjection({ pairs: [[0, 0], [0, 2], [1, 2]] }), 'pairs of one dimension');
+      throws(() => proj.pane(3), 'a fourth pane');
+      panel.remove();
+      assert(x0 < -9 && x1 > 9, `pane 0 x range [${x0}, ${x1}] does not hold the orbit`);
+    });
     await check('export png', async () => {
       const blob = a.export('png');
       const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());

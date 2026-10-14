@@ -89,6 +89,18 @@
       assert(after > start, `start did not move right (dragging left shows later times): ${after - start}`);
     });
 
+    await check('hovering a plot reports the time under the mouse', async () => {
+      await reset();
+      const times = [];
+      plot.on('cursorTimeChanged', (time) => times.push(time));
+      await input([{ type: 'pointer', id: 'mouse', parameters: { pointerType: 'mouse' }, actions: [
+        { type: 'pointerMove', x: x0 - 100, y: y0 }, { type: 'pointerMove', x: x0, y: y0, duration: 100 }] }]);
+      const [start, stop] = panel.timeRange, last = times.filter((v) => !Number.isNaN(v)).at(-1);
+      assert(last !== undefined, `no time reported (${times.length} events)`);
+      assert(last > start && last < stop && Math.abs(last - (start + stop) / 2) < (stop - start) * 0.1,
+             `time ${last} is not near the middle of [${start}, ${stop}]`);
+    });
+
     window.testResult = results;
   </script>
 </body>

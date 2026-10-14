@@ -13,7 +13,7 @@
     <div id="overview" class="plots short"></div>
     <p class="hint">Overview: the whole day. Drag the span, or its edges.</p>
     <div id="detail" class="plots"></div>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const n = 200_000, t0 = Date.UTC(2020, 0, 1) / 1000;
@@ -35,6 +35,6 @@
       detail.on('timeRangeChanged', (a, b) => { if (!same(span.range, [a, b])) span.setRange(a, b); });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

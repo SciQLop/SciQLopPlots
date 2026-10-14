@@ -9,12 +9,23 @@ p.lead { margin: 0 0 16px; color: var(--muted); }
 .plots { height: 480px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; touch-action: none; }
 .plots.tall { height: 640px; }
 .plots.short { height: 240px; }
+.plots.projection { height: 330px; }
+.plots + .plots { margin-top: 12px; }
 .row { display: flex; gap: 12px; }
 .row > .plots { flex: 1; min-width: 0; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; color: var(--muted); }
 button, select { font: inherit; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
 #status { font-size: 13px; color: var(--muted); min-height: 1.5em; }
-pre.source { background: var(--code); border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow: auto; font-size: 13px; }
+section.editor { max-width: 1100px; margin: 24px auto 32px; padding: 0 20px; }
+.editor-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.editor-bar h3 { margin: 0 auto 0 0; font-size: 17px; }
+.editor-bar button[data-action=run] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.editor-host { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; font-size: 13px; }
+.editor-host .CodeMirror { height: auto; background: var(--code); font-size: 13px; }
+.editor-host textarea { display: block; width: 100%; border: 0; padding: 12px; background: var(--code); color: inherit;
+  font: 13px/1.45 ui-monospace, monospace; resize: vertical; }
+.run-error { margin: 8px 0 0; padding: 10px 12px; border-radius: 6px; background: #fdecea; color: #8a1c13; white-space: pre-wrap; font-size: 13px; }
+.run-notice { margin: 0 0 8px; padding: 8px 12px; border-radius: 6px; background: #fff6dc; color: #6b4e00; font-size: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 16px 0 32px; }
 .card { display: block; padding: 14px 16px; border: 1px solid var(--border); border-radius: 6px; color: inherit; text-decoration: none; }
 .card:hover { border-color: var(--accent); }
@@ -38,8 +49,10 @@ table.events tr:hover, table.events tr.selected { background: #eef3fc; }
   .plots { height: 62vh; }
   .plots.tall { height: 80vh; }
   .plots.short { height: 32vh; }
+  .plots.projection { height: 36vh; }
   .row { flex-direction: column; }
   .row > .plots { flex: none; }   /* stacked, each keeps its own height */
-  pre.source { font-size: 12px; }
+  section.editor { padding: 0 12px; }
+  .editor-host, .editor-host .CodeMirror { font-size: 12px; }
   .cards { grid-template-columns: 1fr; }
 }

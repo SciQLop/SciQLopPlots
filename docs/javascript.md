@@ -4,7 +4,7 @@ SciQLopPlots also runs in the browser.
 The same C++ plots, compiled to WebAssembly, draw lines, scatters and spectrograms that pan and zoom smoothly with millions of points.
 A small ES module, `sciqlopplots.mjs`, gives them a JavaScript API.
 
-**[Open the gallery](https://sciqlop.github.io/SciQLopPlots/latest/)** to see it run.
+**[Open the gallery](https://sciqlop.github.io/SciQLopPlots/latest/)** to see it run. Each example's code is editable on its page: change it and press Run (Ctrl+Enter), or Copy link to share your version.
 Every example shows its own source.
 
 ## Getting it
@@ -104,6 +104,7 @@ The gallery pages are laid out for phones too: the plots follow their element's 
 
 Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 `base` is the URL of the folder holding the library files; the default is the folder of `sciqlopplots.mjs`.
+Qt starts once per page: later calls return the same object.
 
 ### `SciQLopPlots`
 
@@ -117,6 +118,7 @@ Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 | Member | Description |
 |---|---|
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
+| `addProjection({ pairs, labels, equalAspect, ranges })` | A new `Projection` at the bottom of the panel. |
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
 | `timeRange` | `[start, stop]` in view. |
 | `on('timeRangeChanged', (start, stop) => …)` | Called after every pan or zoom. |
@@ -135,7 +137,22 @@ Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 | `colormap(t, y, z, { name, yLog, zLog, gradient })` | A `ColorMap` (spectrogram). `y`: the `m` channels, or `n × m` values when they change with time. `z`: `n × m` values, row-major (`z[i * m + j]` is time `i`, channel `j`). `gradient`: `'Jet'`, `'Viridis'`, `'Plasma'`, `'Inferno'`, `'Magma'`, `'Cividis'`, `'Turbo'`, `'Coolwarm'`, … |
 | `setAxis(which, { label, log, range })` | `which`: `'x'`, `'y'`, or `'z'` (a spectrogram's colour axis). `range`: `[min, max]`. |
 | `axisRange(which)` | `[min, max]` of that axis. |
+| `curve(x, y, { labels, colors, name })` | A `Graph` drawn in the order of its points, so `x` need not grow: a model outline, an orbit. |
+| `setLegendVisible(visible)` | Shows or hides the legend. |
+| `on('cursorTimeChanged', (time) => …)` | While the mouse moves over the plot; `NaN` when it leaves. |
 | `remove()` | Removes the plot from its panel. |
+
+### `Projection`
+
+A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showing the same dimension stay linked.
+
+| Member | Description |
+|---|---|
+| `addProjection` options | `pairs`: the dimensions each pane shows, as `[x, y]` indices, e.g. `[[0, 1], [0, 2], [1, 2]]` for X-Y, X-Z, Y-Z. `labels`: the three dimension names. `equalAspect` (default `true`): square panes. `ranges`: a fixed `[min, max]` per dimension instead of fitting the data; give them the same span and a circle stays round. |
+| `trajectory(t, x, y, z, { name, timeColors })` | A `Graph` on every pane. Coloured along time unless `timeColors` is `false`. |
+| `referenceCurve(x, y, z, { name, color })` | A static 3-D curve, projected on every pane. |
+| `pane(i)` | The `i`-th pane, a `Plot`: draw a model's outline on one pane with `curve()`. |
+| `setTimeMarker(t)` / `clearTimeMarker()` | Marks the trajectory at time `t` on every pane, e.g. from a time series' `cursorTimeChanged`. |
 
 ### `Graph` and `ColorMap`
 

@@ -17,7 +17,7 @@
       <button data-theme="paper">Paper</button>
     </div>
     <div id="plots" class="plots"></div>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const themes = {
@@ -39,6 +39,6 @@
         button.onclick = () => panel.setTheme(...themes[button.dataset.theme]);
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

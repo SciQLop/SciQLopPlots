@@ -14,7 +14,7 @@
       <div id="light" class="plots"></div>
       <div id="dark" class="plots"></div>
     </div>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const spz = await load();
@@ -32,6 +32,6 @@
       dark.addPlot().scatter(t, wave(200), { labels: ['w'], colors: ['#ffb000'] });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

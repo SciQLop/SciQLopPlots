@@ -12,7 +12,7 @@
   <main>
     <div id="plots" class="plots tall"></div>
     <p class="hint">Pinch or Ctrl+scroll to zoom in time, drag or scroll to pan.</p>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       // Synthetic but shaped like the real thing: inside, the field is strong and steady and the
@@ -52,6 +52,6 @@
                     { color: 'rgba(255, 170, 0, 0.25)', tooltip: 'magnetopause crossing' });
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

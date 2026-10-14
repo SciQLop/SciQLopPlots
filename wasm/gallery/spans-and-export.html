@@ -17,7 +17,7 @@
     </div>
     <div id="plots" class="plots"></div>
     <p id="status">Drag a span, or drag its edges.</p>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const spz = await load();
@@ -52,6 +52,6 @@
       document.querySelector('#pdf').onclick = () => download(panel.export('pdf'), 'panel.pdf');
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>

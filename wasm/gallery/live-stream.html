@@ -15,7 +15,7 @@
       <span id="status"></span>
     </div>
     <div id="plots" class="plots"></div>
-    <script type="module">
+    <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
       const rate = 10, window_ = 5 * 60;   // samples per second, seconds in view
@@ -50,6 +50,6 @@
       }, 500);
     </script>
   </main>
-  <script src="show-source.js" defer></script>
+  <script type="module" src="editor.js"></script>
 </body>
 </html>
