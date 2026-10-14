@@ -76,7 +76,7 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
     if (orientation == Qt::Vertical)
     {
         ::register_behavior<VPlotsAlign>(_container);
-        _place_holder_manager = new PlaceHolderManager(this);
+        _place_holder_manager = new PlaceHolderManager(this, _container);
     }
     if (synchronize_x)
         ::register_behavior<XAxisSynchronizer>(_container);
@@ -553,7 +553,11 @@ void SciQLopMultiPlotPanel::dragMoveEvent(QDragMoveEvent* event)
     {
         if (_current_callback->create_placeholder())
             _place_holder_manager->dragMoveEvent(event);
-        event->acceptProposedAction();
+        // Nothing to drop on between plots (on a splitter handle): say so, the drop would be lost.
+        if (widget_at(event->position()))
+            event->acceptProposedAction();
+        else
+            event->ignore();
     }
 }
 
@@ -580,9 +584,13 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
                 widget_at(event->position()));
         }
 
-        event->acceptProposedAction();
         if (drop_plot)
+        {
+            event->acceptProposedAction();
             _current_callback->call(drop_plot, event->mimeData());
+        }
+        else
+            event->ignore();
         _current_callback = nullptr;
     }
 }

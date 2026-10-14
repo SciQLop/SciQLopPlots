@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
+#include <QFrame>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
@@ -42,12 +44,13 @@ struct DropResult
     int index;
 };
 
-class PlaceHolder : public SciQLopPlotInterface
+// A plain widget, not a plot: the panel must not sync its palette or time axis, nor list it.
+class PlaceHolder : public QFrame
 {
     Q_OBJECT
 
 public:
-    PlaceHolder(QWidget* parent = nullptr) : SciQLopPlotInterface(parent, "PlaceHolder")
+    PlaceHolder(QWidget* parent = nullptr) : QFrame(parent)
     {
         setStyleSheet("background-color: #BBD5EE; border: 1px solid #2A7FD4");
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -67,6 +70,7 @@ class PlaceHolderManager : public QObject
 
     PlaceHolder* _place_holder = nullptr;
     QWidget* _parent = nullptr;
+    SciQLopPlotContainer* _container = nullptr;
 
     inline PlaceHolderLocation _compute_location(const QPointF& pos) const
     {
@@ -88,22 +92,18 @@ class PlaceHolderManager : public QObject
         return PlaceHolderLocation::None;
     }
 
-    inline SciQLopPlotInterface* _plot_at(const QPointF& pos) const
-    {
-        return qobject_cast<SciQLopPlotInterface*>(_interface()->widget_at(pos));
-    }
 
     inline PlaceHolder* _create_place_holder(int index)
     {
         auto place_holder = new PlaceHolder();
         place_holder->setMinimumHeight(0.9 * _interface()->content_height() / (1 + _interface()->size()));
-        _interface()->insert_plot(index, place_holder);
+        _container->insertWidget(index, place_holder);
         return place_holder;
     }
 
     inline void _remove_place_holder()
     {
-        _interface()->remove_plot(_place_holder);
+        _container->removeWidget(_place_holder, true);
         _place_holder = nullptr;
     }
 
@@ -134,7 +134,10 @@ class PlaceHolderManager : public QObject
 
 
 public:
-    PlaceHolderManager(QWidget* parent = nullptr) : QObject(parent), _parent { parent } { }
+    PlaceHolderManager(QWidget* parent, SciQLopPlotContainer* container)
+            : QObject(parent), _parent { parent }, _container { container }
+    {
+    }
 
     inline void dragEnterEvent(QDragEnterEvent* event)
     {
@@ -145,7 +148,7 @@ public:
     {
         if (_place_holder)
         {
-            if (_plot_at(event->position()) != _place_holder)
+            if (_interface()->widget_at(event->position()) != _place_holder)
             {
                 _remove_place_holder();
                 return;
@@ -169,7 +172,7 @@ public:
     {
         if (_place_holder)
         {
-            int index = _interface()->index(_place_holder);
+            int index = _container->indexOf(_place_holder);
             _remove_place_holder();
             return { DropLocation::NewPlot, index };
         }
