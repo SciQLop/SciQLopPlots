@@ -46,7 +46,7 @@ jobs:
           aqt install-qt -O "$PWD/Qt" linux desktop ${{ env.QT_VERSION }} linux_gcc_64 -m qtshadertools
           aqt install-qt -O "$PWD/Qt" all_os wasm ${{ env.QT_VERSION }} wasm_multithread
       - name: Install the host Qt tools' system libraries
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 xvfb
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 xvfb ccache
 
       - name: Cache Emscripten
         id: cache-emsdk
@@ -61,13 +61,25 @@ jobs:
           "$HOME/emsdk/emsdk" install "$EMSDK_VERSION"
           "$HOME/emsdk/emsdk" activate "$EMSDK_VERSION"
 
+      # Most pushes touch the gallery or the JS, not the C++: ccache skips recompiling it.
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-wasm-${{ env.QT_VERSION }}-${{ env.EMSDK_VERSION }}-${{ hashFiles('src/**', 'include/**', 'wasm/*.cpp', 'meson.build', 'subprojects/*.wrap') }}
+          restore-keys: ccache-wasm-${{ env.QT_VERSION }}-${{ env.EMSDK_VERSION }}-
       - name: Build
+        env:
+          EM_COMPILER_WRAPPER: ccache   # emcc runs clang through it
+          CCACHE_MAXSIZE: 1G
         run: |
           source "$HOME/emsdk/emsdk_env.sh"
           printf "[constants]\nqt_wasm = '%s'\n" "$PWD/Qt/${{ env.QT_VERSION }}/wasm_multithread" > qt.ini
           export PATH="$PWD/Qt/${{ env.QT_VERSION }}/gcc_64/bin:$PATH"
           meson setup build-wasm --cross-file qt.ini --cross-file wasm/emscripten.ini --buildtype=minsize
+          ccache --zero-stats
           meson compile -C build-wasm
+          ccache --show-stats
       - id: version
         run: echo "version=$(meson introspect --projectinfo build-wasm | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" >> "$GITHUB_OUTPUT"
 
