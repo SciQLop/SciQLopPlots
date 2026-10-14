@@ -183,6 +183,12 @@ public:
         return m_time_axis;
     }
 
+    //! No x or y axes of its own: each subplot has its pair, reach them through plots().
+    inline SciQLopPlotAxisInterface* x_axis() const noexcept override { return nullptr; }
+    inline SciQLopPlotAxisInterface* x2_axis() const noexcept override { return nullptr; }
+    inline SciQLopPlotAxisInterface* y_axis() const noexcept override { return nullptr; }
+    inline SciQLopPlotAxisInterface* y2_axis() const noexcept override { return nullptr; }
+
     void set_theme(SciQLopTheme* theme) override;
     inline SciQLopTheme* theme() const override { return m_theme; }
 

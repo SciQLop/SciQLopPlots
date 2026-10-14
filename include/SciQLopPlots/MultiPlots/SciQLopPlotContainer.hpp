@@ -164,7 +164,8 @@ public:
         _x_axis_range = range;
         for (auto plot : plots())
         {
-            plot->x_axis()->set_range(range);
+            if (auto* axis = plot->x_axis())
+                axis->set_range(range);
         }
     }
 
@@ -178,7 +179,8 @@ public:
         _time_axis_range = range;
         for (auto plot : plots())
         {
-            plot->time_axis()->set_range(range);
+            if (auto* axis = plot->time_axis())
+                axis->set_range(range);
         }
     }
 

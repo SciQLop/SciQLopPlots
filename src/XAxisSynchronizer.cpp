@@ -25,15 +25,21 @@
 
 void XAxisSynchronizer::_display_x_axis_only_last_plot()
 {
+    // A projection plot has no x axis of its own, so the last plot may not be the one
+    // that shows it.
+    SciQLopPlotAxisInterface* last = nullptr;
     for (auto& plot : _plots)
     {
-        if (!plot.isNull())
-            plot->x_axis()->set_visible(false);
+        if (plot.isNull())
+            continue;
+        if (auto* axis = plot->x_axis())
+        {
+            axis->set_visible(false);
+            last = axis;
+        }
     }
-    if (!_plots.isEmpty())
-    {
-        _plots.last()->x_axis()->set_visible(true);
-    }
+    if (last)
+        last->set_visible(true);
 }
 
 void XAxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
