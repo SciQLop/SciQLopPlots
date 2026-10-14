@@ -288,6 +288,20 @@ export class Panel extends Handle {
     return { plot: new Kind(this.lib, hit.id), index: hit.index };
   }
 
+  // Accepts drops of mimeType (an HTML5 drag whose dataTransfer has that type). While the drag is
+  // near a plot's top or bottom edge the panel shows where a new plot would go, as SciQLop does.
+  // callback(target, data): target is { plot, index, newPlot }: the plot dropped on, or the new
+  // plot the panel made for the drop (newPlot true); data is the dropped string.
+  acceptDrops(mimeType, callback) {
+    this.lib.m.acceptDrops(this.id, mimeType, (target, data) => {
+      const Kind = target.kind === 'projection' ? Projection : Plot;
+      // An exception must not unwind through Qt's event handling.
+      try { callback({ plot: new Kind(this.lib, target.id), index: target.index, newPlot: target.newPlot }, data); }
+      catch (error) { console.error(error); }
+    });
+    return this;
+  }
+
   // A row of projections. options: pairs (one [x, y] of dimension indices per pane, default
   // [[0, 1], [1, 2], [2, 0]]), labels (the dimension names), equalAspect (default true: square
   // panes), ranges (a fixed [min, max] per dimension; equal spans give equal units on both axes).

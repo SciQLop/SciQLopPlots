@@ -264,6 +264,97 @@ val plot_at(int panel_id, double x, double y)
     return val::null();
 }
 
+// Hands the page what was dropped on a panel: callback(target, data), target = { id, index,
+// newPlot, kind }. As on the desktop, the panel draws a placeholder while the drag is near a
+// plot's edge and makes the new plot itself before calling back.
+class JsDropCallback : public PlotDragNDropCallback
+{
+    SciQLopMultiPlotPanel* m_panel;
+    val m_callback;
+    QList<QPointer<SciQLopPlotInterface>> m_plots_before_drop;
+
+public:
+    JsDropCallback(SciQLopMultiPlotPanel* panel, const QString& mime_type, val callback)
+            : PlotDragNDropCallback(mime_type, true), m_panel(panel), m_callback(std::move(callback))
+    {
+        // A drop reaches the panel's viewport, not the panel: watch for it application-wide.
+        qApp->installEventFilter(this);
+    }
+
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (event->type() == QEvent::Drop)
+            if (auto* widget = qobject_cast<QWidget*>(watched); widget && m_panel->isAncestorOf(widget))
+                m_plots_before_drop = m_panel->plots();
+        return false;
+    }
+
+    void call(SciQLopPlotInterface* plot, const QMimeData* mime_data) override
+    {
+        auto target = val::object();
+        target.set("id", keep(plot));
+        target.set("index", m_panel->index(plot));
+        target.set("newPlot", !m_plots_before_drop.contains(plot));
+        target.set("kind", qobject_cast<SciQLopNDProjectionPlot*>(plot) ? "projection" : "plot");
+        m_callback(target, QString::fromUtf8(mime_data->data(mime_type())).toStdString());
+    }
+};
+
+// Qt 6.11's browser drag (QWasmDrag::onNativeDragOver) gives a drag's page position where the
+// window's own is expected: for a window not at the page's corner, Qt looked for the drop target
+// elsewhere and the drag was refused. This puts the position back in the window's frame.
+class DragPositionFix : public QObject
+{
+    bool m_resending = false;
+
+    static QPointF window_point(QWindow* window, QPointF page)
+    {
+        // Qt's global frame: viewport position minus the body's (QWasmScreen geometry).
+        const auto view = val::global("window");
+        const auto body = val::global("document")["body"].call<val>("getBoundingClientRect");
+        return window->mapFromGlobal(page
+                                     - QPointF(view["scrollX"].as<double>(), view["scrollY"].as<double>())
+                                     - QPointF(body["left"].as<double>(), body["top"].as<double>()));
+    }
+
+public:
+    using QObject::QObject;
+
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (m_resending || (event->type() != QEvent::DragEnter && event->type() != QEvent::DragMove))
+            return false;
+        auto* drag = static_cast<QDragMoveEvent*>(event);
+        const auto at = window_point(static_cast<QWindow*>(watched), drag->position()).toPoint();
+        std::unique_ptr<QDragMoveEvent> fixed;
+        if (event->type() == QEvent::DragEnter)
+            fixed = std::make_unique<QDragEnterEvent>(at, drag->possibleActions(), drag->mimeData(),
+                                                      drag->buttons(), drag->modifiers());
+        else
+            fixed = std::make_unique<QDragMoveEvent>(at, drag->possibleActions(), drag->mimeData(),
+                                                     drag->buttons(), drag->modifiers());
+        m_resending = true;
+        QCoreApplication::sendEvent(watched, fixed.get());
+        m_resending = false;
+        // Qt answers the browser from the event it sent.
+        drag->setDropAction(fixed->dropAction());
+        drag->setAccepted(fixed->isAccepted());
+        return true;
+    }
+};
+
+void accept_drops(int panel_id, std::string mime_type, val callback)
+{
+    auto* panel = get<SciQLopMultiPlotPanel>(panel_id);
+    if (auto* window = panel->windowHandle(); !window->property("dragPositionFixed").toBool())
+    {
+        window->installEventFilter(new DragPositionFix(panel));
+        window->setProperty("dragPositionFixed", true);
+    }
+    panel->add_accepted_mime_type(
+        new JsDropCallback(panel, QString::fromStdString(mime_type), std::move(callback)));
+}
+
 // Removes any object by id, through its owner where it has one.
 void remove_object(int id)
 {
@@ -662,6 +753,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("remove", &remove_object);
     function("addPlot", &add_plot);
     function("plotAt", &plot_at);
+    function("acceptDrops", &accept_drops);
     function("line", &line);
     function("scatter", &scatter);
     function("curve", &curve);

@@ -121,6 +121,7 @@ Qt starts once per page: later calls return the same object.
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
 | `addProjection({ pairs, labels, equalAspect, ranges })` | A new `Projection` at the bottom of the panel. |
 | `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot` or a `Projection` with the same `id` as the page's own handle. `null` between and outside plots. |
+| `acceptDrops(mimeType, (target, data) => …)` | Takes HTML5 drags whose `dataTransfer` holds `mimeType`, as SciQLop does on the desktop: dropped on a plot, `target.plot` is that plot; near a plot's top or bottom edge the panel shows where a new plot would go, and a drop there makes it (`target.newPlot` is `true`). `target.index` is the plot's place in the panel, `data` the dropped string. Set the data in your `dragstart`: `event.dataTransfer.setData(mimeType, data)`. |
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
 | `timeRange` | `[start, stop]` in view. |
 | `on('timeRangeChanged', (start, stop) => …)` | Called after every pan or zoom. |

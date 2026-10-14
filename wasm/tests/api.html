@@ -235,6 +235,47 @@
         `bottom: ${show(hits[2])}`);
       assert(outside === null, `below the panel: ${show(outside)}`);
     });
+    await check('acceptDrops: drops onto a plot, or a new plot at an edge', async () => {
+      const element = document.querySelector('#c');
+      const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });
+      const plots = [panel.addPlot(), panel.addPlot()];
+      const drops = [];
+      panel.acceptDrops('application/x-test-product', (target, data) => {
+        drops.push({ id: target.plot.id, index: target.index, newPlot: target.newPlot, data });
+        if (target.newPlot) panel.clear();   // a page that rebuilds its layout on every drop
+      });
+      await frame();
+      // Qt reads the drag from these events (an HTML5 drag from the page does the same).
+      const qt = element.querySelector(':scope > #qt-shadow-container').shadowRoot;
+      const drag = (type, x, y, data) => {
+        const box = element.getBoundingClientRect();
+        const dataTransfer = new DataTransfer();
+        dataTransfer.setData('application/x-test-product', data);
+        qt.elementFromPoint(box.left + x, box.top + y).dispatchEvent(new DragEvent(type, {
+          dataTransfer, clientX: box.left + x, clientY: box.top + y, bubbles: true, cancelable: true, composed: true }));
+      };
+      const dropAt = async (x, y, data) => {
+        drag('dragenter', x, y, data);
+        await frame();
+        drag('dragover', x, y, data);
+        await frame();
+        drag('dragover', x, y, data);
+        await frame();
+        drag('drop', x, y, data);
+        await frame();
+      };
+      const { height } = element.getBoundingClientRect();
+      await dropAt(300, height / 4, 'amda/b_gse');          // the middle of the first plot
+      await dropAt(300, height - 5, 'cda/mms1_fgm');        // the bottom edge of the last plot
+      panel.addPlot().line(t, sin);   // throws if the clear() in the callback broke the panel
+      await frame();
+      panel.remove();
+      const show = (d) => d && `plot ${d.id} at ${d.index}, new ${d.newPlot}, ${d.data}`;
+      assert(drops.length === 2, `${drops.length} drops: ${drops.map(show).join(' | ')}`);
+      assert(drops[0].id === plots[0].id && drops[0].index === 0 && !drops[0].newPlot && drops[0].data === 'amda/b_gse',
+        `onto a plot: ${show(drops[0])}`);
+      assert(drops[1].newPlot && drops[1].index === 2 && drops[1].data === 'cda/mms1_fgm', `at the edge: ${show(drops[1])}`);
+    });
     await check('remove a panel', async () => {
       b.remove();
       await frame();
