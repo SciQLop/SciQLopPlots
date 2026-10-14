@@ -130,8 +130,8 @@ Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 
 | Member | Description |
 |---|---|
-| `line(t, values, { labels, colors, name })` | A `Graph`: one line per column of `values`. |
-| `scatter(t, values, { labels, colors, name })` | A `Graph` drawn with markers. |
+| `line(t, values, { labels, colors, name, gapThreshold })` | A `Graph`: one line per column of `values`. |
+| `scatter(t, values, { labels, colors, name, gapThreshold })` | A `Graph` drawn with markers. |
 | `colormap(t, y, z, { name, yLog, zLog, gradient })` | A `ColorMap` (spectrogram). `y`: the `m` channels, or `n × m` values when they change with time. `z`: `n × m` values, row-major (`z[i * m + j]` is time `i`, channel `j`). `gradient`: `'Jet'`, `'Viridis'`, `'Plasma'`, `'Inferno'`, `'Magma'`, `'Cividis'`, `'Turbo'`, `'Coolwarm'`, … |
 | `setAxis(which, { label, log, range })` | `which`: `'x'`, `'y'`, or `'z'` (a spectrogram's colour axis). `range`: `[min, max]`. |
 | `axisRange(which)` | `[min, max]` of that axis. |
@@ -143,6 +143,7 @@ Loads the module and starts it. Returns a promise of a `SciQLopPlots` object.
 |---|---|
 | `setData(t, values)` / `setData(t, y, z)` | Replaces the data; same shapes as when created. |
 | `setVisible(visible)` | Shows or hides it. |
+| `setGapThreshold(x)`, `gapThreshold` | `Graph` only. A time step longer than `x` times its neighbours breaks the line, as a data gap (default 1.5). `0` never breaks it: use it for keys that are uneven on purpose, like min/max resampled data. NaN values still break the line. |
 | `remove()` | Removes it from its plot. |
 
 ### `Span`

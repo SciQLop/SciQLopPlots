@@ -9,6 +9,8 @@
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
+#include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 
@@ -259,7 +261,36 @@ void remove_object(int id)
     object->deleteLater();
 }
 
-// options: labels (string[]), colors (CSS colour strings). The first API passed labels alone.
+// A step longer than threshold x its neighbours breaks the line; 0 never breaks it.
+void set_gap_threshold(QObject* object, double threshold)
+{
+    if (!std::isfinite(threshold) || threshold < 0)
+        throw std::invalid_argument("SciQLopPlots: a gap threshold is a number >= 0, got "
+                                    + std::to_string(threshold));
+    if (auto* graph = qobject_cast<SciQLopMultiGraphBase*>(object))
+        return graph->set_gap_threshold(threshold);
+    if (auto* graph = qobject_cast<SciQLopSingleLineGraph*>(object))
+        return graph->set_gap_threshold(threshold);
+    throw std::invalid_argument("SciQLopPlots: only lines and scatters have a gap threshold");
+}
+
+void set_gap_threshold_of(int id, double threshold)
+{
+    set_gap_threshold(get<QObject>(id), threshold);
+}
+
+double gap_threshold(int id)
+{
+    auto* object = get<QObject>(id);
+    if (auto* graph = qobject_cast<SciQLopMultiGraphBase*>(object))
+        return graph->gap_threshold();
+    if (auto* graph = qobject_cast<SciQLopSingleLineGraph*>(object))
+        return graph->gap_threshold();
+    throw std::invalid_argument("SciQLopPlots: only lines and scatters have a gap threshold");
+}
+
+// options: labels (string[]), colors (CSS colour strings), name, gapThreshold. The first API
+// passed labels alone.
 void style_graph(SciQLopGraphInterface* graph, val options)
 {
     if (val::global("Array").call<bool>("isArray", options))
@@ -270,6 +301,8 @@ void style_graph(SciQLopGraphInterface* graph, val options)
         graph->set_colors(color_list(colors));
     if (auto name = option(options, "name"); !name.isUndefined())
         graph->set_name(qstring(name));
+    if (auto threshold = option(options, "gapThreshold"); !threshold.isUndefined())
+        set_gap_threshold(graph, threshold.as<double>());
 }
 
 int line(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val options)
@@ -508,6 +541,8 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("setData", &set_data_xy);
     function("setData", &set_data_xyz);
     function("setVisible", &set_visible);
+    function("setGapThreshold", &set_gap_threshold_of);
+    function("gapThreshold", &gap_threshold);
     function("setAxis", &set_axis);
     function("axisRange", &axis_range);
     function("setTimeRange", &set_time_range);

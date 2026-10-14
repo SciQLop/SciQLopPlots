@@ -77,6 +77,16 @@ export class Graph extends Handle {
   setVisible(visible) {
     this.lib.m.setVisible(this.id, visible);
   }
+
+  // A step longer than threshold x its neighbours' breaks the line (default 1.5). 0 never
+  // breaks it, for keys that are uneven on purpose (min/max resampled data); NaN still does.
+  setGapThreshold(threshold) {
+    this.lib.m.setGapThreshold(this.id, threshold);
+  }
+
+  get gapThreshold() {
+    return this.lib.m.gapThreshold(this.id);
+  }
 }
 
 // y: the channels (m values), or one row of channels per time (n * m values, row-major).

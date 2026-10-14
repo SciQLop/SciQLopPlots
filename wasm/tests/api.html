@@ -56,6 +56,15 @@
       assert(map instanceof ColorMap, 'a ColorMap');
     });
     await check('setData', () => { graph.setData(t, [cos, sin]); map.setData(t, channels, z); });
+    await check('gap threshold: option, setter, 0 turns it off', () => {
+      const p = b.addPlot();
+      const line = p.line(t, sin), off = p.line(t, cos, { gapThreshold: 0 }), dots = p.scatter(t, sin, { gapThreshold: 4 });
+      assert(line.gapThreshold === 1.5, `default ${line.gapThreshold}`);
+      assert(off.gapThreshold === 0 && dots.gapThreshold === 4, `options ${off.gapThreshold}, ${dots.gapThreshold}`);
+      line.setGapThreshold(3);
+      assert(line.gapThreshold === 3, `after setGapThreshold(3): ${line.gapThreshold}`);
+      throws(() => line.setGapThreshold(Number.NaN), 'a NaN threshold');
+    });
     await check('axis range', () => {
       plot.setAxis('y', { range: [-2, 3], label: 'B [nT]' });
       const [lo, hi] = plot.axisRange('y');
