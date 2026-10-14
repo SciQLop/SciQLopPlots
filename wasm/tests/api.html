@@ -190,6 +190,20 @@
       }
       panel.remove();
     });
+    await check('plots removed while their resampling runs', async () => {
+      // Each plot had a thread pool of its own: big data made new threads, which in the browser
+      // start only once the main thread is back in the event loop, and removing the plots waited
+      // for them on the main thread. The page froze for good.
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      const big = Float64Array.from({ length: 200000 }, (_, i) => t0 + i);
+      const wave = big.map((_, i) => Math.sin(i / 500));
+      const plots = Array.from({ length: 8 }, () => panel.addPlot());
+      plots.forEach((p) => p.line(big, [wave, wave, wave]));
+      await new Promise((r) => setTimeout(r, 0));
+      plots.forEach((p) => p.remove());
+      await frame();
+      panel.remove();
+    });
     await check('remove a panel', async () => {
       b.remove();
       await frame();
