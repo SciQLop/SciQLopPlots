@@ -204,6 +204,10 @@ export class Panel extends Handle {
     super(lib, id);
     this.element = element;
     installPinch(lib, this);
+    // Qt re-reads a container's size only on a window resize, not when the element alone
+    // changes size (a sidebar hiding, a flex layout).
+    this.resizeObserver = new ResizeObserver(() => lib.m.qtResizeContainerElement(element));
+    this.resizeObserver.observe(element);
   }
 
   // Plots stack vertically and share the time axis. Set the time range first: a new plot
@@ -249,6 +253,7 @@ export class Panel extends Handle {
 
   remove() {
     super.remove();
+    this.resizeObserver.disconnect();
     this.lib.m.qtRemoveContainerElement(this.element);
   }
 }

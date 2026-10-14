@@ -93,6 +93,20 @@
       panel.remove();
       assert(r > 200 && gr > 120 && gr < 240 && b > 120 && b < 240, `span pixel rgb(${r}, ${gr}, ${b})`);
     });
+    await check('a panel follows its element when only the element resizes', async () => {
+      const element = document.querySelector('#c');
+      const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });
+      panel.addPlot().line(t, sin);
+      await frame();
+      element.style.width = '800px';
+      element.style.height = '500px';
+      await new Promise((r) => setTimeout(r, 300));
+      const canvas = element.querySelector(':scope > #qt-shadow-container').shadowRoot.querySelector('canvas');
+      const { width, height } = canvas.getBoundingClientRect();
+      panel.remove();
+      element.style.width = element.style.height = '';
+      assert(Math.abs(width - 800) < 2 && Math.abs(height - 500) < 2, `canvas ${width}x${height}, element 800x500`);
+    });
     await check('export png', async () => {
       const blob = a.export('png');
       const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
