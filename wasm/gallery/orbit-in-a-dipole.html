@@ -11,8 +11,8 @@
   <header><a href="../index.html">← SciQLopPlots gallery</a><h1>An orbit through a dipole</h1><p class="lead">Two turns of an elliptical orbit through Earth's dipole field: the field along the orbit in time, and the orbit itself in three projections with dipole field lines. Hover the time series to follow the spacecraft on its orbit.</p></header>
   <main>
     <div id="series" class="plots"></div>
-    <div id="orbit" class="plots projection"></div>
-    <p id="status" class="hint">Hover the time series: the marker follows the spacecraft.</p>
+    <div id="orbit" class="plots projection" data-thumbnail></div>
+    <p id="status" class="hint">Hover the time series: the marker follows the spacecraft. Positions in Earth radii.</p>
     <script type="text/plain" id="example">
       import { load } from '../sciqlopplots.mjs';
 
@@ -64,7 +64,7 @@
       const orbit = spz.panel(document.querySelector('#orbit'));
       // Same span on every axis, so a circle stays round.
       const projection = orbit.addProjection({
-        pairs: [[0, 1], [0, 2], [1, 2]], labels: ['X [Re]', 'Y [Re]', 'Z [Re]'],
+        pairs: [[0, 1], [0, 2], [1, 2]], labels: ['X', 'Y', 'Z'],
         ranges: [[-13, 13], [-13, 13], [-13, 13]],
       });
       for (const pane of [0, 1, 2]) projection.pane(pane).setLegendVisible(false);

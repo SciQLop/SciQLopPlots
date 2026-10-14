@@ -49,7 +49,7 @@ table.events tr:hover, table.events tr.selected { background: #eef3fc; }
   .plots { height: 62vh; }
   .plots.tall { height: 80vh; }
   .plots.short { height: 32vh; }
-  .plots.projection { height: 36vh; }
+  .plots.projection { height: 42vw; }   /* three square panes side by side */
   .row { flex-direction: column; }
   .row > .plots { flex: none; }   /* stacked, each keeps its own height */
   section.editor { padding: 0 12px; }

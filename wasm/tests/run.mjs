@@ -10,7 +10,8 @@ import { tmpdir } from 'node:os';
 
 const [site, outdir = mkdtempSync(join(tmpdir(), 'sciqlopplots-tests-'))] = process.argv.slice(2);
 // Test pages publish window.testResult; gallery pages (the index's links) pass when they log
-// no error. THUMBS=<dir> also saves a picture of each gallery page's first .plots element.
+// no error. THUMBS=<dir> also saves a picture of each gallery page's .plots[data-thumbnail]
+// element, or its first .plots.
 const galleryPages = [...readFileSync(join(site, 'index.html'), 'utf8').matchAll(/href="(gallery\/[\w-]+\.html)"/g)]
   .map((match) => match[1]);
 const pages = process.env.PAGES?.split(',')
@@ -101,7 +102,10 @@ async function performRequestedInput() {
 
 async function saveThumbnail(page) {
   const box = JSON.parse(await evaluate(
-    "JSON.stringify((({ x, y, width, height }) => ({ x, y, width, height }))(document.querySelector('.plots').getBoundingClientRect()))"));
+    `(() => { const plots = document.querySelector('.plots[data-thumbnail]') ?? document.querySelector('.plots');
+      plots.scrollIntoView({ block: 'center' });
+      const { x, y, width, height } = plots.getBoundingClientRect();
+      return JSON.stringify({ x, y, width, height }); })()`));
   const data = (await send('browsingContext.captureScreenshot', { context, clip: { type: 'box', ...box } })).result?.data;
   mkdirSync(process.env.THUMBS, { recursive: true });
   if (data) writeFileSync(join(process.env.THUMBS, page.replace(/^gallery\/|\.html$/g, '') + '.png'), Buffer.from(data, 'base64'));

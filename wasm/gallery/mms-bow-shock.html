@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MMS crosses the bow shock · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>MMS crosses the bow shock</h1><p class="lead">Real MMS1 data, 1 December 2017: the spacecraft leaves the magnetosphere through the magnetopause, crosses the magnetosheath, then the bow shock seven times, and ends in the solar wind. The orbit is drawn with two models, the Shue et al. (1998) magnetopause and the Jelínek et al. (2012) bow shock. Hover the time series to follow MMS1; move the sliders to change the solar wind.</p></header>
+  <main>
+    <div id="series" class="plots tall"></div>
+    <div class="controls">
+      <label>Dynamic pressure <input id="pd" type="range" min="0.5" max="8" step="0.05"> <span id="pd-value"></span> nPa</label>
+      <label>IMF Bz (GSM) <input id="bz" type="range" min="-15" max="15" step="0.1"> <span id="bz-value"></span> nT</label>
+      <button type="button" id="omni">OMNI median</button>
+    </div>
+    <div id="orbit" class="plots projection" data-thumbnail></div>
+    <p class="hint"><span style="color:#e8710a">━</span> magnetopause, Shue et al. (1998) · <span style="color:#7b3fbf">━</span> bow shock, Jelínek et al. (2012) · GSE, Earth radii · Y-Z shows both at the spacecraft's X · no aberration</p>
+    <p id="status" class="hint">Hover the time series.</p>
+    <p class="hint">Data: MMS1 FGM, FPI-DIS (AMDA), MEC position (MMS SDC), OMNI HRO 1-min (AMDA), fetched with <a href="https://github.com/SciQLop/speasy">speasy</a>.</p>
+    <script type="text/plain" id="example">
+      import { load } from '../sciqlopplots.mjs';
+
+      const event = await (await fetch('data/mms-event.json')).json();
+      const array = (values) => Float64Array.from(values, (v) => v ?? Number.NaN);
+      const { b, ni, vi, omni, position } = event;
+      const [bx, by, bz] = [b.bx, b.by, b.bz].map(array);
+      const bt = bx.map((_, i) => Math.hypot(bx[i], by[i], bz[i]));
+
+      const spz = await load();
+      const series = spz.panel(document.querySelector('#series'), { timeRange: [event.start, event.stop] });
+      const field = series.addPlot();
+      field.line(array(b.t), [bx, by, bz, bt], { labels: ['Bx', 'By', 'Bz', '|B|'], colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#222'] });
+      field.setAxis('y', { label: 'B GSE [nT]' });
+      const density = series.addPlot();
+      density.setAxis('y', { label: 'Ni [cm⁻³]', log: true });
+      density.line(array(ni.t), array(ni.n), { labels: ['Ni'] });
+      const velocity = series.addPlot();
+      velocity.line(array(vi.t), [vi.vx, vi.vy, vi.vz].map(array), { labels: ['Vx', 'Vy', 'Vz'] });
+      velocity.setAxis('y', { label: 'Vi GSE [km/s]' });
+      const upstream = series.addPlot();
+      upstream.line(array(omni.t), array(omni.pdyn), { labels: ['OMNI Pd'], colors: ['#555'] });
+      upstream.setAxis('y', { label: 'Pd [nPa]' });
+
+      const colors = { magnetopause: '#e8710a', 'bow shock': '#7b3fbf' };
+      for (const crossing of event.crossings)
+        series.addSpan(crossing.t - 45, crossing.t + 45, {
+          readOnly: true, color: colors[crossing.kind] + '55',
+          tooltip: `${crossing.kind}, ${crossing.direction}, ${new Date(crossing.t * 1000).toISOString().slice(11, 19)} UT`,
+        });
+
+      // Models, both symmetric about X: r(θ) in Earth radii, θ from the Sun-Earth line.
+      const shue1998 = (pd, bzImf) => {
+        const r0 = (10.22 + 1.29 * Math.tanh(0.184 * (bzImf + 8.14))) * pd ** (-1 / 6.6);
+        const alpha = (0.58 - 0.007 * bzImf) * (1 + 0.024 * Math.log(pd));
+        return (theta) => r0 * (2 / (1 + Math.cos(theta))) ** alpha;
+      };
+      const jelinek2012 = (pd) => {
+        const r0 = 15.02 * pd ** (-1 / 6.55), lambda = 1.17;
+        return (theta) => 2 * r0 / (Math.cos(theta) + Math.sqrt(Math.cos(theta) ** 2 + (lambda * Math.sin(theta)) ** 2));
+      };
+      // The outline (x, ρ) from θ = 0 to where it leaves the plot.
+      const outline = (r) => {
+        const xs = [], rhos = [];
+        for (let theta = 0; theta < 2.8; theta += 0.02) {
+          const radius = r(theta);
+          if (radius > 40) break;
+          xs.push(radius * Math.cos(theta));
+          rhos.push(radius * Math.sin(theta));
+        }
+        return { xs, rhos };
+      };
+      // ρ of the surface at a given x: the outline's x falls as θ grows.
+      const radiusAt = ({ xs, rhos }, x) => {
+        const k = xs.findIndex((v) => v < x);
+        if (k <= 0) return k === 0 ? 0 : Number.NaN;
+        return rhos[k - 1] + (rhos[k] - rhos[k - 1]) * (x - xs[k - 1]) / (xs[k] - xs[k - 1]);
+      };
+      const mirrored = ({ xs, rhos }) => [[...xs].reverse().concat(xs), [...rhos].reverse().map((v) => -v).concat(rhos)];
+      const circle = (radius) => {
+        const a = Float64Array.from({ length: 121 }, (_, i) => i * 2 * Math.PI / 120);
+        return [a.map((v) => radius * Math.cos(v)), a.map((v) => radius * Math.sin(v))];
+      };
+
+      const orbit = spz.panel(document.querySelector('#orbit'));
+      const projection = orbit.addProjection({
+        pairs: [[0, 1], [0, 2], [1, 2]], labels: ['X', 'Y', 'Z'],
+        ranges: [[-4, 20], [-12, 12], [-12, 12]],
+      });
+      const panes = [0, 1, 2].map((i) => projection.pane(i));
+      panes.forEach((pane) => pane.setLegendVisible(false));
+      panes.forEach((pane) => pane.curve(...circle(1), { colors: ['#2a6fdb'] }));   // Earth
+      const models = {
+        magnetopause: panes.map((pane) => pane.curve([0], [0], { colors: [colors.magnetopause] })),
+        'bow shock': panes.map((pane) => pane.curve([0], [0], { colors: [colors['bow shock']] })),
+      };
+      const pos = { t: array(position.t), x: array(position.x), y: array(position.y), z: array(position.z) };
+      projection.trajectory(pos.t, pos.x, pos.y, pos.z, { name: 'MMS1' });
+
+      const pd = document.querySelector('#pd'), bzInput = document.querySelector('#bz');
+      let outlines;
+      let cursorX = pos.x[0];
+      function drawModels() {
+        document.querySelector('#pd-value').textContent = Number(pd.value).toFixed(2);
+        document.querySelector('#bz-value').textContent = Number(bzInput.value).toFixed(1);
+        outlines = {
+          magnetopause: outline(shue1998(Number(pd.value), Number(bzInput.value))),
+          'bow shock': outline(jelinek2012(Number(pd.value))),
+        };
+        for (const [kind, [xy, xz]] of Object.entries(models)) {
+          xy.setData(...mirrored(outlines[kind]));
+          xz.setData(...mirrored(outlines[kind]));
+        }
+        drawCrossSections();
+      }
+      function drawCrossSections() {
+        for (const [kind, graphs] of Object.entries(models))
+          graphs[2].setData(...circle(radiusAt(outlines[kind], cursorX) || 0));
+      }
+      const setInputs = (p, z) => { pd.value = p; bzInput.value = z; drawModels(); };
+      document.querySelector('#omni').onclick = () => setInputs(omni.median_pdyn, omni.median_bz_gsm);
+      pd.oninput = bzInput.oninput = drawModels;
+      setInputs(omni.median_pdyn, omni.median_bz_gsm);
+
+      // Which region the spacecraft is in, from the crossing list.
+      const region = (time) => {
+        const passed = event.crossings.filter((c) => c.t <= time);
+        if (!passed.length) return 'magnetosphere';
+        const last = passed.at(-1);
+        return last.kind === 'magnetopause' ? 'magnetosheath' : last.direction === 'outbound' ? 'solar wind' : 'magnetosheath';
+      };
+      const status = document.querySelector('#status');
+      for (const plot of [field, density, velocity, upstream])
+        plot.on('cursorTimeChanged', (time) => {
+          if (Number.isNaN(time)) return projection.clearTimeMarker();
+          projection.setTimeMarker(time);
+          const i = Math.min(pos.t.length - 1, Math.max(0, Math.round((time - pos.t[0]) / (pos.t[1] - pos.t[0]))));
+          cursorX = pos.x[i];
+          drawCrossSections();
+          const r = Math.hypot(pos.x[i], pos.y[i], pos.z[i]);
+          status.textContent = `${new Date(time * 1000).toISOString().slice(11, 19)} UT · r = ${r.toFixed(2)} Re · ${region(time)}`;
+        });
+    </script>
+  </main>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>
