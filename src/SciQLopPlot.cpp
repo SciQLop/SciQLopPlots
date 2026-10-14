@@ -689,7 +689,12 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
         Qt::QueuedConnection);
     connect(
         plottable, &SciQLopGraphInterface::request_rescale, this,
-        [this]() { this->_rescale_axes_once_data_shown(); }, Qt::QueuedConnection);
+        [this]()
+        {
+            if (this->m_fit_first_data)
+                this->_rescale_axes_once_data_shown();
+        },
+        Qt::QueuedConnection);
 }
 
 void SciQLopPlot::_rescale_axes_once_data_shown()
@@ -1216,7 +1221,8 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
         // set_data's first-batch request_rescale fired before _configure_plotable
         // connected it. Rescale now rather than queued, so a range the caller
         // sets right after plot() wins.
-        rescale_axes();
+        if (m_fit_first_data)
+            rescale_axes();
     }
     return plottable;
 }
@@ -1246,7 +1252,8 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
     _configure_color_map(cm, y_log_scale, z_log_scale);
     // Same as the line path: the first-batch request_rescale fired before
     // _configure_color_map connected it.
-    rescale_axes();
+    if (m_fit_first_data)
+        rescale_axes();
     return cm;
 }
 
@@ -1285,7 +1292,8 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
             [this, skip_first_batch_data_changed_rescale]()
             {
                 *skip_first_batch_data_changed_rescale = true;
-                this->_rescale_axes_once_data_shown();
+                if (this->m_fit_first_data)
+                    this->_rescale_axes_once_data_shown();
             },
             Qt::QueuedConnection);
         connect(

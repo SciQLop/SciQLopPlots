@@ -265,6 +265,7 @@ protected:
     SciQLopPlotLegend* m_legend = nullptr;
     int m_color_palette_index = 0;
     bool m_auto_scale = false;
+    bool m_fit_first_data = true;
     bool m_equal_aspect_ratio = false;
     QPointer<QCPLaneLayout> m_lane_layout;
 
@@ -535,6 +536,11 @@ public:
         Q_EMIT auto_scale_changed(auto_scale);
     }
     inline virtual bool auto_scale() const noexcept override { return m_auto_scale; }
+
+    //! Whether a graph's first data fits the axes (the default). Off keeps the ranges
+    //! the caller set; rescale_axes() still fits on request.
+    inline void set_fit_first_data(bool fit) noexcept { m_fit_first_data = fit; }
+    inline bool fit_first_data() const noexcept { return m_fit_first_data; }
 
     void set_equal_aspect_ratio(bool enabled) noexcept;
     bool equal_aspect_ratio() const noexcept { return m_equal_aspect_ratio; }
