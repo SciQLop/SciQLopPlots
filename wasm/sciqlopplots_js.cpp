@@ -580,6 +580,9 @@ int main(int argc, char** argv)
     // panel's container, and widgets of the old one keep a dangling QRhi.
     qputenv("QT_WIDGETS_RHI", "1");
     QApplication app(argc, argv);
+    // A page may remove all its panels and make new ones later. Quitting on the last one
+    // would abort the module (there is no event loop to return to in the browser).
+    app.setQuitOnLastWindowClosed(false);
     app.installEventFilter(new OwnContextFirst(&app));
     return app.exec();
 }

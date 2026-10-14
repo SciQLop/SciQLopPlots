@@ -141,8 +141,17 @@
       b.remove();
       await frame();
       throws(() => b.addPlot(), 'a removed panel');
-      const c = spz.panel(document.querySelector('#b'), { timeRange: [t[0], t[n - 1]] });
-      c.addPlot().line(t, sin);
+      window.lastPanel = spz.panel(document.querySelector('#b'), { timeRange: [t[0], t[n - 1]] });
+      window.lastPanel.addPlot().line(t, sin);
+    });
+    await check('a page can remove every panel and make a new one later', async () => {
+      a.remove();
+      window.lastPanel.remove();
+      await new Promise((r) => setTimeout(r, 300));
+      const again = spz.panel(document.querySelector('#a'), { timeRange: [t[0], t[n - 1]] });
+      again.addPlot().line(t, sin);
+      await frame();
+      assert(again.addPlot(), 'no plot on the new panel');
     });
 
     window.testResult = results;
