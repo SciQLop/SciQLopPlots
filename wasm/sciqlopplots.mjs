@@ -271,6 +271,16 @@ export class Panel extends Handle {
     return new Plot(this.lib, this.lib.m.addPlot(this.id));
   }
 
+  // The plot under (x, y), in CSS pixels from the panel element's top-left corner, e.g. where
+  // something was dropped: { plot, index } (plot is a Plot or a Projection), or null between
+  // and outside plots.
+  plotAt(x, y) {
+    const hit = this.lib.m.plotAt(this.id, x, y);
+    if (!hit) return null;
+    const Kind = hit.kind === 'projection' ? Projection : Plot;
+    return { plot: new Kind(this.lib, hit.id), index: hit.index };
+  }
+
   // A row of projections. options: pairs (one [x, y] of dimension indices per pane, default
   // [[0, 1], [1, 2], [2, 0]]), labels (the dimension names), equalAspect (default true: square
   // panes), ranges (a fixed [min, max] per dimension; equal spans give equal units on both axes).

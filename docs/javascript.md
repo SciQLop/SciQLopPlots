@@ -119,6 +119,7 @@ Qt starts once per page: later calls return the same object.
 |---|---|
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
 | `addProjection({ pairs, labels, equalAspect, ranges })` | A new `Projection` at the bottom of the panel. |
+| `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot` or a `Projection` with the same `id` as the page's own handle. `null` between and outside plots. |
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
 | `timeRange` | `[start, stop]` in view. |
 | `on('timeRangeChanged', (start, stop) => …)` | Called after every pan or zoom. |

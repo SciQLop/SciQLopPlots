@@ -13,7 +13,7 @@
   <pre id="status">running</pre>
   <div id="a" class="panel"></div><div id="b" class="panel"></div><div id="c" class="panel"></div>
   <script type="module">
-    import { load, Graph, ColorMap, Span } from '../sciqlopplots.mjs';
+    import { load, Graph, ColorMap, Span, Projection } from '../sciqlopplots.mjs';
 
     const results = [];
     const check = async (name, fn) => {
@@ -203,6 +203,23 @@
       plots.forEach((p) => p.remove());
       await frame();
       panel.remove();
+    });
+    await check('plotAt: the plot under a point, for drops', async () => {
+      const element = document.querySelector('#c');
+      const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });
+      const first = panel.addPlot(), second = panel.addPlot();
+      const proj = panel.addProjection();
+      await frame();
+      const { height } = element.getBoundingClientRect();
+      const hits = [1, 3, 5].map((sixth) => panel.plotAt(300, (height * sixth) / 6));
+      const outside = panel.plotAt(300, height + 50);
+      panel.remove();
+      const show = (hit) => hit && `${hit.plot.constructor.name} ${hit.plot.id} at ${hit.index}`;
+      assert(hits[0]?.plot.id === first.id && hits[0].index === 0, `top: ${show(hits[0])}`);
+      assert(hits[1]?.plot.id === second.id && hits[1].index === 1, `middle: ${show(hits[1])}`);
+      assert(hits[2]?.plot instanceof Projection && hits[2].plot.id === proj.id && hits[2].index === 2,
+        `bottom: ${show(hits[2])}`);
+      assert(outside === null, `below the panel: ${show(outside)}`);
     });
     await check('remove a panel', async () => {
       b.remove();

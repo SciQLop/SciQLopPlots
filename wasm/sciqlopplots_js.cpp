@@ -81,8 +81,13 @@ SciQLopPyBuffer buffer_from_array(val array, val shape)
                            format->second.first, format->second.second, dims);
 }
 
+// One id per object, so a handle the page gets again (plotAt, pane) matches the one it has.
+// simplify: a linear scan, fine for a page's few hundred objects; a QHash when pages hold more.
 int keep(QObject* object)
 {
+    const auto known = std::find(objects.cbegin(), objects.cend(), object);
+    if (known != objects.cend())
+        return int(known - objects.cbegin());
     objects.emplace_back(object);
     return int(objects.size()) - 1;
 }
@@ -236,6 +241,26 @@ SciQLopMultiPlotPanel* default_panel()
 int add_plot(int panel)
 {
     return keep(get<SciQLopMultiPlotPanel>(panel)->create_plot(-1, PlotType::TimeSeries));
+}
+
+// The plot under (x, y), in CSS pixels from the panel's top-left corner (the panel fills its
+// element): { id, index, kind: 'plot' | 'projection' }, or null between and outside plots.
+val plot_at(int panel_id, double x, double y)
+{
+    auto* panel = get<SciQLopMultiPlotPanel>(panel_id);
+    for (auto* w = panel->childAt(QPoint(int(x), int(y))); w && w != panel; w = w->parentWidget())
+    {
+        auto* plot = qobject_cast<SciQLopPlotInterface*>(w);
+        if (plot && panel->contains(plot))
+        {
+            auto hit = val::object();
+            hit.set("id", keep(plot));
+            hit.set("index", panel->index(plot));
+            hit.set("kind", qobject_cast<SciQLopNDProjectionPlot*>(plot) ? "projection" : "plot");
+            return hit;
+        }
+    }
+    return val::null();
 }
 
 // Removes any object by id, through its owner where it has one.
@@ -628,6 +653,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("createPanel", &create_panel);
     function("remove", &remove_object);
     function("addPlot", &add_plot);
+    function("plotAt", &plot_at);
     function("line", &line);
     function("scatter", &scatter);
     function("curve", &curve);
