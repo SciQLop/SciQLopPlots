@@ -48,11 +48,13 @@ const firefox = spawn(process.env.FIREFOX ?? 'firefox', ['--no-remote', '--profi
 
 async function connect() {
   for (let i = 0; i < 100; i++) {
+    let ws;
     try {
-      const ws = new WebSocket(`ws://127.0.0.1:${port}/session`);
-      await new Promise((ok, ko) => { ws.addEventListener('open', ok); ws.addEventListener('error', ko); });
+      ws = new WebSocket(`ws://127.0.0.1:${port}/session`);
+      // Firefox can take the connection and never answer it: give up and try again.
+      await new Promise((ok, ko) => { ws.addEventListener('open', ok); ws.addEventListener('error', ko); setTimeout(ko, 5000); });
       return ws;
-    } catch { await sleep(300); }
+    } catch { ws?.close(); await sleep(300); }
   }
   throw new Error('Firefox did not start');
 }
@@ -125,10 +127,13 @@ async function waitForGalleryPage() {
 let failures = 0;
 for (const page of pages) {
   logs.length = 0;
+  console.log(`${page}:`);   // before the page runs, so a hang shows where it is
   await send('browsingContext.navigate', { context, url: `${origin}/${page}`, wait: 'complete' });
   let result;
   if (page.startsWith('tests/')) {
-    for (let i = 0; i < 240 && !result; i++) {
+    // A frozen page answers no query, and each query waits 30 s: bound the page by the clock.
+    const deadline = Date.now() + 120000;
+    while (!result && Date.now() < deadline) {
       await performRequestedInput();
       const json = await evaluate('window.testResult ? JSON.stringify(window.testResult) : ""');
       if (json) result = JSON.parse(json); else await sleep(500);
@@ -143,7 +148,6 @@ for (const page of pages) {
   }
   const shot = (await send('browsingContext.captureScreenshot', { context })).result?.data;
   if (shot) writeFileSync(join(outdir, page.replace(/\W/g, '_') + '.png'), Buffer.from(shot, 'base64'));
-  console.log(`${page}:`);
   if (!result) {
     failures++;
     console.log('  no result (the page did not finish)\n' + logs.slice(-20).map((l) => '  ' + l).join('\n'));
