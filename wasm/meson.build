@@ -31,6 +31,9 @@ emscripten_link_args = [
     '-sPTHREAD_POOL_SIZE=4', '-sINITIAL_MEMORY=256MB', '-sMAXIMUM_MEMORY=4GB',
     '-sALLOW_MEMORY_GROWTH', '-sSTACK_SIZE=5MB', '-sMAX_WEBGL_VERSION=2', '-sWASM_BIGINT=1',
     '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-sFETCH', '-lembind',
+    # C++ catch blocks run (the cross file compiles them in), and an exception that reaches the
+    # page is an Error carrying what(), not a bare pointer.
+    '-fexceptions', '-sEXCEPTION_STACK_TRACES=1',
 ]
 # Emscripten optimises the wasm (wasm-opt) and minifies the JavaScript at link time.
 if get_option('optimization') not in ['plain', '0']

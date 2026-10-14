@@ -152,6 +152,22 @@
       throws(() => spz.m.Buffer.fromArray(new Float64Array(10), [100]), 'a shape larger than the array');
       throws(() => spz.m.Buffer.fromArray(new Float64Array(10), [5, 3]), 'a 2-D shape that does not match');
     });
+    await check('a C++ error reaches the page as an Error with its message', () => {
+      try { spz.m.addPlot(123456); } catch (e) {
+        assert(e instanceof Error && /no such object/.test(e.message), `got ${e}`);
+        return;
+      }
+      throw new Error('did not throw');
+    });
+    await check('a plot whose colormap C++ rejected can make another', () => {
+      // The C++ catch that unregisters the rejected colormap must run in the browser too.
+      const p = b.addPlot();
+      const buffers = [spz.m.Buffer.fromArray(Float32Array.from(t), [n]),
+        spz.m.Buffer.fromArray(channels, [32]), spz.m.Buffer.fromArray(z, [n, 32])];
+      try { throws(() => spz.m.colormap(p.id, ...buffers, {}), 'float32 keys'); }
+      finally { buffers.forEach((buffer) => buffer.delete()); }
+      p.colormap(t, channels, z).setVisible(true);   // throws when the plot made no colormap
+    });
     await check('remove', async () => {
       span.remove();
       graph.remove();
