@@ -21,8 +21,8 @@ const editor = await createEditor(ui.host, shared ?? original);
 // A link can carry any code: show it, and let the reader run it once they have read it.
 if (shared) showNotice('This code came with the link and has not run. Read it, then press Run.');
 else await runCode(original);
-// For wasm/tests/editor.html.
-window.galleryEditor = { run: () => runCode(editor.getValue()), setCode: (code) => editor.setValue(code), ui };
+// For wasm/tests/editor.html, and for wasm/tests/run.mjs, which waits for the first run.
+window.galleryEditor = { run: () => runCode(editor.getValue()), setCode: (code) => editor.setValue(code), ui, ready: true };
 
 // The script sits indented in the page's HTML.
 function dedent(text) {

@@ -111,6 +111,17 @@ async function saveThumbnail(page) {
   if (data) writeFileSync(join(process.env.THUMBS, page.replace(/^gallery\/|\.html$/g, '') + '.png'), Buffer.from(data, 'base64'));
 }
 
+// A gallery page is ready once editor.js has run its example (the index has no example), then
+// gets a moment more for the frames and errors that follow.
+async function waitForGalleryPage() {
+  const hasExample = await evaluate('Boolean(document.querySelector("script[src$=\\"editor.js\\"]"))');
+  for (let i = 0; hasExample && i < 60; i++) {
+    if (await evaluate('Boolean(window.galleryEditor?.ready)')) break;
+    await sleep(500);
+  }
+  await sleep(1500);
+}
+
 let failures = 0;
 for (const page of pages) {
   logs.length = 0;
@@ -124,7 +135,7 @@ for (const page of pages) {
     }
     await sleep(1000);
   } else {
-    await sleep(8000);
+    await waitForGalleryPage();
     // Fonts Firefox's own start page fetches fail without network: not the page's errors.
     const errors = logs.filter((l) => l.startsWith('[error]') && !/^\[error\] downloadable font: .*source: https:\/\/(?!127\.0\.0\.1)/.test(l));
     result = [{ name: 'no error logged', ok: errors.length === 0, error: errors[0] }];
