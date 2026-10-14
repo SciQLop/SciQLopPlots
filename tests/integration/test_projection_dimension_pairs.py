@@ -72,11 +72,12 @@ def test_axes_showing_the_same_dimension_move_together(proj):
     assert (y2.start(), y2.stop()) != (3, 4)       # the old cyclic link x2 <-> y1 is gone
 
 
-def test_reference_curve_follows_the_pairs(proj):
+def test_reference_curve_follows_the_pairs(proj, qtbot):
     proj.set_dimension_pairs(MAGNETOSPHERIC)
     proj.add_reference_curve(DIMS)
-    process_events()
-    assert [_pane_dims(proj, i) for i in range(3)] == [[0, 1], [0, 2], [1, 2]]
+    # The curves get their data from their resampler threads, some events later.
+    qtbot.waitUntil(lambda: [_pane_dims(proj, i) for i in range(3)] == [[0, 1], [0, 2], [1, 2]],
+                    timeout=2000)
 
 
 @pytest.mark.parametrize("pairs", [[(0, 1), (0, 2)], [(0, 1), (0, 0), (1, 2)], [(0, 1), (0, 3), (1, 2)]],
