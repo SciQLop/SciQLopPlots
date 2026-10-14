@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 514" width="760" height="514" role="img" aria-label="Architecture: Python or JavaScript on top of the C++ library, which draws with NeoQCP on Qt 6">
+<style>
+.bg { fill: #ffffff; stroke: #d0d7de; }
+text { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #1f2328; }
+.ts { font-size: 11px; fill: #59636e; }
+.tb { font-weight: 600; }
+.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 12px; }
+.c { text-anchor: middle; }
+.r { text-anchor: end; }
+.axis { stroke: #8c959f; stroke-width: 1; }
+.line { stroke: #59636e; stroke-width: 1.5; fill: none; }
+.dash { stroke-dasharray: 4 3; }
+.arrow { stroke: #59636e; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.blue { fill: #dbeafe; stroke: #2563eb; }
+.orange { fill: #fef3c7; stroke: #d97706; }
+.green { fill: #d1fae5; stroke: #059669; }
+.red { fill: #fee2e2; stroke: #dc2626; }
+.violet { fill: #ede9fe; stroke: #7c3aed; }
+.grey { fill: #f6f8fa; stroke: #8c959f; }
+.dot-blue { fill: #2563eb; }
+.dot-orange { fill: #d97706; }
+.dot-grey { fill: #8c959f; }
+.nan { fill: #ffffff; stroke: #dc2626; stroke-width: 2; }
+.stroke-blue { stroke: #2563eb; stroke-width: 2; fill: none; }
+.stroke-orange { stroke: #d97706; stroke-width: 2; fill: none; }
+.stroke-green { stroke: #059669; stroke-width: 2; fill: none; }
+.stroke-red { stroke: #dc2626; stroke-width: 2; fill: none; }
+.text-blue { fill: #2563eb; font-weight: 600; }
+.text-orange { fill: #b45309; font-weight: 600; }
+.text-green { fill: #047857; font-weight: 600; }
+.text-red { fill: #dc2626; font-weight: 600; }
+.text-violet { fill: #6d28d9; font-weight: 600; }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/></marker></defs>
+<rect class="bg" x="0.5" y="0.5" width="759" height="513" rx="8"/>
+<rect class="green" x="20.0" y="20.0" width="350.0" height="46.0" rx="6"/>
+<text class="c tb" x="195.0" y="40.0">Your Python code</text>
+<text class="ts c" x="195.0" y="58.0">PySide6 apps, SciQLop, notebooks</text>
+<rect class="orange" x="390.0" y="20.0" width="350.0" height="46.0" rx="6"/>
+<text class="c tb" x="565.0" y="40.0">Your web page</text>
+<text class="ts c" x="565.0" y="58.0">JavaScript</text>
+<path class="arrow" d="M195.0 66.0 L195.0 86.0"/>
+<path class="arrow" d="M565.0 66.0 L565.0 86.0"/>
+<rect class="grey" x="20.0" y="86.0" width="350.0" height="46.0" rx="6"/>
+<text class="c tb" x="195.0" y="106.0">SciQLopPlots package</text>
+<text class="ts c" x="195.0" y="124.0">Python bindings (Shiboken6)</text>
+<rect class="grey" x="390.0" y="86.0" width="350.0" height="46.0" rx="6"/>
+<text class="c tb" x="565.0" y="106.0">sciqlopplots.mjs</text>
+<text class="ts c" x="565.0" y="124.0">JavaScript module + WebAssembly build</text>
+<path class="arrow" d="M195.0 132.0 L195.0 156.0"/>
+<path class="arrow" d="M565.0 132.0 L565.0 156.0"/>
+<rect class="blue" x="20.0" y="156.0" width="720.0" height="206.0" rx="6"/>
+<text class="tb text-blue" x="36.0" y="178.0">C++ library</text>
+<rect class="grey" x="40.0" y="192.0" width="210.0" height="154.0" rx="6"/>
+<text class="c tb" x="145.0" y="242.0">Panel</text>
+<text class="ts c" x="145.0" y="260.0">SciQLopMultiPlotPanel</text>
+<text class="ts c" x="145.0" y="276.0">stacks plots, shares the time</text>
+<text class="ts c" x="145.0" y="292.0">axis, aligns their margins,</text>
+<text class="ts c" x="145.0" y="308.0">takes drag and drop</text>
+<path class="arrow" d="M250.0 269.0 L284.0 269.0"/>
+<text class="ts c" x="267.0" y="261.0">holds</text>
+<rect class="grey" x="284.0" y="192.0" width="210.0" height="154.0" rx="6"/>
+<text class="c tb" x="389.0" y="242.0">Plot</text>
+<text class="ts c" x="389.0" y="260.0">SciQLopPlot</text>
+<text class="ts c" x="389.0" y="276.0">SciQLopTimeSeriesPlot</text>
+<text class="ts c" x="389.0" y="292.0">SciQLopNDProjectionPlot</text>
+<text class="ts c" x="389.0" y="308.0">axes, legend, colour scale</text>
+<path class="arrow" d="M494.0 231.0 L528.0 231.0"/>
+<path class="arrow" d="M494.0 307.0 L528.0 307.0"/>
+<rect class="grey" x="528.0" y="192.0" width="192.0" height="72.0" rx="6"/>
+<text class="c tb" x="624.0" y="217.0">Plottables</text>
+<text class="ts c" x="624.0" y="235.0">lines, curves, colour maps,</text>
+<text class="ts c" x="624.0" y="251.0">histograms, waterfalls</text>
+<rect class="grey" x="528.0" y="274.0" width="192.0" height="72.0" rx="6"/>
+<text class="c tb" x="624.0" y="299.0">Items</text>
+<text class="ts c" x="624.0" y="317.0">spans, tracers, lines,</text>
+<text class="ts c" x="624.0" y="333.0">text, shapes, pictures</text>
+<text class="ts c" x="511.0" y="222.0">holds</text>
+<path class="arrow" d="M380.0 362.0 L380.0 382.0"/>
+<rect class="violet" x="20.0" y="382.0" width="720.0" height="50.0" rx="6"/>
+<text class="c tb" x="380.0" y="404.0">NeoQCP</text>
+<text class="ts c" x="380.0" y="422.0">drawing engine, a fork of QCustomPlot: axes, layers, resampling on worker threads, GPU compositing</text>
+<rect class="grey" x="20.0" y="448.0" width="720.0" height="50.0" rx="6"/>
+<text class="c tb" x="380.0" y="470.0">Qt 6</text>
+<text class="ts c" x="380.0" y="488.0">desktop (Linux, macOS, Windows) or browser (WebAssembly)</text>
+</svg>

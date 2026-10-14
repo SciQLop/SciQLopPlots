@@ -5,7 +5,6 @@ The same C++ plots, compiled to WebAssembly, draw lines, scatters and spectrogra
 A small ES module, `sciqlopplots.mjs`, gives them a JavaScript API.
 
 **[Open the gallery](https://sciqlop.github.io/SciQLopPlots/latest/)** to see it run. Each example's code is editable on its page: change it and press Run (Ctrl+Enter), or Copy link to share your version.
-Every example shows its own source.
 
 ## Getting it
 
@@ -14,6 +13,8 @@ Each release publishes the library twice:
 - **Hosted**, on GitHub Pages, one folder per version:
   `https://sciqlop.github.io/SciQLopPlots/v0.52.0/sciqlopplots.mjs`.
   `latest/` follows the newest release; pin a version for anything that must not change.
+  The first release with the browser library is 0.52.0: until it is out, `latest/` holds
+  the build of the main branch, and the version folders and tarball do not exist yet.
 - **As a tarball**, `sciqlopplots-wasm-<version>.tar.gz`, attached to the
   [GitHub release](https://github.com/SciQLop/SciQLopPlots/releases), to serve from your own site.
 
@@ -150,7 +151,7 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 | Member | Description |
 |---|---|
 | `addProjection` options | `pairs`: the dimensions each pane shows, as `[x, y]` indices, e.g. `[[0, 1], [0, 2], [1, 2]]` for X-Y, X-Z, Y-Z. `labels`: the three dimension names. `equalAspect` (default `true`): square panes. `ranges`: a fixed `[min, max]` per dimension instead of fitting the data; give them the same span and a circle stays round. |
-| `trajectory(t, x, y, z, { name, timeColors })` | A `Graph` on every pane. Coloured along time unless `timeColors` is `false`. |
+| `trajectory(t, x, y, z, { name, timeColors })` | A `Graph` on every pane, coloured along time. `timeColors: false` turns that off for the whole projection, not just this trajectory: the last call wins. |
 | `referenceCurve(x, y, z, { name, color })` | A static 3-D curve, projected on every pane. |
 | `pane(i)` | The `i`-th pane, a `Plot`: draw a model's outline on one pane with `curve()`. |
 | `setTimeMarker(t)` / `clearTimeMarker()` | Marks the trajectory at time `t` on every pane, e.g. from a time series' `cursorTimeChanged`. |
@@ -161,7 +162,7 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 |---|---|
 | `setData(t, values)` / `setData(t, y, z)` | Replaces the data; same shapes as when created. |
 | `setVisible(visible)` | Shows or hides it. |
-| `setGapThreshold(x)`, `gapThreshold` | `Graph` only. A time step longer than `x` times its neighbours breaks the line, as a data gap (default 1.5). `0` never breaks it: use it for keys that are uneven on purpose, like min/max resampled data. NaN values still break the line. |
+| `setGapThreshold(x)`, `gapThreshold` | Lines and scatters only. A time step longer than `x` times its neighbours breaks the line, as a data gap (default 1.5). `0` never breaks it: use it for keys that are uneven on purpose, like min/max resampled data. NaN values still break the line. |
 | `remove()` | Removes it from its plot. |
 
 ### `Span`
@@ -178,8 +179,8 @@ Errors (an unknown gradient, a removed object, data of the wrong size) are throw
 
 ## Limits
 
-- **Size**: 16 MB of WebAssembly: 4.6 MB sent brotli-compressed, 6 MB gzip-compressed
-  (GitHub Pages compresses it). Browsers cache it across pages.
+- **Size**: about 18 MB of WebAssembly, 7 MB as GitHub Pages sends it (gzip-compressed).
+  Browsers cache it across pages.
 - **Browsers**: it needs WebGL 2 and shared-memory workers (SharedArrayBuffer), which recent Firefox, Chrome, Edge and Safari have. The tests run in Firefox.
 - **Data types**: `Float64Array` and `Float32Array` (other arrays are converted to `Float64Array`).
 - Fonts are the ones bundled with Qt; page CSS does not style the plots.

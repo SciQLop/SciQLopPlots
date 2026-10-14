@@ -1,12 +1,13 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![C++20](https://img.shields.io/badge/Language-C++20-blue.svg)]()
+![C++20](https://img.shields.io/badge/Language-C++20-blue.svg)
 [![PyPi](https://img.shields.io/pypi/v/sciqlopplots.svg)](https://pypi.python.org/pypi/sciqlopplots)
-[![Coverage](https://codecov.io/gh/SciQLop/SciQLopPlots/coverage.svg?branch=main)](https://codecov.io/gh/SciQLop/SciQLopPlots/branch/main)
 [![Documentation](https://readthedocs.org/projects/sciqlopplots/badge/?version=latest)](https://sciqlopplots.readthedocs.io/en/latest/)
 
 # SciQLopPlots
 
 A high-performance scientific plotting library built on C++20/Qt6 with Python bindings via Shiboken6 (PySide6). Designed for the [SciQLop](https://github.com/SciQLop/SciQLop) data analysis platform but usable standalone.
+
+**[Try it in your browser](https://sciqlop.github.io/SciQLopPlots/):** the gallery runs the same library as WebAssembly, with examples you can edit and run. The [JavaScript guide](https://sciqlopplots.readthedocs.io/en/latest/javascript.html) shows how to use it in your own pages.
 
 ## Features
 
@@ -19,96 +20,17 @@ A high-performance scientific plotting library built on C++20/Qt6 with Python bi
 - **Export** — PDF (vector), PNG, JPG, BMP for both individual plots and panels
 - **Busy indicator** — visual feedback when data is loading or being processed
 - **Runtime inspector** — tree model/view for inspecting and editing plot properties
-- **Cross-platform** — Linux, macOS, Windows
+- **Signal processing** — gap-aware filters, FFT, spectrograms and rolling statistics on NumPy arrays (`SciQLopPlots.dsp`)
+- **In the browser** — the same plots from JavaScript, compiled to WebAssembly ([gallery](https://sciqlop.github.io/SciQLopPlots/), [guide](https://sciqlopplots.readthedocs.io/en/latest/javascript.html))
+- **Cross-platform** — Linux, macOS and Windows, on x86-64 and ARM64
 
 ## Architecture
 
-```mermaid
-graph TD
-    subgraph Python["Python Layer"]
-        PY[SciQLopPlots package]
-        SB[Shiboken6 bindings]
-    end
-
-    subgraph Plots["Plot Hierarchy"]
-        PI[SciQLopPlotInterface<br/><i>QFrame</i>]
-        SP[SciQLopPlot]
-        TSP[SciQLopTimeSeriesPlot]
-        NDP[SciQLopNDProjectionPlot]
-    end
-
-    subgraph Plotables["Plotables"]
-        PTI[SciQLopPlottableInterface<br/><i>QObject</i>]
-        GI[SciQLopGraphInterface]
-        CMI[SciQLopColorMapInterface]
-        LG[SciQLopLineGraph]
-        SLG[SciQLopSingleLineGraph]
-        CRV[SciQLopCurve]
-        WF[SciQLopWaterfallGraph]
-        NDC[SciQLopNDProjectionCurves]
-        CMB[SciQLopColorMapBase]
-        CM[SciQLopColorMap]
-        H2D[SciQLopHistogram2D]
-    end
-
-    subgraph Items["Overlay Items"]
-        VS[VerticalSpan]
-        HS[HorizontalSpan]
-        RS[RectangularSpan]
-        TR[Tracer]
-        SL[StraightLine]
-    end
-
-    subgraph MultiPlot["Multi-Plot"]
-        PPI[SciQLopPlotPanelInterface]
-        MPP[SciQLopMultiPlotPanel]
-        AX[AxisSynchronizer]
-        VA[VPlotsAlign]
-    end
-
-    PY --> SB --> PI
-
-    PI --> SP
-    PI --> NDP
-    SP --> TSP
-
-    PTI --> GI
-    PTI --> CMI
-    GI --> LG
-    GI --> SLG
-    GI --> CRV
-    GI --> WF
-    GI --> NDC
-    CMI --> CMB
-    CMB --> CM
-    CMB --> H2D
-
-    PPI --> MPP
-    MPP --> AX
-    MPP --> VA
-
-    SP -.->|contains| PTI
-    SP -.->|contains| Items
-    MPP -.->|contains| SP
-```
+![Your Python code or web page goes through the bindings to the C++ library: panels hold plots, plots hold plottables and items. It draws with NeoQCP on Qt 6.](https://raw.githubusercontent.com/SciQLop/SciQLopPlots/main/docs/images/architecture.svg)
 
 ### Data flow
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Plot as SciQLopPlot
-    participant Resampler as Resampler<br/>(worker thread)
-    participant NeoQCP as NeoQCP
-
-    User->>Plot: pan / zoom
-    Plot->>Resampler: new visible range
-    Resampler->>Resampler: downsample data
-    Resampler->>NeoQCP: resampled points
-    NeoQCP->>Plot: render
-```
-
-For callback-driven data, the plot invokes a Python callable with `(start, stop)` on range change, and the returned arrays flow through the same resampling pipeline.
+![A pan or zoom calls your data function on its own thread, worker threads reduce the points to what the pixels can show, and the main thread draws them.](https://raw.githubusercontent.com/SciQLop/SciQLopPlots/main/docs/images/data-flow.svg)
 
 ## Quick start
 
@@ -118,6 +40,8 @@ The **[user guide](https://sciqlopplots.readthedocs.io/en/latest/user-guide.html
 pip install SciQLopPlots
 ```
 
+Wheels exist for Python 3.11 to 3.14. They pin PySide6 to an exact version, so installing replaces any other PySide6 in the environment.
+
 ```python
 import numpy as np
 from PySide6.QtWidgets import QApplication
@@ -126,7 +50,7 @@ from SciQLopPlots import SciQLopPlot
 app = QApplication([])
 plot = SciQLopPlot()
 
-# Static data
+# Static data and a data function, both on the same plot
 x = np.arange(0, 1000, dtype=np.float64)
 y = np.sin(x / 100) * np.cos(x / 10)
 plot.plot(x, y, labels=["signal"])
@@ -145,25 +69,32 @@ app.exec()
 
 ### Reactive pipelines
 
-Connect plot properties with the `>>` operator to build live data pipelines:
+Connect plot properties with the `>>` operator, optionally through a function:
 
 ```python
-from SciQLopPlots import SciQLopPlot
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopPlot, SciQLopVerticalSpan, SciQLopPlotRange
 
 plot = SciQLopPlot()
-graph = plot.plot(lambda start, stop: ..., labels=["signal"])
+x = np.linspace(0, 10, 1000)
+plot.plot(x, np.sin(x), labels=["sin"])
+span = SciQLopVerticalSpan(plot, SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
+                           read_only=False, visible=True, tool_tip="")
 
-# Axis range changes automatically feed a transform, which pushes data to the graph
-plot.x_axis().on.range >> get_data >> graph.on.data
+def describe(event):
+    return f"{event.value.start():.2f} .. {event.value.stop():.2f}"
 
-# Direct property forwarding (no transform)
-span.on.range >> plot.x_axis().on.range
+span.on.range >> describe >> span.on.tooltip   # the tooltip follows the span
 
-# Chain multiple steps
-source.on.range >> transform >> target.on.data
+zoomed = SciQLopPlot()
+zoomed.plot(x, np.sin(x), labels=["zoom"])
+span.on.range >> zoomed.x_axis().on.range      # a second plot shows the span's interval
 ```
 
-Run the gallery for a full feature showcase:
+The function gets an event whose `.value` is the new value. The [user guide](https://sciqlopplots.readthedocs.io/en/latest/user-guide.html#reactive-pipelines) lists the properties you can connect.
+
+To see every feature, try the [browser gallery](https://sciqlop.github.io/SciQLopPlots/), or run the desktop gallery from a source checkout:
 
 ```bash
 python tests/manual-tests/gallery.py
@@ -181,18 +112,18 @@ Enable for a session, then open the file in Perfetto:
 from SciQLopPlots import tracing
 
 with tracing.session("/tmp/sciqlop.json"):
-    panel.zoom_in_a_lot()       # whatever's slow
+    do_the_slow_thing()         # your code here
 ```
 
-Annotate Python work to land alongside the C++ zones (`plot.replot`,
-`setdata.colormap`, `resample.async_2d`, …):
+Annotate your own Python work so it shows next to the C++ zones (`plot.replot`,
+`setdata.colormap`, `resample.async_2d`, …). `speasy` and `q` below stand for your own code:
 
 ```python
 with tracing.zone("speasy.fetch", cat="data", product="amda/mms_fgm"):
     data = speasy.get_data(...)
 
 @tracing.traced("layer.eval", cat="layer")
-def render_layer(...): ...
+def render_layer(layer): ...
 
 tracing.counter("queue_depth", q.size(), cat="fetch")
 ```
@@ -208,17 +139,26 @@ sites feed both the Chrome JSON tracer and the Tracy live-streaming view.
 
 ## Building from source
 
-Requires Qt6, PySide6 == 6.11.0, a C++20 compiler, and Meson.
+You need Qt 6.11, a C++20 compiler, libclang (for Shiboken) and, in a virtual environment,
+the exact PySide6 version the package pins:
 
 ```bash
-# Development build (recommended — plain `debug` disables optimizations
-# and makes the resampling pipelines noticeably sluggish)
+pip install pyside6==6.11.2 shiboken6==6.11.2 shiboken6-generator==6.11.2 \
+    numpy meson meson-python ninja
+
+# Qt's tools must be on PATH
+export PATH=/path/to/Qt/6.11.2/gcc_64/bin:$PATH
+export PKG_CONFIG_PATH=/path/to/Qt/6.11.2/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH
+
+# debugoptimized, not debug: without optimisations the resampling is slow
 meson setup build --buildtype=debugoptimized
 meson compile -C build
 
-# Install as editable Python package
-pip install -e . --no-build-isolation
+# or build and install it as a Python package
+pip install . --no-build-isolation
 ```
+
+The browser build is described in the [JavaScript guide](https://sciqlopplots.readthedocs.io/en/latest/javascript.html).
 
 ### Build options
 

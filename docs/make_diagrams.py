@@ -1,4 +1,4 @@
-"""Draw the explanatory diagrams of the user guide's signal processing section.
+"""Draw the explanatory diagrams of the README and of the user guide's signal processing section.
 
 Each diagram is a standalone SVG with its own style and background, so it reads the
 same on Read the Docs and on GitHub. The gap diagram places its samples, segments and
@@ -242,7 +242,69 @@ def reduce_axes():
     return svg(194, "reduce_axes sums a 4 by 3 row over its angle axis", *body)
 
 
+def box(x, y, w, h, cls, title, *lines, title_cls="tb"):
+    """A box with a bold title and smaller centred lines under it."""
+    cx = x + w / 2
+    top = y + h / 2 - 8 * len(lines) + 5
+    return "\n".join([rect(x, y, w, h, cls), text(cx, top, title, f"c {title_cls}"),
+                       *(text(cx, top + 18 + 16 * i, s, "ts c") for i, s in enumerate(lines))])
+
+
+def arrow(x1, y1, x2, y2, label="", dx=0, dy=-6):
+    body = [line(x1, y1, x2, y2, "arrow")]
+    if label:
+        body.append(text((x1 + x2) / 2 + dx, (y1 + y2) / 2 + dy, label, "ts c"))
+    return "\n".join(body)
+
+
+def architecture():
+    body = [box(20, 20, 350, 46, "green", "Your Python code", "PySide6 apps, SciQLop, notebooks"),
+            box(390, 20, 350, 46, "orange", "Your web page", "JavaScript"),
+            arrow(195, 66, 195, 86), arrow(565, 66, 565, 86),
+            box(20, 86, 350, 46, "grey", "SciQLopPlots package", "Python bindings (Shiboken6)"),
+            box(390, 86, 350, 46, "grey", "sciqlopplots.mjs", "JavaScript module + WebAssembly build"),
+            arrow(195, 132, 195, 156), arrow(565, 132, 565, 156)]
+    body += [rect(20, 156, 720, 206, "blue"), text(36, 178, "C++ library", "tb text-blue")]
+    body += [box(40, 192, 210, 154, "grey", "Panel", "SciQLopMultiPlotPanel",
+                 "stacks plots, shares the time", "axis, aligns their margins,", "takes drag and drop"),
+             arrow(250, 269, 284, 269, "holds", dy=-8),
+             box(284, 192, 210, 154, "grey", "Plot", "SciQLopPlot", "SciQLopTimeSeriesPlot",
+                 "SciQLopNDProjectionPlot", "axes, legend, colour scale"),
+             arrow(494, 231, 528, 231), arrow(494, 307, 528, 307),
+             box(528, 192, 192, 72, "grey", "Plottables", "lines, curves, colour maps,", "histograms, waterfalls"),
+             box(528, 274, 192, 72, "grey", "Items", "spans, tracers, lines,", "text, shapes, pictures"),
+             text(511, 222, "holds", "ts c")]
+    body += [arrow(380, 362, 380, 382),
+             box(20, 382, 720, 50, "violet", "NeoQCP", "drawing engine, a fork of QCustomPlot: axes, layers, "
+                 "resampling on worker threads, GPU compositing"),
+             box(20, 448, 720, 50, "grey", "Qt 6", "desktop (Linux, macOS, Windows) or browser (WebAssembly)")]
+    return svg(514, "Architecture: Python or JavaScript on top of the C++ library, which draws with NeoQCP on Qt 6", *body)
+
+
+def data_flow():
+    lanes = [("Main thread", 46), ("Callback thread", 136), ("Resampling", 226)]
+    body = []
+    for name, y in lanes:
+        body += [rect(20, y, 720, 74, "grey"), text(34, y + 42, name, "tb")]
+    mid = lambda lane: lanes[lane][1] + 37
+    w = 176
+    steps = [(0, 160, "blue", "1. You pan or zoom", "the visible range changes"),
+             (1, 340, "green", "2. Your function runs", "get_data(start, stop)"),
+             (2, 520, "violet", "3. Points reduced", "min and max per pixel bin"),
+             (0, 548, "blue", "4. Drawn", "replaces the last image")]
+    for lane, x, cls, title, sub in steps:
+        body.append(box(x, mid(lane) - 26, w, 52, cls, title, sub))
+    body += [arrow(160 + w - 30, mid(0) + 26, 340 + 30, mid(1) - 26),
+             arrow(340 + w - 30, mid(1) + 26, 520 + 30, mid(2) - 26),
+             arrow(520 + w / 2 + 40, mid(2) - 26, 548 + w / 2 + 40, mid(0) + 26)]
+    body += [text(380, 26, "Static data skips step 2. Until step 4, the plot keeps showing the last image.", "ts c")]
+    return svg(316, "Data flow: a pan or zoom calls your function on its thread, the points are reduced on "
+               "worker threads, and the main thread draws them", *body)
+
+
 DIAGRAMS = {
+    "architecture.svg": architecture,
+    "data-flow.svg": data_flow,
     "dsp-gaps.svg": gaps,
     "dsp-rolling-window.svg": rolling_window,
     "dsp-spectrogram-windows.svg": spectrogram_windows,

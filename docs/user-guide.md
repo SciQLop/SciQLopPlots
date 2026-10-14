@@ -30,7 +30,9 @@ This guide goes from a first plot to live data, multi-plot panels, overlays and 
 pip install SciQLopPlots
 ```
 
-This pulls in PySide6 and NumPy. Wheels exist for Linux, macOS and Windows.
+This pulls in NumPy and PySide6. PySide6 is pinned to an exact version, so installing replaces any other PySide6 in the environment.
+Wheels exist for Python 3.11 to 3.14, on Linux, macOS and Windows, x86-64 and ARM64.
+To plot in a web page instead, see [JavaScript (WebAssembly)](javascript.md).
 
 ## Your first plot
 
@@ -113,7 +115,7 @@ app.exec()
 | `x, y` with `y` of shape `(n,)` or `(n, k)` | line graph, `k` lines | `GraphType.Line` (default) |
 | `x, y` | markers only | `GraphType.Scatter` |
 | `x, y, z` | colour map (spectrogram) | `GraphType.ColorMap` (implied) |
-| `x, y` in any order (orbits, hodograms) | parametric curve | `GraphType.ParametricCurve` |
+| `x, y` where `x` is not sorted (orbits, hodograms) | parametric curve | `GraphType.ParametricCurve` |
 | `x, y` with `y` of shape `(n, k)` | `k` stacked traces | `GraphType.Waterfall` |
 | `x, y` scatter points | 2-D density histogram | `GraphType.Histogram2D` |
 
@@ -136,6 +138,8 @@ graph = plot.plot(x, y, labels=["sin", "cos", "sin 2x"],
 ![Three lines with a legend](images/lines.png)
 
 A 2-D `y` gives one line per column. `labels` names them in the legend, and `colors` sets their colours. Both are optional.
+
+A step in `x` much longer than its neighbours is drawn as a data gap: the line breaks there. `graph.set_gap_threshold(f)` sets how much longer (default 1.5 times); `0` never breaks the line, for keys that are uneven on purpose. A NaN value always breaks it.
 
 ### Scatter
 
@@ -228,6 +232,8 @@ hist.set_data(x, y)
 plot.x_axis().set_range(-4, 4)
 plot.y_axis().set_range(-2, 2)
 ```
+
+`plot.plot(x, y, graph_type=GraphType.Histogram2D)` works too; `add_histogram2d` also sets the bin counts.
 
 ![A 2-D density histogram](images/histogram2d.png)
 
@@ -338,7 +344,7 @@ A time series plot never moves its time axis by itself: you choose the time rang
 
 With NumPy `datetime64` data, convert first: `t = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
 
-Time ranges are more lenient than data. `SciQLopPlotRange(start, stop)`, `axis.set_range`, `plot.set_time_range` and `panel.set_time_axis_range` also take `np.datetime64` (any unit), `datetime`, `date` or an ISO string. All of them mean UTC: a `datetime` without a time zone counts as UTC, not local time.
+Time ranges are more lenient than data. `SciQLopPlotRange(start, stop)`, `axis.set_range`, a time series plot's `set_time_range` and `panel.set_time_axis_range` also take `np.datetime64` (any unit), `datetime`, `date` or an ISO string. All of them mean UTC: a `datetime` without a time zone counts as UTC, not local time.
 
 ## Several plots in a panel
 
@@ -447,7 +453,7 @@ span.range_changed.connect(lambda r: print("span now", r.start(), r.stop()))
 threshold = SciQLopHorizontalLine(plot, 0.5)
 
 # A text label placed in data coordinates
-note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), False, Coordinates.Data)
+note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordinates.Data)
 ```
 
 ![A span, a threshold line and a text label](images/overlays.png)
@@ -597,7 +603,7 @@ The function receives an event whose `.value` is the new value, and returns what
 - `axis.on.range`
 - `span.on.range` and `span.on.tooltip`
 - `graph.on.data`
-- the waterfall settings: `offsets`, `spacing`, `normalize`, `gain`
+- the waterfall settings: `offset_mode`, `offsets`, `spacing`, `normalize`, `gain`
 
 ## N-D projections
 
