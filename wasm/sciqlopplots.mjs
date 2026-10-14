@@ -89,6 +89,13 @@ export class Graph extends Handle {
   }
 }
 
+// A projection's trajectory: a Graph that takes the same four arrays as trajectory().
+export class Trajectory extends Graph {
+  setData(t, x, y, z) {
+    this.withBuffers([t, x, y, z].map(columnsOf), (...b) => this.lib.m.setData(this.id, ...b));
+  }
+}
+
 // y: the channels (m values), or one row of channels per time (n * m values, row-major).
 // z: n * m values, row-major (z[i * m + j] is time i, channel j).
 function spectrogramArrays(t, y, z) {
@@ -161,7 +168,7 @@ export class Projection extends Handle {
 
   // t: times; x, y, z: positions. options: name, timeColors (default true: coloured along time).
   trajectory(t, x, y, z, options = {}) {
-    return new Graph(this.lib, this.withBuffers([t, x, y, z].map(columnsOf),
+    return new Trajectory(this.lib, this.withBuffers([t, x, y, z].map(columnsOf),
       (...b) => this.lib.m.trajectory(this.id, ...b, options)));
   }
 

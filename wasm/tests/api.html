@@ -204,6 +204,20 @@
       await frame();
       panel.remove();
     });
+    await check('a trajectory takes new data', async () => {
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      const proj = panel.addProjection({ pairs: [[0, 1], [0, 2], [1, 2]] });
+      // Made empty, as a page streaming its data would: the first data then fits the panes.
+      const none = new Float64Array(0);
+      const orbit = proj.trajectory(none, none, none, none);
+      orbit.setData(t, t.map((_, i) => 100 + Math.cos(i / 300)), t.map((_, i) => Math.sin(i / 300)), t.map(() => 1));
+      const pane0 = proj.pane(0);
+      const moved = () => pane0.axisRange('x')[1] > 50;
+      for (let i = 0; i < 60 && !moved(); i++) await frame();   // fits once the curves are resampled
+      const [x0, x1] = pane0.axisRange('x');
+      panel.remove();
+      assert(x0 > 50 && x1 > 50, `pane 0 x range [${x0}, ${x1}] did not take the new data`);
+    });
     await check('plotAt: the plot under a point, for drops', async () => {
       const element = document.querySelector('#c');
       const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });

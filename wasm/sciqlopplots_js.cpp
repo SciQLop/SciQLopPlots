@@ -11,6 +11,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
+#include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
@@ -472,6 +473,13 @@ void set_data_xyz(int id, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
     get<SciQLopPlottableInterface>(id)->set_data(x, y, z);
 }
 
+// A trajectory's data: the same four arrays as when it was made.
+void set_data_txyz(int id, const SciQLopPyBuffer& t, const SciQLopPyBuffer& x,
+                   const SciQLopPyBuffer& y, const SciQLopPyBuffer& z)
+{
+    get<SciQLopNDProjectionCurves>(id)->set_data(QList<SciQLopPyBuffer> { t, x, y, z });
+}
+
 void set_visible(int id, bool visible)
 {
     get<SciQLopPlottableInterface>(id)->set_visible(visible);
@@ -667,6 +675,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("colormap", &colormap);
     function("setData", &set_data_xy);
     function("setData", &set_data_xyz);
+    function("setData", &set_data_txyz);
     function("setVisible", &set_visible);
     function("setGapThreshold", &set_gap_threshold_of);
     function("gapThreshold", &gap_threshold);

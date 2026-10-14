@@ -151,16 +151,16 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 | Member | Description |
 |---|---|
 | `addProjection` options | `pairs`: the dimensions each pane shows, as `[x, y]` indices, e.g. `[[0, 1], [0, 2], [1, 2]]` for X-Y, X-Z, Y-Z. `labels`: the three dimension names. `equalAspect` (default `true`): square panes. `ranges`: a fixed `[min, max]` per dimension instead of fitting the data; give them the same span and a circle stays round. |
-| `trajectory(t, x, y, z, { name, timeColors })` | A `Graph` on every pane, coloured along time. `timeColors: false` turns that off for the whole projection, not just this trajectory: the last call wins. |
+| `trajectory(t, x, y, z, { name, timeColors })` | A `Trajectory` on every pane, coloured along time; its `setData(t, x, y, z)` takes new arrays of the same kind. `timeColors: false` turns that off for the whole projection, not just this trajectory: the last call wins. |
 | `referenceCurve(x, y, z, { name, color })` | A static 3-D curve, projected on every pane. |
 | `pane(i)` | The `i`-th pane, a `Plot`: draw a model's outline on one pane with `curve()`. |
 | `setTimeMarker(t)` / `clearTimeMarker()` | Marks the trajectory at time `t` on every pane, e.g. from a time series' `cursorTimeChanged`. |
 
-### `Graph` and `ColorMap`
+### `Graph`, `Trajectory` and `ColorMap`
 
 | Member | Description |
 |---|---|
-| `setData(t, values)` / `setData(t, y, z)` | Replaces the data; same shapes as when created. |
+| `setData(t, values)` / `setData(t, y, z)` | Replaces the data; same shapes as when created (a `Trajectory` takes `t, x, y, z`). |
 | `setVisible(visible)` | Shows or hides it. |
 | `setGapThreshold(x)`, `gapThreshold` | Lines and scatters only. A time step longer than `x` times its neighbours breaks the line, as a data gap (default 1.5). `0` never breaks it: use it for keys that are uneven on purpose, like min/max resampled data. NaN values still break the line. |
 | `remove()` | Removes it from its plot. |
