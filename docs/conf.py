@@ -65,8 +65,21 @@ def shiboken_signature(app, what, name, obj, options, signature, return_annotati
     return "\n".join(_format(s, what) for s in (sigs if isinstance(sigs, list) else [sigs])), ""
 
 
+def _from_qt(name, obj):
+    """A method knows the class that defines it: skip it only when that is a Qt class, so a
+    SciQLopPlots method named like a Qt one (clear, size, name...) stays. The Python functions
+    SciQLopPlots/__init__.py adds are never Qt's. Signals and properties don't know their
+    class: those go by name."""
+    if inspect.isfunction(obj):
+        return False
+    owner = getattr(obj, "__objclass__", None)
+    if owner is not None:
+        return owner.__module__.startswith("PySide6")
+    return name in _QT_NAMES
+
+
 def skip_qt_and_internal_members(app, what, name, obj, skip, options):
-    if what == "class" and name in _QT_NAMES:
+    if what == "class" and _from_qt(name, obj):
         return True
     if what == "module" and name.startswith("tracing_"):
         return True  # raw bindings behind SciQLopPlots.tracing, documented there
