@@ -39,6 +39,7 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 {
     Q_OBJECT
     QList<SciQLopCurve*> m_curves;
+    QList<QPair<int, int>> _dimension_pairs(qsizetype count) const;
     bool m_fetching = false;
     bool m_reported_busy = false;
 

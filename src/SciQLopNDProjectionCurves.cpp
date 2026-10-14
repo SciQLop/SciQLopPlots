@@ -149,6 +149,18 @@ bool SciQLopNDProjectionCurves::selected() const noexcept
     return false;
 }
 
+// The owning projection plot's pairs; cyclic for a bare parent, as before pairs existed.
+QList<QPair<int, int>> SciQLopNDProjectionCurves::_dimension_pairs(qsizetype count) const
+{
+    if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent());
+        plot && plot->dimension_pairs().size() == count)
+        return plot->dimension_pairs();
+    QList<QPair<int, int>> pairs;
+    for (int i = 0; i < count; ++i)
+        pairs.append({ i, static_cast<int>((i + 1) % count) });
+    return pairs;
+}
+
 void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 {
     const auto curves_count = m_curves.size();
@@ -162,12 +174,10 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 
     if (data.size() == curves_count + 1)
     {
-        auto data_without_time = data.sliced(1);
+        const auto dims = data.sliced(1);
+        const auto pairs = _dimension_pairs(curves_count);
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
-        {
-            m_curves[i]->set_data(data_without_time[i % curves_count],
-                                  data_without_time[(i + 1) % curves_count]);
-        }
+            m_curves[i]->set_data(dims[pairs[i].first], dims[pairs[i].second]);
         const auto& time_buf = data[0];
         QVector<double> times = to_double_vector<QVector<double>>(time_buf);
         for (auto* curve : std::as_const(m_curves))

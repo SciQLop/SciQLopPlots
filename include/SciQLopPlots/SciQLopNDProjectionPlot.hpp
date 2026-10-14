@@ -38,7 +38,9 @@ protected:
     QList<QColor> m_color_palette;
     int m_color_palette_index = 0;
     QList<SciQLopPlot*> m_plots;
-    bool m_linked_axes = false;
+    bool m_linked_axes = true;
+    QList<QPair<int, int>> m_dimension_pairs;
+    QStringList m_dimension_names;
     bool m_equal_aspect_ratio = false;
     bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
@@ -54,6 +56,8 @@ protected:
     void _place_time_markers();
     SciQLopGraphInterface* _adopt(SciQLopGraphInterface* graph);
     void _setup_color_scale();
+    void _link_axes(bool linked);
+    void _apply_axis_labels();
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -82,6 +86,18 @@ public:
     }
 
     void set_axis_labels(const QStringList& dimension_names) noexcept;
+
+    /*!
+     * \brief set_dimension_pairs Which two dimensions each subplot shows, as (x, y)
+     *        indices: one pair per subplot. The default is cyclic, (i, i + 1 mod n):
+     *        XY, YZ, ZX for three. [(0, 1), (0, 2), (1, 2)] gives XY, XZ, YZ.
+     *        Axes showing the same dimension stay linked. Graphs added before the
+     *        change keep their pairs until their next data.
+     * \throws std::invalid_argument unless there is one pair per subplot, of two
+     *         different dimensions below the subplot count.
+     */
+    void set_dimension_pairs(const QList<QPair<int, int>>& pairs);
+    inline QList<QPair<int, int>> dimension_pairs() const noexcept { return m_dimension_pairs; }
 
     void set_linked_axes(bool linked) noexcept;
 
@@ -183,7 +199,7 @@ public:
         return m_time_axis;
     }
 
-    //! No x or y axes of its own: each subplot has its pair, reach them through plots().
+    //! No x or y axes of its own: each subplot has its pair, reach them through subplot().
     inline SciQLopPlotAxisInterface* x_axis() const noexcept override { return nullptr; }
     inline SciQLopPlotAxisInterface* x2_axis() const noexcept override { return nullptr; }
     inline SciQLopPlotAxisInterface* y_axis() const noexcept override { return nullptr; }

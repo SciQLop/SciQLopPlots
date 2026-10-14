@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
+#include <algorithm>
+#include <stdexcept>
 #include "SciQLopPlots/ColorScaleController.hpp"
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeColoredCurve.hpp"
@@ -70,20 +72,15 @@ SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, Q
     auto layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     this->setLayout(layout);
-    for (auto i = 0UL; i < projection_count; i++)
+    const auto n = static_cast<int>(projection_count);
+    for (int i = 0; i < n; i++)
     {
         auto plot = new SciQLopPlot(this);
         layout->addWidget(plot);
         m_plots.append(plot);
-        if (i > 0)
-        {
-            plot->x_axis()->couple_range_with(m_plots[i - 1]->y_axis());
-        }
+        m_dimension_pairs.append({ i, (i + 1) % n });
     }
-    if (projection_count > 2)
-    {
-        m_plots[0]->x_axis()->couple_range_with(m_plots.last()->y_axis());
-    }
+    _link_axes(true);
     if (!m_plots.isEmpty())
         _setup_color_scale();
     m_time_axis = new SciQLopPlotDummyAxis(this);
@@ -93,14 +90,59 @@ SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, Q
 
 void SciQLopNDProjectionPlot::set_axis_labels(const QStringList& dimension_names) noexcept
 {
-    const auto n = m_plots.size();
-    if (dimension_names.size() != n)
+    if (dimension_names.size() != m_plots.size())
         return;
+    m_dimension_names = dimension_names;
+    _apply_axis_labels();
+}
 
-    for (int i = 0; i < n; ++i)
+void SciQLopNDProjectionPlot::_apply_axis_labels()
+{
+    if (m_dimension_names.size() != m_plots.size())
+        return;
+    for (int i = 0; i < m_plots.size(); ++i)
     {
-        m_plots[i]->x_axis()->set_label(dimension_names[i % n]);
-        m_plots[i]->y_axis()->set_label(dimension_names[(i + 1) % n]);
+        const auto [x, y] = m_dimension_pairs[i];
+        m_plots[i]->x_axis()->set_label(m_dimension_names[x]);
+        m_plots[i]->y_axis()->set_label(m_dimension_names[y]);
+    }
+}
+
+void SciQLopNDProjectionPlot::set_dimension_pairs(const QList<QPair<int, int>>& pairs)
+{
+    const auto n = m_plots.size();
+    const auto valid = [n](const QPair<int, int>& p)
+    { return p.first != p.second && p.first >= 0 && p.second >= 0 && p.first < n && p.second < n; };
+    if (pairs.size() != n || !std::all_of(pairs.cbegin(), pairs.cend(), valid))
+        throw std::invalid_argument("Projection: expected " + std::to_string(n)
+                                    + " pairs of two different dimensions in [0, "
+                                    + std::to_string(n) + ")");
+    if (m_linked_axes)
+        _link_axes(false);
+    m_dimension_pairs = pairs;
+    if (m_linked_axes)
+        _link_axes(true);
+    _apply_axis_labels();
+}
+
+// Every axis showing a dimension is coupled to the previous one showing it: a chain.
+void SciQLopNDProjectionPlot::_link_axes(bool linked)
+{
+    for (int dim = 0; dim < m_plots.size(); ++dim)
+    {
+        SciQLopPlotAxisInterface* previous = nullptr;
+        for (int i = 0; i < m_plots.size(); ++i)
+        {
+            const auto [x, y] = m_dimension_pairs[i];
+            auto* axis = x == dim ? m_plots[i]->x_axis() : y == dim ? m_plots[i]->y_axis() : nullptr;
+            if (!axis)
+                continue;
+            if (previous && linked)
+                axis->couple_range_with(previous);
+            else if (previous)
+                axis->decouple_range_from(previous);
+            previous = axis;
+        }
     }
 }
 
@@ -109,24 +151,7 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
     if (m_linked_axes != linked)
     {
         m_linked_axes = linked;
-        for (decltype(m_plots.size()) i = 0; i < m_plots.size(); i++)
-        {
-            auto plot = m_plots[i];
-            if (i > 0)
-            {
-                if (linked)
-                    plot->x_axis()->couple_range_with(m_plots[i - 1]->y_axis());
-                else
-                    plot->x_axis()->decouple_range_from(m_plots[i - 1]->y_axis());
-            }
-        }
-        if (m_plots.size() > 2)
-        {
-            if (linked)
-                m_plots[0]->x_axis()->couple_range_with(m_plots.last()->y_axis());
-            else
-                m_plots[0]->x_axis()->decouple_range_from(m_plots.last()->y_axis());
-        }
+        _link_axes(linked);
     }
 }
 
@@ -207,10 +232,10 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     else
     {
         QList<SciQLopPyBuffer> paired_data;
-        for (int i = 0; i < n; ++i)
+        for (const auto& [x, y] : std::as_const(m_dimension_pairs))
         {
-            paired_data.append(dimensions[i % n]);
-            paired_data.append(dimensions[(i + 1) % n]);
+            paired_data.append(dimensions[x]);
+            paired_data.append(dimensions[y]);
         }
         graph->set_data(paired_data);
     }

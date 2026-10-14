@@ -620,6 +620,8 @@ proj.set_axis_labels(["X", "Y", "Z"])
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
 
+`proj.set_dimension_pairs([(0, 1), (0, 2), (1, 2)])` picks the dimensions each pane shows, as (x, y) indices: here X-Y, X-Z, Y-Z, the usual magnetospheric layout. Call it before adding curves. Axes showing the same dimension stay linked (`proj.set_linked_axes(False)` unlinks them).
+
 ## Signal processing
 
 `SciQLopPlots.dsp` filters, transforms and summarises time series. It works on plain NumPy arrays and needs no plot and no `QApplication`.

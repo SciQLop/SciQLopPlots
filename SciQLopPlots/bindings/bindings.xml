@@ -516,6 +516,16 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <modify-function signature="set_dimension_pairs(const QList&lt;QPair&lt;int,int&gt; &gt;&amp;)">
+            <inject-code class="target" position="beginning">
+                try {
+                    %CPPSELF.%FUNCTION_NAME(%1);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
         <modify-function signature="subplot(int)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="c++"/>
