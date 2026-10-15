@@ -60,6 +60,13 @@ void paint_widget(QWidget* w, QPainter* painter, const QRect& target, SciQLopExp
     painter->restore();
 }
 
+// The widget background, so gaps and margins between plots match the theme instead of
+// staying transparent (white paper in a PDF viewer).
+void fill_background(QWidget* w, QPainter* painter, const QRect& target)
+{
+    painter->fillRect(target, w->palette().color(w->backgroundRole()));
+}
+
 } // namespace
 
 void export_widget(QWidget* w, QPainter* painter, const QRect& target,
@@ -115,7 +122,9 @@ bool save_widget_pdf(QWidget* w, const QString& filename, int width, int height)
     painter.setMode(QCPPainter::pmVectorized);
     painter.setMode(QCPPainter::pmNoCaching);
 
-    paint_widget(w, &painter, QRect(0, 0, totalW, totalH), SciQLopExportTarget::Vector);
+    const QRect target(0, 0, totalW, totalH);
+    fill_background(w, &painter, target);
+    paint_widget(w, &painter, target, SciQLopExportTarget::Vector);
     painter.end();
     return true;
 }
@@ -133,14 +142,12 @@ bool save_widget_raster(QWidget* w, const QString& filename, const char* format,
         return false;
 
     QPixmap pixmap(targetW, targetH);
-    // The widget background, so gaps and margins between plots match the theme instead of
-    // staying transparent.
-    pixmap.fill(w->palette().color(w->backgroundRole()));
-
     QCPPainter painter(&pixmap);
     if (!painter.isActive())
         return false;
-    paint_widget(w, &painter, QRect(0, 0, targetW, targetH), SciQLopExportTarget::Raster);
+    const QRect target(0, 0, targetW, targetH);
+    fill_background(w, &painter, target);
+    paint_widget(w, &painter, target, SciQLopExportTarget::Raster);
     painter.end();
 
     if (pixmap.isNull())
