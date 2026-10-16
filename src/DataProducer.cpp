@@ -253,6 +253,9 @@ QList<SciQLopPyBuffer> DataProviderInterface::get_data(QList<SciQLopPyBuffer> va
 
 void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept
 {
+    // An axis that was never given a range holds NaN bounds: nothing to fetch yet.
+    if (new_state.is_null())
+        return;
     {
         QMutexLocker lock(&m_mutex);
         m_next_range = new_state;
