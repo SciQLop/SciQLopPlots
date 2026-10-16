@@ -133,12 +133,16 @@ def test_a_row_added_later_gets_the_current_range(qtbot):
     assert calls == [(100, 200)]
 
 
-def test_a_signal_connects_to_the_set_range_of_a_cpp_made_dummy_axis(qtbot):
-    from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot
-    plot, proj = SciQLopTimeSeriesPlot(), SciQLopNDProjectionPlot(3)
+@pytest.mark.parametrize("target", ["projection time axis", "plot x axis"])
+def test_a_signal_connects_to_the_set_range_of_a_cpp_made_axis(qtbot, qtlog, target):
+    from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlot, SciQLopTimeSeriesPlot
+    plot = SciQLopTimeSeriesPlot()
+    other = SciQLopNDProjectionPlot(3) if target == "projection time axis" else SciQLopPlot()
     qtbot.addWidget(plot)
-    qtbot.addWidget(proj)
-    plot.time_axis_range_changed.connect(proj.time_axis().set_range)   # as the gallery does
+    qtbot.addWidget(other)
+    axis = other.time_axis() if target == "projection time axis" else other.x_axis()
+    plot.time_axis_range_changed.connect(axis.set_range)   # as the gallery does
     plot.time_axis().set_range(10, 20)
     process_events()
-    assert proj.time_axis().range().start() == 10
+    assert axis.range().start() == 10
+    assert [r.message for r in qtlog.records if "dynamic method" in r.message] == []
