@@ -479,9 +479,8 @@
           </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="SciQLopPlotDummyAxis" parent-management="yes">
-        <modify-function signature="SciQLopPlotDummyAxis(QObject*)" remove="all"/>
-    </object-type>
+    <!-- Constructible: WidgetPlot (widget_plot.py) gives its panel one as its time axis. -->
+    <object-type name="SciQLopPlotDummyAxis" parent-management="yes"/>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
 
     <object-type name="SciQLopOverlay" parent-management="yes"/>

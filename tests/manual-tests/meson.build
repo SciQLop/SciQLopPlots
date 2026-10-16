@@ -9,6 +9,9 @@ examples = [
     {'name': 'StackedPlots', 'source': meson.current_source_dir() + '/advanced/stacked_plots.py'},
     {'name': 'DragNDrop', 'source': meson.current_source_dir() + '/advanced/drag_and_drop.py'},
     {'name': 'Products', 'source': meson.current_source_dir() + '/advanced/products.py'},
+    {'name': 'EmbedMatplotlib', 'source': meson.current_source_dir() + '/advanced/embed_matplotlib.py'},
+    {'name': 'EmbedQtGraphs', 'source': meson.current_source_dir() + '/advanced/embed_qtgraphs.py'},
+    {'name': 'EmbedQt3D', 'source': meson.current_source_dir() + '/advanced/embed_qt3d.py'},
     {'name': 'StressModel', 'source': meson.current_source_dir() + '/stress/stress_model.py'},
 ]
 

@@ -272,6 +272,7 @@ class SciQLopPlotDummyAxis : public SciQLopPlotAxisInterface
 {
     Q_OBJECT
     SciQLopPlotRange m_range;
+    bool m_visible = true;
 
 public:
     explicit SciQLopPlotDummyAxis(QObject* parent = nullptr) : SciQLopPlotAxisInterface(parent) { }
@@ -281,6 +282,10 @@ public:
     void set_range(const SciQLopPlotRange& range) noexcept override;
 
     inline SciQLopPlotRange range() const noexcept override { return m_range; }
+
+    // Nothing to draw: a panel hiding the x axes of all its plots but the last asks anyway.
+    inline void set_visible(bool visible) noexcept override { m_visible = visible; }
+    inline bool visible() const noexcept override { return m_visible; }
 };
 
 class SciQLopPlotAxis : public SciQLopPlotAxisInterface

@@ -229,6 +229,7 @@ SciQLopNDProjectionPlot = _patch_sciqlop_plot(SciQLopNDProjectionPlot)
 from .properties import register_property, OnDescriptor
 from .pipeline import Pipeline, PartialPipeline
 from .event import Event
+from .widget_plot import WidgetPlot
 
 register_property(
     SciQLopGraphInterface, "data",

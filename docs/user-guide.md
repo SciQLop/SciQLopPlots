@@ -379,6 +379,38 @@ panel.set_time_axis_range(start, start + 6 * 3600)   # every plot follows
 
 To add a graph to an existing plot of the panel, call `plot()` on that plot instead of on the panel.
 
+### Other widgets in a panel
+
+`WidgetPlot` puts any Qt widget in a panel, as a row of its own: a matplotlib figure, a Qt Graphs view, a Qt 3D scene. The row follows the panel's range: after every pan or zoom, `on_time_range(start, stop)` gets the new range, to redraw the widget.
+
+```python
+import numpy as np
+from PySide6.QtWidgets import QLabel
+from SciQLopPlots import PlotType, SciQLopMultiPlotPanel, WidgetPlot
+
+t = 1.7e9 + np.linspace(0, 3600, 10_000)
+bx = np.sin(t / 300)
+
+panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+panel.set_time_axis_range(t[0], t[-1])                 # before plotting: plots fit what is in view
+panel.plot(t, bx, labels=["Bx"], plot_type=PlotType.TimeSeries)
+
+label = QLabel()
+def show_mean(start, stop):
+    in_view = bx[(t >= start) & (t <= stop)]
+    label.setText(f"mean Bx in view: {in_view.mean():.3f}")
+
+panel.add_plot(WidgetPlot(label, on_time_range=show_mean))
+```
+
+Instead of passing `on_time_range`, a subclass of `WidgetPlot` can override the method. The row only hosts the widget: crosshairs, margin alignment and themes apply to the panel's own plots, not to it.
+
+Three examples are ready to copy, in [`tests/manual-tests/advanced`](https://github.com/SciQLop/SciQLopPlots/tree/main/tests/manual-tests/advanced):
+
+- `embed_matplotlib.py`: a histogram of the values in view, redrawn by matplotlib.
+- `embed_qtgraphs.py`: the spectrogram in view as a Qt Graphs 3-D surface.
+- `embed_qt3d.py`: a Qt 3D scene showing the spacecraft where it is at the middle of the view.
+
 ## Axes
 
 Each plot has `x_axis()`, `y_axis()`, a second pair `x2_axis()` / `y2_axis()` (top and right), and `z_axis()` for colour scales.

@@ -12,6 +12,15 @@ Signatures come from the compiled bindings; methods inherited from Qt are left o
    :imported-members:
 ```
 
+## Other widgets in a panel
+
+See the [user guide](user-guide.md#other-widgets-in-a-panel) and its three examples (matplotlib, Qt Graphs, Qt 3D).
+
+```{eval-rst}
+.. autoclass:: SciQLopPlots.WidgetPlot
+   :members: widget, on_time_range
+```
+
 ## Signal processing
 
 See the [user guide](user-guide.md#signal-processing) for how gaps, windows and reductions work.
