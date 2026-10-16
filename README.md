@@ -9,6 +9,12 @@ A high-performance scientific plotting library built on C++20/Qt6 with Python bi
 
 **[Try it in your browser](https://sciqlop.github.io/SciQLopPlots/):** the gallery runs the same library as WebAssembly, with examples you can edit and run. The [JavaScript guide](https://sciqlopplots.readthedocs.io/en/latest/javascript.html) shows how to use it in your own pages.
 
+<p align="center">
+  <a href="https://sciqlop.github.io/SciQLopPlots/latest/gallery/spacecraft-crossing.html"><img src="wasm/gallery/thumbs/spacecraft-crossing.png" width="640" alt="A panel of three time-synced plots: magnetic field components, density on a log axis and an ion flux spectrogram, with a highlighted interval"></a>
+  <br>
+  <a href="https://sciqlop.github.io/SciQLopPlots/latest/gallery/mms-bow-shock.html"><img src="wasm/gallery/thumbs/mms-bow-shock.png" width="640" alt="Projection plots of a spacecraft trajectory in three planes, with bow shock and magnetopause models"></a>
+</p>
+
 ## Features
 
 - **Async resampling** — render millions of points smoothly; data is downsampled in background threads via [NeoQCP](https://github.com/SciQLop/NeoQCP) pipelines
@@ -102,40 +108,21 @@ python tests/manual-tests/gallery.py
 
 ## Runtime tracing
 
-SciQLopPlots ships with a built-in tracer that emits Chrome trace JSON, viewable in
-[Perfetto](https://ui.perfetto.dev/), [Speedscope](https://www.speedscope.app/), or
-`chrome://tracing`. Always compiled in, runtime-toggled, ~1 ns when off.
-
-Enable for a session, then open the file in Perfetto:
+A built-in tracer writes Chrome trace JSON, to open in [Perfetto](https://ui.perfetto.dev/),
+[Speedscope](https://www.speedscope.app/) or `chrome://tracing`. It is always compiled in and
+costs about 1 ns when off. Your own Python zones show next to the library's:
 
 ```python
 from SciQLopPlots import tracing
 
 with tracing.session("/tmp/sciqlop.json"):
-    do_the_slow_thing()         # your code here
+    with tracing.zone("my.fetch", cat="data"):
+        data = fetch()           # your code here
 ```
 
-Annotate your own Python work so it shows next to the C++ zones (`plot.replot`,
-`setdata.colormap`, `resample.async_2d`, …). `speasy` and `q` below stand for your own code:
-
-```python
-with tracing.zone("speasy.fetch", cat="data", product="amda/mms_fgm"):
-    data = speasy.get_data(...)
-
-@tracing.traced("layer.eval", cat="layer")
-def render_layer(layer): ...
-
-tracing.counter("queue_depth", q.size(), cat="fetch")
-```
-
-You can also auto-enable at process start with the `SCIQLOP_TRACE` env var:
-
-```bash
-SCIQLOP_TRACE=/tmp/sciqlop.json python my_script.py
-```
-
-When `tracy_enable=true` is also passed at build time, the same `PROFILE_HERE_N`
-sites feed both the Chrome JSON tracer and the Tracy live-streaming view.
+`SCIQLOP_TRACE=/tmp/sciqlop.json python my_script.py` turns it on for a whole run. The
+[API reference](https://sciqlopplots.readthedocs.io/en/latest/api.html#tracing) lists the rest:
+decorators, counters, and [Tracy](https://github.com/wolfpld/tracy) when built with `tracy_enable=true`.
 
 ## Building from source
 
@@ -158,27 +145,27 @@ meson compile -C build
 pip install . --no-build-isolation
 ```
 
+Build options: `-Dtracy_enable=true` turns on Tracy profiling, `-Dtrace_refcount=true` traces
+Python reference counts, and `-Dwith_opengl=false` builds without OpenGL.
 The browser build is described in the [JavaScript guide](https://sciqlopplots.readthedocs.io/en/latest/javascript.html).
-
-### Build options
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `trace_refcount` | bool | false | Enable reference count tracing |
-| `tracy_enable` | bool | false | Enable Tracy profiling |
-| `with_opengl` | bool | true | Enable OpenGL support |
 
 ## Contributing
 
-Fork the repository, make your changes and submit a pull request.
-Bug reports and feature requests are welcome.
+Bug reports, feature requests and pull requests are welcome on
+[GitHub](https://github.com/SciQLop/SciQLopPlots/issues). A bug fix comes with a test that fails
+without it. Run the tests from outside the source tree, so the built package is the one imported:
+
+```bash
+cd /tmp && PYTHONPATH=/path/to/SciQLopPlots/build python -m pytest \
+    /path/to/SciQLopPlots/tests/{integration,unit,fuzzing,resampler,tracing}
+```
 
 ## Credits
 
-Development is supported by [CDPP](http://www.cdpp.eu/).
+Development is supported by [CDPP](https://www.cdpp.eu/).
 We acknowledge support from [Plas@Par](https://www.plasapar.sorbonne-universite.fr).
 
 ## Thanks
 
 - [PySide6](https://doc.qt.io/qtforpython-6/index.html) — Qt bindings and Shiboken6 binding generator
-- [NeoQCP](https://github.com/SciQLop/NeoQCP) — fork of [QCustomPlot](https://www.qcustomplot.com/) with async pipelines, multi-dtype support, and QRhi rendering
+- [NeoQCP](https://github.com/SciQLop/NeoQCP) — our fork of [QCustomPlot](https://www.qcustomplot.com/), which draws on the GPU and plots large data without copying it
