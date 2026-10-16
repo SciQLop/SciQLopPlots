@@ -205,14 +205,6 @@ void SciQLopGraphComponent::set_selected(bool selected) noexcept
                                          else
                                              any->setSelection(QCPDataSelection());
                                      },
-                                     [selected](QCPGraph2* any)
-                                     {
-                                         if (selected)
-                                             any->setSelection(
-                                                 QCPDataSelection(QCPDataRange(0, any->dataCount())));
-                                         else
-                                             any->setSelection(QCPDataSelection());
-                                     },
                                      [selected](QCPCurve* any)
                                      {
                                          if (selected)

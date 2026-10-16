@@ -50,7 +50,6 @@
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
 #include <SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp>
 #include <SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp>
-#include <SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp>
 #include <SciQLopPlots/SciQLopOverlay.hpp>
 #include <SciQLopPlots/SciQLopTheme.hpp>
 #include <SciQLopPlots/SciQLopPlot.hpp>

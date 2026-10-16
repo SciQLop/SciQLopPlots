@@ -3,6 +3,10 @@ from . import SciQLopPlotsBindings
 from .SciQLopPlotsBindings import (GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
                                     SciQLopGraphInterface, AxisType, SciQLopPlotRange, SciQLopNDProjectionPlot)
 from .SciQLopPlotsBindings import *
+
+# One-column lines are SciQLopLineGraphs since #113: the old names stay for isinstance checks.
+SciQLopSingleLineGraph = SciQLopLineGraph
+SciQLopSingleLineGraphFunction = SciQLopLineGraphFunction
 from datetime import date, datetime, timezone
 import traceback
 

@@ -10,7 +10,6 @@
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
-#include "SciQLopPlots/Plotables/SciQLopSingleLineGraph.hpp"
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
@@ -495,8 +494,6 @@ void set_gap_threshold(QObject* object, double threshold)
                                     + std::to_string(threshold));
     if (auto* graph = qobject_cast<SciQLopMultiGraphBase*>(object))
         return graph->set_gap_threshold(threshold);
-    if (auto* graph = qobject_cast<SciQLopSingleLineGraph*>(object))
-        return graph->set_gap_threshold(threshold);
     throw std::invalid_argument("SciQLopPlots: only lines and scatters have a gap threshold");
 }
 
@@ -509,8 +506,6 @@ double gap_threshold(int id)
 {
     auto* object = get<QObject>(id);
     if (auto* graph = qobject_cast<SciQLopMultiGraphBase*>(object))
-        return graph->gap_threshold();
-    if (auto* graph = qobject_cast<SciQLopSingleLineGraph*>(object))
         return graph->gap_threshold();
     throw std::invalid_argument("SciQLopPlots: only lines and scatters have a gap threshold");
 }

@@ -584,9 +584,6 @@
             </inject-code>
         </modify-function>
     </object-type>
-    <object-type name="SciQLopSingleLineGraph" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-    </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
@@ -630,9 +627,6 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopLineGraphRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-    </object-type>
-    <object-type name="SciQLopSingleLineGraphFunction" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <!-- Without these the projection graphs came back to Python as the base

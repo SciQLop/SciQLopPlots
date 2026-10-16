@@ -152,7 +152,7 @@ class TestLengthValidation:
     def test_single_line_length_mismatch_raises(self, plot):
         x = np.linspace(0.0, 10.0, 100, dtype=np.float64)
         y = np.sin(x)
-        graph = plot.line(x, y)  # 1D y -> SciQLopSingleLineGraph
+        graph = plot.line(x, y)  # 1D y -> a one-column SciQLopLineGraph
         with pytest.raises((ValueError, RuntimeError)):
             graph.set_data(x, y[:50])
 

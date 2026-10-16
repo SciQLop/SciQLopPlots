@@ -41,7 +41,7 @@ class TestLineGraphBusy:
         assert graph.busy() is False
 
 
-class TestSingleLineGraphBusy:
+class TestOneColumnLineBusy:
     def test_set_busy_delegates(self, plot, sample_data):
         x, y = sample_data
         graph = plot.plot(x, y, labels=["sig"])
