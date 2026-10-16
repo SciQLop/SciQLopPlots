@@ -44,10 +44,10 @@ window = Qt3DExtras.Qt3DWindow()
 window.defaultFrameGraph().setClearColor(QColor("black"))
 root = Qt3DCore.QEntity()
 sphere(root, 1.0, "royalblue")                           # the Earth
-spacecraft = sphere(root, 0.3, "orange")
+spacecraft = sphere(root, 0.5, "orange")
 camera = window.camera()
 camera.lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
-camera.setPosition(QVector3D(0, -25, 12))
+camera.setPosition(QVector3D(0, -18, 8))
 camera.setUpVector(QVector3D(0, 0, 1))                   # Z up, as in the plot's frame
 camera.setViewCenter(QVector3D(0, 0, 0))
 light = Qt3DCore.QEntity(camera)                         # a light that follows the camera
@@ -65,5 +65,4 @@ def spacecraft_at_middle_of_view(start, stop):
 panel.add_plot(WidgetPlot(QWidget.createWindowContainer(window), on_time_range=spacecraft_at_middle_of_view))
 panel.resize(900, 700)
 panel.show()
-panel.organize_plots()                                   # equal heights for every row
 sys.exit(app.exec())

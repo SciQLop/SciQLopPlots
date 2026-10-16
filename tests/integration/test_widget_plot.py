@@ -3,7 +3,8 @@ import gc
 
 import numpy as np
 import pytest
-from PySide6.QtWidgets import QLabel
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QLabel, QWidget
 
 from SciQLopPlots import SciQLopPlotRange, SciQLopTheme, WidgetPlot
 from conftest import process_events
@@ -102,17 +103,23 @@ def test_a_dummy_axis_keeps_its_visibility(qtlog):
     assert _abstract_calls(qtlog) == []
 
 
-def test_a_widget_without_a_size_hint_still_gets_room(panel):
-    from PySide6.QtWidgets import QWidget
-    hintless = QWidget()                     # like a QQuickWidget or a window container
-    assert hintless.sizeHint().height() <= 0
-    panel.plot(np.linspace(0, 10, 100), np.linspace(0, 10, 100))
-    row = WidgetPlot(hintless)
+@pytest.mark.parametrize("make", [lambda: QWidget(),                     # no hint: QQuickWidget, window container
+                                  lambda: _tall(QLabel("tall"))],           # a big hint: a matplotlib canvas
+                         ids=["no-hint", "tall-hint"])
+def test_a_widget_row_gets_the_same_room_as_a_plot(panel, make):
+    plot, _ = panel.plot(np.linspace(0, 10, 100), np.linspace(0, 10, 100))
+    row = WidgetPlot(make())
     panel.add_plot(row)
     panel.resize(600, 600)
     panel.show()
     process_events()
-    assert row.height() > 150
+    assert abs(row.height() - plot.height()) < 0.1 * plot.height(), (row.height(), plot.height())
+
+
+def _tall(widget):
+    widget.setMinimumHeight(10)
+    widget.sizeHint = lambda: QSize(600, 500)
+    return widget
 
 
 def test_a_row_added_later_gets_the_current_range(qtbot):
@@ -124,3 +131,14 @@ def test_a_row_added_later_gets_the_current_range(qtbot):
     panel.add_plot(WidgetPlot(QLabel(), on_time_range=lambda *r: calls.append(r)))
     process_events()
     assert calls == [(100, 200)]
+
+
+def test_a_signal_connects_to_the_set_range_of_a_cpp_made_dummy_axis(qtbot):
+    from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot
+    plot, proj = SciQLopTimeSeriesPlot(), SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(plot)
+    qtbot.addWidget(proj)
+    plot.time_axis_range_changed.connect(proj.time_axis().set_range)   # as the gallery does
+    plot.time_axis().set_range(10, 20)
+    process_events()
+    assert proj.time_axis().range().start() == 10

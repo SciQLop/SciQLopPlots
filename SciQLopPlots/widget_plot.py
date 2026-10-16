@@ -27,10 +27,10 @@ class WidgetPlot(SciQLopPlotInterface):
         self._axis.range_changed.connect(lambda r: self.on_time_range(r.start(), r.stop()))
 
     def sizeHint(self):
-        # The panel shares its height out by size hints; a QQuickWidget or a window
-        # container has none, and its row would get no room at all.
-        hint = self._widget.sizeHint()
-        return hint if hint.height() > 0 else QSize(400, 300)
+        # The panel shares its height out by size hints. A plot's, not the widget's: a
+        # QQuickWidget or a window container has none and would get no room, a matplotlib
+        # canvas a large one and would crowd the plots out.
+        return QSize(50, 50)
 
     @property
     def widget(self):

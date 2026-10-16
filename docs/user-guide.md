@@ -407,9 +407,22 @@ Instead of passing `on_time_range`, a subclass of `WidgetPlot` can override the 
 
 Three examples are ready to copy, in [`tests/manual-tests/advanced`](https://github.com/SciQLop/SciQLopPlots/tree/main/tests/manual-tests/advanced):
 
-- `embed_matplotlib.py`: a histogram of the values in view, redrawn by matplotlib.
-- `embed_qtgraphs.py`: the spectrogram in view as a Qt Graphs 3-D surface.
-- `embed_qt3d.py`: a Qt 3D scene showing the spacecraft where it is at the middle of the view.
+**`embed_matplotlib.py`**: a histogram of the values in view, redrawn by matplotlib after every pan or zoom.
+
+![A time series above a matplotlib histogram of the values in view](images/embed-matplotlib.png)
+
+**`embed_qtgraphs.py`**: the spectrogram in view as a Qt Graphs 3-D surface of time, energy and flux.
+
+![A spectrogram above a Qt Graphs 3-D surface of the same data](images/embed-qtgraphs.png)
+
+**`embed_qt3d.py`**: a Qt 3D scene, with the spacecraft where it is at the middle of the view.
+
+![The spacecraft position components above a Qt 3D view of the Earth and the spacecraft](images/embed-qt3d.png)
+
+Two lifetime rules, both handled and commented in the examples:
+
+- **Qt 3D**: give each mesh, material and transform its entity as parent. `addComponent()` does not keep them alive, and Python would delete them: the scene stays black.
+- **Qt Graphs**: delete the graph item (`Q3DSurfaceWidgetItem`, `Q3DBarsWidgetItem`, ...) before its `QQuickWidget`, for example on `QApplication.aboutToQuit`. Deleted after it, the item crashes the application on exit.
 
 ## Axes
 

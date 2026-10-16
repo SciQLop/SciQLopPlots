@@ -33,6 +33,7 @@ surface = Q3DSurfaceWidgetItem()
 surface.setWidget(view)
 surface.setCameraPreset(QtGraphs3D.CameraPreset.IsometricRightHigh)
 surface.setHorizontalAspectRatio(1.0)                  # as deep in energy as long in time
+surface.setCameraZoomLevel(125)
 series = QSurface3DSeries()
 series.setDrawMode(QSurface3DSeries.DrawFlag.DrawSurface)
 gradient = QLinearGradient()
@@ -67,5 +68,4 @@ panel.add_plot(WidgetPlot(view, on_time_range=surface_of_view))
 app.aboutToQuit.connect(lambda: shiboken6.delete(surface))
 panel.resize(900, 700)
 panel.show()
-panel.organize_plots()                                   # equal heights for every row
 sys.exit(app.exec())

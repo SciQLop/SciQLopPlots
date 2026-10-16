@@ -43,5 +43,4 @@ def histogram_of_view(start, stop):
 panel.add_plot(WidgetPlot(canvas, on_time_range=histogram_of_view))
 panel.resize(900, 600)
 panel.show()
-panel.organize_plots()                                   # equal heights for every row
 sys.exit(app.exec())

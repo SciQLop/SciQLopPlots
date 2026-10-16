@@ -10,7 +10,7 @@ from SciQLopPlots import (
     SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
     SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot,
     PlotType, GraphType, GraphMarkerShape, ColorGradient, Coordinates,
-    OverlayLevel, OverlaySizeMode, OverlayPosition,
+    OverlayLevel, OverlaySizeMode, OverlayPosition, WidgetPlot,
 )
 
 
@@ -367,6 +367,67 @@ def create_projection_tab():
     return container
 
 
+def matplotlib_histogram_row(t, values):
+    """A matplotlib histogram of the values in view, or None without matplotlib."""
+    try:
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+        from matplotlib.figure import Figure
+    except ImportError:
+        return None
+    figure = Figure(figsize=(6, 2), layout="constrained")
+    axes = figure.add_subplot()
+    canvas = FigureCanvasQTAgg(figure)
+
+    def redraw(start, stop):
+        axes.clear()
+        axes.hist(values[(t >= start) & (t <= stop)], bins=60)
+        axes.set_xlabel("values in view (matplotlib)")
+        canvas.draw_idle()
+
+    return WidgetPlot(canvas, on_time_range=redraw)
+
+
+def qtgraphs_bars_row(t, values, bins=24):
+    """Qt Graphs 3-D bars: the mean of the values in view, per time bin."""
+    import shiboken6
+    from PySide6.QtGraphs import QBar3DSeries, QBarDataItem, QtGraphs3D
+    from PySide6.QtGraphsWidgets import Q3DBarsWidgetItem
+    from PySide6.QtQuickWidgets import QQuickWidget
+    view = QQuickWidget()
+    view.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
+    bars = Q3DBarsWidgetItem()
+    bars.setWidget(view)
+    bars.setCameraPreset(QtGraphs3D.CameraPreset.FrontHigh)
+    bars.setCameraZoomLevel(250)
+    series = QBar3DSeries()
+    series.setBaseColor(QColor(31, 119, 180))
+    bars.addSeries(series)
+    # The item must go before its QQuickWidget: see tests/manual-tests/advanced/embed_qtgraphs.py.
+    QApplication.instance().aboutToQuit.connect(lambda: shiboken6.delete(bars))
+
+    def redraw(start, stop):
+        in_view = values[(t >= start) & (t <= stop)]
+        if in_view.size >= bins:
+            series.dataProxy().resetArray([[QBarDataItem(float(c.mean())) for c in np.array_split(in_view, bins)]])
+
+    row = WidgetPlot(view, on_time_range=redraw)
+    row.keep = (bars, series)                    # Python owns them: keep them alive with the row
+    return row
+
+
+def create_widgets_tab():
+    """Other widgets as rows of a panel, following its time range: pan or zoom the top plot."""
+    t = np.linspace(0, 6 * 3600, 100_000)
+    values = np.sin(t / 900) * 20 + np.random.default_rng(0).normal(0, 3, t.size)
+    panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+    panel.set_time_axis_range(t[0], t[-1])
+    panel.plot(t, values, labels=["signal"], plot_type=PlotType.TimeSeries)
+    for row in (matplotlib_histogram_row(t, values), qtgraphs_bars_row(t, values)):
+        if row is not None:
+            panel.add_plot(row)
+    return panel
+
+
 def create_busy_indicator_tab():
     import time
 
@@ -446,6 +507,7 @@ tabs.addTab(create_stacked_tab(), "Stacked Plots")
 tabs.addTab(create_projection_tab(), "Projection + Cursor Sync")
 tabs.addTab(with_export_button(create_pipeline_tab()), "Pipeline (FFT)")
 tabs.addTab(with_export_button(create_busy_indicator_tab()), "Busy Indicator")
+tabs.addTab(create_widgets_tab(), "Other Widgets")
 
 window.setCentralWidget(tabs)
 window.show()
