@@ -25,6 +25,12 @@
     const near = (a, b) => Math.abs(a - b) < 1e-6 * Math.max(1, Math.abs(b));
     const throws = (fn, what) => { try { fn(); } catch { return; } throw new Error(`${what} did not throw`); };
     const frame = () => new Promise((r) => setTimeout(r, 50));
+    // Qt deletes objects from its event loop: wait for that rather than a fixed time.
+    const until = async (cond, ms = 3000) => {
+      for (const t0 = performance.now(); !cond(); await frame())
+        if (performance.now() - t0 > ms) return false;
+      return true;
+    };
 
     const t0 = Date.UTC(2020, 0, 1) / 1000, n = 2000;
     const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 60);
@@ -340,17 +346,43 @@
         await frame();
         fits('after a plot was added');
         row.remove();
-        await frame();
         assert(!div.isConnected, 'remove() left the element in the page');
         const kept = panel.addElement(document.createElement('div'));
         await frame();
         panel.clear();
-        await frame();
-        assert(!kept.element.isConnected, 'clear() left the element in the page');
+        assert(await until(() => !kept.element.isConnected), 'clear() left the element in the page');
       } finally {
         panel.remove();
         element.style.height = '';
       }
+    });
+    await check('a panel removed right after some of its plots, or after clear()', async () => {
+      // Qt deletes removed plots later; deleting one after its panel freed its GPU state trapped.
+      const errors = [];
+      const record = (event) => errors.push(String(event.error ?? event.reason ?? event.message));
+      window.addEventListener('error', record);
+      window.addEventListener('unhandledrejection', record);
+      const consoleError = console.error;   // Qt's event dispatcher reports a trap there
+      console.error = (...args) => { errors.push(args.map(String).join(' ')); consoleError(...args); };
+      try {
+        for (let k = 0; k < 4; k++) {
+          const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+          const plot = panel.addPlot();
+          plot.line(t, sin);
+          const projection = panel.addProjection();
+          panel.addPlot().line(t, cos);
+          await frame();
+          if (k % 2) panel.clear();
+          else { plot.remove(); projection.remove(); }
+          panel.remove();
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      } finally {
+        window.removeEventListener('error', record);
+        window.removeEventListener('unhandledrejection', record);
+        console.error = consoleError;
+      }
+      assert(errors.length === 0, `errors: ${errors.join(' | ').slice(0, 300)}`);
     });
     await check('remove a panel', async () => {
       b.remove();

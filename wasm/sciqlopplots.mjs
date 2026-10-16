@@ -201,6 +201,12 @@ export class ElementRow extends Handle {
     super(lib, id);
     this.element = element;
   }
+
+  // The element goes now; the row once Qt deletes it (it hides at once).
+  remove() {
+    super.remove();
+    this.element.remove();
+  }
 }
 
 // The layer over a panel that holds its rows' elements, clipped to the panel.

@@ -480,6 +480,9 @@ void remove_object(int id)
     }
     else if (auto* panel = dynamic_cast<SciQLopMultiPlotPanel*>(object))
     {
+        // Plots it removed or cleared are deleted later, and their GPU widgets free resources
+        // of the panel's QRhi: delete them while it still exists.
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
         // Now, not deleteLater(): the page removes the panel's screen right after this call.
         return delete panel;
     }
