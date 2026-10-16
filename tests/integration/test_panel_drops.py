@@ -1,7 +1,7 @@
 """Drops on a panel. The drop placeholder was a plot to the panel (palette and time axis
 synchronised, abstract methods warning on every drag event), and a drop on the splitter
 handle between two plots was accepted but reached no callback."""
-from PySide6.QtCore import QMimeData, QPoint, Qt
+from PySide6.QtCore import QEvent, QMimeData, QPoint, Qt
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import QApplication
 from SciQLopPlots import PlotDragNDropCallback, PlotType
@@ -80,3 +80,15 @@ def test_drops_onto_a_plot_and_at_an_edge_still_arrive(panel):
     assert [(plot is first, data) for plot, data in recorder.drops[:1]] == [(True, "amda/b_gse")]
     assert len(recorder.drops) == 2 and recorder.drops[1][0] not in (first, second)
     assert panel.plot_count() == 3
+
+
+def test_a_new_callback_for_a_mime_type_replaces_the_old_one(panel):
+    import shiboken6
+    first = Recorder(panel)
+    panel.add_accepted_mime_type(first)
+    second = Recorder(panel)
+    panel.add_accepted_mime_type(second)
+    panel.add_accepted_mime_type(second)   # again: kept, not deleted
+    QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert not shiboken6.isValid(first)
+    assert shiboken6.isValid(second)

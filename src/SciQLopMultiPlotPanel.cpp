@@ -355,7 +355,11 @@ void SciQLopMultiPlotPanel::add_accepted_mime_type(PlotDragNDropCallback* callba
     if (!callback)
         return;
     callback->setParent(this);
-    _accepted_mime_types[callback->mime_type()] = callback;
+    auto& registered = _accepted_mime_types[callback->mime_type()];
+    // Later, not now: a callback may register its successor from its own call().
+    if (registered && registered != callback)
+        registered->deleteLater();
+    registered = callback;
 }
 
 void SciQLopMultiPlotPanel::setSelected(bool selected)
