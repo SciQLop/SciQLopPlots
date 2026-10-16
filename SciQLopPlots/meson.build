@@ -76,6 +76,11 @@ moc_files = qtmod.compile_moc(
                             include_directories : includes)
 
 resources_files = qtmod.compile_resources(sources : sciqlopplots_resources + sciqlopplots_logos)
+# Every compiled .qrc defines qt_resource_data: two of them in one unity chunk collide.
+resources_lib = static_library('sciqlopplots_resources', resources_files,
+        dependencies : qtdeps,
+        override_options: ['unity=off'],
+)
 
 # Shiboken-generated sources and PythonInterface.cpp must be compiled
 # without unity: PySide6 headers reference protected enums that error
@@ -91,7 +96,7 @@ bindings_lib = static_library('sciqlopplots_bindings_impl',
         override_options: ['unity=off'],
 )
 
-sources = moc_files + resources_files + sciqlopplots_sources
+sources = moc_files + sciqlopplots_sources
 
 cpp_args = []
 
@@ -112,7 +117,7 @@ endif
 sciqlopplots_bindings = python3.extension_module('SciQLopPlotsBindings',
         sources,
         dependencies : [ python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, gl_dep, fmt_dep, magic_enum_dep, dsp_dep] + optional_deps,
-        link_whole: [bindings_lib],
+        link_whole: [bindings_lib, resources_lib],
         cpp_args: cpp_args,
         limited_api: py_limited_api,
         subdir : 'SciQLopPlots',
