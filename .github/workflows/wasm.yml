@@ -113,6 +113,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -122,10 +123,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
           REPO: ${{ github.repository }}
+      # The github-pages environment only deploys from main, so a run on main publishes the release.
+      - run: gh workflow run wasm.yml --ref main --repo "$REPO"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
 
   pages:
     needs: build
-    if: github.repository_owner == 'SciQLop' && (github.event_name == 'release' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+    if: github.repository_owner == 'SciQLop' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-24.04
     concurrency:
       group: pages
@@ -153,17 +159,13 @@ jobs:
           for tag in $(gh release list --repo "$REPO" --exclude-drafts --limit 200 --json tagName --jq '.[].tagName'); do
             gh release download "$tag" --repo "$REPO" --pattern 'sciqlopplots-wasm-*.tar.gz' --dir releases 2>/dev/null || true
           done
-          # the release that triggered this run may not have its asset uploaded yet
-          if [ "${{ github.event_name }}" = release ]; then cp current/*.tar.gz releases/; fi
           for archive in releases/*.tar.gz; do
             [ -e "$archive" ] || continue
             version=$(basename "$archive" .tar.gz); version=${version#sciqlopplots-wasm-}
             mkdir -p "site/v$version"
             tar xzf "$archive" -C "site/v$version" --strip-components=1
           done
-          if [ "${{ github.event_name }}" != release ]; then   # main, or a manual run
-            mkdir -p site/dev && tar xzf current/*.tar.gz -C site/dev --strip-components=1
-          fi
+          mkdir -p site/dev && tar xzf current/*.tar.gz -C site/dev --strip-components=1
           latest=$(gh release list --repo "$REPO" --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // ""')
           if [ -n "$latest" ] && [ -d "site/${latest}" ]; then
             cp -r "site/${latest}" site/latest
