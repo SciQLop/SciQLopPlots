@@ -27,6 +27,7 @@
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
+#include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
@@ -44,12 +45,33 @@
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopHistogram2DDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopWaterfallDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTimelineDelegate.hpp"
+#include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopNDProjectionPlotDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopPlotAxisDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/SciQLopTextItemDelegate.hpp"
 #include "SciQLopPlots/Inspector/PropertiesDelegates/InspectorExtensionDelegate.hpp"
 
 namespace
 {
+
+// A pane's own plottables: not the pieces of the projection's trajectories, which the
+// projection node shows once.
+QList<QObject*> pane_plottables(SciQLopNDProjectionPane* pane)
+{
+    QList<QObject*> own;
+    auto* projection = qobject_cast<SciQLopNDProjectionPlot*>(pane->parentWidget());
+    const auto trajectories = projection ? projection->plottables() : QList<SciQLopPlottableInterface*>{};
+    for (auto* p : pane->plottables())
+    {
+        const auto is_piece = [p](SciQLopPlottableInterface* t)
+        {
+            auto* curves = qobject_cast<SciQLopNDProjectionCurves*>(t);
+            return curves && curves->is_pane_curve(p);
+        };
+        if (std::ranges::none_of(trajectories, is_piece))
+            own.append(p);
+    }
+    return own;
+}
 
 void register_all_types()
 {
@@ -168,6 +190,8 @@ void register_all_types()
             auto plot = qobject_cast<SciQLopNDProjectionPlot*>(obj);
             if (!plot) return {};
             QList<QObject*> c;
+            for (int i = 0; i < plot->subplot_count(); ++i)
+                c.append(plot->subplot(i));
             for (auto p : plot->plottables())
                 c.append(p);
             for (auto* ext : plot->inspector_extensions())
@@ -179,6 +203,11 @@ void register_all_types()
             auto plot = qobject_cast<SciQLopNDProjectionPlot*>(obj);
             if (!plot) return {};
             return {
+                QObject::connect(plot, &SciQLopNDProjectionPlot::graph_list_changed, plot,
+                    [plot, add]() {
+                        for (auto p : plot->plottables())
+                            add(p, -1);
+                    }),
                 QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_added, plot,
                     [add](InspectorExtension* ext) { add(ext, -1); }),
                 QObject::connect(plot, &SciQLopNDProjectionPlot::inspector_extension_removed, plot,
@@ -189,6 +218,34 @@ void register_all_types()
             if (auto p = qobject_cast<SciQLopNDProjectionPlot*>(obj))
                 p->set_selected(s);
         },
+    });
+
+    // Owned by its projection plot: never deleted or dragged out from the tree.
+    types.register_type<SciQLopNDProjectionPane>({
+        .children = [](QObject* obj) -> QList<QObject*> {
+            auto pane = qobject_cast<SciQLopNDProjectionPane*>(obj);
+            if (!pane) return {};
+            return QList<QObject*>{ pane->x_axis(), pane->y_axis() } + pane_plottables(pane);
+        },
+        .connect_children = [](QObject* obj, auto add, auto)
+                -> QList<QMetaObject::Connection> {
+            auto pane = qobject_cast<SciQLopNDProjectionPane*>(obj);
+            if (!pane) return {};
+            // Queued: a trajectory makes its pane curves while it is being constructed, before
+            // pane_plottables() can tell they are its pieces.
+            return {
+                QObject::connect(pane, &SciQLopPlot::graph_list_changed, pane,
+                    [pane, add]() {
+                        for (auto* p : pane_plottables(pane))
+                            add(p, -1);
+                    }, Qt::QueuedConnection),
+            };
+        },
+        .set_selected = [](QObject* obj, bool s) {
+            if (auto p = qobject_cast<SciQLopNDProjectionPane*>(obj))
+                p->set_selected(s);
+        },
+        .deletable = false,
     });
 
     // SciQLopNDProjectionCurves inherits this via metaObject chain lookup
@@ -283,6 +340,7 @@ void register_all_types()
     auto& delegates = DelegateRegistry::instance();
     delegates.register_type<SciQLopMultiPlotPanelDelegate>();
     delegates.register_type<SciQLopPlotDelegate>();
+    delegates.register_type<SciQLopNDProjectionPlotDelegate>();
     delegates.register_type<SciQLopGraphDelegate>();
     delegates.register_type<SciQLopGraphComponentDelegate>();
     delegates.register_type<SciQLopColorMapBaseDelegate>();

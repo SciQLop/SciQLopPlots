@@ -94,6 +94,15 @@ enum class PlotType
 };
 Q_DECLARE_METATYPE(PlotType);
 
+// How a projection plot's axes follow each other.
+enum class ProjectionAxisLinking
+{
+    Independent,
+    ByDimension, // axes showing the same dimension share their range
+    SameScale,   // and every axis has the same span: one data unit, one length everywhere
+};
+Q_DECLARE_METATYPE(ProjectionAxisLinking);
+
 enum class GraphMarkerShape
 {
     NoMarker,

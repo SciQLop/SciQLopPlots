@@ -52,6 +52,13 @@ const std::map<std::string, std::pair<char, std::size_t>> typed_array_formats {
     { "Float32Array", { 'f', 4 } },
 };
 
+// A projection's axis modes, by their JavaScript name.
+const std::map<std::string, ProjectionAxisLinking> axis_linkings {
+    { "independent", ProjectionAxisLinking::Independent },
+    { "linked", ProjectionAxisLinking::ByDimension },
+    { "sameScale", ProjectionAxisLinking::SameScale },
+};
+
 // Theme colours a page can set, by their JavaScript name.
 const std::map<std::string, void (SciQLopTheme::*)(const QColor&)> theme_colors {
     { "background", &SciQLopTheme::set_background },
@@ -464,10 +471,21 @@ void set_legend_visible(int plot, bool visible)
         legend->set_visible(visible);
 }
 
+// mode: one of axis_linkings' names.
+void set_projection_axes(int projection, std::string mode)
+{
+    const auto linking = axis_linkings.find(mode);
+    if (linking == axis_linkings.end())
+        throw std::invalid_argument("SciQLopPlots: axes must be 'independent', 'linked' or "
+                                    "'sameScale', not '" + mode + "'");
+    get<SciQLopNDProjectionPlot>(projection)->set_axis_linking(linking->second);
+}
+
 // A row of 2-D projections of a 3-D trajectory, added to the panel's stack.
 // options: pairs ([[x, y], ...] dimension indices, one per pane; default [[0,1],[1,2],[2,0]]),
 // labels (the three dimension names), equalAspect (default true), ranges (a fixed [min, max] per
-// dimension instead of fitting the first data; same spans keep equal aspect in data units).
+// dimension instead of fitting the first data; same spans keep equal aspect in data units),
+// axes (a set_projection_axes mode, default "linked").
 int add_projection(int panel, val options)
 {
     auto* projection = dynamic_cast<SciQLopNDProjectionPlot*>(
@@ -484,7 +502,10 @@ int add_projection(int panel, val options)
     projection->set_equal_aspect_ratio(option(options, "equalAspect", val(true)).as<bool>());
     if (auto ranges = option(options, "ranges"); !ranges.isUndefined())
         hold_ranges(projection, ranges);
-    return keep(projection);
+    const int id = keep(projection);
+    if (auto axes = option(options, "axes"); !axes.isUndefined())
+        set_projection_axes(id, axes.as<std::string>());
+    return id;
 }
 
 int projection_pane(int projection, int index)
@@ -760,6 +781,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("setLegendVisible", &set_legend_visible);
     function("addProjection", &add_projection);
     function("projectionPane", &projection_pane);
+    function("setProjectionAxes", &set_projection_axes);
     function("trajectory", &trajectory);
     function("referenceCurve", &reference_curve);
     function("setTimeMarker", &set_time_marker);

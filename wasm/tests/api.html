@@ -218,6 +218,21 @@
       panel.remove();
       assert(x0 > 50 && x1 > 50, `pane 0 x range [${x0}, ${x1}] did not take the new data`);
     });
+    await check('projection axes: same scale everywhere, and bad modes throw', async () => {
+      const panel = spz.panel(document.querySelector('#c'), { timeRange: [t[0], t[n - 1]] });
+      const proj = panel.addProjection({ pairs: [[0, 1], [0, 2], [1, 2]], axes: 'sameScale' });
+      proj.trajectory(t, t.map((_, i) => 10 * Math.cos(i / 300)), t.map((_, i) => 2 * Math.sin(i / 300)), t.map(() => 1));
+      const span = (pane, axis) => { const [lo, hi] = proj.pane(pane).axisRange(axis); return hi - lo; };
+      const fitted = () => span(0, 'x') > 19;
+      for (let i = 0; i < 60 && !fitted(); i++) await frame();   // fits once the curves are resampled
+      const spans = [0, 1, 2].flatMap((i) => [span(i, 'x'), span(i, 'y')]);
+      throws(() => proj.setAxes('square'), 'an unknown axes mode');
+      proj.setAxes('independent');
+      proj.setAxes('linked');
+      panel.remove();
+      assert(spans.every((s) => Math.abs(s - spans[0]) < 1e-9 * spans[0]) && spans[0] > 19,
+             `spans ${spans} are not all the same, or do not hold the orbit`);
+    });
     await check('plotAt: the plot under a point, for drops', async () => {
       const element = document.querySelector('#c');
       const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });

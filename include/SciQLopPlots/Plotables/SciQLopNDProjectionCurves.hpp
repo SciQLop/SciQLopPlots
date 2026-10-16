@@ -33,6 +33,7 @@
 #include <qcustomplot.h>
 
 #include "SciQLopPlots/Plotables/SciQLopCurve.hpp"
+#include <algorithm>
 
 
 class SciQLopNDProjectionCurves : public SciQLopGraphInterface
@@ -77,6 +78,13 @@ public:
     //! A fetch in flight, or a pane still resampling its data.
     virtual bool busy() const noexcept override;
     virtual void set_busy(bool busy) noexcept override;
+
+    //! Whether \a pane_plottable is this graph's curve on one of the panes.
+    bool is_pane_curve(const QObject* pane_plottable) const noexcept
+    {
+        return std::ranges::any_of(m_curves, [pane_plottable](const QObject* c)
+                                   { return c == pane_plottable; });
+    }
 
     //! One component per pane, in pane order.
     virtual QList<SciQLopGraphComponentInterface*> components() const noexcept override;

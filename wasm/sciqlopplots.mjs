@@ -166,6 +166,12 @@ export class Projection extends Handle {
     return new Plot(this.lib, this.lib.m.projectionPane(this.id, index));
   }
 
+  // mode: 'independent', 'linked' (axes showing the same dimension move together, the default)
+  // or 'sameScale' (and every axis has the same span, with square panes: a circle stays round).
+  setAxes(mode) {
+    this.lib.m.setProjectionAxes(this.id, mode);
+  }
+
   // t: times; x, y, z: positions. options: name, timeColors (default true: coloured along time).
   trajectory(t, x, y, z, options = {}) {
     return new Trajectory(this.lib, this.withBuffers([t, x, y, z].map(columnsOf),
@@ -304,7 +310,8 @@ export class Panel extends Handle {
 
   // A row of projections. options: pairs (one [x, y] of dimension indices per pane, default
   // [[0, 1], [1, 2], [2, 0]]), labels (the dimension names), equalAspect (default true: square
-  // panes), ranges (a fixed [min, max] per dimension; equal spans give equal units on both axes).
+  // panes), ranges (a fixed [min, max] per dimension; equal spans give equal units on both axes),
+  // axes (see Projection.setAxes; default 'linked').
   addProjection(options = {}) {
     return new Projection(this.lib, this.lib.m.addProjection(this.id, options));
   }

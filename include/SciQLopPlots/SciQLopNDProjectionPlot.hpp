@@ -29,6 +29,20 @@
 class ColorScaleController;
 class SciQLopNDProjectionCurves;
 
+//! A pane of a projection plot: a plot the projection owns, so the inspector neither deletes
+//! nor moves it.
+class SciQLopNDProjectionPane : public SciQLopPlot
+{
+    Q_OBJECT
+public:
+    using SciQLopPlot::SciQLopPlot;
+    using SciQLopPlot::rescale_axes;
+
+    //! With SameScale, a pane can't fit alone: the projection fits all its panes together.
+    void rescale_axes(const QList<SciQLopPlotAxisInterface*>& axes) noexcept override;
+    void fit_own_axes() noexcept { SciQLopPlot::rescale_axes({ x_axis(), y_axis() }); }
+};
+
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface, public SciQLopExportable
 {
     Q_OBJECT
@@ -38,7 +52,9 @@ protected:
     QList<QColor> m_color_palette;
     int m_color_palette_index = 0;
     QList<SciQLopPlot*> m_plots;
-    bool m_linked_axes = true;
+    ProjectionAxisLinking m_axis_linking = ProjectionAxisLinking::ByDimension;
+    QList<QMetaObject::Connection> m_same_scale_connections;
+    bool m_equalizing_spans = false;
     QList<QPair<int, int>> m_dimension_pairs;
     QStringList m_dimension_names;
     bool m_equal_aspect_ratio = false;
@@ -57,6 +73,9 @@ protected:
     SciQLopGraphInterface* _adopt(SciQLopGraphInterface* graph);
     void _setup_color_scale();
     void _link_axes(bool linked);
+    void _set_same_scale(bool enabled);
+    void _equalize_spans(const SciQLopPlotAxisInterface* source);
+    QList<SciQLopPlotAxisInterface*> _pane_axes() const;
     void _apply_axis_labels();
 
     virtual SciQLopGraphInterface*
@@ -99,10 +118,21 @@ public:
     void set_dimension_pairs(const QList<QPair<int, int>>& pairs);
     inline QList<QPair<int, int>> dimension_pairs() const noexcept { return m_dimension_pairs; }
 
+    using SciQLopPlotInterface::rescale_axes;
+    //! Fits every pane to its data; with SameScale every axis then takes the widest span.
+    void rescale_axes() noexcept override;
+
+    void set_axis_linking(ProjectionAxisLinking linking) noexcept;
+    inline ProjectionAxisLinking axis_linking() const noexcept { return m_axis_linking; }
+
+    //! true: ByDimension, false: Independent.
     void set_linked_axes(bool linked) noexcept;
+    inline bool linked_axes() const noexcept
+    {
+        return m_axis_linking != ProjectionAxisLinking::Independent;
+    }
 
-    inline bool linked_axes() const noexcept { return m_linked_axes; }
-
+    //! Square panes. Always on with SameScale, which needs them for a circle to stay round.
     void set_equal_aspect_ratio(bool enabled) noexcept;
     bool equal_aspect_ratio() const noexcept { return m_equal_aspect_ratio; }
 
@@ -190,6 +220,7 @@ signals:
 #endif
     //! Emitted when the marker moves to a new time, with NaN when it is cleared.
     Q_SIGNAL void time_marker_changed(double t);
+    Q_SIGNAL void axis_linking_changed(ProjectionAxisLinking linking);
 #ifdef BINDINGS_H
 public:
 #endif

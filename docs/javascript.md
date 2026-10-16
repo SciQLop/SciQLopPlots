@@ -119,7 +119,7 @@ Qt starts once per page: later calls return the same object.
 | Member | Description |
 |---|---|
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
-| `addProjection({ pairs, labels, equalAspect, ranges })` | A new `Projection` at the bottom of the panel. |
+| `addProjection({ pairs, labels, equalAspect, ranges, axes })` | A new `Projection` at the bottom of the panel. |
 | `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot` or a `Projection` with the same `id` as the page's own handle. `null` between and outside plots. |
 | `acceptDrops(mimeType, (target, data) => …)` | Takes HTML5 drags whose `dataTransfer` holds `mimeType`, as SciQLop does on the desktop: dropped on a plot, `target.plot` is that plot; near a plot's top or bottom edge the panel shows where a new plot would go, and a drop there makes it (`target.newPlot` is `true`). `target.index` is the plot's place in the panel, `data` the dropped string. Set the data in your `dragstart`: `event.dataTransfer.setData(mimeType, data)`. |
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
@@ -151,7 +151,8 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 
 | Member | Description |
 |---|---|
-| `addProjection` options | `pairs`: the dimensions each pane shows, as `[x, y]` indices, e.g. `[[0, 1], [0, 2], [1, 2]]` for X-Y, X-Z, Y-Z. `labels`: the three dimension names. `equalAspect` (default `true`): square panes. `ranges`: a fixed `[min, max]` per dimension instead of fitting the data; give them the same span and a circle stays round. |
+| `addProjection` options | `pairs`: the dimensions each pane shows, as `[x, y]` indices, e.g. `[[0, 1], [0, 2], [1, 2]]` for X-Y, X-Z, Y-Z. `labels`: the three dimension names. `equalAspect` (default `true`): square panes. `ranges`: a fixed `[min, max]` per dimension instead of fitting the data; give them the same span and a circle stays round. `axes`: see `setAxes`. |
+| `setAxes(mode)` | How the axes follow each other. `'linked'` (the default): axes showing the same dimension move together. `'independent'`: nothing is linked. `'sameScale'`: also, every axis has the same span and the panes stay square, so a circle stays round, whatever the data. |
 | `trajectory(t, x, y, z, { name, timeColors })` | A `Trajectory` on every pane, coloured along time; its `setData(t, x, y, z)` takes new arrays of the same kind. `timeColors: false` turns that off for the whole projection, not just this trajectory: the last call wins. |
 | `referenceCurve(x, y, z, { name, color })` | A static 3-D curve, projected on every pane. |
 | `pane(i)` | The `i`-th pane, a `Plot`: draw a model's outline on one pane with `curve()`. |
