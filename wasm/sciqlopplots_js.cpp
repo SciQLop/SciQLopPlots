@@ -251,8 +251,109 @@ int add_plot(int panel)
     return keep(get<SciQLopMultiPlotPanel>(panel)->create_plot(-1, PlotType::TimeSeries));
 }
 
+// A row of a panel that a page element covers (sciqlopplots.mjs lays the element over it), for
+// another plotting library: it draws nothing, follows the panel's time range like a plot, and
+// tells the page where it is, in CSS pixels from the panel's top-left corner.
+class ElementRow : public SciQLopPlotInterface
+{
+    SciQLopPlotDummyAxis* m_time_axis = new SciQLopPlotDummyAxis(this);
+    QList<QColor> m_palette;
+    val m_on_geometry;
+    // simplify: the chain is the one of the last reparenting; a row moved under a widget that
+    // is itself reparented later would stop following. Rows only move within their panel.
+    QList<QPointer<QWidget>> m_ancestors;
+
+    static bool moves(QEvent* event)
+    {
+        const auto type = event->type();
+        return type == QEvent::Move || type == QEvent::Resize || type == QEvent::Show
+            || type == QEvent::Hide;
+    }
+
+    // { x, y, width, height }, or null while the row is not shown (removed rows are hidden).
+    void report_geometry()
+    {
+        if (!isVisible())
+            return (void)m_on_geometry(val::null());
+        const auto corner = mapTo(window(), QPoint(0, 0));
+        auto rect = val::object();
+        rect.set("x", corner.x());
+        rect.set("y", corner.y());
+        rect.set("width", width());
+        rect.set("height", height());
+        m_on_geometry(rect);
+    }
+
+    // A row moves when any widget between it and the panel does: a splitter, a scroll.
+    void watch_ancestors()
+    {
+        for (const auto& ancestor : std::as_const(m_ancestors))
+            if (ancestor)
+                ancestor->removeEventFilter(this);
+        m_ancestors.clear();
+        for (auto* ancestor = parentWidget(); ancestor; ancestor = ancestor->parentWidget())
+        {
+            ancestor->installEventFilter(this);
+            m_ancestors.append(ancestor);
+        }
+    }
+
+public:
+    // on_geometry(rect | null), on_time_range(start, stop); undefined for none.
+    ElementRow(val on_geometry, val on_time_range) : m_on_geometry(std::move(on_geometry))
+    {
+        if (!on_time_range.isUndefined())
+            connect(m_time_axis, &SciQLopPlotAxisInterface::range_changed, this,
+                    [on_time_range](SciQLopPlotRange r) { on_time_range(r.start(), r.stop()); });
+    }
+
+    // 'removed' tells the page to take its element away: a panel's clear() deletes rows too.
+    ~ElementRow() override { m_on_geometry(val("removed")); }
+
+    // The panel shares its height out by size hints: as much room as a plot.
+    QSize sizeHint() const override { return QSize(50, 50); }
+
+    SciQLopPlotAxisInterface* time_axis() const noexcept override { return m_time_axis; }
+    SciQLopPlotAxisInterface* x_axis() const noexcept override { return m_time_axis; }
+    QList<QColor> color_palette() const noexcept override { return m_palette; }
+    void set_color_palette(const QList<QColor>& colors) noexcept override { m_palette = colors; }
+
+protected:
+    bool event(QEvent* event) override
+    {
+        if (event->type() == QEvent::ParentChange)
+            watch_ancestors();
+        if (moves(event))
+            report_geometry();
+        return SciQLopPlotInterface::event(event);
+    }
+
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (moves(event))
+            report_geometry();
+        return SciQLopPlotInterface::eventFilter(watched, event);
+    }
+};
+
+int add_element_row(int panel, val on_geometry, val on_time_range)
+{
+    auto* row = new ElementRow(std::move(on_geometry), std::move(on_time_range));
+    const int id = keep(row);
+    get<SciQLopMultiPlotPanel>(panel)->add_plot(row);
+    return id;
+}
+
+std::string kind_of(SciQLopPlotInterface* plot)
+{
+    if (qobject_cast<SciQLopNDProjectionPlot*>(plot))
+        return "projection";
+    return dynamic_cast<ElementRow*>(plot) ? "element" : "plot";
+}
+
 // The plot under (x, y), in CSS pixels from the panel's top-left corner (the panel fills its
-// element): { id, index, kind: 'plot' | 'projection' }, or null between and outside plots.
+// element): { id, index, kind: 'plot' | 'projection' | 'element' }, or null between and outside
+// plots.
 val plot_at(int panel_id, double x, double y)
 {
     auto* panel = get<SciQLopMultiPlotPanel>(panel_id);
@@ -264,7 +365,7 @@ val plot_at(int panel_id, double x, double y)
             auto hit = val::object();
             hit.set("id", keep(plot));
             hit.set("index", panel->index(plot));
-            hit.set("kind", qobject_cast<SciQLopNDProjectionPlot*>(plot) ? "projection" : "plot");
+            hit.set("kind", kind_of(plot));
             return hit;
         }
     }
@@ -302,7 +403,7 @@ public:
         target.set("id", keep(plot));
         target.set("index", m_panel->index(plot));
         target.set("newPlot", !m_plots_before_drop.contains(plot));
-        target.set("kind", qobject_cast<SciQLopNDProjectionPlot*>(plot) ? "projection" : "plot");
+        target.set("kind", kind_of(plot));
         m_callback(target, QString::fromUtf8(mime_data->data(mime_type())).toStdString());
     }
 };
@@ -773,6 +874,7 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("createPanel", &create_panel);
     function("remove", &remove_object);
     function("addPlot", &add_plot);
+    function("addElementRow", &add_element_row);
     function("plotAt", &plot_at);
     function("acceptDrops", &accept_drops);
     function("line", &line);

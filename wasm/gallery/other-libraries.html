@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Other chart libraries · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Other chart libraries</h1><p class="lead">A Plotly histogram and a Chart.js hodogram as rows of a panel: both redraw for the time range in view after a pan or zoom.</p></header>
+  <main>
+    <div id="plots" class="plots tall"></div>
+    <script type="text/plain" id="example">
+      import { load } from '../sciqlopplots.mjs';
+      // Any library works: the page draws in an element, the panel keeps it over its row.
+      // A cross-origin isolated page loads scripts from CDNs that send CORP headers (jsDelivr does).
+      import Chart from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/auto/+esm';
+
+      // Plotly ships no ES module: its script sets globalThis.Plotly.
+      if (!globalThis.Plotly)
+        await new Promise((onload, onerror) => document.head.append(Object.assign(document.createElement('script'),
+          { src: 'https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js', onload, onerror })));
+
+      const n = 200_000, day = 86400, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + (day * i) / n);
+      const phase = (i) => (2 * Math.PI * i) / 20_000;
+      const bx = Float64Array.from({ length: n }, (_, i) => 20 * Math.cos(phase(i)) + 3 * Math.sin(i / 37));
+      const by = Float64Array.from({ length: n }, (_, i) => 12 * Math.sin(phase(i)) + 3 * Math.cos(i / 23));
+      const bz = Float64Array.from({ length: n }, (_, i) => 5 * Math.sin(phase(i) / 3));
+
+      const spz = await load();
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t0, t0 + day / 4] });
+      panel.addPlot().line(t, [bx, by, bz], { labels: ['Bx', 'By', 'Bz'] });
+
+      // The samples in view: t is sorted, so two binary searches.
+      const indexOf = (time) => {
+        let lo = 0, hi = n;
+        while (lo < hi) { const mid = (lo + hi) >> 1; t[mid] < time ? (lo = mid + 1) : (hi = mid); }
+        return lo;
+      };
+      const inView = (start, stop) => [indexOf(start), indexOf(stop)];
+
+      const histogram = document.createElement('div');
+      const drawHistogram = (start, stop) => {
+        const [from, to] = inView(start, stop);
+        const magnitude = Array.from({ length: to - from }, (_, k) => Math.hypot(bx[from + k], by[from + k], bz[from + k]));
+        Plotly.react(histogram, [{ type: 'histogram', x: magnitude, marker: { color: '#1f77b4' } }], {
+          margin: { l: 60, r: 20, t: 10, b: 40 }, bargap: 0.05,
+          xaxis: { title: { text: '|B| (nT)' } }, yaxis: { title: { text: `${to - from} samples` } },
+        }, { displayModeBar: false });
+      };
+      new ResizeObserver(() => histogram.data && Plotly.Plots.resize(histogram)).observe(histogram);
+
+      const hodogram = document.createElement('div');
+      const chart = new Chart(hodogram.appendChild(document.createElement('canvas')), {
+        type: 'scatter',
+        data: { datasets: [{ label: 'By against Bx', data: [], pointRadius: 1, borderColor: '#d62728' }] },
+        options: { animation: false, maintainAspectRatio: false,
+                   scales: { x: { title: { display: true, text: 'Bx (nT)' } }, y: { title: { display: true, text: 'By (nT)' } } } },
+      });
+      const drawHodogram = (start, stop) => {
+        const [from, to] = inView(start, stop), step = Math.max(1, Math.floor((to - from) / 3000));
+        const points = [];
+        for (let i = from; i < to; i += step) points.push({ x: bx[i], y: by[i] });
+        chart.data.datasets[0].data = points;
+        chart.update();
+      };
+
+      // Redraw once per burst of pan or zoom events.
+      const onceAFrame = (draw) => {
+        let pending = null;
+        return (start, stop) => { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => draw(start, stop)); };
+      };
+      panel.addElement(histogram, { onTimeRange: onceAFrame(drawHistogram) });
+      panel.addElement(hodogram, { onTimeRange: onceAFrame(drawHodogram) });
+    </script>
+  </main>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

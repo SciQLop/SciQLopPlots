@@ -194,6 +194,39 @@ export class Projection extends Handle {
   }
 }
 
+// A row of a panel showing a page element: a chart from another library (Plotly, Chart.js,
+// D3, ...). The panel lays the element over the row and keeps it there; its own events stay its own.
+export class ElementRow extends Handle {
+  constructor(lib, id, element) {
+    super(lib, id);
+    this.element = element;
+  }
+}
+
+// The layer over a panel that holds its rows' elements, clipped to the panel.
+function overlayOf(panel) {
+  if (!panel.overlay) {
+    const element = panel.element;
+    if (getComputedStyle(element).position === 'static') element.style.position = 'relative';
+    // Qt stacks its windows with z-indices of their own: kept inside one stacking context, they
+    // stay under the layer.
+    element.querySelector(':scope > #qt-shadow-container').style.isolation = 'isolate';
+    panel.overlay = document.createElement('div');
+    panel.overlay.style.cssText = 'position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;';
+    element.append(panel.overlay);
+  }
+  return panel.overlay;
+}
+
+// rect: where the row is ({ x, y, width, height }), null while it is hidden, 'removed' once gone.
+function placeElement(element, rect) {
+  if (rect === 'removed') return element.remove();
+  element.style.display = rect ? '' : 'none';
+  if (rect)
+    Object.assign(element.style, { left: `${rect.x}px`, top: `${rect.y}px`,
+      width: `${rect.width}px`, height: `${rect.height}px` });
+}
+
 export class Span extends Handle {
   get range() {
     return this.lib.m.spanRange(this.id);
@@ -227,9 +260,11 @@ function installPinch(lib, panel) {
     return { distance: Math.hypot(bx - ax, by - ay), middle: [(ax + bx) / 2, (ay + by) / 2] };
   };
   const swallow = (event) => { event.stopPropagation(); event.preventDefault(); };
+  // Events over a row's element belong to the element (another library's chart).
+  const ours = (event) => event.isTrusted && !panel.overlay?.contains(event.target);
 
   element.addEventListener('wheel', (event) => {
-    if (!event.isTrusted || !event.ctrlKey) return;
+    if (!ours(event) || !event.ctrlKey) return;
     swallow(event);
     const [x, y] = local(event.clientX, event.clientY);
     const lines = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 33 : 1;
@@ -239,14 +274,14 @@ function installPinch(lib, panel) {
   // Fingers are read from touch events (one per finger change, with every touch); Qt reads
   // pointer events, which it must not see during a pinch.
   element.addEventListener('touchstart', (event) => {
-    if (!event.isTrusted || event.touches.length < 2 || pinch) return;
+    if (!ours(event) || event.touches.length < 2 || pinch) return;
     pinch = geometry(event.touches);
     // Qt is dragging with the first finger: release it, or that drag would undo the zoom.
     if (dragging) dragging.target.dispatchEvent(new PointerEvent('pointerup', dragging.event));
     dragging = null;
   }, { capture: true, passive: true });
   element.addEventListener('touchmove', (event) => {
-    if (!event.isTrusted || !pinch || event.touches.length < 2) return;
+    if (!ours(event) || !pinch || event.touches.length < 2) return;
     const step = geometry(event.touches);
     lib.m.pinchTime(panel.id, pinch.middle[0], step.middle[0], step.middle[1],
                     pinch.distance / step.distance);
@@ -258,7 +293,7 @@ function installPinch(lib, panel) {
 
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'])
     element.addEventListener(type, (event) => {
-      if (!event.isTrusted || event.pointerType !== 'touch') return;
+      if (!ours(event) || event.pointerType !== 'touch') return;
       if (pinch) return swallow(event);
       if (type === 'pointerdown') dragging = { target: event.composedPath()[0], event };
       else if (type !== 'pointermove') dragging = null;
@@ -271,6 +306,7 @@ export class Panel extends Handle {
   constructor(lib, id, element) {
     super(lib, id);
     this.element = element;
+    this.rows = new Map();   // id -> ElementRow
     installPinch(lib, this);
     // Qt re-reads a container's size only on a window resize, not when the element alone
     // changes size (a sidebar hiding, a flex layout).
@@ -284,14 +320,37 @@ export class Panel extends Handle {
     return new Plot(this.lib, this.lib.m.addPlot(this.id));
   }
 
+  // A row showing element, e.g. a chart from another library, laid over the row and resized
+  // with it (the panel sets its position, left, top, width and height). options: onTimeRange
+  // (start, stop), called with the panel's time range now and after every pan or zoom.
+  addElement(element, { onTimeRange } = {}) {
+    Object.assign(element.style, { position: 'absolute', boxSizing: 'border-box', pointerEvents: 'auto' });
+    overlayOf(this).append(element);
+    const place = (rect) => {
+      // An exception must not unwind through Qt's layout.
+      try { placeElement(element, rect); } catch (error) { console.error(error); }
+      if (rect === 'removed') this.rows.delete(row.id);
+    };
+    const timeRange = onTimeRange && ((start, stop) => {
+      try { onTimeRange(start, stop); } catch (error) { console.error(error); }
+    });
+    const row = new ElementRow(this.lib, this.lib.m.addElementRow(this.id, place, timeRange), element);
+    this.rows.set(row.id, row);
+    return row;
+  }
+
+  // What plotAt and drops hand back for a row the panel reports.
+  rowHandle({ id, kind }) {
+    if (kind === 'element') return this.rows.get(id);
+    return new (kind === 'projection' ? Projection : Plot)(this.lib, id);
+  }
+
   // The plot under (x, y), in CSS pixels from the panel element's top-left corner, e.g. where
-  // something was dropped: { plot, index } (plot is a Plot or a Projection), or null between
-  // and outside plots.
+  // something was dropped: { plot, index } (plot is a Plot, a Projection or an ElementRow), or
+  // null between and outside plots.
   plotAt(x, y) {
     const hit = this.lib.m.plotAt(this.id, x, y);
-    if (!hit) return null;
-    const Kind = hit.kind === 'projection' ? Projection : Plot;
-    return { plot: new Kind(this.lib, hit.id), index: hit.index };
+    return hit && { plot: this.rowHandle(hit), index: hit.index };
   }
 
   // Accepts drops of mimeType (an HTML5 drag whose dataTransfer has that type). While the drag is
@@ -300,9 +359,8 @@ export class Panel extends Handle {
   // plot the panel made for the drop (newPlot true); data is the dropped string.
   acceptDrops(mimeType, callback) {
     this.lib.m.acceptDrops(this.id, mimeType, (target, data) => {
-      const Kind = target.kind === 'projection' ? Projection : Plot;
       // An exception must not unwind through Qt's event handling.
-      try { callback({ plot: new Kind(this.lib, target.id), index: target.index, newPlot: target.newPlot }, data); }
+      try { callback({ plot: this.rowHandle(target), index: target.index, newPlot: target.newPlot }, data); }
       catch (error) { console.error(error); }
     });
     return this;
@@ -354,6 +412,7 @@ export class Panel extends Handle {
   remove() {
     super.remove();
     this.resizeObserver.disconnect();
+    this.overlay?.remove();
     this.lib.m.qtRemoveContainerElement(this.element);
   }
 }

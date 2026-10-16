@@ -120,7 +120,8 @@ Qt starts once per page: later calls return the same object.
 |---|---|
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
 | `addProjection({ pairs, labels, equalAspect, ranges, axes })` | A new `Projection` at the bottom of the panel. |
-| `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot` or a `Projection` with the same `id` as the page's own handle. `null` between and outside plots. |
+| `addElement(element, { onTimeRange })` | A new `ElementRow` at the bottom of the panel, showing `element`: see [Charts from other libraries](#charts-from-other-libraries). |
+| `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot`, a `Projection` or an `ElementRow`, with the same `id` as the page's own handle. `null` between and outside plots. |
 | `acceptDrops(mimeType, (target, data) => …)` | Takes HTML5 drags whose `dataTransfer` holds `mimeType`, as SciQLop does on the desktop: dropped on a plot, `target.plot` is that plot; near a plot's top or bottom edge the panel shows where a new plot would go, and a drop there makes it (`target.newPlot` is `true`). `target.index` is the plot's place in the panel, `data` the dropped string. Set the data in your `dragstart`: `event.dataTransfer.setData(mimeType, data)`. |
 | `setTimeRange(start, stop)` | Shows this time range on every plot. |
 | `timeRange` | `[start, stop]` in view. |
@@ -177,7 +178,37 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 | `on('deleteRequested', () => …)` | When the user asks to delete it (Delete or Backspace on a selected span). |
 | `remove()` | Removes it. |
 
+### `ElementRow`
+
+| Member | Description |
+|---|---|
+| `element` | The element it shows. |
+| `remove()` | Removes the row from its panel, and the element from the page. |
+
 Errors (an unknown gradient, a removed object, data of the wrong size) are thrown as exceptions.
+
+## Charts from other libraries
+
+A row of a panel can show any element of your page, so a chart from Plotly, Chart.js, D3 or any other library sits among the plots and follows the panel's time range.
+The panel lays the element over its row and keeps it there when the panel resizes, a divider moves, or rows come and go.
+It sets the element's `position`, `left`, `top`, `width` and `height`; style the rest as you like.
+Mouse and touch events over the element are its own: the library's zoom, hover and tooltips work.
+
+```js
+const histogram = document.createElement('div');
+panel.addElement(histogram, {
+  // Called with the panel's time range at once, then after every pan or zoom.
+  onTimeRange: (start, stop) => Plotly.react(histogram, [{ type: 'histogram', x: valuesBetween(start, stop) }]),
+});
+```
+
+![A SciQLopPlots line above a Plotly histogram and a Chart.js hodogram of the samples in view](images/js-other-libraries.png)
+
+The [other chart libraries](https://sciqlop.github.io/SciQLopPlots/latest/gallery/other-libraries.html) example has the full code.
+
+- **Loading the library**: the page is cross-origin isolated, so scripts from another site load only if it sends a `Cross-Origin-Resource-Policy` header. jsDelivr and cdnjs do.
+- **Resizing**: the element changes size with its row. Chart.js follows on its own; for Plotly, call `Plotly.Plots.resize(element)` from a `ResizeObserver`.
+- **Export**: `panel.export()` draws only SciQLopPlots' own plots, and leaves an element's row empty. Use the library's own export for its chart.
 
 ## Limits
 

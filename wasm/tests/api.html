@@ -291,6 +291,56 @@
         `onto a plot: ${show(drops[0])}`);
       assert(drops[1].newPlot && drops[1].index === 2 && drops[1].data === 'cda/mms1_fgm', `at the edge: ${show(drops[1])}`);
     });
+    await check('addElement: a page element over its own row, following the time range', async () => {
+      const element = document.querySelector('#c');
+      const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });
+      const above = panel.addPlot();
+      const div = document.createElement('div');
+      const ranges = [];
+      const row = panel.addElement(div, { onTimeRange: (start, stop) => ranges.push([start, stop]) });
+      const below = panel.addPlot();
+      await frame();
+      // Where the row is, told by the plots around it and by plotAt.
+      const at = () => {
+        const box = element.getBoundingClientRect(), r = div.getBoundingClientRect();
+        return { top: r.top - box.top, bottom: r.bottom - box.top, width: r.width, panelWidth: box.width };
+      };
+      const fits = (where) => {
+        const { top, bottom, width, panelWidth } = at();
+        assert(bottom - top > 50 && Math.abs(width - panelWidth) < 2, `${where}: ${top}..${bottom}, ${width} wide`);
+        assert(panel.plotAt(300, top - 6)?.plot.id === above.id, `${where}: no plot just above the element`);
+        assert(panel.plotAt(300, bottom + 6)?.plot.id === below.id, `${where}: no plot just below the element`);
+        assert(panel.plotAt(300, (top + bottom) / 2)?.plot === row, `${where}: plotAt the element is not its row`);
+        const r = div.getBoundingClientRect();
+        assert(div.contains(document.elementFromPoint(r.left + 300, (r.top + r.bottom) / 2)),
+          `${where}: the element is under Qt's canvas`);
+      };
+      try {
+        assert(div.isConnected && element.contains(div), 'the element is not in the panel');
+        fits('at first');
+        assert(ranges.length && near(ranges.at(-1)[0], t[0]) && near(ranges.at(-1)[1], t[n - 1]),
+          `first time range ${ranges.at(-1)}`);
+        panel.setTimeRange(t[10], t[20]);
+        assert(near(ranges.at(-1)[0], t[10]) && near(ranges.at(-1)[1], t[20]), `after setTimeRange ${ranges.at(-1)}`);
+        element.style.height = '600px';
+        await new Promise((r) => setTimeout(r, 300));
+        fits('after the panel grew');
+        panel.addPlot().line(t, sin);    // the rows share the height again
+        await frame();
+        fits('after a plot was added');
+        row.remove();
+        await frame();
+        assert(!div.isConnected, 'remove() left the element in the page');
+        const kept = panel.addElement(document.createElement('div'));
+        await frame();
+        panel.clear();
+        await frame();
+        assert(!kept.element.isConnected, 'clear() left the element in the page');
+      } finally {
+        panel.remove();
+        element.style.height = '';
+      }
+    });
     await check('remove a panel', async () => {
       b.remove();
       await frame();
