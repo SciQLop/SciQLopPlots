@@ -553,6 +553,18 @@ int curve(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val opti
     return keep(graph);
 }
 
+// A [min, max] pair, checked here: indexing a missing one throws in JavaScript, past C++'s catch.
+SciQLopPlotRange range_of(val ranges, int dim)
+{
+    const bool is_pair = val::global("Array").call<bool>("isArray", ranges)
+        && dim < ranges["length"].as<int>() && val::global("Array").call<bool>("isArray", ranges[dim])
+        && ranges[dim]["length"].as<int>() == 2;
+    if (!is_pair)
+        throw std::invalid_argument("SciQLopPlots: ranges needs a [min, max] for dimension "
+                                    + std::to_string(dim));
+    return SciQLopPlotRange(ranges[dim][0].as<double>(), ranges[dim][1].as<double>());
+}
+
 void hold_ranges(SciQLopNDProjectionPlot* projection, val ranges)
 {
     const auto pairs = projection->dimension_pairs();
@@ -560,7 +572,7 @@ void hold_ranges(SciQLopNDProjectionPlot* projection, val ranges)
     {
         auto* pane = projection->subplot(i);
         pane->set_fit_first_data(false);
-        const auto range = [&](int dim) { return SciQLopPlotRange(ranges[dim][0].as<double>(), ranges[dim][1].as<double>()); };
+        const auto range = [&](int dim) { return range_of(ranges, dim); };
         pane->x_axis()->set_range(range(pairs[i].first));
         pane->y_axis()->set_range(range(pairs[i].second));
     }
@@ -587,10 +599,8 @@ void set_projection_axes(int projection, std::string mode)
 // labels (the three dimension names), equalAspect (default true), ranges (a fixed [min, max] per
 // dimension instead of fitting the first data; same spans keep equal aspect in data units),
 // axes (a set_projection_axes mode, default "linked").
-int add_projection(int panel, val options)
+void configure_projection(SciQLopNDProjectionPlot* projection, val options)
 {
-    auto* projection = dynamic_cast<SciQLopNDProjectionPlot*>(
-        get<SciQLopMultiPlotPanel>(panel)->create_plot(-1, PlotType::Projections));
     if (auto pairs = option(options, "pairs"); !pairs.isUndefined())
     {
         QList<QPair<int, int>> list;
@@ -603,10 +613,26 @@ int add_projection(int panel, val options)
     projection->set_equal_aspect_ratio(option(options, "equalAspect", val(true)).as<bool>());
     if (auto ranges = option(options, "ranges"); !ranges.isUndefined())
         hold_ranges(projection, ranges);
-    const int id = keep(projection);
     if (auto axes = option(options, "axes"); !axes.isUndefined())
-        set_projection_axes(id, axes.as<std::string>());
-    return id;
+        set_projection_axes(keep(projection), axes.as<std::string>());
+}
+
+int add_projection(int panel_id, val options)
+{
+    auto* panel = get<SciQLopMultiPlotPanel>(panel_id);
+    auto* projection
+        = dynamic_cast<SciQLopNDProjectionPlot*>(panel->create_plot(-1, PlotType::Projections));
+    // Bad options throw once the row is in the panel, and the page gets no handle to remove it.
+    try
+    {
+        configure_projection(projection, options);
+    }
+    catch (...)
+    {
+        panel->remove_plot(projection);
+        throw;
+    }
+    return keep(projection);
 }
 
 int projection_pane(int projection, int index)

@@ -233,6 +233,17 @@
       assert(spans.every((s) => Math.abs(s - spans[0]) < 1e-9 * spans[0]) && spans[0] > 19,
              `spans ${spans} are not all the same, or do not hold the orbit`);
     });
+    await check('a projection with bad options throws and leaves no row behind', async () => {
+      const element = document.querySelector('#c');
+      const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });
+      const bad = [{ pairs: [[0, 1]] }, { ranges: [[0, 1]] }, { axes: 'sideways' }];
+      bad.forEach((options) => throws(() => panel.addProjection(options), JSON.stringify(options)));
+      await frame();
+      const { height } = element.getBoundingClientRect();
+      const left = panel.plotAt(300, height / 2);
+      panel.remove();
+      assert(left === null, `a ${left?.plot.constructor.name} was left in the panel`);
+    });
     await check('plotAt: the plot under a point, for drops', async () => {
       const element = document.querySelector('#c');
       const panel = spz.panel(element, { timeRange: [t[0], t[n - 1]] });

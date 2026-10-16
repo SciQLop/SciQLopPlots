@@ -326,15 +326,18 @@ export class Panel extends Handle {
   addElement(element, { onTimeRange } = {}) {
     Object.assign(element.style, { position: 'absolute', boxSizing: 'border-box', pointerEvents: 'auto' });
     overlayOf(this).append(element);
+    let row = null;
     const place = (rect) => {
-      // An exception must not unwind through Qt's layout.
-      try { placeElement(element, rect); } catch (error) { console.error(error); }
-      if (rect === 'removed') this.rows.delete(row.id);
+      // An exception must not unwind through Qt's layout, nor through a row's destructor.
+      try {
+        placeElement(element, rect);
+        if (rect === 'removed' && row) this.rows.delete(row.id);
+      } catch (error) { console.error(error); }
     };
     const timeRange = onTimeRange && ((start, stop) => {
       try { onTimeRange(start, stop); } catch (error) { console.error(error); }
     });
-    const row = new ElementRow(this.lib, this.lib.m.addElementRow(this.id, place, timeRange), element);
+    row = new ElementRow(this.lib, this.lib.m.addElementRow(this.id, place, timeRange), element);
     this.rows.set(row.id, row);
     return row;
   }
