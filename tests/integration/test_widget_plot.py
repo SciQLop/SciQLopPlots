@@ -146,3 +146,13 @@ def test_a_signal_connects_to_the_set_range_of_a_cpp_made_axis(qtbot, qtlog, tar
     process_events()
     assert axis.range().start() == 10
     assert [r.message for r in qtlog.records if "dynamic method" in r.message] == []
+
+
+def test_a_widget_row_last_leaves_the_x_axis_on_the_last_plot(panel):
+    # A default panel shows the x axis on its last row only: a widget row has none to show.
+    first, _ = panel.plot(np.arange(10.0), np.arange(10.0))
+    last, _ = panel.plot(np.arange(10.0), np.arange(10.0))
+    panel.add_plot(WidgetPlot(QLabel("embedded")))
+    process_events()
+    assert not first.x_axis().visible()
+    assert last.x_axis().visible()
