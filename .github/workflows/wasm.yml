@@ -24,8 +24,8 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'   # aqt misreads Qt's archives on Python <= 3.13
       - uses: actions/setup-node@v4
@@ -92,7 +92,7 @@ jobs:
         timeout-minutes: 10
         run: COI_HEADERS=0 xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site test-shots-coi
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-test-screenshots
           path: test-shots*/*.png
@@ -102,7 +102,7 @@ jobs:
           name=sciqlopplots-wasm-${{ steps.version.outputs.version }}
           cp -r _site "$name"
           tar czf "$name.tar.gz" "$name"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sciqlopplots-wasm
           path: sciqlopplots-wasm-*.tar.gz
@@ -178,4 +178,4 @@ jobs:
         with:
           path: site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
