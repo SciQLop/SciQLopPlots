@@ -48,6 +48,8 @@ struct TypeDescriptor
     // Display text when it differs from objectName (which is also a plottable's legend text).
     // Empty falls back to objectName.
     std::function<QString(const QObject*)> label = {};
+    // Objects whose renaming changes this node's label, so the tree repaints it.
+    std::function<QList<QObject*>(const QObject*)> label_sources = {};
     std::function<void(QObject*, bool)> set_selected = {};
 
     bool deletable = true;

@@ -223,6 +223,18 @@ void PlotsModel::addNode(PlotsModelNode* parent, QObject* obj, int row)
                     emit dataChanged(idx, idx);
             }));
 
+    if (desc && desc->label_sources)
+        for (QObject* source : desc->label_sources(obj))
+            node->add_connection(connect(source, &QObject::objectNameChanged, this,
+                [this, guardedNode]
+                {
+                    if (!guardedNode)
+                        return;
+                    auto idx = make_index(guardedNode);
+                    if (idx.isValid())
+                        emit dataChanged(idx, idx);
+                }));
+
     if (desc && desc->connect_children)
     {
         auto add_child = [this, guardedNode](QObject* child, int row)

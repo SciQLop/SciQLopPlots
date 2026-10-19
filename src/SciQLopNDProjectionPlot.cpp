@@ -141,11 +141,12 @@ void SciQLopNDProjectionPlot::_apply_pane_names()
 
 void SciQLopNDProjectionPlot::set_pane_names(const QStringList& names)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_pane_names(names));
+    // Checked before queuing: off-thread, a throw from the queued call would escape the event loop.
     if (!names.isEmpty() && names.size() != m_plots.size())
         throw std::invalid_argument("Projection: expected " + std::to_string(m_plots.size())
                                     + " pane names, one per pane, got "
                                     + std::to_string(names.size()));
+    SCIQLOP_ON_OWNER_THREAD(set_pane_names(names));
     m_pane_names = names;
     _apply_pane_names();
 }

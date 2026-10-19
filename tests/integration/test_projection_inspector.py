@@ -257,3 +257,16 @@ class TestPaneNames:
         proj.set_pane_names(["XY", "XZ", "YZ"])
         process_events()
         assert [c.name() for c in graph.components()] == ["MMS1"] * 3
+
+    def test_a_pane_rename_refreshes_its_trajectory_rows(self, panel, projection):
+        proj, graph = projection
+        process_events()
+        model, node = _node(panel, proj)
+        graph_idx = _find(model, node, graph)
+        first = model.index(0, 0, graph_idx)
+        changed = []
+        model.dataChanged.connect(lambda tl, br, roles=None: changed.append((tl.parent(), tl.row(), br.row())))
+        proj.set_pane_names(["XY", "XZ", "YZ"])
+        process_events()
+        assert any(parent == graph_idx and top <= first.row() <= bottom
+                   for parent, top, bottom in changed), changed

@@ -248,6 +248,9 @@
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
                     return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
+                    return nullptr;
                 }
             </inject-code>
         </modify-function>
@@ -537,6 +540,9 @@
                     %CPPSELF.%FUNCTION_NAME(%1);
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
                     return nullptr;
                 }
             </inject-code>
@@ -1219,6 +1225,9 @@
                     %CPPSELF.%FUNCTION_NAME(%1);
                 } catch (const std::invalid_argument&amp; e) {
                     PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
                     return nullptr;
                 }
             </inject-code>

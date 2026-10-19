@@ -58,7 +58,7 @@ SciQLopPlotGroup* SciQLopPlotInterface::group(const QString& name,
                                               const QList<SciQLopPlottableInterface*>& members)
 {
     SciQLopPlots::require_owner_thread(this, "SciQLopPlotInterface::group");
-    auto group = std::make_unique<SciQLopPlotGroup>(name, this);
+    std::unique_ptr<SciQLopPlotGroup> group { new SciQLopPlotGroup(name, this) };
     for (auto* member : members)
         group->add(member);
     return group.release();

@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
@@ -49,6 +50,9 @@ QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* 
     }
     else if (auto* map = qobject_cast<const SciQLopColorMapBase*>(plottable); map && map->plottable())
         plottables.append(map->plottable());
+    else if (auto* timeline = qobject_cast<const SciQLopTimeline*>(plottable);
+             timeline && timeline->intervals())
+        plottables.append(timeline->intervals());
     return plottables;
 }
 

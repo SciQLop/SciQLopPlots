@@ -51,8 +51,11 @@ class SciQLopPlotGroup : public QObject
     QCPPlottableGroup* canvas_group(QCustomPlot* canvas);
     void forget_destroyed_members();
 
-public:
+    // Made by SciQLopPlotInterface::group, which checks the thread and the members.
     SciQLopPlotGroup(const QString& name, SciQLopPlotInterface* plot);
+    friend class SciQLopPlotInterface;
+
+public:
     ~SciQLopPlotGroup() override;
 
     QString name() const { return m_name; }

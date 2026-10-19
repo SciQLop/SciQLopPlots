@@ -53,23 +53,37 @@
 namespace
 {
 
-// Every pane's piece of a projection curve carries the curve's legend text: in the tree, name each
-// after its pane instead. Empty for any other component.
-QString projection_piece_label(const QObject* component)
+// The pane drawing \a component when it is a piece of a projection curve, else null.
+SciQLopNDProjectionPane* projection_piece_pane(const QObject* component)
 {
     auto* curve = qobject_cast<const SciQLopPlottableInterface*>(component->parent());
     auto* canvas = curve ? curve->parent() : nullptr;
     auto* pane = canvas ? qobject_cast<SciQLopNDProjectionPane*>(canvas->parent()) : nullptr;
     auto* projection = pane ? qobject_cast<SciQLopNDProjectionPlot*>(pane->parentWidget()) : nullptr;
     if (!projection)
-        return {};
+        return nullptr;
     const auto curves = projection->plottables();
     const bool piece = std::ranges::any_of(curves, [curve](SciQLopPlottableInterface* p)
     {
         auto* c = qobject_cast<SciQLopNDProjectionCurves*>(p);
         return c && c->is_pane_curve(curve);
     });
-    return piece ? pane->objectName() : QString();
+    return piece ? pane : nullptr;
+}
+
+// Every pane's piece of a projection curve carries the curve's legend text: in the tree, name each
+// after its pane instead. Empty for any other component.
+QString projection_piece_label(const QObject* component)
+{
+    auto* pane = projection_piece_pane(component);
+    return pane ? pane->objectName() : QString();
+}
+
+QList<QObject*> projection_piece_label_sources(const QObject* component)
+{
+    if (auto* pane = projection_piece_pane(component))
+        return { pane };
+    return {};
 }
 
 // A pane's own plottables: not the pieces of the projection's trajectories, which the
@@ -300,6 +314,7 @@ void register_all_types()
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
         .label = projection_piece_label,
+        .label_sources = projection_piece_label_sources,
         .set_selected = [](QObject* obj, bool s) {
             if (auto c = qobject_cast<SciQLopGraphComponentInterface*>(obj))
                 c->set_selected(s);

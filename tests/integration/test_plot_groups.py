@@ -190,3 +190,59 @@ class TestProjection:
         proj.remove_group(group)
         for i in range(proj.subplot_count()):
             assert proj.subplot(i).legend().row_labels() == ["Shue"]
+
+
+class TestFromTheReview:
+    """Findings of the opencode code review of 14f5bac."""
+
+    @staticmethod
+    def _off_thread(call):
+        import threading
+        result = {}
+
+        def work():
+            try:
+                call()
+                result["error"] = None
+            except Exception as e:  # noqa: BLE001 - the type is what we test
+                result["error"] = e
+        t = threading.Thread(target=work)
+        t.start()
+        t.join()
+        return result["error"]
+
+    def test_group_off_the_gui_thread_raises(self, plot, lines):
+        error = self._off_thread(lambda: plot.group("x", lines))
+        assert isinstance(error, RuntimeError)
+
+    def test_add_off_the_gui_thread_raises(self, plot, lines):
+        group = plot.group("x", lines[:1])
+        error = self._off_thread(lambda: group.add(lines[1]))
+        assert isinstance(error, RuntimeError)
+
+    def test_bad_pane_names_off_the_gui_thread_raise(self, proj):
+        error = self._off_thread(lambda: proj.set_pane_names(["XY"]))
+        assert isinstance(error, ValueError)
+
+    def test_a_timeline_can_leave_the_legend(self, plot):
+        timeline = plot.add_timeline(0)
+        assert len(plot.legend().row_labels()) == 1
+        timeline.set_in_legend(False)
+        assert plot.legend().row_labels() == []
+
+    def test_a_timeline_can_be_grouped(self, plot, lines):
+        timeline = plot.add_timeline(0)
+        plot.group("all", lines + [timeline])
+        assert plot.legend().row_labels() == ["all"]
+
+    def test_removing_the_group_from_a_visibility_slot(self, plot, lines):
+        group = plot.group("abc", lines)
+        lines[0].visible_changed.connect(lambda _: plot.remove_group(group))
+        group.set_visible(False)  # must not touch the deleted group
+        process_events()
+        assert plot.groups() == []
+
+    def test_groups_are_only_made_by_their_plot(self, plot):
+        from SciQLopPlots import SciQLopPlotGroup
+        with pytest.raises(TypeError):
+            SciQLopPlotGroup("x", plot)
