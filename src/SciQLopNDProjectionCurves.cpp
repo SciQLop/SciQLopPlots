@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
@@ -317,6 +318,7 @@ qreal SciQLopNDProjectionCurves::line_width() const
 
 void SciQLopNDProjectionCurves::set_in_legend(bool in_legend)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_in_legend(in_legend));
     m_in_legend = in_legend;
     for (auto* curve : m_curves)
         curve->set_in_legend(in_legend);

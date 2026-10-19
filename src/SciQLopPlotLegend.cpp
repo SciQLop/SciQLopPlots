@@ -119,9 +119,10 @@ QStringList SciQLopPlotLegend::row_labels() const
 
 QRect SciQLopPlotLegend::row_rect(int row) const
 {
-    if (row < 0 || row >= m_legend->itemCount())
+    auto* item = row >= 0 && row < m_legend->itemCount() ? m_legend->item(row) : nullptr;
+    if (!item)
         return {};
-    QRect rect = m_legend->item(row)->outerRect();
+    QRect rect = item->outerRect();
     if (auto* plot = qobject_cast<QWidget*>(parent()))
         rect.moveTopLeft(m_legend->parentPlot()->mapTo(plot, rect.topLeft()));
     return rect;

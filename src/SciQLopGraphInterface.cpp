@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
@@ -58,6 +59,7 @@ QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* 
 
 void SciQLopPlottableInterface::set_in_legend(bool in_legend)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_in_legend(in_legend));
     m_in_legend = in_legend;
     for (auto* p : qcp_plottables_of(this))
         p->setWantsLegend(in_legend);

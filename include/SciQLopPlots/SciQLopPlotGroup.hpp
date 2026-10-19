@@ -50,6 +50,7 @@ class SciQLopPlotGroup : public QObject
     void sync_canvas_groups(SciQLopPlottableInterface* member);
     QCPPlottableGroup* canvas_group(QCustomPlot* canvas);
     void forget_destroyed_members();
+    bool forget(SciQLopPlottableInterface* member);
 
     // Made by SciQLopPlotInterface::group, which checks the thread and the members.
     SciQLopPlotGroup(const QString& name, SciQLopPlotInterface* plot);

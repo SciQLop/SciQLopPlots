@@ -107,25 +107,41 @@ void SciQLopPlotGroup::add(SciQLopPlottableInterface* member)
     check_member(member);
     if (members().contains(member))
         return;
+    // Every signal waits until the move is done, and is guarded: a members_changed slot may
+    // delete a group, this one included.
+    QList<QPointer<SciQLopPlotGroup>> left;
     for (auto* other : m_plot->findChildren<SciQLopPlotGroup*>(Qt::FindDirectChildrenOnly))
-        if (other != this)
-            other->remove(member);
+        if (other != this && other->forget(member))
+            left.append(other);
     m_members.append(member);
     connect(member, &QObject::destroyed, this, &SciQLopPlotGroup::forget_destroyed_members);
     if (auto* graph = qobject_cast<SciQLopGraphInterface*>(member))
         connect(graph, &SciQLopGraphInterface::component_list_changed, this,
                 [this, member] { sync_canvas_groups(member); });
-    sync_canvas_groups(member);
-    Q_EMIT members_changed();
+    sync_canvas_groups(member); // NeoQCP moves its plottables out of their old canvas groups
+
+    QPointer<SciQLopPlotGroup> self = this;
+    for (const auto& other : left)
+        if (other)
+            Q_EMIT other->members_changed();
+    if (self)
+        Q_EMIT members_changed();
+}
+
+bool SciQLopPlotGroup::forget(SciQLopPlottableInterface* member)
+{
+    if (!members().contains(member))
+        return false;
+    disconnect(member, nullptr, this, nullptr);
+    m_members.removeAll(member);
+    return true;
 }
 
 void SciQLopPlotGroup::remove(SciQLopPlottableInterface* member)
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(member, remove(member));
-    if (!member || !members().contains(member))
+    if (!member || !forget(member))
         return;
-    disconnect(member, nullptr, this, nullptr);
-    m_members.removeAll(member);
     for (auto* p : qcp_plottables_of(member))
         if (auto* group = p->group(); group && m_canvas_groups.contains(group))
         {
@@ -151,11 +167,12 @@ QCPPlottableGroup* SciQLopPlotGroup::canvas_group(QCustomPlot* canvas)
 void SciQLopPlotGroup::sync_canvas_groups(SciQLopPlottableInterface* member)
 {
     for (auto* p : qcp_plottables_of(member))
-        if (auto* canvas = p->parentPlot(); canvas && !p->group())
-        {
-            canvas_group(canvas)->addMember(p);
-            canvas->replot(QCustomPlot::rpQueuedReplot);
-        }
+        if (auto* canvas = p->parentPlot())
+            if (auto* group = canvas_group(canvas); p->group() != group)
+            {
+                group->addMember(p);
+                canvas->replot(QCustomPlot::rpQueuedReplot);
+            }
 }
 
 void SciQLopPlotGroup::forget_destroyed_members()
@@ -174,6 +191,9 @@ bool SciQLopPlotGroup::visible() const
 void SciQLopPlotGroup::set_visible(bool visible)
 {
     SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-    for (auto* member : members())
-        member->set_visible(visible);
+    // A member's visible_changed slot may remove another member: iterate guarded pointers.
+    const auto snapshot = m_members;
+    for (const auto& member : snapshot)
+        if (member)
+            member->set_visible(visible);
 }

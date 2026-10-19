@@ -493,8 +493,9 @@ low = plot.plot(x, np.sin(x) - 0.2, labels=["min"])
 high = plot.plot(x, np.sin(x) + 0.2, labels=["max"])
 
 model = plot.group("model", [centre, low, high])   # one row: "model"
-model.set_visible(False)                           # hides all three
 model.add(plot.plot(x, np.cos(x), labels=["extra"]))
+model.set_visible(False)                           # hides the four members
+model.set_visible(True)
 plot.remove_group(model)                           # the four rows come back
 
 outline = plot.plot(x, 0 * x, labels=["zero"])
@@ -503,6 +504,7 @@ print(plot.legend().row_labels())                  # ['median', 'min', 'max', 'e
 ```
 
 - A group holds its members, it doesn't own them: deleting a member just takes it out of the group.
+- `set_visible` acts on the members present now; a member added later keeps its own visibility.
 - Members must belong to the plot that made the group, otherwise `ValueError`.
 - `set_in_legend(False)` also holds after a member leaves its group.
 - `legend.row_labels()` and `legend.row_rect(i)` tell what the legend shows and where, for tests.

@@ -1,6 +1,6 @@
 # Plot groups, legend exclusion and pane names
 
-Status: v1 implemented 2026-10-19 (NeoQCP 523aaf4 + ddb12a4, SciQLopPlots on top), after a code review by opencode. Revision 3 of the design, after two opencode reviews; see "Where v1 differs" at the end.
+Status: v1 implemented 2026-10-19 (NeoQCP 523aaf4, ddb12a4, e63652a; SciQLopPlots on top), after three opencode code reviews. Revision 3 of the design, after two opencode reviews; see "Where v1 differs" at the end.
 
 ## Why
 
@@ -193,3 +193,6 @@ SciQLopPlots:
 - **`remove_group` with another plot's group raises `ValueError`**, checked before the call is queued. `set_pane_names` validates the same way.
 - **Timelines** can be grouped and kept out of the legend.
 - **`SciQLopPlotGroup` has no public constructor:** only `plot.group()` makes one, after checking the thread and the members.
+- **Leaving a group restores a row only if the plottable had one when it joined, or asked for one while grouped** (`setWantsLegend(true)`). With `autoAddPlottableToLegend(false)`, leaving doesn't add a row.
+- **NeoQCP's `setVisible` also sets a multi-graph's components**, since a multi-graph with every component hidden counts as hidden.
+- **Re-entrancy:** a member move and `set_visible` finish their state first and emit afterwards, under guards. Slots may remove members or delete groups.

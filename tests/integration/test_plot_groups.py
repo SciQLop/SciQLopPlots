@@ -291,3 +291,64 @@ class TestDoubleClick:
 
     def test_a_row_rect_is_empty_past_the_last_row(self, plot, lines):
         assert not plot.legend().row_rect(len(lines)).isValid()
+
+
+class TestSecondReview:
+    """Findings of the second opencode review (6d236bd..bb2770a)."""
+
+    def test_a_visibility_slot_may_remove_a_later_member(self, plot, lines):
+        group = plot.group("abc", lines)
+        lines[0].visible_changed.connect(lambda _: plot.remove_plottable(lines[2]))
+        group.set_visible(False)  # must not touch the deleted third line
+        process_events()
+        assert len(group.members()) == 2
+
+    def test_moving_survives_a_slot_deleting_the_new_group(self, plot, lines):
+        first = plot.group("first", lines[:1])
+        second = plot.group("second", lines[1:2])
+        first.members_changed.connect(lambda: plot.remove_group(second))
+        second.add(lines[0])  # first tells its slot mid-move; second is deleted there
+        process_events()
+        assert plot.groups() == [first]
+        assert first.members() == []
+
+    def test_a_member_moves_between_groups(self, plot, lines):
+        first = plot.group("first", lines[:2])
+        second = plot.group("second", lines[2:])
+        changed = []
+        first.members_changed.connect(lambda: changed.append("first"))
+        second.add(lines[0])
+        assert first.members() == lines[1:2]
+        assert second.members() == [lines[2], lines[0]]
+        assert sorted(plot.legend().row_labels()) == ["first", "second"]
+        assert changed == ["first"]
+
+    def test_renaming_a_group_renames_its_row(self, plot, lines):
+        group = plot.group("abc", lines)
+        group.set_name("model")
+        assert plot.legend().row_labels() == ["model"]
+
+    def test_the_last_member_removed_leaves_an_empty_group(self, plot, lines):
+        group = plot.group("a", lines[:1])
+        plot.remove_plottable(lines[0])
+        process_events()
+        assert group.members() == []
+        assert sorted(plot.legend().row_labels()) == ["b", "c"]
+        group.add(lines[1])
+        assert sorted(plot.legend().row_labels()) == ["a", "c"]
+
+    def test_set_in_legend_off_the_gui_thread_is_queued(self, plot, lines):
+        import threading
+        t = threading.Thread(target=lambda: lines[0].set_in_legend(False))
+        t.start()
+        t.join()
+        process_events()
+        assert plot.legend().row_labels() == ["b", "c"]
+
+    def test_good_pane_names_off_the_gui_thread_are_queued(self, proj):
+        import threading
+        t = threading.Thread(target=lambda: proj.set_pane_names(["XY", "YZ", "ZX"]))
+        t.start()
+        t.join()
+        process_events()
+        assert proj.subplot(1).objectName() == "YZ"
