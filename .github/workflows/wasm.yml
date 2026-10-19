@@ -25,7 +25,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'   # aqt misreads Qt's archives on Python <= 3.13
       - uses: actions/setup-node@v4
