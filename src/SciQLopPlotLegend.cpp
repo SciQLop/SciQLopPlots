@@ -95,7 +95,14 @@ QString row_label(QCPAbstractLegendItem* item)
     if (auto* row = qobject_cast<QCPGroupLegendItem*>(item))
         return row->headerName();
     if (auto* row = qobject_cast<QCPIntervalsLegendItem*>(item))
-        return row->intervals() ? row->intervals()->name() : QString();
+    {
+        // A timeline's row lists its categories, one per line.
+        QStringList names;
+        if (row->intervals())
+            for (const auto& [name, color] : row->intervals()->legendEntries())
+                names.append(name);
+        return names.join('\n');
+    }
     if (auto* row = qobject_cast<QCPPlottableLegendItem*>(item))
         return row->plottable() ? row->plottable()->name() : QString();
     return {};
@@ -108,4 +115,14 @@ QStringList SciQLopPlotLegend::row_labels() const
     for (int i = 0; i < m_legend->itemCount(); ++i)
         labels.append(row_label(m_legend->item(i)));
     return labels;
+}
+
+QRect SciQLopPlotLegend::row_rect(int row) const
+{
+    if (row < 0 || row >= m_legend->itemCount())
+        return {};
+    QRect rect = m_legend->item(row)->outerRect();
+    if (auto* plot = qobject_cast<QWidget*>(parent()))
+        rect.moveTopLeft(m_legend->parentPlot()->mapTo(plot, rect.topLeft()));
+    return rect;
 }

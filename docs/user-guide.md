@@ -476,6 +476,37 @@ Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma 
 
 A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`.
 
+## Legends
+
+Every graph gets a legend row. Two calls keep a busy legend short.
+
+A group shows several plottables as one row, under its own name. Double-clicking the row hides or shows them all:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+centre = plot.plot(x, np.sin(x), labels=["median"])
+low = plot.plot(x, np.sin(x) - 0.2, labels=["min"])
+high = plot.plot(x, np.sin(x) + 0.2, labels=["max"])
+
+model = plot.group("model", [centre, low, high])   # one row: "model"
+model.set_visible(False)                           # hides all three
+model.add(plot.plot(x, np.cos(x), labels=["extra"]))
+plot.remove_group(model)                           # the four rows come back
+
+outline = plot.plot(x, 0 * x, labels=["zero"])
+outline.set_in_legend(False)                       # a decoration: no row at all
+print(plot.legend().row_labels())                  # ['median', 'min', 'max', 'extra']
+```
+
+- A group holds its members, it doesn't own them: deleting a member just takes it out of the group.
+- Members must belong to the plot that made the group, otherwise `ValueError`.
+- `set_in_legend(False)` also holds after a member leaves its group.
+- `legend.row_labels()` and `legend.row_rect(i)` tell what the legend shows and where, for tests.
+
 ## Overlays: spans, lines and text
 
 ```python
@@ -690,6 +721,27 @@ assert proj.equal_aspect_ratio()      # square panes come with the same scale
 `proj.set_equal_aspect_ratio(True)` keeps the panes square on their own.
 
 In the inspector, a projection plot has a properties panel for these settings, and its panes are listed under it, each with its axes and its own plot properties.
+
+Panes are named after their axis labels ("X-Y"). With long labels, give them short names; they stay when the labels or pairs change:
+
+```python
+import numpy as np
+from SciQLopPlots import GraphType, SciQLopNDProjectionPlot
+
+proj = SciQLopNDProjectionPlot(3)
+proj.set_axis_labels(["X GSM [R_E]", "Y GSM [R_E]", "Z GSM [R_E]"])
+proj.set_pane_names(["XY", "YZ", "ZX"])
+
+# One boundary drawn in every pane, shown once in the legend.
+proj.set_shared_legend(True)
+phi = np.linspace(0, 2 * np.pi, 100)
+pieces = [proj.subplot(i).plot(10 * np.cos(phi), 12 * np.sin(phi), labels=["bow shock"],
+                               graph_type=GraphType.ParametricCurve)
+          for i in range(proj.subplot_count())]
+proj.group("bow shock", pieces)
+```
+
+A group on a projection plot can hold curves from any pane, or whole trajectories. Grouping one pane's piece of a trajectory raises `ValueError`: group the trajectory instead.
 
 ## Signal processing
 

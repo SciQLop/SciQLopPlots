@@ -23,6 +23,7 @@
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include <QColor>
+#include <stdexcept>
 
 void SciQLopPlotInterface::apply_selection_style()
 {
@@ -71,7 +72,10 @@ QList<SciQLopPlotGroup*> SciQLopPlotInterface::groups() const
 
 void SciQLopPlotInterface::remove_group(SciQLopPlotGroup* group)
 {
+    // Checked before queuing: off-thread, a throw from the queued call would escape the event loop.
+    if (group && group->parent() != this)
+        throw std::invalid_argument("Group: '" + group->name().toStdString()
+                                    + "' belongs to another plot");
     SCIQLOP_ON_OWNER_THREAD_WITH(group, remove_group(group));
-    if (group && group->parent() == this)
-        delete group;
+    delete group;
 }

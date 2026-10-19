@@ -1,6 +1,6 @@
 # Plot groups, legend exclusion and pane names
 
-Status: v1 implemented 2026-10-19 (NeoQCP 523aaf4, SciQLopPlots on top). Revision 3 of the design, after two opencode reviews; see "Where v1 differs" at the end.
+Status: v1 implemented 2026-10-19 (NeoQCP 523aaf4 + ddb12a4, SciQLopPlots on top), after a code review by opencode. Revision 3 of the design, after two opencode reviews; see "Where v1 differs" at the end.
 
 ## Why
 
@@ -188,5 +188,8 @@ SciQLopPlots:
 - **`QCPLayerable::visibleChanged(bool)`** was added so the group row repaints when a member hides. Without it the row kept its undimmed look until the legend repainted for another reason.
 - **Deleting a group:** `plot.remove_group(group)`. `delete` can't be a C++ method name.
 - **Late components:** the group listens to each member's `component_list_changed`. `SciQLopNDProjectionCurves` now forwards its pane curves' signal.
-- **`legend.row_labels()`:** added, so tests (here and in SciQLop) can read the legend.
-- **Not tested at the SciQLopPlots level:** the double-click on a group row. NeoQCP tests that the row reports it; the wrapper only connects that signal to `set_visible(not visible())`.
+- **`legend.row_labels()` and `legend.row_rect(i)`:** added, so tests (here and in SciQLop) can read the legend and click its rows. A timeline's row reads as its categories, one per line, as drawn.
+- **Tree labels refresh:** `TypeDescriptor.label_sources` names the objects whose renaming changes a node's label (a projection piece's pane).
+- **`remove_group` with another plot's group raises `ValueError`**, checked before the call is queued. `set_pane_names` validates the same way.
+- **Timelines** can be grouped and kept out of the legend.
+- **`SciQLopPlotGroup` has no public constructor:** only `plot.group()` makes one, after checking the thread and the members.

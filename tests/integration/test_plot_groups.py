@@ -224,6 +224,13 @@ class TestFromTheReview:
         error = self._off_thread(lambda: proj.set_pane_names(["XY"]))
         assert isinstance(error, ValueError)
 
+    def test_a_timeline_row_reads_as_its_categories(self, plot):
+        # A timeline's row draws one swatch and label per category, not a name.
+        timeline = plot.add_timeline(0)
+        timeline.set_intervals([0, 2], [1, 3], lane=["X", "X"], category=["BS", "MP"])
+        process_events()
+        assert plot.legend().row_labels() == ["BS\nMP"]
+
     def test_a_timeline_can_leave_the_legend(self, plot):
         timeline = plot.add_timeline(0)
         assert len(plot.legend().row_labels()) == 1
@@ -246,3 +253,41 @@ class TestFromTheReview:
         from SciQLopPlots import SciQLopPlotGroup
         with pytest.raises(TypeError):
             SciQLopPlotGroup("x", plot)
+
+    def test_removing_another_plots_group_raises(self, qtbot, plot, lines):
+        other = SciQLopPlot()
+        qtbot.addWidget(other)
+        foreign = other.group("f", [other.plot(X, X, labels=["f"])])
+        with pytest.raises(ValueError):
+            plot.remove_group(foreign)
+        assert other.groups() == [foreign]
+
+
+class TestDoubleClick:
+    """A real double-click on the group's row, through Qt's event path."""
+
+    @staticmethod
+    def _double_click_row(qtbot, plot, row):
+        from PySide6.QtCore import Qt
+        from PySide6.QtTest import QTest
+        plot.resize(600, 400)
+        plot.show()
+        qtbot.waitExposed(plot)
+        plot.replot(True)
+        process_events()
+        rect = plot.legend().row_rect(row)
+        assert rect.isValid()
+        target = plot.childAt(rect.center())
+        QTest.mouseDClick(target, Qt.LeftButton, Qt.NoModifier, target.mapFrom(plot, rect.center()))
+        process_events()
+
+    def test_double_click_toggles_every_member(self, qtbot, plot, lines):
+        group = plot.group("abc", lines)
+        self._double_click_row(qtbot, plot, 0)
+        assert not any(g.visible() for g in lines)
+        self._double_click_row(qtbot, plot, 0)
+        assert all(g.visible() for g in lines)
+        assert group.visible()
+
+    def test_a_row_rect_is_empty_past_the_last_row(self, plot, lines):
+        assert not plot.legend().row_rect(len(lines)).isValid()

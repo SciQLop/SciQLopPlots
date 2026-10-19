@@ -49,4 +49,5 @@ public:
     QColor color() const override;
     void set_color(const QColor& color) override;
     QStringList row_labels() const override;
+    QRect row_rect(int row) const override;
 };

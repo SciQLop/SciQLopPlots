@@ -25,6 +25,7 @@
 #include <QColor>
 #include <QFont>
 #include <QPointF>
+#include <QRect>
 #include <QObject>
 #include <QStringList>
 
@@ -83,6 +84,13 @@ public:
 
     //! The text of each row, top to bottom (busy symbols left out).
     inline virtual QStringList row_labels() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    //! Where row \a row is drawn, in the plot widget's coordinates; empty if there is no such row.
+    inline virtual QRect row_rect(int row) const
     {
         WARN_ABSTRACT_METHOD;
         return {};
