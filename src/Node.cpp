@@ -155,3 +155,11 @@ QString PlotsModelNode::tooltip() const
         return m_descriptor->tooltip(m_obj);
     return {};
 }
+
+QString PlotsModelNode::label() const
+{
+    if (m_descriptor && m_descriptor->label && m_obj)
+        if (QString text = m_descriptor->label(m_obj); !text.isEmpty())
+            return text;
+    return name();
+}

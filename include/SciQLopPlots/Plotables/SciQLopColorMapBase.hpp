@@ -57,6 +57,7 @@ protected:
     }
 
     virtual QCPAbstractPlottable* plottable() const = 0;
+    friend QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface*);
 
     void _connect_legend_visibility();
     void _apply_legend_visibility_style(bool visible);

@@ -63,6 +63,7 @@ protected:
     // the caller actually set via set_name().
     bool m_user_named = false;
     bool m_warned_dropped_colour = false;
+    bool m_in_legend = true;
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
@@ -104,6 +105,10 @@ public:
     }
 
     virtual QString name() const noexcept { return this->objectName(); }
+
+    //! False keeps this plottable out of every legend, e.g. a decoration like a planet's outline.
+    virtual void set_in_legend(bool in_legend);
+    bool in_legend() const noexcept { return m_in_legend; }
 
     inline QVariantMap& meta_data(){return this->m_metaData;}
     inline const QVariantMap& meta_data() const {return this->m_metaData;}
@@ -248,6 +253,12 @@ signals:
 
     Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<SciQLopPyBuffer>, m_data, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };
+
+#ifndef BINDINGS_H
+class QCPAbstractPlottable;
+//! The NeoQCP plottables drawing \a plottable: one per component, or a colour map's own.
+QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* plottable);
+#endif
 
 class SciQLopGraphInterface : public SciQLopPlottableInterface
 {

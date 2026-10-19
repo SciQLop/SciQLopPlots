@@ -57,6 +57,7 @@ protected:
     bool m_equalizing_spans = false;
     QList<QPair<int, int>> m_dimension_pairs;
     QStringList m_dimension_names;
+    QStringList m_pane_names;
     bool m_equal_aspect_ratio = false;
     bool m_linked_crosshairs = false;
     bool m_time_color_enabled = false;
@@ -77,6 +78,7 @@ protected:
     void _equalize_spans(const SciQLopPlotAxisInterface* source);
     QList<SciQLopPlotAxisInterface*> _pane_axes() const;
     void _apply_axis_labels();
+    void _apply_pane_names();
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
@@ -105,6 +107,11 @@ public:
     }
 
     void set_axis_labels(const QStringList& dimension_names) noexcept;
+
+    //! Short names for the panes (the inspector tree shows them), one per pane; kept when the
+    //! axis labels or dimension pairs change. Empty: automatic, "x_label-y_label".
+    void set_pane_names(const QStringList& names);
+    QString pane_name(int index) const;
 
     /*!
      * \brief set_dimension_pairs Which two dimensions each subplot shows, as (x, y)

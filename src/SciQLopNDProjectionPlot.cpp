@@ -86,11 +86,11 @@ SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, Q
     for (int i = 0; i < n; i++)
     {
         auto plot = new SciQLopNDProjectionPane(this);
-        plot->setObjectName(QString("Pane %1").arg(i + 1));
         layout->addWidget(plot);
         m_plots.append(plot);
         m_dimension_pairs.append({ i, (i + 1) % n });
     }
+    _apply_pane_names();
     _link_axes(true);
     if (!m_plots.isEmpty())
         _setup_color_scale();
@@ -109,15 +109,45 @@ void SciQLopNDProjectionPlot::set_axis_labels(const QStringList& dimension_names
 
 void SciQLopNDProjectionPlot::_apply_axis_labels()
 {
-    if (m_dimension_names.size() != m_plots.size())
-        return;
-    for (int i = 0; i < m_plots.size(); ++i)
+    if (m_dimension_names.size() == m_plots.size())
+        for (int i = 0; i < m_plots.size(); ++i)
+        {
+            const auto [x, y] = m_dimension_pairs[i];
+            m_plots[i]->x_axis()->set_label(m_dimension_names[x]);
+            m_plots[i]->y_axis()->set_label(m_dimension_names[y]);
+        }
+    _apply_pane_names();
+}
+
+QString SciQLopNDProjectionPlot::pane_name(int index) const
+{
+    if (index < 0 || index >= m_plots.size())
+        return {};
+    if (!m_pane_names.isEmpty())
+        return m_pane_names[index];
+    if (m_dimension_names.size() == m_plots.size())
     {
-        const auto [x, y] = m_dimension_pairs[i];
-        m_plots[i]->x_axis()->set_label(m_dimension_names[x]);
-        m_plots[i]->y_axis()->set_label(m_dimension_names[y]);
-        m_plots[i]->setObjectName(m_dimension_names[x] + "-" + m_dimension_names[y]);
+        const auto [x, y] = m_dimension_pairs[index];
+        return m_dimension_names[x] + "-" + m_dimension_names[y];
     }
+    return QString("Pane %1").arg(index + 1);
+}
+
+void SciQLopNDProjectionPlot::_apply_pane_names()
+{
+    for (int i = 0; i < m_plots.size(); ++i)
+        m_plots[i]->setObjectName(pane_name(i));
+}
+
+void SciQLopNDProjectionPlot::set_pane_names(const QStringList& names)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_pane_names(names));
+    if (!names.isEmpty() && names.size() != m_plots.size())
+        throw std::invalid_argument("Projection: expected " + std::to_string(m_plots.size())
+                                    + " pane names, one per pane, got "
+                                    + std::to_string(names.size()));
+    m_pane_names = names;
+    _apply_pane_names();
 }
 
 void SciQLopNDProjectionPlot::set_dimension_pairs(const QList<QPair<int, int>>& pairs)

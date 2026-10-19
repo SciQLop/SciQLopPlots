@@ -1,6 +1,6 @@
 # Plot groups, legend exclusion and pane names
 
-Status: design, not implemented. 2026-10-19, revision 3 (after two opencode reviews).
+Status: v1 implemented 2026-10-19 (NeoQCP 523aaf4, SciQLopPlots on top). Revision 3 of the design, after two opencode reviews; see "Where v1 differs" at the end.
 
 ## Why
 
@@ -180,3 +180,13 @@ SciQLopPlots:
 - A member hidden by hand: group still visible; all hidden by hand: rows dim; double-click shows all.
 - `delete()`: every pane's members get their rows back.
 - Tree: projection-curve children labelled by pane; labels follow `set_pane_names`; `set_pane_names` survives `set_dimension_pairs` and `set_axis_labels`; a component `set_name` doesn't change its tree label.
+
+## Where v1 differs from this design
+
+- **`set_in_legend` keeps a flag on the wrapper too.** Wrappers make their NeoQCP plottables late: a parametric curve gets one per column when its data is resampled. The wrapper flag is applied to each new component (`_register_component`), and NeoQCP's `wantsLegend` stays the source of truth for existing plottables.
+- **Group icon:** `drawLegendIcon` of the first shown member, for every type. `QCPMultiGraph::drawLegendIcon` already draws its visible components, so there is no multigraph special case.
+- **`QCPLayerable::visibleChanged(bool)`** was added so the group row repaints when a member hides. Without it the row kept its undimmed look until the legend repainted for another reason.
+- **Deleting a group:** `plot.remove_group(group)`. `delete` can't be a C++ method name.
+- **Late components:** the group listens to each member's `component_list_changed`. `SciQLopNDProjectionCurves` now forwards its pane curves' signal.
+- **`legend.row_labels()`:** added, so tests (here and in SciQLop) can read the legend.
+- **Not tested at the SciQLopPlots level:** the double-click on a group row. NeoQCP tests that the row reports it; the wrapper only connects that signal to `set_visible(not visible())`.

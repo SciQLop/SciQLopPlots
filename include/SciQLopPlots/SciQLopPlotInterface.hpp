@@ -26,6 +26,7 @@
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/SciQLopPlotLegendInterface.hpp"
+#include "SciQLopPlots/SciQLopPlotGroup.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/enums.hpp"
@@ -429,6 +430,14 @@ public:
         SCIQLOP_ON_OWNER_THREAD(remove_plottable(name));
         delete plottable(name);
     }
+
+    //! One legend row for \a members, a SciQLopPlotGroup owned by this plot. Raises ValueError
+    //! for a member of another plot.
+    SciQLopPlotGroup* group(const QString& name,
+                            const QList<SciQLopPlottableInterface*>& members = {});
+    QList<SciQLopPlotGroup*> groups() const;
+    //! Deletes \a group. Its members stay, with their own legend rows back.
+    void remove_group(SciQLopPlotGroup* group);
 
     inline bool selected() const noexcept { return m_selected; }
 

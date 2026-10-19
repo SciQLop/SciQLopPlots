@@ -85,3 +85,27 @@ void SciQLopPlotLegend::set_color(const QColor& color)
         Q_EMIT color_changed(color);
     }
 }
+
+namespace
+{
+QString row_label(QCPAbstractLegendItem* item)
+{
+    if (auto* row = qobject_cast<QCPPlottableGroupLegendItem*>(item))
+        return row->rowText(false);
+    if (auto* row = qobject_cast<QCPGroupLegendItem*>(item))
+        return row->headerName();
+    if (auto* row = qobject_cast<QCPIntervalsLegendItem*>(item))
+        return row->intervals() ? row->intervals()->name() : QString();
+    if (auto* row = qobject_cast<QCPPlottableLegendItem*>(item))
+        return row->plottable() ? row->plottable()->name() : QString();
+    return {};
+}
+}
+
+QStringList SciQLopPlotLegend::row_labels() const
+{
+    QStringList labels;
+    for (int i = 0; i < m_legend->itemCount(); ++i)
+        labels.append(row_label(m_legend->item(i)));
+    return labels;
+}

@@ -237,6 +237,20 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
+        <modify-function signature="group(const QString&amp;,const QList&lt;SciQLopPlottableInterface*&gt;&amp;)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="c++"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                try {
+                    auto* result = %CPPSELF.%FUNCTION_NAME(%1, %2);
+                    %PYARG_0 = %CONVERTTOPYTHON[SciQLopPlotGroup*](result);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
         <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
             <modify-argument index="3">
                 <rename to="labels"/>
@@ -517,6 +531,16 @@
     </object-type>
     <object-type name="SciQLopNDProjectionPane" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <modify-function signature="set_pane_names(const QStringList&amp;)">
+            <inject-code class="target" position="beginning">
+                try {
+                    %CPPSELF.%FUNCTION_NAME(%1);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
         <modify-function signature="set_dimension_pairs(const QList&lt;QPair&lt;int,int&gt; &gt;&amp;)">
             <inject-code class="target" position="beginning">
                 try {
@@ -1188,6 +1212,18 @@
     </object-type>
     <object-type name="PlotDragNDropCallback" parent-management="yes"/>
     <object-type name="SciQLopPlotLegend" parent-management="yes"/>
+    <object-type name="SciQLopPlotGroup" parent-management="yes">
+        <modify-function signature="add(SciQLopPlottableInterface*)">
+            <inject-code class="target" position="beginning">
+                try {
+                    %CPPSELF.%FUNCTION_NAME(%1);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopPlotLegendInterface" parent-management="yes"/>
 
     <object-type name="TypeRegistry"/>

@@ -26,6 +26,7 @@
 #include <QFont>
 #include <QPointF>
 #include <QObject>
+#include <QStringList>
 
 class SciQLopPlotLegendInterface : public QObject
 {
@@ -78,6 +79,13 @@ public:
     inline virtual void set_color(const QColor&)
     {
         WARN_ABSTRACT_METHOD;
+    }
+
+    //! The text of each row, top to bottom (busy symbols left out).
+    inline virtual QStringList row_labels() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
     }
 
 

@@ -53,3 +53,25 @@ void SciQLopPlotInterface::set_selected(bool selected) noexcept
         Q_EMIT selection_changed(selected);
     }
 }
+
+SciQLopPlotGroup* SciQLopPlotInterface::group(const QString& name,
+                                              const QList<SciQLopPlottableInterface*>& members)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopPlotInterface::group");
+    auto group = std::make_unique<SciQLopPlotGroup>(name, this);
+    for (auto* member : members)
+        group->add(member);
+    return group.release();
+}
+
+QList<SciQLopPlotGroup*> SciQLopPlotInterface::groups() const
+{
+    return findChildren<SciQLopPlotGroup*>(Qt::FindDirectChildrenOnly);
+}
+
+void SciQLopPlotInterface::remove_group(SciQLopPlotGroup* group)
+{
+    SCIQLOP_ON_OWNER_THREAD_WITH(group, remove_group(group));
+    if (group && group->parent() == this)
+        delete group;
+}

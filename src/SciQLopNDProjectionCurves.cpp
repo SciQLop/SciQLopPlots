@@ -71,6 +71,8 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
                     &SciQLopNDProjectionCurves::_report_busy);
             connect(curve, qOverload<>(&SciQLopGraphInterface::data_changed), this,
                     qOverload<>(&SciQLopGraphInterface::data_changed));
+            connect(curve, &SciQLopGraphInterface::component_list_changed, this,
+                    &SciQLopGraphInterface::component_list_changed);
             // A pane can go first (the whole plot torn down): forget its curve then.
             connect(curve, &QObject::destroyed, this,
                     [this, curve] { m_curves.removeOne(curve); });
@@ -311,6 +313,13 @@ void SciQLopNDProjectionCurves::set_line_width(qreal width)
 qreal SciQLopNDProjectionCurves::line_width() const
 {
     return m_curves.isEmpty() ? 1.0 : m_curves.first()->line_width();
+}
+
+void SciQLopNDProjectionCurves::set_in_legend(bool in_legend)
+{
+    m_in_legend = in_legend;
+    for (auto* curve : m_curves)
+        curve->set_in_legend(in_legend);
 }
 
 void SciQLopNDProjectionCurves::set_visible(bool visible) noexcept

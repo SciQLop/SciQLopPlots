@@ -68,6 +68,7 @@ public:
     Qt::ItemFlags flags() const;
     QIcon icon() const;
     QString tooltip() const;
+    QString label() const;
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL

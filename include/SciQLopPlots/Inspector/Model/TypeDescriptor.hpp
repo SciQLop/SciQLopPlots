@@ -45,6 +45,9 @@ struct TypeDescriptor
 
     std::function<QIcon(const QObject*)> icon = {};
     std::function<QString(const QObject*)> tooltip = {};
+    // Display text when it differs from objectName (which is also a plottable's legend text).
+    // Empty falls back to objectName.
+    std::function<QString(const QObject*)> label = {};
     std::function<void(QObject*, bool)> set_selected = {};
 
     bool deletable = true;

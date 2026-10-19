@@ -52,6 +52,8 @@ void SQPQCPAbstractPlottableWrapper::notify_color_scale_later()
 void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* component)
 {
     m_components.append(component);
+    if (component->plottable())
+        component->plottable()->setWantsLegend(in_legend());
     connect(component, &SciQLopGraphComponent::replot, this,
             &SQPQCPAbstractPlottableWrapper::replot);
     // Connected before the inspector model sees the component, so this runs

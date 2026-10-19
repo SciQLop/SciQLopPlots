@@ -97,6 +97,7 @@ QVariant PlotsModel::data(const QModelIndex& index, int role) const
     switch (role)
     {
         case Qt::DisplayRole:
+            return node->label();
         case Qt::UserRole:
             return node->name();
         case Qt::DecorationRole:

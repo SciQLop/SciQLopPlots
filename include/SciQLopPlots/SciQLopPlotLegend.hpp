@@ -48,4 +48,5 @@ public:
     void set_font(const QFont& font) override;
     QColor color() const override;
     void set_color(const QColor& color) override;
+    QStringList row_labels() const override;
 };

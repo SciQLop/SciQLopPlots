@@ -212,3 +212,48 @@ def test_rescale_axes_fits_every_pane(proj):
     process_events()
     proj.rescale_axes()
     assert _holds(proj, dims)
+
+
+class TestPaneNames:
+    """SciQLop's axis labels are long ("X MESO [R_M]"): joined, they make unreadable pane names."""
+
+    def test_explicit_names_name_the_panes(self, panel, projection):
+        proj, _ = projection
+        proj.set_pane_names(["XY", "XZ", "YZ"])
+        assert [proj.subplot(i).objectName() for i in range(3)] == ["XY", "XZ", "YZ"]
+
+    def test_names_survive_a_relabel_and_new_pairs(self, panel, projection):
+        proj, _ = projection
+        proj.set_pane_names(["XY", "XZ", "YZ"])
+        proj.set_axis_labels(["X MESO [R_M]", "Y MESO [R_M]", "Z MESO [R_M]"])
+        proj.set_dimension_pairs(MAGNETOSPHERIC)
+        assert [proj.subplot(i).objectName() for i in range(3)] == ["XY", "XZ", "YZ"]
+        assert proj.subplot(0).x_axis().label() == "X MESO [R_M]"
+
+    def test_no_names_means_automatic(self, panel, projection):
+        proj, _ = projection
+        proj.set_axis_labels(["X", "Y", "Z"])
+        proj.set_pane_names(["a", "b", "c"])
+        proj.set_pane_names([])
+        assert proj.subplot(0).objectName() == "X-Y"
+
+    def test_one_name_per_pane(self, panel, projection):
+        proj, _ = projection
+        with pytest.raises(ValueError):
+            proj.set_pane_names(["XY"])
+
+    def test_trajectory_children_are_named_after_their_pane(self, panel, projection):
+        proj, graph = projection
+        proj.set_pane_names(["XY", "XZ", "YZ"])
+        process_events()
+        model, node = _node(panel, proj)
+        graph_idx = _find(model, node, graph)
+        labels = [model.data(model.index(r, 0, graph_idx)) for r in range(model.rowCount(graph_idx))]
+        assert labels == ["XY", "XZ", "YZ"]
+
+    def test_a_tree_label_does_not_rename_the_legend(self, panel, projection):
+        proj, graph = projection
+        graph.set_name("MMS1")
+        proj.set_pane_names(["XY", "XZ", "YZ"])
+        process_events()
+        assert [c.name() for c in graph.components()] == ["MMS1"] * 3

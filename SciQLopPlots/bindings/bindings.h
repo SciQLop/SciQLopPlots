@@ -60,6 +60,7 @@
 #include <SciQLopPlots/SciQLopNDProjectionPlot.hpp>
 #include <SciQLopPlots/SciQLopPlotLegendInterface.hpp>
 #include <SciQLopPlots/SciQLopPlotLegend.hpp>
+#include <SciQLopPlots/SciQLopPlotGroup.hpp>
 #include <SciQLopPlots/enums.hpp>
 
 #include <SciQLopPlots/Products/ProductsModel.hpp>

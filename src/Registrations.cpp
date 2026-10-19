@@ -53,6 +53,25 @@
 namespace
 {
 
+// Every pane's piece of a projection curve carries the curve's legend text: in the tree, name each
+// after its pane instead. Empty for any other component.
+QString projection_piece_label(const QObject* component)
+{
+    auto* curve = qobject_cast<const SciQLopPlottableInterface*>(component->parent());
+    auto* canvas = curve ? curve->parent() : nullptr;
+    auto* pane = canvas ? qobject_cast<SciQLopNDProjectionPane*>(canvas->parent()) : nullptr;
+    auto* projection = pane ? qobject_cast<SciQLopNDProjectionPlot*>(pane->parentWidget()) : nullptr;
+    if (!projection)
+        return {};
+    const auto curves = projection->plottables();
+    const bool piece = std::ranges::any_of(curves, [curve](SciQLopPlottableInterface* p)
+    {
+        auto* c = qobject_cast<SciQLopNDProjectionCurves*>(p);
+        return c && c->is_pane_curve(curve);
+    });
+    return piece ? pane->objectName() : QString();
+}
+
 // A pane's own plottables: not the pieces of the projection's trajectories, which the
 // projection node shows once.
 QList<QObject*> pane_plottables(SciQLopNDProjectionPane* pane)
@@ -280,6 +299,7 @@ void register_all_types()
     types.register_type<SciQLopGraphComponentInterface>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
+        .label = projection_piece_label,
         .set_selected = [](QObject* obj, bool s) {
             if (auto c = qobject_cast<SciQLopGraphComponentInterface*>(obj))
                 c->set_selected(s);

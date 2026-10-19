@@ -20,6 +20,8 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
+#include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/unique_names_factory.hpp"
@@ -33,6 +35,29 @@ SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObje
           this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
 {
     connect(this, &QObject::objectNameChanged, this, &SciQLopPlottableInterface::name_changed);
+}
+
+QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* plottable)
+{
+    QList<QCPAbstractPlottable*> plottables;
+    if (auto* graph = qobject_cast<const SciQLopGraphInterface*>(plottable))
+    {
+        for (auto* component : graph->components())
+            if (auto* c = qobject_cast<SciQLopGraphComponent*>(component);
+                c && c->plottable() && !plottables.contains(c->plottable()))
+                plottables.append(c->plottable());
+    }
+    else if (auto* map = qobject_cast<const SciQLopColorMapBase*>(plottable); map && map->plottable())
+        plottables.append(map->plottable());
+    return plottables;
+}
+
+void SciQLopPlottableInterface::set_in_legend(bool in_legend)
+{
+    m_in_legend = in_legend;
+    for (auto* p : qcp_plottables_of(this))
+        p->setWantsLegend(in_legend);
+    Q_EMIT replot();
 }
 
 SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)

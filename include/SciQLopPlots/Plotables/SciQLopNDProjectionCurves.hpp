@@ -73,6 +73,7 @@ public:
     virtual void set_colors(const QList<QColor>& colors) override;
 
     virtual void set_visible(bool visible) noexcept override;
+    virtual void set_in_legend(bool in_legend) override;
     virtual bool visible() const noexcept override;
 
     //! A fetch in flight, or a pane still resampling its data.

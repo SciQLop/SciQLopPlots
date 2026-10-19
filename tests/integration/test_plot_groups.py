@@ -1,0 +1,192 @@
+"""Plot groups and legend exclusion (docs/plans/2026-10-19-plot-groups-design.md).
+
+SciQLop's planetary scenes draw each boundary model as a centre curve plus dashed min/max
+curves, in 3 panes. Without groups their legend has one row per curve and covers the pane.
+"""
+import gc
+
+import numpy as np
+import pytest
+
+from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlot
+from conftest import process_events
+
+X = np.linspace(0, 10, 50)
+
+
+@pytest.fixture
+def lines(plot):
+    return [plot.plot(X, np.sin(X) + k, labels=[name]) for k, name in enumerate("abc")]
+
+
+@pytest.fixture
+def proj(qtbot):
+    p = SciQLopNDProjectionPlot(3)
+    p.set_shared_legend(True)
+    qtbot.addWidget(p)
+    return p
+
+
+def pane_curves(proj, label):
+    """One curve per pane, the way SciQLop's scene adds its boundaries."""
+    t = np.linspace(0, 2 * np.pi, 50)
+    return [proj.subplot(i).plot(np.cos(t) + i, np.sin(t), labels=[label],
+                                 graph_type=_parametric())
+            for i in range(proj.subplot_count())]
+
+
+def _parametric():
+    from SciQLopPlots import GraphType
+    return GraphType.ParametricCurve
+
+
+def shown_rows(proj):
+    """Legend rows a user sees: only legends that are visible count."""
+    rows = []
+    for i in range(proj.subplot_count()):
+        legend = proj.subplot(i).legend()
+        if legend.is_visible():
+            rows += legend.row_labels()
+    return rows
+
+
+class TestPlainPlot:
+    def test_a_group_has_one_legend_row(self, plot, lines):
+        assert plot.legend().row_labels() == ["a", "b", "c"]
+        group = plot.group("abc", lines)
+        assert plot.legend().row_labels() == ["abc"]
+        assert group.name() == "abc"
+        assert group.members() == lines
+
+    def test_removing_the_group_gives_rows_back(self, plot, lines):
+        group = plot.group("abc", lines)
+        plot.remove_group(group)
+        assert sorted(plot.legend().row_labels()) == ["a", "b", "c"]
+        assert plot.groups() == []
+
+    def test_set_visible_hides_every_member_and_signals(self, plot, lines, qtbot):
+        group = plot.group("abc", lines)
+        fired = []
+        for g in lines:
+            g.visible_changed.connect(fired.append)
+        group.set_visible(False)
+        assert not any(g.visible() for g in lines)
+        assert fired == [False, False, False]
+        assert not group.visible()
+
+    def test_visible_while_any_member_is(self, plot, lines):
+        group = plot.group("abc", lines)
+        lines[0].set_visible(False)
+        assert group.visible()
+        for g in lines:
+            g.set_visible(False)
+        assert not group.visible()
+        group.set_visible(True)
+        assert all(g.visible() for g in lines)
+
+    def test_add_and_remove(self, plot, lines):
+        group = plot.group("ab", lines[:2])
+        group.add(lines[2])
+        assert group.members() == lines
+        group.remove(lines[0])
+        assert group.members() == lines[1:]
+        assert sorted(plot.legend().row_labels()) == ["a", "ab"]
+
+    def test_an_empty_group_stays(self, plot, lines):
+        group = plot.group("a", lines[:1])
+        group.remove(lines[0])
+        assert group.members() == []
+        assert plot.groups() == [group]
+        assert sorted(plot.legend().row_labels()) == ["a", "b", "c"]
+
+    def test_a_removed_member_leaves_the_group(self, plot, lines):
+        group = plot.group("abc", lines)
+        plot.remove_plottable(lines[0])
+        process_events()
+        assert len(group.members()) == 2
+        assert plot.legend().row_labels() == ["abc"]
+
+    def test_the_python_handle_does_not_own_the_group(self, plot, lines):
+        plot.group("abc", lines)
+        gc.collect()
+        process_events()
+        assert len(plot.groups()) == 1
+        assert plot.legend().row_labels() == ["abc"]
+
+    def test_a_member_of_another_plot_is_refused(self, qtbot, plot, lines):
+        other = SciQLopPlot()
+        qtbot.addWidget(other)
+        foreign = other.plot(X, X, labels=["f"])
+        with pytest.raises(ValueError):
+            plot.group("bad", [foreign])
+        group = plot.group("ok", lines[:1])
+        with pytest.raises(ValueError):
+            group.add(foreign)
+        assert group.members() == lines[:1]
+
+    def test_late_components_join_the_group(self, qtbot, plot):
+        # A parametric curve makes one NeoQCP curve per column, after the data is resampled.
+        curve = plot.plot(X, X, graph_type=_parametric())
+        qtbot.waitUntil(lambda: curve.plottable_count() == 1, timeout=5000)
+        plot.group("late", [curve])
+        curve.set_data(X, np.column_stack([X, 2 * X, 3 * X]))
+        qtbot.waitUntil(lambda: curve.plottable_count() == 3, timeout=5000)
+        assert plot.legend().row_labels() == ["late"]
+
+
+class TestInLegend:
+    def test_a_graph_can_leave_and_rejoin_the_legend(self, plot, lines):
+        assert lines[1].in_legend()
+        lines[1].set_in_legend(False)
+        assert not lines[1].in_legend()
+        assert plot.legend().row_labels() == ["a", "c"]
+        lines[1].set_in_legend(True)
+        assert sorted(plot.legend().row_labels()) == ["a", "b", "c"]
+
+    def test_a_grouped_graph_stays_out_after_leaving(self, plot, lines):
+        lines[0].set_in_legend(False)
+        group = plot.group("ab", lines[:2])
+        group.remove(lines[0])
+        assert sorted(plot.legend().row_labels()) == ["ab", "c"]
+
+    def test_a_projection_curve_leaves_every_pane(self, proj):
+        t = np.linspace(0, 1, 20)
+        traj = proj.parametric_curve([t, t, t, t], labels=["MMS1"] * 3)
+        traj.set_in_legend(False)
+        assert not traj.in_legend()
+        for i in range(proj.subplot_count()):
+            assert "MMS1" not in proj.subplot(i).legend().row_labels()
+
+
+class TestProjection:
+    def test_a_scene_boundary_shows_once(self, proj):
+        centre, low, high = (pane_curves(proj, name) for name in ("Shue", "min", "max"))
+        group = proj.group("Shue 1998", centre + low + high)
+        assert shown_rows(proj) == ["Shue 1998"]
+        assert len(group.members()) == 9
+
+    def test_hiding_the_group_hides_every_pane(self, proj):
+        curves = pane_curves(proj, "Shue")
+        group = proj.group("Shue 1998", curves)
+        group.set_visible(False)
+        assert not any(c.visible() for c in curves)
+
+    def test_a_trajectory_can_be_grouped(self, proj):
+        t = np.linspace(0, 1, 20)
+        traj = proj.parametric_curve([t, t, t, t], labels=["MMS1"] * 3)
+        proj.group("MMS", [traj])
+        assert shown_rows(proj) == ["MMS"]
+
+    def test_a_pane_piece_of_a_trajectory_is_refused(self, proj):
+        t = np.linspace(0, 1, 20)
+        traj = proj.parametric_curve([t, t, t, t], labels=["MMS1"] * 3)
+        piece = proj.subplot(0).plottables()[0]
+        with pytest.raises(ValueError):
+            proj.group("bad", [piece])
+
+    def test_removing_the_group_gives_every_pane_its_rows(self, proj):
+        curves = pane_curves(proj, "Shue")
+        group = proj.group("Shue 1998", curves)
+        proj.remove_group(group)
+        for i in range(proj.subplot_count()):
+            assert proj.subplot(i).legend().row_labels() == ["Shue"]
