@@ -92,7 +92,7 @@ jobs:
         timeout-minutes: 10
         run: COI_HEADERS=0 xvfb-run -a -s "-screen 0 1400x1000x24" node wasm/tests/run.mjs _site test-shots-coi
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-test-screenshots
           path: test-shots*/*.png
@@ -102,7 +102,7 @@ jobs:
           name=sciqlopplots-wasm-${{ steps.version.outputs.version }}
           cp -r _site "$name"
           tar czf "$name.tar.gz" "$name"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sciqlopplots-wasm
           path: sciqlopplots-wasm-*.tar.gz
