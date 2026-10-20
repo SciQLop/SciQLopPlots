@@ -288,6 +288,10 @@ public:
     // Nothing to draw: a panel hiding the x axes of all its plots but the last asks anyway.
     inline void set_visible(bool visible) noexcept override { m_visible = visible; }
     inline bool visible() const noexcept override { return m_visible; }
+
+    // Never drawn, so never selected: panel actions ask every axis.
+    inline bool selected() const noexcept override { return false; }
+    inline void set_selected(bool) noexcept override { }
 };
 
 class SciQLopPlotAxis : public SciQLopPlotAxisInterface

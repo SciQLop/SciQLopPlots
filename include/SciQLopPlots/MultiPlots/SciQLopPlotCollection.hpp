@@ -72,15 +72,12 @@ protected:
 public:
     SciQLopPlotCollectionBehavior(QObject* parent = nullptr) : QObject(parent) { }
 
-    inline virtual Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>& plots)
-    {
-        WARN_ABSTRACT_METHOD;
-    }
-
-    inline virtual Q_SLOT void plotAdded(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
-    inline virtual Q_SLOT void plotRemoved(SciQLopPlotInterface* plot) { WARN_ABSTRACT_METHOD; }
-    inline  virtual Q_SLOT  void panelAdded(SciQLopPlotPanelInterface* panel) {WARN_ABSTRACT_METHOD;}
-    inline  virtual Q_SLOT  void panelRemoved(SciQLopPlotPanelInterface* panel) {WARN_ABSTRACT_METHOD;}
+    // Hooks, not unsupported calls: each behaviour overrides the events it cares about.
+    inline virtual Q_SLOT void updatePlotList(const QList<QPointer<SciQLopPlotInterface>>&) { }
+    inline virtual Q_SLOT void plotAdded(SciQLopPlotInterface*) { }
+    inline virtual Q_SLOT void plotRemoved(SciQLopPlotInterface*) { }
+    inline virtual Q_SLOT void panelAdded(SciQLopPlotPanelInterface*) { }
+    inline virtual Q_SLOT void panelRemoved(SciQLopPlotPanelInterface*) { }
 
 };
 

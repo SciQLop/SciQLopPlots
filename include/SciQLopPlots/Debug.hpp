@@ -28,10 +28,14 @@
 // build — compiled-out diagnostics left users with no way to see why nothing
 // was drawn in release.
 
+//! A method this concrete class doesn't implement. Called from Python, it raises
+//! NotImplementedError (a pending Python error, never a C++ throw: many stubs are noexcept);
+//! called from C++, it only warns. Each build's Python interface defines it.
+void report_unsupported_call(const char* function, const char* concrete_class);
+
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \
-        qWarning() << "Abstract method called:" << Q_FUNC_INFO                                     \
-                   << "from concrete class:" << typeid(*this).name();                              \
+        report_unsupported_call(Q_FUNC_INFO, typeid(*this).name());                                \
     }
 
 #define DEBUG_MESSAGE(message)                                                                     \
@@ -41,5 +45,5 @@
 
 #define WARN_UNSUPPORTED_FUNCTIONALITY                                                             \
     {                                                                                              \
-        qWarning() << "Unsupported functionality:" << Q_FUNC_INFO;                                 \
+        report_unsupported_call(Q_FUNC_INFO, typeid(*this).name());                                \
     }

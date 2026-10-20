@@ -86,7 +86,7 @@ resources_lib = static_library('sciqlopplots_resources', resources_files,
 # without unity: PySide6 headers reference protected enums that error
 # when merged with other TUs, and PythonInterface.cpp has slots macro conflicts.
 bindings_lib = static_library('sciqlopplots_bindings_impl',
-        sciqlopplots_bindings_src + shiboken_generator_out + ['../src/PythonInterface.cpp'],
+        sciqlopplots_bindings_src + shiboken_generator_out + ['../src/PythonInterface.cpp', '../src/UnsupportedCall.cpp'],
         dependencies : [python3_dep, shiboken_dep, qtdeps, NeoQCP_dep, cpp_utils_dep, fmt_dep, magic_enum_dep],
         include_directories : includes,
         cpp_args: py_limited_api_args,

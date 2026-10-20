@@ -105,13 +105,14 @@ def add_flaky_callback_line(panel, model, plot_index):
 )
 def add_flaky_callback_spectrogram(panel, model, plot_index):
     from SciQLopPlots import GraphType
+    from tests.fuzzing.graph_actions import colormap_or_refusal
     plot = panel.plot_at(plot_index)
-    plot.plot(
+    colormap_or_refusal(plot, lambda: plot.plot(
         make_flaky_spectrogram(failure_rate=0.3, n_channels=16),
         graph_type=GraphType.ColorMap,
         name="flaky_spectra",
         y_log_scale=True,
-    )
+    ))
 
 
 @ui_action(

@@ -182,23 +182,12 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
-    inline virtual SciQLopPlotAxisInterface* x_axis() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return nullptr;
-    }
+    // No axis is an answer, not an unsupported call: callers check for None.
+    inline virtual SciQLopPlotAxisInterface* x_axis() const noexcept { return nullptr; }
 
-    inline virtual SciQLopPlotAxisInterface* y_axis() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return nullptr;
-    }
+    inline virtual SciQLopPlotAxisInterface* y_axis() const noexcept { return nullptr; }
 
-    inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return nullptr;
-    }
+    inline virtual SciQLopPlotAxisInterface* z_axis() const noexcept { return nullptr; }
 
     inline virtual std::size_t parent_plot_height() const noexcept
     {

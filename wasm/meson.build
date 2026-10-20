@@ -48,7 +48,7 @@ thread_pool_dep = dependency('bshoshany-thread-pool',
     fallback: ['thread-pool', 'bshoshany_thread_pool_dep'])
 
 executable('sciqlopplots',
-    'sciqlopplots_js.cpp', 'python_interface.cpp',
+    'sciqlopplots_js.cpp', 'python_interface.cpp', '../src/UnsupportedCall.cpp',
     sciqlopplots_sources, moc_files, resources_files,
     include_directories: sciqlopplots_includes,
     dependencies: [qtdeps, NeoQCP_dep, cpp_utils_dep, hedley_dep, fmt_dep, magic_enum_dep,

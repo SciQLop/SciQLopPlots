@@ -13,9 +13,11 @@ Z = np.ones((10, 10))
 class TestGraphTypeAndArity:  # task 8, finding 3.1
     @pytest.mark.parametrize("graph_type", [GraphType.Line, GraphType.Scatter,
                                             GraphType.ParametricCurve])
-    def test_three_arrays_with_another_type_raise(self, plot, graph_type):
-        with pytest.raises(ValueError, match="3"):
-            plot.plot(X, X, Z, graph_type=graph_type)
+    def test_three_arrays_with_another_type_warn(self, plot, graph_type):
+        # A warning first: SciQLop's XY panels pass ParametricCurve with three arrays.
+        with pytest.warns(DeprecationWarning, match="3 arrays"):
+            graph = plot.plot(X, X, Z, graph_type=graph_type)
+        assert isinstance(graph, SciQLopColorMap)
 
     @pytest.mark.parametrize("graph_type", [None, GraphType.ColorMap])
     def test_three_arrays_make_a_colormap(self, plot, graph_type):
@@ -120,3 +122,42 @@ class TestDataCallbackErrors:  # task 9, finding 3.2
         qtbot.waitUntil(lambda: bool(failures), timeout=5000)
         self._fetch(qtbot, graph, 0.1, 0.9)  # inside what the failed fetch asked for
         qtbot.waitUntil(lambda: len(calls) >= 2, timeout=5000)
+
+
+class TestUnsupportedCallsRaise:  # task 7, findings 1.14, 2.7
+    def test_set_data_on_a_timeline_raises(self, plot):
+        timeline = plot.add_timeline(0)
+        with pytest.raises(NotImplementedError, match="set_data"):
+            timeline.set_data(X, X)
+
+    def test_legend_position_raises_until_it_exists(self, plot):
+        from PySide6.QtCore import QPointF
+        with pytest.raises(NotImplementedError, match="set_position"):
+            plot.legend().set_position(QPointF(0, 0))
+
+    def test_a_supported_call_still_works(self, plot):
+        graph = plot.plot(X, X)
+        graph.set_data(X, 2 * X)
+
+
+class TestPixmapItemGeometry:  # found by SciQLop's suite once stubs raised (finding 2.7)
+    def _pixmap(self, plot):
+        from PySide6.QtCore import QRectF
+        from PySide6.QtGui import QPixmap
+        from SciQLopPlots import Coordinates, SciQLopPixmapItem
+        image = QPixmap(4, 4)
+        return SciQLopPixmapItem(plot, image, QRectF(1.0, 2.0, 3.0, 4.0), False, Coordinates.Data)
+
+    def test_position_is_the_top_left_corner(self, plot):
+        item = self._pixmap(plot)
+        assert (item.position().x(), item.position().y()) == (1.0, 2.0)
+
+    def test_set_position_keeps_the_size(self, plot):
+        from PySide6.QtCore import QPointF
+        item = self._pixmap(plot)
+        item.set_position(QPointF(10.0, 20.0))
+        r = item.bounding_rectangle()
+        assert (r.x(), r.y(), r.width(), r.height()) == (10.0, 20.0, 3.0, 4.0)
+
+    def test_set_movable(self, plot):
+        self._pixmap(plot).set_movable(True)

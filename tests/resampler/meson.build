@@ -17,6 +17,7 @@ test_resampler_moc = qtmod.compile_moc(
 test_resampler_exe = executable('test_resampler_locking',
     'test_resampler_locking.cpp', test_resampler_moc,
     '../../src/PythonInterface.cpp',
+    '../../src/UnsupportedCall.cpp',
     '../../src/Tracing.cpp',
     '../../src/Profiling.cpp',
     include_directories: resampler_test_includes,

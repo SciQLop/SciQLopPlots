@@ -119,4 +119,36 @@ public:
     {
         return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
     }
+
+    //! The top-left corner, in the item's coordinates.
+    [[nodiscard]] inline QPointF position() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->topLeft->coords(); });
+    }
+
+    //! Moves the pixmap, keeping its size.
+    inline void set_position(const QPointF& pos) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_position(pos));
+        qptr_apply(m_item,
+                   [pos](auto&& item)
+                   {
+                       const auto shift = pos - item->topLeft->coords();
+                       item->topLeft->setCoords(pos);
+                       item->bottomRight->setCoords(item->bottomRight->coords() + shift);
+                       item->replot();
+                   });
+    }
+
+    [[nodiscard]] inline QRectF bounding_rectangle() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item)
+                             { return QRectF(item->topLeft->coords(), item->bottomRight->coords()); });
+    }
+
+    inline void set_movable(bool movable) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
+        qptr_apply(m_item, [movable](auto&& item) { item->setMovable(movable); });
+    }
 };
