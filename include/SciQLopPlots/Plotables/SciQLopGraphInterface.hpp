@@ -242,6 +242,8 @@ signals:
     Q_SIGNAL void data_changed(const QList<SciQLopPyBuffer>& values);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void busy_changed(bool busy);
+    //! A data callback raised or returned data the graph can't take: the traceback or the reason.
+    Q_SIGNAL void fetch_failed(const QString& message);
     Q_SIGNAL void parent_plot_resized(const QSize& size);
     Q_SIGNAL void request_rescale();
 
@@ -380,6 +382,7 @@ inline void apply_or_drop_batch(SciQLopPlottableInterface* g, Apply&& apply)
     {
         qWarning() << "SciQLopPlots: dropping data batch from provider for"
                    << g->objectName() << ":" << e.what();
+        Q_EMIT g->fetch_failed(QString::fromUtf8(e.what()));
     }
 }
 
@@ -411,6 +414,8 @@ connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* gr
                 { drop_bad_batch(g, values); });
             break;
     }
+    conns << QObject::connect(pipeline, &Pipeline::fetch_failed, graph,
+                              &SciQLopPlottableInterface::fetch_failed);
     conns << QObject::connect(pipeline, &Pipeline::new_data_colored, graph,
         [g = graph](const QList<SciQLopPyBuffer>& data, const SciQLopPyBuffer& color)
         { apply_or_drop_batch(g, [&] { g->set_data_and_color(data, color); }); });

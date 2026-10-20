@@ -51,6 +51,7 @@ struct _Colored_data
 {
     _NDdata data;
     SciQLopPyBuffer color;
+    QString error; // the data callback's traceback when it raised
 };
 
 using _PendingData = std::variant<std::monostate, _2D_data, _3D_data, _NDdata, _Colored_data>;
@@ -142,6 +143,7 @@ signals:
     //! A request ended with no data to deliver: an empty answer, or a range already held.
     Q_SIGNAL void request_ended();
     Q_SIGNAL void pipeline_idle();
+    Q_SIGNAL void fetch_failed(QString message);
 
 protected:
     void set_range(SciQLopPlotRange new_range) noexcept;
@@ -296,7 +298,8 @@ protected:
         if (!cb)
             return {};
         auto batch = cb->get_data(lower, upper);
-        return { _to_qlist(std::move(batch.data)), std::move(batch.color) };
+        return { _to_qlist(std::move(batch.data)), std::move(batch.color),
+                 QString::fromStdString(batch.error) };
     }
 #endif
 };
@@ -380,6 +383,7 @@ signals:
     Q_SIGNAL void new_data_nd(QList<SciQLopPyBuffer> values);
     Q_SIGNAL void new_data_colored(QList<SciQLopPyBuffer> data, SciQLopPyBuffer color);
     Q_SIGNAL void pipeline_idle();
+    Q_SIGNAL void fetch_failed(QString message);
 };
 
 
@@ -441,4 +445,5 @@ signals:
     //! A request ended with no data to deliver, see request_done().
     Q_SIGNAL void request_ended();
     Q_SIGNAL void pipeline_idle();
+    Q_SIGNAL void fetch_failed(QString message);
 };

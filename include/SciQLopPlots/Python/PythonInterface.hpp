@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <string>
 
 #include <cassert>
 #include <cmath>
@@ -366,6 +367,7 @@ struct SciQLopPyDataBatch
 {
     std::vector<SciQLopPyBuffer> data;
     SciQLopPyBuffer color;
+    std::string error; // the callback's traceback when it raised
 };
 
 struct GetDataPyCallable

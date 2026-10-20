@@ -154,6 +154,12 @@ void DataProviderInterface::_range_based_update(const SciQLopPlotRange& new_rang
     const double widening = margin_within_budget(margin, budget, m_bytes_per_key, new_range.size());
     const auto wanted = widening > 0. ? new_range * (1. + 2. * widening) : new_range;
     auto r = fetch(wanted.start(), wanted.stop());
+    if (!r.error.isEmpty())
+    {
+        // Not marked loaded: the next request for this range calls the callback again.
+        Q_EMIT fetch_failed(r.error);
+        return;
+    }
     m_current_range = wanted;
     _notify_new_data(r);
 }
@@ -351,6 +357,8 @@ SimplePyCallablePipeline::SimplePyCallablePipeline(GetDataPyCallable&& callable,
         &SimplePyCallablePipeline::new_data_colored);
     connect(m_callable_wrapper, &SimplePyCallablePWrapper::pipeline_idle, this,
         &SimplePyCallablePipeline::pipeline_idle);
+    connect(m_callable_wrapper, &SimplePyCallablePWrapper::fetch_failed, this,
+        &SimplePyCallablePipeline::fetch_failed);
 }
 
 RemoteDataPipeline::RemoteDataPipeline(QObject* parent) : QObject(parent)
@@ -360,6 +368,8 @@ RemoteDataPipeline::RemoteDataPipeline(QObject* parent) : QObject(parent)
     m_worker->set_data_provider(m_provider);
     connect(m_provider, &RemoteDataProvider::data_requested, this,
             &RemoteDataPipeline::data_requested);
+    connect(m_provider, &RemoteDataProvider::fetch_failed, this,
+            &RemoteDataPipeline::fetch_failed);
     connect(m_provider, &RemoteDataProvider::new_data_2d, this,
             &RemoteDataPipeline::new_data_2d);
     connect(m_provider, &RemoteDataProvider::new_data_3d, this,

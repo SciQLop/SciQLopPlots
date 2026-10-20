@@ -77,3 +77,46 @@ class TestSaveRaises:  # task 13, finding 3.9
 
     def test_a_good_save_still_returns_true(self, plot, tmp_path):
         assert plot.save_png(str(tmp_path / "ok.png"), 200, 100) is True
+
+
+class TestDataCallbackErrors:  # task 9, finding 3.2
+    @staticmethod
+    def _fetch(qtbot, graph, start=0.0, stop=1.0):
+        from SciQLopPlots import SciQLopPlotRange
+        graph.set_range(SciQLopPlotRange(start, stop))
+
+    def test_a_raising_callback_is_reported(self, qtbot, plot):
+        def broken(start, stop):
+            raise ValueError("instrument offline")
+        graph = plot.plot(broken)
+        failures = []
+        graph.fetch_failed.connect(failures.append)
+        self._fetch(qtbot, graph)
+        qtbot.waitUntil(lambda: bool(failures), timeout=5000)
+        assert "instrument offline" in failures[0]
+        assert "ValueError" in failures[0]
+
+    def test_bad_data_is_reported(self, qtbot, plot):
+        graph = plot.plot(lambda start, stop: (np.arange(10.), np.arange(3.)))
+        failures = []
+        graph.fetch_failed.connect(failures.append)
+        self._fetch(qtbot, graph)
+        qtbot.waitUntil(lambda: bool(failures), timeout=5000)
+
+    def test_a_failed_range_is_fetched_again(self, qtbot, plot):
+        calls = []
+
+        def flaky(start, stop):
+            calls.append((start, stop))
+            if len(calls) == 1:
+                raise RuntimeError("timeout")
+            return np.linspace(start, stop, 10), np.zeros(10)
+        graph = plot.plot(flaky)
+        # With a margin, a fetched range covers pans inside it: a failed one must not.
+        graph.set_prefetch_margin(1.0)
+        failures = []
+        graph.fetch_failed.connect(failures.append)
+        self._fetch(qtbot, graph, 0.0, 1.0)
+        qtbot.waitUntil(lambda: bool(failures), timeout=5000)
+        self._fetch(qtbot, graph, 0.1, 0.9)  # inside what the failed fetch asked for
+        qtbot.waitUntil(lambda: len(calls) >= 2, timeout=5000)

@@ -77,6 +77,46 @@ struct PyAutoScopedGIL
     ~PyAutoScopedGIL() { PyGILState_Release(gstate); }
 };
 
+// The traceback of the Python error being raised, as text; the error is cleared. Also written to
+// sys.stderr, but not through sys.excepthook: test runners and IDEs turn that into a failure of
+// whatever happens to run, while the graph reports the error itself (fetch_failed).
+static std::string take_python_error()
+{
+    PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
+    PyErr_Fetch(&type, &value, &tb);
+    PyErr_NormalizeException(&type, &value, &tb);
+    std::string text = "unknown Python error";
+    if (auto* traceback = PyImport_ImportModule("traceback"))
+    {
+        if (auto* lines = PyObject_CallMethod(traceback, "format_exception", "OOO", type ? type : Py_None,
+                                              value ? value : Py_None, tb ? tb : Py_None))
+        {
+            if (auto* sep = PyUnicode_FromString(""))
+            {
+                if (auto* joined = PyUnicode_Join(sep, lines))
+                {
+                    Py_ssize_t n = 0;
+                    if (const char* utf8 = PyUnicode_AsUTF8AndSize(joined, &n))
+                        text.assign(utf8, static_cast<std::size_t>(n));
+                    Py_DECREF(joined);
+                }
+                Py_DECREF(sep);
+            }
+            Py_DECREF(lines);
+        }
+        Py_DECREF(traceback);
+    }
+    PyErr_Clear();
+    if (auto* stderr_file = PySys_GetObject("stderr"))
+        if (auto* written = PyObject_CallMethod(stderr_file, "write", "s", text.c_str()))
+            Py_DECREF(written);
+    PyErr_Clear();
+    Py_XDECREF(type);
+    Py_XDECREF(value);
+    Py_XDECREF(tb);
+    return text;
+}
+
 // ---------------------------------------------------------------------------
 // Deferred Python object release queue
 //
@@ -644,10 +684,7 @@ struct _GetDataPyCallable_impl
                 Py_DECREF(res);
             }
             else
-            {
-                PyErr_Print();
-                PyErr_Clear();
-            }
+                data.error = take_python_error();
         }
         return data;
     }
@@ -681,10 +718,7 @@ struct _GetDataPyCallable_impl
                 Py_DECREF(res);
             }
             else
-            {
-                PyErr_Print();
-                PyErr_Clear();
-            }
+                (void)take_python_error();
         }
         return data;
     }
@@ -721,10 +755,7 @@ struct _GetDataPyCallable_impl
                 Py_DECREF(res);
             }
             else
-            {
-                PyErr_Print();
-                PyErr_Clear();
-            }
+                (void)take_python_error();
         }
         return data;
     }
