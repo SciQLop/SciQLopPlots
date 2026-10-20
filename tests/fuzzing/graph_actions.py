@@ -39,7 +39,20 @@ def add_colormap(panel, model, plot_index):
     x = np.linspace(0, 10, 50, dtype=np.float64)
     y = np.linspace(0, 5, 30, dtype=np.float64)
     z = np.random.rand(30, 50).astype(np.float64)
-    plot.plot(x, y, z, name="cmap")
+    colormap_or_refusal(plot, lambda: plot.plot(x, y, z, name="cmap"))
+
+
+def colormap_or_refusal(plot, add):
+    """A plot holds one colour map: a second one must be refused loudly, not come back None."""
+    if not plot.has_colormap():
+        add()
+        return
+    try:
+        add()
+    except RuntimeError as e:
+        assert "already has a colour map" in str(e), e
+    else:
+        raise AssertionError("a second colour map on a plot was accepted")
 
 
 @ui_action(

@@ -53,14 +53,15 @@ def add_callback_line_1c(panel, model, plot_index):
 )
 def add_callback_spectrogram(panel, model, plot_index):
     from SciQLopPlots import GraphType
+    from tests.fuzzing.graph_actions import colormap_or_refusal
     plot = panel.plot_at(plot_index)
-    plot.plot(
+    colormap_or_refusal(plot, lambda: plot.plot(
         make_spectrogram(32),
         graph_type=GraphType.ColorMap,
         name="ion_spectra",
         y_log_scale=True,
         z_log_scale=True,
-    )
+    ))
 
 
 @ui_action(
