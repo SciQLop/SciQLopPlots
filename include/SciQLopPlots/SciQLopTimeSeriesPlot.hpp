@@ -31,10 +31,6 @@ public:
     explicit SciQLopTimeSeriesPlot(QWidget* parent = nullptr);
     virtual ~SciQLopTimeSeriesPlot() Q_DECL_OVERRIDE = default;
 
-    inline QList<SciQLopPyBuffer> unity(const QList<SciQLopPyBuffer>& views) { return views; }
-
-    inline SciQLopPyBuffer unity(const SciQLopPyBuffer& view) { return view; }
-
     inline virtual SciQLopPlotAxisInterface* time_axis() const noexcept override
     {
         return x_axis();

@@ -9,6 +9,7 @@ SciQLopSingleLineGraph = SciQLopLineGraph
 SciQLopSingleLineGraphFunction = SciQLopLineGraphFunction
 from datetime import date, datetime, timezone
 import traceback
+import warnings
 
 import sys
 
@@ -536,3 +537,40 @@ SciQLopTimeline.category_order = property(lambda self: list(_category_order_get(
 SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 
+
+
+
+# snake_case names for the camelCase ones (API review 2026-10-20, 1.5 and 1.6). The same attribute
+# under a second name, never a wrapper: a Python wrapper on a Qt slot breaks its connections.
+# The camelCase names stay, deprecated.
+_SNAKE_CASE_ALIASES = {
+    SciQLopMultiPlotPanel: {"set_selected": "setSelected", "add_widget": "addWidget",
+                            "remove_widget": "removeWidget", "index_of": "indexOf",
+                            "selection_changed": "selectionChanged"},
+    **{cls: {"add_object": "addObject", "remove_object": "removeObject", "replot_all": "replotAll",
+             "update_plot_list": "updatePlotList"}
+       # The two subclasses override addObject/removeObject: each needs its own alias.
+       for cls in (SciQLopPlotsBindings.SciQLopMultiPlotObject, SciQLopPlotsBindings.MultiPlotsVerticalSpan,
+                   SciQLopPlotsBindings.MultiPlotsVerticalLine)},
+    SciQLopPlotsBindings.SciQLopVerticalSpan: {"selection_changed": "selectionChanged"},
+    SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selection_changed": "selectionChanged"},
+    SciQLopPlotsBindings.SciQLopRectangularSpan: {"selection_changed": "selectionChanged"},
+}
+for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
+    for _new, _old in _aliases.items():
+        setattr(_cls, _new, getattr(_cls, _old))
+
+
+def _public_names():
+    # `from .SciQLopPlotsBindings import *` and this module's own imports (numpy, datetime, the Qt
+    # modules) would all leak into a star import: list what the package offers instead.
+    import types
+    bound = {n for n in dir(SciQLopPlotsBindings)
+             if not n.startswith("_") and not isinstance(getattr(SciQLopPlotsBindings, n), types.ModuleType)}
+    # The SciQLopSingleLineGraph* aliases stay importable by name, but are no longer advertised.
+    own = {"tracing", "WidgetPlot",
+           "Pipeline", "PartialPipeline", "Event", "register_property", "OnDescriptor"}
+    return sorted(bound | own)
+
+
+__all__ = _public_names()

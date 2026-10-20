@@ -280,7 +280,7 @@ inline QCPLineEnding::EndingStyle to_qcp(LineTermination termination)
     {
         case LineTermination::Arrow:
             return QCPLineEnding::esFlatArrow;
-        case LineTermination::SPikeArrow:
+        case LineTermination::SpikeArrow:
             return QCPLineEnding::esSpikeArrow;
         case LineTermination::LineArrow:
             return QCPLineEnding::esLineArrow;

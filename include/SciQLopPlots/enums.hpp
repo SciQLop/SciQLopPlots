@@ -188,14 +188,15 @@ enum class LineTermination
 {
     NoneTermination,
     Arrow,
-    SPikeArrow,
+    SpikeArrow,
     LineArrow,
     Circle,
     Square,
     Diamond,
     Bar,
     HalfBar,
-    SkewedBar
+    SkewedBar,
+    SPikeArrow = SpikeArrow // the old misspelling stays for existing callers
 };
 Q_DECLARE_METATYPE(LineTermination);
 

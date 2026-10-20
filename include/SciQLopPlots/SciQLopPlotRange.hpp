@@ -38,6 +38,11 @@ inline int _capture_or_default(const QRegularExpressionMatch& match, const QStri
     return match.captured(name).isEmpty() ? def : match.captured(name).toInt();
 }
 
+inline double date_to_double(const QDateTime& date)
+{
+    return static_cast<double>(date.toSecsSinceEpoch())+static_cast<double>(date.time().msec())/1000.0;
+}
+
 inline double str_date_to_double(const QString& str)
 {
     static const QRegularExpression date_regex(R"(^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T? ?(?<hour>\d{2})?:?(?<minute>\d{2})?:?(?<second>\d{2})?\.?(?<millisecond>\d{3})?)");
@@ -53,14 +58,9 @@ inline double str_date_to_double(const QString& str)
         QDateTime date(QDate(year, month, day), QTime(hour, minute, second, millisecond));
         // Not QTimeZone::utc(): Qt for WebAssembly is built without the timezone feature.
         date.setTimeZone(QTimeZone::UTC);
-        return date.toSecsSinceEpoch();
+        return date_to_double(date);
     }
     return std::nan("");
-}
-
-inline double date_to_double(const QDateTime& date)
-{
-    return static_cast<double>(date.toSecsSinceEpoch())+static_cast<double>(date.time().msec())/1000.0;
 }
 
 inline auto epoch_to_std_time(double epoch)
@@ -77,11 +77,7 @@ protected:
 public:
     SciQLopPlotRange() : QPair<double, double> { std::nan(""), std::nan("") } { }
 
-    SciQLopPlotRange(const SciQLopPlotRange& other)
-            : QPair<double, double> { other.first, other.second }
-            , _is_time_range(other._is_time_range)
-    {
-    }
+    SciQLopPlotRange(const SciQLopPlotRange& other) = default;
 
     explicit SciQLopPlotRange(const QDateTime& start, const QDateTime& end)
             : QPair<double, double> { date_to_double(start), date_to_double(end) }
@@ -110,16 +106,18 @@ public:
     {
     }
 
-    inline QDateTime start_date() const { return QDateTime::fromSecsSinceEpoch(first); }
-
-    inline QDateTime stop_date() const { return QDateTime::fromSecsSinceEpoch(second); }
-
-    inline SciQLopPlotRange& operator=(const SciQLopPlotRange& other)
+    // UTC like every time in SciQLopPlots, to the millisecond.
+    inline QDateTime start_date() const
     {
-        first = other.first;
-        second = other.second;
-        return *this;
+        return QDateTime::fromMSecsSinceEpoch(std::llround(first * 1000.), QTimeZone::UTC);
     }
+
+    inline QDateTime stop_date() const
+    {
+        return QDateTime::fromMSecsSinceEpoch(std::llround(second * 1000.), QTimeZone::UTC);
+    }
+
+    SciQLopPlotRange& operator=(const SciQLopPlotRange& other) = default;
 
     std::string __repr__() const
     {

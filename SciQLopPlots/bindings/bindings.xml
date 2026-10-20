@@ -5,6 +5,52 @@
 <typesystem package="SciQLopPlotsBindings" exception-handling="auto-on">
     <system-include file-name="memory"/>
     <rejection class="std" function-name="^[a-z_]+$"/>
+    <!-- Protected members are C++ state, not API: Python could read and overwrite them. -->
+    <rejection class="*" field-name="m_auto_scale"/>
+    <rejection class="*" field-name="m_axes_to_rescale"/>
+    <rejection class="*" field-name="m_axis_linking"/>
+    <rejection class="*" field-name="m_busy"/>
+    <rejection class="*" field-name="m_color_palette"/>
+    <rejection class="*" field-name="m_color_palette_index"/>
+    <rejection class="*" field-name="m_connections"/>
+    <rejection class="*" field-name="m_data_range"/>
+    <rejection class="*" field-name="m_dimension_names"/>
+    <rejection class="*" field-name="m_dimension_pairs"/>
+    <rejection class="*" field-name="m_enforcing_aspect"/>
+    <rejection class="*" field-name="m_equal_aspect_ratio"/>
+    <rejection class="*" field-name="m_equalizing_spans"/>
+    <rejection class="*" field-name="m_fit_first_data"/>
+    <rejection class="*" field-name="m_frozen_axes"/>
+    <rejection class="*" field-name="m_idle_connection"/>
+    <rejection class="*" field-name="m_in_legend"/>
+    <rejection class="*" field-name="m_layout"/>
+    <rejection class="*" field-name="m_legend"/>
+    <rejection class="*" field-name="m_linked_crosshairs"/>
+    <rejection class="*" field-name="m_max_range_size"/>
+    <rejection class="*" field-name="m_metaData"/>
+    <rejection class="*" field-name="m_min_range_size"/>
+    <rejection class="*" field-name="m_observer_connections"/>
+    <rejection class="*" field-name="m_overlay"/>
+    <rejection class="*" field-name="m_pane_names"/>
+    <rejection class="*" field-name="m_pipeline"/>
+    <rejection class="*" field-name="m_plots"/>
+    <rejection class="*" field-name="m_range"/>
+    <rejection class="*" field-name="m_rescale_waiting_for_data"/>
+    <rejection class="*" field-name="m_same_scale_connections"/>
+    <rejection class="*" field-name="m_selected"/>
+    <rejection class="*" field-name="m_shared_legend"/>
+    <rejection class="*" field-name="m_time_axis"/>
+    <rejection class="*" field-name="m_time_color_enabled"/>
+    <rejection class="*" field-name="m_time_marker_key"/>
+    <rejection class="*" field-name="m_title"/>
+    <rejection class="*" field-name="m_user_named"/>
+    <rejection class="*" field-name="m_uuid"/>
+    <rejection class="*" field-name="m_warned_dropped_colour"/>
+    <!-- Plumbing that is public in C++ for the library's own callers. -->
+    <rejection class="SciQLopMultiGraphBase" function-name="^(clear_graphs|build_data_source|sync_components|create_graphs)$"/>
+    <rejection class="SciQLopCurve" function-name="create_graphs"/>
+    <rejection class="SciQLopPlottableInterface" function-name="^(check_first_data|data_off_view)$"/>
+    <rejection class="SciQLopNDProjectionCurves" function-name="^(check_batch_size|is_pane_curve)$"/>
     <system-include file-name="shared_ptr.h"/>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
@@ -278,7 +324,7 @@
                 <rename to="marker"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
@@ -292,7 +338,7 @@
                 <rename to="marker"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
@@ -306,7 +352,7 @@
                 <rename to="marker"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap)">
@@ -320,7 +366,7 @@
                 <rename to="marker"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,QVariantMap)">
@@ -334,7 +380,7 @@
                 <rename to="z_log_scale"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap)">
@@ -351,7 +397,7 @@
                 <rename to="sync_with"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap)">
@@ -368,7 +414,7 @@
                 <rename to="sync_with"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap)">
@@ -385,7 +431,7 @@
                 <rename to="sync_with"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,QObject*,QVariantMap)">
@@ -402,7 +448,7 @@
                 <rename to="sync_with"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,QVariantMap)">
@@ -422,7 +468,7 @@
                 <rename to="y_bins_log"/>
             </modify-argument>
             <modify-argument index="8">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,QObject*,QVariantMap)">
@@ -445,7 +491,7 @@
                 <rename to="sync_with"/>
             </modify-argument>
             <modify-argument index="8">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
@@ -771,7 +817,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,int,QVariantMap)">
@@ -791,7 +837,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="8">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap)">
@@ -808,7 +854,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="projection(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap)">
@@ -822,7 +868,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="5">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,PlotType,int,QVariantMap)">
@@ -842,7 +888,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="9">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int,QVariantMap)">
@@ -862,7 +908,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,QObject*,int,QVariantMap)">
@@ -885,7 +931,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="8">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int,QVariantMap)">
@@ -905,7 +951,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="7">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,QObject*,int,QVariantMap)">
@@ -928,7 +974,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="8">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int,QVariantMap)">
@@ -945,7 +991,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="6">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,PlotType,int,QVariantMap)">
@@ -971,7 +1017,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="10">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,PlotType,QObject*,int,QVariantMap)">
@@ -1000,7 +1046,7 @@
                 <rename to="index"/>
             </modify-argument>
             <modify-argument index="10">
-                <rename to="metaData"/>
+                <rename to="metadata"/>
             </modify-argument>
         </modify-function>
     </object-type>

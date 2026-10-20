@@ -1073,4 +1073,8 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **A data function's changes don't show.** The same range is not fetched twice. Call `graph.invalidate_cache()` after changing what the function returns.
 
+**`unsupported keyword 'metaData'`.** The keyword is `metadata=` now, like every other snake_case argument.
+
+**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
+
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.

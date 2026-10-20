@@ -22,7 +22,8 @@ def test_enum_is_an_int_enum_listing_every_member(name):
     e = getattr(SciQLopPlots, name)
     assert issubclass(e, enum.IntEnum)
     assert not issubclass(e, enum.Flag)
-    assert len(list(e)) == len(e.__members__)
+    # Aliases (LineTermination.SPikeArrow) share a value and are left out of iteration.
+    assert len(list(e)) == len({m.value for m in e.__members__.values()})
 
 
 def test_int_comparisons_keep_working():
