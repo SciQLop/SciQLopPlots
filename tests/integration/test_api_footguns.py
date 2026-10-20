@@ -130,11 +130,6 @@ class TestUnsupportedCallsRaise:  # task 7, findings 1.14, 2.7
         with pytest.raises(NotImplementedError, match="set_data"):
             timeline.set_data(X, X)
 
-    def test_legend_position_raises_until_it_exists(self, plot):
-        from PySide6.QtCore import QPointF
-        with pytest.raises(NotImplementedError, match="set_position"):
-            plot.legend().set_position(QPointF(0, 0))
-
     def test_a_supported_call_still_works(self, plot):
         graph = plot.plot(X, X)
         graph.set_data(X, 2 * X)

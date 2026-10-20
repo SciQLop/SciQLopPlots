@@ -509,6 +509,26 @@ print(plot.legend().row_labels())                  # ['median', 'min', 'max', 'e
 - `set_in_legend(False)` also holds after a member leaves its group.
 - `legend.row_labels()` and `legend.row_rect(i)` tell what the legend shows and where, for tests.
 
+Place the legend in a corner, at a point, or with its entries side by side:
+
+```python
+import numpy as np
+from PySide6.QtCore import QPointF, Qt
+from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+for k in range(3):
+    plot.plot(x, np.sin(x + k), labels=[f"phase {k}"])
+
+plot.legend().set_alignment(Qt.AlignBottom | Qt.AlignLeft)   # a corner or an edge
+plot.legend().set_position(QPointF(0.6, 0.1))   # top-left corner, in fractions of the plot area
+plot.legend().set_columns(3)                    # entries side by side
+
+panel = SciQLopMultiPlotPanel()
+panel.set_legend_visible(False)                 # every plot's legend, later ones too
+```
+
 ## Overlays: spans, lines and text
 
 ```python

@@ -59,6 +59,18 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
             &SciQLopMultiPlotPanel::plot_list_changed);
     connect(_container, &SciQLopPlotContainer::plot_added, this,
             &SciQLopMultiPlotPanel::plot_added);
+    connect(_container, &SciQLopPlotContainer::plot_added, this,
+            [this](SciQLopPlotInterface* plot)
+            {
+                if (auto* legend = plot ? plot->legend() : nullptr)
+                    legend->set_visible(m_legend_visible);
+            });
+    connect(this, &SciQLopMultiPlotPanel::panel_added, this,
+            [this](SciQLopPlotPanelInterface* panel)
+            {
+                if (auto* sub_panel = qobject_cast<SciQLopMultiPlotPanel*>(panel))
+                    sub_panel->set_legend_visible(m_legend_visible);
+            });
     connect(_container, &SciQLopPlotContainer::plot_removed, this,
             &SciQLopMultiPlotPanel::plot_removed);
     connect(_container, &SciQLopPlotContainer::plot_inserted, this,
@@ -739,6 +751,17 @@ void SciQLopMultiPlotPanel::_on_item_canceled(QCustomPlot*)
 {
     _clear_preview_spans();
     Q_EMIT span_creation_canceled();
+}
+
+void SciQLopMultiPlotPanel::set_legend_visible(bool visible)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_legend_visible(visible));
+    m_legend_visible = visible;
+    for (const auto& plot : plots())
+        if (auto* legend = plot ? plot->legend() : nullptr)
+            legend->set_visible(visible);
+    for (auto* sub_panel : findChildren<SciQLopMultiPlotPanel*>())
+        sub_panel->set_legend_visible(visible);
 }
 
 void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)

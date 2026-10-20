@@ -89,6 +89,22 @@ public:
         return {};
     }
 
+    //! Puts the legend in a corner or on an edge of the plot area.
+    inline virtual void set_alignment(Qt::Alignment) { WARN_ABSTRACT_METHOD; }
+    inline virtual Qt::Alignment alignment() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return {};
+    }
+
+    //! Entries side by side, \a columns per row; 1 stacks them.
+    inline virtual void set_columns(int) { WARN_ABSTRACT_METHOD; }
+    inline virtual int columns() const
+    {
+        WARN_ABSTRACT_METHOD;
+        return 1;
+    }
+
     //! Where row \a row is drawn, in the plot widget's coordinates; empty if there is no such row.
     inline virtual QRect row_rect(int row) const
     {

@@ -75,6 +75,7 @@ class SciQLopMultiPlotPanel : public SciQLopPlotPanelInterface, public SciQLopEx
     std::map<QCustomPlot*, QList<QMetaObject::Connection>> m_per_plot_connections;
     QPointer<SciQLopTheme> m_theme;
     QList<QMetaObject::Connection> m_theme_connections;                   // plot_added/panel_added
+    bool m_legend_visible = true;
 
     void _install_span_creator(SciQLopPlot* plot);
     void _uninstall_span_creator(SciQLopPlot* plot);
@@ -330,6 +331,9 @@ public:
     Qt::KeyboardModifier span_creation_modifier() const { return m_span_creation_modifier; }
 
     void set_theme(SciQLopTheme* theme);
+    //! Shows or hides the legend of every plot, sub-panels and plots added later included.
+    void set_legend_visible(bool visible);
+    inline bool legend_visible() const noexcept { return m_legend_visible; }
     SciQLopTheme* theme() const { return m_theme; }
 
     void add_inspector_extension(InspectorExtension* extension);

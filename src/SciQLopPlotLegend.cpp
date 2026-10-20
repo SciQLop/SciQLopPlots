@@ -45,15 +45,80 @@ void SciQLopPlotLegend::set_visible(bool visible)
     }
 }
 
-QPointF SciQLopPlotLegend::position() const
+namespace
 {
-    WARN_UNSUPPORTED_FUNCTIONALITY;
-    return QPointF();
+// The legend lives in the axis rect's inset layout: its slot there holds its placement.
+std::pair<QCPLayoutInset*, int> inset_slot(QCPLegend* legend)
+{
+    auto* inset = qobject_cast<QCPLayoutInset*>(legend->layout());
+    if (inset)
+        for (int i = 0; i < inset->elementCount(); ++i)
+            if (inset->elementAt(i) == legend)
+                return { inset, i };
+    return { nullptr, -1 };
+}
 }
 
-void SciQLopPlotLegend::set_position(const QPointF&)
+QPointF SciQLopPlotLegend::position() const
 {
-    WARN_UNSUPPORTED_FUNCTIONALITY;
+    auto [inset, index] = inset_slot(m_legend);
+    if (!inset)
+        return {};
+    const QRect area = inset->rect();
+    if (area.width() <= 0 || area.height() <= 0)
+        return inset->insetRect(index).topLeft();
+    const QRect legend = m_legend->outerRect();
+    return { double(legend.x() - area.x()) / area.width(),
+             double(legend.y() - area.y()) / area.height() };
+}
+
+void SciQLopPlotLegend::set_position(const QPointF& position)
+{
+    auto [inset, index] = inset_slot(m_legend);
+    if (!inset)
+        return;
+    inset->setInsetPlacement(index, QCPLayoutInset::ipFree);
+    // A zero size: the inset layout grows it to the legend's minimum, its natural size.
+    inset->setInsetRect(index, QRectF(position, QSizeF(0., 0.)));
+    m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    Q_EMIT position_changed(position);
+}
+
+void SciQLopPlotLegend::set_alignment(Qt::Alignment alignment)
+{
+    auto [inset, index] = inset_slot(m_legend);
+    if (!inset)
+        return;
+    inset->setInsetPlacement(index, QCPLayoutInset::ipBorderAligned);
+    inset->setInsetAlignment(index, alignment);
+    m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    Q_EMIT position_changed(position());
+}
+
+Qt::Alignment SciQLopPlotLegend::alignment() const
+{
+    auto [inset, index] = inset_slot(m_legend);
+    return inset ? inset->insetAlignment(index) : Qt::Alignment {};
+}
+
+void SciQLopPlotLegend::set_columns(int columns)
+{
+    if (columns <= 1)
+    {
+        m_legend->setFillOrder(QCPLayoutGrid::foRowsFirst);
+        m_legend->setWrap(0);
+    }
+    else
+    {
+        m_legend->setFillOrder(QCPLayoutGrid::foColumnsFirst);
+        m_legend->setWrap(columns);
+    }
+    m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+}
+
+int SciQLopPlotLegend::columns() const
+{
+    return m_legend->fillOrder() == QCPLayoutGrid::foColumnsFirst ? std::max(1, m_legend->wrap()) : 1;
 }
 
 QFont SciQLopPlotLegend::font() const

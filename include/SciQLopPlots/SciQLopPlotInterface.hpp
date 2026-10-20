@@ -225,11 +225,8 @@ public:
         return nullptr;
     }
 
-    inline virtual SciQLopPlotLegendInterface* legend() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return nullptr;
-    }
+    //! None for plots without one (a widget in a panel): an answer, not an unsupported call.
+    inline virtual SciQLopPlotLegendInterface* legend() const noexcept { return nullptr; }
 
     inline virtual void set_theme(SciQLopTheme* theme) { Q_UNUSED(theme); }
     inline virtual SciQLopTheme* theme() const { return nullptr; }

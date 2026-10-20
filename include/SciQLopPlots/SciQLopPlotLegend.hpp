@@ -40,9 +40,15 @@ public:
 
     void set_visible(bool visible) override;
 
+    //! The legend's top-left corner, in fractions (0 to 1) of the plot area.
     QPointF position() const override;
+    //! Places the legend's top-left corner there, at its natural size.
+    void set_position(const QPointF& position) override;
 
-    void set_position(const QPointF&) override;
+    void set_alignment(Qt::Alignment alignment) override;
+    Qt::Alignment alignment() const override;
+    void set_columns(int columns) override;
+    int columns() const override;
 
     QFont font() const override;
     void set_font(const QFont& font) override;
