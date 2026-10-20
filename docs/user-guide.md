@@ -466,6 +466,7 @@ graph = plot.plot(x, np.column_stack([np.sin(x), np.cos(x)]), labels=["a", "b"])
 graph.set_labels(["sine", "cosine"])                   # legend names
 graph.set_colors([QColorConstants.Magenta, QColorConstants.Cyan])
 graph.set_name("trig")                                 # the graph's own name
+plot.set_title("Trigonometry")                         # a title above the plot area ("" removes it)
 plot.set_theme(SciQLopTheme.dark(plot))                # or SciQLopTheme.light(plot)
 plot.set_z_gradient(ColorGradient.Cividis)             # gradient for colour-coded data
 ```

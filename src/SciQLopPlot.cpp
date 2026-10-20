@@ -623,8 +623,45 @@ void _impl::SciQLopPlot::show_color_scale()
     if (m_color_scale->visible())
         return;
     m_color_scale->setVisible(true);
-    plotLayout()->addElement(0, 1, m_color_scale);
+    plotLayout()->addElement(axis_rect_row(), 1, m_color_scale);
     applyTheme();
+}
+
+int _impl::SciQLopPlot::axis_rect_row() const
+{
+    for (int i = 0; i < plotLayout()->elementCount(); ++i)
+        if (plotLayout()->elementAt(i) == axisRect())
+        {
+            int row = 0, column = 0;
+            plotLayout()->indexToRowCol(i, row, column);
+            return row;
+        }
+    return 0;
+}
+
+void _impl::SciQLopPlot::set_title(const QString& title)
+{
+    if (title.isEmpty())
+    {
+        if (m_title)
+        {
+            plotLayout()->remove(m_title);
+            plotLayout()->simplify();
+        }
+    }
+    else if (m_title)
+        m_title->setText(title);
+    else
+    {
+        plotLayout()->insertRow(0);
+        QFont font = this->font();
+        font.setBold(true);
+        font.setPointSizeF(font.pointSizeF() * 1.2);
+        m_title = new QCPTextElement(this, title, font);
+        plotLayout()->addElement(0, 0, m_title);
+        applyTheme();
+    }
+    replot(QCustomPlot::rpQueuedReplot);
 }
 
 void _impl::SciQLopPlot::hide_color_scale()
@@ -1481,6 +1518,15 @@ bool SciQLopPlot::save(const QString& filename, int width, int height,
     if (ext == "bmp")
         return save_bmp(filename, width, height, scale);
     throw_unknown_save_format(filename);
+}
+
+void SciQLopPlot::set_title(const QString& title)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_title(title));
+    if (title == m_impl->title())
+        return;
+    m_impl->set_title(title);
+    Q_EMIT title_changed(title);
 }
 
 void SciQLopPlot::set_equal_aspect_ratio(bool enabled) noexcept

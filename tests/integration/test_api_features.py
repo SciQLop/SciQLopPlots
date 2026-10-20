@@ -71,3 +71,53 @@ class TestPanelLegend:  # task 15, finding 4.5
         assert not later.legend().is_visible()
         panel.set_legend_visible(True)
         assert first.legend().is_visible() and later.legend().is_visible()
+
+
+def _top_band(plot, tmp_path, name):
+    """The top 40 pixel rows of a 600x400 export, as bytes: where a title draws."""
+    from PySide6.QtGui import QImage
+    path = str(tmp_path / f"{name}.png")
+    plot.save_png(path, 600, 400)
+    img = QImage(path).convertToFormat(QImage.Format_ARGB32)
+    return bytes(img.copy(0, 0, 600, 40).constBits())
+
+
+class TestPlotTitle:  # task 16, finding 4.2
+    def test_set_title(self, qtbot, plot):
+        seen = []
+        plot.title_changed.connect(seen.append)
+        plot.set_title("Run 42")
+        assert plot.title() == "Run 42"
+        assert seen == ["Run 42"]
+
+    def test_the_title_is_drawn_and_removed(self, qtbot, plot, tmp_path):
+        plot.plot(X, np.sin(X))
+        bare = _top_band(plot, tmp_path, "bare")
+        plot.set_title("Run 42")
+        assert _top_band(plot, tmp_path, "titled") != bare
+        plot.set_title("")
+        assert plot.title() == ""
+        assert _top_band(plot, tmp_path, "removed") == bare
+
+    @pytest.mark.parametrize("title_first", [True, False])
+    def test_a_colour_scale_sits_beside_the_plot_area(self, qtbot, plot, tmp_path, title_first):
+        z = np.random.rand(30, 20)
+        if title_first:
+            plot.set_title("spectrogram")
+        plot.plot(np.arange(30.), np.arange(20.), z)
+        if not title_first:
+            plot.set_title("spectrogram")
+        assert _gradient_beside_the_plot_area(plot, tmp_path, "cmap")
+        plot.set_title("")  # the colour scale stays, the title row goes
+        assert _gradient_beside_the_plot_area(plot, tmp_path, "cmap2")
+
+
+def _gradient_beside_the_plot_area(plot, tmp_path, name):
+    """Coloured pixels in the strip right of the plot area's labels (x 552-578 of 600), level
+    with the plot area: the colour bar. Put in the title's row, it collapses to a stub at the top."""
+    from PySide6.QtGui import QImage
+    path = str(tmp_path / f"{name}.png")
+    plot.save_png(path, 600, 400)
+    img = QImage(path).convertToFormat(QImage.Format_ARGB32)
+    return sum(1 for x in range(552, 578) for y in range(120, 330)
+               if img.pixelColor(x, y).saturation() > 80) > 50

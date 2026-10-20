@@ -53,6 +53,7 @@ class SciQLopPlot : public QCustomPlot
     double m_scroll_factor = 1.;
     SciQLopCrosshair* m_crosshair = nullptr;
     QCPColorScale* m_color_scale = nullptr;
+    QPointer<QCPTextElement> m_title;
     QList<SciQLopPlotAxis*> m_axes;
     QElapsedTimer m_hover_throttle_timer;
     bool m_suppress_range_signals = false;
@@ -121,6 +122,11 @@ public:
     //! Takes a scale shown by show_color_scale() back out of the layout. Do not use it
     //! on a plot with a colormap, which needs the scale.
     void hide_color_scale();
+    //! A title row above the plot area; an empty title removes it.
+    void set_title(const QString& title);
+    inline QString title() const { return m_title ? m_title->text() : QString(); }
+    //! The plot area's row: 1 under a title, 0 otherwise.
+    int axis_rect_row() const;
 
     void minimize_margins();
 
@@ -554,6 +560,17 @@ public:
     bool save_bmp(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0) override;
 
+    //! A title above the plot area; "" removes it.
+    void set_title(const QString& title);
+    inline QString title() const { return m_impl->title(); }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void title_changed(const QString& title);
+
+public:
     //! A timeline plot asks for its lanes' natural height; other plots keep QFrame's hint.
     QSize sizeHint() const override;
 
