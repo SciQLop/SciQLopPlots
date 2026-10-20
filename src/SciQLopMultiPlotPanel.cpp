@@ -616,6 +616,11 @@ bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int hei
     return saved_or_throw(save_widget_pdf(_container, filename, width, height), filename);
 }
 
+bool SciQLopMultiPlotPanel::save_svg(const QString& filename, int width, int height)
+{
+    return saved_or_throw(save_widget_svg(_container, filename, width, height), filename);
+}
+
 bool SciQLopMultiPlotPanel::save_png(const QString& filename, int width, int height,
                                      double scale, int quality)
 {

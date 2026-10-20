@@ -1057,9 +1057,12 @@ plot.plot(x, np.sin(x), labels=["sin"])
 
 plot.save_png("figure.png", 1200, 800)   # raster, width and height in pixels
 plot.save_pdf("figure.pdf")              # vector, current size
+plot.save_svg("figure.svg", 800, 500)    # vector, for the web or to edit
+plot.save("figure.svg")                  # the format follows the extension
 ```
 
 `save_jpg` and `save_bmp` also exist. Panels export all their plots together: `panel.save_pdf("panel.pdf")`.
+A save that fails raises `OSError` (a missing folder, say), an unknown extension `ValueError`.
 
 ## Performance tips
 

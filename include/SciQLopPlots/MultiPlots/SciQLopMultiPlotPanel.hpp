@@ -316,6 +316,7 @@ public:
     bool save(const QString& filename, int width = 0, int height = 0,
               double scale = 1.0, int quality = -1) override;
     bool save_pdf(const QString& filename, int width = 0, int height = 0) override;
+    bool save_svg(const QString& filename, int width = 0, int height = 0) override;
     bool save_png(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0, int quality = -1) override;
     bool save_jpg(const QString& filename, int width = 0, int height = 0,

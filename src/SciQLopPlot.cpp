@@ -1487,6 +1487,11 @@ bool SciQLopPlot::save_pdf(const QString& filename, int width, int height)
     return saved_or_throw(m_impl->savePdf(filename, width, height), filename);
 }
 
+bool SciQLopPlot::save_svg(const QString& filename, int width, int height)
+{
+    return saved_or_throw(save_widget_svg(this, filename, width, height), filename);
+}
+
 bool SciQLopPlot::save_png(const QString& filename, int width, int height,
                            double scale, int quality)
 {
@@ -1511,6 +1516,8 @@ bool SciQLopPlot::save(const QString& filename, int width, int height,
     auto ext = QFileInfo(filename).suffix().toLower();
     if (ext == "pdf")
         return save_pdf(filename, width, height);
+    if (ext == "svg")
+        return save_svg(filename, width, height);
     if (ext == "png")
         return save_png(filename, width, height, scale, quality);
     if (ext == "jpg" || ext == "jpeg")

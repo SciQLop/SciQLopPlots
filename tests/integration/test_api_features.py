@@ -121,3 +121,38 @@ def _gradient_beside_the_plot_area(plot, tmp_path, name):
     img = QImage(path).convertToFormat(QImage.Format_ARGB32)
     return sum(1 for x in range(552, 578) for y in range(120, 330)
                if img.pixelColor(x, y).saturation() > 80) > 50
+
+
+class TestSvgExport:  # task 18, finding 4.7
+    @staticmethod
+    def _targets(qtbot):
+        from SciQLopPlots import SciQLopNDProjectionPlot
+        plot = SciQLopPlot()
+        plot.plot(X, np.sin(X))
+        panel = SciQLopMultiPlotPanel()
+        panel.plot(X, np.cos(X))
+        proj = SciQLopNDProjectionPlot(3)
+        for w in (plot, panel, proj):
+            qtbot.addWidget(w)
+        return {"plot": plot, "panel": panel, "projection": proj}
+
+    @pytest.mark.parametrize("kind", ["plot", "panel", "projection"])
+    @pytest.mark.parametrize("method", ["save_svg", "save"])
+    def test_writes_an_svg(self, qtbot, tmp_path, kind, method):
+        targets = self._targets(qtbot)
+        path = tmp_path / f"{kind}.svg"
+        assert getattr(targets[kind], method)(str(path), 400, 300) is True
+        text = path.read_text()
+        assert "<svg" in text and "</svg>" in text
+        if kind != "projection":  # an empty projection draws only its frames
+            assert "<polyline" in text  # the graph, as vector lines
+
+    def test_a_bad_path_raises(self, qtbot, tmp_path):
+        targets = self._targets(qtbot)
+        with pytest.raises(OSError, match="failed to save"):
+            targets["plot"].save_svg(str(tmp_path / "no_such_dir" / "x.svg"))
+
+    def test_unknown_format_lists_svg(self, qtbot, tmp_path):
+        targets = self._targets(qtbot)
+        with pytest.raises(ValueError, match="svg"):
+            targets["plot"].save(str(tmp_path / "x.tiff"))

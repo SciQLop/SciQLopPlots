@@ -23,7 +23,9 @@
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
 #include <stdexcept>
 
+#include <QFile>
 #include <QFileInfo>
+#include <QSvgGenerator>
 #include <QLayout>
 #include <QPdfWriter>
 #include <QPixmap>
@@ -130,6 +132,34 @@ bool save_widget_pdf(QWidget* w, const QString& filename, int width, int height)
     return true;
 }
 
+bool save_widget_svg(QWidget* w, const QString& filename, int width, int height)
+{
+    const int totalW = (width > 0) ? width : w->width();
+    const int totalH = (height > 0) ? height : w->height();
+    if (totalW <= 0 || totalH <= 0)
+        return false;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+    QSvgGenerator generator;
+    generator.setOutputDevice(&file);
+    generator.setSize(QSize(totalW, totalH));
+    generator.setViewBox(QRect(0, 0, totalW, totalH));
+
+    QCPPainter painter(&generator);
+    if (!painter.isActive())
+        return false;
+    painter.setMode(QCPPainter::pmVectorized);
+    painter.setMode(QCPPainter::pmNoCaching);
+
+    const QRect target(0, 0, totalW, totalH);
+    fill_background(w, &painter, target);
+    paint_widget(w, &painter, target, SciQLopExportTarget::Vector);
+    painter.end();
+    return true;
+}
+
 bool save_widget_raster(QWidget* w, const QString& filename, const char* format, int width,
                         int height, double scale, int quality)
 {
@@ -162,6 +192,8 @@ bool save_widget(QWidget* w, const QString& filename, int width, int height, dou
     const auto ext = QFileInfo(filename).suffix().toLower();
     if (ext == "pdf")
         return save_widget_pdf(w, filename, width, height);
+    if (ext == "svg")
+        return save_widget_svg(w, filename, width, height);
     if (ext == "png")
         return save_widget_raster(w, filename, "PNG", width, height, scale, quality);
     if (ext == "jpg" || ext == "jpeg")
@@ -183,5 +215,5 @@ void throw_unknown_save_format(const QString& filename)
 {
     throw std::invalid_argument("can't save " + filename.toStdString() + ": unknown format '"
                              + QFileInfo(filename).suffix().toStdString()
-                             + "' (pdf, png, jpg or bmp)");
+                             + "' (pdf, svg, png, jpg or bmp)");
 }

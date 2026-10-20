@@ -595,6 +595,11 @@ bool SciQLopNDProjectionPlot::save_pdf(const QString& filename, int width, int h
     return saved_or_throw(save_widget_pdf(this, filename, width, height), filename);
 }
 
+bool SciQLopNDProjectionPlot::save_svg(const QString& filename, int width, int height)
+{
+    return saved_or_throw(save_widget_svg(this, filename, width, height), filename);
+}
+
 bool SciQLopNDProjectionPlot::save_png(const QString& filename, int width, int height,
                                        double scale, int quality)
 {

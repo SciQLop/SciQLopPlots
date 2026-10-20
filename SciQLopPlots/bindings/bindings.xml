@@ -578,6 +578,9 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <modify-function signature="save_svg(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <modify-function signature="save(const QString&amp;,int,int,double,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
@@ -622,6 +625,9 @@
     </object-type>
     <object-type name="SciQLopNDProjectionPane" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <modify-function signature="save_svg(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <modify-function signature="save(const QString&amp;,int,int,double,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
@@ -1126,6 +1132,9 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="save_svg(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <modify-function signature="save(const QString&amp;,int,int,double,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>

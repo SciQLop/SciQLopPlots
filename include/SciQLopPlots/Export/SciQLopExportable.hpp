@@ -64,9 +64,10 @@ void export_children(const QWidget* parent, const QList<QWidget*>& children, QPa
 
 // Save a widget, with every plot inside it, to a file. A size of 0 keeps the widget's.
 bool save_widget_pdf(QWidget* w, const QString& filename, int width, int height);
+bool save_widget_svg(QWidget* w, const QString& filename, int width, int height);
 bool save_widget_raster(QWidget* w, const QString& filename, const char* format, int width,
                         int height, double scale, int quality);
-// The format follows the extension: pdf, png, jpg/jpeg or bmp.
+// The format follows the extension: pdf, svg, png, jpg/jpeg or bmp.
 bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
                  int quality);
 
