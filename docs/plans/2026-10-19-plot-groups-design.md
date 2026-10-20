@@ -154,6 +154,11 @@ shue.delete()                # members get their rows back
 - **Items as members.** Needs items in the tree (none are listed, `Registrations.cpp:133-149`) and NeoQCP's group to accept `QCPAbstractItem`s.
 - **Dragging a group.** Python-held item wrappers don't implement `move()`, only their NeoQCP-side objects do (`SciQLopPlotItem.hpp:168` vs `SciQLopShapesItems.hpp:78`). Straight lines bypass `move()` (`SciQLopStraightLines.cpp:25-51`). First step: generic item dragging in NeoQCP with a pixel-delta `move`.
 - **`remove_group(g, remove_members=True)`.**
+- **Minor review notes, not acted on** (no measured cost yet):
+  - `QCPPlottableGroup::members()` builds a list on each call, a few times per row paint. Iterate `mMembers` inside the class if the legend shows up in a profile.
+  - `projection_piece_label` scans the projection's curves on every tree repaint. Cache the pane per component if trees get large.
+  - Mutators queue off-thread (`remove`, `set_visible`, `set_name`, `set_in_legend`) while factories and validating calls throw (`group`, `add`, `remove_group`), as for SciQLop#147. A read right after a queued call from another thread sees the old value.
+  - A group holding a member deleted directly with `delete` (not `removePlottable`) keeps an empty row until the next change. NeoQCP doesn't support direct deletes anyway.
 
 ## Tests (written first)
 
