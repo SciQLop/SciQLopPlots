@@ -69,3 +69,8 @@ bool save_widget_raster(QWidget* w, const QString& filename, const char* format,
 // The format follows the extension: pdf, png, jpg/jpeg or bmp.
 bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
                  int quality);
+
+// A failed save throws (OSError in Python, ValueError for an unknown format): a False return
+// was easy to miss.
+bool saved_or_throw(bool saved, const QString& filename);
+[[noreturn]] void throw_unknown_save_format(const QString& filename);

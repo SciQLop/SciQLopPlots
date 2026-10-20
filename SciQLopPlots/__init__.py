@@ -172,6 +172,10 @@ def _patch_sciqlop_plot(cls):
         raise ValueError(f"unsupported graph_type {graph_type!r} for single-arg plot()")
 
     def plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
+        if len(args) == 3 and graph_type not in (None, GraphType.ColorMap):
+            # Three arrays always made a colour map: an explicit other type was ignored.
+            raise ValueError(f"3 arrays (x, y, z) make a colour map, not a {graph_type.name}: "
+                             "drop graph_type or pass GraphType.ColorMap")
         graph_type = graph_type or GraphType.Line
         # Only colormaps and 2D histograms take name= natively (#114).
         takes_name = graph_type in (GraphType.ColorMap, GraphType.Histogram2D) or len(args) == 3

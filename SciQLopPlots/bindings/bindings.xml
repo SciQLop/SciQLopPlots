@@ -52,6 +52,20 @@
     <rejection class="SciQLopPlottableInterface" function-name="^(check_first_data|data_off_view)$"/>
     <rejection class="SciQLopNDProjectionCurves" function-name="^(check_batch_size|is_pane_curve)$"/>
     <system-include file-name="shared_ptr.h"/>
+    <!-- A failed save is an OSError, an unknown format a ValueError (API review 2026-10-20, task 13):
+         shiboken's own handling would make both RuntimeErrors. -->
+    <template name="save_raises_oserror">
+        try {
+            bool %0 = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+            %PYARG_0 = %CONVERTTOPYTHON[bool](%0);
+        } catch (const std::invalid_argument&amp; e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_OSError, e.what());
+            return nullptr;
+        }
+    </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
     <load-typesystem name="typesystem_widgets.xml" generate="no" />
@@ -564,6 +578,21 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_pdf(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_png(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_jpg(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_bmp(const QString&amp;,int,int,double)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
     </object-type>
 
@@ -593,6 +622,21 @@
     </object-type>
     <object-type name="SciQLopNDProjectionPane" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_pdf(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_png(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_jpg(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_bmp(const QString&amp;,int,int,double)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <modify-function signature="set_pane_names(const QStringList&amp;)">
             <inject-code class="target" position="beginning">
                 try {
@@ -1082,6 +1126,21 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_pdf(const QString&amp;,int,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_png(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_jpg(const QString&amp;,int,int,double,int)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
+        <modify-function signature="save_bmp(const QString&amp;,int,int,double)">
+            <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
+        </modify-function>
         <!-- datetimes go through the PyObject overload below: QDateTime would read them as local time. -->
         <modify-function signature="set_time_axis_range(const QDateTime&amp;,const QDateTime&amp;)" remove="all"/>
         <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,

@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
+#include <stdexcept>
 
 #include <QFileInfo>
 #include <QLayout>
@@ -167,5 +168,20 @@ bool save_widget(QWidget* w, const QString& filename, int width, int height, dou
         return save_widget_raster(w, filename, "JPG", width, height, scale, quality);
     if (ext == "bmp")
         return save_widget_raster(w, filename, "BMP", width, height, scale, -1);
-    return false;
+    throw_unknown_save_format(filename);
+}
+
+bool saved_or_throw(bool saved, const QString& filename)
+{
+    if (!saved)
+        throw std::runtime_error("failed to save " + filename.toStdString()
+                                 + ": check that its folder exists and is writable");
+    return true;
+}
+
+void throw_unknown_save_format(const QString& filename)
+{
+    throw std::invalid_argument("can't save " + filename.toStdString() + ": unknown format '"
+                             + QFileInfo(filename).suffix().toStdString()
+                             + "' (pdf, png, jpg or bmp)");
 }

@@ -601,31 +601,31 @@ void SciQLopMultiPlotPanel::dropEvent(QDropEvent* event)
 
 bool SciQLopMultiPlotPanel::save_pdf(const QString& filename, int width, int height)
 {
-    return save_widget_pdf(_container, filename, width, height);
+    return saved_or_throw(save_widget_pdf(_container, filename, width, height), filename);
 }
 
 bool SciQLopMultiPlotPanel::save_png(const QString& filename, int width, int height,
                                      double scale, int quality)
 {
-    return save_widget_raster(_container, filename, "PNG", width, height, scale, quality);
+    return saved_or_throw(save_widget_raster(_container, filename, "PNG", width, height, scale, quality), filename);
 }
 
 bool SciQLopMultiPlotPanel::save_jpg(const QString& filename, int width, int height,
                                      double scale, int quality)
 {
-    return save_widget_raster(_container, filename, "JPG", width, height, scale, quality);
+    return saved_or_throw(save_widget_raster(_container, filename, "JPG", width, height, scale, quality), filename);
 }
 
 bool SciQLopMultiPlotPanel::save_bmp(const QString& filename, int width, int height,
                                      double scale)
 {
-    return save_widget_raster(_container, filename, "BMP", width, height, scale, -1);
+    return saved_or_throw(save_widget_raster(_container, filename, "BMP", width, height, scale, -1), filename);
 }
 
 bool SciQLopMultiPlotPanel::save(const QString& filename, int width, int height,
                                  double scale, int quality)
 {
-    return save_widget(_container, filename, width, height, scale, quality);
+    return saved_or_throw(save_widget(_container, filename, width, height, scale, quality), filename);
 }
 
 void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)

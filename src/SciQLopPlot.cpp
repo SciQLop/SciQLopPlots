@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/ColorScaleController.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include <stdexcept>
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
@@ -41,6 +42,19 @@
 #include <cpp_utils/containers/algorithms.hpp>
 #include <limits>
 #include <utility>
+
+namespace
+{
+// A plot holds one colour map; a second used to come back as None.
+template <typename ColorMap>
+ColorMap* the_only_color_map(ColorMap* created)
+{
+    if (!created)
+        throw std::runtime_error("this plot already has a colour map and holds only one: remove "
+                                 "it first (remove_plottable) or put the new one on another plot");
+    return created;
+}
+}
 
 namespace _impl
 {
@@ -1050,8 +1064,7 @@ SciQLopWaterfallGraphRemote* SciQLopPlot::add_remote_waterfall(const QStringList
 
 SciQLopColorMapRemote* SciQLopPlot::add_remote_color_map(const QString& name)
 {
-    auto* g = m_impl->add_remote_color_map(name);
-    if (g)
+    auto* g = the_only_color_map(m_impl->add_remote_color_map(name));
     {
         _configure_color_map(g, false, false);
         connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
@@ -1230,9 +1243,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
                                                  const SciQLopPyBuffer& z, QString name, bool y_log_scale,
                                                  bool z_log_scale, QVariantMap metaData)
 {
-    auto cm = m_impl->add_color_map(name, y_log_scale, z_log_scale);
-    if (!cm)
-        return nullptr;
+    auto cm = the_only_color_map(m_impl->add_color_map(name, y_log_scale, z_log_scale));
     cm->set_meta_data(metaData);
     try
     {
@@ -1369,8 +1380,8 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
                                                  QObject* sync_with, QVariantMap metaData)
 {
     SciQLopColorMapInterface* plotable = nullptr;
-    plotable = m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale);
-    if (plotable)
+    plotable = the_only_color_map(
+        m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale));
     {
         plotable->set_meta_data(metaData);
         _configure_color_map(plotable, y_log_scale, z_log_scale);
@@ -1436,25 +1447,25 @@ QList<SciQLopPlottableInterface*> SciQLopPlot::plottables() const noexcept
 
 bool SciQLopPlot::save_pdf(const QString& filename, int width, int height)
 {
-    return m_impl->savePdf(filename, width, height);
+    return saved_or_throw(m_impl->savePdf(filename, width, height), filename);
 }
 
 bool SciQLopPlot::save_png(const QString& filename, int width, int height,
                            double scale, int quality)
 {
-    return m_impl->savePng(filename, width, height, scale, quality);
+    return saved_or_throw(m_impl->savePng(filename, width, height, scale, quality), filename);
 }
 
 bool SciQLopPlot::save_jpg(const QString& filename, int width, int height,
                            double scale, int quality)
 {
-    return m_impl->saveJpg(filename, width, height, scale, quality);
+    return saved_or_throw(m_impl->saveJpg(filename, width, height, scale, quality), filename);
 }
 
 bool SciQLopPlot::save_bmp(const QString& filename, int width, int height,
                            double scale)
 {
-    return m_impl->saveBmp(filename, width, height, scale);
+    return saved_or_throw(m_impl->saveBmp(filename, width, height, scale), filename);
 }
 
 bool SciQLopPlot::save(const QString& filename, int width, int height,
@@ -1469,7 +1480,7 @@ bool SciQLopPlot::save(const QString& filename, int width, int height,
         return save_jpg(filename, width, height, scale, quality);
     if (ext == "bmp")
         return save_bmp(filename, width, height, scale);
-    return false;
+    throw_unknown_save_format(filename);
 }
 
 void SciQLopPlot::set_equal_aspect_ratio(bool enabled) noexcept

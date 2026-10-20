@@ -82,7 +82,9 @@ class TestPlotSaveDispatch:
 
     def test_save_unknown_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.xyz")
-        assert plot.save(path) is False
+        # Raises since the API review (2026-10-20, task 13): a False return was easy to miss.
+        with pytest.raises(ValueError, match="unknown format 'xyz'"):
+            plot.save(path)
 
 
 @pytest.fixture
@@ -143,7 +145,9 @@ class TestPanelSaveDispatch:
 
     def test_save_unknown_extension(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.xyz")
-        assert panel_with_plots.save(path) is False
+        # Raises since the API review (2026-10-20, task 13): a False return was easy to miss.
+        with pytest.raises(ValueError, match="unknown format 'xyz'"):
+            panel_with_plots.save(path)
 
 
 class TestPanelScrolledContent:

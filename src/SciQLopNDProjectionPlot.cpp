@@ -587,28 +587,28 @@ void SciQLopNDProjectionPlot::export_paint(QPainter* painter, const QRect& targe
 bool SciQLopNDProjectionPlot::save(const QString& filename, int width, int height, double scale,
                                    int quality)
 {
-    return save_widget(this, filename, width, height, scale, quality);
+    return saved_or_throw(save_widget(this, filename, width, height, scale, quality), filename);
 }
 
 bool SciQLopNDProjectionPlot::save_pdf(const QString& filename, int width, int height)
 {
-    return save_widget_pdf(this, filename, width, height);
+    return saved_or_throw(save_widget_pdf(this, filename, width, height), filename);
 }
 
 bool SciQLopNDProjectionPlot::save_png(const QString& filename, int width, int height,
                                        double scale, int quality)
 {
-    return save_widget_raster(this, filename, "PNG", width, height, scale, quality);
+    return saved_or_throw(save_widget_raster(this, filename, "PNG", width, height, scale, quality), filename);
 }
 
 bool SciQLopNDProjectionPlot::save_jpg(const QString& filename, int width, int height,
                                        double scale, int quality)
 {
-    return save_widget_raster(this, filename, "JPG", width, height, scale, quality);
+    return saved_or_throw(save_widget_raster(this, filename, "JPG", width, height, scale, quality), filename);
 }
 
 bool SciQLopNDProjectionPlot::save_bmp(const QString& filename, int width, int height,
                                        double scale)
 {
-    return save_widget_raster(this, filename, "BMP", width, height, scale, -1);
+    return saved_or_throw(save_widget_raster(this, filename, "BMP", width, height, scale, -1), filename);
 }
