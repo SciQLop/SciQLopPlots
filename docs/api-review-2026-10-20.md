@@ -121,3 +121,20 @@ rules holds in some classes and not in others.
 2. **Footguns:** `graph_type` vs arity raises (3.2), data-callback errors surfaced (3.3), stubs raise `NotImplementedError` (5.8), projection axes (2.2), item ownership (1.1).
 3. **Features with the most demand:** fill/bands/error bars (4.1), legend placement and a panel legend (2.1, 4.5), title (4.2), 1-D histogram (4.3).
 4. **Unification, one at a time:** dispatch table (5.4), `.on` from conventions (5.1), `save` (5.5), drawn-object base and `remove` (5.2, 5.3), spans (5.6).
+
+## Progress
+
+**Phase 1, hygiene: done** (47801cd). `__all__`; `m_*` fields and plumbing hidden; snake_case twins for the camelCase names; `SciQLopPlotRange` assignment, UTC and millisecond fixes; `unity()` gone, `SpikeArrow`. One deliberate break: `metaData=` is `metadata=`, with no shim, because a Python shim hid shiboken's signature listing on bad calls.
+
+**Phase 2, footguns: done**, checked against SciQLop's full suite (4690 tests) and the four plugins using SciQLopPlots (718 tests).
+
+| Task | Outcome |
+| --- | --- |
+| 7 Unsupported calls | Raise `NotImplementedError` from Python (shiboken's `storeErrorOrPrint`, safe in `noexcept` stubs); from C++ they print. Stubs that were hooks or honest defaults became plain defaults (behaviour hooks, a plottable's axes, the dummy axis's selection). The pixmap item got the geometry it lacked. |
+| 8 Arity vs `graph_type` | `DeprecationWarning` instead of an error: SciQLop's XY panels pass `ParametricCurve` with three arrays. An error at 1.0. |
+| 9 Data-callback errors | `graph.fetch_failed(message)`; a failed range is not recorded as loaded. |
+| 10 Projection axes | Rejected: `x_axis()` returning None means "not on the panel's x axis", and the panel's x sync relies on it. |
+| 11 `name` | Deferred to 1.0, done with SciQLop: `name()` methods everywhere was chosen, but SciQLop reads `impl.name` as a property on panels. |
+| 12 Item factories | Moved to phase 4, with `plot.remove(x)` and one ownership model. |
+| 13 `save()` | Raises `OSError("failed to save ...")`, `ValueError` for an unknown format. |
+| (found) | A second colour map on a plot raised nothing and returned None; it raises now. |
