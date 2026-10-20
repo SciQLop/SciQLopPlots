@@ -68,4 +68,12 @@ def set_graph_data(panel, model, plot_index):
     if plottables:
         x = np.linspace(0, 10, 200, dtype=np.float64)
         y = np.sin(x + np.random.uniform(0, 2 * np.pi)).astype(np.float64)
+        from SciQLopPlots import SciQLopColorMapInterface
+        if isinstance(plottables[0], SciQLopColorMapInterface):
+            # A colour map takes (x, y, z): an (x, y) call is refused, not silently dropped.
+            try:
+                plottables[0].set_data(x, y)
+            except NotImplementedError:
+                return
+            raise AssertionError("set_data(x, y) on a colour map was accepted")
         plottables[0].set_data(x, y)
