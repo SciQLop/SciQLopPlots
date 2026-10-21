@@ -373,6 +373,8 @@ hist = plot.histogram(values, bins=30)
 plot.time_axis().set_range(0.0, 50.0)
 ```
 
+A `SciQLopTimeSeriesPlot` cannot hold a histogram: its x axis is the time. `histogram` and `bars` raise `NotImplementedError` there. Use a `SciQLopPlot`, or `panel.histogram`, which makes one.
+
 Data that is already binned goes through `plot.bars(edges, heights)`. There must be one more edge than there are heights. A 2-D `heights` gives one step outline per column.
 
 ```python

@@ -271,3 +271,8 @@ An earlier draft claimed that `SciQLopNDProjectionPlot` creates a second hidden 
 - A callback batch with the wrong number of arrays now emits `fetch_failed` instead of vanishing. This is a side fix, shared with bands and error bars.
 - NeoQCP's async pipeline was fixed for jobs started from a `finished()` handler.
 - `plot.bars(edges, heights)` reports its bar count through `bins()`.
+- The inspector has a "Fill color" row only. There is no error-bar row.
+- A dense error-bar band keeps its plain colour when the graph is selected.
+- An empty data window keeps fills and error bars. A non-empty narrower one still drops them.
+- `SciQLopTimeSeriesPlot` does not host histograms: its x axis is time. Use a plain plot or `panel.histogram`.
+- Histograms are not selectable in v1: a click on a bar selects nothing.
