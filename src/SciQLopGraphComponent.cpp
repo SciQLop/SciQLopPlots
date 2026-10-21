@@ -314,3 +314,120 @@ void SciQLopGraphComponent::_apply_legend_visibility_style(bool visible)
         li->setSelectedTextColor(c);
     }
 }
+
+std::optional<MultiGraphRef> SciQLopGraphComponent::multi_ref() const
+{
+    const auto variant = to_variant();
+    if (const auto* ref = std::get_if<MultiGraphRef>(&variant); ref && ref->graph)
+        return *ref;
+    return std::nullopt;
+}
+
+int SciQLopGraphComponent::sibling_index(SciQLopGraphComponentInterface* other) const
+{
+    const auto* sibling = qobject_cast<SciQLopGraphComponent*>(other);
+    const auto mine = multi_ref();
+    const auto theirs = sibling ? sibling->multi_ref() : std::nullopt;
+    if (!mine || !theirs || mine->graph != theirs->graph)
+        throw std::invalid_argument("the other component must belong to the same graph");
+    return theirs->componentIndex;
+}
+
+void SciQLopGraphComponent::set_fill_to_value(double value)
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    ref->graph->setComponentFill(ref->componentIndex, value);
+    Q_EMIT fill_changed();
+    Q_EMIT replot();
+}
+
+void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* other)
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    const int target = sibling_index(other);
+    if (!ref->graph->setComponentFillBetween(ref->componentIndex, target))
+        throw std::invalid_argument("a component cannot be filled against itself");
+    Q_EMIT fill_changed();
+    Q_EMIT replot();
+}
+
+void SciQLopGraphComponent::clear_fill()
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    ref->graph->clearComponentFill(ref->componentIndex);
+    Q_EMIT fill_changed();
+    Q_EMIT replot();
+}
+
+void SciQLopGraphComponent::set_fill_color(const QColor& color)
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    if (!has_fill())
+        throw std::invalid_argument("this component has no fill");
+    ref->graph->setComponentFillBrush(ref->componentIndex, QBrush(color));
+    Q_EMIT fill_changed();
+    Q_EMIT replot();
+}
+
+bool SciQLopGraphComponent::has_fill() const
+{
+    const auto ref = multi_ref();
+    return ref && ref->graph->componentFill(ref->componentIndex).has_value();
+}
+
+QColor SciQLopGraphComponent::fill_color() const
+{
+    const auto ref = multi_ref();
+    const auto fill = ref ? ref->graph->componentFill(ref->componentIndex) : std::nullopt;
+    return fill ? ref->graph->effectiveFillBrush(*fill).color() : QColor();
+}
+
+void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower,
+                                           SciQLopGraphComponentInterface* upper,
+                                           double cap_width)
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    if (!ref->graph->setComponentErrorBars(ref->componentIndex, sibling_index(lower),
+                                           sibling_index(upper), cap_width))
+        throw std::invalid_argument("error bars need three distinct components");
+    Q_EMIT error_bars_changed();
+    Q_EMIT replot();
+}
+
+void SciQLopGraphComponent::clear_error_bars()
+{
+    const auto ref = multi_ref();
+    if (!ref)
+    {
+        WARN_UNSUPPORTED_FUNCTIONALITY;
+        return;
+    }
+    ref->graph->clearComponentErrorBars(ref->componentIndex);
+    Q_EMIT error_bars_changed();
+    Q_EMIT replot();
+}

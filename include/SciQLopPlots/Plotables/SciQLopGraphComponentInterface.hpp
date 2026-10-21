@@ -124,6 +124,20 @@ public:
         return false;
     }
 
+    virtual void set_fill_to_value(double value) { WARN_ABSTRACT_METHOD; }
+    virtual void set_fill_between(SciQLopGraphComponentInterface* other) { WARN_ABSTRACT_METHOD; }
+    virtual void clear_fill() { WARN_ABSTRACT_METHOD; }
+    virtual void set_fill_color(const QColor& color) { WARN_ABSTRACT_METHOD; }
+    virtual bool has_fill() const { return false; }
+    virtual QColor fill_color() const { return {}; }
+    virtual void set_error_bars(SciQLopGraphComponentInterface* lower,
+                                SciQLopGraphComponentInterface* upper, double cap_width = 6.)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+    virtual void clear_error_bars() { WARN_ABSTRACT_METHOD; }
+    virtual int component_index() const noexcept { return -1; }
+
     inline virtual QString name() const noexcept { return this->objectName(); }
 
     inline virtual bool selected() const noexcept
@@ -157,6 +171,8 @@ signals:
     Q_SIGNAL void marker_pen_changed(const QPen& pen);
     Q_SIGNAL void marker_size_changed(qreal size);
     Q_SIGNAL void replot();
+    Q_SIGNAL void fill_changed();
+    Q_SIGNAL void error_bars_changed();
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void inspector_extensions_changed();
 };

@@ -274,6 +274,21 @@
     </value-type>
 
     <object-type name="SciQLopGraphComponentInterface" parent-management="yes">
+        <modify-function signature="set_fill_between(SciQLopGraphComponentInterface*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_fill_color(const QColor&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_error_bars(SciQLopGraphComponentInterface*,SciQLopGraphComponentInterface*,double)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="add_inspector_extension(InspectorExtension*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
@@ -317,6 +332,21 @@
             </inject-code>
         </modify-function>
         <modify-function signature="set_fill_color(int,const QColor&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_column_line_style(int,GraphLineStyle)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_column_marker_shape(int,GraphMarkerShape)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_column_in_legend(int,bool)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
             </inject-code>

@@ -33,6 +33,8 @@ class SciQLopGraphComponentDelegate : public PropertyDelegateBase
     SciQLopGraphComponentInterface* component() const;
     LineDelegate* m_lineDelegate;
 
+    void add_fill_color_row(SciQLopGraphComponentInterface* object);
+
 public:
     using compatible_type = SciQLopGraphComponentInterface;
     SciQLopGraphComponentDelegate(SciQLopGraphComponentInterface* object,

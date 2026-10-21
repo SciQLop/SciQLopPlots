@@ -22,6 +22,7 @@
 #pragma once
 
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
+#include <optional>
 #include <qcustomplot.h>
 #include <plottables/plottable-multigraph.h>
 #include <plottables/plottable-graph2.h>
@@ -96,6 +97,9 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
                     return gi;
         return nullptr;
     }
+
+    std::optional<MultiGraphRef> multi_ref() const;
+    int sibling_index(SciQLopGraphComponentInterface* other) const;
 
     void _connect_legend_visibility();
     void _apply_legend_visibility_style(bool visible);
@@ -231,6 +235,17 @@ public:
     virtual void set_visible(bool visible) noexcept override;
 
     virtual void set_name(const QString& name) noexcept override;
+
+    void set_fill_to_value(double value) override;
+    void set_fill_between(SciQLopGraphComponentInterface* other) override;
+    void clear_fill() override;
+    void set_fill_color(const QColor& color) override;
+    bool has_fill() const override;
+    QColor fill_color() const override;
+    void set_error_bars(SciQLopGraphComponentInterface* lower,
+                        SciQLopGraphComponentInterface* upper, double cap_width = 6.) override;
+    void clear_error_bars() override;
+    int component_index() const noexcept override { return m_componentIndex; }
 
     virtual void set_selected(bool selected) noexcept override;
 

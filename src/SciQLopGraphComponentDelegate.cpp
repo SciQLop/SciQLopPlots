@@ -100,5 +100,28 @@ SciQLopGraphComponentDelegate::SciQLopGraphComponentDelegate(SciQLopGraphCompone
                 sizeSpin->setValue(s);
             });
 
+    add_fill_color_row(object);
+
     append_inspector_extensions();
+}
+
+void SciQLopGraphComponentDelegate::add_fill_color_row(SciQLopGraphComponentInterface* object)
+{
+    auto* row = new QWidget(this);
+    auto* rowLayout = new QFormLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    auto* fillColor = new ColorDelegate(object->fill_color(), row);
+    rowLayout->addRow("Fill color", fillColor);
+    row->setVisible(object->has_fill());
+    m_layout->addWidget(row);
+
+    connect(fillColor, &ColorDelegate::colorChanged, object,
+            &SciQLopGraphComponentInterface::set_fill_color);
+    connect(object, &SciQLopGraphComponentInterface::fill_changed, row,
+            [object, row, fillColor]()
+            {
+                QSignalBlocker blocker(fillColor);
+                fillColor->setColor(object->fill_color());
+                row->setVisible(object->has_fill());
+            });
 }

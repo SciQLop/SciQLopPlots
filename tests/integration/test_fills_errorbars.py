@@ -1,7 +1,7 @@
 """Fills, bands and error bars (docs/plans/2026-10-21-bands-errorbars-histogram-design.md)."""
 import numpy as np
 import pytest
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QColor, QImage
 
 from SciQLopPlots import GraphLineStyle, SciQLopPlot
 
@@ -59,3 +59,56 @@ class TestColumnDecorations:
         assert g.components()[1].line_style() == GraphLineStyle.NoLine
         assert g.column_in_legend(2) is False
         assert g.column_in_legend(0) is True
+
+    def test_negative_column_raises_value_error(self, plot):
+        g = plot.line(X, np.column_stack([X, X]))
+        with pytest.raises(ValueError):
+            g.set_column_line_style(-1, GraphLineStyle.NoLine)
+        with pytest.raises(ValueError):
+            g.set_column_in_legend(-1, False)
+
+    def test_fill_color_without_a_fill_raises_value_error(self, plot):
+        g = plot.line(X, np.column_stack([X, X]))
+        with pytest.raises(ValueError):
+            g.set_fill_color(0, QColor("blue"))
+
+
+class TestComponentDecorations:
+    def test_component_fill_between(self, qtbot, plot, tmp_path):
+        g = plot.line(X, np.column_stack([np.full_like(X, 3.0), np.full_like(X, 7.0)]),
+                      colors=["red", "red"])
+        low, high = g.components()
+        low.set_fill_between(high)
+        assert low.has_fill() and low.component_index() == 0
+        plot.x_axis().set_range(0, 10)
+        plot.y_axis().set_range(0, 10)
+        img = _render(plot, tmp_path)
+        assert _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
+        low.clear_fill()
+        assert not low.has_fill()
+
+    def test_fill_between_another_graph_raises(self, plot):
+        a = plot.line(X, np.sin(X)).components()[0]
+        b = plot.line(X, np.cos(X)).components()[0]
+        with pytest.raises(ValueError):
+            a.set_fill_between(b)
+
+    def test_curve_components_raise_not_implemented(self, plot):
+        from SciQLopPlots import GraphType
+        c = plot.plot(X, np.sin(X), graph_type=GraphType.ParametricCurve).components()[0]
+        with pytest.raises(NotImplementedError):
+            c.set_fill_to_value(0.0)
+
+    def test_fill_changed_is_emitted(self, qtbot, plot):
+        comp = plot.line(X, np.sin(X)).components()[0]
+        with qtbot.waitSignal(comp.fill_changed, timeout=1000):
+            comp.set_fill_to_value(0.0)
+
+    def test_component_fill_color_and_error_bars(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        v, lo, hi = g.components()
+        v.set_fill_to_value(0.0)
+        v.set_fill_color(QColor(10, 20, 30, 90))
+        assert v.fill_color() == QColor(10, 20, 30, 90)
+        v.set_error_bars(lo, hi, 4.0)
+        v.clear_error_bars()

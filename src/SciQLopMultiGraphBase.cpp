@@ -104,7 +104,8 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
 void SciQLopMultiGraphBase::apply_preset(int column)
 {
     const auto it = _column_presets.find(column);
-    if (it == _column_presets.end() || column >= static_cast<int>(plottable_count()))
+    if (it == _column_presets.end() || column < 0
+        || column >= static_cast<int>(plottable_count()))
         return;
     const auto& preset = it->second;
     if (preset.line_style)
@@ -295,6 +296,8 @@ void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
 {
     if (!_multiGraph)
         return;
+    require(_multiGraph->componentFill(column).has_value(),
+            "column " + std::to_string(column) + " has no fill");
     _multiGraph->setComponentFillBrush(column, QBrush(color));
     Q_EMIT replot();
 }
@@ -317,18 +320,21 @@ void SciQLopMultiGraphBase::clear_error_bars(int column)
 
 void SciQLopMultiGraphBase::set_column_line_style(int column, GraphLineStyle style)
 {
+    require(column >= 0, "set_column_line_style: invalid column " + std::to_string(column));
     _column_presets[column].line_style = style;
     apply_preset(column);
 }
 
 void SciQLopMultiGraphBase::set_column_marker_shape(int column, GraphMarkerShape shape)
 {
+    require(column >= 0, "set_column_marker_shape: invalid column " + std::to_string(column));
     _column_presets[column].marker = shape;
     apply_preset(column);
 }
 
 void SciQLopMultiGraphBase::set_column_in_legend(int column, bool in_legend)
 {
+    require(column >= 0, "set_column_in_legend: invalid column " + std::to_string(column));
     _column_presets[column].in_legend = in_legend;
     apply_preset(column);
 }
