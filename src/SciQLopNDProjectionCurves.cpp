@@ -45,11 +45,16 @@ QStringList pane_labels(qsizetype panes, const QStringList& labels, const QStrin
 }
 } // namespace
 
-void SciQLopNDProjectionCurves::check_batch_size(qsizetype panes, qsizetype buffers)
+void SciQLopNDProjectionCurves::check_pane_count(qsizetype panes)
 {
     if (panes < 2)
         throw std::invalid_argument("Projection: needs at least 2 panes, got "
                                     + std::to_string(panes));
+}
+
+void SciQLopNDProjectionCurves::check_batch_size(qsizetype panes, qsizetype buffers)
+{
+    check_pane_count(panes);
     if (buffers != panes + 1 && buffers != 2 * panes && buffers != 3 * panes)
         throw std::invalid_argument("Projection: expected [t, d0..d" + std::to_string(panes - 1)
                                     + "] (" + std::to_string(panes + 1) + " buffers), or "

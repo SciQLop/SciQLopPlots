@@ -63,6 +63,8 @@ public:
     //! \throws std::invalid_argument unless \a buffers is a valid batch size for \a panes,
     //!         or if there are fewer than 2 panes.
     static void check_batch_size(qsizetype panes, qsizetype buffers);
+    //! \throws std::invalid_argument if there are fewer than 2 panes.
+    static void check_pane_count(qsizetype panes);
 
     //! Also renames every pane's legend entry: a projection is one curve.
     virtual void set_name(const QString& name) noexcept override;

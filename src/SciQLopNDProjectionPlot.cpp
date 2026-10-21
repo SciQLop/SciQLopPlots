@@ -333,6 +333,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::add_reference_curve(
     const QList<SciQLopPyBuffer>& dimensions, const QString& label, const QColor& color)
 {
     const auto n = m_plots.size();
+    SciQLopNDProjectionCurves::check_pane_count(n);
     const bool with_time = dimensions.size() == n + 1;
     if (dimensions.size() != n && !with_time)
         return nullptr;

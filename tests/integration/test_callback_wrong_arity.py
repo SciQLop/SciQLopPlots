@@ -57,3 +57,12 @@ def test_one_pane_projection_reports_its_batches(qtbot):
     with qtbot.waitSignal(g.fetch_failed, timeout=5000) as blocker:
         _fetch(g)
     assert "at least 2 panes" in blocker.args[0]
+
+
+def test_one_pane_reference_curve_raises_and_builds_nothing(qtbot):
+    proj = SciQLopNDProjectionPlot(1)
+    qtbot.addWidget(proj)
+    t = np.linspace(0.0, 10.0, 200)
+    with pytest.raises(ValueError, match="at least 2 panes"):
+        proj.add_reference_curve([t, np.cos(t)], label="ref")
+    assert proj.plottables() == []

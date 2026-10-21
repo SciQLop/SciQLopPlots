@@ -162,6 +162,7 @@ public:
      *        takes it -- time first followed by one buffer per subplot. Only the
      *        latter carries time, so only it can be time-coloured or time-marked.
      * \return The new curve, or nullptr on any other buffer count.
+     * \throws std::invalid_argument with fewer than 2 subplots.
      */
     SciQLopGraphInterface* add_reference_curve(
         const QList<SciQLopPyBuffer>& dimensions,
