@@ -30,13 +30,22 @@ def _xyz():
     return (x, y, z), "new_data_3d"
 
 
-# (factory(plot) -> remote graph, make_data() -> (set_data args, new_data signal))
+def _x(plot):
+    return plot.x_axis()
+
+
+def _time(plot):
+    return plot.time_axis()
+
+
+# (factory(plot) -> remote graph, make_data() -> (set_data args, new_data signal),
+#  the axis whose range it fetches: a histogram's x holds values, so it follows time)
 CASES = [
-    pytest.param(lambda p: p.add_remote_line_graph(["B"]), _xy, id="line"),
-    pytest.param(lambda p: p.add_remote_curve(["c"]), _xy, id="curve"),
-    pytest.param(lambda p: p.add_remote_waterfall(["w"]), _xy_multi, id="waterfall"),
-    pytest.param(lambda p: p.add_remote_color_map("cm"), _xyz, id="colormap"),
-    pytest.param(lambda p: p.add_remote_histogram2d("h"), _xy, id="histogram2d"),
+    pytest.param(lambda p: p.add_remote_line_graph(["B"]), _xy, _x, id="line"),
+    pytest.param(lambda p: p.add_remote_curve(["c"]), _xy, _x, id="curve"),
+    pytest.param(lambda p: p.add_remote_waterfall(["w"]), _xy_multi, _x, id="waterfall"),
+    pytest.param(lambda p: p.add_remote_color_map("cm"), _xyz, _x, id="colormap"),
+    pytest.param(lambda p: p.add_remote_histogram2d("h"), _xy, _time, id="histogram2d"),
 ]
 
 
@@ -46,28 +55,49 @@ def _channel(plot, factory):
     return g, g.remote_channel()
 
 
-@pytest.mark.parametrize("factory,make_data", CASES)
-def test_request_emitted_on_range_change(qtbot, plot, factory, make_data):
+@pytest.mark.parametrize("factory,make_data,fetch_axis", CASES)
+def test_request_emitted_on_range_change(qtbot, plot, factory, make_data, fetch_axis):
     _, ch = _channel(plot, factory)
     requests = []
     ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
-    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    fetch_axis(plot).set_range(SciQLopPlotRange(10.0, 20.0))
     qtbot.waitUntil(lambda: len(requests) > 0, timeout=2000)
     assert requests[-1] == (10.0, 20.0)
 
 
-@pytest.mark.parametrize("factory,make_data", CASES)
-def test_set_data_round_trips_to_new_data(qtbot, plot, factory, make_data):
+@pytest.mark.parametrize("factory,make_data,fetch_axis", CASES)
+def test_set_data_round_trips_to_new_data(qtbot, plot, factory, make_data, fetch_axis):
     _, ch = _channel(plot, factory)
     args, signal = make_data()
     ch.data_requested.connect(lambda r: ch.set_data(*args))
     got = []
     getattr(ch, signal).connect(lambda *bufs: got.append([np.asarray(b) for b in bufs]))
-    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    fetch_axis(plot).set_range(SciQLopPlotRange(10.0, 20.0))
     qtbot.waitUntil(lambda: len(got) > 0, timeout=2000)
     # the buffers must round-trip unchanged, not just trigger the signal
     for out, expected in zip(got[-1], args):
         assert np.allclose(out, expected)
+
+
+def test_remote_histogram2d_asks_for_the_time_window_not_the_value_range(qtbot, plot):
+    plot.x_axis().set_range(SciQLopPlotRange(-3.0, 3.0))
+    plot.time_axis().set_range(SciQLopPlotRange(50.0, 60.0))
+    _, ch = _channel(plot, lambda p: p.add_remote_histogram2d("h"))
+    requests = []
+    ch.data_requested.connect(lambda r: requests.append((r.start(), r.stop())))
+    plot.x_axis().set_range(SciQLopPlotRange(-4.0, 4.0))
+    plot.time_axis().set_range(SciQLopPlotRange(100.0, 200.0))
+    qtbot.waitUntil(lambda: (100.0, 200.0) in requests, timeout=2000)
+    assert not {(-3.0, 3.0), (-4.0, 4.0)} & set(requests)
+
+
+def test_remote_histogram2d_starts_on_the_time_window(qtbot, plot):
+    plot.time_axis().set_range(SciQLopPlotRange(50.0, 60.0))
+    hist = plot.add_remote_histogram2d("h")
+    requests = []
+    hist.remote_channel().data_requested.connect(
+        lambda r: requests.append((r.start(), r.stop())))
+    qtbot.waitUntil(lambda: (50.0, 60.0) in requests, timeout=2000)
 
 
 def test_busy_clears_only_after_data_arrives(qtbot, plot):
@@ -82,8 +112,8 @@ def test_busy_clears_only_after_data_arrives(qtbot, plot):
     qtbot.waitUntil(lambda: g.busy() is False, timeout=2000)
 
 
-@pytest.mark.parametrize("factory,make_data", CASES)
-def test_set_busy_emits_exactly_once_per_call(qtbot, plot, factory, make_data):
+@pytest.mark.parametrize("factory,make_data,fetch_axis", CASES)
+def test_set_busy_emits_exactly_once_per_call(qtbot, plot, factory, make_data, fetch_axis):
     """Each *Remote::set_busy() override forwards to its base class's
     set_busy() (whose busyChanged is already wired to busy_changed once the
     underlying QCP plottable/components exist) and used to *also* emit

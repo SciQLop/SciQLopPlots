@@ -51,20 +51,23 @@ class TestCurve:
         qtbot.waitUntil(lambda: curve.busy() is False, timeout=5000)
 
 
+# The last item is the axis the graph fetches over: a histogram's x holds values.
 REMOTE_WITHOUT_COLOUR = [
-    pytest.param(lambda p: p.add_remote_waterfall(["w"]), _xy, id="waterfall"),
-    pytest.param(lambda p: p.add_remote_color_map("cm"), _xyz, id="colormap"),
-    pytest.param(lambda p: p.add_remote_histogram2d("h"), _xy, id="histogram2d"),
+    pytest.param(lambda p: p.add_remote_waterfall(["w"]), _xy, lambda p: p.x_axis(), id="waterfall"),
+    pytest.param(lambda p: p.add_remote_color_map("cm"), _xyz, lambda p: p.x_axis(), id="colormap"),
+    pytest.param(lambda p: p.add_remote_histogram2d("h"), _xy, lambda p: p.time_axis(),
+                 id="histogram2d"),
 ]
 
 
-@pytest.mark.parametrize("factory,make_data", REMOTE_WITHOUT_COLOUR)
-def test_a_graph_without_colour_keeps_the_data_and_warns(qtbot, qtlog, plot, factory, make_data):
+@pytest.mark.parametrize("factory,make_data,fetch_axis", REMOTE_WITHOUT_COLOUR)
+def test_a_graph_without_colour_keeps_the_data_and_warns(qtbot, qtlog, plot, factory, make_data,
+                                                         fetch_axis):
     graph, channel = _channel(plot, factory)
     data = make_data()
     channel.data_requested.connect(
         lambda _r: channel.set_data_colored(data, np.linspace(1.0, 2.0, len(data[0]))))
-    plot.x_axis().set_range(SciQLopPlotRange(10.0, 20.0))
+    fetch_axis(plot).set_range(SciQLopPlotRange(10.0, 20.0))
     qtbot.waitUntil(lambda: graph.busy() is False, timeout=5000)
     process_events()
     assert len(graph.data()) > 0 and len(np.asarray(graph.data()[0])) > 0

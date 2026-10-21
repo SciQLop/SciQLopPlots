@@ -962,6 +962,13 @@ void start_on(FunctionHistogram* hist, QObject* observed)
         axis && axis->range().is_valid())
         hist->set_range(axis->range());
 }
+void start_remote_on(SciQLopPlottableInterface* hist, SciQLopPlotAxisInterface* time_axis)
+{
+    QObject::connect(time_axis, &SciQLopPlotAxisInterface::range_changed, hist,
+                     &SciQLopPlottableInterface::set_range);
+    if (time_axis->range().is_valid())
+        hist->set_range(time_axis->range());
+}
 } // namespace
 
 SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int x_bins, int y_bins,
@@ -1204,8 +1211,7 @@ SciQLopHistogram2DRemote* SciQLopPlot::add_remote_histogram2d(const QString& nam
         hist->set_x_bins_log(x_bins_log);
         hist->set_y_bins_log(y_bins_log);
         _configure_color_map(hist, y_bins_log, false);
-        connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, hist,
-                &SciQLopPlottableInterface::set_range);
+        start_remote_on(hist, time_axis());
     }
     return hist;
 }

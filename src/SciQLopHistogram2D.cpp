@@ -318,5 +318,5 @@ SciQLopHistogram2DRemote::SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopP
     : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins, std::move(metaData)}
     , SciQLopRemoteGraph(this, 2)
 {
-    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+    // Same as SciQLopHistogram2DFunction: xAxis holds values, not the fetch window.
 }
