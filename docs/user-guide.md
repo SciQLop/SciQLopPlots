@@ -290,6 +290,101 @@ plot.y_axis().set_range(-2, 2)
 
 ![A 2-D density histogram](images/histogram2d.png)
 
+### Histograms
+
+`plot.histogram(values)` counts values into bins and draws the counts. The x axis holds the values. The y axis holds the counts.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+values = np.random.default_rng(42).normal(0, 1, 100_000)
+hist = plot.histogram(values, bins=50, name="speed")
+```
+
+One column of values is drawn as bars. Several columns are drawn as step outlines, one per column. Pass `style=HistogramStyle.Bars` or `style=HistogramStyle.Step` to choose. An explicit style always wins.
+
+`range=(lower, upper)` fixes the edges. Values outside the range are not counted.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+values = np.random.default_rng(42).normal(0, 1, 100_000)
+hist = plot.histogram(values, bins=40, range=(-2.0, 2.0))
+```
+
+Without `range`, the edges follow the data. They only widen, so a bar never disappears when the data shrinks. `hist.reset_edges()` forgets the widest range and fits the data again.
+
+`log_bins=True` makes the bins equally wide in log space. It also sets the x axis to log. Log bins need positive values.
+
+```python
+import numpy as np
+from SciQLopPlots import HistogramNormalization, SciQLopPlot
+
+plot = SciQLopPlot()
+values = np.random.default_rng(42).lognormal(0, 1, 100_000)
+hist = plot.histogram(values, bins=60, log_bins=True,
+                      normalization=HistogramNormalization.Density)
+```
+
+`normalization` sets what the bars show:
+
+- `HistogramNormalization.Count`: the number of values in each bin. This is the default.
+- `HistogramNormalization.Density`: the count divided by the bin width. The area under the bars is 1.
+- `HistogramNormalization.Probability`: the count divided by the total. The heights add up to 1.
+
+Give `histogram` a function and it follows the time range. The function receives `(start, stop)` and returns `(t, values)` for that window, like any live data function.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopMultiPlotPanel
+
+panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
+
+def signal(start, stop):
+    t = np.linspace(start, stop, 10_000)
+    return t, np.sin(t) + np.random.default_rng(0).normal(0, 0.1, t.size)
+
+line_plot, line = panel.plot(signal)
+hist_plot, hist = panel.histogram(signal, bins=40)
+panel.set_time_axis_range(0.0, 100.0)
+```
+
+The histogram counts the values inside the panel's time range. The panel's x axis is the time. The histogram's own x axis is the value, so the panel does not drag it along.
+
+A panel that holds only histograms has no line plot to set the time. Call `panel.set_time_axis_range(start, stop)` yourself.
+
+A histogram on a standalone plot fetches nothing at first. Set the time with `plot.time_axis().set_range(start, stop)` to start it.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+
+def values(start, stop):
+    t = np.linspace(start, stop, 5_000)
+    return t, np.sin(t)
+
+hist = plot.histogram(values, bins=30)
+plot.time_axis().set_range(0.0, 50.0)
+```
+
+Data that is already binned goes through `plot.bars(edges, heights)`. There must be one more edge than there are heights. A 2-D `heights` gives one step outline per column.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+edges = np.array([0.0, 1.0, 2.0, 5.0, 10.0])
+heights = np.array([4.0, 9.0, 3.0, 1.0])
+bars = plot.bars(edges, heights, name="pre-binned")
+```
+
 ## Live data: plot a function
 
 Instead of arrays, give `plot()` a function. It receives the visible range as `(start, stop)` and returns the data for it. On every pan or zoom, it is called again for the new range.

@@ -139,7 +139,7 @@ rules holds in some classes and not in others.
 | 13 `save()` | Raises `OSError("failed to save ...")`, `ValueError` for an unknown format. |
 | (found) | A second colour map on a plot raised nothing and returned None; it raises now. |
 
-**Phase 3, features: 4 of 5 done.**
+**Phase 3, features: 5 of 5 done.**
 
 | Task | Outcome |
 | --- | --- |
@@ -147,4 +147,4 @@ rules holds in some classes and not in others.
 | 16 Title | `plot.set_title()`, themed; the colour scale now follows the plot area's row (73d93ca). |
 | 18 SVG | `save_svg()`, `save()` writes `.svg`; no `format=` keyword (d62aa8c). |
 | 14 Bands, error bars | Done. Fills and bands as column decorations, error bars that become a band when dense, `plot.band` and `plot.error_bars`. Side fix: a callback batch with the wrong number of arrays now emits `fetch_failed` instead of vanishing, which also fixed 2-pane projection callbacks. |
-| 17 1-D histogram | Needs a design: a new plottable type with its own resampler, over NeoQCP's `QCPBars`. |
+| 17 1-D histogram | Done. `SciQLopHistogram` over NeoQCP's `QCPHistogram`: `plot.histogram` (values or time-range callback), `plot.bars(edges, heights)`, bins, range, log bins, normalization, bars or step. A per-plot opt-out from the panel's x sync keeps the value axis still. Guide section "Histograms". |

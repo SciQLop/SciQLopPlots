@@ -262,4 +262,12 @@ SciQLopPlots integration tests (`tests/integration`), with sampled pixels (no go
 
 ## Found while designing
 
-`SciQLopNDProjectionPlot`'s constructor creates a second hidden time axis (`src/SciQLopNDProjectionPlot.cpp:97-99`) and orphans the base class's one. Fixed separately, with its own test.
+An earlier draft claimed that `SciQLopNDProjectionPlot` creates a second hidden time axis. That was wrong. It derives `SciQLopPlotInterface`, not `SciQLopPlot`, so its `m_time_axis` is its only one. A guard test keeps it that way (`tests/integration/test_projection_time_axis.py`).
+
+## Where v1 differs
+
+- Step with one column draws the outline only, with no fill.
+- The panel's x sync gained a per-plot opt-out, `set_axis_synchronized`, so a histogram's value axis is not dragged with the time.
+- A callback batch with the wrong number of arrays now emits `fetch_failed` instead of vanishing. This is a side fix, shared with bands and error bars.
+- NeoQCP's async pipeline was fixed for jobs started from a `finished()` handler.
+- `plot.bars(edges, heights)` reports its bar count through `bins()`.

@@ -144,6 +144,11 @@ class TestFactories:
         with pytest.raises(ValueError):
             plot.bars(np.array([0.0, 1.0]), np.array([3.0, 5.0]))
 
+    def test_bars_report_their_bar_count_as_bins(self, plot):
+        b = plot.bars(np.array([0.0, 1.0, 2.0, 5.0]), np.array([3.0, 5.0, 1.0]))
+        assert b.bins() == 3
+        assert list(b.bin_heights()[0]) == [3.0, 5.0, 1.0]
+
     def test_refused_bars_leave_nothing_on_the_plot(self, plot):
         with pytest.raises(ValueError):
             plot.bars(np.array([0.0, 1.0]), np.array([3.0, 5.0]))

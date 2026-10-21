@@ -202,9 +202,11 @@ void SciQLopHistogram::set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights
         return;
     check_binned(edges, heights);
     auto split = split_columns(heights);
+    const int bars = static_cast<int>(edges.flat_size()) - 1;
     _apply_default_style(split.size());
     _buffers = { edges, heights };
     _hist->setBinned(to_double_vector<std::vector<double>>(edges), std::move(split));
+    _hist->setBins(bars);
     Q_EMIT data_changed();
 }
 
