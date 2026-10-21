@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Plotables/SciQLopHistogram.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include <datasource/row-major-multi-datasource.h>
@@ -167,6 +168,8 @@ void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     if (!_hist || !y.is_valid())
         return;
+    if (x.is_valid())
+        sqp::validation::validate_same_length(x, "x", y, "y");
     _bin(x, y);
     _buffers = { x, y };
     Q_EMIT data_changed(x, y);
@@ -427,5 +430,5 @@ SciQLopHistogramRemote::SciQLopHistogramRemote(QCustomPlot* parent, SciQLopPlotA
     : SciQLopHistogram { parent, xAxis, yAxis, name, bins, std::move(metaData) }
     , SciQLopRemoteGraph(this, 2)
 {
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
+    // Same as SciQLopHistogramFunction: xAxis holds values, not the fetch window.
 }

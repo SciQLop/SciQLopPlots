@@ -426,7 +426,8 @@ public:
                                                QString name = QStringLiteral("Histogram"),
                                                int bins = 64, QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
     }
 
     inline virtual SciQLopHistogram* histogram(GetDataPyCallable callable,
@@ -434,7 +435,8 @@ public:
                                                int bins = 64, QObject* sync_with = nullptr,
                                                QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
     }
 
     inline virtual SciQLopHistogram* bars(const SciQLopPyBuffer& edges,
@@ -442,7 +444,8 @@ public:
                                           QString name = QStringLiteral("Bars"),
                                           QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
     }
 
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)

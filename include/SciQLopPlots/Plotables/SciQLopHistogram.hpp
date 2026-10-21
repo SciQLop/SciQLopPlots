@@ -56,9 +56,11 @@ public:
                               const QString& name, int bins = 64, QVariantMap metaData = {});
     virtual ~SciQLopHistogram() override;
 
-    //! Bins every column of y; x is ignored.
+    //! Bins every column of y; x only has to match y's length.
+    //! \throws std::invalid_argument if y is not 1-D or 2-D, or x and y lengths differ.
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
     virtual QList<SciQLopPyBuffer> data() const noexcept override { return _buffers; }
+    //! \throws std::invalid_argument if values is not 1-D or 2-D.
     void set_values(SciQLopPyBuffer values);
     //! \throws std::invalid_argument unless edges has one more entry than heights has rows.
     void set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights);

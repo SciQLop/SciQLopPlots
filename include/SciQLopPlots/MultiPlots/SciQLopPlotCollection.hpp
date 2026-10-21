@@ -388,7 +388,8 @@ public:
     histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
               int bins = 64, int index = -1, QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return { nullptr, nullptr };
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
@@ -396,14 +397,16 @@ public:
               int bins = 64, QObject* sync_with = nullptr, int index = -1,
               QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return { nullptr, nullptr };
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
     bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
          QString name = QStringLiteral("Bars"), int index = -1, QVariantMap metadata = {})
     {
-        throw std::runtime_error("Not implemented");
+        WARN_ABSTRACT_METHOD;
+        return { nullptr, nullptr };
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>

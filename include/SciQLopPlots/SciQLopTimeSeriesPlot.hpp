@@ -50,6 +50,29 @@ public:
     {
         this->x_axis()->set_range(SciQLopPlotRange { start, stop });
     }
+
+    // x is the time axis here, so bars binned over values would land off screen:
+    // a histogram needs a plain plot (or panel.histogram, which makes one).
+    inline SciQLopHistogram* histogram(const SciQLopPyBuffer&, QString = QStringLiteral("Histogram"),
+                                       int = 64, QVariantMap = {}) override
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline SciQLopHistogram* histogram(GetDataPyCallable, QString = QStringLiteral("Histogram"),
+                                       int = 64, QObject* = nullptr, QVariantMap = {}) override
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
+
+    inline SciQLopHistogram* bars(const SciQLopPyBuffer&, const SciQLopPyBuffer&,
+                                  QString = QStringLiteral("Bars"), QVariantMap = {}) override
+    {
+        WARN_ABSTRACT_METHOD;
+        return nullptr;
+    }
 };
 
 inline QList<SciQLopTimeSeriesPlot*> only_sciqlop_timeserieplots(

@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 
 from SciQLopPlots import (GraphType, HistogramNormalization, HistogramStyle, SciQLopHistogram,
-                          SciQLopMultiPlotPanel, SciQLopPlot)
+                          SciQLopMultiPlotPanel, SciQLopNDProjectionPlot, SciQLopPlot,
+                          SciQLopTimeSeriesPlot)
 
 
 class TestHistogramClass:
@@ -258,3 +259,29 @@ class TestAutoScale:
         _wait_result(qtbot, h)
         h.set_bin_range(0.0, 1000.0)
         qtbot.waitUntil(lambda: plot.x_axis().range().stop() >= 1000.0, timeout=5000)
+
+
+class TestHistogramValidation:
+    def test_three_dimensional_values_raise_value_error(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        cube = np.zeros((2, 2, 2))
+        with pytest.raises(ValueError):
+            h.set_values(cube)
+        with pytest.raises(ValueError):
+            h.set_data(np.arange(2.0), cube)
+
+    def test_x_and_y_lengths_must_match(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        with pytest.raises(ValueError, match="length mismatch"):
+            h.set_data(np.arange(3.0), np.arange(5.0))
+
+
+class TestHistogramHosts:
+    @pytest.mark.parametrize("make", [SciQLopTimeSeriesPlot, lambda: SciQLopNDProjectionPlot(3)])
+    def test_plots_that_cannot_host_one_raise_not_implemented(self, qtbot, make):
+        p = make()
+        qtbot.addWidget(p)
+        with pytest.raises(NotImplementedError):
+            p.histogram(np.arange(10.0))
+        with pytest.raises(NotImplementedError):
+            p.bars(np.array([0.0, 1.0]), np.array([1.0]))

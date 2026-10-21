@@ -188,8 +188,7 @@ def _patch_sciqlop_plot(cls):
         graph = _plot(self, *args, name=name if takes_name else None, labels=labels,
                       colors=colors, graph_type=graph_type, **kwargs)
         if name is not None and not takes_name:
-            # Panels return (plot, graph).
-            (graph[1] if isinstance(graph, tuple) else graph).set_name(name)
+            _graph_of(graph).set_name(name)
         return graph
 
     def _plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
@@ -345,7 +344,8 @@ def _histogram_calling(cpp_histogram):
     return histogram
 
 
-_HISTOGRAM_HOSTS = (SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel)
+# Not SciQLopTimeSeriesPlot: x is time there, so its C++ histogram()/bars() raise.
+_HISTOGRAM_HOSTS = (SciQLopPlot, SciQLopMultiPlotPanel)
 _cpp_histogram = {_cls: _cls.histogram for _cls in _HISTOGRAM_HOSTS}
 
 for _cls in _HISTOGRAM_HOSTS:

@@ -289,6 +289,11 @@
     </value-type>
 
     <object-type name="SciQLopGraphComponentInterface" parent-management="yes">
+        <modify-function signature="set_fill_to_value(double)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="set_fill_between(SciQLopGraphComponentInterface*)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
@@ -840,8 +845,16 @@
     </object-type>
     <object-type name="SciQLopHistogram" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
-        <modify-function signature="set_values(SciQLopPyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_values(SciQLopPyBuffer)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="set_binned(SciQLopPyBuffer,SciQLopPyBuffer)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
