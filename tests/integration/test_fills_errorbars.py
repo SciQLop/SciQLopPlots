@@ -174,3 +174,10 @@ class TestFactories:
     def test_bad_arity_raises_type_error(self, plot):
         with pytest.raises(TypeError):
             plot.band(X, X)
+
+
+def test_wrapped_callback_rejects_the_dict_batch_form():
+    from SciQLopPlots import _wrapped_callback, _band_batch
+    wrapped = _wrapped_callback(lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, _band_batch)
+    with pytest.raises(TypeError, match="not the"):
+        wrapped(0.0, 1.0)

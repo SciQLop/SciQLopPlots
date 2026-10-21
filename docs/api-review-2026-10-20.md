@@ -139,12 +139,12 @@ rules holds in some classes and not in others.
 | 13 `save()` | Raises `OSError("failed to save ...")`, `ValueError` for an unknown format. |
 | (found) | A second colour map on a plot raised nothing and returned None; it raises now. |
 
-**Phase 3, features: 3 of 5 done.**
+**Phase 3, features: 4 of 5 done.**
 
 | Task | Outcome |
 | --- | --- |
 | 15 Legend | `set_alignment`, `set_position` (fractions of the plot area), `set_columns`; `panel.set_legend_visible` (4102b7f). |
 | 16 Title | `plot.set_title()`, themed; the colour scale now follows the plot area's row (73d93ca). |
 | 18 SVG | `save_svg()`, `save()` writes `.svg`; no `format=` keyword (d62aa8c). |
-| 14 Bands, error bars | Needs a design: NeoQCP's `QCPMultiGraph` has no fill at all; it must work with the GPU path and resampled min/max envelopes. |
+| 14 Bands, error bars | Done. Fills and bands as column decorations, error bars that become a band when dense, `plot.band` and `plot.error_bars`. Side fix: a callback batch with the wrong number of arrays now emits `fetch_failed` instead of vanishing, which also fixed 2-pane projection callbacks. |
 | 17 1-D histogram | Needs a design: a new plottable type with its own resampler, over NeoQCP's `QCPBars`. |

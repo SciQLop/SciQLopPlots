@@ -267,6 +267,8 @@ def _wrapped_callback(callback, to_batch):
         batch = callback(start, stop)
         if batch is None or len(batch) == 0:
             return batch
+        if isinstance(batch, dict):
+            raise TypeError("band()/error_bars() callbacks return arrays, not the {'data', 'color'} form")
         return to_batch(*batch)
     return wrapped
 

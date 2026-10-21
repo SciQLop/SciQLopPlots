@@ -141,6 +141,59 @@ A 2-D `y` gives one line per column. `labels` names them in the legend, and `col
 
 A step in `x` much longer than its neighbours is drawn as a data gap: the line breaks there. `graph.set_gap_threshold(f)` sets how much longer (default 1.5 times); `0` never breaks the line, for keys that are uneven on purpose. A NaN value always breaks it.
 
+### Bands, fills and error bars
+
+`plot.band(x, lower, upper)` shades the area between two curves. It draws no line of its own.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 10_000)
+plot.band(x, np.sin(x) - 0.3, np.sin(x) + 0.3, name="sin +/- 0.3")
+```
+
+Fills are also available on any line graph, one column at a time. `set_fill_to_value` fills between a line and a constant. `set_fill_between` fills between two columns of the same graph.
+
+```python
+import numpy as np
+from SciQLopPlots import GraphLineStyle, SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 10_000)
+y = np.sin(x)
+graph = plot.plot(x, np.column_stack([y, y - 0.3, y + 0.3]), labels=["y", "low", "high"])
+graph.set_column_line_style(1, GraphLineStyle.NoLine)
+graph.set_column_line_style(2, GraphLineStyle.NoLine)
+graph.set_fill_between(1, 2)
+graph.set_fill_to_value(0, 0.0)
+```
+
+`graph.clear_fill(column)` removes a fill. `set_fill_color(column, color)` changes its colour.
+
+Both columns must belong to the same graph. To shade between two spacecraft, build one virtual product that returns both curves as columns.
+
+For an uncertainty around a curve, pass `[y, y - e, y + e]` and call `set_fill_between(1, 2)`, as above. Or let `plot.error_bars` do it:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 200)
+plot.error_bars(x, np.sin(x), 0.1)
+plot.error_bars(x, np.cos(x), 0.1, 0.3, name="asymmetric")
+```
+
+One error gives symmetric bars. Two give the lower and the upper error. Errors are a scalar or one value per point.
+
+Bars are drawn while there is room for them. Zoom out and they merge into a band.
+
+A band is downsampled like any line. Zoomed out, it spans between the drawn min/max lines, not between every raw point.
+
+Both `band` and `error_bars` also accept a data function, as in the next sections. It returns arrays, not the `{"data", "color"}` form.
+
 ### Scatter
 
 ```python
