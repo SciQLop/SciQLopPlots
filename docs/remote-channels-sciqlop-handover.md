@@ -56,6 +56,9 @@ matching `set_data` arrives. You don't manage it.
 1. **Trigger.** Panning/zooming the plot's x-axis makes the graph emit
    `ch.data_requested(range)`. The graph also emits one **initial** request at
    creation (seeded from the current x range).
+   A remote **histogram2d** is the exception: its x axis holds values, so it follows
+   `plot.time_axis()` instead. Its first request goes out when it is added if the
+   time axis already has a range, else on the first time-axis change.
 
 2. **Reply.** Compute, then call `ch.set_data(...)` with the right arity:
    - **N=2** (line, curve, waterfall, histogram2d): `ch.set_data(x, y)`.

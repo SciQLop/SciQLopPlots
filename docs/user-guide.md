@@ -288,6 +288,8 @@ plot.y_axis().set_range(-2, 2)
 
 `plot.plot(x, y, graph_type=GraphType.Histogram2D)` works too; `add_histogram2d` also sets the bin counts.
 
+A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `plot.time_axis()` has a range, like the 1-D histograms below.
+
 ![A 2-D density histogram](images/histogram2d.png)
 
 ### Histograms
@@ -874,6 +876,8 @@ proj.set_axis_labels(["X", "Y", "Z"])
 ![Three 2-D projections of an orbit](images/nd-projection.png)
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
+
+A projection needs at least 2 panes. On a 1-pane projection, adding a curve raises `ValueError`.
 
 `proj.set_dimension_pairs([(0, 1), (0, 2), (1, 2)])` picks the dimensions each pane shows, as (x, y) indices: here X-Y, X-Z, Y-Z, the usual magnetospheric layout. Call it before adding curves.
 
