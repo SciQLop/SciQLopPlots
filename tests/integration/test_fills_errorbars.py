@@ -2,8 +2,9 @@
 import numpy as np
 import pytest
 from PySide6.QtGui import QColor, QImage
+from PySide6.QtWidgets import QLabel
 
-from SciQLopPlots import GraphLineStyle, SciQLopPlot
+from SciQLopPlots import DelegateRegistry, GraphLineStyle, SciQLopPlot
 
 X = np.linspace(0, 10, 200)
 
@@ -71,6 +72,74 @@ class TestColumnDecorations:
         g = plot.line(X, np.column_stack([X, X]))
         with pytest.raises(ValueError):
             g.set_fill_color(0, QColor("blue"))
+
+
+    def test_nan_fill_baseline_raises_value_error(self, plot):
+        g = plot.line(X, np.sin(X))
+        with pytest.raises(ValueError):
+            g.set_fill_to_value(0, float("nan"))
+        with pytest.raises(ValueError):
+            g.set_fill_to_value(0, float("inf"))
+        with pytest.raises(ValueError):
+            g.components()[0].set_fill_to_value(float("nan"))
+        assert not g.components()[0].has_fill()
+
+    def test_negative_cap_width_raises_value_error(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        with pytest.raises(ValueError):
+            g.set_error_bars(0, 1, 2, -1.0)
+        v, lo, hi = g.components()
+        with pytest.raises(ValueError):
+            v.set_error_bars(lo, hi, -1.0)
+
+    def test_column_presets_request_a_replot(self, qtbot, plot):
+        g = plot.line(X, np.column_stack([X, X]))
+        with qtbot.waitSignal(g.replot, timeout=1000):
+            g.set_column_in_legend(1, False)
+
+    def test_graph_level_error_bars_notify_the_component(self, qtbot, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        with qtbot.waitSignal(g.components()[0].error_bars_changed, timeout=1000):
+            g.set_error_bars(0, 1, 2)
+        with qtbot.waitSignal(g.components()[0].error_bars_changed, timeout=1000):
+            g.clear_error_bars(0)
+
+
+def _fill_color_row(delegate):
+    label = next(l for l in delegate.findChildren(QLabel) if l.text() == "Fill color")
+    return label.parentWidget()
+
+
+class TestInspectorFillRow:
+    def test_row_follows_graph_level_fills(self, qtbot, plot):
+        g = plot.line(X, np.column_stack([X, X + 1]))
+        delegate = DelegateRegistry.instance().create_delegate(g.components()[0], None)
+        qtbot.addWidget(delegate)
+        row = _fill_color_row(delegate)
+        assert row.isHidden()
+        g.set_fill_between(0, 1)
+        assert not row.isHidden()
+        g.set_fill_color(0, QColor(10, 20, 30))
+        g.clear_fill(0)
+        assert row.isHidden()
+        g.set_fill_to_value(0, 0.0)
+        assert not row.isHidden()
+
+    def test_picking_a_colour_after_the_fill_went_away_is_harmless(self, qtbot, plot):
+        from PySide6.QtCore import Q_ARG, QMetaObject
+        from PySide6.QtWidgets import QWidget
+        g = plot.line(X, np.sin(X))
+        comp = g.components()[0]
+        comp.set_fill_to_value(0.0)
+        delegate = DelegateRegistry.instance().create_delegate(comp, None)
+        qtbot.addWidget(delegate)
+        row = _fill_color_row(delegate)
+        picker = next(w for w in row.findChildren(QWidget)
+                      if w.metaObject().className() == "ColorDelegate")
+        g.clear_fill(0)
+        # A C++ exception escaping this slot would abort the process.
+        QMetaObject.invokeMethod(picker, "colorChanged", Q_ARG(QColor, QColor("blue")))
+        assert not comp.has_fill()
 
 
 class TestComponentDecorations:

@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include "SciQLopPlots/Python/Validation.hpp"
 #include <QMouseEvent>
 #include <layoutelements/layoutelement-legend.h>
 #include <layoutelements/layoutelement-legend-group.h>
@@ -335,6 +336,7 @@ int SciQLopGraphComponent::sibling_index(SciQLopGraphComponentInterface* other) 
 
 void SciQLopGraphComponent::set_fill_to_value(double value)
 {
+    sqp::validation::validate_finite(value, "set_fill_to_value");
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -406,6 +408,8 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
                                            SciQLopGraphComponentInterface* upper,
                                            double cap_width)
 {
+    if (!(cap_width >= 0))
+        throw std::invalid_argument("set_error_bars: cap_width must be >= 0");
     const auto ref = multi_ref();
     if (!ref)
     {

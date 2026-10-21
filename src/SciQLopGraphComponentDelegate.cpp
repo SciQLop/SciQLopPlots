@@ -115,8 +115,13 @@ void SciQLopGraphComponentDelegate::add_fill_color_row(SciQLopGraphComponentInte
     row->setVisible(object->has_fill());
     m_layout->addWidget(row);
 
+    // set_fill_color throws without a fill, and an exception must not cross Qt's dispatch.
     connect(fillColor, &ColorDelegate::colorChanged, object,
-            &SciQLopGraphComponentInterface::set_fill_color);
+            [object](const QColor& color)
+            {
+                if (object->has_fill())
+                    object->set_fill_color(color);
+            });
     connect(object, &SciQLopGraphComponentInterface::fill_changed, row,
             [object, row, fillColor]()
             {
