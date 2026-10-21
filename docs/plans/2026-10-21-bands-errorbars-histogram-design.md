@@ -54,7 +54,7 @@ Fills and error bars are a graph-level list of decorations, by column index, not
 
 ```cpp
 struct Fill      { int owner; std::variant<double, int> target; QBrush brush; };
-struct ErrorBars { int value; int lower; int upper; std::optional<QPen> pen; double capWidthPx; };
+struct ErrorBars { int value; int lower; int upper; std::optional<QPen> pen; double capWidthPx = 6; };
 ```
 
 Why graph-level: components only exist after the first data, and a shrinking source truncates them.
@@ -65,7 +65,8 @@ Rules:
 - Columns are checked at set time: in range of the current column count when known, not equal to the owner.
 - Columns are checked again at draw time against the displayed column count; an invalid decoration is skipped.
 - When a data swap shrinks the column count, decorations that reference a missing column are dropped. Shrinking is lossy: a later regrow does not bring them back.
-- Every per-column vector (`mComponents` side data, line caches, fill caches, error-bar caches) is resized in one helper, at the point where `draw()` decides the displayed column count.
+- Per-column vectors (`mComponents` side data, line extrusion caches) are resized in one helper, at the point where `draw()` decides the displayed column count.
+- Fill and error-bar caches are per decoration, not per column: they live next to their decoration and go away with it.
 - Setters invalidate the caches they affect, like `setComponentLineStyle` does.
 
 A band edge is hidden with `lineStyle = lsNone`, not with `visible = false`.
@@ -81,10 +82,10 @@ Why not the pixel lines: each column's line array is built on its own (NaN value
 
 Construction:
 
-1. Each pair of consecutive rows gives one quad between the two edges. With downsampled data this follows the drawn lines exactly, including across bins.
-2. A row where either edge is NaN, or where the line has a gap, breaks the strip. Gaps come from the same NaN sentinels the lines use, not from a second rule.
+1. Each pair of consecutive rows gives one quad between the two edges. With downsampled data this follows the drawn lines, including across bins.
+2. A row where either edge is NaN breaks the strip. A key gap breaks it too, with the rule the lines use: the shared key array against `mGapThreshold` (`detectKeyGaps` on raw rows, `gapRatio` on downsampled rows). Computed once for both edges.
 3. Where the edges cross inside a segment, the quad is split at the crossing, so the overlap is not blended twice.
-4. When the raw rows in view exceed 4× the plot width (no downsampling: small sources under the resampling threshold, log key axis), rows are binned into one vertical span per pixel column. This caps the vertex count; it is local to the fill.
+4. When the raw rows in view exceed 4× the plot width (no downsampling: small sources under the resampling threshold, log key axis), rows are binned into vertical spans, 4 per pixel column (the lines' own `kLevel2PixelMultiplier`), so the fill is not blockier than a downsampled line. This caps the vertex count; it is local to the fill.
 5. Step line styles: the step transform runs before the fill pass, and the fill uses the stepped points. An impulse component refuses a fill.
 6. A fill to a constant uses the constant as the second edge. On a log value axis a constant ≤ 0 is clamped to about two plot heights past the axis edge; the scissor clips it. A clamp at the edge would drift during a GPU pan; a far clamp would lose float precision.
 
@@ -142,14 +143,16 @@ comp.set_fill_to_value(0.0)
 comp.set_fill_between(other_comp)
 comp.clear_fill()
 comp.set_fill_color(color)        # default: line colour at ~25 % opacity
-comp.set_error_bars(lower_comp, upper_comp)
+comp.set_error_bars(lower_comp, upper_comp, cap_width=6)   # cap width in logical pixels
 comp.clear_error_bars()
 comp.component_index()            # exposes the existing m_componentIndex
 ```
 
 They write into the graph's decoration list and emit `fill_changed` / `error_bars_changed`.
 The inspector gets rows for them.
-On curve components (`QCPCurve`, `QCPGraph`) they raise `NotImplementedError`, the project rule since phase 2.
+`SciQLopGraphComponent` also wraps `QCPCurve` and `QCPGraph` components (`SciQLopGraphComponent.hpp:40`). On those the fill and error-bar methods raise `NotImplementedError`, the project rule since phase 2.
+
+Registration: the new methods and signals go in the `SciQLopGraphComponentInterface` block of `bindings.xml`; `HistogramNormalization` and `HistogramStyle` are registered like the other enums in `enums.hpp`.
 
 Plot factories:
 
@@ -160,9 +163,9 @@ plot.error_bars(x, y, err_minus, err_plus)    # asymmetric
 plot.error_bars(callback)                     # callback returns (x, y, err) or (x, y, err_minus, err_plus)
 ```
 
-- `band` makes a 2-column line graph, lines hidden, fill from column 0 to 1, one legend row.
-- `error_bars` makes a 3-column graph: `y` with markers and no line, the two bounds hidden and out of the legend, error bars `0 → (1, 2)`.
-- The callback form is wrapped in Python into a callback returning `[x, y, y - e, y + e]`, a list of 1-D buffers like any multi-column callback. A Python wrapper on a data callback is fine; the "no Python wrappers" rule is about Qt slots.
+- `band` makes a 2-column line graph, both lines `lsNone`, fill from column 0 to 1. Column 0 stays in the legend and column 1 does not, so the band is one legend row; its icon is a swatch in the fill colour.
+- `error_bars` makes a 3-column graph: `y` with markers and no line, error bars `0 → (1, 2)`. The bounds get `lineStyle = lsNone` and `inLegend = false`; they stay **visible**, otherwise the dense-case band and auto-scale would lose them. `y` is the legend row.
+- The callback form is wrapped in Python into a callback returning `(x, np.column_stack([y, y - e, y + e]))`: two buffers, the second 2-D, like any multi-column line callback. Four 1-D buffers would not work: a provider emits a 4-buffer batch on `new_data_nd` (`src/DataProducer.cpp:104-119`), which line graphs do not listen to, so the batch would be dropped silently. A Python wrapper on a data callback is fine; the "no Python wrappers" rule is about Qt slots.
 - `err` lengths must match `y`, else `ValueError`.
 - Both set their decorations at creation, so a callback graph is configured before its first data.
 
@@ -186,7 +189,7 @@ Bin edges:
 - `bins_changed` is emitted when edges move.
 - Log bins: `log_bins=True` also sets the x axis to log, as `SciQLopHistogram2D` does; log edges on a linear axis are unreadable. Non-positive data are skipped by `bin1d`; a fixed `range` with `lo <= 0` and log bins raises `ValueError` in SciQLopPlots, before NeoQCP's `Q_ASSERT` in `BinAxis::make`.
 
-Normalization, an enum (the 2-D histogram's bare int is review finding 2.9):
+Normalization, an enum (the 2-D histogram takes a bare `int` for it today, the odd one out):
 
 - `Count`;
 - `Density`: count / (N × width of that bin), so log bins are right;
@@ -196,15 +199,15 @@ Style, an enum:
 
 - `Bars`: GPU quads plus outline, in one `addPlottable(fill, stroke)` entry. Each bar's outline is its own NaN-separated run, so no diagonal joins one bar to the next.
 - `Step`: the outline only.
-- Several columns default to `Step` with a light fill, so overlaps stay readable.
+- Default: `Bars` for one column; `Step` with a light fill for several columns, so overlaps stay readable. An explicit `style` always wins.
 - On a log value axis empty bins are left out of the outline (count 0 has no log position) but kept in the fill, clamped past the axis edge.
 
 Ranges and auto-scale:
 
-- Key range = edges, value range = [0, max height].
+- Key range = edges, value range = [0, max height]. On a log value axis the lower bound is the smallest positive height, like other plottables' sign-domain ranges.
 - Empty or all-NaN data: no bars, an empty range, no error. An empty fetch is a normal state for a time-windowed callback, so range accessors must not dereference a missing result.
-- Auto-scale runs on the first result and whenever edges move, like `SciQLopHistogram2D::set_data` does through `pipeline().finished`.
-- Layer: above the grid.
+- Auto-scale runs on the first result and whenever edges move, like `SciQLopHistogram2D::set_data` does through `pipeline().finished`. The pre-binned path has no pipeline; both paths call the same rescale function.
+- Layer: `Main`, which is above `Grid`.
 
 ### Following the panel's time range
 
@@ -229,7 +232,7 @@ panel.histogram(callback, ...)
 - `GraphType.Histogram` dispatches only in the 1-argument form of `plot()`. The 2-argument form would be ambiguous between `(values, bins)` and `(edges, heights)`: `TypeError`.
 - Histogram keyword arguments are rejected on every other dispatch path, like the 2-D histogram's are. Otherwise `plot(x, y, bins=32)` would make a line and drop `bins`.
 - `takes_name` includes `Histogram`.
-- Legend: one row per column, swatch in the fill colour.
+- Legend: one entry for the whole histogram (a plottable has one legend item); its icon is split into one swatch per column, in each column's fill colour.
 
 ## Testing
 
@@ -239,7 +242,7 @@ NeoQCP unit tests (`subprojects/NeoQCP/tests/unit`), on pure builders that take 
 - error-bar builder: NaN rows, one-sided bars, crossed bounds, caps, vertical key axis;
 - `bin1d`: shared edges, log bins, NaN and infinities, flat data, normalization sums, per-bin-width density, widen-only edges.
 
-NeoQCP regression tests (one per review finding):
+NeoQCP regression tests, one per bug class the reviews found:
 
 - a hidden band edge keeps its fill;
 - auto-scale includes band edges and error bounds;
