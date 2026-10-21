@@ -274,13 +274,14 @@ private:
 ```
 
 Rules:
-- `installTransform` mirrors `QCPHistogram2D::installTransform` (`plottable-histogram2d.cpp:50-69`): a `TransformKind::ViewportIndependent` lambda capturing `bins`, `log` (= key axis is logarithmic), `normalization`, `fixed` (`mFixedRange`) and `autoRange` (`mAutoRange`), that computes `range = fixed ? *fixed : widenedRange(autoRange, *finiteValueBounds(src, log))` (no bounds → return `nullptr`), `expandIfFlat(range, log)`, `bin1d`, `normalize`.
+- `installTransform` mirrors `QCPHistogram2D::installTransform` (`plottable-histogram2d.cpp:50-69`): a `TransformKind::ViewportIndependent` lambda capturing **by value** `bins`, `log` (= key axis is logarithmic), `normalization`, `fixed` (`mFixedRange`) and `autoRange` (`mAutoRange`). The job runs on a worker thread, so it never reads members. `takeResult` updates `mAutoRange` and calls `installTransform()` again, on the GUI thread; `setTransform` does not restart the pipeline (`async-pipeline.h:123-127`), so this cannot loop. A job already running with the old range is harmless: its result is widened again by the next one. The lambda computes `range = fixed ? *fixed : widenedRange(autoRange, *finiteValueBounds(src, log))` (no bounds → return `nullptr`), `expandIfFlat(range, log)`, `bin1d`, `normalize`.
+- `takeResult(nullptr)` (no finite value: the transform returned nothing) resets `mResult`, emits `histogramReady()`, leaves `mAutoRange` and `edgesChanged` alone.
 - On `pipeline().finished`, `takeResult(pipeline().result())`: when the edges differ from the previous result's, store the range in `mAutoRange` (auto mode only) and emit `edgesChanged()`; always emit `histogramReady()` and `mLayer->replot`-mark like `QCPHistogram2D` does.
 - `setBinned` validates `edges.size() == heights[c].size() + 1` for every column (else ignore and `qWarning`), builds a `Histogram1D` directly and calls `takeResult`. It never touches the pipeline: with no transform, `pipeline().result()` returns nothing (`async-pipeline.h:139-152`), which is why `draw` reads `mResult`.
 - Any setter that changes binning (`setBins`, `setFixedRange`, `setNormalization`, `resetEdges`, key axis scale change) reinstalls the transform and restarts the pipeline (mirror `QCPHistogram2D::refreshBinning`, connected to the key axis `scaleTypeChanged`).
 - Export (`painter->modes().testFlag(QCPPainter::pmNoCaching)`) with no `mResult` and a data source: `mPipeline.runSynchronously(...)` then `takeResult` (mirror `QCPHistogram2D::draw`, `plottable-histogram2d.cpp:284-342`).
 - `getKeyRange`: `edges.front()..edges.back()`, `found = false` without a result. `getValueRange`: `0..max(height)`; with `inSignDomain == sdPositive` (log value axis), lower = smallest positive height; `found = false` when there is no result or every height is 0 on a log axis. Never dereference a null `mResult`.
-- `selectTest`: the distance 0 when `pos` falls inside a bar of any column, else -1 (`onlySelectable && !mSelectable` → -1).
+- `selectTest`: returns -1 in this task; Task 4 implements it with `barRects` (distance 0 inside a bar of any column).
 
 - [ ] **Step 1: Failing tests**
 
@@ -364,10 +365,13 @@ void TestHistogramPlottable::emptyDataAfterDataHasNoRangeAndNoCrash()
     auto* h = new QCPHistogram(mPlot->xAxis, mPlot->yAxis);
     h->setDataSource(values({0, 10}));
     QVERIFY(waitForResult(h));
-    h->setDataSource(values({}));
-    QTest::qWait(200);
+    QSignalSpy ready(h, &QCPHistogram::histogramReady);
+    h->setDataSource(values({std::numeric_limits<double>::quiet_NaN()}));
+    QVERIFY(ready.wait(5000));
+    QVERIFY(!h->histogram());
     bool found = true;
     h->getValueRange(found);
+    QVERIFY(!found);
     mPlot->rescaleAxes();
     mPlot->replot(QCustomPlot::rpImmediateRefresh);
     h->setDataSource(values({1, 2}));
@@ -395,9 +399,7 @@ void TestHistogramPlottable::logValueAxisRangeSkipsZeroHeights()
 }
 ```
 
-If an empty `QCPSoAMultiDataSource` cannot be built from empty vectors, use a one-NaN column instead (same meaning: no finite value).
-
-- [ ] **Step 2: Run** — compile error. FAIL.
+- [ ] **Step 2: Run** — compile error, then (once the class exists) every test except the two pre-binned ones FAILS. `preBinnedNeedsNoPipeline` and `preBinnedWithBadEdgesIsIgnored` are contract tests: green as soon as `setBinned` exists.
 - [ ] **Step 3: Implement** per the rules. `draw()` and `drawLegendIcon()` stay empty in this commit; Task 4 fills them in next. Nothing outside NeoQCP's tests uses `QCPHistogram` until then.
 - [ ] **Step 4: Run** — `QCP_TEST_CLASS=TestHistogramPlottable` → PASS.
 - [ ] **Step 5: Commit (NeoQCP)** — `git commit -m "feat(histogram): QCPHistogram, background binning and stable edges"`.
@@ -434,6 +436,8 @@ Rules:
 - Colours: `mColors[c]`, defaulting to the theme's plottable colour cycle (look at how `QCPMultiGraph` picks `sDefaultColors`). `Bars`: fill = colour at alpha 255 for one column, outline = colour darkened by 20 %. `Step` (default for several columns): fill = colour at alpha 64, outline = colour.
 - GPU: one `prl->addPlottable(fillVerts, strokeVerts, clipRect(), dpr, outHeight, 0, 0, painter->opacity())` per column, `strokeVerts` from `QCPLineExtruder::extrudePolyline(outline, penWidth, colour)`. Export / no RHI: `painter->drawRect` per bar and `drawPolyline` per run (split at NaN with `qcp::drawPolylineSplitNaN` if exposed, else split locally).
 - Legend icon: one swatch per column across `rect`'s width (like `QCPMultiGraph::drawLegendIcon` splits by component).
+- `selectTest`: distance 0 when `pos` is inside any column's `barRects`, else -1 (`onlySelectable && !mSelectable` → -1). Test it: a click inside a bar hits, a click above it misses.
+- Outlines are extruded every frame without a cache. Add `// simplify: re-extruded per frame; fine for the hundreds of bins histograms use. Cache with qcp::ExtrusionCache (drawPolylineCached) if a 10^5-bin case appears.`
 
 - [ ] **Step 1: Failing tests**
 
@@ -497,7 +501,7 @@ void TestHistogramPlottable::emptyBinsOnALogAxisStayOutOfTheOutline()
 
 **Files:**
 - Create: `include/SciQLopPlots/Plotables/SciQLopHistogram.hpp`, `src/SciQLopHistogram.cpp`; add the `.cpp` and the header to `SciQLopPlots/meson.build` next to `SciQLopHistogram2D`
-- Modify: `include/SciQLopPlots/enums.hpp` (`HistogramNormalization`, `HistogramStyle`, `GraphType::Histogram`), `include/SciQLopPlots/qcp_enums.hpp` if conversions live there
+- Modify: `include/SciQLopPlots/enums.hpp` (`HistogramNormalization`, `HistogramStyle`, `GraphType::Histogram`), `include/SciQLopPlots/qcp_enums.hpp` (conversions `to_qcp(HistogramNormalization) -> qcp::algo::HistogramNormalization` and `to_qcp(HistogramStyle) -> QCPHistogram::Style`, next to the existing `GraphLineStyle` conversions there)
 - Modify: `SciQLopPlots/bindings/bindings.h` (include), `bindings.xml` (object types, enums, `void_raises_valueerror` on `set_bins` and `set_bin_range`)
 - Test: `tests/integration/test_histogram1d.py` (create)
 
@@ -538,6 +542,7 @@ class SciQLopHistogramRemote : public SciQLopHistogram, public SciQLopRemoteGrap
 ```
 
 Model the class on two existing ones: `SciQLopHistogram2D` (`include/SciQLopPlots/Plotables/SciQLopHistogram2D.hpp`, `src/SciQLopHistogram2D.cpp`: `set_data` dtype dispatch into a span-backed source kept alive by an aliased `shared_ptr`, first-result rescale through a `SingleShotConnection`, destructor removal, the `Function`/`Remote` variants, `set_busy` in the remote variant) and `SciQLopNDProjectionCurves` (a `SciQLopGraphInterface` subclass: which virtuals a graph must implement). Differences:
+- `set_values(values)` has no x: it synthesises keys `0..N-1` (a `std::vector<double>` kept in the data holder), because a multi source needs sorted keys for `findBegin`/`keyRange`.
 - The source is a `QCPSoAMultiDataSource<std::span<const double>, std::span<const V>>` over `y` (1-D: one column; 2-D row-major: build column spans or use `QCPRowMajorMultiDataSource` exactly like `SciQLopMultiGraphBase::build_data_source`, `src/SciQLopMultiGraphBase.cpp:46-102`). Keys = `x` (ignored by the binning, needed by the source type).
 - Rescale on `histogramReady` the first time, and on every `edgesChanged` (connect to `request_rescale`), not only once.
 - Layer `Constants::LayersNames::Main`.
@@ -611,7 +616,7 @@ class TestHistogramClass:
 
 Time sync: in the callable factory, `graph->observe(sync_with ? sync_with : time_axis())` — **not** `_connect_callable_sync`, which observes `x_axis()` (`src/SciQLopPlot.cpp:1362-1375`), the value axis here.
 
-Python (`__init__.py`): `plot.histogram(values_or_callback, bins=64, range=None, log_bins=False, normalization=HistogramNormalization.Count, style=None, name=None)` is a Python method that calls the C++ factory, then `set_bin_range(*range)` / `set_log_bins` / `set_normalization` / `set_style` (style `None` = the one/several-column default). Keep the C++ method before replacing it (`_cpp_histogram = {cls: cls.histogram for cls in (...)}`) and call that; the panel's returns `(plot, histogram)`, so configure `_graph_of(result)` (helper from the fills plan, Task 11; define it here if that plan has not landed). Not a Qt slot, so this is allowed. `_HISTOGRAM_KWARGS = ("bins", "range", "log_bins", "normalization", "style")`, rejected (TypeError) on every other dispatch path, like `_reject_histogram2d_kwargs`. `GraphType.Histogram` dispatches only in `plot_func` (1 argument); in `_plot` with 2 arguments it raises `TypeError("GraphType.Histogram takes one argument (values or a callback); use plot.bars(edges, heights) for pre-binned data")`. Add `GraphType.Histogram` to `takes_name`.
+Python (`__init__.py`): `plot.histogram(values_or_callback, bins=64, range=None, log_bins=False, normalization=HistogramNormalization.Count, style=None, name=None)` is a Python method that calls the C++ factory, then `set_bin_range(*range)` / `set_log_bins` / `set_normalization` / `set_style` (style `None` = the one/several-column default). Keep the C++ method before replacing it (`_cpp_histogram = {cls: cls.histogram for cls in (...)}`) and call that; the panel's returns `(plot, histogram)`, so configure `_graph_of(result)`. The fills plan (Task 11) owns `_graph_of`; if it has not landed, add it here exactly as written there, once, and the fills plan then reuses it instead of redefining it. Not a Qt slot, so this is allowed. `_HISTOGRAM_KWARGS = ("bins", "range", "log_bins", "normalization", "style")`, rejected (TypeError) on every other dispatch path, like `_reject_histogram2d_kwargs`. `GraphType.Histogram` dispatches only in `plot_func` (1 argument); in `_plot` with 2 arguments it raises `TypeError("GraphType.Histogram takes one argument (values or a callback); use plot.bars(edges, heights) for pre-binned data")`. Add `GraphType.Histogram` to `takes_name`.
 
 - [ ] **Step 1: Failing tests** (append)
 
@@ -673,7 +678,7 @@ class TestFactories:
         qtbot.waitUntil(lambda: len(h.bin_heights()) == 1, timeout=5000)
 ```
 
-Check the exact names for range accessors (`start()`/`stop()` vs `first`/`second`) against `SciQLopPlotRange` bindings and the time-range setter on the panel (`set_time_axis_range` takes a `SciQLopPlotRange` or two floats) before running.
+(`panel.set_time_axis_range(double, double)` exists, `SciQLopMultiPlotPanel.hpp:275`; `SciQLopPlotRange` has `start()` / `stop()`, `SciQLopPlotRange.hpp:134-136`.)
 
 - [ ] **Step 2: Run** — FAIL.
 - [ ] **Step 3: Implement.**

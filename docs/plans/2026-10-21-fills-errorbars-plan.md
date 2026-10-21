@@ -159,7 +159,8 @@ QVector<int> QCPMultiGraph::legendComponents() const
 - `shownExpanded()`: `mExpanded && mMultiGraph && mMultiGraph->legendComponents().size() > 1`.
 - `rowHeight()`, `minimumOuterSizeHint()`: iterate `legendComponents()`; height `rh * (1 + shown.size())`.
 - `headerName()` and `headerRowText()`: use the first/last of `legendComponents()` and its size for the "▸/▾" and "first … last".
-- `selectTest`: `componentIndex = shown.value(hitRow - 1, shown.isEmpty() ? -1 : shown.last())`.
+- `selectTest`: `componentIndex = shown.isEmpty() ? -1 : shown[qMin(hitRow - 1, shown.size() - 1)]` (a click below the last row picks the last in-legend component, as today).
+- `selectEvent` (:131-132): the "nothing to expand, a click selects the line" case becomes `legendComponents().size() == 1` and selects `legendComponents().first()`, not component 0.
 - `draw()` collapsed: `segWidth = iconWidth / shown.size()`, position by position in `shown`; expanded: row `k` draws `shown[k]`.
 
 - [ ] **Step 4: Run to verify they pass**
@@ -674,6 +675,7 @@ void TestMultiGraph::fillCacheIsRebuiltOnZoom()
     mPlot->xAxis->setRange(1.5, 2.5);
     mPlot->replot(QCustomPlot::rpImmediateRefresh);
     QVERIFY(mg->mFills.first().verts != before);
+    QVERIFY(mPlot->plottableRhiLayer(mg->layer())); // the GPU branch ran, not only the export one
 }
 
 void TestMultiGraph::autoScaleIncludesHiddenLineBandEdges()
@@ -687,7 +689,7 @@ void TestMultiGraph::autoScaleIncludesHiddenLineBandEdges()
 
 Also one downsampled case: `fillFollowsADownsampledLine` — 500 000 rows of `y = sin`, fill to 0, render after the pipeline finished (wait like `zoomedOutLinesAreThinnedToThePixelWidth` does), assert red below the curve at a crest, not above.
 
-- [ ] **Step 2: Run to verify they fail** — the fill tests FAIL (no red pixels); `autoScaleIncludesHiddenLineBandEdges` already passes (it documents the lsNone rule; keep it).
+- [ ] **Step 2: Run to verify they fail** — every fill test FAILS (no red pixels). Contract test, green from the start, kept on purpose: `autoScaleIncludesHiddenLineBandEdges` (it pins the `lsNone` rule the fills rely on).
 
 - [ ] **Step 3: Implement** `fillRows` and `drawFills` per the rules above, with small helpers: `fillBaselinePixel(double value)` (rule 2), `ownerStep(const Component&)` mapping `LineStyle` to `qcp::fill::Step`, `fillVisible(const Fill&)`. Use `qcp::rhi::premultipliedColor(brush.color())` for the vertex colour (as `tessellateFillPolygon` does).
 
@@ -746,8 +748,9 @@ void TestMultiGraph::legendIconOfABandIsAFilledSwatch()
 - Produces (namespace `qcp::errorbars`):
 
 ```cpp
-//! One bar in pixels. value/lower/upper may be NaN; resolve() has already clamped crossed
-//! bounds and log-invalid bounds in data space.
+//! One bar in pixels. value/lower/upper may be NaN. Crossed and log-invalid bounds are clamped
+//! once, in data space, by the caller (Task 8) before mapping to pixels; resolve() only fills
+//! a missing bound.
 struct Bar { double key; double value; double lower; double upper; };
 
 //! A NaN bound falls back to the value (a one-sided bar). Returns false when fewer than two of
@@ -856,12 +859,14 @@ void TestErrorBarGeometry::noInfinitiesEverReachTheRuns()
     [[nodiscard]] std::optional<ErrorBars> componentErrorBars(int value) const;
 ```
 
+`setComponentErrorBars` also sets `inLegend = false` on the lower and upper components (bounds are never curves of their own). Fills do not touch the legend: shading between two real curves keeps both rows; `plot.band()` hides its upper edge itself.
+
 Storage: `QVector<ErrorBarsEntry> mErrorBars` with `struct ErrorBarsEntry { ErrorBars spec; qcp::ExtrusionCache bars; std::vector<float> band; bool asBand = false; };`. Validation as fills (all three columns distinct from each other where `lower == upper` is refused, `>= 0`, `< columnCount()` when a source exists). `dropDecorationsBeyond` also drops entries with any column `>= columnCount`. Setters invalidate like Task 4 (cap width or pen change must show on the next frame).
 
 Drawing (`drawErrorBars`, called right after `drawFills`, before the line loop):
 1. Skip when the value component is not `visible`.
 2. Data-space resolution per row, before mapping: when `y` is finite, `lower = min(lower, y)`, `upper = max(upper, y)`; on a log value axis a bound `<= 0` maps to the axis edge pixel (reuse Task 5's `fillBaselinePixel(0)` rule, without the 2× extension: bars stop at the edge).
-3. Bars only when `ds == mDataSource.get()` (after the L2 re-resolve at :999-1008) **and** `qcp::errorbars::barsFit(bars, 3 * capWidthPx)`. Then `pen = comp.selection.isEmpty() ? spec.pen.value_or(comp.pen) : comp.selectedPen` and `qcp::drawPolylineCached(painter, mParentPlot, mLayer, runs, pen, gpuOffset, clipRect(), needFreshLines, entry.bars)` (export: `drawPolylineWithGpuFallback`).
+3. Bars only when `ds == mDataSource.get()` (after the L2 re-resolve at :999-1008) **and** `qcp::errorbars::barsFit(bars, 3 * capWidthPx)`. `capWidthPx` is the full cap width: pass `capWidthPx / 2` to `barRuns`. Then `pen = comp.selection.isEmpty() ? spec.pen.value_or(comp.pen) : comp.selectedPen` and `qcp::drawPolylineCached(painter, mParentPlot, mLayer, runs, pen, gpuOffset, clipRect(), needFreshLines, entry.bars)` (export: `drawPolylineWithGpuFallback`).
 4. Otherwise a band: strip rows with `a = lower`, `b = upper` from `ds` (downsampled sources carry the bound columns), brush = the pen colour at alpha 64, drawn like a fill and cached in `entry.band`. `entry.asBand` records the mode for cache-hit frames.
 5. `entry.bars.clear()` and `entry.band.clear()` in the same block that clears `mExtrusionCaches` (:1074).
 
@@ -918,7 +923,10 @@ void TestMultiGraph::errorBoundsBelowZeroOnALogAxisReachTheEdge()
     mPlot->yAxis->setRange(0.1, 10);
     const QImage img = renderOf(mPlot);
     const QRect r = mPlot->axisRect()->rect();
-    QVERIFY(isRedish(img.pixelColor(int(mPlot->xAxis->coordToPixel(1)), r.bottom() - 3)));
+    bool lit = false;
+    for (int dy = 0; dy <= 2; ++dy)
+        lit = lit || isRedish(img.pixelColor(int(mPlot->xAxis->coordToPixel(1)), r.bottom() - dy));
+    QVERIFY(lit); // the stem reaches the bottom edge
 }
 
 void TestMultiGraph::selectedErrorBarsUseTheSelectedPen()
@@ -999,6 +1007,8 @@ void TestMultiGraph::capWidthChangeShowsOnTheNextFrame()
     //! The preset if one was set, else the component's flag, else true.
     bool column_in_legend(int column) const;
 ```
+
+Presets are applied to a component once: when the setter runs (if the component exists) and when `sync_components` creates its wrapper (only `[old_count, new_count)`). They are never re-applied to existing components on later batches, so a style the user sets afterwards sticks.
 
 Presets: `struct ColumnPreset { std::optional<GraphLineStyle> line_style; std::optional<GraphMarkerShape> marker; std::optional<bool> in_legend; }; std::map<int, ColumnPreset> _column_presets;`. A small `apply_preset(int column)` applies through the component wrapper (`component(column)->set_line_style(...)`, `set_marker_shape(...)`, and `_multiGraph->setComponentInLegend(column, ...)`), called from the setters when `column < plottable_count()` and from `sync_components` for each newly created component. Never call `component(column)` with an out-of-range index: it clamps to the last component (`QCPAbstractPlottableWrapper.hpp:161-168`); check `column < plottable_count()` first.
 
@@ -1213,11 +1223,13 @@ def _as_columns(*columns):
 def _error_bounds(y, err_minus, err_plus=None):
     import numpy as np
     y = np.asarray(y, dtype=np.float64)
-    try:
-        em = np.broadcast_to(np.asarray(err_minus, dtype=np.float64), y.shape)
-        ep = em if err_plus is None else np.broadcast_to(np.asarray(err_plus, dtype=np.float64), y.shape)
-    except ValueError:
-        raise ValueError(f"errors must be a scalar or match y's length ({len(y)})") from None
+    def as_error(e):
+        e = np.asarray(e, dtype=np.float64)
+        if e.ndim != 0 and e.shape != y.shape:
+            raise ValueError(f"errors must be a scalar or have y's length ({len(y)}), got shape {e.shape}")
+        return e
+    em = as_error(err_minus)
+    ep = em if err_plus is None else as_error(err_plus)
     return y - em, y + ep
 
 
