@@ -112,3 +112,65 @@ class TestComponentDecorations:
         assert v.fill_color() == QColor(10, 20, 30, 90)
         v.set_error_bars(lo, hi, 4.0)
         v.clear_error_bars()
+
+
+def _wide_tint(img, y):
+    # Wide rows only: the legend swatch is tinted too but a few pixels wide.
+    return sum(_tinted_red(img.pixelColor(x, y)) for x in range(img.width())) > img.width() // 2
+
+
+class TestFactories:
+    def test_band_shades_between_lower_and_upper(self, qtbot, plot, tmp_path):
+        plot.band(X, np.full_like(X, 3.0), np.full_like(X, 7.0), name="b", color="red")
+        plot.x_axis().set_range(0, 10)
+        plot.y_axis().set_range(0, 10)
+        img = _render(plot, tmp_path)
+        rows = [y for y in range(img.height()) if _wide_tint(img, y)]
+        assert _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
+        assert 0.25 * img.height() < max(rows) - min(rows) < 0.5 * img.height()
+
+    def test_band_is_one_legend_row(self, plot):
+        g = plot.band(X, X - 1, X + 1, name="b")
+        assert g.name == "b"
+        assert g.column_in_legend(0) and not g.column_in_legend(1)
+
+    def test_band_callback_passes_empty_batches_through(self, qtbot, plot):
+        calls = []
+
+        def cb(start, stop):
+            calls.append((start, stop))
+            if len(calls) == 1:
+                return None
+            x = np.linspace(start, stop, 20)
+            return x, x - 1, x + 1
+        g = plot.band(cb)
+        plot.x_axis().set_range(0, 10)
+        qtbot.waitUntil(lambda: len(calls) == 1, timeout=5000)
+        plot.x_axis().set_range(20, 30)
+        qtbot.waitUntil(lambda: len(g.components()) == 2, timeout=5000)
+
+    def test_error_bars_symmetric_and_asymmetric(self, plot):
+        x = np.arange(5.0)
+        g = plot.error_bars(x, x, 0.5)
+        assert len(g.components()) == 3
+        data = np.asarray(g.data()[1])
+        np.testing.assert_allclose(data[:, 2] - data[:, 1], 1.0)
+        g2 = plot.error_bars(x, x, 0.2, np.full(5, 0.7))
+        np.testing.assert_allclose(np.asarray(g2.data()[1])[:, 2] - x, 0.7)
+
+    def test_error_bars_length_mismatch_raises(self, plot):
+        with pytest.raises(ValueError):
+            plot.error_bars(np.arange(5.0), np.arange(5.0), np.ones(3))
+
+    def test_error_bars_callback_reaches_three_columns(self, qtbot, plot):
+        g = plot.error_bars(lambda a, b: (np.linspace(a, b, 10), np.ones(10), 0.1))
+        plot.x_axis().set_range(0, 10)
+        qtbot.waitUntil(lambda: len(g.components()) == 3, timeout=5000)
+
+    def test_panel_band_returns_plot_and_graph(self, qtbot, panel):
+        p, g = panel.band(X, X - 1, X + 1)
+        assert g is not None and p is not None
+
+    def test_bad_arity_raises_type_error(self, plot):
+        with pytest.raises(TypeError):
+            plot.band(X, X)

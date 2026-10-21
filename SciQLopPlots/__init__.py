@@ -231,10 +231,98 @@ def _patch_sciqlop_plot(cls):
 
 
 
+def _graph_of(result):
+    return result[1] if isinstance(result, tuple) else result
+
+
+def _as_columns(*columns):
+    import numpy as np
+    return np.column_stack([np.asarray(c, dtype=np.float64) for c in columns])
+
+
+def _error_bounds(y, err_minus, err_plus=None):
+    import numpy as np
+    y = np.asarray(y, dtype=np.float64)
+
+    def as_error(e):
+        e = np.asarray(e, dtype=np.float64)
+        if e.ndim != 0 and e.shape != y.shape:
+            raise ValueError(f"errors must be a scalar or have y's length ({len(y)}), got shape {e.shape}")
+        return e
+    em = as_error(err_minus)
+    ep = em if err_plus is None else as_error(err_plus)
+    return y - em, y + ep
+
+
+def _band_batch(x, lower, upper):
+    return x, _as_columns(lower, upper)
+
+
+def _error_batch(x, y, *errors):
+    return x, _as_columns(y, *_error_bounds(y, *errors))
+
+
+def _wrapped_callback(callback, to_batch):
+    def wrapped(start, stop):
+        batch = callback(start, stop)
+        if batch is None or len(batch) == 0:
+            return batch
+        return to_batch(*batch)
+    return wrapped
+
+
+def _line_data(args, to_batch, arity):
+    if len(args) == 1 and callable(args[0]):
+        return (_wrapped_callback(args[0], to_batch),)
+    if len(args) in arity:
+        return to_batch(*args)
+    raise TypeError(f"expected a callback or {' or '.join(map(str, arity))} arrays, got {len(args)} arguments")
+
+
+def _named(graph, name):
+    if name is not None:
+        graph.set_name(name)
+
+
+def _hide_columns(graph, columns, keep_in_legend=()):
+    for c in columns:
+        graph.set_column_line_style(c, GraphLineStyle.NoLine)
+        if c not in keep_in_legend:
+            graph.set_column_in_legend(c, False)
+
+
+def _band(self, *args, name=None, color=None, **kwargs):
+    data = _line_data(args, _band_batch, (3,))
+    colors = [color, color] if color is not None else []
+    result = self.line(*data, labels=[name or "band", "upper"], colors=colors, **kwargs)
+    graph = _graph_of(result)
+    _named(graph, name)
+    _hide_columns(graph, (0, 1), keep_in_legend=(0,))
+    graph.set_fill_between(0, 1)
+    return result
+
+
+def _error_bars(self, *args, name=None, color=None, cap_width=6.0, **kwargs):
+    data = _line_data(args, _error_batch, (3, 4))
+    colors = [color] * 3 if color is not None else []
+    result = self.line(*data, labels=[name or "y", "lower", "upper"], colors=colors, **kwargs)
+    graph = _graph_of(result)
+    _named(graph, name)
+    graph.set_column_marker_shape(0, GraphMarkerShape.Circle)
+    _hide_columns(graph, (0, 1, 2), keep_in_legend=(0,))
+    graph.set_error_bars(0, 1, 2, cap_width)
+    return result
+
+
 SciQLopPlot = _patch_sciqlop_plot(SciQLopPlot)
 SciQLopTimeSeriesPlot = _patch_sciqlop_plot(SciQLopTimeSeriesPlot)
 SciQLopMultiPlotPanel = _patch_sciqlop_plot(SciQLopMultiPlotPanel)
 SciQLopNDProjectionPlot = _patch_sciqlop_plot(SciQLopNDProjectionPlot)
+
+for _cls in (SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel):
+    _cls.band = _band
+    _cls.error_bars = _error_bars
+
 
 # --- Reactive pipeline API ---
 from .properties import register_property, OnDescriptor
