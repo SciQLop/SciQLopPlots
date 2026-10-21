@@ -212,6 +212,15 @@ SciQLopHistogram* SciQLopPlot::add_histogram(const QString& name, int bins)
     return hist;
 }
 
+SciQLopHistogramFunction* SciQLopPlot::add_histogram(GetDataPyCallable&& callable,
+                                                     const QString& name, int bins)
+{
+    auto* hist = new SciQLopHistogramFunction(this, this->m_axes[0], this->m_axes[1],
+                                              std::move(callable), name, bins);
+    _register_plottable_wrapper(hist);
+    return hist;
+}
+
 SciQLopTimeline* SciQLopPlot::add_timeline(QCPLaneLayout* layout)
 {
     auto* timeline = new SciQLopTimeline(this, layout, this->m_axes[1]);
@@ -745,11 +754,17 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
                 this->_rescale_axes_once_data_shown();
         },
         Qt::QueuedConnection);
+    _rescale_on_request(plottable, false);
+}
+
+void SciQLopPlot::_rescale_on_request(SciQLopPlottableInterface* plottable,
+                                      bool also_on_auto_scale)
+{
     connect(
-        plottable, &SciQLopGraphInterface::request_rescale, this,
-        [this]()
+        plottable, &SciQLopPlottableInterface::request_rescale, this,
+        [this, also_on_auto_scale]()
         {
-            if (this->m_fit_first_data)
+            if (this->m_fit_first_data || (also_on_auto_scale && this->m_auto_scale))
                 this->_rescale_axes_once_data_shown();
         },
         Qt::QueuedConnection);
@@ -946,32 +961,64 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
     return hist;
 }
 
-SciQLopHistogram* SciQLopPlot::histogram(const SciQLopPyBuffer& values, QString name, int bins,
-                                         bool log_bins, QVariantMap metadata)
+namespace
 {
-    auto* hist = m_impl->add_histogram(name, bins);
-    hist->set_meta_data(metadata);
-    hist->set_log_bins(log_bins);
-    // The binning is asynchronous: unlike a line, the first fit can only come from the result.
-    connect(
-        hist, &SciQLopGraphInterface::request_rescale, this,
-        [this]()
-        {
-            if (this->m_fit_first_data)
-                this->_rescale_axes_once_data_shown();
-        },
-        Qt::QueuedConnection);
+// A dtype or shape error must not leave an empty histogram on the plot.
+template <typename Fill>
+SciQLopHistogram* filled_or_deleted(SciQLopHistogram* hist, Fill&& fill)
+{
     try
     {
-        hist->set_values(values);
+        fill(hist);
     }
     catch (...)
     {
-        // A dtype or shape error must not leave an empty histogram on the plot.
         delete hist;
         throw;
     }
     return hist;
+}
+
+void start_on(SciQLopHistogramFunction* hist, QObject* observed)
+{
+    hist->observe(observed);
+    if (auto* axis = qobject_cast<SciQLopPlotAxisInterface*>(observed);
+        axis && axis->range().is_valid())
+        hist->set_range(axis->range());
+}
+} // namespace
+
+// The binning is asynchronous: unlike a line, the fit can only come from the result, which
+// asks for it on the first result and whenever the edges move.
+void SciQLopPlot::_configure_histogram(SciQLopHistogram* hist, const QVariantMap& metadata)
+{
+    hist->set_meta_data(metadata);
+    _rescale_on_request(hist, true);
+}
+
+SciQLopHistogram* SciQLopPlot::histogram(const SciQLopPyBuffer& values, QString name, int bins,
+                                         QVariantMap metadata)
+{
+    auto* hist = m_impl->add_histogram(name, bins);
+    _configure_histogram(hist, metadata);
+    return filled_or_deleted(hist, [&values](auto* h) { h->set_values(values); });
+}
+
+SciQLopHistogram* SciQLopPlot::histogram(GetDataPyCallable callable, QString name, int bins,
+                                         QObject* sync_with, QVariantMap metadata)
+{
+    auto* hist = m_impl->add_histogram(std::move(callable), name, bins);
+    _configure_histogram(hist, metadata);
+    start_on(hist, sync_with ? sync_with : time_axis());
+    return hist;
+}
+
+SciQLopHistogram* SciQLopPlot::bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
+                                    QString name, QVariantMap metadata)
+{
+    auto* hist = m_impl->add_histogram(name);
+    _configure_histogram(hist, metadata);
+    return filled_or_deleted(hist, [&](auto* h) { h->set_binned(edges, heights); });
 }
 
 QCPLaneLayout* SciQLopPlot::lane_layout()

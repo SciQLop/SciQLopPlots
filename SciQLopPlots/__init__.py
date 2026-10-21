@@ -129,38 +129,41 @@ def _pop_waterfall_kwargs(kwargs):
     return {k: kwargs.pop(k) for k in _WATERFALL_KWARGS if k in kwargs}
 
 
-def _reject_waterfall_kwargs(kwargs, graph_type):
-    stray = [k for k in _WATERFALL_KWARGS if k in kwargs]
-    if stray:
-        raise TypeError(
-            f"{', '.join(stray)} kwarg(s) only apply to GraphType.Waterfall, "
-            f"got graph_type={graph_type!r}")
-
-
 _HISTOGRAM2D_KWARGS = ("x_bins", "y_bins", "x_bins_log", "y_bins_log")
+_HISTOGRAM_KWARGS = ("bins", "range", "log_bins", "normalization", "style")
+
+_KWARGS_OF = {
+    GraphType.Waterfall: _WATERFALL_KWARGS,
+    GraphType.Histogram2D: _HISTOGRAM2D_KWARGS,
+    GraphType.Histogram: _HISTOGRAM_KWARGS,
+}
 
 
-def _reject_histogram2d_kwargs(kwargs, graph_type):
-    stray = [k for k in _HISTOGRAM2D_KWARGS if k in kwargs]
-    if stray:
-        raise TypeError(
-            f"{', '.join(stray)} kwarg(s) only apply to GraphType.Histogram2D, "
-            f"got graph_type={graph_type!r}")
+def _reject_foreign_kwargs(kwargs, graph_type):
+    for owner, names in _KWARGS_OF.items():
+        stray = [k for k in names if k in kwargs]
+        if stray and owner != graph_type:
+            raise TypeError(
+                f"{', '.join(stray)} kwarg(s) only apply to GraphType.{owner.name}, "
+                f"got graph_type={graph_type!r}")
+
+
+_TWO_ARGUMENT_HISTOGRAM = ("GraphType.Histogram takes one argument (values or a callback); "
+                           "use plot.bars(edges, heights) for pre-binned data")
 
 
 def _patch_sciqlop_plot(cls):
     def plot_func(self, callback, graph_type=None, **kwargs):
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        _reject_foreign_kwargs(kwargs, graph_type)
         if graph_type == GraphType.Waterfall:
-            _reject_histogram2d_kwargs(kwargs, graph_type)
             wf_kwargs = _pop_waterfall_kwargs(kwargs)
             wf = cls.waterfall(self, callback, **kwargs)
             return _apply_waterfall_kwargs(wf, **wf_kwargs)
         if graph_type == GraphType.Histogram2D:
-            _reject_waterfall_kwargs(kwargs, graph_type)
             return cls.histogram2d(self, callback, **kwargs)
-        _reject_waterfall_kwargs(kwargs, graph_type)
-        _reject_histogram2d_kwargs(kwargs, graph_type)
+        if graph_type == GraphType.Histogram:
+            return cls.histogram(self, callback, **kwargs)
         if graph_type == GraphType.ParametricCurve:
             return cls.parametric_curve(self, callback, **kwargs)
         elif graph_type == GraphType.Line:
@@ -180,7 +183,8 @@ def _patch_sciqlop_plot(cls):
                           stacklevel=2)
         graph_type = graph_type or GraphType.Line
         # Only colormaps and 2D histograms take name= natively (#114).
-        takes_name = graph_type in (GraphType.ColorMap, GraphType.Histogram2D) or len(args) == 3
+        takes_name = (graph_type in (GraphType.ColorMap, GraphType.Histogram2D, GraphType.Histogram)
+                      or len(args) == 3)
         graph = _plot(self, *args, name=name if takes_name else None, labels=labels,
                       colors=colors, graph_type=graph_type, **kwargs)
         if name is not None and not takes_name:
@@ -191,8 +195,7 @@ def _patch_sciqlop_plot(cls):
     def _plot(self, *args, name=None, labels=None, colors=None, graph_type=None, **kwargs):
         kwargs = _merge_kwargs(kwargs, name=name, labels=labels, colors=colors)
         if (graph_type == GraphType.ParametricCurve) and (len(args) in (1, 2, 4)) and not callable(args[0]):
-            _reject_waterfall_kwargs(kwargs, graph_type)
-            _reject_histogram2d_kwargs(kwargs, graph_type)
+            _reject_foreign_kwargs(kwargs, graph_type)
             plot_type = kwargs.pop("plot_type", None)
             if plot_type == PlotType.Projections:
                 return cls.projection(self, _projection_buffers(args), **kwargs)
@@ -200,8 +203,10 @@ def _patch_sciqlop_plot(cls):
         if len(args) == 1:
             return plot_func(self, *args, graph_type=graph_type, **kwargs)
         if len(args) == 2:
+            if graph_type == GraphType.Histogram:
+                raise TypeError(_TWO_ARGUMENT_HISTOGRAM)
+            _reject_foreign_kwargs(kwargs, graph_type)
             if graph_type == GraphType.Waterfall:
-                _reject_histogram2d_kwargs(kwargs, graph_type)
                 wf_kwargs = _pop_waterfall_kwargs(kwargs)
                 wf = _apply_waterfall_kwargs(cls.waterfall(self, *args, **kwargs), **wf_kwargs)
                 # plot() fitted the axes before the offsets were applied. On a panel, refit
@@ -209,10 +214,7 @@ def _patch_sciqlop_plot(cls):
                 (wf[0] if isinstance(wf, tuple) else self).rescale_axes()
                 return wf
             if graph_type == GraphType.Histogram2D:
-                _reject_waterfall_kwargs(kwargs, graph_type)
                 return cls.histogram2d(self, *args, **kwargs)
-            _reject_waterfall_kwargs(kwargs, graph_type)
-            _reject_histogram2d_kwargs(kwargs, graph_type)
             if graph_type == GraphType.Line:
                 return cls.line(self, *args, **kwargs)
             if graph_type == GraphType.Scatter:
@@ -221,8 +223,7 @@ def _patch_sciqlop_plot(cls):
                 return cls.colormap(self, *args, **kwargs)
             raise ValueError(f"unsupported graph_type {graph_type!r} for 2-arg plot()")
         if len(args) == 3:
-            _reject_waterfall_kwargs(kwargs, graph_type)
-            _reject_histogram2d_kwargs(kwargs, graph_type)
+            _reject_foreign_kwargs(kwargs, GraphType.ColorMap)
             return cls.colormap(self, *args, **kwargs)
         raise ValueError(f"only 1, 2 or 3 arguments are supported, got {len(args)}")
 
@@ -321,9 +322,36 @@ SciQLopTimeSeriesPlot = _patch_sciqlop_plot(SciQLopTimeSeriesPlot)
 SciQLopMultiPlotPanel = _patch_sciqlop_plot(SciQLopMultiPlotPanel)
 SciQLopNDProjectionPlot = _patch_sciqlop_plot(SciQLopNDProjectionPlot)
 
-for _cls in (SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel):
+def _configure_histogram(hist, range, log_bins, normalization, style):
+    # Log first: the range check depends on it.
+    if log_bins:
+        hist.set_log_bins(True)
+    if range is not None:
+        hist.set_bin_range(*range)
+    hist.set_normalization(normalization)
+    if style is not None:
+        hist.set_style(style)
+
+
+def _histogram_calling(cpp_histogram):
+    def histogram(self, values_or_callback, bins=64, range=None, log_bins=False,
+                  normalization=HistogramNormalization.Count, style=None, name=None, **kwargs):
+        if name is not None:
+            kwargs["name"] = name
+        result = cpp_histogram(self, values_or_callback, bins=bins, **kwargs)
+        _configure_histogram(_graph_of(result), range, log_bins, normalization, style)
+        return result
+    histogram.__doc__ = cpp_histogram.__doc__
+    return histogram
+
+
+_HISTOGRAM_HOSTS = (SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel)
+_cpp_histogram = {_cls: _cls.histogram for _cls in _HISTOGRAM_HOSTS}
+
+for _cls in _HISTOGRAM_HOSTS:
     _cls.band = _band
     _cls.error_bars = _error_bars
+    _cls.histogram = _histogram_calling(_cpp_histogram[_cls])
 
 
 # --- Reactive pipeline API ---

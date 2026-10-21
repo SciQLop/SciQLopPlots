@@ -39,6 +39,7 @@
 
 class SciQLopTheme;
 class InspectorExtension;
+class SciQLopHistogram;
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 
 class SciQLopPlotInterface : public QFrame
@@ -46,6 +47,7 @@ class SciQLopPlotInterface : public QFrame
 
     Q_OBJECT
 
+    QList<AxisType> m_unsynchronized_axes;
 
 protected:
     QList<SciQLopPlotAxisInterface*> m_axes_to_rescale;
@@ -186,6 +188,26 @@ public:
             default:
                 return nullptr;
         }
+    }
+
+    //! A panel's synchronisers leave an unsynchronized axis alone (a histogram's x holds
+    //! values, not the x the panel shares). Set it before adding the plot to the panel.
+    inline void set_axis_synchronized(AxisType axis, bool synchronized) noexcept
+    {
+        m_unsynchronized_axes.removeAll(axis);
+        if (!synchronized)
+            m_unsynchronized_axes.append(axis);
+    }
+
+    inline bool axis_synchronized(AxisType axis) const noexcept
+    {
+        return !m_unsynchronized_axes.contains(axis);
+    }
+
+    //! The axis a panel synchroniser drives, nullptr if this plot opted out of it.
+    inline SciQLopPlotAxisInterface* synchronized_axis(AxisType axis) const noexcept
+    {
+        return axis_synchronized(axis) ? this->axis(axis) : nullptr;
     }
 
     inline virtual SciQLopPlotAxisInterface* axis(Qt::AnchorPoint pos, int index = 0) const noexcept
@@ -398,6 +420,29 @@ public:
     {
         return plot_impl(callable, name, x_bins, y_bins, x_bins_log, y_bins_log,
                          sync_with, metaData);
+    }
+
+    inline virtual SciQLopHistogram* histogram(const SciQLopPyBuffer& values,
+                                               QString name = QStringLiteral("Histogram"),
+                                               int bins = 64, QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopHistogram* histogram(GetDataPyCallable callable,
+                                               QString name = QStringLiteral("Histogram"),
+                                               int bins = 64, QObject* sync_with = nullptr,
+                                               QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual SciQLopHistogram* bars(const SciQLopPyBuffer& edges,
+                                          const SciQLopPyBuffer& heights,
+                                          QString name = QStringLiteral("Bars"),
+                                          QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
     }
 
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)

@@ -32,7 +32,8 @@ void XAxisSynchronizer::_display_x_axis_only_last_plot()
     {
         if (plot.isNull())
             continue;
-        if (auto* axis = plot->x_axis(); axis && !qobject_cast<SciQLopPlotDummyAxis*>(axis))
+        if (auto* axis = plot->synchronized_axis(AxisType::XAxis);
+            axis && !qobject_cast<SciQLopPlotDummyAxis*>(axis))
         {
             axis->set_visible(false);
             last = axis;

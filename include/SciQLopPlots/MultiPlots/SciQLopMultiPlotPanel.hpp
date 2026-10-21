@@ -119,6 +119,28 @@ protected:
         return { plot, plot->histogram2d(std::forward<Args>(args)...) };
     }
 
+    //! A plot of its own whose x axis stays out of the panel's x sync: it holds values.
+    //! The plot goes away again if make throws.
+    template <typename Make>
+    QPair<SciQLopPlotInterface*, SciQLopHistogram*> _plot_histogram(int index, Make&& make)
+    {
+        auto* plot = new SciQLopPlot();
+        plot->set_axis_synchronized(AxisType::XAxis, false);
+        if (index == -1)
+            add_plot(plot);
+        else
+            insert_plot(index, plot);
+        try
+        {
+            return { plot, make(plot) };
+        }
+        catch (...)
+        {
+            remove_plot(plot);
+            throw;
+        }
+    }
+
     template <typename T, typename U, typename... Args>
     QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
@@ -253,6 +275,18 @@ public:
     void removeWidget(QWidget* widget);
 
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
+
+    QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
+              int bins = 64, int index = -1, QVariantMap metadata = {}) Q_DECL_OVERRIDE;
+    QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    histogram(GetDataPyCallable callable, QString name = QStringLiteral("Histogram"),
+              int bins = 64, QObject* sync_with = nullptr, int index = -1,
+              QVariantMap metadata = {}) Q_DECL_OVERRIDE;
+    QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
+         QString name = QStringLiteral("Bars"), int index = -1,
+         QVariantMap metadata = {}) Q_DECL_OVERRIDE;
 
     //! A compact time-series plot with lane names on its y axis (see
     //! SciQLopPlot::configure_as_timeline), plus the timeline plottable to feed via

@@ -26,7 +26,7 @@
 void _set_axis_range(const SciQLopPlotRange& range, const QPointer<SciQLopPlotInterface>& plot,
                      AxisType m_sync_axis)
 {
-    if (auto axis = plot->axis(m_sync_axis))
+    if (auto axis = plot->synchronized_axis(m_sync_axis))
         axis->set_range(range);
 }
 
@@ -36,7 +36,7 @@ void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>
         _plots, plots,
         [this](SciQLopPlotInterface* plot)
         {
-            if (auto axis = plot->axis(this->m_sync_axis))
+            if (auto axis = plot->synchronized_axis(this->m_sync_axis))
                 connect(axis, &SciQLopPlotAxisInterface::range_changed, this,
                         &AxisSynchronizer::set_axis_range);
         },

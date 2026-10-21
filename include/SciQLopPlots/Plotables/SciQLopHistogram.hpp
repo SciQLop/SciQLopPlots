@@ -68,7 +68,8 @@ public:
     int bins() const noexcept;
     //! Not set_range: SciQLopFunctionGraph observers drive a set_range(SciQLopPlotRange) slot
     //! with the fetch window; the bin range is a different thing.
-    //! \throws std::invalid_argument if lower >= upper, or lower <= 0 with log bins.
+    //! \throws std::invalid_argument if a bound is not finite, lower >= upper, or lower <= 0
+    //!         with log bins.
     void set_bin_range(double lower, double upper);
     void clear_bin_range();
     void reset_edges();

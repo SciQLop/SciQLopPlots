@@ -384,6 +384,28 @@ public:
                          sync_with, index, metaData);
     }
 
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
+              int bins = 64, int index = -1, QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    histogram(GetDataPyCallable callable, QString name = QStringLiteral("Histogram"),
+              int bins = 64, QObject* sync_with = nullptr, int index = -1,
+              QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
+    inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+    bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
+         QString name = QStringLiteral("Bars"), int index = -1, QVariantMap metadata = {})
+    {
+        throw std::runtime_error("Not implemented");
+    }
+
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     waterfall(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),

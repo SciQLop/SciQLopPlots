@@ -77,6 +77,19 @@
             return nullptr;
         }
     </template>
+    <!-- Insert with <replace from="$TYPE" to="the return type"/>. -->
+    <template name="returning_raises_valueerror">
+        try {
+            $TYPE result = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+            %PYARG_0 = %CONVERTTOPYTHON[$TYPE](result);
+        } catch (const std::invalid_argument&amp; e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return nullptr;
+        }
+    </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
     <load-typesystem name="typesystem_widgets.xml" generate="no" />
@@ -660,18 +673,19 @@
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
         <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
-        <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,bool,QVariantMap)">
+        <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,QVariantMap)">
             <inject-code class="target" position="beginning">
-                try {
-                    SciQLopHistogram* hist = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
-                    %PYARG_0 = %CONVERTTOPYTHON[SciQLopHistogram*](hist);
-                } catch (const std::invalid_argument&amp; e) {
-                    PyErr_SetString(PyExc_ValueError, e.what());
-                    return nullptr;
-                } catch (const std::exception&amp; e) {
-                    PyErr_SetString(PyExc_RuntimeError, e.what());
-                    return nullptr;
-                }
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="histogram(GetDataPyCallable,QString,int,QObject*,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="bars(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
             </inject-code>
         </modify-function>
     </object-type>
@@ -1235,6 +1249,21 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="histogram(GetDataPyCallable,QString,int,QObject*,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="bars(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+            </inject-code>
+        </modify-function>
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>

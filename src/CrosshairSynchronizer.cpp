@@ -27,7 +27,7 @@
 
 bool CrosshairSynchronizer::has_sync_axis(SciQLopPlotInterface* plot) const
 {
-    auto* axis = plot->axis(m_sync_axis);
+    auto* axis = plot->synchronized_axis(m_sync_axis);
     return axis && !qobject_cast<SciQLopPlotDummyAxis*>(axis);
 }
 

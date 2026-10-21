@@ -26,6 +26,7 @@
 #include "SciQLopPlots/qcp_enums.hpp"
 #include <datasource/row-major-multi-datasource.h>
 #include <datasource/soa-multi-datasource.h>
+#include <cmath>
 #include <numeric>
 #include <span>
 #include <stdexcept>
@@ -253,6 +254,8 @@ int SciQLopHistogram::bins() const noexcept
 
 void SciQLopHistogram::set_bin_range(double lower, double upper)
 {
+    if (!std::isfinite(lower) || !std::isfinite(upper))
+        throw std::invalid_argument("histogram range: bounds must be finite");
     if (!(lower < upper))
         throw std::invalid_argument("histogram range: lower must be below upper");
     if (log_bins() && lower <= 0)
@@ -412,7 +415,8 @@ SciQLopHistogramFunction::SciQLopHistogramFunction(QCustomPlot* parent, SciQLopP
     : SciQLopHistogram { parent, xAxis, yAxis, name, bins }
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    this->set_range({ parent->xAxis->range().lower, parent->xAxis->range().upper });
+    // No fetch from xAxis here, unlike the line graphs: it holds values, not the fetch window.
+    // The factory that picks the observed axis starts the first fetch.
 }
 
 SciQLopHistogramRemote::SciQLopHistogramRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

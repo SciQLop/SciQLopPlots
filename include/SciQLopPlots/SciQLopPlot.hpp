@@ -111,6 +111,8 @@ public:
                                                       int y_bins = 100);
 
     SciQLopHistogram* add_histogram(const QString& name, int bins = 64);
+    SciQLopHistogramFunction* add_histogram(GetDataPyCallable&& callable, const QString& name,
+                                            int bins = 64);
 
     SciQLopTimeline* add_timeline(QCPLaneLayout* layout);
 
@@ -281,6 +283,10 @@ protected:
     void _configure_color_map(SciQLopColorMapInterface* cmap, bool y_log_scale, bool z_log_scale);
 
     void _connect_callable_sync(SciQLopPlottableInterface* plottable, QObject* sync_with);
+    //! Queued, so the rescale sees the data the request announced. With also_on_auto_scale,
+    //! auto-scale honours the request as well as fit_first_data.
+    void _rescale_on_request(SciQLopPlottableInterface* plottable, bool also_on_auto_scale);
+    void _configure_histogram(SciQLopHistogram* hist, const QVariantMap& metadata);
     //! rescale_axes() once every graph shows its latest batch: NeoQCP stages new data
     //! on a rendered graph and swaps it in later, and a rescale before that fits the
     //! data being replaced.
@@ -419,7 +425,16 @@ public:
     //! \throws std::invalid_argument if bins <= 0.
     SciQLopHistogram* histogram(const SciQLopPyBuffer& values,
                                 QString name = QStringLiteral("Histogram"), int bins = 64,
-                                bool log_bins = false, QVariantMap metadata = {});
+                                QVariantMap metadata = {}) override;
+    //! Fetches over the time axis (or sync_with), never over x: x holds the values.
+    //! \throws std::invalid_argument if bins <= 0.
+    SciQLopHistogram* histogram(GetDataPyCallable callable,
+                                QString name = QStringLiteral("Histogram"), int bins = 64,
+                                QObject* sync_with = nullptr, QVariantMap metadata = {}) override;
+    //! \throws std::invalid_argument unless edges has one more entry than heights has rows.
+    SciQLopHistogram* bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
+                           QString name = QStringLiteral("Bars"),
+                           QVariantMap metadata = {}) override;
 
     SciQLopTimeline* add_timeline(int lane_height = 22);
 #ifndef BINDINGS_H

@@ -164,7 +164,7 @@ public:
         _x_axis_range = range;
         for (auto plot : plots())
         {
-            if (auto* axis = plot->x_axis())
+            if (auto* axis = plot->synchronized_axis(AxisType::XAxis))
                 axis->set_range(range);
         }
     }

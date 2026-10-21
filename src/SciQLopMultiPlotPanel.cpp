@@ -545,6 +545,33 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int x
     return { nullptr, nullptr };
 }
 
+QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+SciQLopMultiPlotPanel::histogram(const SciQLopPyBuffer& values, QString name, int bins, int index,
+                                 QVariantMap metadata)
+{
+    return _plot_histogram(index, [&](SciQLopPlot* plot)
+                           { return plot->histogram(values, name, bins, metadata); });
+}
+
+QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+SciQLopMultiPlotPanel::histogram(GetDataPyCallable callable, QString name, int bins,
+                                 QObject* sync_with, int index, QVariantMap metadata)
+{
+    return _plot_histogram(index,
+                           [&](SciQLopPlot* plot) {
+                               return plot->histogram(std::move(callable), name, bins, sync_with,
+                                                      metadata);
+                           });
+}
+
+QPair<SciQLopPlotInterface*, SciQLopHistogram*>
+SciQLopMultiPlotPanel::bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
+                            QString name, int index, QVariantMap metadata)
+{
+    return _plot_histogram(index, [&](SciQLopPlot* plot)
+                           { return plot->bars(edges, heights, name, metadata); });
+}
+
 void SciQLopMultiPlotPanel::dragEnterEvent(QDragEnterEvent* event)
 {
     using namespace cpp_utils;
