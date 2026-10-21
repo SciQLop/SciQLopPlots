@@ -96,6 +96,26 @@ class TestRebinOnTheNewAxis:
         plot.x_axis().set_log(True)
         assert changes == []
 
+    def test_histogram_keeps_its_auto_edges_on_a_same_scale_axis(self, qtbot, plot):
+        h = plot.histogram(np.linspace(0.0, 100.0, 500), bins=10)
+        qtbot.waitUntil(lambda: len(h.bin_edges()) == 11, timeout=5000)
+        h.set_values(np.linspace(40.0, 60.0, 500))
+        qtbot.wait(200)
+        assert h.bin_edges()[0] == 0.0
+        h.set_x_axis(plot.x2_axis())
+        qtbot.wait(200)
+        assert (h.bin_edges()[0], h.bin_edges()[-1]) == (0.0, 100.0)
+
+    def test_histogram2d_does_not_rebin_on_a_same_scale_axis(self, qtbot, plot):
+        h = plot.histogram2d(np.linspace(0.0, 1.0, 500), np.linspace(0.0, 1.0, 500))
+        qtbot.wait(200)
+        busy = []
+        h.busy_changed.connect(busy.append)
+        h.set_x_axis(plot.x2_axis())
+        h.set_y_axis(plot.y2_axis())
+        qtbot.wait(200)
+        assert busy == []
+
 
 class TestLateAxisSynchronization:
     def _two_plots(self, panel):

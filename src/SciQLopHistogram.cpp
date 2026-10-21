@@ -399,9 +399,11 @@ void SciQLopHistogram::_reset_edges_on_log_of_key_axis()
                                   });
 }
 
-// Re-binned at once: the binning took its log flag from the old axis.
+// Re-binned at once when the binning's log flag, taken from the old axis, is now wrong.
+// Only then: a reset throws away auto edges, which otherwise never shrink.
 void SciQLopHistogram::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
+    const bool was_log = log_bins();
     apply_axis(_keyAxis, axis,
                [this](auto* a)
                {
@@ -409,7 +411,7 @@ void SciQLopHistogram::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
                        _hist->setKeyAxis(a);
                });
     _reset_edges_on_log_of_key_axis();
-    if (_hist)
+    if (_hist && was_log != log_bins())
         _hist->resetEdges();
 }
 

@@ -87,10 +87,11 @@ void SciQLopHistogram2D::_rebin_on_log_of(SciQLopPlotAxis* axis,
 void SciQLopHistogram2D::_rebin_for_new_axis(bool was_log, bool is_log,
                                              void (SciQLopHistogram2D::*log_changed)(bool))
 {
+    if (was_log == is_log)
+        return;
     if (_hist)
         _hist->refreshBinning();
-    if (was_log != is_log)
-        Q_EMIT(this->*log_changed)(is_log);
+    Q_EMIT(this->*log_changed)(is_log);
 }
 
 void SciQLopHistogram2D::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
