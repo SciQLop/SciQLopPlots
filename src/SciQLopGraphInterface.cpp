@@ -23,6 +23,7 @@
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
+#include "SciQLopPlots/Plotables/SciQLopHistogram.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
@@ -42,7 +43,12 @@ SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObje
 QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* plottable)
 {
     QList<QCPAbstractPlottable*> plottables;
-    if (auto* graph = qobject_cast<const SciQLopGraphInterface*>(plottable))
+    if (auto* histogram = qobject_cast<const SciQLopHistogram*>(plottable))
+    {
+        if (histogram->histogram())
+            plottables.append(histogram->histogram());
+    }
+    else if (auto* graph = qobject_cast<const SciQLopGraphInterface*>(plottable))
     {
         for (auto* component : graph->components())
             if (auto* c = qobject_cast<SciQLopGraphComponent*>(component);

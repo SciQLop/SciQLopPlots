@@ -23,6 +23,7 @@
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopCrosshair.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
+#include "SciQLopPlots/Plotables/SciQLopHistogram.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
 #include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
@@ -108,6 +109,8 @@ public:
                                                  bool y_bins_log = false);
     SciQLopHistogram2DRemote* add_remote_histogram2d(const QString& name, int x_bins = 100,
                                                       int y_bins = 100);
+
+    SciQLopHistogram* add_histogram(const QString& name, int bins = 64);
 
     SciQLopTimeline* add_timeline(QCPLaneLayout* layout);
 
@@ -412,6 +415,11 @@ public:
                                                  const QString& name, int x_bins = 100,
                                                  int y_bins = 100, bool x_bins_log = false,
                                                  bool y_bins_log = false);
+
+    //! \throws std::invalid_argument if bins <= 0.
+    SciQLopHistogram* histogram(const SciQLopPyBuffer& values,
+                                QString name = QStringLiteral("Histogram"), int bins = 64,
+                                bool log_bins = false, QVariantMap metadata = {});
 
     SciQLopTimeline* add_timeline(int lane_height = 22);
 #ifndef BINDINGS_H

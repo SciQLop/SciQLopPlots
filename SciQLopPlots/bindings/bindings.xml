@@ -91,6 +91,8 @@
     <enum-type name="GraphMarkerShape" python-type="IntEnum"/>
     <enum-type name="ProjectionAxisLinking" python-type="IntEnum"/>
     <enum-type name="GraphLineStyle" python-type="IntEnum"/>
+    <enum-type name="HistogramNormalization" python-type="IntEnum"/>
+    <enum-type name="HistogramStyle" python-type="IntEnum"/>
     <enum-type name="ColorGradient" python-type="IntEnum"/>
     <enum-type name="ProductsModelNodeType" python-type="IntEnum"/>
     <enum-type name="ParameterType" python-type="IntEnum"/>
@@ -658,6 +660,20 @@
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
         <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
+        <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,bool,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                try {
+                    SciQLopHistogram* hist = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                    %PYARG_0 = %CONVERTTOPYTHON[SciQLopHistogram*](hist);
+                } catch (const std::invalid_argument&amp; e) {
+                    PyErr_SetString(PyExc_ValueError, e.what());
+                    return nullptr;
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(PyExc_RuntimeError, e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
     </object-type>
 
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes">
@@ -808,6 +824,26 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
     </object-type>
+    <object-type name="SciQLopHistogram" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="set_values(SciQLopPyBuffer)" exception-handling="auto-on"/>
+        <modify-function signature="set_binned(SciQLopPyBuffer,SciQLopPyBuffer)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_bins(int)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_bin_range(double,double)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopHistogram2D" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
@@ -872,6 +908,12 @@
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogram2DRemote" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopHistogramFunction" parent-management="yes">
+        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+    </object-type>
+    <object-type name="SciQLopHistogramRemote" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopWaterfallGraphFunction" parent-management="yes">

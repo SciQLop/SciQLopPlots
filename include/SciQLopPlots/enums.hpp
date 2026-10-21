@@ -75,7 +75,8 @@ enum class GraphType
     Scatter,
     ColorMap,
     Waterfall,
-    Histogram2D
+    Histogram2D,
+    Histogram
 };
 Q_DECLARE_METATYPE(GraphType);
 
@@ -158,6 +159,21 @@ enum class GraphLineStyle
     StepCenter
 };
 Q_DECLARE_METATYPE(GraphLineStyle);
+
+enum class HistogramNormalization
+{
+    Count,
+    Density,
+    Probability
+};
+Q_DECLARE_METATYPE(HistogramNormalization);
+
+enum class HistogramStyle
+{
+    Bars,
+    Step
+};
+Q_DECLARE_METATYPE(HistogramStyle);
 
 enum class ColorGradient
 {

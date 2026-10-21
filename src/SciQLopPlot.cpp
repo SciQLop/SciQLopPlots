@@ -205,6 +205,13 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
     return hist;
 }
 
+SciQLopHistogram* SciQLopPlot::add_histogram(const QString& name, int bins)
+{
+    auto* hist = new SciQLopHistogram(this, this->m_axes[0], this->m_axes[1], name, bins);
+    _register_plottable_wrapper(hist);
+    return hist;
+}
+
 SciQLopTimeline* SciQLopPlot::add_timeline(QCPLaneLayout* layout)
 {
     auto* timeline = new SciQLopTimeline(this, layout, this->m_axes[1]);
@@ -935,6 +942,34 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
     {
         _configure_color_map(hist, y_bins_log, false);
         _connect_callable_sync(hist, nullptr);
+    }
+    return hist;
+}
+
+SciQLopHistogram* SciQLopPlot::histogram(const SciQLopPyBuffer& values, QString name, int bins,
+                                         bool log_bins, QVariantMap metadata)
+{
+    auto* hist = m_impl->add_histogram(name, bins);
+    hist->set_meta_data(metadata);
+    hist->set_log_bins(log_bins);
+    // The binning is asynchronous: unlike a line, the first fit can only come from the result.
+    connect(
+        hist, &SciQLopGraphInterface::request_rescale, this,
+        [this]()
+        {
+            if (this->m_fit_first_data)
+                this->_rescale_axes_once_data_shown();
+        },
+        Qt::QueuedConnection);
+    try
+    {
+        hist->set_values(values);
+    }
+    catch (...)
+    {
+        // A dtype or shape error must not leave an empty histogram on the plot.
+        delete hist;
+        throw;
     }
     return hist;
 }

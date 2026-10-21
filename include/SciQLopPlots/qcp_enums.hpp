@@ -138,6 +138,42 @@ inline GraphLineStyle from_qcp(QCPGraph::LineStyle style)
     }
 }
 
+inline qcp::algo::HistogramNormalization to_qcp(HistogramNormalization normalization)
+{
+    switch (normalization)
+    {
+        case HistogramNormalization::Density:
+            return qcp::algo::HistogramNormalization::Density;
+        case HistogramNormalization::Probability:
+            return qcp::algo::HistogramNormalization::Probability;
+        default:
+            return qcp::algo::HistogramNormalization::Count;
+    }
+}
+
+inline HistogramNormalization from_qcp(qcp::algo::HistogramNormalization normalization)
+{
+    switch (normalization)
+    {
+        case qcp::algo::HistogramNormalization::Density:
+            return HistogramNormalization::Density;
+        case qcp::algo::HistogramNormalization::Probability:
+            return HistogramNormalization::Probability;
+        default:
+            return HistogramNormalization::Count;
+    }
+}
+
+inline QCPHistogram::Style to_qcp(HistogramStyle style)
+{
+    return style == HistogramStyle::Step ? QCPHistogram::sStep : QCPHistogram::sBars;
+}
+
+inline HistogramStyle from_qcp(QCPHistogram::Style style)
+{
+    return style == QCPHistogram::sStep ? HistogramStyle::Step : HistogramStyle::Bars;
+}
+
 constexpr ColorGradient from_qcp(QCPColorGradient::GradientPreset gradient)
 {
     switch (gradient)
