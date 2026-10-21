@@ -60,7 +60,8 @@ public:
      * \throws std::invalid_argument for any other buffer count.
      */
     Q_SLOT virtual void set_data(const QList<SciQLopPyBuffer>& data) override;
-    //! \throws std::invalid_argument unless \a buffers is a valid batch size for \a panes.
+    //! \throws std::invalid_argument unless \a buffers is a valid batch size for \a panes,
+    //!         or if there are fewer than 2 panes.
     static void check_batch_size(qsizetype panes, qsizetype buffers);
 
     //! Also renames every pane's legend entry: a projection is one curve.

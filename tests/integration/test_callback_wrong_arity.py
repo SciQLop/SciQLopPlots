@@ -47,3 +47,13 @@ def test_two_pane_projection_takes_time_and_two_dimensions(qtbot):
     qtbot.waitUntil(lambda: proj.subplot(0).x_axis().range().start() < -0.9 or bool(failures),
                     timeout=5000)
     assert failures == []
+
+
+def test_one_pane_projection_reports_its_batches(qtbot):
+    proj = SciQLopNDProjectionPlot(1)
+    qtbot.addWidget(proj)
+    t = np.linspace(0.0, 10.0, 200)
+    g = proj.add_model_curve(lambda start, stop: [t, np.cos(t)], label="model")
+    with qtbot.waitSignal(g.fetch_failed, timeout=5000) as blocker:
+        _fetch(g)
+    assert "at least 2 panes" in blocker.args[0]

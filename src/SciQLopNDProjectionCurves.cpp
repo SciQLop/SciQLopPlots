@@ -47,6 +47,9 @@ QStringList pane_labels(qsizetype panes, const QStringList& labels, const QStrin
 
 void SciQLopNDProjectionCurves::check_batch_size(qsizetype panes, qsizetype buffers)
 {
+    if (panes < 2)
+        throw std::invalid_argument("Projection: needs at least 2 panes, got "
+                                    + std::to_string(panes));
     if (buffers != panes + 1 && buffers != 2 * panes && buffers != 3 * panes)
         throw std::invalid_argument("Projection: expected [t, d0..d" + std::to_string(panes - 1)
                                     + "] (" + std::to_string(panes + 1) + " buffers), or "
@@ -167,12 +170,6 @@ QList<QPair<int, int>> SciQLopNDProjectionCurves::_dimension_pairs(qsizetype cou
 void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 {
     const auto curves_count = m_curves.size();
-
-    if (curves_count < 2)
-    {
-        DEBUG_MESSAGE("Need at least 2 curves for projection");
-        return;
-    }
     check_batch_size(curves_count, data.size());
 
     if (data.size() == curves_count + 1)
