@@ -42,6 +42,7 @@ class SciQLopHistogram : public SciQLopGraphInterface
     bool _selected = false;
     bool _had_result = false;
     bool _edges_moved = false;
+    QMetaObject::Connection _key_log_connection;
 
     QCustomPlot* _plot() const;
     QCPPlottableLegendItem* _legend_item() const;
@@ -50,6 +51,7 @@ class SciQLopHistogram : public SciQLopGraphInterface
     void _apply_default_style(std::size_t columns);
     void _on_edges_changed();
     void _on_histogram_ready();
+    void _reset_edges_on_log_of_key_axis();
 
 public:
     explicit SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,

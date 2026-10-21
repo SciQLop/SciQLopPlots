@@ -53,25 +53,8 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
     this->setObjectName(name);
     _hist->setName(name);
 
-    // The bin scale follows the axis scale. SciQLopPlotAxis::set_log blocks the
-    // underlying QCPAxis::scaleTypeChanged, so drive the re-bin (and the UI
-    // signal) from the wrapper's log_changed instead.
-    if (_keyAxis)
-        connect(_keyAxis, &SciQLopPlotAxis::log_changed, this,
-                [this](bool on)
-                {
-                    if (_hist)
-                        _hist->refreshBinning();
-                    Q_EMIT x_bins_log_changed(on);
-                });
-    if (_valueAxis)
-        connect(_valueAxis, &SciQLopPlotAxis::log_changed, this,
-                [this](bool on)
-                {
-                    if (_hist)
-                        _hist->refreshBinning();
-                    Q_EMIT y_bins_log_changed(on);
-                });
+    _rebin_on_log_of(_keyAxis, _x_log_connection, &SciQLopHistogram2D::x_bins_log_changed);
+    _rebin_on_log_of(_valueAxis, _y_log_connection, &SciQLopHistogram2D::y_bins_log_changed);
 
     install_rescale_provider();
 
@@ -80,6 +63,50 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
         connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
                 &SciQLopHistogram2D::set_selected);
     }
+}
+
+// The bin scale follows the axis scale. SciQLopPlotAxis::set_log blocks the
+// underlying QCPAxis::scaleTypeChanged, so drive the re-bin (and the UI
+// signal) from the wrapper's log_changed instead.
+void SciQLopHistogram2D::_rebin_on_log_of(SciQLopPlotAxis* axis,
+                                          QMetaObject::Connection& connection,
+                                          void (SciQLopHistogram2D::*log_changed)(bool))
+{
+    disconnect(connection);
+    if (!axis)
+        return;
+    connection = connect(axis, &SciQLopPlotAxis::log_changed, this,
+                         [this, log_changed](bool on)
+                         {
+                             if (_hist)
+                                 _hist->refreshBinning();
+                             Q_EMIT(this->*log_changed)(on);
+                         });
+}
+
+void SciQLopHistogram2D::_rebin_for_new_axis(bool was_log, bool is_log,
+                                             void (SciQLopHistogram2D::*log_changed)(bool))
+{
+    if (_hist)
+        _hist->refreshBinning();
+    if (was_log != is_log)
+        Q_EMIT(this->*log_changed)(is_log);
+}
+
+void SciQLopHistogram2D::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
+{
+    const bool was_log = x_bins_log();
+    SciQLopColorMapBase::set_x_axis(axis);
+    _rebin_on_log_of(_keyAxis, _x_log_connection, &SciQLopHistogram2D::x_bins_log_changed);
+    _rebin_for_new_axis(was_log, x_bins_log(), &SciQLopHistogram2D::x_bins_log_changed);
+}
+
+void SciQLopHistogram2D::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
+{
+    const bool was_log = y_bins_log();
+    SciQLopColorMapBase::set_y_axis(axis);
+    _rebin_on_log_of(_valueAxis, _y_log_connection, &SciQLopHistogram2D::y_bins_log_changed);
+    _rebin_for_new_axis(was_log, y_bins_log(), &SciQLopHistogram2D::y_bins_log_changed);
 }
 
 SciQLopHistogram2D::~SciQLopHistogram2D()
@@ -191,7 +218,7 @@ int SciQLopHistogram2D::normalization() const
 }
 
 // Log binning is just the axis being logarithmic. Driving the axis re-bins (and
-// updates the inspector) through the log_changed connection in the constructor.
+// updates the inspector) through the log_changed connection (_rebin_on_log_of).
 void SciQLopHistogram2D::set_x_bins_log(bool log)
 {
     if (_keyAxis)
@@ -279,7 +306,8 @@ SciQLopHistogram2DFunction::SciQLopHistogram2DFunction(QCustomPlot* parent, SciQ
     : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
-    this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
+    // No fetch from xAxis here, unlike the line graphs: it holds values, not the fetch window.
+    // The factory that picks the observed axis starts the first fetch.
 }
 
 SciQLopHistogram2DRemote::SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,

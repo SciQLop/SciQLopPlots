@@ -125,13 +125,7 @@ SciQLopHistogram::SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
             &SciQLopPlottableInterface::busy_changed);
     connect(_hist, &QCPHistogram::edgesChanged, this, &SciQLopHistogram::_on_edges_changed);
     connect(_hist, &QCPHistogram::histogramReady, this, &SciQLopHistogram::_on_histogram_ready);
-    // SciQLopPlotAxis::set_log blocks QCPAxis::scaleTypeChanged, which QCPHistogram re-bins on.
-    connect(_keyAxis, &SciQLopPlotAxis::log_changed, this,
-            [this](bool)
-            {
-                if (_hist)
-                    _hist->resetEdges();
-            });
+    _reset_edges_on_log_of_key_axis();
     if (auto* legend_item = _legend_item())
         connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
                 &SciQLopHistogram::set_selected);
@@ -393,6 +387,19 @@ void SciQLopHistogram::set_busy(bool busy) noexcept
         _hist->setBusy(busy);
 }
 
+// SciQLopPlotAxis::set_log blocks QCPAxis::scaleTypeChanged, which QCPHistogram re-bins on.
+void SciQLopHistogram::_reset_edges_on_log_of_key_axis()
+{
+    disconnect(_key_log_connection);
+    _key_log_connection = connect(_keyAxis, &SciQLopPlotAxis::log_changed, this,
+                                  [this](bool)
+                                  {
+                                      if (_hist)
+                                          _hist->resetEdges();
+                                  });
+}
+
+// Re-binned at once: the binning took its log flag from the old axis.
 void SciQLopHistogram::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     apply_axis(_keyAxis, axis,
@@ -401,6 +408,9 @@ void SciQLopHistogram::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
                    if (_hist)
                        _hist->setKeyAxis(a);
                });
+    _reset_edges_on_log_of_key_axis();
+    if (_hist)
+        _hist->resetEdges();
 }
 
 void SciQLopHistogram::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept

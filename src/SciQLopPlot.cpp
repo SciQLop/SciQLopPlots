@@ -935,6 +935,35 @@ SciQLopPlot::~SciQLopPlot()
     }
 }
 
+namespace
+{
+// A dtype or shape error must not leave an empty histogram on the plot.
+template <typename Fill>
+SciQLopHistogram* filled_or_deleted(SciQLopHistogram* hist, Fill&& fill)
+{
+    try
+    {
+        fill(hist);
+    }
+    catch (...)
+    {
+        delete hist;
+        throw;
+    }
+    return hist;
+}
+
+// A histogram's x holds values: it fetches over the time axis (or sync_with), never x.
+template <typename FunctionHistogram>
+void start_on(FunctionHistogram* hist, QObject* observed)
+{
+    hist->observe(observed);
+    if (auto* axis = qobject_cast<SciQLopPlotAxisInterface*>(observed);
+        axis && axis->range().is_valid())
+        hist->set_range(axis->range());
+}
+} // namespace
+
 SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int x_bins, int y_bins,
                                                   bool x_bins_log, bool y_bins_log)
 {
@@ -956,37 +985,10 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
     if (hist)
     {
         _configure_color_map(hist, y_bins_log, false);
-        _connect_callable_sync(hist, nullptr);
+        start_on(hist, time_axis());
     }
     return hist;
 }
-
-namespace
-{
-// A dtype or shape error must not leave an empty histogram on the plot.
-template <typename Fill>
-SciQLopHistogram* filled_or_deleted(SciQLopHistogram* hist, Fill&& fill)
-{
-    try
-    {
-        fill(hist);
-    }
-    catch (...)
-    {
-        delete hist;
-        throw;
-    }
-    return hist;
-}
-
-void start_on(SciQLopHistogramFunction* hist, QObject* observed)
-{
-    hist->observe(observed);
-    if (auto* axis = qobject_cast<SciQLopPlotAxisInterface*>(observed);
-        axis && axis->range().is_valid())
-        hist->set_range(axis->range());
-}
-} // namespace
 
 // The binning is asynchronous: unlike a line, the fit can only come from the result, which
 // asks for it on the first result and whenever the edges move.
@@ -1535,7 +1537,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
     {
         hist->set_meta_data(metaData);
         _configure_color_map(hist, y_bins_log, false);
-        _connect_callable_sync(hist, sync_with);
+        start_on(hist, sync_with ? sync_with : time_axis());
     }
     return hist;
 }

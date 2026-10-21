@@ -38,6 +38,10 @@ protected:
     //! Time-synchronised child panels: they follow this range as plots do.
     QList<QPointer<SciQLopPlotPanelInterface>> _panels;
 
+    void _follow(SciQLopPlotInterface* plot);
+    void _unfollow(SciQLopPlotInterface* plot);
+    //! The plot opted in or out of this axis after joining the panel.
+    virtual void resynchronize(SciQLopPlotInterface* plot);
 
 public:
     AxisSynchronizer(AxisType axis, QObject* parent = nullptr)

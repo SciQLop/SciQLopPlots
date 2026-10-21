@@ -108,10 +108,14 @@ protected:
         return nullptr;
     }
 
+    //! On an XY plot the x axis holds values, so it stays out of the panel's x sync;
+    //! a time-series plot's x is its time axis and keeps following the panel.
     template <typename T, typename... Args>
     QPair<T*, SciQLopColorMapInterface*> _plot_histogram2d(int index, Args&&... args)
     {
         auto* plot = new T();
+        if (plot->x_axis() != plot->time_axis())
+            plot->set_axis_synchronized(AxisType::XAxis, false);
         if (index == -1)
             add_plot(plot);
         else

@@ -43,10 +43,16 @@ class SciQLopHistogram2D : public SciQLopColorMapBase
         std::shared_ptr<QCPAbstractDataSource> source;
     };
     std::shared_ptr<DataSourceWithBuffers> _dataHolder;
+    QMetaObject::Connection _x_log_connection;
+    QMetaObject::Connection _y_log_connection;
 
     Q_OBJECT
 
     void _hist_got_destroyed();
+    void _rebin_on_log_of(SciQLopPlotAxis* axis, QMetaObject::Connection& connection,
+                          void (SciQLopHistogram2D::*log_changed)(bool));
+    void _rebin_for_new_axis(bool was_log, bool is_log,
+                             void (SciQLopHistogram2D::*log_changed)(bool));
 
 protected:
     virtual QCPAbstractPlottable* plottable() const override
@@ -63,6 +69,9 @@ public:
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
     virtual QList<SciQLopPyBuffer> data() const noexcept override;
+
+    virtual void set_x_axis(SciQLopPlotAxisInterface* axis) noexcept override;
+    virtual void set_y_axis(SciQLopPlotAxisInterface* axis) noexcept override;
 
     inline QCPHistogram2D* histogram() const { return _hist; }
 

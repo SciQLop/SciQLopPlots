@@ -29,6 +29,9 @@ class XAxisSynchronizer : public AxisSynchronizer
     Q_OBJECT
     void _display_x_axis_only_last_plot();
 
+protected:
+    void resynchronize(SciQLopPlotInterface* plot) override;
+
 public:
     XAxisSynchronizer(QObject* parent = nullptr) : AxisSynchronizer(AxisType::XAxis, parent) { }
 

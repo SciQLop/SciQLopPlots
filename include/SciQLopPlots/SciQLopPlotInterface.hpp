@@ -191,12 +191,15 @@ public:
     }
 
     //! A panel's synchronisers leave an unsynchronized axis alone (a histogram's x holds
-    //! values, not the x the panel shares). Set it before adding the plot to the panel.
+    //! values, not the x the panel shares). They re-wire the plot when this changes.
     inline void set_axis_synchronized(AxisType axis, bool synchronized) noexcept
     {
+        if (axis_synchronized(axis) == synchronized)
+            return;
         m_unsynchronized_axes.removeAll(axis);
         if (!synchronized)
             m_unsynchronized_axes.append(axis);
+        Q_EMIT axis_synchronized_changed(axis, synchronized);
     }
 
     inline bool axis_synchronized(AxisType axis) const noexcept
@@ -596,6 +599,7 @@ signals:
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();
     Q_SIGNAL void cursor_time_changed(double time);
+    Q_SIGNAL void axis_synchronized_changed(AxisType axis, bool synchronized);
     Q_SIGNAL void inspector_extensions_changed();
     Q_SIGNAL void inspector_extension_added(InspectorExtension* extension);
     Q_SIGNAL void inspector_extension_removed(InspectorExtension* extension);
