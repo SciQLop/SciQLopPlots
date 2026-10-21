@@ -240,8 +240,8 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
         [g = this->as_graph, pipeline = m_pipeline](const SciQLopPlotRange& range)
         { g->set_busy(true); pipeline->call(range); });
 
-    // Clear busy on the same arity the data path is wired for, so a mismatched
-    // signal can never drop busy without data having reached the graph.
+    // Every batch size reaches the graph (as data, or reported through fetch_failed),
+    // so any of them ends the request.
     const auto clear_busy = [g = this->as_graph]() { g->set_busy(false); };
     // A coloured batch reaches every graph (set_data_and_color), whatever its arity.
     m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_colored,
@@ -249,19 +249,10 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     // A request that ends without data: request_done(), an empty answer, a range held.
     m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::request_ended,
                                       this->as_graph, clear_busy);
-    switch (N)
-    {
-        case 2:
-            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_2d,
-                                              this->as_graph, clear_busy);
-            break;
-        case 3:
-            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_3d,
-                                              this->as_graph, clear_busy);
-            break;
-        default:
-            m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_nd,
-                                              this->as_graph, clear_busy);
-            break;
-    }
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_2d,
+                                      this->as_graph, clear_busy);
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_3d,
+                                      this->as_graph, clear_busy);
+    m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_nd,
+                                      this->as_graph, clear_busy);
 }

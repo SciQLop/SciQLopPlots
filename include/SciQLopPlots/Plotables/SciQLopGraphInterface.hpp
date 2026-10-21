@@ -358,6 +358,13 @@ public:
     }
 };
 
+inline void drop_batch(SciQLopPlottableInterface* g, const QString& why)
+{
+    qWarning() << "SciQLopPlots: dropping data batch from provider for" << g->objectName() << ":"
+               << why;
+    Q_EMIT g->fetch_failed(why);
+}
+
 // Runs `apply` (a batch reaching the graph), guarding against exceptions escaping
 // a queued connection (which would std::terminate): a rejected batch is dropped.
 template <typename Apply>
@@ -369,40 +376,62 @@ inline void apply_or_drop_batch(SciQLopPlottableInterface* g, Apply&& apply)
     }
     catch (const std::exception& e)
     {
-        qWarning() << "SciQLopPlots: dropping data batch from provider for"
-                   << g->objectName() << ":" << e.what();
-        Q_EMIT g->fetch_failed(QString::fromUtf8(e.what()));
+        drop_batch(g, QString::fromUtf8(e.what()));
     }
 }
 
+inline QString wrong_arity_message(int expected, qsizetype got)
+{
+    return QStringLiteral("expected %1, got %2 arrays")
+        .arg(expected == 2 ? QStringLiteral("(x, y)") : QStringLiteral("(x, y, z)"))
+        .arg(got);
+}
+
 // Wire a pipeline's new_data_* signals to graph->set_data, dropping a batch that
-// throws. N picks the arity: 2 -> new_data_2d, 3 -> new_data_3d, else new_data_nd.
+// throws. N picks the arity: 2 -> set_data(x, y), 3 -> set_data(x, y, z), else
+// set_data(list) for every batch size (the graph checks it). A 2 or 3 graph reports
+// a batch of any other size instead of losing it.
 // new_data_colored always goes to graph->set_data_and_color.
 template <typename Pipeline>
 inline QList<QMetaObject::Connection>
 connect_pipeline_data_to_graph(Pipeline* pipeline, SciQLopPlottableInterface* graph, int N)
 {
-    const auto drop_bad_batch = [](SciQLopPlottableInterface* g, auto&&... buffers)
+    const auto apply = [](SciQLopPlottableInterface* g, auto&&... buffers)
     { apply_or_drop_batch(g, [&] { g->set_data(std::forward<decltype(buffers)>(buffers)...); }); };
-    QList<QMetaObject::Connection> conns;
-    switch (N)
+    const auto as_list = [N, apply](SciQLopPlottableInterface* g, QList<SciQLopPyBuffer> values)
     {
-        case 2:
-            conns << QObject::connect(pipeline, &Pipeline::new_data_2d, graph,
-                [g = graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y)
-                { drop_bad_batch(g, std::move(x), std::move(y)); });
-            break;
-        case 3:
-            conns << QObject::connect(pipeline, &Pipeline::new_data_3d, graph,
-                [g = graph, drop_bad_batch](SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
-                { drop_bad_batch(g, std::move(x), std::move(y), std::move(z)); });
-            break;
-        default:
-            conns << QObject::connect(pipeline, &Pipeline::new_data_nd, graph,
-                [g = graph, drop_bad_batch](const QList<SciQLopPyBuffer>& values)
-                { drop_bad_batch(g, values); });
-            break;
-    }
+        if (N == 2 || N == 3)
+            drop_batch(g, wrong_arity_message(N, values.size()));
+        else
+            apply(g, values);
+    };
+    const auto pair = [N, apply, as_list](SciQLopPlottableInterface* g, SciQLopPyBuffer x,
+                                          SciQLopPyBuffer y)
+    {
+        if (N == 2)
+            apply(g, std::move(x), std::move(y));
+        else
+            as_list(g, { std::move(x), std::move(y) });
+    };
+    const auto triple = [N, apply, as_list](SciQLopPlottableInterface* g, SciQLopPyBuffer x,
+                                            SciQLopPyBuffer y, SciQLopPyBuffer z)
+    {
+        if (N == 3)
+            apply(g, std::move(x), std::move(y), std::move(z));
+        else
+            as_list(g, { std::move(x), std::move(y), std::move(z) });
+    };
+    QList<QMetaObject::Connection> conns;
+    conns << QObject::connect(pipeline, &Pipeline::new_data_2d, graph,
+                              [g = graph, pair](SciQLopPyBuffer x, SciQLopPyBuffer y)
+                              { pair(g, std::move(x), std::move(y)); });
+    conns << QObject::connect(
+        pipeline, &Pipeline::new_data_3d, graph,
+        [g = graph, triple](SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
+        { triple(g, std::move(x), std::move(y), std::move(z)); });
+    conns << QObject::connect(pipeline, &Pipeline::new_data_nd, graph,
+                              [g = graph, as_list](const QList<SciQLopPyBuffer>& values)
+                              { as_list(g, values); });
     conns << QObject::connect(pipeline, &Pipeline::fetch_failed, graph,
                               &SciQLopPlottableInterface::fetch_failed);
     conns << QObject::connect(pipeline, &Pipeline::new_data_colored, graph,
