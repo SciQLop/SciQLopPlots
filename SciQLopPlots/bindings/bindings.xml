@@ -66,6 +66,17 @@
             return nullptr;
         }
     </template>
+    <template name="void_raises_valueerror">
+        try {
+            %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+        } catch (const std::invalid_argument&amp; e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return nullptr;
+        }
+    </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
     <load-typesystem name="typesystem_widgets.xml" generate="no" />
@@ -295,6 +306,26 @@
     <object-type name="SciQLopColorMapBase" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopMultiGraphBase" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_fill_to_value(int,double)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_fill_between(int,int)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_fill_color(int,const QColor&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_error_bars(int,int,int,double)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
         <modify-function signature="remove_group(SciQLopPlotGroup*)">

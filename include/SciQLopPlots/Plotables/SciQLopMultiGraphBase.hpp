@@ -25,6 +25,8 @@
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <plottables/plottable-multigraph.h>
+#include <map>
+#include <optional>
 #include <span>
 
 class SciQLopMultiGraphBase : public SQPQCPAbstractPlottableWrapper
@@ -37,6 +39,17 @@ protected:
     QStringList _pendingLabels;
     SciQLopPlotAxis* _keyAxis = nullptr;
     SciQLopPlotAxis* _valueAxis = nullptr;
+
+    struct ColumnPreset
+    {
+        std::optional<GraphLineStyle> line_style;
+        std::optional<GraphMarkerShape> marker;
+        std::optional<bool> in_legend;
+    };
+    std::map<int, ColumnPreset> _column_presets;
+
+    void apply_preset(int column);
+    void apply_presets_to_new_components(int first, int last);
 
     virtual QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) = 0;
 
@@ -93,6 +106,21 @@ public:
     SciQLopPlotAxisInterface* y_axis() const noexcept override { return _valueAxis; }
 
     void create_graphs(const QStringList& labels);
+
+    void set_fill_to_value(int column, double value);
+    void set_fill_between(int column, int other);
+    void clear_fill(int column);
+    void set_fill_color(int column, const QColor& color);
+    void set_error_bars(int column, int lower, int upper, double cap_width = 6.);
+    void clear_error_bars(int column);
+
+    //! Styles for components that may not exist yet (a callback graph before its first data):
+    //! applied now if the component exists, and again whenever it is created.
+    void set_column_line_style(int column, GraphLineStyle style);
+    void set_column_marker_shape(int column, GraphMarkerShape shape);
+    void set_column_in_legend(int column, bool in_legend);
+    //! The preset if one was set, else the component's flag, else true.
+    bool column_in_legend(int column) const;
 
 #ifndef BINDINGS_H
     void collect_visible_values(const SciQLopPlotRange& visible_key_range,

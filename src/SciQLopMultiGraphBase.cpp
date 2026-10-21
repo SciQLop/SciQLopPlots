@@ -101,6 +101,26 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
     _dataHolder = std::move(guard);
 }
 
+void SciQLopMultiGraphBase::apply_preset(int column)
+{
+    const auto it = _column_presets.find(column);
+    if (it == _column_presets.end() || column >= static_cast<int>(plottable_count()))
+        return;
+    const auto& preset = it->second;
+    if (preset.line_style)
+        component(column)->set_line_style(*preset.line_style);
+    if (preset.marker)
+        component(column)->set_marker_shape(*preset.marker);
+    if (preset.in_legend)
+        _multiGraph->setComponentInLegend(column, *preset.in_legend);
+}
+
+void SciQLopMultiGraphBase::apply_presets_to_new_components(int first, int last)
+{
+    for (int i = first; i < last; ++i)
+        apply_preset(i);
+}
+
 void SciQLopMultiGraphBase::sync_components()
 {
     const int nComponents = _multiGraph->componentCount();
@@ -108,13 +128,15 @@ void SciQLopMultiGraphBase::sync_components()
     {
         if (!_pendingLabels.isEmpty())
             _multiGraph->setComponentNames(_pendingLabels);
-        for (int i = static_cast<int>(plottable_count()); i < nComponents; ++i)
+        const int old_count = static_cast<int>(plottable_count());
+        for (int i = old_count; i < nComponents; ++i)
         {
             auto component = new SciQLopGraphComponent(_multiGraph, i, this);
             if (i < _pendingLabels.size())
                 component->set_name(_pendingLabels.value(i));
             _register_component(component);
         }
+        apply_presets_to_new_components(old_count, nComponents);
         _pendingLabels.clear();
     }
     else
@@ -235,4 +257,88 @@ void SciQLopMultiGraphBase::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
 void SciQLopMultiGraphBase::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
 {
     apply_axis(_valueAxis, axis, [this](auto* a) { if (_multiGraph) _multiGraph->setValueAxis(a); });
+}
+
+namespace
+{
+void require(bool accepted, const std::string& what)
+{
+    if (!accepted)
+        throw std::invalid_argument(what);
+}
+} // namespace
+
+void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
+{
+    require(_multiGraph && _multiGraph->setComponentFill(column, value),
+            "set_fill_to_value: invalid column " + std::to_string(column));
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::set_fill_between(int column, int other)
+{
+    require(_multiGraph && _multiGraph->setComponentFillBetween(column, other),
+            "set_fill_between: invalid columns " + std::to_string(column) + ", "
+                + std::to_string(other));
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::clear_fill(int column)
+{
+    if (!_multiGraph)
+        return;
+    _multiGraph->clearComponentFill(column);
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
+{
+    if (!_multiGraph)
+        return;
+    _multiGraph->setComponentFillBrush(column, QBrush(color));
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, double cap_width)
+{
+    require(_multiGraph && _multiGraph->setComponentErrorBars(column, lower, upper, cap_width),
+            "set_error_bars: invalid columns " + std::to_string(column) + ", "
+                + std::to_string(lower) + ", " + std::to_string(upper));
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::clear_error_bars(int column)
+{
+    if (!_multiGraph)
+        return;
+    _multiGraph->clearComponentErrorBars(column);
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::set_column_line_style(int column, GraphLineStyle style)
+{
+    _column_presets[column].line_style = style;
+    apply_preset(column);
+}
+
+void SciQLopMultiGraphBase::set_column_marker_shape(int column, GraphMarkerShape shape)
+{
+    _column_presets[column].marker = shape;
+    apply_preset(column);
+}
+
+void SciQLopMultiGraphBase::set_column_in_legend(int column, bool in_legend)
+{
+    _column_presets[column].in_legend = in_legend;
+    apply_preset(column);
+}
+
+bool SciQLopMultiGraphBase::column_in_legend(int column) const
+{
+    const auto it = _column_presets.find(column);
+    if (it != _column_presets.end() && it->second.in_legend)
+        return *it->second.in_legend;
+    if (_multiGraph && column >= 0 && column < _multiGraph->componentCount())
+        return _multiGraph->component(column).inLegend;
+    return true;
 }
