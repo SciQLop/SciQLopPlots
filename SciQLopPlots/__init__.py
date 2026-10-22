@@ -117,14 +117,26 @@ def _projection_buffers(args):
     return list(args)
 
 
-def _apply_post(name, shape, host, result, post):
-    if name != "waterfall":
-        return
+def _apply_waterfall_post(shape, host, result, post):
     _apply_waterfall_kwargs(result, **post)
     if shape.name == "arrays":
         # plot() fitted the axes before the offsets were applied. On a panel, refit
         # only the new plot: a panel-wide rescale would undo the other plots' zoom.
         (result[0] if isinstance(result, tuple) else host).rescale_axes()
+
+
+def _apply_histogram_post(shape, host, result, post):
+    _configure_histogram(_graph_of(result), post.get("range"), post.get("log_bins", False),
+                         post.get("normalization", HistogramNormalization.Count),
+                         post.get("style"))
+
+
+_POST = {"waterfall": _apply_waterfall_post, "histogram": _apply_histogram_post}
+
+
+def _apply_post(name, shape, host, result, post):
+    if name in _POST:
+        _POST[name](shape, host, result, post)
 
 
 def plot(self, *args, graph_type=None, **kwargs):

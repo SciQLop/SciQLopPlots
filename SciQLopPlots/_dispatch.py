@@ -45,7 +45,8 @@ _SYNC = frozenset({"sync_with"})
 _WATERFALL_POST = frozenset({"offsets", "normalize", "gain"})
 _COLORMAP = frozenset({"y_log_scale", "z_log_scale"})
 _HISTOGRAM2D = frozenset({"x_bins", "y_bins", "x_bins_log", "y_bins_log"})
-_HISTOGRAM = frozenset({"bins", "range", "log_bins", "normalization", "style"})
+_HISTOGRAM = frozenset({"bins"})
+_HISTOGRAM_POST = frozenset({"range", "log_bins", "normalization", "style"})
 _PROJECTION = frozenset({"labels", "colors"})
 
 
@@ -69,8 +70,8 @@ KINDS = {
          Shape("arrays", 4, _PROJECTION),  # (t, d0, d1, d2)
          Shape("callback", None, _PROJECTION | _SYNC)),
         {SciQLopMultiPlotPanel: "projection", SciQLopNDProjectionPlot: "parametric_curve"},
-        frozenset(), frozenset({"index"}), SciQLopGraphInterface,
-        consumed=frozenset({"plot_type"})),
+        frozenset(), _BOTH_PANEL_KEYWORDS, SciQLopGraphInterface,
+        consumed=frozenset({"plot_type"})),  # it picks this row; projection() has no plot_type
     "colormap": Kind(
         GraphType.ColorMap,
         (Shape("arrays", 3, _COLORMAP), Shape("callback", None, _COLORMAP | _SYNC)),
@@ -89,7 +90,8 @@ KINDS = {
         SciQLopColorMapInterface),
     "histogram": Kind(
         GraphType.Histogram,
-        (Shape("arrays", 1, _HISTOGRAM), Shape("callback", None, _HISTOGRAM | _SYNC)),
+        (Shape("arrays", 1, _HISTOGRAM, _HISTOGRAM_POST),
+         Shape("callback", None, _HISTOGRAM | _SYNC, _HISTOGRAM_POST)),
         _on((SciQLopPlot, SciQLopMultiPlotPanel), "histogram"), _NAME, frozenset({"index"}),
         SciQLopHistogram),
 }
@@ -127,12 +129,21 @@ def _warn_if_three_arrays_with(graph_type):
                       stacklevel=5)
 
 
+def _is_panel(host_cls):
+    return host_class(host_cls) is SciQLopMultiPlotPanel
+
+
+def _reject_plot_type_off_panels(host_cls, kwargs):
+    if "plot_type" in kwargs and not _is_panel(host_cls):
+        raise TypeError(f"plot_type kwarg is panel-only: {host_cls.__name__} is a single plot")
+
+
 def _wants_projection(host_cls, shape, graph_type, kwargs):
-    projections = kwargs.get("plot_type") == PlotType.Projections
-    if shape == "callback" and projections:
-        return True
-    on_projection_plot = issubclass(host_cls, SciQLopNDProjectionPlot)
-    return graph_type == GraphType.ParametricCurve and (projections or on_projection_plot)
+    if issubclass(host_cls, SciQLopNDProjectionPlot):
+        return graph_type == GraphType.ParametricCurve
+    if kwargs.get("plot_type") != PlotType.Projections:
+        return False
+    return shape == "callback" or graph_type in (None, GraphType.ParametricCurve)
 
 
 def _kind_by_graph_type(graph_type, shape, nargs):
@@ -144,27 +155,25 @@ def _kind_by_graph_type(graph_type, shape, nargs):
     return names[0]
 
 
-def _list_kind(graph_type):
+def _list_kind(graph_type, plot_type):
     if graph_type not in (None, GraphType.ParametricCurve):
-        raise TypeError(f"a list of arrays makes a projection, not a {getattr(graph_type, 'name', graph_type)}")
+        hint = ": pass the values as one array" if graph_type == GraphType.Histogram else ""
+        raise TypeError("a list of arrays makes a projection, "
+                        f"not a {getattr(graph_type, 'name', graph_type)}{hint}")
+    if plot_type not in (None, PlotType.Projections):
+        raise ValueError(f"a list of arrays makes a projection, it can't go on a {plot_type.name} plot")
     return "projection"
 
 
 def _kind_name(host_cls, shape, nargs, graph_type, kwargs):
     if shape == "list":
-        return _list_kind(graph_type)
+        return _list_kind(graph_type, kwargs.get("plot_type"))
     if shape == "arrays" and nargs == 3:
         _warn_if_three_arrays_with(graph_type)
         return "colormap"
     if _wants_projection(host_cls, shape, graph_type, kwargs):
         return "projection"
     return _kind_by_graph_type(graph_type or GraphType.Line, shape, nargs)
-
-
-def kind_of(host_cls, args, graph_type, kwargs):
-    """The table row a plot() call lands on, before the host and keywords are checked."""
-    shape, nargs = shape_of(args)
-    return _kind_name(host_cls, shape, nargs, graph_type, kwargs)
 
 
 def _describe(shape):
@@ -194,24 +203,29 @@ def _kind_options(kind):
     return frozenset().union(*(s.options | s.post for s in kind.shapes))
 
 
-def _foreign_keyword_message(stray, name, accepted, graph_type):
-    owners = sorted({k.graph_type.name for k in KINDS.values() if set(stray) <= _kind_options(k)})
+def _foreign_keyword_message(stray, name, shape, accepted, graph_type):
+    accepted = ", ".join(sorted(accepted))
+    if set(stray) <= _kind_options(KINDS[name]):
+        return f"{', '.join(stray)} kwarg(s) not accepted by {name} with {_describe(shape)}; accepted: {accepted}"
+    owners = sorted({k.graph_type.name for n, k in KINDS.items()
+                     if n != name and set(stray) <= _kind_options(k)})
     if owners:
         return (f"{', '.join(stray)} kwarg(s) only apply to "
                 f"{' or '.join('GraphType.' + o for o in owners)}, got graph_type={graph_type!r}")
-    return f"{', '.join(stray)} kwarg(s) not accepted by {name}; accepted: {', '.join(sorted(accepted))}"
+    return f"{', '.join(stray)} kwarg(s) not accepted by {name}; accepted: {accepted}"
 
 
 def _check_keywords(name, kind, shape, host_cls, graph_type, kwargs):
-    allowed = COMMON | kind.native | kind.consumed | shape.options | shape.post | {"name"}
-    if host_class(host_cls) is SciQLopMultiPlotPanel:
+    allowed = COMMON | kind.native | shape.options | shape.post | {"name"}
+    if _is_panel(host_cls):
         allowed |= kind.panel_keywords
     stray = sorted(set(kwargs) - allowed)
     if stray:
-        raise TypeError(_foreign_keyword_message(stray, name, allowed, graph_type))
+        raise TypeError(_foreign_keyword_message(stray, name, shape, allowed, graph_type))
 
 
 def resolve(host_cls, args, graph_type, kwargs):
+    _reject_plot_type_off_panels(host_cls, kwargs)
     shape, nargs = shape_of(args)
     name = _kind_name(host_cls, shape, nargs, graph_type, kwargs)
     kind = KINDS[name]
