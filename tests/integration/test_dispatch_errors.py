@@ -25,15 +25,29 @@ def test_a_plain_plot_given_a_list_raises(qtbot, plot):
         plot.parametric_curve([X, X, X])
 
 
-@pytest.mark.parametrize("call", [
-    lambda p: p.line(X, X, plot_type=PlotType.Projections),
-    lambda p: p.scatter(X, X, plot_type=PlotType.Projections),
-    lambda p: p.parametric_curve(X, X, plot_type=PlotType.Projections),
-    lambda p: p.waterfall(X, np.zeros((10, 4)), plot_type=PlotType.Projections),
-    lambda p: p.colormap(X, X, Z2, plot_type=PlotType.Projections),
-    lambda p: p.histogram2d(X, X, plot_type=PlotType.Projections),
+PROJ = PlotType.Projections
+LISTS = "list of arrays or a callback"
+CMAP = "projections can't hold a colour map"
+HIST2D = "projections can't hold a 2D histogram"
+
+
+@pytest.mark.parametrize("call, message", [
+    (lambda p: p.line(X, X, plot_type=PROJ), LISTS),
+    (lambda p: p.scatter(X, X, plot_type=PROJ), LISTS),
+    (lambda p: p.parametric_curve(X, X, plot_type=PROJ), LISTS),
+    (lambda p: p.waterfall(X, np.zeros((10, 4)), plot_type=PROJ), LISTS),
+    (lambda p: p.colormap(X, X, Z2, plot_type=PROJ), CMAP),
+    (lambda p: p.colormap(lambda a, b: (X, X, Z2), plot_type=PROJ), CMAP),
+    (lambda p: p.histogram2d(X, X, plot_type=PROJ), HIST2D),
+    (lambda p: p.histogram2d(lambda a, b: (X, X), plot_type=PROJ), HIST2D),
 ])
-def test_arrays_on_a_projections_panel_raise(qtbot, panel, call):
-    with pytest.raises(ValueError, match="list of arrays or a callback"):
+def test_unsupported_kinds_on_a_projections_panel_raise(qtbot, panel, call, message):
+    with pytest.raises(ValueError, match=message):
         call(panel)
     assert panel.plot_count() == 0
+
+
+def test_a_callable_line_on_a_projections_panel_still_builds_a_projection_plot(qtbot, panel):
+    plot, _ = panel.line(lambda a, b: (X, X), plot_type=PROJ)
+    assert isinstance(plot, SciQLopNDProjectionPlot)
+    assert panel.plot_count() == 1

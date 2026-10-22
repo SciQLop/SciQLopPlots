@@ -439,8 +439,7 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
                 index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale,metaData);
             break;
         case ::PlotType::Projections:
-            throw std::invalid_argument(
-                "projections take a list of arrays or a callback, not x and y arrays");
+            throw std::invalid_argument("projections can't hold a colour map");
         default:
             throw std::invalid_argument("unknown plot type");
     }
@@ -497,6 +496,8 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
                 index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
             break;
+        case ::PlotType::Projections:
+            throw std::invalid_argument("projections can't hold a colour map");
         default:
             throw std::invalid_argument("unknown plot type");
     }
@@ -518,8 +519,7 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
                 index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metaData);
             break;
         case ::PlotType::Projections:
-            throw std::invalid_argument(
-                "projections take a list of arrays or a callback, not x and y arrays");
+            throw std::invalid_argument("projections can't hold a 2D histogram");
         default:
             throw std::invalid_argument("unknown plot type");
     }
@@ -543,6 +543,8 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int x
                 index, std::move(callable), name, x_bins, y_bins, x_bins_log, y_bins_log,
                 sync_with, metaData);
             break;
+        case ::PlotType::Projections:
+            throw std::invalid_argument("projections can't hold a 2D histogram");
         default:
             throw std::invalid_argument("unknown plot type");
     }
