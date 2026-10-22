@@ -125,13 +125,12 @@ def _apply_waterfall_post(shape, host, result, post):
         (result[0] if isinstance(result, tuple) else host).rescale_axes()
 
 
-def _apply_histogram_post(shape, host, result, post):
-    _configure_histogram(_graph_of(result), post.get("range"), post.get("log_bins", False),
-                         post.get("normalization", HistogramNormalization.Count),
-                         post.get("style"))
+# histogram's post options are not here: plot() calls the Python histogram, which applies them.
+_POST = {"waterfall": _apply_waterfall_post}
 
 
-_POST = {"waterfall": _apply_waterfall_post, "histogram": _apply_histogram_post}
+def _pop_post(name, shape, kwargs):
+    return {k: kwargs.pop(k) for k in shape.post if k in kwargs} if name in _POST else {}
 
 
 def _apply_post(name, shape, host, result, post):
@@ -142,7 +141,7 @@ def _apply_post(name, shape, host, result, post):
 def plot(self, *args, graph_type=None, **kwargs):
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
     name, kind, shape = _dispatch.resolve(type(self), args, graph_type, kwargs)
-    post = {k: kwargs.pop(k) for k in shape.post if k in kwargs}
+    post = _pop_post(name, shape, kwargs)
     label = kwargs.pop("name", None) if "name" not in kind.keywords_on(type(self)) else None
     for consumed in kind.consumed:
         kwargs.pop(consumed, None)

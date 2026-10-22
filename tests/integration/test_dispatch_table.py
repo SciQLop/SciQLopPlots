@@ -2,9 +2,10 @@
 import numpy as np
 import pytest
 
-from SciQLopPlots import (GraphType, HistogramNormalization, PlotType, SciQLopHistogram,
-                          SciQLopMultiPlotPanel, SciQLopNDProjectionPlot, SciQLopPlot,
-                          SciQLopTimeSeriesPlot)
+import SciQLopPlots
+from SciQLopPlots import (GraphMarkerShape, GraphType, HistogramNormalization, PlotType,
+                          SciQLopHistogram, SciQLopMultiPlotPanel, SciQLopNDProjectionPlot,
+                          SciQLopPlot, SciQLopTimeSeriesPlot)
 
 X = np.linspace(0, 1, 10)
 
@@ -46,7 +47,7 @@ def test_name_on_a_projections_panel_call(qtbot, panel):
     assert g.objectName() == "scene"
 
 
-def test_histogram_keyword_not_valid_for_plot_type_on_a_panel(qtbot, panel):
+def test_histogram_on_a_panel_rejects_plot_type(qtbot, panel):
     with pytest.raises(TypeError, match="plot_type"):
         panel.plot(np.arange(10.0), graph_type=GraphType.Histogram, plot_type=PlotType.BasicXY)
 
@@ -128,12 +129,56 @@ def test_histogram_post_options_on_a_panel(qtbot, panel):
     assert h.bins() == 5
 
 
+def _markers(graph):
+    return {c.marker_shape() for c in graph.components()}
+
+
 def test_projection_plot_scene_calls(qtbot):
     nd = SciQLopNDProjectionPlot(3)
     qtbot.addWidget(nd)
     nd.plot([X, X, X, X], graph_type=GraphType.ParametricCurve)
-    nd.plot(lambda a, b: [X, X, X, X], name="model", labels=["m"] * 3,
-            graph_type=GraphType.ParametricCurve)
+    model = nd.plot(lambda a, b: [X, X, X, X], name="model", labels=["m"] * 3,
+                    graph_type=GraphType.ParametricCurve, marker=GraphMarkerShape.Circle)
+    assert _markers(model) == {GraphMarkerShape.Circle}
+
+
+@pytest.mark.parametrize("data", [[X, X, X, X], lambda a, b: [X, X, X, X]],
+                         ids=["list", "callback"])
+def test_marker_lands_on_a_panel_projection(qtbot, panel, data):
+    _, g = panel.plot(data, plot_type=PlotType.Projections, marker=GraphMarkerShape.Circle)
+    assert _markers(g) == {GraphMarkerShape.Circle}
+
+
+def test_the_panel_projection_factory_takes_marker(qtbot, panel):
+    _, g = panel.projection([X, X, X, X], marker=GraphMarkerShape.Circle)
+    assert _markers(g) == {GraphMarkerShape.Circle}
+
+
+@pytest.mark.parametrize("args", [(X, X), (X, X, np.zeros((10, 10)))])
+def test_a_graph_type_that_is_not_a_graph_type_is_a_type_error(qtbot, plot, args):
+    with pytest.raises(TypeError, match="graph_type must be a GraphType"):
+        plot.plot(*args, graph_type="Line")
+
+
+def test_a_tuple_of_arrays_is_not_a_projection(qtbot, ts_plot):
+    with pytest.raises(TypeError, match="got 1 array;"):
+        ts_plot.plot((X, X))
+
+
+@pytest.mark.parametrize("host", ["plot", "ts_plot"])
+def test_a_list_with_parametric_curve_on_a_single_plot_is_not_supported(qtbot, request, host):
+    target = request.getfixturevalue(host)
+    with pytest.raises(NotImplementedError, match=f"projection is not supported by {type(target).__name__}"):
+        target.plot([X, X, X], graph_type=GraphType.ParametricCurve)
+
+
+def test_histogram_settings_are_applied_once(qtbot, plot, monkeypatch):
+    calls = []
+    configure = SciQLopPlots._configure_histogram
+    monkeypatch.setattr(SciQLopPlots, "_configure_histogram",
+                        lambda *a: calls.append(a) or configure(*a))
+    plot.plot(np.arange(1.0, 100.0), graph_type=GraphType.Histogram, log_bins=True)
+    assert len(calls) == 1
 
 
 HOSTS = {"plot": SciQLopPlot, "ts_plot": SciQLopTimeSeriesPlot,
@@ -168,6 +213,34 @@ LANDS_ON_ANOTHER_ROW = {
     *((h, "projection", s) for h in ("plot", "ts_plot")
       for s in (("arrays", 2), ("arrays", 4), ("callback", None))),
 }
+
+
+def _direct_factory(kind, target):
+    return next(getattr(target, m) for m in kind.factory.values() if hasattr(target, m))
+
+
+def _direct_args(name, args):
+    # What plot() hands the factory: a projection always gets one list.
+    return (SciQLopPlots._projection_buffers(args),) if name == "projection" else args
+
+
+@pytest.mark.parametrize("host", list(HOSTS))
+def test_direct_factory_walk(qtbot, host):
+    from SciQLopPlots._dispatch import KINDS, host_class
+    for name, kind in KINDS.items():
+        for shape in kind.shapes:
+            if (host, name, (shape.name, shape.nargs)) in LANDS_ON_ANOTHER_ROW:
+                continue
+            target = _fresh(qtbot, host)
+            factory = _direct_factory(kind, target)
+            args = _direct_args(name, _data(name, shape))
+            if host_class(HOSTS[host]) not in kind.factory:
+                with pytest.raises(NotImplementedError, match=HOSTS[host].__name__):
+                    factory(*args)
+                continue
+            result = factory(*args)
+            made = result[1] if host == "panel" else result
+            assert isinstance(made, kind.returns), (host, name, shape)
 
 
 @pytest.mark.parametrize("host", list(HOSTS))
