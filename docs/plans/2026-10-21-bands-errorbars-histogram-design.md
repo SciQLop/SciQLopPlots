@@ -274,6 +274,7 @@ An earlier draft claimed that `SciQLopNDProjectionPlot` creates a second hidden 
 - The inspector has a "Fill color" row only. There is no error-bar row.
 - A dense error-bar band keeps its plain colour when the graph is selected.
 - An empty data window keeps the components (names, pens, line styles), fills and error bars. A non-empty narrower one still drops them.
+- A non-empty data window defines the column set. A fill or error bar pointing past it is dropped for good, even one set before any data.
 - `SciQLopTimeSeriesPlot` does not host histograms: its x axis is time. Use a plain plot or `panel.histogram`.
 - Histograms are not selectable in v1: a click on a bar selects nothing.
 - A callable `plot.histogram2d` follows the time axis, not x: on a plain plot it fetches only once `plot.time_axis()` has a range, like the 1-D histograms.
