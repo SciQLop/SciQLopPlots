@@ -415,10 +415,12 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, x, y,
                                                                        labels, colors, marker, metaData);
             break;
+        case ::PlotType::Projections:
+            throw std::invalid_argument(
+                "projections take a list of arrays or a callback, not x and y arrays");
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -436,10 +438,12 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
                 index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale,metaData);
             break;
+        case ::PlotType::Projections:
+            throw std::invalid_argument(
+                "projections take a list of arrays or a callback, not x and y arrays");
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -474,9 +478,8 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
             return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
                 index, graph_type, callable, labels, colors, marker, sync_with, metaData);
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -495,9 +498,8 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
                 index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
             break;
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -515,10 +517,12 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
             return _plot_histogram2d<SciQLopTimeSeriesPlot>(
                 index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metaData);
             break;
+        case ::PlotType::Projections:
+            throw std::invalid_argument(
+                "projections take a list of arrays or a callback, not x and y arrays");
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -540,9 +544,8 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int x
                 sync_with, metaData);
             break;
         default:
-            break;
+            throw std::invalid_argument("unknown plot type");
     }
-    return { nullptr, nullptr };
 }
 
 QPair<SciQLopPlotInterface*, SciQLopHistogram*>

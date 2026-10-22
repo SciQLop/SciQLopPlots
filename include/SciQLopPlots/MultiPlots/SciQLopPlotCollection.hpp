@@ -91,7 +91,7 @@ protected:
               ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1,QVariantMap metaData={})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -99,7 +99,7 @@ protected:
               QList<QColor> colors = QList<QColor>(),
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1, QVariantMap metaData={})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -107,7 +107,7 @@ protected:
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -117,7 +117,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -126,7 +126,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -135,7 +135,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -144,7 +144,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData = {})
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
 public:

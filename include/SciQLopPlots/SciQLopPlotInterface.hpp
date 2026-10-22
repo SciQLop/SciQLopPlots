@@ -453,12 +453,12 @@ public:
 
     inline virtual SciQLopPlottableInterface* plottable(int index = -1)
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     inline virtual SciQLopPlottableInterface* plottable(const QString& name)
     {
-        throw std::runtime_error("Not implemented");
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     virtual void remove_plottable(SciQLopPlottableInterface* plottable)

@@ -33,6 +33,7 @@
 #include <QWidget>
 #include <map>
 #include <memory>
+#include <stdexcept>
 
 class SciQLopTheme;
 
@@ -145,9 +146,18 @@ protected:
         }
     }
 
+    static constexpr bool is_handled_graph_type(GraphType graph_type)
+    {
+        return graph_type == GraphType::Line || graph_type == GraphType::Scatter
+               || graph_type == GraphType::ParametricCurve || graph_type == GraphType::ColorMap
+               || graph_type == GraphType::Waterfall;
+    }
+
     template <typename T, typename U, typename... Args>
     QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
+        if (!is_handled_graph_type(graph_type))
+            throw std::invalid_argument("unsupported graph type");
         auto* plot = new T();
         if (index == -1)
             add_plot(plot);
@@ -177,7 +187,7 @@ protected:
         {
             return { plot, __plot<T, GraphType::Waterfall>(plot, std::forward<Args>(args)...) };
         }
-        return { nullptr, nullptr };
+        throw std::invalid_argument("unsupported graph type");
     }
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
