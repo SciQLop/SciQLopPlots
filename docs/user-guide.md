@@ -108,7 +108,17 @@ app.exec()
 
 ## Plot types
 
-`plot.plot(...)` picks the graph type from its arguments. Pass `graph_type=` to choose another one.
+`plot.plot(*args, graph_type=None, **kwargs)` picks the graph type from its arguments. Pass `graph_type=` to choose another one.
+
+The kind comes from the shape of the arguments, then from `graph_type`:
+
+- Two arrays make a line by default. `graph_type` turns them into a scatter, a parametric curve, a waterfall or a 2-D histogram.
+- Three arrays make a colour map.
+- One array with `graph_type=GraphType.Histogram` makes a histogram.
+- A list of arrays makes a projection.
+- A function makes a line by default. `graph_type` picks another kind.
+
+An unknown keyword raises `TypeError` and names the kind that owns the keywords. On a single plot, `plot_type` raises `TypeError`: it only means something on a panel, where it picks the kind of plot to create.
 
 | You pass | You get | `graph_type` |
 |---|---|---|
@@ -1289,6 +1299,10 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 **A data function's changes don't show.** The same range is not fetched twice. Call `graph.invalidate_cache()` after changing what the function returns.
 
 **`unsupported keyword 'metaData'`.** The keyword is `metadata=` now, like every other snake_case argument.
+
+**`NotImplementedError: <kind> is not supported by <class>`.** That plot class cannot hold this kind of graph. For example, a time-series plot cannot hold a histogram. Use a `SciQLopPlot`, or call `plot()` on a panel, which creates a suitable plot.
+
+**`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays needs `plot_type=PlotType.Projections`.
 
 **A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
 

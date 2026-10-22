@@ -150,3 +150,5 @@ rules holds in some classes and not in others.
 | 17 1-D histogram | Done. `SciQLopHistogram` over NeoQCP's `QCPHistogram`: `plot.histogram` (values or time-range callback), `plot.bars(edges, heights)`, bins, range, log bins, normalization, bars or step. A per-plot opt-out from the panel's x sync keeps the value axis still. Guide section "Histograms". |
 
 **Phase 3 gate: met.** Every feature has a guide section and a picture (band, fills, error bars sparse and dense, histograms, bars, legend placement, title). Checking an SVG export found graphs drawn outside the plot area; fixed by writing SVG 1.1, which keeps clip paths.
+
+**Phase 4, unification: item 5.4 done.** One dispatch table (`SciQLopPlots/_dispatch.py`) drives `plot()` on plots and panels. `plot_type` is panel-only; unknown keywords raise `TypeError`; an unsupported (kind, host) raises `NotImplementedError`. Panel factories take `marker` and `name` like plots, and projection plots apply the marker and colours they are given. One break: waterfall's `metaData=` is `metadata=`.
