@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <QDebug>
+#include <stdexcept>
+#include <string>
 #include <typeinfo>
 
 // These guard "silently empty plot" failures (wrong set_data overload, wrong
@@ -32,6 +34,19 @@
 //! NotImplementedError (a pending Python error, never a C++ throw: many stubs are noexcept);
 //! called from C++, it only warns. Each build's Python interface defines it.
 void report_unsupported_call(const char* function, const char* concrete_class);
+
+//! "<function> is not supported by <class>", with the class name demangled.
+std::string unsupported_message(const char* function, const char* concrete_class);
+
+namespace sqp
+{
+//! A factory this concrete class can't serve. Bindings turn it into NotImplementedError.
+//! Derived from runtime_error so C++ catch sites for the old "Not implemented" keep working.
+struct unsupported_call : std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+}
 
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \

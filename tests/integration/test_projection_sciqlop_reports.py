@@ -49,13 +49,13 @@ def test_no_labels_still_draws_a_curve_on_every_pane(panel):
 
 @pytest.mark.parametrize("labels", [["a", "b"], ["a", "b", "c", "d"]])
 def test_wrong_label_count_raises_and_adds_no_plot(panel, labels):
-    with pytest.raises(RuntimeError, match="label"):
+    with pytest.raises(ValueError, match="label"):
         panel.plot([t, X, Y, Z], labels=labels, **PROJECTION)
     assert panel.size() == 0
 
 
 def test_wrong_buffer_count_raises_and_adds_no_plot(panel):
-    with pytest.raises(RuntimeError, match="buffers"):
+    with pytest.raises(ValueError, match="buffers"):
         panel.plot([t, X, Y, Z, Z], **PROJECTION)
     assert panel.size() == 0
 

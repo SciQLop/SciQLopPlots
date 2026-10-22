@@ -90,6 +90,22 @@
             return nullptr;
         }
     </template>
+    <!-- Insert with <replace from="$TYPE" to="the return type"/>. -->
+    <template name="returning_raises_python_errors">
+        try {
+            $TYPE result = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+            %PYARG_0 = %CONVERTTOPYTHON[$TYPE](result);
+        } catch (const sqp::unsupported_call&amp; e) {
+            PyErr_SetString(PyExc_NotImplementedError, e.what());
+            return nullptr;
+        } catch (const std::invalid_argument&amp; e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return nullptr;
+        }
+    </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
     <load-typesystem name="typesystem_widgets.xml" generate="no" />
@@ -409,6 +425,9 @@
             </inject-code>
         </modify-function>
         <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -426,6 +445,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -443,6 +465,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -460,6 +485,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -477,6 +505,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopColorMapInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="4">
                 <rename to="name"/>
             </modify-argument>
@@ -491,6 +522,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -511,6 +545,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -531,6 +568,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -551,6 +591,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="waterfall(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -568,6 +611,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="waterfall(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,QObject*,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopGraphInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -588,6 +634,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,QObject*,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopColorMapInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -605,6 +654,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopColorMapInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -625,6 +677,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,QObject*,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopColorMapInterface*"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -738,17 +793,17 @@
         <modify-function signature="add_timeline(int)" exception-handling="auto-on"/>
         <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
             </inject-code>
         </modify-function>
         <modify-function signature="histogram(GetDataPyCallable,QString,int,QObject*,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
             </inject-code>
         </modify-function>
         <modify-function signature="bars(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopHistogram*"/></insert-template>
             </inject-code>
         </modify-function>
     </object-type>
@@ -1045,6 +1100,9 @@
 
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
         <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -1068,6 +1126,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,int,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -1091,6 +1152,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -1114,6 +1178,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="projection(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1128,6 +1195,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,bool,bool,PlotType,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopColorMapInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="4">
                 <rename to="name"/>
             </modify-argument>
@@ -1148,6 +1218,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="line(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1174,6 +1247,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="scatter(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,GraphMarkerShape,PlotType,QObject*,int,QVariantMap,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1200,6 +1276,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="parametric_curve(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1226,6 +1305,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="waterfall(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="labels"/>
             </modify-argument>
@@ -1249,6 +1331,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="waterfall(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,PlotType,QObject*,int,QVariantMap,GraphMarkerShape,QString)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1275,6 +1360,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="colormap(GetDataPyCallable,QString,bool,bool,PlotType,QObject*,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopColorMapInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -1298,6 +1386,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="labels"/>
             </modify-argument>
@@ -1315,6 +1406,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,int,bool,bool,PlotType,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopColorMapInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="3">
                 <rename to="name"/>
             </modify-argument>
@@ -1341,6 +1435,9 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="histogram2d(GetDataPyCallable,QString,int,int,bool,bool,PlotType,QObject*,int,QVariantMap)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopColorMapInterface*&gt;"/></insert-template>
+            </inject-code>
             <modify-argument index="2">
                 <rename to="name"/>
             </modify-argument>
@@ -1404,17 +1501,17 @@
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
         <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,int,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
             </inject-code>
         </modify-function>
         <modify-function signature="histogram(GetDataPyCallable,QString,int,QObject*,int,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
             </inject-code>
         </modify-function>
         <modify-function signature="bars(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QString,int,QVariantMap)">
             <inject-code class="target" position="beginning">
-                <insert-template name="returning_raises_valueerror"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
             </inject-code>
         </modify-function>
         <modify-function signature="save_svg(const QString&amp;,int,int)">

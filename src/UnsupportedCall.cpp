@@ -49,6 +49,11 @@ std::string readable(const char* type_name)
 }
 }
 
+std::string unsupported_message(const char* function, const char* concrete_class)
+{
+    return std::string(function) + " is not supported by " + readable(concrete_class);
+}
+
 void report_unsupported_call(const char* function, const char* concrete_class)
 {
     const auto name = readable(concrete_class);
@@ -58,8 +63,8 @@ void report_unsupported_call(const char* function, const char* concrete_class)
         // storeErrorOrPrint keeps the error for the Python call in progress to raise, and prints
         // it when C++ alone made the call. Safe from any thread, and in noexcept stubs.
         const auto gil = PyGILState_Ensure();
-        PyErr_Format(PyExc_NotImplementedError, "%s is not supported by %s", function,
-                     name.c_str());
+        PyErr_SetString(PyExc_NotImplementedError,
+                        unsupported_message(function, concrete_class).c_str());
         Shiboken::Errors::storeErrorOrPrint();
         PyGILState_Release(gil);
         return;
