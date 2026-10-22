@@ -28,9 +28,12 @@ class Kind:
     shapes: tuple
     factory: Mapping
     native: frozenset
-    panel_keywords: frozenset
+    host_keywords: Mapping
     returns: type
     consumed: frozenset = frozenset()
+
+    def keywords_on(self, host_cls):
+        return self.native | self.host_keywords.get(host_class(host_cls), frozenset())
 
 
 def _on(hosts, method):
@@ -38,7 +41,7 @@ def _on(hosts, method):
 
 
 _PLOTS_AND_PANEL = (SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel)
-_BOTH_PANEL_KEYWORDS = frozenset({"plot_type", "index"})
+_PANEL_KEYWORDS = {SciQLopMultiPlotPanel: frozenset({"plot_type", "index"})}
 _NAME = frozenset({"name"})
 _CURVE = frozenset({"labels", "colors", "marker"})
 _SYNC = frozenset({"sync_with"})
@@ -54,7 +57,7 @@ def _curve_kind(graph_type, method, four_arrays=False):
     four = (Shape("arrays", 4, frozenset({"marker"})),) if four_arrays else ()
     return Kind(graph_type,
                 (Shape("arrays", 2, _CURVE), *four, Shape("callback", None, _CURVE | _SYNC)),
-                _on(_PLOTS_AND_PANEL, method), _NAME, _BOTH_PANEL_KEYWORDS,
+                _on(_PLOTS_AND_PANEL, method), _NAME, _PANEL_KEYWORDS,
                 SciQLopGraphInterface)
 
 
@@ -70,29 +73,32 @@ KINDS = {
          Shape("arrays", 4, _PROJECTION),  # (t, d0, d1, d2)
          Shape("callback", None, _PROJECTION | _SYNC)),
         {SciQLopMultiPlotPanel: "projection", SciQLopNDProjectionPlot: "parametric_curve"},
-        frozenset(), _BOTH_PANEL_KEYWORDS, SciQLopGraphInterface,
+        frozenset(),
+        # parametric_curve, which backs the projection plot, also takes marker and name
+        {**_PANEL_KEYWORDS, SciQLopNDProjectionPlot: frozenset({"marker", "name"})},
+        SciQLopGraphInterface,
         consumed=frozenset({"plot_type"})),  # it picks this row; projection() has no plot_type
     "colormap": Kind(
         GraphType.ColorMap,
         (Shape("arrays", 3, _COLORMAP), Shape("callback", None, _COLORMAP | _SYNC)),
-        _on(_PLOTS_AND_PANEL, "colormap"), _NAME, _BOTH_PANEL_KEYWORDS,
+        _on(_PLOTS_AND_PANEL, "colormap"), _NAME, _PANEL_KEYWORDS,
         SciQLopColorMapInterface),
     "waterfall": Kind(
         GraphType.Waterfall,
         (Shape("arrays", 2, _CURVE, _WATERFALL_POST),
          Shape("callback", None, _CURVE | _SYNC, _WATERFALL_POST)),
-        _on(_PLOTS_AND_PANEL, "waterfall"), _NAME, _BOTH_PANEL_KEYWORDS,
+        _on(_PLOTS_AND_PANEL, "waterfall"), _NAME, _PANEL_KEYWORDS,
         SciQLopGraphInterface),
     "histogram2d": Kind(
         GraphType.Histogram2D,
         (Shape("arrays", 2, _HISTOGRAM2D), Shape("callback", None, _HISTOGRAM2D | _SYNC)),
-        _on(_PLOTS_AND_PANEL, "histogram2d"), _NAME, _BOTH_PANEL_KEYWORDS,
+        _on(_PLOTS_AND_PANEL, "histogram2d"), _NAME, _PANEL_KEYWORDS,
         SciQLopColorMapInterface),
     "histogram": Kind(
         GraphType.Histogram,
         (Shape("arrays", 1, _HISTOGRAM, _HISTOGRAM_POST),
          Shape("callback", None, _HISTOGRAM | _SYNC, _HISTOGRAM_POST)),
-        _on((SciQLopPlot, SciQLopMultiPlotPanel), "histogram"), _NAME, frozenset({"index"}),
+        _on((SciQLopPlot, SciQLopMultiPlotPanel), "histogram"), _NAME, {SciQLopMultiPlotPanel: frozenset({"index"})},
         SciQLopHistogram),
 }
 
@@ -208,7 +214,7 @@ def _foreign_keyword_message(stray, name, shape, accepted, graph_type):
     if set(stray) <= _kind_options(KINDS[name]):
         return f"{', '.join(stray)} kwarg(s) not accepted by {name} with {_describe(shape)}; accepted: {accepted}"
     owners = sorted({k.graph_type.name for n, k in KINDS.items()
-                     if n != name and set(stray) <= _kind_options(k)})
+                     if n != name and k.graph_type != KINDS[name].graph_type and set(stray) <= _kind_options(k)})
     if owners:
         return (f"{', '.join(stray)} kwarg(s) only apply to "
                 f"{' or '.join('GraphType.' + o for o in owners)}, got graph_type={graph_type!r}")
@@ -216,9 +222,7 @@ def _foreign_keyword_message(stray, name, shape, accepted, graph_type):
 
 
 def _check_keywords(name, kind, shape, host_cls, graph_type, kwargs):
-    allowed = COMMON | kind.native | shape.options | shape.post | {"name"}
-    if _is_panel(host_cls):
-        allowed |= kind.panel_keywords
+    allowed = COMMON | kind.keywords_on(host_cls) | shape.options | shape.post | {"name"}
     stray = sorted(set(kwargs) - allowed)
     if stray:
         raise TypeError(_foreign_keyword_message(stray, name, shape, allowed, graph_type))

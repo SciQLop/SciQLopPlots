@@ -3,15 +3,13 @@
 For every kind, shape and host, the keywords the factory overload takes (read from
 shiboken's signatures) must be the ones the table lets through to it.
 """
+import numpy as np
 import pytest
 from shibokensupport.signature import get_signature
 
 import SciQLopPlots
-from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopNDProjectionPlot, _dispatch
-
-# SciQLopNDProjectionPlot has no projection(): the table routes it to parametric_curve, whose
-# C++ overloads also take marker and name. The table keeps them off the projection row on purpose.
-HOST_EXTRAS = {("projection", SciQLopNDProjectionPlot): {"marker", "name"}}
+from SciQLopPlots import (GraphMarkerShape, GraphType, SciQLopMultiPlotPanel,
+                          SciQLopNDProjectionPlot, _dispatch)
 
 
 def _overloads(method):
@@ -50,10 +48,7 @@ def _cpp_keywords(kind_name, shape, method):
 
 
 def _table_keywords(kind_name, kind, shape, host):
-    keywords = _dispatch.COMMON | kind.native | shape.options
-    if _dispatch.host_class(host) is SciQLopMultiPlotPanel:
-        keywords |= kind.panel_keywords - kind.consumed
-    return set(keywords) | HOST_EXTRAS.get((kind_name, _dispatch.host_class(host)), set())
+    return set(_dispatch.COMMON | kind.keywords_on(host) | shape.options) - kind.consumed
 
 
 def _cases():
@@ -74,3 +69,24 @@ def _mismatch(kind_name, shape, host, method_name):
 def test_table_keywords_match_the_factory_signatures():
     mismatches = [m for m in (_mismatch(*case) for case in _cases()) if m]
     assert mismatches == []
+
+
+def test_every_kind_shape_and_host_is_compared():
+    assert len(_cases()) == 51
+
+
+def _xyz(start, stop):
+    t = np.linspace(0.0, 1.0, 20)
+    return t, np.stack([t, 2 * t, 3 * t], axis=1)
+
+
+@pytest.mark.parametrize("named", [False, True])
+# The C++ plot_impl accepts marker but never applies it, so only the call is checked.
+def test_projection_plot_takes_marker_and_name(qtbot, named):
+    plot = SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(plot)
+    extra = {"name": "orbit"} if named else {}
+    graph = plot.plot(_xyz, labels=["x", "y", "z"], graph_type=GraphType.ParametricCurve,
+                         marker=GraphMarkerShape.Circle, **extra)
+    assert len(graph.components()) == 3
+    assert not named or graph.objectName() == "orbit"

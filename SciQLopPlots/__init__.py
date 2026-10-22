@@ -143,7 +143,7 @@ def plot(self, *args, graph_type=None, **kwargs):
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
     name, kind, shape = _dispatch.resolve(type(self), args, graph_type, kwargs)
     post = {k: kwargs.pop(k) for k in shape.post if k in kwargs}
-    label = kwargs.pop("name", None) if "name" not in kind.native else None
+    label = kwargs.pop("name", None) if "name" not in kind.keywords_on(type(self)) else None
     for consumed in kind.consumed:
         kwargs.pop(consumed, None)
     factory = getattr(self, kind.factory[_dispatch.host_class(type(self))])
