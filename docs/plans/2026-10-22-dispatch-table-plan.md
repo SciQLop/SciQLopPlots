@@ -40,7 +40,7 @@
 - Modify: `include/SciQLopPlots/SciQLopPlotInterface.hpp` (~317-407): `line`, `scatter`, `parametric_curve` (all three overloads), `waterfall` gain `QString name = QString()` last.
 - Modify: `include/SciQLopPlots/MultiPlots/SciQLopPlotCollection.hpp` (~276-430) and the overrides in `SciQLopMultiPlotPanel.hpp`: panel `line`, `parametric_curve`, `waterfall` gain `::GraphMarkerShape marker` after `metaData`; `line`, `scatter`, `parametric_curve`, `waterfall` gain `QString name` last.
 - `marker` needs no plumbing: the panel's `plot_impl(x, y, ...)` already carries it and `__plot` forwards it (SciQLopMultiPlotPanel.hpp ~92-105, ~184-190); pass the new parameter through. `name` needs one helper applying `set_name` when the name is non-empty and the graph non-null, with two forms: graph pointer (plots) and the pair's second element (panels).
-- Modify: `SciQLopPlots/bindings/bindings.xml`: update every touched entry's signature string; add `waterfall` entries (buffer + callable) on the plot interface and the collection interface, with the same renames as `line` (`metaData`→`metadata`, labels, colors, marker, plot_type, index, sync_with, name).
+- Modify: `SciQLopPlots/bindings/bindings.xml`: update every touched entry's signature string; add `waterfall` entries (buffer + callable) on the plot interface and the collection interface. Spell the renames per entry from that entry's real parameters: plot buffer `(x, y, labels, colors, marker, metadata, name)`; plot callable adds `sync_with`; panel buffer `(x, y, labels, colors, plot_type, index, metadata, marker, name)` (no `sync_with`); panel callable adds `sync_with`. A rename for a parameter the entry doesn't have is a warning and is dropped.
 - Test: `tests/integration/test_dispatch_parity_kwargs.py` (create)
 
 **Interfaces:**
@@ -104,7 +104,7 @@ def test_positional_prefix_unchanged(qtbot, plot):
 
 **Files:**
 - Modify: `include/SciQLopPlots/Debug.hpp` (it is already included by SciQLopPlotInterface.hpp and so by bindings.h): `namespace sqp { struct unsupported_call : std::runtime_error { using std::runtime_error::runtime_error; }; }` — derived from `runtime_error`, so existing C++ `catch (const std::runtime_error&)` sites keep working.
-- Modify: `src/UnsupportedCall.cpp`: extract `std::string unsupported_message(const char* function, const char* concrete_class)` from `report_unsupported_call` (same demangled "<what> is not supported by <class>" text) and use it in both.
+- Modify: `src/UnsupportedCall.cpp`: extract `std::string unsupported_message(const char* function, const char* concrete_class)` from `report_unsupported_call` (same demangled "<what> is not supported by <class>" text; the demangling `readable()` helper stays in the .cpp) and use it in both. Declare `unsupported_message` in `Debug.hpp` next to `report_unsupported_call`, so the inline stubs in SciQLopPlotInterface.hpp link.
 - Modify: `include/SciQLopPlots/SciQLopPlotInterface.hpp:59-116`: the seven `plot_impl` stubs `throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()))`.
 - Modify: `SciQLopPlots/bindings/bindings.xml`: a template next to `returning_raises_valueerror` (~line 80), injected into every factory entry that can reach a stub, using the signature strings from Task 1.
 - Test: `tests/integration/test_dispatch_errors.py` (create)
@@ -202,7 +202,7 @@ def test_arrays_on_a_projections_panel_raise(qtbot, panel, call):
 ```
 
 - [ ] **Step 2: Run** — expected FAIL: `(None, None)` returned, no exception.
-- [ ] **Step 3: Implement** — `case ::PlotType::Projections:` → `throw std::invalid_argument("projections take a list of arrays or a callback, not x and y arrays")`; the `default:` → `throw std::invalid_argument("unknown plot type")`; `_plot<T>` checks the `GraphType` first and throws `std::invalid_argument("unsupported graph type")` before creating or adding the plot.
+- [ ] **Step 3: Implement** — `case ::PlotType::Projections:` → `throw std::invalid_argument("projections take a list of arrays or a callback, not x and y arrays")`; the `default:` → `throw std::invalid_argument("unknown plot type")`; `_plot<T>` checks the `GraphType` first and throws `std::invalid_argument("unsupported graph type")` before creating or adding the plot. The `_plot<T>` guard is defensive (no Python path reaches it with an unhandled `GraphType` today): say so in the commit message rather than claiming a user-visible fix.
 - [ ] **Step 4: Run** — PASS; `pytest tests/integration -k projection`; full suite.
 - [ ] **Step 5: Commit** — `git commit -m "fix(panel): arrays with plot_type=Projections raise instead of returning (None, None)"`.
 
@@ -217,7 +217,7 @@ def test_arrays_on_a_projections_panel_raise(qtbot, panel, call):
 
 **Interfaces:**
 - Consumes: Tasks 1-3.
-- Produces: `Shape(name, nargs, options, post=frozenset())`, `Kind(graph_type, shapes, factory, native, panel_keywords, returns)`, `KINDS: dict[str, Kind]`, `COMMON = frozenset({"metadata"})`, `resolve(host_cls, args, graph_type, kwargs) -> tuple[str, Kind, Shape]`, `host_class(cls)`, and the new `plot()`.
+- Produces: `Shape(name, nargs, options, post=frozenset())`, `Kind(graph_type, shapes, factory, native, panel_keywords, returns, consumed=frozenset())`, `KINDS: dict[str, Kind]`, `COMMON = frozenset({"metadata"})`, `resolve(host_cls, args, graph_type, kwargs) -> tuple[str, Kind, Shape]`, `host_class(cls)`, and the new `plot()`.
 
 The table (factories are method **names**, resolved with `getattr` at call time, so the Python `histogram` wrapper installed later in `__init__` is the one called):
 
@@ -231,6 +231,8 @@ The table (factories are method **names**, resolved with `getattr` at call time,
 | waterfall | Waterfall | arrays(2): labels colors marker (offsets normalize gain); callback: labels colors marker sync_with (offsets normalize gain) | plot, ts, panel → `waterfall` | name | plot_type index | SciQLopGraphInterface |
 | histogram2d | Histogram2D | arrays(2): x_bins y_bins x_bins_log y_bins_log; callback: same + sync_with | plot, ts, panel → `histogram2d` | name | plot_type index | SciQLopColorMapInterface |
 | histogram | Histogram | arrays(1): bins range log_bins normalization style; callback: same + sync_with | plot, panel → `histogram` | name | index | SciQLopHistogram |
+
+`consumed` (keywords the table reads and never forwards): `{plot_type}` on the projection row only — it picks the kind and the container, and `projection()` has no `plot_type`.
 
 (`COMMON` is only `metadata`: colour maps and histograms take no `labels`/`colors`. Hosts: `SciQLopPlot`, `SciQLopTimeSeriesPlot`, `SciQLopNDProjectionPlot`, `SciQLopMultiPlotPanel`; `host_class` checks `isinstance` in the order time series, projection plot, panel, plot.)
 
@@ -338,7 +340,7 @@ def _data(kind_name, shape):
         return ([X, X, X, X],)
     if shape.name == "callback":
         batch = {"colormap": (X, X, np.zeros((10, 10))), "projection": [X, X, X, X],
-                 "histogram": (X, X)}.get(kind_name, (X, X))
+                 "histogram": [X], "waterfall": (X, np.zeros((10, 4)))}.get(kind_name, (X, X))
         return (lambda a, b, batch=batch: batch,)
     return {1: (X,), 2: (X, np.zeros((10, 4)) if kind_name == "waterfall" else X),
             3: (X, X, np.zeros((10, 10))), 4: (X, X, ["a"], ["#f00"])}[shape.nargs]
@@ -394,6 +396,7 @@ class Kind:
     native: frozenset
     panel_keywords: frozenset
     returns: type
+    consumed: frozenset = frozenset()
 
 
 KINDS = {...}  # the rows of the table above, written out in full
@@ -440,7 +443,7 @@ def _check_host(name, kind, host_cls):
 
 
 def _check_keywords(name, kind, shape, host_cls, kwargs):
-    allowed = COMMON | kind.native | shape.options | shape.post | {"name"}
+    allowed = COMMON | kind.native | kind.consumed | shape.options | shape.post | {"name"}
     if host_class(host_cls) is SciQLopMultiPlotPanel:
         allowed |= kind.panel_keywords
     stray = sorted(set(kwargs) - allowed)
@@ -458,7 +461,7 @@ def resolve(host_cls, args, graph_type, kwargs):
     return name, kind, row
 ```
 
-  `_kind_by_graph_type`, `_accepted_forms`, `_shape_row` and `_warn_if_three_arrays_with` are small helpers; `_foreign_keyword_message` names the kind whose options hold the keyword, in today's `_reject_foreign_kwargs` wording ("x_bins kwarg(s) only apply to GraphType.Histogram2D, got graph_type=..."), else lists the allowed keywords. `plot_type` on a plot, or on a panel row without it, fails `_check_keywords` with a `TypeError` naming `plot_type`.
+  `_kind_by_graph_type`, `_accepted_forms`, `_shape_row` and `_warn_if_three_arrays_with` are small helpers; `_foreign_keyword_message` names the kind whose options hold the keyword, in today's `_reject_foreign_kwargs` wording ("x_bins kwarg(s) only apply to GraphType.Histogram2D, got graph_type=..."), else says "<stray> kwarg(s) not accepted by <kind>; accepted: …". Both forms start with the stray names, so `plot_type` on a plot, or on a panel row without it, gives a `TypeError` whose text contains `plot_type`.
 
   `plot()` in `__init__.py`:
 
@@ -468,7 +471,8 @@ def plot(self, *args, graph_type=None, **kwargs):
     name, kind, shape = _dispatch.resolve(type(self), args, graph_type, kwargs)
     post = {k: kwargs.pop(k) for k in shape.post if k in kwargs}
     label = kwargs.pop("name", None) if "name" not in kind.native else None
-    kwargs.pop("plot_type", None) if "plot_type" not in kind.panel_keywords else None
+    for consumed in kind.consumed:
+        kwargs.pop(consumed, None)
     factory = getattr(self, kind.factory[_dispatch.host_class(type(self))])
     args = (_projection_buffers(args),) if name == "projection" else args
     result = factory(*args, **kwargs)
@@ -478,7 +482,7 @@ def plot(self, *args, graph_type=None, **kwargs):
     return result
 ```
 
-  `_projection_buffers(args)` already accepts the list itself, `(t, d0, d1, …)` and `(t, values2d)`: pass `args` straight to it, never convert twice. `_apply_post` runs `_apply_waterfall_kwargs` plus the existing rescale of the new plot for waterfall (the `rescale_axes` call from today's 2-array branch), and nothing for the others. The 3-array `DeprecationWarning` is raised in `_kind_name`. `plot_type` for `projection` is consumed by the table (it chose the kind) and never forwarded, since `projection()` has none.
+  `_projection_buffers(args)` already accepts the list itself, `(t, d0, d1, …)` and `(t, values2d)`: pass `args` straight to it, never convert twice. `_apply_post` runs `_apply_waterfall_kwargs` plus the existing rescale of the new plot for waterfall (the `rescale_axes` call from today's 2-array branch), and nothing for the others. The 3-array `DeprecationWarning` is raised in `_kind_name`. `plot_type` for `projection` is in the row's `consumed` set: validation accepts it, `_kind_name` reads it, and it is popped before the call. `plot_func` stays as a thin alias, `plot_func(self, callback, graph_type=None, **kw) -> self.plot(callback, graph_type=graph_type, **kw)`, because it is public on the four patched classes. `plot()`'s signature becomes `plot(*args, graph_type=None, **kwargs)`; Task 6 documents it.
 - [ ] **Step 4: Run** — PASS; then the existing dispatch test files (test_api_footguns, test_p1_bugs, test_waterfall, test_histogram2d, test_histogram2d_log_bins, test_histogram1d, test_plot_name_kwarg, test_scatter_kwargs, the projection tests, test_api_hygiene, test_fills_errorbars) unchanged; then the full suite.
 - [ ] **Step 5: Commit** — `git commit -m "feat(plot): one dispatch table drives plot() on every host"`.
 
@@ -492,7 +496,7 @@ def plot(self, *args, graph_type=None, **kwargs):
 **Interfaces:**
 - Consumes: `_dispatch.KINDS`, `COMMON`, `HOSTS`, `host_class`.
 
-- [ ] **Step 1: Write the test** — for every kind, shape and host in the row's `factory`: print one `SciQLopPlot.line.__doc__` first to see shiboken's overload-listing format (one line per overload, `name: type = default`). Pick the overload for the shape (callback = first parameter a callable; list = first parameter a list/sequence; arrays = `nargs` leading buffer parameters, the 4-array curve counting labels and colors as positional). Assert its keyword names (minus the positional data parameters) equal `COMMON | kind.native | shape.options` plus, on the panel, `kind.panel_keywords`. `shape.post` is excluded: those keywords never reach the factory. For the histogram row the factory is the Python wrapper: compare with `inspect.signature` of the wrapper. Report every mismatch in one assertion message.
+- [ ] **Step 1: Write the test** — for every kind, shape and host in the row's `factory`: enumerate the overloads with `shibokensupport.signature.get_signature(method)` (returns a list for overloaded methods), the same helper `tests/integration/test_scatter_kwargs.py:12,25-27` uses, with its `@pytest.mark.filterwarnings("ignore:pyside_type_init:RuntimeWarning")` guard (`:39-40`). Pick the overload for the shape (callback = first parameter a callable; list = first parameter a list/sequence; arrays = `nargs` leading buffer parameters, the 4-array curve counting labels and colors as positional). Assert its keyword names (minus the positional data parameters) equal `COMMON | kind.native | shape.options` plus, on the panel, `kind.panel_keywords`. `shape.post` is excluded: those keywords never reach the factory. For the histogram row the factory is the Python wrapper, which hides `metadata`/`index` in `**kwargs`: compare against the wrapped C++ method (kept in `_cpp_histogram` in `__init__.py`) and add `{range, log_bins, normalization, style}` as the documented Python-only extras. Report every mismatch in one assertion message.
 - [ ] **Step 2: Mutation check** — remove `marker` from the panel `line` row's options in the table: the test FAILS naming it; restore: PASS. Then remove `name` from `waterfall.native`: FAIL; restore.
 - [ ] **Step 3: Commit** — `git commit -m "test(plot): the dispatch table and the factory signatures stay in step"`.
 
@@ -500,7 +504,7 @@ def plot(self, *args, graph_type=None, **kwargs):
 
 ### Task 6: Docs, SciQLop check
 
-- [ ] **Step 1:** `docs/user-guide.md`: in the plot-types intro, one paragraph on how `plot()` picks the kind (shape + `graph_type`; a list of arrays makes a projection; three arrays make a colour map). Troubleshooting: `NotImplementedError: <kind> is not supported by <class>`, and `waterfall(metaData=)` → `metadata=`. Snippets must run (the guide test executes them).
+- [ ] **Step 1:** `docs/user-guide.md`: show `plot(*args, graph_type=None, **kwargs)` where the guide documents `plot()`'s signature, and in the plot-types intro, one paragraph on how `plot()` picks the kind (shape + `graph_type`; a list of arrays makes a projection; three arrays make a colour map). Troubleshooting: `NotImplementedError: <kind> is not supported by <class>`, and `waterfall(metaData=)` → `metadata=`. Snippets must run (the guide test executes them).
 - [ ] **Step 2:** `docs/api-review-2026-10-20.md` Progress: item 5.4 done, noting the waterfall `metaData` break.
 - [ ] **Step 3:** Full SciQLopPlots suite. Then SciQLop's suite and the plugins against `build-venv`: from /home/jeandet/Documents/prog/SciQLop, `xvfb-run -a -s "-screen 0 2560x1440x24" env PYTHONPATH=/home/jeandet/Documents/prog/SciQLopPlots/build-venv timeout 590 .venv/bin/python -m pytest <files> -q -p no:cacheprovider -o addopts="" --no-xvfb`, chunks under 590 s; plugins sciqlop_msa, sciqlop_radio, sciqlop_sismo with `PYTHONPATH=<build-venv>:<plugin dir>` (cdf_workbench can't run: old pycdfpp). Known pre-existing failure: test_onboarding_integration.py drag-step test. End with `ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'` empty.
 - [ ] **Step 4:** Commit docs.
