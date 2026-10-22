@@ -148,3 +148,5 @@ rules holds in some classes and not in others.
 | 18 SVG | `save_svg()`, `save()` writes `.svg`; no `format=` keyword (d62aa8c). |
 | 14 Bands, error bars | Done. Fills and bands as column decorations, error bars that become a band when dense, `plot.band` and `plot.error_bars`. Side fix: a callback batch with the wrong number of arrays now emits `fetch_failed` instead of vanishing, which also fixed 2-pane projection callbacks. |
 | 17 1-D histogram | Done. `SciQLopHistogram` over NeoQCP's `QCPHistogram`: `plot.histogram` (values or time-range callback), `plot.bars(edges, heights)`, bins, range, log bins, normalization, bars or step. A per-plot opt-out from the panel's x sync keeps the value axis still. Guide section "Histograms". |
+
+**Phase 3 gate: met.** Every feature has a guide section and a picture (band, fills, error bars sparse and dense, histograms, bars, legend placement, title). Checking an SVG export found graphs drawn outside the plot area; fixed by writing SVG 1.1, which keeps clip paths.

@@ -154,6 +154,8 @@ x = np.linspace(0, 10, 10_000)
 plot.band(x, np.sin(x) - 0.3, np.sin(x) + 0.3, name="sin +/- 0.3")
 ```
 
+![A shaded band around a sine](images/band.png)
+
 Fills are also available on any line graph, one column at a time. `set_fill_to_value` fills between a line and a constant. `set_fill_between` fills between two columns of the same graph.
 
 ```python
@@ -170,6 +172,8 @@ graph.set_fill_between(1, 2)
 graph.set_fill_to_value(0, 0.0)
 ```
 
+![A sine filled to zero, with a band between its low and high columns](images/fills.png)
+
 `graph.clear_fill(column)` removes a fill. `set_fill_color(column, color)` changes its colour.
 
 Both columns must belong to the same graph. To shade between two spacecraft, build one virtual product that returns both curves as columns.
@@ -181,14 +185,28 @@ import numpy as np
 from SciQLopPlots import SciQLopPlot
 
 plot = SciQLopPlot()
-x = np.linspace(0, 10, 200)
+x = np.linspace(0, 10, 25)
 plot.error_bars(x, np.sin(x), 0.1)
 plot.error_bars(x, np.cos(x), 0.1, 0.3, name="asymmetric")
+plot.x_axis().set_range(-0.5, 10.5)
 ```
+
+![Symmetric and asymmetric error bars with caps](images/error-bars.png)
 
 One error gives symmetric bars. Two give the lower and the upper error. Errors are a scalar or one value per point.
 
-Bars are drawn while there is room for them. Zoom out and they merge into a band.
+Bars are drawn while there is room for them. Zoom out, or pass many points, and they merge into a band:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 2000)
+plot.error_bars(x, np.sin(x), 0.02 + 0.03 * x, name="dense")   # the error grows with x
+```
+
+![Error bars too dense to draw, shown as a band](images/error-bars-dense.png)
 
 A band is downsampled like any line. Zoomed out, it spans between the drawn min/max lines, not between every raw point.
 
@@ -223,6 +241,7 @@ cmap = plot.plot(x, y, z, name="spectrogram")
 cmap.set_gradient(ColorGradient.Viridis)
 cmap.set_y_log_scale(True)
 cmap.set_z_log_scale(True)
+plot.set_title("Electron flux")
 ```
 
 ![A spectrogram on log y and colour scales](images/colormap.png)
@@ -305,7 +324,21 @@ values = np.random.default_rng(42).normal(0, 1, 100_000)
 hist = plot.histogram(values, bins=50, name="speed")
 ```
 
+![A histogram of normal values drawn as bars](images/histogram.png)
+
 One column of values is drawn as bars. Several columns are drawn as step outlines, one per column. Pass `style=HistogramStyle.Bars` or `style=HistogramStyle.Step` to choose. An explicit style always wins.
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+rng = np.random.default_rng(42)
+values = np.column_stack([rng.normal(0, 1, 50_000), rng.normal(1.5, 0.7, 50_000)])
+hist = plot.histogram(values, bins=60, name="two populations")
+```
+
+![Two histograms drawn as step outlines](images/histogram-step.png)
 
 `range=(lower, upper)` fixes the edges. Values outside the range are not counted.
 
@@ -388,6 +421,8 @@ edges = np.array([0.0, 1.0, 2.0, 5.0, 10.0])
 heights = np.array([4.0, 9.0, 3.0, 1.0])
 bars = plot.bars(edges, heights, name="pre-binned")
 ```
+
+![Pre-binned bars with uneven widths](images/bars.png)
 
 ## Live data: plot a function
 
@@ -681,6 +716,8 @@ plot.legend().set_columns(3)                    # entries side by side
 panel = SciQLopMultiPlotPanel()
 panel.set_legend_visible(False)                 # every plot's legend, later ones too
 ```
+
+![A legend with three entries side by side, placed inside the plot](images/legend-placement.png)
 
 ## Overlays: spans, lines and text
 
