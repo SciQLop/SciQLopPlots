@@ -291,13 +291,20 @@ class TestEmptyFetchWindow:
             return _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
         qtbot.waitUntil(centre_is_tinted, timeout=5000)  # the new data is shown asynchronously
 
-    def test_kept_components_stay_editable_in_the_gap(self, qtbot, plot):
-        cb, calls = _empty_in_the_gap(lambda x: (np.column_stack([x, x + 1]),))
-        g = plot.line(cb, labels=["a", "b"])
+    def test_kept_components_stay_editable_in_the_gap(self, qtbot, plot, tmp_path):
+        cb, calls = _empty_in_the_gap(
+            lambda x: (np.column_stack([np.full_like(x, 3.0), np.full_like(x, 7.0)]),))
+        g = plot.line(cb, labels=["a", "b"], colors=["red", "red"])
         plot.y_axis().set_range(0, 10)
         _show(qtbot, plot, g, calls, (0, 10))
         _show(qtbot, plot, g, calls, GAP)
         g.set_fill_between(0, 1)
+        _show(qtbot, plot, g, calls, (40, 50))
+
+        def centre_is_tinted():  # only the (40, 50) data can tint it: the gap drew nothing
+            img = _render(plot, tmp_path)
+            return _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
+        qtbot.waitUntil(centre_is_tinted, timeout=5000)
         assert g.components()[0].has_fill()
 
     def test_error_bars_keep_their_stems(self, qtbot, plot, tmp_path):
