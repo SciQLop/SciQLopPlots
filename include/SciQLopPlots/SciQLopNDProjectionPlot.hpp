@@ -72,6 +72,8 @@ protected:
     void _ensure_marker_layer();
     void _place_time_markers();
     SciQLopGraphInterface* _adopt(SciQLopGraphInterface* graph);
+    static SciQLopGraphInterface* _styled(SciQLopGraphInterface* graph,
+                                          const QList<QColor>& colors, GraphMarkerShape marker);
     void _setup_color_scale();
     void _link_axes(bool linked);
     void _set_same_scale(bool enabled);

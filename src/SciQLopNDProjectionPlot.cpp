@@ -45,7 +45,7 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
 
     connect(this, &SciQLopPlot::time_axis_range_changed, graph,
             &SciQLopNDProjectionCurvesFunction::set_range);
-    return _adopt(graph);
+    return _adopt(_styled(graph, colors, marker));
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<SciQLopPyBuffer>& data,
@@ -55,7 +55,18 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<SciQLopPyB
     SciQLopNDProjectionCurves::check_batch_size(m_plots.size(), data.size());
     auto* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels, metaData);
     graph->set_data(data);
-    return _adopt(graph);
+    return _adopt(_styled(graph, colors, marker));
+}
+
+SciQLopGraphInterface* SciQLopNDProjectionPlot::_styled(SciQLopGraphInterface* graph,
+                                                        const QList<QColor>& colors,
+                                                        GraphMarkerShape marker)
+{
+    if (!colors.isEmpty())
+        graph->set_colors(colors);
+    for (auto* component : graph->components())
+        component->set_marker_shape(marker);
+    return graph;
 }
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::_adopt(SciQLopGraphInterface* graph)
