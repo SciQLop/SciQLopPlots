@@ -147,6 +147,28 @@ class TestSvgExport:  # task 18, finding 4.7
         if kind != "projection":  # an empty projection draws only its frames
             assert "<polyline" in text  # the graph, as vector lines
 
+    def test_a_line_leaving_the_view_is_clipped_to_the_plot_area(self, qtbot, tmp_path, plot):
+        # Read the SVG itself: QSvgRenderer implements SVG Tiny, which ignores clip paths.
+        import re
+        import xml.etree.ElementTree as ET
+        from PySide6.QtGui import QColorConstants
+        plot.plot(X, 3 * np.sin(X), colors=[QColorConstants.Red])
+        _laid_out(qtbot, plot)
+        plot.x_axis().set_range(2, 8)
+        plot.y_axis().set_range(-1, 1)
+        process_events()
+        path = tmp_path / "zoomed.svg"
+        assert plot.save_svg(str(path), 600, 400) is True
+        ns = {"svg": "http://www.w3.org/2000/svg"}
+        root = ET.parse(path).getroot()
+        clips = {c.get("id"): c.find("svg:path", ns).get("d") for c in root.iter(f"{{{ns['svg']}}}clipPath")}
+        red_line_clips = [re.search(r"#([^)]+)", g.get("clip-path")).group(1)
+                          for g in root.iter(f"{{{ns['svg']}}}g")
+                          if g.get("clip-path") and any(child.get("stroke") == "#ff0000" for child in g)]
+        assert red_line_clips
+        corners = [[float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", clips[c])] for c in red_line_clips]
+        assert all(min(xy[0::2]) > 0 and max(xy[0::2]) < 600 for xy in corners)
+
     def test_a_bad_path_raises(self, qtbot, tmp_path):
         targets = self._targets(qtbot)
         with pytest.raises(OSError, match="failed to save"):

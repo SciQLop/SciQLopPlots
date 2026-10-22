@@ -142,7 +142,9 @@ bool save_widget_svg(QWidget* w, const QString& filename, int width, int height)
     QFile file(filename);
     if (!file.open(QIODevice::WriteOnly))
         return false;
-    QSvgGenerator generator;
+    // SVG 1.1, not the default SVG Tiny 1.2: only 1.1 writes clip paths, so graphs stay inside
+    // their plot area.
+    QSvgGenerator generator(QSvgGenerator::SvgVersion::Svg11);
     generator.setOutputDevice(&file);
     generator.setSize(QSize(totalW, totalH));
     generator.setViewBox(QRect(0, 0, totalW, totalH));
