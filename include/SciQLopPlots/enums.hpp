@@ -85,6 +85,7 @@ inline constexpr const char* factory_name(GraphType graph_type)
 {
     constexpr std::array names { "line",      "parametric_curve", "scatter",  "colormap",
                                  "waterfall", "histogram2d",      "histogram" };
+    static_assert(names.size() == static_cast<std::size_t>(GraphType::Histogram) + 1);
     return names[static_cast<std::size_t>(graph_type)];
 }
 

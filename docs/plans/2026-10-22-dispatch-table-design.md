@@ -69,7 +69,7 @@ Common keyword, accepted by every factory: `metadata`. `labels` and `colors` are
 
 Per-shape factory options follow today's overloads: `marker` on line/scatter/parametric curve/waterfall/projection; `sync_with` on every callback shape; `y_log_scale`/`z_log_scale` on colour map; `x_bins`/`y_bins`/`x_bins_log`/`y_bins_log` on 2-D histogram; `bins` on histogram; on panels, `index` on every factory and `plot_type` on every factory except `projection` (neither its list nor its callable overload has one) and `histogram` (it always makes a plain plot: a time-series plot can't hold a histogram, so `plot_type` has nothing to choose).
 
-`post` options are applied by `plot()` after the factory returns, as today: waterfall's `offsets`/`normalize`/`gain` (`_apply_waterfall_kwargs`) and histogram's `range`/`log_bins`/`normalization`/`style` (the Python `histogram` wrapper). They are not C++ keywords.
+`post` options are not C++ keywords. Waterfall's `offsets`/`normalize`/`gain` are applied by `plot()` after the factory returns (`_apply_waterfall_kwargs`). Histogram's `range`/`log_bins`/`normalization`/`style` are applied by the Python `histogram` wrapper the row's factory resolves to, so `plot()` must not apply them a second time.
 
 The table consumes `plot_type` itself (it chooses the container and the kind) and passes it on only to factories that take it; it never forwards `plot_type` to `projection`.
 

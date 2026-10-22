@@ -96,7 +96,7 @@ def test_the_three_array_warning_points_at_the_caller(qtbot, plot):
     assert record[0].filename == __file__
 
 
-def test_histogram_settings_are_applied_after_the_factory(qtbot, plot):
+def test_histogram_settings_are_applied_by_the_python_wrapper(qtbot, plot):
     from SciQLopPlots._dispatch import KINDS
     assert all("normalization" in s.post for s in KINDS["histogram"].shapes)
     h = plot.plot(np.arange(1.0, 100.0), graph_type=GraphType.Histogram, log_bins=True,
@@ -216,7 +216,11 @@ LANDS_ON_ANOTHER_ROW = {
 
 
 def _direct_factory(kind, target):
-    return next(getattr(target, m) for m in kind.factory.values() if hasattr(target, m))
+    from SciQLopPlots._dispatch import host_class
+    own = kind.factory.get(host_class(type(target)))
+    # A host missing from the row is walked through any factory name it has, to check the refusal.
+    return getattr(target, own) if own else next(
+        getattr(target, m) for m in kind.factory.values() if hasattr(target, m))
 
 
 def _direct_args(name, args):
