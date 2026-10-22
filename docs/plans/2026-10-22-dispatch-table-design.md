@@ -1,6 +1,6 @@
 # One dispatch table for plot() and the factories
 
-Status: design for API review item 5.4 (docs/api-review-2026-10-20.md), Phase 4. Revision 2, after two opencode reviews (of the draft and of revision 1).
+Status: design for API review item 5.4 (docs/api-review-2026-10-20.md), Phase 4. Revision 3, after three opencode reviews (draft, revision 1, revision 2).
 
 ## Why
 
@@ -42,7 +42,8 @@ In `SciQLopPlots/_dispatch.py`, imported by `__init__.py`. Keyed on its own kind
 class Shape:
     name: str                    # "arrays", "callback" or "list"
     nargs: int | None            # positional count for "arrays"; None otherwise
-    options: frozenset[str]      # keywords of this kind for this shape
+    options: frozenset[str]      # keywords the C++ factory overload takes for this shape
+    post: frozenset[str] = frozenset()   # keywords plot() applies after the factory returns
 
 @dataclass(frozen=True)
 class Kind:
@@ -66,7 +67,11 @@ Common keywords, accepted by every factory: `labels`, `colors`, `metadata`. `nam
 | 2-D histogram | Histogram2D | arrays (2), callback | plot, time series, panel → `histogram2d` | colour map |
 | histogram | Histogram | arrays (1), callback | plot, panel → `histogram` | histogram |
 
-Per-shape options follow today's overloads: `marker` on line/scatter/parametric curve/waterfall; `sync_with` on every callback shape; `y_log_scale`/`z_log_scale` on colour map; `x_bins`/`y_bins`/`x_bins_log`/`y_bins_log` on 2-D histogram; `bins`/`range`/`log_bins`/`normalization`/`style` on histogram; waterfall's `offsets`/`normalize`/`gain`; on panels, `plot_type` and `index` on every shape (not on `projection(callable)`, which has no `plot_type`).
+Per-shape factory options follow today's overloads: `marker` on line/scatter/parametric curve/waterfall; `sync_with` on every callback shape; `y_log_scale`/`z_log_scale` on colour map; `x_bins`/`y_bins`/`x_bins_log`/`y_bins_log` on 2-D histogram; `bins` on histogram; on panels, `index` on every factory and `plot_type` on every factory except `projection` (neither its list nor its callable overload has one).
+
+`post` options are applied by `plot()` after the factory returns, as today: waterfall's `offsets`/`normalize`/`gain` (`_apply_waterfall_kwargs`) and histogram's `range`/`log_bins`/`normalization`/`style` (the Python `histogram` wrapper). They are not C++ keywords.
+
+The table consumes `plot_type` itself (it chooses the container and the kind) and passes it on only to factories that take it; it never forwards `plot_type` to `projection`.
 
 The table is not mirrored in C++: the factories return different types, so a C++ table would need variant returns. The parity test checks the C++ against the Python table.
 
@@ -75,12 +80,12 @@ The table is not mirrored in C++: the factories return different types, so a C++
 1. **The kind is chosen by `(shape, graph_type)`.**
    - Two arrays: `graph_type` picks line (the default), scatter, parametric curve, waterfall or 2-D histogram.
    - A callback: `graph_type` picks the kind (default line); `plot_type=Projections` on a panel picks projection whatever `graph_type` says.
-   - A list of arrays: always projection.
+   - A list of arrays: always projection. A `graph_type` other than `None` or `ParametricCurve` with a list raises `TypeError`.
    - Three arrays: always colour map. With a `graph_type` other than `ColorMap`, today's `DeprecationWarning` stays until 1.0 (the one case where the shape overrides `graph_type`).
    - One array: histogram (`graph_type=Histogram` required, as today); four arrays: parametric curve.
-   - Any other combination raises `TypeError` listing the accepted forms for the given `graph_type`.
-2. **`plot_type` says which container a panel creates**; on plots it is rejected (`TypeError`), as today.
-3. **An unsupported (kind, host) raises `NotImplementedError` naming the host class**, for example "histogram is not supported by SciQLopTimeSeriesPlot", from the table, before any C++ call.
+   - Any other combination raises `TypeError` listing the accepted forms for the given `graph_type`. Two arrays with `graph_type=Histogram` keep today's message pointing to `plot.bars(edges, heights)`.
+2. **`plot_type` says which container a panel creates.** On a plot, `plot_type` is a keyword the host doesn't take: `TypeError` from the table (today it is an `AttributeError` from shiboken). On a panel, a `plot_type` value that can't hold the shape (two arrays with `Projections`) is a bad value: `ValueError`, from `plot()` and from the direct factory alike.
+3. **An unsupported (kind, host) raises `NotImplementedError` naming the host class**, from the table, before any C++ call. The message uses the same form as the C++ path (`report_unsupported_call`, src/UnsupportedCall.cpp): "<what> is not supported by <class>". Tests assert the exception type and the class name, not the full text.
 4. **Unknown keywords raise `TypeError`**, naming the kind that owns the keyword when one does (today's `_reject_foreign_kwargs` message), else listing the keywords the chosen kind and shape accept.
 
 ## C++ changes
@@ -88,7 +93,7 @@ The table is not mirrored in C++: the factories return different types, so a C++
 - Panel `line`, `waterfall` and `parametric_curve` gain `marker`, and line/scatter/parametric_curve/waterfall gain a native `name`. New parameters go **after `metaData`**, `name` last, so no existing positional call changes meaning.
 - `waterfall` gets bindings entries on the plot and collection interfaces, renaming its keywords like the other factories (`metaData` → `metadata`, `labels`, `colors`, `marker`, `plot_type`, `index`). This is a straight break for `metaData=` with no shim, like Phase 1, listed in the changelog. SciQLop never passes it.
 - The panel's `plot_impl(x, y, ...)` switch (src/SciQLopMultiPlotPanel.cpp:403-422) no longer returns `(nullptr, nullptr)` for `Projections`: two arrays with `plot_type=Projections` raise `std::invalid_argument` ("projections take a list of arrays or a callback"), mapped to `ValueError`.
-- Unsupported factory calls on a host (the base `plot_impl` stubs throwing `std::runtime_error("Not implemented")`, SciQLopPlotInterface.hpp:59-116) throw a dedicated `sqp::unsupported_call` (derived from `std::logic_error`) instead. The factory bindings map it to `NotImplementedError` with one injection template, like `void_raises_valueerror`. C++ callers keep getting an exception, not a null return.
+- Unsupported factory calls on a host (the base `plot_impl` stubs throwing `std::runtime_error("Not implemented")`, SciQLopPlotInterface.hpp:59-116) throw a dedicated `sqp::unsupported_call` (derived from `std::logic_error`) instead. One injection template maps it to `NotImplementedError` (and `std::invalid_argument` to `ValueError`), like `void_raises_valueerror` (bindings.xml:69-79). The template must be attached to every factory entry that can reach a stub, on the plot and the collection interfaces: roughly two dozen `modify-function` entries. The direct-factory tests catch a missed one. C++ callers keep getting an exception, not a null return.
 
 ## Silent failures fixed
 
@@ -122,5 +127,5 @@ The SciQLop suite (xvfb-run outside `timeout`, `--no-xvfb`) and the four plugins
 ## Tests
 
 - **Dispatch walk:** for every row × shape × host, `plot()` with that shape and `graph_type` returns the row's `returns` (a panel: `(plot, returns)`); for hosts missing from the row, it raises `NotImplementedError` naming the host. The same for the direct factory where the host has one.
-- **Signature parity, per overload:** for every row, shape and host, the C++ factory overload for that shape (read from shiboken's overload listing in `__doc__`, not `inspect.signature`) accepts exactly the common keywords, the row's native keywords and that shape's options. A C++ signature change the table doesn't follow fails this test.
+- **Signature parity, per overload:** for every row, shape and host, the C++ factory overload for that shape (read from shiboken's overload listing in `__doc__`, not `inspect.signature`) accepts exactly the common keywords, the row's native keywords and that shape's `options` (not its `post` options), plus `index`/`plot_type` on panels where the factory takes them. A C++ signature change the table doesn't follow fails this test.
 - The existing dispatch tests (test_api_footguns, test_p1_bugs, test_waterfall, test_histogram2d, test_histogram2d_log_bins, test_histogram1d, test_plot_name_kwarg, test_scatter_kwargs, the projection tests, test_api_hygiene) keep passing unchanged, except for `metaData=` on waterfall.
