@@ -1014,6 +1014,11 @@
          fetched anything. -->
     <object-type name="SciQLopNDProjectionCurves" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <modify-function signature="set_data(const QList&lt;SciQLopPyBuffer&gt;&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
                 // This code replaces the call, and with it the base class's conversion rule.
@@ -1177,7 +1182,7 @@
                 <rename to="name"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="projection(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap)">
+        <modify-function signature="projection(const QList&lt;SciQLopPyBuffer&gt;&amp;,QStringList,QList&lt;QColor&gt;,int,QVariantMap,GraphMarkerShape)">
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
             </inject-code>
@@ -1385,7 +1390,7 @@
                 <rename to="metadata"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int,QVariantMap)">
+        <modify-function signature="projection(GetDataPyCallable,QStringList,QList&lt;QColor&gt;,QObject*,int,QVariantMap,GraphMarkerShape)">
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
             </inject-code>

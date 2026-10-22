@@ -48,6 +48,13 @@ struct unsupported_call : std::runtime_error
 };
 }
 
+//! Throws sqp::unsupported_call: "<what> is not supported by <self's concrete class>".
+template <typename T>
+[[noreturn]] void throw_unsupported(const char* what, const T& self)
+{
+    throw sqp::unsupported_call(unsupported_message(what, typeid(self).name()));
+}
+
 #define WARN_ABSTRACT_METHOD                                                                       \
     {                                                                                              \
         report_unsupported_call(Q_FUNC_INFO, typeid(*this).name());                                \

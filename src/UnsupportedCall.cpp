@@ -29,23 +29,34 @@
 #include "SciQLopPlots/Debug.hpp"
 #include <cstdlib>
 #include <memory>
+#include <string_view>
 #if defined(__GNUG__)
 #include <cxxabi.h>
 #endif
 
 namespace
 {
-std::string readable(const char* type_name)
+std::string demangled(const char* type_name)
 {
 #if defined(__GNUG__)
     int status = 0;
-    std::unique_ptr<char, void (*)(void*)> demangled {
+    std::unique_ptr<char, void (*)(void*)> name {
         abi::__cxa_demangle(type_name, nullptr, nullptr, &status), std::free
     };
     if (status == 0)
-        return demangled.get();
+        return name.get();
 #endif
     return type_name;
+}
+
+std::string readable(const char* type_name)
+{
+    // An object made from Python is shiboken's <Class>Wrapper subclass: name the class users know.
+    constexpr std::string_view wrapper = "Wrapper";
+    auto name = demangled(type_name);
+    if (name.ends_with(wrapper))
+        name.resize(name.size() - wrapper.size());
+    return name;
 }
 }
 

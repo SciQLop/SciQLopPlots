@@ -80,6 +80,14 @@ enum class GraphType
 };
 Q_DECLARE_METATYPE(GraphType);
 
+//! The factory that makes this kind, as Python users call it; unsupported-call messages name it.
+inline constexpr const char* factory_name(GraphType graph_type)
+{
+    constexpr std::array names { "line",      "parametric_curve", "scatter",  "colormap",
+                                 "waterfall", "histogram2d",      "histogram" };
+    return names[static_cast<std::size_t>(graph_type)];
+}
+
 enum class WaterfallOffsetMode
 {
     Uniform,

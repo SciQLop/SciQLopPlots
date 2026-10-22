@@ -91,7 +91,7 @@ protected:
               ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1,QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported(factory_name(graph_type), *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -99,7 +99,7 @@ protected:
               QList<QColor> colors = QList<QColor>(),
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, int index = -1, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("projection", *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -107,7 +107,7 @@ protected:
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("colormap", *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -117,7 +117,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported(factory_name(graph_type), *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -126,7 +126,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("colormap", *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -135,7 +135,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("histogram2d", *this);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -144,7 +144,7 @@ protected:
               ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData = {})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("histogram2d", *this);
     }
 
 public:
@@ -310,9 +310,10 @@ public:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     projection(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
-               QList<QColor> colors = QList<QColor>(), int index = -1, QVariantMap metaData={})
+               QList<QColor> colors = QList<QColor>(), int index = -1, QVariantMap metaData = {},
+               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
-        return plot_impl(values, labels, colors, ::GraphMarkerShape::NoMarker, index,metaData);
+        return plot_impl(values, labels, colors, marker, index, metaData);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -356,10 +357,11 @@ public:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     projection(GetDataPyCallable callable, QStringList labels = QStringList(),
-               QList<QColor> colors = QList<QColor>(), QObject* sync_with = nullptr, int index = -1, QVariantMap metaData={})
+               QList<QColor> colors = QList<QColor>(), QObject* sync_with = nullptr, int index = -1,
+               QVariantMap metaData = {}, ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker)
     {
-        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
-                         ::GraphMarkerShape::NoMarker, ::PlotType::Projections, sync_with, index,metaData);
+        return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, marker,
+                         ::PlotType::Projections, sync_with, index, metaData);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -388,7 +390,7 @@ public:
     histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
               int bins = 64, int index = -1, QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return { nullptr, nullptr };
     }
 
@@ -397,7 +399,7 @@ public:
               int bins = 64, QObject* sync_with = nullptr, int index = -1,
               QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return { nullptr, nullptr };
     }
 
@@ -405,7 +407,7 @@ public:
     bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
          QString name = QStringLiteral("Bars"), int index = -1, QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("bars", typeid(*this).name());
         return { nullptr, nullptr };
     }
 

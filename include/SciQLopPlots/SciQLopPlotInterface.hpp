@@ -61,7 +61,7 @@ protected:
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported(factory_name(graph_type), *this);
     }
 
     inline virtual SciQLopGraphInterface*
@@ -69,7 +69,7 @@ protected:
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("projection", *this);
     }
 
     inline virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
@@ -78,7 +78,7 @@ protected:
                                                        bool y_log_scale = false,
                                                        bool z_log_scale = false, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("colormap", *this);
     }
 
     inline virtual SciQLopGraphInterface*
@@ -87,14 +87,14 @@ protected:
               ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
               QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported(factory_name(graph_type), *this);
     }
 
     inline virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
               bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("colormap", *this);
     }
 
     inline virtual SciQLopColorMapInterface*
@@ -103,7 +103,7 @@ protected:
               int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
               QVariantMap metaData = {})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("histogram2d", *this);
     }
 
     inline virtual SciQLopColorMapInterface*
@@ -112,7 +112,7 @@ protected:
               bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {})
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        throw_unsupported("histogram2d", *this);
     }
 
 public:
@@ -429,7 +429,7 @@ public:
                                                QString name = QStringLiteral("Histogram"),
                                                int bins = 64, QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return nullptr;
     }
 
@@ -438,7 +438,7 @@ public:
                                                int bins = 64, QObject* sync_with = nullptr,
                                                QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return nullptr;
     }
 
@@ -447,7 +447,7 @@ public:
                                           QString name = QStringLiteral("Bars"),
                                           QVariantMap metadata = {})
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("bars", typeid(*this).name());
         return nullptr;
     }
 

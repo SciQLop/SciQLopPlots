@@ -17,8 +17,9 @@ def _y(factory):
 
 
 @pytest.mark.parametrize("factory", ["line", "parametric_curve", "waterfall"])
-def test_panel_factories_take_marker(qtbot, panel, factory):
-    assert _graph(getattr(panel, factory)(X, _y(factory), marker=GraphMarkerShape.Circle)) is not None
+def test_panel_factories_apply_marker(qtbot, panel, factory):
+    graph = _graph(getattr(panel, factory)(X, _y(factory), marker=GraphMarkerShape.Circle))
+    assert graph.components()[0].marker_shape() == GraphMarkerShape.Circle
 
 
 @pytest.mark.parametrize("host", ["plot", "panel"])

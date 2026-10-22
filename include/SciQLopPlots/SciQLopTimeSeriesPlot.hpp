@@ -56,21 +56,21 @@ public:
     inline SciQLopHistogram* histogram(const SciQLopPyBuffer&, QString = QStringLiteral("Histogram"),
                                        int = 64, QVariantMap = {}) override
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return nullptr;
     }
 
     inline SciQLopHistogram* histogram(GetDataPyCallable, QString = QStringLiteral("Histogram"),
                                        int = 64, QObject* = nullptr, QVariantMap = {}) override
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("histogram", typeid(*this).name());
         return nullptr;
     }
 
     inline SciQLopHistogram* bars(const SciQLopPyBuffer&, const SciQLopPyBuffer&,
                                   QString = QStringLiteral("Bars"), QVariantMap = {}) override
     {
-        WARN_ABSTRACT_METHOD;
+        report_unsupported_call("bars", typeid(*this).name());
         return nullptr;
     }
 };

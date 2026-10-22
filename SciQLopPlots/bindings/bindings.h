@@ -6,6 +6,8 @@
 // #define QT_ANNOTATE_ACCESS_SPECIFIER(a) __attribute__((annotate(#a)))
 // #include <memory>
 
+// The returning_raises_python_errors template catches sqp::unsupported_call in every wrapper.
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Python/MatchedBuffers.hpp"

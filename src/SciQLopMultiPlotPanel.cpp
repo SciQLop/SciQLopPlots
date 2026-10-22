@@ -474,8 +474,10 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
                 index, graph_type, callable, labels, colors, marker, sync_with, metaData);
             break;
         case ::PlotType::Projections:
+            // A projection plot draws every callback as its parametric curve, whatever graph_type says.
             return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
-                index, graph_type, callable, labels, colors, marker, sync_with, metaData);
+                index, GraphType::ParametricCurve, callable, labels, colors, marker, sync_with,
+                metaData);
         default:
             throw std::invalid_argument("unknown plot type");
     }

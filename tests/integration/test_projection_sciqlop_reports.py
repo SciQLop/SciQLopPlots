@@ -62,7 +62,7 @@ def test_wrong_buffer_count_raises_and_adds_no_plot(panel):
 
 def test_set_data_with_wrong_buffer_count_raises(panel):
     _, graph = panel.plot([t, X, Y, Z], **PROJECTION)
-    with pytest.raises(RuntimeError, match="buffers"):
+    with pytest.raises(ValueError, match="buffers"):
         graph.set_data([t, X, Y, Z, Z])
 
 

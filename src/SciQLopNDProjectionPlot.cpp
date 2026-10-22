@@ -40,6 +40,8 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
                                                           QStringList labels, QList<QColor> colors,
                                                           GraphType graph_type, GraphMarkerShape marker, QObject* sync_with, QVariantMap metaData)
 {
+    if (graph_type != GraphType::ParametricCurve)
+        throw_unsupported(factory_name(graph_type), *this);
     SciQLopGraphInterface* graph
         = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels,metaData);
 

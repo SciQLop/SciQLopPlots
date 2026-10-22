@@ -109,37 +109,11 @@ protected:
         return nullptr;
     }
 
-    //! On an XY plot the x axis holds values, so it stays out of the panel's x sync;
-    //! a time-series plot's x is its time axis and keeps following the panel.
-    //! The plot goes away again if histogram2d throws.
-    template <typename T, typename... Args>
-    QPair<T*, SciQLopColorMapInterface*> _plot_histogram2d(int index, Args&&... args)
+    //! Adds \a plot at \a index, then fills it with \a make; the plot goes away again if
+    //! make throws, so a factory error never leaves an empty plot behind.
+    template <typename T, typename Make>
+    auto _add_and_fill(int index, T* plot, Make&& make) -> QPair<T*, decltype(make(plot))>
     {
-        auto* plot = new T();
-        if (plot->x_axis() != plot->time_axis())
-            plot->set_axis_synchronized(AxisType::XAxis, false);
-        if (index == -1)
-            add_plot(plot);
-        else
-            insert_plot(index, plot);
-        try
-        {
-            return { plot, plot->histogram2d(std::forward<Args>(args)...) };
-        }
-        catch (...)
-        {
-            remove_plot(plot);
-            throw;
-        }
-    }
-
-    //! A plot of its own whose x axis stays out of the panel's x sync: it holds values.
-    //! The plot goes away again if make throws.
-    template <typename Make>
-    QPair<SciQLopPlotInterface*, SciQLopHistogram*> _plot_histogram(int index, Make&& make)
-    {
-        auto* plot = new SciQLopPlot();
-        plot->set_axis_synchronized(AxisType::XAxis, false);
         if (index == -1)
             add_plot(plot);
         else
@@ -155,6 +129,27 @@ protected:
         }
     }
 
+    //! On an XY plot the x axis holds values, so it stays out of the panel's x sync;
+    //! a time-series plot's x is its time axis and keeps following the panel.
+    template <typename T, typename... Args>
+    QPair<T*, SciQLopColorMapInterface*> _plot_histogram2d(int index, Args&&... args)
+    {
+        auto* plot = new T();
+        if (plot->x_axis() != plot->time_axis())
+            plot->set_axis_synchronized(AxisType::XAxis, false);
+        return _add_and_fill(index, plot, [&](T* p)
+                             { return p->histogram2d(std::forward<Args>(args)...); });
+    }
+
+    //! A plot of its own whose x axis stays out of the panel's x sync: it holds values.
+    template <typename Make>
+    QPair<SciQLopPlotInterface*, SciQLopHistogram*> _plot_histogram(int index, Make&& make)
+    {
+        auto* plot = new SciQLopPlot();
+        plot->set_axis_synchronized(AxisType::XAxis, false);
+        return _add_and_fill(index, plot, std::forward<Make>(make));
+    }
+
     static constexpr bool is_handled_graph_type(GraphType graph_type)
     {
         return graph_type == GraphType::Line || graph_type == GraphType::Scatter
@@ -163,40 +158,32 @@ protected:
     }
 
     template <typename T, typename U, typename... Args>
+    U* _graph_of_type(T* plot, GraphType graph_type, Args&&... args)
+    {
+        switch (graph_type)
+        {
+            case GraphType::Line:
+                return __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...);
+            case GraphType::Scatter:
+                return __plot<T, GraphType::Scatter>(plot, std::forward<Args>(args)...);
+            case GraphType::ParametricCurve:
+                return __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...);
+            case GraphType::ColorMap:
+                return __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...);
+            default: // is_handled_graph_type leaves only Waterfall
+                return __plot<T, GraphType::Waterfall>(plot, std::forward<Args>(args)...);
+        }
+    }
+
+    template <typename T, typename U, typename... Args>
     QPair<T*, U*> _plot(int index, GraphType graph_type, Args&&... args)
     {
+        // Checked before the plot exists, so an unknown kind adds and removes nothing.
         if (!is_handled_graph_type(graph_type))
             throw std::invalid_argument("unsupported graph type");
-        auto* plot = new T();
-        if (index == -1)
-            add_plot(plot);
-        else
-            insert_plot(index, plot);
-
-        if (graph_type == GraphType::Line)
-        {
-            return { plot, __plot<T, GraphType::Line>(plot, std::forward<Args>(args)...) };
-        }
-
-        if (graph_type == GraphType::Scatter)
-        {
-            return { plot, __plot<T, GraphType::Scatter>(plot, std::forward<Args>(args)...) };
-        }
-
-        if (graph_type == GraphType::ParametricCurve)
-        {
-            return { plot,
-                     __plot<T, GraphType::ParametricCurve>(plot, std::forward<Args>(args)...) };
-        }
-        if (graph_type == GraphType::ColorMap)
-        {
-            return { plot, __plot<T, GraphType::ColorMap>(plot, std::forward<Args>(args)...) };
-        }
-        if (graph_type == GraphType::Waterfall)
-        {
-            return { plot, __plot<T, GraphType::Waterfall>(plot, std::forward<Args>(args)...) };
-        }
-        throw std::invalid_argument("unsupported graph type");
+        return _add_and_fill(index, new T(), [&](T* plot)
+                             { return _graph_of_type<T, U>(plot, graph_type,
+                                                           std::forward<Args>(args)...); });
     }
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
