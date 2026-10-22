@@ -245,36 +245,43 @@ class TestFactories:
             plot.band(X, X)
 
 
-def _empty_on_the_second_call(columns):
-    """A callback answering data, then empty arrays (a data gap), then data again."""
+GAP = (20, 30)
+
+
+def _empty_in_the_gap(columns):
+    """A callback answering data, except empty arrays (a data gap) for the GAP window."""
     calls = []
 
     def cb(start, stop):
         calls.append((start, stop))
-        x = np.empty(0) if len(calls) == 2 else np.linspace(start, stop, 10)
+        x = np.empty(0) if (start, stop) == GAP else np.linspace(start, stop, 10)
         return (x, *columns(x))
     return cb, calls
 
 
+def _show(qtbot, plot, graph, calls, window):
+    plot.x_axis().set_range(*window)
+    qtbot.waitUntil(lambda: window in calls, timeout=5000)
+    expected = np.empty(0) if window == GAP else np.linspace(*window, 10)
+    qtbot.waitUntil(lambda: np.array_equal(np.asarray(graph.data()[0]), expected), timeout=5000)
+
+
 def _through_an_empty_window(qtbot, plot, graph, calls):
     plot.y_axis().set_range(0, 10)
-    for i, window in enumerate([(0, 10), (20, 30), (40, 50)]):
-        plot.x_axis().set_range(*window)
-        qtbot.waitUntil(lambda: len(calls) == i + 1, timeout=5000)
-    qtbot.waitUntil(lambda: len(graph.data()[0]) > 0 and np.asarray(graph.data()[0])[0] >= 40,
-                    timeout=5000)
+    for window in [(0, 10), GAP, (40, 50)]:
+        _show(qtbot, plot, graph, calls, window)
 
 
 class TestEmptyFetchWindow:
     def test_a_line_keeps_its_names_and_colours(self, qtbot, plot):
-        cb, calls = _empty_on_the_second_call(lambda x: (np.column_stack([x, x + 1]),))
+        cb, calls = _empty_in_the_gap(lambda x: (np.column_stack([x, x + 1]),))
         g = plot.line(cb, labels=["a", "b"], colors=["red", "green"])
         _through_an_empty_window(qtbot, plot, g, calls)
         assert [c.name() for c in g.components()] == ["a", "b"]
         assert [c.color().name() for c in g.components()] == ["#ff0000", "#008000"]
 
     def test_a_band_keeps_its_fill(self, qtbot, plot, tmp_path):
-        cb, calls = _empty_on_the_second_call(lambda x: (np.full_like(x, 3.0), np.full_like(x, 7.0)))
+        cb, calls = _empty_in_the_gap(lambda x: (np.full_like(x, 3.0), np.full_like(x, 7.0)))
         g = plot.band(cb, color="red")
         _through_an_empty_window(qtbot, plot, g, calls)
         assert g.components()[0].has_fill()
@@ -284,8 +291,17 @@ class TestEmptyFetchWindow:
             return _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
         qtbot.waitUntil(centre_is_tinted, timeout=5000)  # the new data is shown asynchronously
 
+    def test_kept_components_stay_editable_in_the_gap(self, qtbot, plot):
+        cb, calls = _empty_in_the_gap(lambda x: (np.column_stack([x, x + 1]),))
+        g = plot.line(cb, labels=["a", "b"])
+        plot.y_axis().set_range(0, 10)
+        _show(qtbot, plot, g, calls, (0, 10))
+        _show(qtbot, plot, g, calls, GAP)
+        g.set_fill_between(0, 1)
+        assert g.components()[0].has_fill()
+
     def test_error_bars_keep_their_stems(self, qtbot, plot, tmp_path):
-        cb, calls = _empty_on_the_second_call(lambda x: (np.full_like(x, 5.0), 4.0))
+        cb, calls = _empty_in_the_gap(lambda x: (np.full_like(x, 5.0), 4.0))
         g = plot.error_bars(cb, color="red")
         _through_an_empty_window(qtbot, plot, g, calls)
 
