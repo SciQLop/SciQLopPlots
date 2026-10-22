@@ -553,3 +553,20 @@ public:
     inline bool remote_busy() const noexcept { return m_busy; }
     inline void set_remote_busy(bool busy) noexcept { m_busy = busy; }
 };
+
+//! Gives a freshly made graph the caller's name. An empty name keeps the automatic one.
+inline SciQLopGraphInterface* with_name(SciQLopGraphInterface* graph, const QString& name)
+{
+    if (graph && !name.isEmpty())
+        graph->set_name(name);
+    return graph;
+}
+
+//! Same for a panel factory's (plot, graph) pair.
+template <typename Plot>
+QPair<Plot*, SciQLopGraphInterface*> with_name(QPair<Plot*, SciQLopGraphInterface*> pair,
+                                               const QString& name)
+{
+    with_name(pair.second, name);
+    return pair;
+}
