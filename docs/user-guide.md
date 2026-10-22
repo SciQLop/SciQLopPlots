@@ -1302,7 +1302,7 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **`NotImplementedError: <kind> is not supported by <class>`.** That plot class cannot hold this kind of graph. For example, a time-series plot cannot hold a histogram. Use a `SciQLopPlot`, or call `plot()` on a panel, which creates a suitable plot.
 
-**`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays needs `plot_type=PlotType.Projections`.
+**`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays always makes a projection, so leave `plot_type` out or pass `PlotType.Projections`.
 
 **A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
 
