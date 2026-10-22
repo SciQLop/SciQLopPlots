@@ -147,27 +147,77 @@ class TestSvgExport:  # task 18, finding 4.7
         if kind != "projection":  # an empty projection draws only its frames
             assert "<polyline" in text  # the graph, as vector lines
 
-    def test_a_line_leaving_the_view_is_clipped_to_the_plot_area(self, qtbot, tmp_path, plot):
-        # Read the SVG itself: QSvgRenderer implements SVG Tiny, which ignores clip paths.
+    LINE_COLORS = ["#ff0000", "#00ff00", "#0000ff"]
+
+    @staticmethod
+    def _scenes(qtbot):
+        """kind -> (exported widget, plots hosting one coloured line each)."""
+        from SciQLopPlots import SciQLopNDProjectionPlot
+        plot = SciQLopPlot()
+        panel = SciQLopMultiPlotPanel()
+        for _ in TestSvgExport.LINE_COLORS:
+            panel.plot(X, np.sin(X))
+        proj = SciQLopNDProjectionPlot(3)
+        for w in (plot, panel, proj):
+            qtbot.addWidget(w)
+        return {"plot": (plot, [plot]),
+                "panel": (panel, [panel.plot_at(i) for i in range(3)]),
+                "projection": (proj, [proj.subplot(0)])}
+
+    @staticmethod
+    def _rect_in(root, plot):
+        top_left = plot.mapTo(root, plot.rect().topLeft())
+        return top_left.x(), top_left.y(), top_left.x() + plot.width(), top_left.y() + plot.height()
+
+    @staticmethod
+    def _clip_boxes(svg_root, color):
+        """Bounding boxes (x0, y0, x1, y1) of every clip path applied to polylines stroked `color`."""
         import re
+        svg = "{http://www.w3.org/2000/svg}"
+        parent = {child: node for node in svg_root.iter() for child in node}
+        clips = {c.get("id"): [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", c.find(svg + "path").get("d"))]
+                 for c in svg_root.iter(svg + "clipPath")}
+
+        def ancestors(node):
+            while node in parent:
+                node = parent[node]
+                yield node
+
+        def stroke_of(polyline):
+            return next((n.get("stroke") for n in ancestors(polyline) if n.get("stroke")), None)
+
+        ids = {re.search(r"#([^)]+)", n.get("clip-path")).group(1)
+               for line in svg_root.iter(svg + "polyline") if stroke_of(line) == color
+               for n in ancestors(line) if n.get("clip-path")}
+        return [(min(xy[0::2]), min(xy[1::2]), max(xy[0::2]), max(xy[1::2])) for xy in map(clips.get, ids)]
+
+    @pytest.mark.parametrize("kind", ["plot", "panel", "projection"])
+    def test_a_line_leaving_the_view_is_clipped_to_its_plot_area(self, qtbot, tmp_path, kind):
+        # Read the SVG itself: QSvgRenderer implements SVG Tiny, which ignores clip paths.
         import xml.etree.ElementTree as ET
-        from PySide6.QtGui import QColorConstants
-        plot.plot(X, 3 * np.sin(X), colors=[QColorConstants.Red])
-        _laid_out(qtbot, plot)
-        plot.x_axis().set_range(2, 8)
-        plot.y_axis().set_range(-1, 1)
+        from PySide6.QtGui import QColor
+        root, plots = self._scenes(qtbot)[kind]
+        for p, color in zip(plots, self.LINE_COLORS):
+            p.plot(X, 3 * np.sin(X), colors=[QColor(color)])
+        root.resize(600, 400)
+        root.show()
+        qtbot.waitExposed(root)
+        for p in plots:
+            p.x_axis().set_range(2, 8)
+            p.y_axis().set_range(-1, 1)
+            p.replot(True)
         process_events()
         path = tmp_path / "zoomed.svg"
-        assert plot.save_svg(str(path), 600, 400) is True
-        ns = {"svg": "http://www.w3.org/2000/svg"}
-        root = ET.parse(path).getroot()
-        clips = {c.get("id"): c.find("svg:path", ns).get("d") for c in root.iter(f"{{{ns['svg']}}}clipPath")}
-        red_line_clips = [re.search(r"#([^)]+)", g.get("clip-path")).group(1)
-                          for g in root.iter(f"{{{ns['svg']}}}g")
-                          if g.get("clip-path") and any(child.get("stroke") == "#ff0000" for child in g)]
-        assert red_line_clips
-        corners = [[float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", clips[c])] for c in red_line_clips]
-        assert all(min(xy[0::2]) > 0 and max(xy[0::2]) < 600 for xy in corners)
+        assert root.save_svg(str(path), root.width(), root.height()) is True
+        svg_root = ET.parse(path).getroot()
+        assert svg_root.get("version") == "1.1" and svg_root.get("baseProfile") != "tiny"
+        for p, color in zip(plots, self.LINE_COLORS):
+            left, top, right, bottom = self._rect_in(root, p)
+            boxes = self._clip_boxes(svg_root, color)
+            assert boxes, f"no clip path on the {color} line"
+            for x0, y0, x1, y1 in boxes:
+                assert left < x0 and x1 < right, f"{color} clip leaks in x: {(x0, x1)} vs {(left, right)}"
+                assert top - 1 <= y0 and y1 <= bottom + 1, f"{color} clip leaks in y: {(y0, y1)} vs {(top, bottom)}"
 
     def test_a_bad_path_raises(self, qtbot, tmp_path):
         targets = self._targets(qtbot)
