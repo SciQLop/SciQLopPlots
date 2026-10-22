@@ -1,6 +1,6 @@
 # One base for everything drawn
 
-Status: design for API review item 5.3 (docs/api-review-2026-10-20.md), Phase 4, part A. Revision 3, after two opencode reviews. Part B (item factories, `plot.remove(x)`, one ownership model: items 5.2 and phase-2 task 12) gets its own spec and builds on this one.
+Status: design for API review item 5.3 (docs/api-review-2026-10-20.md), Phase 4, part A. Revision 4, after three opencode reviews. Part B (item factories, `plot.remove(x)`, one ownership model: items 5.2 and phase-2 task 12) gets its own spec and builds on this one.
 
 ## Why
 
@@ -10,6 +10,7 @@ Every drawn family declares `visible`, `selected`, `name` and `color` on its own
 - The inspector's `set_selected` callbacks cast to each class in turn (src/Registrations.cpp). Plot groups loop members through `SciQLopPlottableInterface` only, so items can't join them.
 - Some setters are silent stubs: text and pixmap `set_tool_tip`, text and ellipse `set_movable` (`WARN_ABSTRACT_METHOD`), although every NeoQCP-side item stores the movable flag (`impl::SciQLopPlotItem::setMovable`) and the pixmap already stores a tooltip (`impl::SciQlopItemWithToolTip`); the text item needs that mixin.
 - `SciQLopTimeline::set_visible` never emits `visible_changed` (src/SciQLopTimeline.cpp:213-217).
+- `graph.set_selected(...)` does nothing: the component loop in `SQPQCPAbstractPlottableWrapper::set_selected` is commented out (src/QCPAbstractPlottableWrapper.cpp:145-158), so the inspector's graph selection is a no-op too.
 - The Python `name` property is `set="setObjectName"` (bindings.xml:359, :705, ...), so it bypasses `set_name()` and `m_user_named` (SciQLopGraphInterface.hpp:64) stays false.
 
 ## Scope
@@ -19,7 +20,7 @@ In:
 1. A QObject base, `SciQLopDrawnObject`, under every drawn family.
 2. `visible`, `selected`, `name` and `color` on it, as C++ methods and Qt signals, exposed to Python as methods and signals.
 3. The inspector's selection callbacks call the base.
-4. The three bugs above, each with its own reproducer.
+4. The four bugs above, each with its own reproducer.
 5. Old spellings kept as aliases.
 
 Out:
@@ -68,8 +69,8 @@ private:
 Rules:
 
 1. **The public setter owns the signal, on the owner thread.** It first hops to the owner thread (`SCIQLOP_ON_OWNER_THREAD`, include/SciQLopPlots/ThreadGuard.hpp:76, which re-invokes the setter there). Then, on the owner thread: `before = _x()`; if `before == v` and not `_always_apply()`, return; `_set_x(v)`; if `_x() != before`, `_notify_x(_x())`. The compare never runs on the calling thread.
-2. **Aggregates always apply.** The group returns `true` from `_always_apply()`: `set_visible(v)` reaches every member even when the group already reads `v` (one member hidden, group visible: showing the group shows that member), and the group signals only if its own value changed. The group connects each member's `visible_changed` to `_notify_visible(visible())`, so hiding the last visible member signals the group too.
-3. **One change, one signal.** `_notify_x(value)` emits unless `value` equals the last value emitted (the base's `m_last_*`, the one piece of state the base stores). When NeoQCP changes the state itself (a click selects an item: `QCPAbstractItem::selectionChanged`, NeoQCP items/item.h:224), the family's handler calls `_notify_x`. When a setter causes NeoQCP to signal as well, the second notify sees the value already emitted and stays silent. NeoQCP emits on the GUI thread, the owner thread of every drawn object.
+2. **Aggregates always apply and track their own value.** Two families read their value from parts: the plot group (visible = any member visible) and multi-line graphs (visible / selected = any component). They return `true` from `_always_apply()`, so `set_x(v)` reaches every part even when the aggregate already reads `v` (one member hidden, group visible: showing the group shows that member). An aggregate seeds its own value when it is built and when a part is added or removed, and on each part's signal recomputes it and calls `_notify_x` only when it flipped. So a part changing without flipping the aggregate signals nothing on the aggregate.
+3. **One change, one signal.** `_notify_x(value)` emits unless `value` equals the last value emitted (the base's `m_last_*`, the one piece of state the base stores). When NeoQCP changes the state itself (a click selects an item: `QCPAbstractItem::selectionChanged`, NeoQCP items/item.h:224), the family's handler calls `_notify_x`. Components already connect this in their constructor (src/SciQLopGraphComponent.cpp:44, :56); items connect it where their NeoQCP item is set, with `Qt::UniqueConnection`, so a re-created item never connects twice. When a setter causes NeoQCP to signal as well, the second notify sees the value already emitted and stays silent. NeoQCP emits on the GUI thread, the owner thread of every drawn object. Every `_set_x` applies synchronously (true of every family today); the contract test asserts `_x() == v` right after the setter, so an asynchronous family fails there rather than silently dropping its signal.
 4. **Unsupported means raise.** The default `_x` / `_set_x` throw `sqp::unsupported_call` (include/SciQLopPlots/Debug.hpp), mapped to `NotImplementedError` naming the class. These virtuals are not `noexcept`, and every override drops `noexcept` (a throw from a `noexcept` function terminates the process).
 5. **`name` is `objectName`.** `set_name` compares, sets `objectName`, calls `_named(name)` (plottables set `m_user_named` there), emits `name_changed` once. Every existing `objectNameChanged → name_changed` connection (src/SciQLopGraphInterface.cpp:40) and manual emit (src/SciQLopGraphComponent.cpp:156-176) is removed. `SciQLopPlotGroup` moves its `m_name` (SciQLopPlotGroup.hpp:45) onto `objectName`; its `_named` renames the NeoQCP canvas groups and replots (today's `set_name` body, src/SciQLopPlotGroup.cpp:66-76), and its constructor goes through `set_name` so the canvas groups start named.
 6. **No new state in the families.** Their state stays where it is today (NeoQCP items, graph components); the base only keeps the last emitted values (rule 3). The exception is the text item's tooltip, which gets the `impl::SciQlopItemWithToolTip` mixin the ellipse and pixmap already use.
@@ -83,7 +84,7 @@ Families that derive `QObject` directly today derive `SciQLopDrawnObject` instea
 
 | Row | Classes | visible | selected | name | color |
 |---|---|---|---|---|---|
-| graph | SciQLopLineGraph, SciQLopCurve, SciQLopWaterfallGraph, SciQLopNDProjectionCurves (+ `*Function` variants) | ✓ | ✓ | ✓ | raise ("use colors()") |
+| graph | SciQLopLineGraph, SciQLopCurve, SciQLopWaterfallGraph, SciQLopNDProjectionCurves (+ `*Function` variants) | ✓ (aggregate) | ✓ (aggregate; bug fixed) | ✓ | raise ("use colors()") |
 | component | SciQLopGraphComponent | ✓ | ✓ | ✓ | ✓ |
 | colour map | SciQLopColorMap, SciQLopHistogram2D | ✓ | ✓ | ✓ | raise (gradient) |
 | histogram | SciQLopHistogram | ✓ | ✓ | ✓ | raise ("use colors()") |
@@ -98,7 +99,7 @@ Families that derive `QObject` directly today derive `SciQLopDrawnObject` instea
 | span collection | MultiPlotsVSpanCollection | raise | raise | ✓ | raise |
 | legend | SciQLopPlotLegend | ✓ | raise | ✓ | ✓ |
 
-Bound bases that are never built on their own are listed as abstract in the test and not instantiated: `SciQLopDrawnObject`, `SciQLopPlottableInterface`, `SciQLopGraphInterface`, `SQPQCPAbstractPlottableWrapper`, `SciQLopMultiGraphBase`, `SciQLopColorMapInterface`, `SciQLopColorMapBase`, `SciQLopGraphComponentInterface`, `SciQLopItemInterface`, `SciQLopMovableItemInterface`, the other item interfaces, `SciQLopMultiPlotObject`. Unbound drawn classes (`SciQLopCrosshair`) stay outside this item.
+Bound bases that are never built on their own are listed as abstract in the test and not instantiated: `SciQLopDrawnObject`, `SciQLopPlottableInterface`, `SciQLopGraphInterface`, `SQPQCPAbstractPlottableWrapper`, `SciQLopMultiGraphBase`, `SciQLopColorMapInterface`, `SciQLopColorMapBase`, `SciQLopGraphComponentInterface`, `SciQLopItemInterface`, `SciQLopMovableItemInterface`, the other item interfaces, `SciQLopMultiPlotObject`, `SciQLopPlotLegendInterface`. Unbound drawn classes (`SciQLopCrosshair`) stay outside this item.
 
 Notes:
 
@@ -136,7 +137,8 @@ The base lands first under the plottables (the families with the most callers an
 - **Contract test**, parametrised over the table: one row per family, with its classes and a factory that builds each. For each ✓ cell and each class, reading and writing the way that class exposes it (a method pair, or the Python property on plottables' `name` and the panel span / line): set → get round trip; the signal fires exactly once; setting the same value fires nothing; a set from a worker thread does nothing until events are processed (`qtbot.wait`), then applies and signals once. For each "raise" cell: `NotImplementedError` naming the class, for the getter and the setter. Walking `SciQLopDrawnObject.__subclasses__()` recursively, every class must be reached by exactly one row or be in the abstract list, or the test fails.
 - **Name emits once**, on a plottable and on a component (the double-emit path today), and `name = "x"` from Python sets `m_user_named` (checked through the behaviour that reads it; the plan names it).
 - **NeoQCP-driven change signals once:** selecting an item through NeoQCP emits `selection_changed` once; setting an item selected through `set_selected` emits once although NeoQCP also signals; hiding a group's last visible member emits the group's `visible_changed`; showing a group with one hidden member shows that member and emits nothing (the group was already visible).
-- **Reproducers first**, each failing before its fix: timeline `visible_changed`; text and pixmap tooltip round trip; text and ellipse `set_movable` round trip; the `name` property calls `set_name`.
+- **Aggregates:** a graph with two components, one selected by NeoQCP: `graph.set_selected(True)` selects both and the graph signals nothing (it was already selected); hiding one member of a two-member group signals nothing on the group.
+- **Reproducers first**, each failing before its fix: `graph.set_selected(True)` selects its components; timeline `visible_changed`; text and pixmap tooltip round trip; text and ellipse `set_movable` round trip; the `name` property calls `set_name`.
 - **Aliases:** the overlay's pattern on a span (`selection_changed` connect + `selected` set fires once, like tests/test_catalog_overlay.py:45-50 in SciQLop); `selectionChanged` still connects; `legend.is_visible()` and `legend.visibility_changed` work.
 - **Unchanged:** the plot-group, inspector, item-ownership, projection and span tests pass as they are.
 - **Gate:** the SciQLopPlots suite; SciQLop's full suite and the three plugins (msa, radio, sismo) against the build; an opus and an opencode review of the branch.
