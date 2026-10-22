@@ -245,8 +245,60 @@ class TestFactories:
             plot.band(X, X)
 
 
-def test_wrapped_callback_rejects_the_dict_batch_form():
-    from SciQLopPlots import _wrapped_callback, _band_batch
-    wrapped = _wrapped_callback(lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, _band_batch)
+def _empty_on_the_second_call(columns):
+    """A callback answering data, then empty arrays (a data gap), then data again."""
+    calls = []
+
+    def cb(start, stop):
+        calls.append((start, stop))
+        x = np.empty(0) if len(calls) == 2 else np.linspace(start, stop, 10)
+        return (x, *columns(x))
+    return cb, calls
+
+
+def _through_an_empty_window(qtbot, plot, graph, calls):
+    plot.y_axis().set_range(0, 10)
+    for i, window in enumerate([(0, 10), (20, 30), (40, 50)]):
+        plot.x_axis().set_range(*window)
+        qtbot.waitUntil(lambda: len(calls) == i + 1, timeout=5000)
+    qtbot.waitUntil(lambda: len(graph.data()[0]) > 0 and np.asarray(graph.data()[0])[0] >= 40,
+                    timeout=5000)
+
+
+class TestEmptyFetchWindow:
+    def test_a_line_keeps_its_names_and_colours(self, qtbot, plot):
+        cb, calls = _empty_on_the_second_call(lambda x: (np.column_stack([x, x + 1]),))
+        g = plot.line(cb, labels=["a", "b"], colors=["red", "green"])
+        _through_an_empty_window(qtbot, plot, g, calls)
+        assert [c.name() for c in g.components()] == ["a", "b"]
+        assert [c.color().name() for c in g.components()] == ["#ff0000", "#008000"]
+
+    def test_a_band_keeps_its_fill(self, qtbot, plot, tmp_path):
+        cb, calls = _empty_on_the_second_call(lambda x: (np.full_like(x, 3.0), np.full_like(x, 7.0)))
+        g = plot.band(cb, color="red")
+        _through_an_empty_window(qtbot, plot, g, calls)
+        assert g.components()[0].has_fill()
+
+        def centre_is_tinted():
+            img = _render(plot, tmp_path)
+            return _tinted_red(img.pixelColor(img.width() // 2, img.height() // 2))
+        qtbot.waitUntil(centre_is_tinted, timeout=5000)  # the new data is shown asynchronously
+
+    def test_error_bars_keep_their_stems(self, qtbot, plot, tmp_path):
+        cb, calls = _empty_on_the_second_call(lambda x: (np.full_like(x, 5.0), 4.0))
+        g = plot.error_bars(cb, color="red")
+        _through_an_empty_window(qtbot, plot, g, calls)
+
+        def stems_are_drawn():  # markers alone span a few pixels
+            rows = _tinted_rows(_render(plot, tmp_path))
+            return bool(rows) and max(rows) - min(rows) > 0.5 * plot.height()
+        qtbot.waitUntil(stems_are_drawn, timeout=5000)
+
+
+@pytest.mark.parametrize("to_batch", ["_band_batch", "_error_batch"])
+def test_wrapped_callback_rejects_the_dict_batch_form(to_batch):
+    import SciQLopPlots
+    wrapped = SciQLopPlots._wrapped_callback(
+        lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, getattr(SciQLopPlots, to_batch))
     with pytest.raises(TypeError, match="not the"):
         wrapped(0.0, 1.0)

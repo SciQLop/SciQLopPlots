@@ -21,4 +21,5 @@ def test_data_after_a_none_answer_on_an_overlapping_range(plot, qtbot):
     plot.x_axis().set_range(0, 11)
     qtbot.waitUntil(lambda: len(calls) >= 2, timeout=2000)
     qtbot.waitUntil(lambda: len(g.components()) > 0, timeout=2000)
+    assert calls[0] == (0, 10)
     assert calls[-1] == (0, 11)
