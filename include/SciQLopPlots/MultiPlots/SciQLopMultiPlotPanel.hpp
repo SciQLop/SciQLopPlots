@@ -111,6 +111,7 @@ protected:
 
     //! On an XY plot the x axis holds values, so it stays out of the panel's x sync;
     //! a time-series plot's x is its time axis and keeps following the panel.
+    //! The plot goes away again if histogram2d throws.
     template <typename T, typename... Args>
     QPair<T*, SciQLopColorMapInterface*> _plot_histogram2d(int index, Args&&... args)
     {
@@ -121,7 +122,15 @@ protected:
             add_plot(plot);
         else
             insert_plot(index, plot);
-        return { plot, plot->histogram2d(std::forward<Args>(args)...) };
+        try
+        {
+            return { plot, plot->histogram2d(std::forward<Args>(args)...) };
+        }
+        catch (...)
+        {
+            remove_plot(plot);
+            throw;
+        }
     }
 
     //! A plot of its own whose x axis stays out of the panel's x sync: it holds values.

@@ -47,6 +47,12 @@ def test_unsupported_kinds_on_a_projections_panel_raise(qtbot, panel, call, mess
     assert panel.plot_count() == 0
 
 
+def test_a_failing_histogram2d_leaves_no_empty_plot(qtbot, panel):
+    with pytest.raises(Exception):
+        panel.histogram2d(X, X[:5])
+    assert panel.plot_count() == 0
+
+
 def test_a_callable_line_on_a_projections_panel_still_builds_a_projection_plot(qtbot, panel):
     plot, _ = panel.line(lambda a, b: (X, X), plot_type=PROJ)
     assert isinstance(plot, SciQLopNDProjectionPlot)
