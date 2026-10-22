@@ -277,4 +277,4 @@ An earlier draft claimed that `SciQLopNDProjectionPlot` creates a second hidden 
 - `SciQLopTimeSeriesPlot` does not host histograms: its x axis is time. Use a plain plot or `panel.histogram`.
 - Histograms are not selectable in v1: a click on a bar selects nothing.
 - A callable `plot.histogram2d` follows the time axis, not x: on a plain plot it fetches only once `plot.time_axis()` has a range, like the 1-D histograms.
-- A 1-pane projection raises `ValueError` for curves. It used to drop their data silently.
+- On a 1-pane projection, `add_reference_curve` raises `ValueError`, and a model or callback curve reports its batches through `fetch_failed`. Both used to drop the data silently.
