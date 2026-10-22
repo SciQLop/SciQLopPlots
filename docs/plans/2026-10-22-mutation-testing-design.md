@@ -1,6 +1,6 @@
 # Mutation testing for SciQLopPlots and NeoQCP
 
-Status: backlog (2026-10-22). Design only, not approved for implementation. Do it after the API review (docs/api-review-2026-10-20.md) is finished.
+Status: backlog (2026-10-22), the last step before V1. Design only, not approved for implementation. Do it after the API review (docs/api-review-2026-10-20.md) is finished.
 
 ## Why
 
