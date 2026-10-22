@@ -273,7 +273,8 @@ def _ranged(make):
         plot = make()
         if plot.x_axis() is not None:
             plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
-        plot.time_axis().set_range(SciQLopPlotRange(0.0, 10.0))
+        if plot.time_axis() is not None:
+            plot.time_axis().set_range(SciQLopPlotRange(0.0, 10.0))
         return plot
     return made
 
@@ -505,7 +506,10 @@ protected:
 
 namespace
 {
-//! A queued set has no caller left to raise to: an unsupported one only warns.
+//! A queued set has no caller left to raise to, and a throw out of a queued slot terminates the
+//! process: anything thrown there only warns.
+// simplify: a worker-thread caller never learns its set was unsupported; upgrade path = a
+// completion signal or a future returned by the setter, if a caller ever needs it.
 template <typename Call>
 void run_queued(const Call& call)
 {
@@ -513,7 +517,7 @@ void run_queued(const Call& call)
     {
         call();
     }
-    catch (const sqp::unsupported_call& e)
+    catch (const std::exception& e)
     {
         qWarning() << "SciQLopPlots:" << e.what();
     }
@@ -538,8 +542,8 @@ void apply_change(SciQLopDrawnObject* self, bool always_apply, const T& value, G
     const T before = (self->*get)();
     if (before == value && !always_apply)
         return;
-    // Seeded with the live value: a change that bypassed the setters must not make this one's
-    // signal look like a repeat.
+    // Seeded with the live value, before _set_x and never after: a change that bypassed the
+    // setters must not make this one's signal look like a repeat.
     (self->*seed)(before);
     // A slot run while applying may delete self (a member's slot removing its group).
     QPointer<SciQLopDrawnObject> alive = self;
@@ -736,8 +740,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 2: Plottables under the base (graph selection bug, timeline signal, name through set_name)
 
 **Files:**
-- Modify: `include/SciQLopPlots/Plotables/SciQLopGraphInterface.hpp` (base class; drop :69 and :259 `Q_PROPERTY(selected)`, :85 `set_visible`, :87-91 `set_name`, :101-107 `visible`/`name`, :159-165 `set_selected`/`selected`, signals :225, :226, :232; add hooks)
-- Modify: `src/SciQLopGraphInterface.cpp:633-640` (base constructor, drop the `objectNameChanged → name_changed` connection)
+- Modify: `include/SciQLopPlots/Plotables/SciQLopGraphInterface.hpp` (base class; drop :69 and :259 `Q_PROPERTY(selected)` (nothing reads it, here or in SciQLop; a Qt property reader would also get an exception from families that raise, so the base declares none), :85 `set_visible`, :87-91 `set_name`, :101-107 `visible`/`name`, :159-165 `set_selected`/`selected`, signals :225, :226, :232; add hooks)
+- Modify: `src/SciQLopGraphInterface.cpp:34-41` (the `SciQLopPlottableInterface` constructor: new base, drop the `objectNameChanged → name_changed` connection at :40)
 - Modify: `include/SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp` (drop the dead free functions `_set_selected<T>` and `set_selected(QCPAbstractPlottable*, bool)`, :28-50: a member `_set_selected` would hide them; hooks), `src/QCPAbstractPlottableWrapper.cpp:73-169`
 - Modify: `include/SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp:74-81`, `SciQLopLineGraph.hpp:70` + `src/SciQLopLineGraph.cpp:67-71`, `SciQLopCurve.hpp:92` + `src/SciQLopCurve.cpp:330-334`
 - Modify: `include/SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp:70-80` + `src/SciQLopNDProjectionCurves.cpp:92-96,146-158,329-343`
@@ -749,7 +753,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: Task 1's base API and harness.
-- Produces: `SciQLopPlottableInterface : SciQLopDrawnObject`; `SQPQCPAbstractPlottableWrapper::_always_apply() == true` with `_visible` / `_selected` = any component; `SciQLopGraphInterface::_color` / `_set_color` raising "...; use colors()" / "...; use set_colors()"; contract rows `graph`, `colour map`, `histogram`, `timeline`.
+- Produces: `SciQLopPlottableInterface : SciQLopDrawnObject`; `SQPQCPAbstractPlottableWrapper::_always_apply() == true` (the graph's aggregate signals from its parts start in Task 3; until then only the setter path signals) with `_visible` / `_selected` = any component; `SciQLopGraphInterface::_color` / `_set_color` raising "...; use colors()" / "...; use set_colors()"; contract rows `graph`, `colour map`, `histogram`, `timeline`.
 
 - [ ] **Step 1: Failing tests** — `tests/integration/test_drawn_plottables.py`:
 
@@ -1293,7 +1297,9 @@ def test_hiding_every_pane_curve_hides_the_projection_once(qtbot):
         for (auto component : std::exchange(m_components, {}))
             if (component)
             {
-                // A dying component signals; this graph may be half destroyed already.
+                // A dying component signals; this graph may be half destroyed already. This drops
+                // every component-to-graph connection (replot included): only teardown and a
+                // shrinking set_data reach here, and both rebuild or discard the components.
                 disconnect(component, nullptr, this, nullptr);
                 delete component.data();
             }
@@ -1375,7 +1381,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 4: Components under the base
 
 **Files:**
-- Modify: `include/SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp` (base class; drop :44 `Q_PROPERTY`, :57 `set_color`, :69 `set_visible`, :71 `set_name`, :73-77 `set_selected`, :85-89 `color`, :121-125 `visible`, :141 `name`, :143-147 `selected`, signals :168, :169, :176)
+- Modify: `include/SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp` (base class; drop :44 `Q_PROPERTY` (see Task 2), :57 `set_color`, :69 `set_visible`, :71 `set_name`, :73-77 `set_selected`, :85-89 `color`, :121-125 `visible`, :141 `name`, :143-147 `selected`, signals :168, :169, :176)
 - Modify: `include/SciQLopPlots/Plotables/SciQLopGraphComponent.hpp` (drop the inline `set_color`, `visible`, `name`, `selected` and the `set_visible`, `set_name`, `set_selected`, `color` declarations; add hooks), `src/SciQLopGraphComponent.cpp` (`set_visible` :137, `set_name` :156, `set_selected` :179, `color` :251)
 - Test: `tests/integration/test_drawn_components.py` (create), `tests/integration/test_drawn_contract.py` (row)
 
@@ -1477,6 +1483,8 @@ void SciQLopGraphComponent::_named(const QString& name)
         mg->component(m_componentIndex).name = name;
 }
 
+// Moved, not retyped: this is today's inline set_color body (SciQLopGraphComponent.hpp:124-138),
+// deleted from the header in the same step, so one copy exists.
 void SciQLopGraphComponent::_set_color(const QColor& color)
 {
     if (!m_plottable)
@@ -1700,7 +1708,7 @@ ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLine
 ```
 
   `SciQLopLineItemInterface`: delete `set_color` and `color`.
-- [ ] **Step 4: Text item** — `impl::TextItem` becomes `class TextItem : public SciQLopPlotItem<QCPItemText>, public SciQlopItemWithToolTip` (the mixin the ellipse and pixmap use, read by `SciQLopPlot`'s hover code at src/SciQLopPlot.cpp:583). In `SciQLopTextItem`: the constructor's `else` branch is followed by `_follow_selection(m_item);`; delete `set_visible`, `visible`, `set_color`, `color`; add
+- [ ] **Step 4: Text item** — `impl::TextItem` becomes `class TextItem : public SciQLopPlotItem<QCPItemText>, public SciQlopItemWithToolTip` (the mixin the ellipse and pixmap use, read by `SciQLopPlot`'s hover code at src/SciQLopPlot.cpp:583). In `SciQLopTextItem`: once `m_item` is set, after the constructor's `if`/`else` (on every construction path), call `_follow_selection(m_item);`; delete `set_visible`, `visible`, `set_color`, `color`; add
 
 ```cpp
     [[nodiscard]] inline QString tool_tip() const noexcept override
@@ -1760,8 +1768,8 @@ public:
 ```
 
   (`set_font_color` keeps calling `setColor` without a signal; the base's seeding keeps the next `set_color` signal right.)
-- [ ] **Step 5: Pixmap** — after its constructor's `else` branch `_follow_selection(m_item);`; delete `set_visible`, `visible`; add the same `tool_tip`, `set_tool_tip`, `movable` overrides as the text item (it keeps its existing `set_movable`) and the `_set_visible`, `_visible`, `_set_selected`, `_selected` hooks of Step 4 (no colour hooks: `color` raises).
-- [ ] **Step 6: Ellipse and curved line** — ellipse: `_follow_selection(m_item);` at the end of each of the three constructors; delete `set_visible`, `visible`, `set_color`, `color`; add the `set_movable` / `movable` overrides of Step 4, the visible and selected hooks of Step 4, and
+- [ ] **Step 5: Pixmap** — once `m_item` is set, after the constructor's `if`/`else` (every path), `_follow_selection(m_item);`; delete `set_visible`, `visible`; add the same `tool_tip`, `set_tool_tip`, `movable` overrides as the text item (it keeps its existing `set_movable`) and the `_set_visible`, `_visible`, `_set_selected`, `_selected` hooks of Step 4 (no colour hooks: `color` raises).
+- [ ] **Step 6: Ellipse and curved line** — ellipse: `_follow_selection(m_item);` at the end of each of the three constructors (it connects with `Qt::UniqueConnection`; no code re-creates an item's NeoQCP item today, so this is defensive only); delete `set_visible`, `visible`, `set_color`, `color`; add the `set_movable` / `movable` overrides of Step 4, the visible and selected hooks of Step 4, and
 
 ```cpp
     void _set_color(const QColor& color) override
@@ -1774,7 +1782,7 @@ public:
     QColor _color() const override { return pen().color(); }
 ```
 
-  Curved line: `_follow_selection(m_item);` after its constructor's `else` branch; delete `set_visible`, `visible`, `set_color`, `color`; add the visible and selected hooks of Step 4 and
+  Curved line: `_follow_selection(m_item);` once `m_item` is set, after the constructor's `if`/`else` (every path); delete `set_visible`, `visible`, `set_color`, `color`; add the visible and selected hooks of Step 4 and
 
 ```cpp
     void _set_color(const QColor& color) override
@@ -1882,6 +1890,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QWidget
 
 from SciQLopPlots import (SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
                           SciQLopVerticalSpan)
@@ -1913,9 +1922,11 @@ def test_clicking_a_span_selects_it_and_signals_once(qtbot, plot):
     qtbot.waitExposed(plot)
     plot.replot(True)
     process_events()
-    centre = QPoint(plot.width() // 2, plot.height() // 2)
-    target = plot.childAt(centre) or plot
-    QTest.mouseClick(target, Qt.LeftButton, Qt.NoModifier, target.mapFrom(plot, centre))
+    # Clicked on the QCustomPlot canvas itself, like tests/integration/test_timeline_edit.py:15:
+    # the plot's child at a point may be an axis or legend widget instead.
+    canvas = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+    centre = QPoint(canvas.width() // 2, canvas.height() // 2)
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, centre)
     process_events()
     assert (span.selected(), seen) == (True, [True])
 ```
@@ -2108,6 +2119,8 @@ void MultiPlotsVerticalLine::_set_visible(bool visible)
 for _cls, _names in ((SciQLopPlotsBindings.MultiPlotsVerticalSpan, ("visible", "selected", "color")),
                      (SciQLopPlotsBindings.MultiPlotsVerticalLine, ("visible", "color"))):
     for _name in _names:
+        # Only when the XML route bound nothing: never wrap a property in a property.
+        assert not isinstance(_cls.__dict__.get(_name), property), (_cls, _name)
         setattr(_cls, _name, property(getattr(SciQLopPlotsBindings.SciQLopDrawnObject, _name),
                                       getattr(SciQLopPlotsBindings.SciQLopDrawnObject, "set_" + _name)))
 ```
@@ -2538,7 +2551,7 @@ except NotImplementedError as error:
 ````
 
   In "Overlays", after the `MultiPlotsVerticalSpan` bullet: `- Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too; text and pixmap tooltips and `set_movable` work on text, ellipse and pixmap.`
-- [ ] **Step 2: API review progress** — append to the phase 4 paragraph: `Item 5.3 part A done: SciQLopDrawnObject under plottables, components, items, spans, panel spans and lines, groups and the legend. Fixed on the way: graph.set_selected() did nothing, the timeline never signalled visible_changed, the name property bypassed set_name(), text/pixmap tooltips and text/ellipse set_movable were stubs. Breaks: C++ overrides of these accessors move to the _x hooks and drop noexcept; color/selected raise NotImplementedError where the kind has none; setObjectName() no longer emits name_changed (set_name does). Deprecated aliases: span selectionChanged, legend is_visible/visibility_changed. Part B (factories, plot.remove, ownership) is next.`
+- [ ] **Step 2: API review progress** — append to the phase 4 paragraph: `Item 5.3 part A done: SciQLopDrawnObject under plottables, components, items, spans, panel spans and lines, groups and the legend. Fixed on the way: graph.set_selected() did nothing, the timeline never signalled visible_changed, the name property bypassed set_name(), text/pixmap tooltips and text/ellipse set_movable were stubs. Breaks: C++ overrides of these accessors move to the _x hooks and drop noexcept; color/selected raise NotImplementedError where the kind has none; setObjectName() no longer emits name_changed (set_name does); the Q_PROPERTY(selected) declarations on graphs and components are gone. Deprecated aliases: span selectionChanged, legend is_visible/visibility_changed. Part B (factories, plot.remove, ownership) is next.`
 - [ ] **Step 3: Portability check** (GCC accepted code that broke clang before): run clang's syntax check on the sources this branch changed:
 
 ```bash
