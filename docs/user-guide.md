@@ -115,7 +115,7 @@ The kind comes from the shape of the arguments, then from `graph_type`:
 - Two arrays make a line by default. `graph_type` turns them into a scatter, a parametric curve, a waterfall or a 2-D histogram.
 - Three arrays make a colour map.
 - One array with `graph_type=GraphType.Histogram` makes a histogram.
-- A list of arrays makes a projection.
+- A list of arrays `[t, d0, d1, ...]` makes a projection, on a panel or a projection plot only: a single plot raises `NotImplementedError`. `t, d0, d1, d2` (four arrays) and `t, values` (one column per dimension) do the same.
 - A function makes a line by default. `graph_type` picks another kind.
 
 An unknown keyword raises `TypeError` and names the kind that owns the keywords. On a single plot, `plot_type` raises `TypeError`: it only means something on a panel, where it picks the kind of plot to create.
