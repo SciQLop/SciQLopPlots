@@ -73,6 +73,13 @@ class TestColumnDecorations:
         with pytest.raises(ValueError):
             g.set_fill_color(0, QColor("blue"))
 
+    def test_fill_color_and_fill_to_value_agree_on_a_column_the_graph_lacks(self, plot):
+        g = plot.line(X, np.column_stack([X, X]))
+        with pytest.raises(ValueError):
+            g.set_fill_to_value(5, 0.0)
+        with pytest.raises(ValueError):
+            g.set_fill_color(5, QColor("blue"))
+
 
     def test_nan_fill_baseline_raises_value_error(self, plot):
         g = plot.line(X, np.sin(X))
@@ -348,3 +355,65 @@ def test_a_missing_or_identical_partner_raises_on_any_component(plot, kind, bad)
     call, message = BAD_PARTNERS[bad]
     with pytest.raises(ValueError, match=message):
         call(component)
+
+
+THREE = np.column_stack([X, X - 1, X + 1])
+
+GRAPH_DECORATIONS = {
+    "set_fill_to_value": ("fill_changed", lambda g: g.set_fill_to_value(0, 1.0)),
+    "set_fill_between": ("fill_changed", lambda g: g.set_fill_between(0, 1)),
+    "clear_fill": ("fill_changed", lambda g: g.clear_fill(0)),
+    "set_fill_color": ("fill_changed", lambda g: g.set_fill_color(0, QColor("blue"))),
+    "set_error_bars": ("error_bars_changed", lambda g: g.set_error_bars(0, 1, 2)),
+    "clear_error_bars": ("error_bars_changed", lambda g: g.clear_error_bars(0)),
+}
+
+COMPONENT_DECORATIONS = {
+    "set_fill_to_value": ("fill_changed", lambda v, lo, hi: v.set_fill_to_value(1.0)),
+    "set_fill_between": ("fill_changed", lambda v, lo, hi: v.set_fill_between(lo)),
+    "clear_fill": ("fill_changed", lambda v, lo, hi: v.clear_fill()),
+    "set_fill_color": ("fill_changed", lambda v, lo, hi: v.set_fill_color(QColor("blue"))),
+    "set_error_bars": ("error_bars_changed", lambda v, lo, hi: v.set_error_bars(lo, hi)),
+    "clear_error_bars": ("error_bars_changed", lambda v, lo, hi: v.clear_error_bars()),
+}
+
+DECORATION_NAME = r"^(set|clear)_(fill|error)"
+
+
+def _decoration_setters(cls):
+    import re
+    return {name for name in dir(cls) if re.match(DECORATION_NAME, name)}
+
+
+def test_every_graph_and_component_decoration_setter_is_in_the_delete_tables(plot):
+    graph = plot.line(X, THREE)
+    assert _decoration_setters(type(graph)) == set(GRAPH_DECORATIONS)
+    assert _decoration_setters(type(graph.components()[0])) == set(COMPONENT_DECORATIONS)
+
+
+@pytest.mark.parametrize("setter", GRAPH_DECORATIONS)
+def test_a_slot_deleting_the_graph_while_it_decorates_a_column_does_not_crash(plot, setter):
+    import shiboken6
+    graph = plot.line(X, THREE)
+    graph.set_fill_to_value(0, 0.0)
+    signal, apply = GRAPH_DECORATIONS[setter]
+    getattr(graph.components()[0], signal).connect(lambda *_: shiboken6.delete(graph))
+    apply(graph)  # the graph emitted replot on a dead self
+    plot.replot()
+    assert not shiboken6.isValid(graph)
+
+
+@pytest.mark.parametrize("victim", ["graph", "component"])
+@pytest.mark.parametrize("setter", COMPONENT_DECORATIONS)
+def test_a_slot_deleting_the_component_while_it_decorates_itself_does_not_crash(
+        plot, setter, victim):
+    import shiboken6
+    graph = plot.line(X, THREE)
+    v, lo, hi = graph.components()
+    v.set_fill_to_value(0.0)
+    signal, apply = COMPONENT_DECORATIONS[setter]
+    doomed = graph if victim == "graph" else v
+    getattr(v, signal).connect(lambda *_: shiboken6.delete(doomed))
+    apply(v, lo, hi)  # the component emitted replot on a dead self
+    plot.replot()
+    assert not shiboken6.isValid(v)

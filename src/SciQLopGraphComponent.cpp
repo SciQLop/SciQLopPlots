@@ -338,6 +338,19 @@ void SciQLopGraphComponent::_apply_legend_visibility_style(bool visible)
     }
 }
 
+namespace
+{
+//! A slot on \a signal may delete \a component, so it replots only while the component lives.
+void emit_then_replot(SciQLopGraphComponentInterface& component,
+                      void (SciQLopGraphComponentInterface::*signal)())
+{
+    const QPointer self(&component);
+    Q_EMIT(component.*signal)();
+    if (self)
+        Q_EMIT component.replot();
+}
+} // namespace
+
 std::optional<MultiGraphRef> SciQLopGraphComponent::multi_ref() const
 {
     const auto variant = to_variant();
@@ -367,8 +380,7 @@ void SciQLopGraphComponent::set_fill_to_value(double value)
         return;
     }
     ref->graph->setComponentFill(ref->componentIndex, value);
-    Q_EMIT fill_changed();
-    Q_EMIT replot();
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* other)
@@ -386,9 +398,8 @@ void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* oth
     }
     const int target = sibling_index(other);
     if (!ref->graph->setComponentFillBetween(ref->componentIndex, target))
-        throw std::invalid_argument("a component cannot be filled against itself");
-    Q_EMIT fill_changed();
-    Q_EMIT replot();
+        throw std::invalid_argument("set_fill_between: the other component is no longer in this graph");
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopGraphComponent::clear_fill()
@@ -401,8 +412,7 @@ void SciQLopGraphComponent::clear_fill()
         return;
     }
     ref->graph->clearComponentFill(ref->componentIndex);
-    Q_EMIT fill_changed();
-    Q_EMIT replot();
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopGraphComponent::set_fill_color(const QColor& color)
@@ -417,8 +427,7 @@ void SciQLopGraphComponent::set_fill_color(const QColor& color)
     if (!has_fill())
         throw std::invalid_argument("this component has no fill");
     ref->graph->setComponentFillBrush(ref->componentIndex, QBrush(color));
-    Q_EMIT fill_changed();
-    Q_EMIT replot();
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 bool SciQLopGraphComponent::has_fill() const
@@ -459,8 +468,7 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
     if (!ref->graph->setComponentErrorBars(ref->componentIndex, sibling_index(lower),
                                            sibling_index(upper), cap_width))
         throw std::invalid_argument("error bars need three distinct components");
-    Q_EMIT error_bars_changed();
-    Q_EMIT replot();
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::error_bars_changed);
 }
 
 void SciQLopGraphComponent::clear_error_bars()
@@ -473,6 +481,5 @@ void SciQLopGraphComponent::clear_error_bars()
         return;
     }
     ref->graph->clearComponentErrorBars(ref->componentIndex);
-    Q_EMIT error_bars_changed();
-    Q_EMIT replot();
+    emit_then_replot(*this, &SciQLopGraphComponentInterface::error_bars_changed);
 }

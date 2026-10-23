@@ -267,12 +267,16 @@ void require(bool accepted, const std::string& what)
         throw std::invalid_argument(what);
 }
 
-// The component's own setters emit these too: an open inspector follows either path.
-void notify_component(const SciQLopMultiGraphBase& graph, int column,
-                      void (SciQLopGraphComponentInterface::*signal)())
+// The component's own setters emit these too: an open inspector follows either path. A slot on
+// that signal may delete the graph, so it replots only while the graph lives.
+void notify_component_then_replot(SciQLopMultiGraphBase& graph, int column,
+                                  void (SciQLopGraphComponentInterface::*signal)())
 {
+    const QPointer<SciQLopMultiGraphBase> self(&graph);
     if (column >= 0 && column < static_cast<int>(graph.plottable_count()))
         Q_EMIT(graph.component(column)->*signal)();
+    if (self)
+        Q_EMIT graph.replot();
 }
 } // namespace
 
@@ -283,8 +287,7 @@ void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
     require(column >= 0, invalid);
     SCIQLOP_ON_OWNER_THREAD(set_fill_to_value(column, value));
     require(_multiGraph && _multiGraph->setComponentFill(column, value), invalid);
-    notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopMultiGraphBase::set_fill_between(int column, int other)
@@ -294,8 +297,7 @@ void SciQLopMultiGraphBase::set_fill_between(int column, int other)
     require(column >= 0 && other >= 0 && column != other, invalid);
     SCIQLOP_ON_OWNER_THREAD(set_fill_between(column, other));
     require(_multiGraph && _multiGraph->setComponentFillBetween(column, other), invalid);
-    notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopMultiGraphBase::clear_fill(int column)
@@ -304,8 +306,7 @@ void SciQLopMultiGraphBase::clear_fill(int column)
     if (!_multiGraph)
         return;
     _multiGraph->clearComponentFill(column);
-    notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
@@ -313,12 +314,9 @@ void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
     const auto no_fill = "column " + std::to_string(column) + " has no fill";
     require(column >= 0, no_fill);
     SCIQLOP_ON_OWNER_THREAD(set_fill_color(column, color));
-    if (!_multiGraph)
-        return;
-    require(_multiGraph->componentFill(column).has_value(), no_fill);
+    require(_multiGraph && _multiGraph->componentFill(column).has_value(), no_fill);
     _multiGraph->setComponentFillBrush(column, QBrush(color));
-    notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::fill_changed);
 }
 
 void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, double cap_width)
@@ -332,8 +330,7 @@ void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, dou
     SCIQLOP_ON_OWNER_THREAD(set_error_bars(column, lower, upper, cap_width));
     require(_multiGraph && _multiGraph->setComponentErrorBars(column, lower, upper, cap_width),
             invalid);
-    notify_component(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
 }
 
 void SciQLopMultiGraphBase::clear_error_bars(int column)
@@ -342,8 +339,7 @@ void SciQLopMultiGraphBase::clear_error_bars(int column)
     if (!_multiGraph)
         return;
     _multiGraph->clearComponentErrorBars(column);
-    notify_component(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
-    Q_EMIT replot();
+    notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
 }
 
 void SciQLopMultiGraphBase::set_column_line_style(int column, GraphLineStyle style)
