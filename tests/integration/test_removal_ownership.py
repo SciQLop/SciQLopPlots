@@ -4,6 +4,8 @@ No bound removal keeps the widget today: remove_plot, removeWidget / remove_widg
 remove_panel all destroy it. SciQLopPlotContainer's remove_plot(plot, destroy) and
 removeWidget(widget, destroy) unparent without destroying, but are not bound.
 """
+import enum
+import sys
 import weakref
 
 import pytest
@@ -19,24 +21,66 @@ from shibokensupport.signature import get_signature
 DESTROY_FLAG_REMOVALS = set()
 
 
-def _bound_functions_with_a_destroy_argument():
-    found = set()
+def _signatures(function):
+    signature = get_signature(function)
+    return signature if isinstance(signature, list) else [signature] if signature else []
+
+
+def _wrapped_original(function):
+    """The C++ method a Python wrapper (SciQLopPlots/__init__.py) delegates to, if it keeps one."""
+    if hasattr(function, "__wrapped__"):
+        return function.__wrapped__
+    cells = [c.cell_contents for c in getattr(function, "__closure__", None) or []]
+    return next((c for c in cells if _signatures(c)), None)
+
+
+def _walk_bound_functions():
+    """-> (functions seen with their signatures, names of Python wrappers whose original is hidden)."""
+    seen, hidden = {}, set()
     for class_name, cls in vars(SciQLopPlotsBindings).items():
-        if not isinstance(cls, type):
+        if not isinstance(cls, type) or issubclass(cls, enum.Enum):
             continue
         for name, function in vars(cls).items():
-            try:
-                signature = get_signature(function)
-            except Exception:  # noqa: BLE001 - not every attribute has a signature
+            if not callable(function):
                 continue
-            signatures = signature if isinstance(signature, list) else [signature] if signature else []
-            if any(s is not None and "destroy" in s.parameters for s in signatures):
-                found.add(f"{class_name}.{name}")
-    return found
+            signatures = _signatures(function) or _signatures(_wrapped_original(function))
+            if signatures:
+                seen[f"{class_name}.{name}"] = signatures
+            elif type(function).__name__ == "function" and name != "__init__":
+                hidden.add(f"{class_name}.{name}")
+    return seen, hidden
+
+
+# Python wrappers that keep no reference to the C++ original, so the walk cannot see their parameters.
+HIDDEN_WRAPPERS = {
+    "SciQLopPlot.plot", "SciQLopPlot.band", "SciQLopPlot.error_bars",
+    "SciQLopTimeSeriesPlot.plot", "SciQLopNDProjectionPlot.plot",
+    "SciQLopMultiPlotPanel.plot", "SciQLopMultiPlotPanel.band", "SciQLopMultiPlotPanel.error_bars",
+    "SciQLopTimeline.set_intervals", "SciQLopTimeline.interval", "SciQLopTimeline.interval_at",
+}
+
+
+def _bound_functions_with_a_destroy_argument(seen):
+    return {name for name, signatures in seen.items() if any("destroy" in s.parameters for s in signatures)}
+
+
+def test_the_walk_sees_the_bindings():
+    seen, hidden = _walk_bound_functions()
+    parents = [n for n, sigs in seen.items() if any("parent" in s.parameters for s in sigs)]
+    assert len(seen) > 1000 and len(parents) > 20
+    assert "SciQLopMultiPlotPanel.remove_plot" in seen and "SciQLopMultiPlotPanel.add_plot" in seen
+    assert hidden == HIDDEN_WRAPPERS
 
 
 def test_every_removal_that_keeps_the_widget_is_listed():
-    assert _bound_functions_with_a_destroy_argument() == DESTROY_FLAG_REMOVALS
+    seen, _ = _walk_bound_functions()
+    assert _bound_functions_with_a_destroy_argument(seen) == DESTROY_FLAG_REMOVALS
+
+
+def test_a_broken_walk_fails_the_positive_control(monkeypatch):
+    monkeypatch.setattr(sys.modules[__name__], "get_signature", lambda function: None)
+    with pytest.raises(AssertionError):
+        test_the_walk_sees_the_bindings()
 
 
 @pytest.mark.parametrize("remove", ["remove_plot", "removeWidget"])  # remove_widget is the same function (snake alias)
