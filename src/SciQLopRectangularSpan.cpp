@@ -60,7 +60,7 @@ void impl::RectangularSpan::set_key_range(const SciQLopPlotRange range)
         return;
     if (SciQLopPlots::set_then_emit(
             this, [&] { setKeyRange(QCPRange(sorted.first, sorted.second)); },
-            [&] { emit key_range_changed(sorted); }))
+            [this] { emit key_range_changed(key_range()); }))
         replot();
 }
 
@@ -77,7 +77,7 @@ void impl::RectangularSpan::set_value_range(const SciQLopPlotRange range)
         return;
     if (SciQLopPlots::set_then_emit(
             this, [&] { setValueRange(QCPRange(sorted.first, sorted.second)); },
-            [&] { emit value_range_changed(sorted); }))
+            [this] { emit value_range_changed(value_range()); }))
         replot();
 }
 

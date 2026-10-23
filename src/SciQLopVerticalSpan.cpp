@@ -61,7 +61,7 @@ void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
         return;
     if (SciQLopPlots::set_then_emit(
             this, [&] { setRange(QCPRange(sorted.first, sorted.second)); },
-            [&] { emit range_changed(sorted); }))
+            [this] { emit range_changed(range()); }))
         replot();
 }
 
