@@ -41,25 +41,26 @@ def test_set_parent_gives_a_widget_to_its_new_parent(qtbot):
     assert gone == [True]
 
 
-def _moved_by(first, second, add):
-    plot = SciQLopPlot(first)
+def _moved_by(host, add):
+    plot = SciQLopPlot()
     plot.setObjectName("probe")
+    assert shiboken6.ownedByPython(plot)
     add(plot)
+    assert not shiboken6.ownedByPython(plot)
     gone = on_destroyed(plot)
     del plot
-    shiboken6.delete(first)
     collect()
-    assert (gone, second.findChild(QObject, "probe") is not None) == ([], True)
-    shiboken6.delete(second)
+    assert (gone, host.findChild(QObject, "probe") is not None) == ([], True)
+    shiboken6.delete(host)
     assert gone == [True]
 
 
 def test_a_layout_moves_a_widget_to_its_host(qtbot):
-    first, second = QWidget(), QWidget()
-    layout = QVBoxLayout(second)
-    _moved_by(first, second, layout.addWidget)
+    host = QWidget()
+    layout = QVBoxLayout(host)
+    _moved_by(host, layout.addWidget)
 
 
 def test_a_splitter_moves_a_widget_to_itself(qtbot):
-    first, second = QWidget(), QSplitter()
-    _moved_by(first, second, second.addWidget)
+    host = QSplitter()
+    _moved_by(host, host.addWidget)
