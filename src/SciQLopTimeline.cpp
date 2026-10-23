@@ -131,10 +131,13 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
     for (double id : doubles(ids))
         columns.ids.push_back(static_cast<qint64>(id));
     columns.labels = labels;
+    // setData() re-selects by id and emits selectionChanged when one vanished; a slot may delete us.
+    const QPointer<SciQLopTimeline> self(this);
     _intervals->setData(std::move(columns));
+    if (!self)
+        return;
     _apply_category_order(); // new names may now have palette indices
-    _apply_palette();
-    emit replot();
+    _apply_palette(); // emits replot last: a slot on it may delete this timeline
 }
 
 int SciQLopTimeline::count() const { return _intervals ? _intervals->rowCount() : 0; }
