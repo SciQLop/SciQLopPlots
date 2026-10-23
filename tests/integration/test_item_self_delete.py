@@ -3,6 +3,9 @@ import pytest
 import shiboken6
 
 import numpy as np
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QWidget
 
 from SciQLopPlots import (MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
                           SciQLopVerticalSpan)
@@ -78,3 +81,41 @@ def test_a_slot_deleting_a_panel_span_on_selection_does_not_crash_its_border_sel
     getattr(plot_span, f"select_{border}_border")(True)
     process_events()
     assert not shiboken6.isValid(span)
+
+
+def _shown_timeline(ts_plot):
+    ts_plot.resize(400, 300)
+    ts_plot.show()
+    process_events()
+    tl = _timeline(ts_plot)
+    ts_plot.x_axis().set_range(R(0, 100))
+    process_events()
+    return tl
+
+
+def _pixel(tl, key, lane):
+    q = tl.pixel_of(key, lane)
+    return QPoint(round(q.x()), round(q.y()))
+
+
+def _click(canvas, tl):
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, _pixel(tl, 25, "A"))
+
+
+def _shift_drag(canvas, tl):
+    end = _pixel(tl, 95, "B")
+    QTest.mousePress(canvas, Qt.LeftButton, Qt.ShiftModifier, _pixel(tl, 25, "A"))
+    QTest.mouseMove(canvas, end)
+    QTest.mouseRelease(canvas, Qt.LeftButton, Qt.ShiftModifier, end)
+
+
+@pytest.mark.parametrize("gesture", [_click, _shift_drag], ids=["click", "shift_drag"])
+def test_a_slot_deleting_the_timeline_on_a_selection_gesture_does_not_crash(ts_plot, gesture):
+    tl = _shown_timeline(ts_plot)
+    canvas = next(w for w in ts_plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+    fired = []
+    tl.selected_intervals_changed.connect(lambda *_: (fired.append(1), shiboken6.delete(tl)))
+    gesture(canvas, tl)
+    process_events()
+    assert fired
+    assert not shiboken6.isValid(tl)
