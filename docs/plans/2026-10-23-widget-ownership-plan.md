@@ -153,6 +153,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ### Task 2: A bad call from a worker thread raises in the caller
 
+> **Ruling after the opencode plan review (binding, overrides the code below where they differ):** only checks that read nothing but the call's own arguments run before the hop — a value range, a null pointer, an argument compared by pointer identity with `this` or with another argument (no dereference). A check that reads `this`'s state or another object's state (`m_components.size()`, `sibling_index(other)`, NeoQCP indices) stays after the hop, on the owner thread: read from the caller's thread it races with the GUI thread (e.g. `set_fill_between(other)` while `set_data` deletes `other`). So `check_siblings` keeps only pointer-identity comparisons (`other == this`, `lower == upper`, ...) before the hop and the `sibling_index` checks stay in the queued body; `require_one_per_component` (labels / colors count) stays after the hop, and its off-thread wrong count stays a warning — the test for it pins the warning, and Task 3's docs name the rule. Adapt the steps and tests below to this rule.
+
 **Files:**
 - Modify: `src/QCPAbstractPlottableWrapper.cpp:113-145` (`set_labels`, `set_colors`)
 - Modify: `src/SciQLopGraphComponent.cpp:374-388` (`set_fill_between`), `:433-456` (`set_error_bars`)
@@ -744,8 +746,10 @@ CASES = [(name, index) for name, builders in BUILDERS.items() for index in range
 
 
 def _signatures(cls):
+    # shiboken lists None for an overload it can't describe; a None here would stop the walk.
     found = get_signature(cls)
-    return found if isinstance(found, list) else [found] if found else []
+    found = found if isinstance(found, list) else [found]
+    return [s for s in found if s is not None]
 
 
 def _parent_constructor_counts():
@@ -881,7 +885,7 @@ def _bound_functions_with_a_destroy_argument():
             except Exception:  # noqa: BLE001 - not every attribute has a signature
                 continue
             signatures = signature if isinstance(signature, list) else [signature] if signature else []
-            if any("destroy" in s.parameters for s in signatures):
+            if any(s is not None and "destroy" in s.parameters for s in signatures):
                 found.add(f"{class_name}.{name}")
     return found
 
@@ -890,7 +894,7 @@ def test_every_removal_that_keeps_the_widget_is_listed():
     assert _bound_functions_with_a_destroy_argument() == DESTROY_FLAG_REMOVALS
 
 
-@pytest.mark.parametrize("remove", ["remove_plot", "removeWidget", "remove_widget"])
+@pytest.mark.parametrize("remove", ["remove_plot", "removeWidget"])  # remove_widget is the same function (snake alias)
 def test_a_removal_deletes_a_plot_built_with_the_panel_as_parent(qtbot, panel, remove):
     plot = SciQLopPlot(panel)
     panel.add_plot(plot)
@@ -1112,7 +1116,7 @@ EOF
 - [ ] **Step 4: Full SciQLopPlots suite** — FULL.
 - [ ] **Step 5: SciQLop and the plugins** against `build-venv`: from /home/jeandet/Documents/prog/SciQLop, `xvfb-run -a -s "-screen 0 2560x1440x24" env PYTHONPATH=/home/jeandet/Documents/prog/SciQLopPlots/build-venv timeout 590 .venv/bin/python -m pytest <files> -q -p no:cacheprovider -o addopts="" --no-xvfb`, in chunks under 590 s. Plugins `cdf_workbench`, `sciqlop_msa`, `sciqlop_radio`, `sciqlop_sismo` (under /home/jeandet/Documents/prog/plugins_sciqlop) with `PYTHONPATH=<build-venv>:<plugin dir>`. Known pre-existing failure: `test_onboarding_integration.py` drag step. Expected new failure: `tests/test_gui_leftover_sweep.py::test_release_covers_a_parented_python_subclass_widget` on its precondition `assert _has_ownership(panel)` (the parent owns a parented `TimeSyncPanel` now). Check especially the dock and panel tests (`test_panel_container.py`, `test_catalog_panel_removal.py`, `test_panel_close_busy.py`: QtAds `setWidget` reparenting, review focus 2) and `test_gui_leftover_sweep.py`. End with `ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'` empty. Do not edit SciQLop or the plugins.
 - [ ] **Step 6: SciQLop patch description** — write it in the final report for the user to approve, never applied. Start from this survey (read-only, 2026-10-23), confirmed or corrected by Step 5:
-  1. `tests/test_gui_leftover_sweep.py::test_release_covers_a_parented_python_subclass_widget`: replace `assert _has_ownership(panel), "expected a parented Python-subclass widget to be owned"` with `assert not _has_ownership(panel), "the parent owns a parented panel"`, and rename the test `test_a_parented_python_subclass_widget_belongs_to_its_parent`. The release calls after it still pass (releasing what Python doesn't own is harmless).
+  1. `tests/test_gui_leftover_sweep.py::test_release_covers_a_parented_python_subclass_widget`: replace `assert _has_ownership(panel), "expected a parented Python-subclass widget to be owned"` with `assert not _has_ownership(panel), "the parent owns a parented panel"`, and rename the test `test_a_parented_python_subclass_widget_belongs_to_its_parent`; rewrite its docstring to the new rule (a parented panel belongs to its container, which destroys it; releasing it at exit stays harmless). The release calls after it still pass (releasing what Python doesn't own is harmless).
   2. `tests/conftest.py:313-314` (`_release_leftover_widget_ownership` docstring): drop "and widgets of a Python subclass, which keep Python ownership even when parented (a `TimeSyncPanel(parent=container)` is still force-destroyed)"; with SciQLopPlots >= this release, only unparented widgets stay Python-owned.
   3. No production change: `user_api/plot/_panel.py:201` hands the sub-panel to `add_panel` right away; `components/comparison/ui/inner_panel.py:16` (`TimeSyncPanel(parent=parent)`) returns the panel to callers that keep it; `core/ui/mainwindow.py:469,521` keep `ProductsView(self)` / `PropertiesPanel(self)` in attributes (`PropertiesPanel` is now really parented to the window until its dock takes it); the `InspectorExtension` subclasses built with `parent=graph` / `parent=renderer` / `host` were already handed to `add_inspector_extension`; `cdf_workbench/preview.py:75-78` keeps its four plots in a dict and a layout. Nothing relies on dropping a reference to delete a parented widget.
   4. SciQLop's SciQLopPlots pin moves to the release carrying this change.
