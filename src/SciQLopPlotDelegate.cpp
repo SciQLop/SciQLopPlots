@@ -56,11 +56,11 @@ SciQLopPlotDelegate::SciQLopPlotDelegate(SciQLopPlot* object, QWidget* parent)
     auto* legendBox = new QGroupBox("Legend", this);
     auto* legendLayout = new QFormLayout(legendBox);
 
-    auto* legend_delegate = new LegendDelegate(legend->is_visible(), legendBox);
+    auto* legend_delegate = new LegendDelegate(legend->visible(), legendBox);
     legendLayout->addRow(legend_delegate);
     connect(legend_delegate, &LegendDelegate::visibility_changed, legend,
             &SciQLopPlotLegendInterface::set_visible);
-    connect(legend, &SciQLopPlotLegendInterface::visibility_changed, legend_delegate,
+    connect(legend, &SciQLopPlotLegendInterface::visible_changed, legend_delegate,
             &LegendDelegate::set_visible);
 
     auto* legendFont = new FontDelegate(legend->font(), legend->color(), legendBox);

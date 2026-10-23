@@ -36,10 +36,6 @@ public:
 
     virtual ~SciQLopPlotLegend() = default;
 
-    bool is_visible() const override;
-
-    void set_visible(bool visible) override;
-
     //! The legend's top-left corner, in fractions (0 to 1) of the plot area.
     QPointF position() const override;
     //! Places the legend's top-left corner there, at its natural size.
@@ -52,8 +48,12 @@ public:
 
     QFont font() const override;
     void set_font(const QFont& font) override;
-    QColor color() const override;
-    void set_color(const QColor& color) override;
     QStringList row_labels() const override;
     QRect row_rect(int row) const override;
+
+protected:
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    QColor _color() const override;
+    void _set_color(const QColor& color) override;
 };

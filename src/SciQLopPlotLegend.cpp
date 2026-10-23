@@ -30,19 +30,15 @@ SciQLopPlotLegend::SciQLopPlotLegend(QCPLegend* legend, QObject* parent)
     legend->setSelectableParts(QCPLegend::spItems);
 }
 
-bool SciQLopPlotLegend::is_visible() const
+bool SciQLopPlotLegend::_visible() const
 {
     return m_legend->visible();
 }
 
-void SciQLopPlotLegend::set_visible(bool visible)
+void SciQLopPlotLegend::_set_visible(bool visible)
 {
-    if (visible != is_visible())
-    {
-        m_legend->setVisible(visible);
-        m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
-        Q_EMIT visibility_changed(visible);
-    }
+    m_legend->setVisible(visible);
+    m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
 
 namespace
@@ -136,19 +132,15 @@ void SciQLopPlotLegend::set_font(const QFont& font)
     }
 }
 
-QColor SciQLopPlotLegend::color() const
+QColor SciQLopPlotLegend::_color() const
 {
     return m_legend->textColor();
 }
 
-void SciQLopPlotLegend::set_color(const QColor& color)
+void SciQLopPlotLegend::_set_color(const QColor& color)
 {
-    if (m_legend->textColor() != color)
-    {
-        m_legend->setTextColor(color);
-        m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
-        Q_EMIT color_changed(color);
-    }
+    m_legend->setTextColor(color);
+    m_legend->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
 
 namespace

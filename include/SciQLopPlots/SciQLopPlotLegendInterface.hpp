@@ -22,6 +22,7 @@
 #pragma once
 
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include <QColor>
 #include <QFont>
 #include <QPointF>
@@ -29,25 +30,14 @@
 #include <QObject>
 #include <QStringList>
 
-class SciQLopPlotLegendInterface : public QObject
+class SciQLopPlotLegendInterface : public SciQLopDrawnObject
 {
     Q_OBJECT
 
 public:
-    SciQLopPlotLegendInterface(QObject* parent = nullptr) : QObject(parent) { }
+    SciQLopPlotLegendInterface(QObject* parent = nullptr) : SciQLopDrawnObject(parent) { }
 
     virtual ~SciQLopPlotLegendInterface() = default;
-
-    inline virtual bool is_visible() const
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
-    }
-
-    inline virtual void set_visible(bool visible)
-    {
-        WARN_ABSTRACT_METHOD;
-    }
 
     inline virtual QPointF position() const
     {
@@ -67,17 +57,6 @@ public:
     }
 
     inline virtual void set_font(const QFont&)
-    {
-        WARN_ABSTRACT_METHOD;
-    }
-
-    inline virtual QColor color() const
-    {
-        WARN_ABSTRACT_METHOD;
-        return QColor();
-    }
-
-    inline virtual void set_color(const QColor&)
     {
         WARN_ABSTRACT_METHOD;
     }
@@ -117,9 +96,7 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void visibility_changed(bool value);
     Q_SIGNAL void position_changed(const QPointF& value);
     Q_SIGNAL void font_changed(const QFont& font);
-    Q_SIGNAL void color_changed(const QColor& color);
 
 };

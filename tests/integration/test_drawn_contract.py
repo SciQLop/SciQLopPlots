@@ -225,6 +225,10 @@ def _group(hosts):
 ROWS.append(Row("group", ("SciQLopPlotGroup",), {"SciQLopPlotGroup": _group},
                 {"visible": OK, "selected": RAISE, "name": OK, "color": RAISE}))
 
+ROWS.append(Row("legend", ("SciQLopPlotLegend",), {"SciQLopPlotLegend": lambda h: h.plot.legend()},
+                {"visible": OK, "selected": RAISE, "name": OK, "color": OK}))
+ABSTRACT.add("SciQLopPlotLegendInterface")
+
 
 # --- rows: each task inserts its families above this line --------------------------------------
 # (parametrize reads ROWS when the test functions below are defined, so rows must come first)

@@ -624,6 +624,8 @@ _DEPRECATED_ALIASES = {
     SciQLopPlotsBindings.SciQLopVerticalSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopRectangularSpan: {"selectionChanged": "selection_changed"},
+    SciQLopPlotsBindings.SciQLopPlotLegendInterface: {"is_visible": "visible",
+                                                      "visibility_changed": "visible_changed"},
 }
 for _cls, _aliases in _DEPRECATED_ALIASES.items():
     for _alias, _native in _aliases.items():
