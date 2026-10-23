@@ -106,6 +106,25 @@ app.exec()
 
 `graph.set_data(x, y)` replaces the data at any time. The plot redraws by itself.
 
+### Who keeps a plot alive
+
+Like any Qt widget, a plot belongs to its parent. Without a parent, it belongs to its Python object.
+
+```python
+from PySide6.QtWidgets import QWidget
+from SciQLopPlots import SciQLopPlot
+
+host = QWidget()
+SciQLopPlot(host)        # kept: host owns it, no Python reference needed
+plot = SciQLopPlot()     # no parent: dropping the last reference deletes it
+plot.setParent(host)     # host owns it now
+plot.setParent(None)     # Python owns it again
+plot.deleteLater()       # delete a widget now, whoever owns it
+```
+
+Adding a plot to a panel or a layout gives it to that panel or layout's widget. The panel's
+`remove_plot`, `remove_widget` and `remove_panel` delete what they remove.
+
 ## Plot types
 
 `plot.plot(*args, graph_type=None, **kwargs)` picks the graph type from its arguments. Pass `graph_type=` to choose another one.
