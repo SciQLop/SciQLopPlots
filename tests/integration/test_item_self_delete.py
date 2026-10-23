@@ -27,6 +27,15 @@ def _timeline_selecting_7(ts_plot):
     return tl
 
 
+def _category_timeline(ts_plot):
+    tl = ts_plot.add_timeline()
+    tl.stack = "category"
+    tl.set_intervals([10, 20, 60], [40, 50, 90], lane=["A", "A", "B"], category=["x", "y", "x"],
+                     ids=[7, 8, 9])
+    process_events()
+    return tl
+
+
 CASES = {
     "vspan_range": (lambda p, _: SciQLopVerticalSpan(p, R(0.2, 0.4)), "range_changed",
                     lambda s: s.set_range(R(0.5, 0.6))),
@@ -43,6 +52,15 @@ CASES = {
     "timeline_data_drops_selection": (lambda _, ts: _timeline_selecting_7(ts),
                                       "selected_intervals_changed",
                                       lambda t: t.set_intervals([20], [30], lane=["A"], ids=[9])),
+    "timeline_category_order": (lambda _, ts: _category_timeline(ts), "replot",
+                                lambda t: t.set_category_order(["y", "x"])),
+    "timeline_new_category_lanes": (lambda _, ts: _category_timeline(ts), "lanes_changed",
+                                    lambda t: t.set_intervals([10, 20], [40, 50], lane=["A", "A"],
+                                                              category=["x", "z"], ids=[7, 8])),
+    "timeline_new_lane": (lambda _, ts: _category_timeline(ts), "lanes_changed",
+                          lambda t: t.set_intervals([10], [40], lane=["C"], ids=[7])),
+    "timeline_unstack": (lambda _, ts: _category_timeline(ts), "lanes_changed",
+                         lambda t: setattr(t, "stack", None)),
 }
 
 

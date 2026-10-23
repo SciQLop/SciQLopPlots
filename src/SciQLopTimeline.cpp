@@ -24,6 +24,7 @@
 #include <QMouseEvent>
 #include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 namespace {
 
@@ -68,8 +69,7 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
         setObjectName("timeline");
     connect(&CategoryPalette::instance(), &CategoryPalette::changed, this,
             &SciQLopTimeline::_apply_palette);
-    connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::lanes_changed);
-    connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::replot);
+    connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::_on_layout_changed);
     connect(plot, &QCustomPlot::mouseMove, this, &SciQLopTimeline::_update_hover);
     plot->installEventFilter(this);
     connect(_intervals, qOverload<const QCPDataSelection&>(&QCPAbstractPlottable::selectionChanged),
@@ -105,8 +105,54 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
     _apply_palette();
 }
 
+void SciQLopTimeline::_on_layout_changed()
+{
+    if (_repacking)
+        _lanes_changed_pending = true;
+    else
+        (void)_relay_lanes_changed();
+}
+
+//! False when a slot deleted this timeline.
+bool SciQLopTimeline::_relay_lanes_changed()
+{
+    const QPointer<SciQLopTimeline> self(this);
+    emit lanes_changed();
+    if (self)
+        emit replot();
+    return !self.isNull();
+}
+
+//! NeoQCP re-packs the lanes in the middle of \a neoqcp_call and goes on with the intervals
+//! afterwards: a slot deleting this timeline from lanes_changed there would free them under it.
+//! So the relay waits until the call returned. False when a slot deleted this timeline.
+template <typename F>
+bool SciQLopTimeline::_repack(F&& neoqcp_call)
+{
+    const QPointer<SciQLopTimeline> self(this);
+    _repacking = true;
+    try
+    {
+        neoqcp_call();
+    }
+    catch (...)
+    {
+        if (self)
+            _repacking = _lanes_changed_pending = false;
+        throw;
+    }
+    if (!self)
+        return false;
+    _repacking = false;
+    return !std::exchange(_lanes_changed_pending, false) || _relay_lanes_changed();
+}
+
 SciQLopTimeline::~SciQLopTimeline()
 {
+    // Removing the intervals drops their lane rows, and the layout's changed signal would re-enter
+    // this half-destroyed timeline (a slot on lanes_changed or replot may delete it a second time).
+    if (_layout)
+        disconnect(_layout, nullptr, this, nullptr);
     if (_intervals)
         _intervals->parentPlot()->removePlottable(_intervals);
 }
@@ -119,7 +165,9 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
 {
     SCIQLOP_ON_OWNER_THREAD(set_intervals_coded(start, stop, lane_codes, lane_names,
                                                 category_codes, category_names, labels, ids));
-    const QVector<int> lane_table = _layout->laneIndices(lane_names);
+    QVector<int> lane_table;
+    if (!_repack([&] { lane_table = _layout->laneIndices(lane_names); }))
+        return;
     QVector<int> category_table;
     for (const auto& name : category_names)
         category_table.append(CategoryPalette::instance().index(name));
@@ -131,13 +179,11 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
     for (double id : doubles(ids))
         columns.ids.push_back(static_cast<qint64>(id));
     columns.labels = labels;
-    // setData() re-selects by id and emits selectionChanged when one vanished; a slot may delete us.
-    const QPointer<SciQLopTimeline> self(this);
-    _intervals->setData(std::move(columns));
-    if (!self)
+    // setData() also re-selects by id and emits selectionChanged when one vanished.
+    if (!_repack([&] { _intervals->setData(std::move(columns)); }))
         return;
-    _apply_category_order(); // new names may now have palette indices
-    _apply_palette(); // emits replot last: a slot on it may delete this timeline
+    if (_apply_category_order()) // new names may now have palette indices
+        _apply_palette();
 }
 
 int SciQLopTimeline::count() const { return _intervals ? _intervals->rowCount() : 0; }
@@ -202,14 +248,16 @@ QColor SciQLopTimeline::category_color(const QString& category) const
     return palette.colors[palette.index(category)];
 }
 
+// Guarded after each NeoQCP call: a slot on a signal it emits may delete this timeline.
 void SciQLopTimeline::_apply_palette()
 {
+    const QPointer<SciQLopTimeline> self(this);
     if (_intervals)
-    {
         _intervals->setCategoryColors(CategoryPalette::instance().colors);
+    if (self && _intervals)
         _intervals->setCategoryNames(CategoryPalette::instance().names);
-    }
-    emit replot();
+    if (self)
+        emit replot();
 }
 
 QString SciQLopTimeline::layer() const noexcept
@@ -403,8 +451,8 @@ void SciQLopTimeline::set_stack(const QString& mode)
     for (const auto& [name, value] : kStackModes)
         if (mode == name)
         {
-            _intervals->setStackMode(value);
-            emit replot();
+            if (_repack([&] { _intervals->setStackMode(value); }))
+                emit replot();
         }
 }
 
@@ -412,18 +460,19 @@ void SciQLopTimeline::set_category_order(const QStringList& names)
 {
     SCIQLOP_ON_OWNER_THREAD(set_category_order(names));
     _category_order = names;
-    _apply_category_order();
-    emit replot();
+    if (_apply_category_order())
+        emit replot();
 }
 
 //! Names to palette indices; a name no data has used yet has no index and is skipped until then.
-void SciQLopTimeline::_apply_category_order()
+//! False when a slot deleted this timeline.
+bool SciQLopTimeline::_apply_category_order()
 {
     std::vector<int> order;
     for (const auto& name : _category_order)
         if (const int index = CategoryPalette::instance().names.indexOf(name); index >= 0)
             order.push_back(index);
-    _intervals->setCategoryOrder(std::move(order));
+    return _repack([&] { _intervals->setCategoryOrder(std::move(order)); });
 }
 
 bool SciQLopTimeline::forbid_overlap() const { return _intervals->forbidOverlap(); }
