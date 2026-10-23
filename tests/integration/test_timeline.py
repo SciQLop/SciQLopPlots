@@ -31,6 +31,29 @@ def test_new_lanes_notify_once_per_set_intervals(ts_plot):
     assert len(seen) == 1
 
 
+@pytest.mark.parametrize("nested", [
+    lambda tl: setattr(tl, "stack", None),
+    lambda tl: tl.set_category_order(["y", "x"]),
+], ids=["set_stack", "set_category_order"])
+def test_lanes_changed_comes_after_a_nested_repack_returned(ts_plot, nested):
+    tl = _strip(ts_plot)
+    tl.stack = "time"
+    tl.set_intervals([10, 20], [40, 50], lane=["A", "A"], category=["x", "y"], ids=[7, 8])
+    tl.select_ids([7])
+    events = []
+
+    def on_selection(*_):
+        events.append("selection")
+        nested(tl)
+        events.append("selection done")
+
+    tl.selected_intervals_changed.connect(on_selection)
+    tl.lanes_changed.connect(lambda: events.append("lanes"))
+    tl.set_intervals([10, 20, 30], [40, 50, 60], lane=["A", "A", "A"], category=["x", "y", "x"],
+                     ids=[8, 9, 10])
+    assert events == ["selection", "selection done", "lanes"]
+
+
 def test_datetime64_times_are_epoch_seconds(ts_plot):
     tl = _strip(ts_plot)
     start = np.array(["2026-01-01T00:00:00"], dtype="datetime64[ns]")

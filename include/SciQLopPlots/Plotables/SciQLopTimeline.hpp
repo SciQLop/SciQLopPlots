@@ -36,14 +36,11 @@ class SciQLopTimeline : public SciQLopPlottableInterface
     SciQLopPlotAxis* _y_axis;
     qint64 _hovered = -1;
     QStringList _category_order;
-    bool _repacking = false;
-    bool _lanes_changed_pending = false;
 
     [[nodiscard]] bool _apply_category_order();
-    void _on_layout_changed();
-    [[nodiscard]] bool _relay_lanes_changed();
+    void _relay_lanes_changed();
     template <typename F>
-    [[nodiscard]] bool _repack(F&& neoqcp_call);
+    [[nodiscard]] bool _survives(F&& neoqcp_call);
 
     void _apply_palette();
 #ifndef BINDINGS_H

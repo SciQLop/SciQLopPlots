@@ -69,7 +69,7 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
         setObjectName("timeline");
     connect(&CategoryPalette::instance(), &CategoryPalette::changed, this,
             &SciQLopTimeline::_apply_palette);
-    connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::_on_layout_changed);
+    connect(layout, &QCPLaneLayout::changed, this, &SciQLopTimeline::_relay_lanes_changed);
     connect(plot, &QCustomPlot::mouseMove, this, &SciQLopTimeline::_update_hover);
     plot->installEventFilter(this);
     connect(_intervals, qOverload<const QCPDataSelection&>(&QCPAbstractPlottable::selectionChanged),
@@ -105,46 +105,22 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
     _apply_palette();
 }
 
-void SciQLopTimeline::_on_layout_changed()
-{
-    if (_repacking)
-        _lanes_changed_pending = true;
-    else
-        (void)_relay_lanes_changed();
-}
-
-//! False when a slot deleted this timeline.
-bool SciQLopTimeline::_relay_lanes_changed()
+void SciQLopTimeline::_relay_lanes_changed()
 {
     const QPointer<SciQLopTimeline> self(this);
     emit lanes_changed();
     if (self)
         emit replot();
-    return !self.isNull();
 }
 
-//! NeoQCP re-packs the lanes in the middle of \a neoqcp_call and goes on with the intervals
-//! afterwards: a slot deleting this timeline from lanes_changed there would free them under it.
-//! So the relay waits until the call returned. False when a slot deleted this timeline.
+//! NeoQCP emits the lane layout's changed last in each call, so a slot deleting this timeline
+//! there runs once NeoQCP is done with the intervals. False when one did.
 template <typename F>
-bool SciQLopTimeline::_repack(F&& neoqcp_call)
+bool SciQLopTimeline::_survives(F&& neoqcp_call)
 {
     const QPointer<SciQLopTimeline> self(this);
-    _repacking = true;
-    try
-    {
-        neoqcp_call();
-    }
-    catch (...)
-    {
-        if (self)
-            _repacking = _lanes_changed_pending = false;
-        throw;
-    }
-    if (!self)
-        return false;
-    _repacking = false;
-    return !std::exchange(_lanes_changed_pending, false) || _relay_lanes_changed();
+    neoqcp_call();
+    return !self.isNull();
 }
 
 SciQLopTimeline::~SciQLopTimeline()
@@ -166,7 +142,7 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
     SCIQLOP_ON_OWNER_THREAD(set_intervals_coded(start, stop, lane_codes, lane_names,
                                                 category_codes, category_names, labels, ids));
     QVector<int> lane_table;
-    if (!_repack([&] { lane_table = _layout->laneIndices(lane_names); }))
+    if (!_survives([&] { lane_table = _layout->laneIndices(lane_names); }))
         return;
     QVector<int> category_table;
     for (const auto& name : category_names)
@@ -180,7 +156,7 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
         columns.ids.push_back(static_cast<qint64>(id));
     columns.labels = labels;
     // setData() also re-selects by id and emits selectionChanged when one vanished.
-    if (!_repack([&] { _intervals->setData(std::move(columns)); }))
+    if (!_survives([&] { _intervals->setData(std::move(columns)); }))
         return;
     if (_apply_category_order()) // new names may now have palette indices
         _apply_palette();
@@ -451,7 +427,7 @@ void SciQLopTimeline::set_stack(const QString& mode)
     for (const auto& [name, value] : kStackModes)
         if (mode == name)
         {
-            if (_repack([&] { _intervals->setStackMode(value); }))
+            if (_survives([&] { _intervals->setStackMode(value); }))
                 emit replot();
         }
 }
@@ -472,7 +448,7 @@ bool SciQLopTimeline::_apply_category_order()
     for (const auto& name : _category_order)
         if (const int index = CategoryPalette::instance().names.indexOf(name); index >= 0)
             order.push_back(index);
-    return _repack([&] { _intervals->setCategoryOrder(std::move(order)); });
+    return _survives([&] { _intervals->setCategoryOrder(std::move(order)); });
 }
 
 bool SciQLopTimeline::forbid_overlap() const { return _intervals->forbidOverlap(); }

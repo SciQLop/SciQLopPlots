@@ -74,6 +74,22 @@ def test_a_slot_deleting_an_item_from_its_own_signal_does_not_crash(plot, ts_plo
     assert not shiboken6.isValid(item)
 
 
+@pytest.mark.parametrize("nested", [
+    lambda tl: setattr(tl, "stack", None),
+    lambda tl: tl.set_category_order(["y", "x"]),
+], ids=["set_stack", "set_category_order"])
+def test_a_slot_deleting_the_timeline_after_a_nested_repack_does_not_crash(ts_plot, nested):
+    tl = _category_timeline(ts_plot)
+    tl.stack = "time"
+    tl.select_ids([7])
+    tl.selected_intervals_changed.connect(lambda *_: nested(tl))
+    tl.lanes_changed.connect(lambda: shiboken6.delete(tl))
+    tl.set_intervals([10, 20, 30], [40, 50, 60], lane=["A", "A", "A"], category=["x", "y", "x"],
+                     ids=[8, 9, 10])
+    process_events()
+    assert not shiboken6.isValid(tl)
+
+
 SPANS = {"vspan": SciQLopVerticalSpan, "hspan": SciQLopHorizontalSpan}
 
 
