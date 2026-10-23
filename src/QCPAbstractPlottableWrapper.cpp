@@ -62,14 +62,27 @@ void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* 
     // before the model removes its row and the tree re-selects this graph.
     connect(component, &QObject::destroyed, this,
             &SQPQCPAbstractPlottableWrapper::_forget_destroyed_components);
+    connect(component, &SciQLopGraphComponentInterface::visible_changed, this,
+            [this] { _notify_visible(_visible()); });
+    connect(component, &SciQLopGraphComponentInterface::selection_changed, this,
+            [this] { _notify_selected(_selected()); });
+    _seed_parts();
     Q_EMIT this->component_list_changed();
 }
 
 void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
 {
     // destroyed() fires after Qt has nulled the QPointer to the dying component.
-    if (m_components.removeIf([](const auto& c) { return c.isNull(); }) > 0)
+    const bool forgot = m_components.removeIf([](const auto& c) { return c.isNull(); }) > 0;
+    _seed_parts();
+    if (forgot)
         Q_EMIT this->component_list_changed();
+}
+
+void SQPQCPAbstractPlottableWrapper::_seed_parts()
+{
+    _seed_visible(_visible());
+    _seed_selected(_selected());
 }
 
 void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)

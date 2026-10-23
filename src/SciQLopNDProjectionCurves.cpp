@@ -82,11 +82,26 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
                     qOverload<>(&SciQLopGraphInterface::data_changed));
             connect(curve, &SciQLopGraphInterface::component_list_changed, this,
                     &SciQLopGraphInterface::component_list_changed);
+            connect(curve, &SciQLopDrawnObject::visible_changed, this,
+                    [this] { _notify_visible(_visible()); });
+            connect(curve, &SciQLopDrawnObject::selection_changed, this,
+                    [this] { _notify_selected(_selected()); });
             // A pane can go first (the whole plot torn down): forget its curve then.
             connect(curve, &QObject::destroyed, this,
-                    [this, curve] { m_curves.removeOne(curve); });
+                    [this, curve]
+                    {
+                        m_curves.removeOne(curve);
+                        _seed_parts();
+                    });
         }
     }
+    _seed_parts();
+}
+
+void SciQLopNDProjectionCurves::_seed_parts()
+{
+    _seed_visible(_visible());
+    _seed_selected(_selected());
 }
 
 void SciQLopNDProjectionCurves::_named(const QString& name)

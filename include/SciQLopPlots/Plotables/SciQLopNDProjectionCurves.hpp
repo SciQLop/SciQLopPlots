@@ -46,6 +46,7 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 
     void _update_color_scale();
     void _report_busy();
+    void _seed_parts();
     void _set_scale_gradient(::ColorGradient gradient);
 
 

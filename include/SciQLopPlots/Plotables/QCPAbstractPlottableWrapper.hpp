@@ -34,6 +34,7 @@ protected:
 
     void _register_component(SciQLopGraphComponent* component);
     void _forget_destroyed_components();
+    void _seed_parts();
 
 #ifndef BINDINGS_H
     //! Tells the plot to re-read its colour scale; a gradient is requested on it too.
@@ -53,7 +54,15 @@ public:
     inline void clear_plottables()
     {
         for (auto component : std::exchange(m_components, {}))
-            delete component;
+            if (component)
+            {
+                // A dying component signals; this graph may be half destroyed already. This drops
+                // every component-to-graph connection (replot included): only teardown and a
+                // shrinking set_data reach here, and both rebuild or discard the components.
+                disconnect(component, nullptr, this, nullptr);
+                delete component.data();
+            }
+        _seed_parts();
     }
 
     const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept
