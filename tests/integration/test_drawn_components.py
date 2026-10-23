@@ -79,48 +79,67 @@ def test_an_ellipse_pen_and_a_text_font_colour_signal_color_changed(plot):
     assert seen == ([QColor("red")], [QColor("blue")])
 
 
-SELECTION_PEN = (0, 0, 255)  # QCPLegend's default selectedIconBorderPen
-
-
-def _is_selection_pen(colour):
-    return (colour.red(), colour.green(), colour.blue()) == SELECTION_PEN
-
-
-def _framed_rows(plot, tmp_path):
-    """Which of a two-line group's rows (a, b) the legend's selection frame reaches."""
+def _render(plot, tmp_path):
     from PySide6.QtGui import QImage
     plot.replot(True)
     path = str(tmp_path / "legend.png")
     plot.save_png(path, plot.width(), plot.height())
-    image = QImage(path)
-    item = plot.legend().row_rect(0)
-    row = item.height() // 3  # header, a, b
+    return QImage(path)
 
-    def framed(top, bottom):
-        return any(_is_selection_pen(image.pixelColor(x, y))
-                   for y in range(top + 2, bottom - 2) for x in range(item.left() - 2, item.left() + 3))
 
-    return framed(item.top() + row, item.top() + 2 * row), framed(item.top() + 2 * row, item.bottom())
+def _border_pixels(image, rect):
+    """(y, colour) along the legend item's left border, where the frame's left side runs and no
+    icon or text is drawn."""
+    return [(y, image.pixelColor(x, y))
+            for y in range(rect.top(), rect.bottom() + 1)
+            for x in range(rect.left() - 2, rect.left() + 3)]
 
 
 @pytest.fixture
-def shown_pair(qtbot, plot):
+def shown_pair(qtbot, plot, tmp_path):
+    """A shown two-line group, and its legend's selection frame (colour, row bands) as NeoQCP
+    draws it: the pixels that change on the item's left border when row a alone is framed."""
+    import collections
     graph = plot.plot(X, np.column_stack([np.sin(X), np.cos(X)]), labels=["a", "b"])
     plot.resize(600, 400)
     plot.show()
     qtbot.waitExposed(plot)
-    return graph
+    first = graph.components()[0]
+    first.set_selected(True)  # also expands the group: both renders share one layout
+    image = _render(plot, tmp_path)
+    rect = plot.legend().row_rect(0)
+    framed = _border_pixels(image, rect)
+    first.set_selected(False)
+    plain = _border_pixels(_render(plot, tmp_path), rect)
+    changed = [(y, c) for (y, c), (_, p) in zip(framed, plain) if c != p]
+    colour = collections.Counter(c.rgb() for _, c in changed).most_common(1)[0][0]
+    top, bottom = changed[0][0], changed[-1][0]  # row a's frame; NeoQCP gives rows one height
+    return graph, colour, rect, [(top, bottom), (bottom, 2 * bottom - top)]
+
+
+def _framed_rows(plot, tmp_path, shown_pair):
+    """Which of the group's rows (a, b) the legend's selection frame reaches."""
+    _, colour, rect, bands = shown_pair
+    border = _border_pixels(_render(plot, tmp_path), rect)
+    return tuple(any(c.rgb() == colour for y, c in border if top + 2 <= y < bottom - 2)
+                 for top, bottom in bands)
 
 
 def test_every_selected_component_shows_in_the_legend(plot, shown_pair, tmp_path):
-    shown_pair.set_selected(True)
-    assert _framed_rows(plot, tmp_path) == (True, True)
+    graph = shown_pair[0]
+    graph.set_selected(True)
+    assert _framed_rows(plot, tmp_path, shown_pair) == (True, True)
 
 
 def test_deselecting_one_component_leaves_the_other_framed(plot, shown_pair, tmp_path):
-    shown_pair.set_selected(True)
-    shown_pair.components()[1].set_selected(False)
-    assert _framed_rows(plot, tmp_path) == (True, False)
+    graph = shown_pair[0]
+    graph.set_selected(True)
+    graph.components()[1].set_selected(False)
+    assert _framed_rows(plot, tmp_path, shown_pair) == (True, False)
+
+
+def test_an_unselected_group_frames_no_row(plot, shown_pair, tmp_path):
+    assert _framed_rows(plot, tmp_path, shown_pair) == (False, False)
 
 
 def test_set_pen_off_the_gui_thread_lands_on_it_and_signals_once(plot):
