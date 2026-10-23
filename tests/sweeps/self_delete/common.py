@@ -111,8 +111,9 @@ BUILDERS = {
     "timeline": _timeline,
     "nd_projection": lambda h: _comps(h.nd.plot([X, X, np.sin(X), np.cos(X)])),
     "line_component": lambda h: _first(h, h.plot.plot(X, LINES, labels=["a", "b", "c"])),
+    # Three columns: error bars need three distinct components.
     "curve_component": lambda h: _first(h, _comps(h.plot.parametric_curve(
-        np.cos(X), np.column_stack([np.sin(X), np.cos(X)]), labels=["a", "b"]))),
+        np.cos(X), np.column_stack([np.sin(X), np.cos(X), np.sin(2 * X)]), labels=["a", "b", "c"]))),
     "waterfall_component": lambda h: _first(h, h.plot.plot(X, LINES, labels=["a", "b", "c"], graph_type=GraphType.Waterfall)),
     "nd_component": lambda h: _first(h, _comps(h.nd.plot([X, X, np.sin(X), np.cos(X)]))),
     "text": lambda h: S.SciQLopTextItem(h.plot, "t", QPointF(10, 10)),
@@ -157,8 +158,16 @@ def signals(obj):
     return seen
 
 
+def _pane_curves(obj):
+    """A projection's per-pane curves: their signals never reach the projection's own."""
+    if not isinstance(obj, S.SciQLopNDProjectionCurves):
+        return []
+    nd = obj.parent()
+    return [(f"pane[{i}]", c) for i in range(nd.subplot_count()) for c in nd.subplot(i).plottables()]
+
+
 def parts(obj):
-    """(label, object) pairs whose signals count as the object's own: itself and its components."""
+    """(label, object) pairs whose signals count as the object's own: itself, its components, its panes."""
     out = [("self", obj)]
     comps = getattr(obj, "components", None)
     if callable(comps):
@@ -166,7 +175,7 @@ def parts(obj):
             out += [(f"component[{i}]", c) for i, c in enumerate(comps())]
         except Exception:
             pass
-    return out
+    return out + _pane_curves(obj)
 
 
 def _mutated(v):
@@ -313,6 +322,39 @@ def from_signatures(obj, setter):
     return out
 
 
+def _coded_intervals():
+    one = lambda v: np.array([v], dtype=np.float64)
+    return (one(20.0), one(30.0), one(0.0), ["A"], one(0.0), ["x"], ["l"], one(7.0))
+
+
+def _with_fill(obj, hosts):
+    """set_fill_color raises on a column without a fill: give column 0 one first."""
+    graph = getattr(hosts, "owner", None) or obj
+    graph.set_fill_to_value(0, 0.0)
+
+
+# setter -> state the setter needs before it can run at all; applied before any slot is wired.
+PREPARE = {"set_fill_color": _with_fill}
+
+
+def prepare(obj, setter, hosts):
+    if setter in PREPARE:
+        try:
+            PREPARE[setter](obj, hosts)
+        except Exception:
+            pass  # unsupported here: the setter's own call says so
+        pump()
+
+
+def _axis_hosts(hosts):
+    """Every plot that owns axes: the projection host has none itself, only its panes do."""
+    for host in hosts._made.values():
+        yield host
+        count = getattr(host, "subplot_count", None)
+        if callable(count):
+            yield from (host.subplot(i) for i in range(count()))
+
+
 def candidates(kind, obj, setter, hosts):
     """Argument tuples to try, most plausible first."""
     out = []
@@ -325,9 +367,11 @@ def candidates(kind, obj, setter, hosts):
                 "select_ids": [([7],)], "set_lanes": [(["B", "A"],)], "set_category_order": [(["y", "x"],)],
                 "set_stack": [("category",), ("time",)], "set_snap_times": [([15.0, 50.0],)],
                 "set_category_colors": [({"x": RED},)], "set_style": [("bars",)],
-                "set_edit_modes": [(["move", "resize"],)]}.get(setter, [])
+                "set_edit_modes": [(["move", "resize"],)],
+                "set_intervals_coded": [_coded_intervals()],
+                "set_data_and_color": [([np.array([20.0]), np.array([30.0])], np.array([1.0]))]}.get(setter, [])
     if setter in ("set_x_axis", "set_y_axis", "set_z_axis"):
-        for host in hosts._made.values():
+        for host in _axis_hosts(hosts):
             for which in ("y2_axis", "x2_axis", "y_axis", "x_axis"):
                 ax = getattr(host, which, lambda: None)()
                 if ax is not None:
@@ -343,7 +387,7 @@ def candidates(kind, obj, setter, hosts):
     owner = getattr(hosts, "owner", None)
     if owner is not None and setter in ("set_error_bars", "set_fill_between"):
         others = owner.components()[1:]
-        out.append(tuple(others[:2]) if setter == "set_error_bars" else (others[0],))
+        out.append(tuple((others * 2)[:2]) if setter == "set_error_bars" else (others[0],))
     if setter == "update_plot_list":
         out.append(([],))
     if setter.startswith("set_"):

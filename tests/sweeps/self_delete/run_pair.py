@@ -7,9 +7,7 @@ import common as C
 
 
 def resolve_part(obj, label):
-    if label == "self":
-        return obj
-    return obj.components()[int(label[len("component["):-1])]
+    return dict(C.parts(obj))[label]
 
 
 def main():
@@ -17,6 +15,7 @@ def main():
     h = C.Hosts()
     obj = C.BUILDERS[kind](h)
     C.pump()
+    C.prepare(obj, setter, h)
     target = obj if target_name == "self" else h.owner
     args = C.candidates(kind, obj, setter, h)[int(idx)]
     fired = []

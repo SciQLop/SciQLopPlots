@@ -25,8 +25,14 @@ def wire(obj, fired):
     return keep
 
 
+def _unsupported(kind, setter, e):
+    return {"kind": kind, "setter": setter, "idx": None, "outcome": "unsupported",
+            "unsupported": str(e)[:120], "emitted": []}
+
+
 def probe(kind, setter):
     h, obj = build(kind)
+    C.prepare(obj, setter, h)
     fired = []
     keep = wire(obj, fired)
     errors = []
@@ -34,16 +40,20 @@ def probe(kind, setter):
         try:
             getattr(obj, setter)(*args)
         except NotImplementedError as e:
-            return {"kind": kind, "setter": setter, "idx": None, "unsupported": str(e)[:120], "emitted": []}
+            return _unsupported(kind, setter, e)
         except Exception as e:
+            if "does not support" in str(e):
+                return _unsupported(kind, setter, e)
             errors.append(f"{type(e).__name__}: {str(e)[:80]}")
             continue
         fired_in_call = list(fired)
         C.pump()
         emitted = sorted(set(fired))
         return {"kind": kind, "setter": setter, "idx": idx, "args": repr(args)[:120],
+                "outcome": "emitted" if emitted else "no emit",
                 "emitted": emitted, "emitted_sync": sorted(set(fired_in_call))}
-    return {"kind": kind, "setter": setter, "idx": None, "errors": [e for e in errors if not e.startswith("TypeError")][:3] or errors[-2:], "emitted": []}
+    real_errors = [e for e in errors if not e.startswith("TypeError")][:3] or errors[-2:]
+    return {"kind": kind, "setter": setter, "idx": None, "outcome": "no args", "errors": real_errors, "emitted": []}
 
 
 def main():

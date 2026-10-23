@@ -2,6 +2,7 @@
 
 SQP_BUILD (default <repo>/build-venv) is the build dir; SWEEP_OUT (default this dir) gets the jsonl files.
 """
+import collections
 import json
 import os
 import subprocess
@@ -97,13 +98,31 @@ def pairs(kinds):
                 print(job, res, flush=True)
 
 
+def _counts(statuses):
+    counts = collections.Counter(statuses)
+    return ", ".join(f"{k} {v}" for k, v in sorted(counts.items()))
+
+
+def _setter_status(r):
+    """One final status per probed setter; a crash record supersedes its start record."""
+    return r.get("outcome", r["status"]) if r["status"] == "done" else r["status"]
+
+
+def discovery_summary(kinds):
+    final = {}
+    for r in lines(DISC):
+        if r["kind"] in kinds and r["status"] != "start":
+            final[(r["kind"], r.get("setter", ""))] = _setter_status(r)
+    print(len(final), "setters:", _counts(final.values()))
+    for (kind, setter), status in sorted(final.items()):
+        if status not in ("emitted", "no emit"):
+            print(" ", kind, setter, status)
+
+
 def summary(kinds):
+    discovery_summary(kinds)
     rows = [r for r in lines(PAIRS) if r["job"][0] in kinds]
-    counts = {}
-    for r in rows:
-        key = r["result"].split("(")[0]
-        counts[key] = counts.get(key, 0) + 1
-    print(len(rows), "pairs:", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
+    print(len(rows), "pairs:", _counts(r["result"].split("(")[0].strip() for r in rows))
     for r in rows:
         if r["result"].startswith(("CRASH", "HANG")):
             print(" ".join(map(str, r["job"])), r["result"])

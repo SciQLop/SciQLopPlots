@@ -8,9 +8,13 @@ process survives. One subprocess per pair, sequential, poisoned malloc. Not coll
 cd tests/sweeps/self_delete
 ../../../.venv/bin/python driver.py discover   # finds working args and the signals each setter fires
 ../../../.venv/bin/python driver.py pairs      # runs every (setter, signal) pair, ~15 min
-../../../.venv/bin/python driver.py summary    # counts, then each CRASH / HANG pair
+../../../.venv/bin/python driver.py summary    # setter and pair counts per status, then the odd ones
 ./bt.sh line_graph set_busy 0 self busy_changed self   # gdb backtrace of one pair
 ```
 
 `SQP_BUILD` picks the build dir (default `build-venv`), `SWEEP_OUT` where the jsonl files go.
 Delete `discovery.jsonl` / `pairs.jsonl` for a fresh run: both phases resume from them.
+
+Setter statuses: `emitted` (pairs run), `no emit` (ran, fired nothing), `no args` (every candidate
+argument raised: the setter never ran, add arguments in `common.candidates` or state in
+`common.PREPARE`), `unsupported` (the class refuses it), `crashed` (discovery itself died).
