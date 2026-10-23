@@ -70,6 +70,22 @@ def force_gc():
     gc.collect()
 
 
+def collect():
+    """Garbage-collects and delivers deferred deletes, which processEvents() alone does not."""
+    from PySide6.QtCore import QCoreApplication, QEvent
+    gc.collect()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    QApplication.processEvents()
+    gc.collect()
+
+
+def on_destroyed(obj):
+    """A list that gets True once obj's C++ object is deleted; the slot holds no reference to obj."""
+    gone = []
+    obj.destroyed.connect(lambda *_: gone.append(True))
+    return gone
+
+
 def record(signal):
     """Every value `signal` emits, in order."""
     seen = []

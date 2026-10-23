@@ -470,6 +470,11 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
+        <modify-function signature="SciQLopPlotInterface(QWidget*,const QString&amp;)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="remove_group(SciQLopPlotGroup*)">
             <inject-code class="target" position="beginning">
                 try {
@@ -848,6 +853,11 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <modify-function signature="SciQLopPlot(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
@@ -885,6 +895,11 @@
     </object-type>
 
     <object-type name="SciQLopTimeSeriesPlot" parent-management="yes">
+        <modify-function signature="SciQLopTimeSeriesPlot(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <!-- datetimes go through the PyObject overload below: QDateTime would read them as local time. -->
         <modify-function signature="set_time_range(const QDateTime&amp;,const QDateTime&amp;)" remove="all"/>
         <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,
@@ -910,6 +925,11 @@
     </object-type>
     <object-type name="SciQLopNDProjectionPane" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <modify-function signature="SciQLopNDProjectionPlot(std::size_t,QWidget*)">
+            <modify-argument index="this">
+                <parent index="2" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
@@ -1549,6 +1569,11 @@
     </object-type>
 
     <object-type name="SciQLopPlotPanelInterface" parent-management="yes">
+        <modify-function signature="SciQLopPlotPanelInterface(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="save(const QString&amp;,int,int,double,int)">
             <modify-argument index="2"><rename to="width"/></modify-argument>
             <modify-argument index="3"><rename to="height"/></modify-argument>
@@ -1654,6 +1679,9 @@
         </modify-function>
         <modify-function signature="add_timeline(int,int)" exception-handling="auto-on"/>
         <modify-function signature="SciQLopMultiPlotPanel(QWidget*,bool,bool,Qt::Orientation)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
             <modify-argument index="2">
                 <rename to="synchronize_x"/>
             </modify-argument>
@@ -1823,12 +1851,42 @@
     <object-type name="DelegateRegistry"/>
     <object-type name="PlotsModelNode" parent-management="yes"/>
     <object-type name="PlotsModel" parent-management="yes"/>
-    <object-type name="PlotsTreeView" parent-management="yes"/>
-    <object-type name="InspectorView" parent-management="yes"/>
-    <object-type name="PropertyDelegateBase" parent-management="yes"/>
+    <object-type name="PlotsTreeView" parent-management="yes">
+        <modify-function signature="PlotsTreeView(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="InspectorView" parent-management="yes">
+        <modify-function signature="InspectorView(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="PropertyDelegateBase" parent-management="yes">
+        <modify-function signature="PropertyDelegateBase(QObject*,QWidget*)">
+            <modify-argument index="this">
+                <parent index="2" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="InspectorExtension" parent-management="yes"/>
-    <object-type name="FontDelegate" parent-management="yes"/>
-    <object-type name="PropertiesPanel" parent-management="yes"/>
+    <object-type name="FontDelegate" parent-management="yes">
+        <modify-function signature="FontDelegate(const QFont&amp;,const QColor&amp;,QWidget*)">
+            <modify-argument index="this">
+                <parent index="3" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="PropertiesPanel" parent-management="yes">
+        <modify-function signature="PropertiesPanel(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
 
     <value-type name="MatchResult"/>
     <object-type name="SubsequenceMatcher"/>
@@ -1845,7 +1903,13 @@
     <object-type name="ProductsTreeFilterModel" parent-management="yes"/>
     <object-type name="ProductsFlatFilterModel" parent-management="yes"/>
 
-    <object-type name="ProductsView" parent-management="yes"/>
+    <object-type name="ProductsView" parent-management="yes">
+        <modify-function signature="ProductsView(QWidget*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="ProductsModel" parent-management="yes">
         <modify-function signature="add_node(QStringList, ProductsModelNode*)">
           <inject-code class="target" position="end">

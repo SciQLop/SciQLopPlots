@@ -25,7 +25,7 @@
 #include <QSplitter>
 #include <QVBoxLayout>
 
-PropertiesPanel::PropertiesPanel(QWidget* parent)
+PropertiesPanel::PropertiesPanel(QWidget* parent) : QWidget(parent)
 {
     this->setWindowTitle("Properties");
     auto splitter = new QSplitter(Qt::Vertical, this);
