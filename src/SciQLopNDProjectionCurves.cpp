@@ -304,15 +304,18 @@ void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGr
     if (!self)
         return;
     _update_color_scale();
-    if (values.is_valid() && values.flat_size() > 0)
+    if (self && values.is_valid() && values.flat_size() > 0)
         _set_scale_gradient(gradient);
 }
 
 void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
 {
     SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
+    // A curve's replot relay may delete this projection.
+    const QPointer self(this);
     _for_each_curve([gradient](SciQLopCurve* curve) { curve->set_color_gradient(gradient); });
-    _set_scale_gradient(gradient);
+    if (self)
+        _set_scale_gradient(gradient);
 }
 
 SciQLopNDProjectionCurves::~SciQLopNDProjectionCurves()

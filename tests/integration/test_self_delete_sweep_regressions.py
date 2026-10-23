@@ -137,3 +137,35 @@ def test_a_slot_deleting_a_projection_while_it_sets_coloured_data_does_not_crash
     _pump()
     assert fired
     assert not shiboken6.isValid(proj)
+
+
+def _projection(qtbot):
+    from SciQLopPlots import SciQLopNDProjectionPlot
+    nd = SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(nd)
+    nd.show()
+    proj = nd.plot([X, X, np.sin(X), np.cos(X)])
+    qtbot.waitUntil(lambda: len(proj.components()) > 0 and not proj.busy(), timeout=5000)
+    return nd, proj
+
+
+def _pane_curve(nd):
+    (curve,) = nd.subplot(0).plottables()
+    return curve
+
+
+PROJECTION_COLOR_SETTERS = {
+    "set_color_gradient": lambda p: p.set_color_gradient(ColorGradient.Hot),
+    "set_color_data": lambda p: p.set_color_data(SCALARS, ColorGradient.Hot),
+}
+
+
+@pytest.mark.parametrize("setter", PROJECTION_COLOR_SETTERS)
+def test_a_slot_deleting_a_projection_from_a_pane_curve_replot_does_not_crash(qtbot, setter):
+    nd, proj = _projection(qtbot)
+    slot, fired = _delete_once(proj)
+    _pane_curve(nd).replot.connect(slot)
+    PROJECTION_COLOR_SETTERS[setter](proj)
+    _pump()
+    assert fired
+    assert not shiboken6.isValid(proj)
