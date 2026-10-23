@@ -467,7 +467,7 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
     }
     if (!ref->graph->setComponentErrorBars(ref->componentIndex, sibling_index(lower),
                                            sibling_index(upper), cap_width))
-        throw std::invalid_argument("error bars need three distinct components");
+        throw std::invalid_argument("set_error_bars: a bound component is no longer in this graph");
     emit_then_replot(*this, &SciQLopGraphComponentInterface::error_bars_changed);
 }
 

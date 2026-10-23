@@ -4,7 +4,7 @@ import pytest
 from PySide6.QtGui import QColor, QImage
 from PySide6.QtWidgets import QLabel
 
-from SciQLopPlots import DelegateRegistry, GraphLineStyle, SciQLopPlot
+from SciQLopPlots import DelegateRegistry, GraphLineStyle, GraphMarkerShape, SciQLopPlot
 
 X = np.linspace(0, 10, 200)
 
@@ -75,9 +75,9 @@ class TestColumnDecorations:
 
     def test_fill_color_and_fill_to_value_agree_on_a_column_the_graph_lacks(self, plot):
         g = plot.line(X, np.column_stack([X, X]))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r"^invalid column 5$"):
             g.set_fill_to_value(5, 0.0)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r"^invalid column 5$"):
             g.set_fill_color(5, QColor("blue"))
 
 
@@ -359,13 +359,29 @@ def test_a_missing_or_identical_partner_raises_on_any_component(plot, kind, bad)
 
 THREE = np.column_stack([X, X - 1, X + 1])
 
+def _first_component(g):
+    return g.components()[0]
+
+
+def _graph(g):
+    return g
+
+
+# setter: (who emits, the signal a slot deletes the graph from, the call)
 GRAPH_DECORATIONS = {
-    "set_fill_to_value": ("fill_changed", lambda g: g.set_fill_to_value(0, 1.0)),
-    "set_fill_between": ("fill_changed", lambda g: g.set_fill_between(0, 1)),
-    "clear_fill": ("fill_changed", lambda g: g.clear_fill(0)),
-    "set_fill_color": ("fill_changed", lambda g: g.set_fill_color(0, QColor("blue"))),
-    "set_error_bars": ("error_bars_changed", lambda g: g.set_error_bars(0, 1, 2)),
-    "clear_error_bars": ("error_bars_changed", lambda g: g.clear_error_bars(0)),
+    "set_fill_to_value": (_first_component, "fill_changed", lambda g: g.set_fill_to_value(0, 1.0)),
+    "set_fill_between": (_first_component, "fill_changed", lambda g: g.set_fill_between(0, 1)),
+    "clear_fill": (_first_component, "fill_changed", lambda g: g.clear_fill(0)),
+    "set_fill_color": (_first_component, "fill_changed",
+                       lambda g: g.set_fill_color(0, QColor("blue"))),
+    "set_error_bars": (_first_component, "error_bars_changed", lambda g: g.set_error_bars(0, 1, 2)),
+    "clear_error_bars": (_first_component, "error_bars_changed", lambda g: g.clear_error_bars(0)),
+    "set_column_line_style": (_graph, "replot",
+                              lambda g: g.set_column_line_style(0, GraphLineStyle.NoLine)),
+    "set_column_marker_shape": (_graph, "replot",
+                                lambda g: g.set_column_marker_shape(0, GraphMarkerShape.Circle)),
+    "set_column_in_legend": (_graph, "replot", lambda g: g.set_column_in_legend(0, False)),
+    "set_gap_threshold": (_graph, "replot", lambda g: g.set_gap_threshold(2.0)),
 }
 
 COMPONENT_DECORATIONS = {
@@ -378,17 +394,19 @@ COMPONENT_DECORATIONS = {
 }
 
 DECORATION_NAME = r"^(set|clear)_(fill|error)"
+# Every multigraph-level setter that ends in replot.
+GRAPH_SETTER_NAME = r"^((set|clear)_(fill|error|column)|set_gap_threshold$)"
 
 
-def _decoration_setters(cls):
+def _setters(cls, pattern):
     import re
-    return {name for name in dir(cls) if re.match(DECORATION_NAME, name)}
+    return {name for name in dir(cls) if re.match(pattern, name)}
 
 
 def test_every_graph_and_component_decoration_setter_is_in_the_delete_tables(plot):
     graph = plot.line(X, THREE)
-    assert _decoration_setters(type(graph)) == set(GRAPH_DECORATIONS)
-    assert _decoration_setters(type(graph.components()[0])) == set(COMPONENT_DECORATIONS)
+    assert _setters(type(graph), GRAPH_SETTER_NAME) == set(GRAPH_DECORATIONS)
+    assert _setters(type(graph.components()[0]), DECORATION_NAME) == set(COMPONENT_DECORATIONS)
 
 
 @pytest.mark.parametrize("setter", GRAPH_DECORATIONS)
@@ -396,8 +414,8 @@ def test_a_slot_deleting_the_graph_while_it_decorates_a_column_does_not_crash(pl
     import shiboken6
     graph = plot.line(X, THREE)
     graph.set_fill_to_value(0, 0.0)
-    signal, apply = GRAPH_DECORATIONS[setter]
-    getattr(graph.components()[0], signal).connect(lambda *_: shiboken6.delete(graph))
+    emitter, signal, apply = GRAPH_DECORATIONS[setter]
+    getattr(emitter(graph), signal).connect(lambda *_: shiboken6.delete(graph))
     apply(graph)  # the graph emitted replot on a dead self
     plot.replot()
     assert not shiboken6.isValid(graph)
