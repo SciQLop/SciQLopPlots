@@ -133,20 +133,11 @@ SciQLopMultiPlotPanel* MultiPlotsVSpanCollection::panel()
 
 void MultiPlotsVSpanCollection::updateVisibleSpans(const SciQLopPlotRange& horizontal_range)
 {
-    for (auto& span : _spans)
-    {
+    // Over a snapshot, like the rest of this file: a span's visibility slot may delete a sibling.
+    const auto spans = _spans;
+    for (const auto& span : spans)
         if (span)
-        {
-            if (horizontal_range.intersects(span->range()))
-            {
-                span->show();
-            }
-            else
-            {
-                span->hide();
-            }
-        }
-    }
+            span->set_visible(horizontal_range.intersects(span->range()));
 }
 
 void MultiPlotsVSpanCollection::delete_span(const QString &id)
