@@ -110,38 +110,40 @@ void SQPQCPAbstractPlottableWrapper::_seed_parts()
     _seed_selected(_selected());
 }
 
+namespace
+{
+//! Applies \a apply to each part with its index; a part's slot may delete this graph and the
+//! other parts, so it walks a snapshot and stops once \a self is gone. False when it stopped.
+template <typename Apply>
+bool for_each_part_while_alive(QObject* self,
+                               QList<QPointer<SciQLopGraphComponent>> parts, Apply apply)
+{
+    const QPointer<QObject> alive(self);
+    for (qsizetype i = 0; i < parts.size() && alive; ++i)
+        if (parts[i])
+            apply(*parts[i], i);
+    return !alive.isNull();
+}
+}
+
 void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
     SCIQLOP_ON_OWNER_THREAD(set_labels(labels));
-    if (std::size(labels) == std::size(m_components))
-    {
-        for (decltype(std::size(m_components)) i = 0UL; i < std::size(m_components); ++i)
-        {
-            m_components[i]->set_name(labels[i]);
-        }
-        Q_EMIT labels_changed(labels);
-    }
-    else
-    {
+    if (std::size(labels) != std::size(m_components))
         throw std::runtime_error("Invalid number of labels");
-    }
+    const auto apply = [&labels](auto& component, qsizetype i) { component.set_name(labels[i]); };
+    if (for_each_part_while_alive(this, m_components, apply))
+        Q_EMIT labels_changed(labels);
 }
 
 void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 {
     SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
-    if (std::size(colors) == std::size(m_components))
-    {
-        for (decltype(std::size(m_components)) i = 0; i < std::size(m_components); ++i)
-        {
-            m_components[i]->set_color(colors[i]);
-        }
-        Q_EMIT colors_changed(colors);
-    }
-    else
-    {
+    if (std::size(colors) != std::size(m_components))
         throw std::runtime_error("Invalid number of colors");
-    }
+    const auto apply = [&colors](auto& component, qsizetype i) { component.set_color(colors[i]); };
+    if (for_each_part_while_alive(this, m_components, apply))
+        Q_EMIT colors_changed(colors);
 }
 
 QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept

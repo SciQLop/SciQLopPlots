@@ -67,8 +67,11 @@ void SciQLopLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 
 void SciQLopLineGraph::_set_visible(bool visible)
 {
+    // A component's visible_changed slot may delete this graph.
+    const QPointer self(this);
     SciQLopMultiGraphBase::_set_visible(visible);
-    notify_color_scale();
+    if (self)
+        notify_color_scale();
 }
 
 void SciQLopLineGraph::check_color_length(const SciQLopPyBuffer& values,

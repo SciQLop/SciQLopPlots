@@ -254,3 +254,27 @@ def test_a_slot_deleting_the_projection_mid_colouring_does_not_crash(qtbot, name
     ND_COLOUR_OPERATIONS[name](projection)
     process_events()
     assert not shiboken6.isValid(projection)
+
+
+GRAPH_KINDS = {
+    "line_graph": lambda plot: plot.plot(X, TWO, labels=["a", "b"]),
+    "curve": lambda plot: plot.parametric_curve(X, TWO, labels=["a", "b"]),
+}
+
+PART_SETTERS = {
+    "visible": ("visible_changed", lambda g: g.set_visible(False)),
+    "colors": ("color_changed", lambda g: g.set_colors([QColor("red"), QColor("blue")])),
+    "labels": ("name_changed", lambda g: g.set_labels(["c", "d"])),
+}
+
+
+@pytest.mark.parametrize("setter", PART_SETTERS)
+@pytest.mark.parametrize("kind", GRAPH_KINDS)
+def test_a_slot_deleting_the_graph_while_it_sets_its_parts_does_not_crash(plot, kind, setter):
+    import shiboken6
+    graph = GRAPH_KINDS[kind](plot)
+    signal, apply = PART_SETTERS[setter]
+    getattr(graph.components()[0], signal).connect(lambda *_: shiboken6.delete(graph))
+    apply(graph)  # the setter went on with the parts list, or the colour scale, of a dead self
+    process_events()
+    assert not shiboken6.isValid(graph)

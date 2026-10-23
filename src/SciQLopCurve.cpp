@@ -333,8 +333,11 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
 
 void SciQLopCurve::_set_visible(bool visible)
 {
+    // A component's visible_changed slot may delete this graph.
+    const QPointer self(this);
     SQPQCPAbstractPlottableWrapper::_set_visible(visible);
-    notify_color_scale();
+    if (self)
+        notify_color_scale();
 }
 
 void SciQLopCurve::set_color_scale(QCPColorScale* scale)
