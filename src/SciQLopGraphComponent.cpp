@@ -74,12 +74,14 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
 }
 
 // The hook, not set_selected: a component going away is no selection change to its graph,
-// the same as one a shrinking set_data drops (it re-seeds silently).
+// the same as one a shrinking set_data drops (it re-seeds silently). Only a selected one has a
+// frame and a selection to clear.
 SciQLopGraphComponent::~SciQLopGraphComponent()
 {
     if (m_componentIndex >= 0)
     {
-        _set_selected(false);
+        if (m_selected)
+            _set_selected(false);
         return;
     }
     if (m_plottable)
@@ -90,7 +92,8 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
             (void)plot->removePlottable(m_plottable.data());
         }
     }
-    _set_selected(false);
+    if (m_selected)
+        _set_selected(false);
 }
 
 void SciQLopGraphComponent::set_pen(const QPen& pen)

@@ -151,3 +151,16 @@ def test_set_pen_off_the_gui_thread_lands_on_it_and_signals_once(plot):
     queued = component.pen().color() != QColor("red")
     process_events()
     assert (queued, component.pen().color(), seen) == (True, QColor("red"), [QColor("red")])
+
+
+@pytest.mark.parametrize("make", [
+    lambda p: p.plot(X, np.column_stack([np.sin(X), np.cos(X)]), labels=["a", "b"]),
+    lambda p: p.parametric_curve(X, np.column_stack([np.sin(X), np.cos(X)])),
+], ids=["line-graph", "curve"])
+def test_an_unselected_component_going_away_asks_for_no_replot(plot, make):
+    import shiboken6
+    component = make(plot).components()[0]
+    replots = []
+    component.replot.connect(lambda: replots.append(True))
+    shiboken6.delete(component)
+    assert replots == []
