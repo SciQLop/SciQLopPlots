@@ -36,11 +36,13 @@ def _register_with_shiboken_signatures():
         instead of a catchable TypeError. Keep ``_PRIMITIVE_TYPE_MAP`` in sync
         with the ``<primitive-type>`` list at the top of bindings.xml.
 
-    Finally, a global ``enum class`` default renders in the generated
-    signatures as ``.GraphMarkerShape.NoMarker`` (module prefix dropped → a
-    leading dot the parser can't eval). That only warns — once per signature,
-    and only while formatting an error — but it would bury the now-useful
-    message under a wall of RuntimeWarnings, so the specific warning is muted.
+    Finally, some C++ defaults have no Python spelling in the generated
+    signatures (``QStringLiteral("ColorMap")``, ``QColor(100, 100, 100)``,
+    ``QPointer[...]``). That only warns — once per signature, and only while
+    formatting an error — but it would bury the now-useful message under a
+    wall of RuntimeWarnings, so the specific warning is muted. (Enum defaults
+    must not start with ``::``: ``= ::GraphMarkerShape::NoMarker`` rendered as
+    an unresolvable ``.GraphMarkerShape.NoMarker``.)
     """
     import collections.abc
     import warnings

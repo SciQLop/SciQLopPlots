@@ -80,7 +80,7 @@ public:
      * replaces an earlier plot.set_z_gradient(). A colormap on the plot keeps its own.
      */
     Q_SLOT void set_color_data(SciQLopPyBuffer values,
-                               ::ColorGradient gradient = ::ColorGradient::Jet) override;
+                               ::ColorGradient gradient = ColorGradient::Jet) override;
 
     /*!
      * \brief set_color_gradient The gradient colour data is drawn with, set_color_data's

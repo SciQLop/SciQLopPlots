@@ -122,7 +122,7 @@ public:
      * throws rather than dropping the data on the floor — a silent no-op here
      * used to look exactly like a working call.
      */
-    Q_SLOT virtual void set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient = ::ColorGradient::Jet)
+    Q_SLOT virtual void set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient = ColorGradient::Jet)
     {
         Q_UNUSED(values);
         Q_UNUSED(gradient);

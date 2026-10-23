@@ -103,7 +103,7 @@ public:
      * \throws std::invalid_argument if \a values does not match the data length.
      */
     Q_SLOT virtual void set_color_data(SciQLopPyBuffer values,
-                                       ::ColorGradient gradient = ::ColorGradient::Jet) override;
+                                       ::ColorGradient gradient = ColorGradient::Jet) override;
     //! Preset gradient for the scalar colouring, e.g. of the `3n` data layout.
     void set_color_gradient(::ColorGradient gradient);
 

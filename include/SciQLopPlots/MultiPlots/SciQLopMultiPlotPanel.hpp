@@ -188,46 +188,46 @@ protected:
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = ::PlotType::BasicXY,
-              ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = PlotType::BasicXY,
+              ::GraphType graph_type = GraphType::Line,
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
               QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
-              bool z_log_scale = false, ::PlotType plot_type = ::PlotType::BasicXY,
+              bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
-              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
+              ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
               bool y_log_scale = false, bool z_log_scale = false,
-              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
-              ::PlotType plot_type = ::PlotType::BasicXY, int index = -1,
+              ::PlotType plot_type = PlotType::BasicXY, int index = -1,
               QVariantMap metaData = {}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(GetDataPyCallable callable, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
-              ::PlotType plot_type = ::PlotType::BasicXY, QObject* sync_with = nullptr,
+              ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData = {}) Q_DECL_OVERRIDE;
 
 public:

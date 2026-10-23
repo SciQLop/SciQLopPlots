@@ -820,7 +820,7 @@ void SciQLopPlot::_apply_component_style(SciQLopGraphInterface* plottable,
     for (auto& component : components)
     {
         component->set_marker_shape(marker);
-        if (graph_type == ::GraphType::Scatter)
+        if (graph_type == GraphType::Scatter)
             component->set_line_style(::GraphLineStyle::NoLine);
     }
     _apply_component_labels(plottable, labels);

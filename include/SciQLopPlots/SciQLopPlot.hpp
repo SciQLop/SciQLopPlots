@@ -305,7 +305,7 @@ protected:
 
     void _configure_plotable(SciQLopGraphInterface* plottable, const QStringList& labels,
                              const QList<QColor>& colors, ::GraphType graph_type,
-                             ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker);
+                             ::GraphMarkerShape marker = GraphMarkerShape::NoMarker);
 
     // Apply per-component cosmetics (palette/explicit colors, marker, scatter
     // line style) then names. Must run when the components actually exist.
@@ -316,8 +316,8 @@ protected:
 
     virtual SciQLopGraphInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker, QVariantMap metaData={}) override;
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                 const SciQLopPyBuffer& z,
@@ -327,8 +327,8 @@ protected:
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
-              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = ::GraphType::Line,
-              ::GraphMarkerShape marker = ::GraphMarkerShape::NoMarker,
+              QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
               QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
