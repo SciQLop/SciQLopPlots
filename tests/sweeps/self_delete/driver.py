@@ -105,7 +105,8 @@ def _counts(statuses):
 
 def _setter_status(r):
     """One final status per probed setter; a crash record supersedes its start record."""
-    return r.get("outcome", r["status"]) if r["status"] == "done" else r["status"]
+    # A discovery file from before the "outcome" field can't tell "no emit" from "no args".
+    return r.get("outcome", "unknown (stale discovery.jsonl)") if r["status"] == "done" else r["status"]
 
 
 def discovery_summary(kinds):

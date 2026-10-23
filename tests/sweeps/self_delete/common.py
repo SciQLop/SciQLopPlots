@@ -163,6 +163,8 @@ def _pane_curves(obj):
     if not isinstance(obj, S.SciQLopNDProjectionCurves):
         return []
     nd = obj.parent()
+    if not hasattr(nd, "subplot_count"):  # unparented, or not in a projection plot
+        return []
     return [(f"pane[{i}]", c) for i in range(nd.subplot_count()) for c in nd.subplot(i).plottables()]
 
 
