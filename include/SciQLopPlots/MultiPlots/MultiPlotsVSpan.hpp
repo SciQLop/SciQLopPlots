@@ -33,6 +33,16 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 {
     Q_OBJECT
     QList<QPointer<SciQLopVerticalSpan>> _spans;
+
+    // Over a snapshot: a slot may delete this span, or a plot span that edits _spans.
+    template <typename F>
+    void for_each_span(F&& f)
+    {
+        const auto spans = _spans;
+        for (const auto& span : spans)
+            if (span)
+                f(span.data());
+    }
     SciQLopPlotRange _horizontal_range;
     bool m_selected = false;
     bool _lower_border_selected = false;

@@ -1,5 +1,6 @@
 """Panel-wide objects under SciQLopDrawnObject."""
 import numpy as np
+import pytest
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
@@ -56,3 +57,59 @@ def test_a_panel_span_reaches_a_later_plot_and_outlives_a_removed_one(panel):
     span.visible = True
     span.color = QColor("red")
     assert [(s.visible(), s.color()) for s in _plot_spans(later)] == [(True, QColor("red"))]
+
+
+def _delete_on(signal, victim):
+    import shiboken6
+    signal.connect(lambda *_: shiboken6.delete(victim))
+    return lambda: not shiboken6.isValid(victim)
+
+
+def _span_and_plot_span(panel):
+    panel.plot(X, np.sin(X))
+    panel.plot(X, np.cos(X))
+    process_events()
+    span = MultiPlotsVerticalSpan(panel, SciQLopPlotRange(1.0, 2.0))
+    return span, _plot_spans(panel.plots()[0])[0]
+
+
+def _line_and_plot_line(panel):
+    from SciQLopPlots import SciQLopVerticalLine
+    panel.plot(X, np.sin(X))
+    panel.plot(X, np.cos(X))
+    process_events()
+    line = MultiPlotsVerticalLine(panel, 2.0)
+    return line, panel.plots()[0].findChildren(SciQLopVerticalLine)[0]
+
+
+SPAN_MUTATIONS = {
+    "visible": ("visible_changed", lambda s: setattr(s, "visible", False)),
+    "selected": ("selection_changed", lambda s: setattr(s, "selected", True)),
+    "color": ("color_changed", lambda s: setattr(s, "color", QColor("red"))),
+}
+
+
+@pytest.mark.parametrize("name", SPAN_MUTATIONS)
+def test_a_slot_deleting_the_panel_span_mid_mutation_does_not_crash(panel, name):
+    signal_name, mutate = SPAN_MUTATIONS[name]
+    span, plot_span = _span_and_plot_span(panel)
+    deleted = _delete_on(getattr(plot_span, signal_name), span)
+    mutate(span)
+    process_events()
+    assert deleted()
+
+
+LINE_MUTATIONS = {
+    "visible": ("visible_changed", lambda l: setattr(l, "visible", False)),
+    "color": ("color_changed", lambda l: setattr(l, "color", QColor("red"))),
+}
+
+
+@pytest.mark.parametrize("name", LINE_MUTATIONS)
+def test_a_slot_deleting_the_panel_line_mid_mutation_does_not_crash(panel, name):
+    signal_name, mutate = LINE_MUTATIONS[name]
+    line, plot_line = _line_and_plot_line(panel)
+    deleted = _delete_on(getattr(plot_line, signal_name), line)
+    mutate(line)
+    process_events()
+    assert deleted()

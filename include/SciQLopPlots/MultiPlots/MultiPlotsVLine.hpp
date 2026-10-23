@@ -43,7 +43,8 @@ class MultiPlotsVerticalLine : public SciQLopMultiPlotObject
     template <typename F>
     void for_each_line(F&& f)
     {
-        for (auto& line : _lines)
+        const auto lines = _lines;
+        for (const auto& line : lines)
             if (line)
                 f(line.data());
     }

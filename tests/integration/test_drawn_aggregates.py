@@ -1,5 +1,8 @@
 """Rule 2: an aggregate reads its parts and signals only when that reading flips."""
 import numpy as np
+import pytest
+from PySide6.QtGui import QColor
+from SciQLopPlots import ColorGradient
 
 from conftest import process_events, record
 
@@ -231,5 +234,23 @@ def test_a_slot_deleting_the_projection_mid_rename_does_not_crash(qtbot):
     _nd, projection = _three_pane_projection(qtbot)
     projection.components()[0].name_changed.connect(lambda _: shiboken6.delete(projection))
     projection.name = "renamed"  # the base emitted name_changed on a dead self after _named
+    process_events()
+    assert not shiboken6.isValid(projection)
+
+
+ND_COLOUR_OPERATIONS = {
+    "colors": lambda p: p.set_colors([QColor("red")] * 3),
+    "time_gradient": lambda p: p.set_time_color_gradient(QColor("red"), QColor("blue")),
+    "color_data": lambda p: p.set_color_data(np.linspace(0, 1, 50), ColorGradient.Viridis),
+}
+
+
+@pytest.mark.parametrize("name", ND_COLOUR_OPERATIONS)
+def test_a_slot_deleting_the_projection_mid_colouring_does_not_crash(qtbot, name):
+    import shiboken6
+    _nd, projection = _three_pane_projection(qtbot)
+    first = _first_pane_curve(projection)
+    first.data_changed.connect(lambda *_: shiboken6.delete(projection))
+    ND_COLOUR_OPERATIONS[name](projection)
     process_events()
     assert not shiboken6.isValid(projection)

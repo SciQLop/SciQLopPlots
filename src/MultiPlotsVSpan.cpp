@@ -92,28 +92,28 @@ void MultiPlotsVerticalSpan::_set_selected(bool selected)
 {
     // Stored first: each plot's span echoes the selection back through set_selected.
     m_selected = selected;
-    for (auto span : _spans)
-        if (span)
-            span->set_selected(selected);
-    replotAll();
+    const QPointer<MultiPlotsVerticalSpan> self(this);
+    for_each_span([selected](SciQLopVerticalSpan* span) { span->set_selected(selected); });
+    if (self)
+        replotAll();
 }
 
 // Stored after forwarding, unlike selection (no echo here): a plot span that raises leaves the
 // panel span reading its old value, so a retry is not taken for a repeat.
 void MultiPlotsVerticalSpan::_set_color(const QColor& color)
 {
-    for (auto span : _spans)
-        if (span)
-            span->set_color(color);
-    m_color = color;
+    const QPointer<MultiPlotsVerticalSpan> self(this);
+    for_each_span([&color](SciQLopVerticalSpan* span) { span->set_color(color); });
+    if (self)
+        m_color = color;
 }
 
 void MultiPlotsVerticalSpan::_set_visible(bool visible)
 {
-    for (auto span : _spans)
-        if (span)
-            span->set_visible(visible);
-    m_visible = visible;
+    const QPointer<MultiPlotsVerticalSpan> self(this);
+    for_each_span([visible](SciQLopVerticalSpan* span) { span->set_visible(visible); });
+    if (self)
+        m_visible = visible;
 }
 
 void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
@@ -122,11 +122,8 @@ void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     if (horizontal_range != _horizontal_range)
     {
         _horizontal_range = horizontal_range;
-        for (auto span : _spans)
-        {
-            if (span)
-                span->set_range(horizontal_range);
-        }
+        for_each_span([&horizontal_range](SciQLopVerticalSpan* span)
+                      { span->set_range(horizontal_range); });
         Q_EMIT range_changed(horizontal_range);
     }
 }
