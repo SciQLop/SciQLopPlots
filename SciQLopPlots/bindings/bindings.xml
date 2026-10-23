@@ -818,6 +818,11 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
+        <modify-function signature="SciQLopPlotAxisInterface(QObject*,const QString&amp;)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <!-- Start/stop may be dates (datetime64, datetime, ISO strings), as UTC. Converted here,
              not by a Python wrapper: connect() must keep finding the C++ slot. -->
         <modify-function signature="set_range(double,double)">
@@ -845,7 +850,13 @@
         </modify-function>
     </object-type>
     <!-- Constructible: WidgetPlot (widget_plot.py) gives its panel one as its time axis. -->
-    <object-type name="SciQLopPlotDummyAxis" parent-management="yes"/>
+    <object-type name="SciQLopPlotDummyAxis" parent-management="yes">
+        <modify-function signature="SciQLopPlotDummyAxis(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
 
     <object-type name="SciQLopOverlay" parent-management="yes"/>
@@ -1812,23 +1823,54 @@
     <object-type name="SciQLopMultiPlotObject" parent-management="yes">
     </object-type>
     <object-type name="SciQLopPlotCollectionBehavior" parent-management="yes">
+        <modify-function signature="SciQLopPlotCollectionBehavior(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="XAxisSynchronizer" parent-management="yes">
     </object-type>
     <object-type name="VPlotsAlign" parent-management="yes">
+        <modify-function signature="VPlotsAlign(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="DataProviderInterface" parent-management="yes">
+        <modify-function signature="DataProviderInterface(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="RemoteDataPipeline" parent-management="yes">
+        <modify-function signature="RemoteDataPipeline(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="DataProviderWorker" parent-management="yes">
+        <modify-function signature="DataProviderWorker(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="set_data_provider(DataProviderInterface*)">
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="PlotDragNDropCallback" parent-management="yes"/>
+    <object-type name="PlotDragNDropCallback" parent-management="yes">
+        <modify-function signature="PlotDragNDropCallback(const QString&amp;,bool,QObject*)">
+            <modify-argument index="this">
+                <parent index="3" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopPlotLegend" parent-management="yes"/>
     <object-type name="SciQLopPlotGroup" parent-management="yes">
         <modify-function signature="add(SciQLopPlottableInterface*)">
@@ -1850,7 +1892,13 @@
     <object-type name="TypeRegistry"/>
     <object-type name="DelegateRegistry"/>
     <object-type name="PlotsModelNode" parent-management="yes"/>
-    <object-type name="PlotsModel" parent-management="yes"/>
+    <object-type name="PlotsModel" parent-management="yes">
+        <modify-function signature="PlotsModel(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="PlotsTreeView" parent-management="yes">
         <modify-function signature="PlotsTreeView(QWidget*)">
             <modify-argument index="this">
@@ -1872,7 +1920,13 @@
             </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="InspectorExtension" parent-management="yes"/>
+    <object-type name="InspectorExtension" parent-management="yes">
+        <modify-function signature="InspectorExtension(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="FontDelegate" parent-management="yes">
         <modify-function signature="FontDelegate(const QFont&amp;,const QColor&amp;,QWidget*)">
             <modify-argument index="this">
@@ -1900,8 +1954,20 @@
     <value-type name="Query"/>
     <object-type name="QueryParser"/>
 
-    <object-type name="ProductsTreeFilterModel" parent-management="yes"/>
-    <object-type name="ProductsFlatFilterModel" parent-management="yes"/>
+    <object-type name="ProductsTreeFilterModel" parent-management="yes">
+        <modify-function signature="ProductsTreeFilterModel(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    <object-type name="ProductsFlatFilterModel" parent-management="yes">
+        <modify-function signature="ProductsFlatFilterModel(ProductsModel*,QObject*)">
+            <modify-argument index="this">
+                <parent index="2" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
 
     <object-type name="ProductsView" parent-management="yes">
         <modify-function signature="ProductsView(QWidget*)">
@@ -1911,6 +1977,11 @@
         </modify-function>
     </object-type>
     <object-type name="ProductsModel" parent-management="yes">
+        <modify-function signature="ProductsModel(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="add_node(QStringList, ProductsModelNode*)">
           <inject-code class="target" position="end">
               // %0 (cppResult) is scoped to the try-block exception-handling wraps calls
@@ -1921,6 +1992,16 @@
         </modify-function>
     </object-type>
     <object-type name="ProductsModelNode" parent-management="yes">
+        <modify-function signature="ProductsModelNode(const QString&amp;,const QMap&lt;QString,QVariant&gt;&amp;,const QString&amp;,QObject*)">
+            <modify-argument index="this">
+                <parent index="4" action="add"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="ProductsModelNode(const QString&amp;,const QString&amp;,const QMap&lt;QString,QVariant&gt;&amp;,ProductsModelNodeType,ParameterType,const QString&amp;,QObject*)">
+            <modify-argument index="this">
+                <parent index="7" action="add"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="add_child(ProductsModelNode*)">
           <inject-code class="target" position="end">
               // Same as add_node: %PYARG_0 outlives the try-block %0 is scoped to.
@@ -1930,7 +2011,13 @@
         </modify-function>
     </object-type>
 
-    <object-type name="Icons" parent-management="yes"/>
+    <object-type name="Icons" parent-management="yes">
+        <modify-function signature="Icons(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
 
     <add-function signature="validate_buffer(SciQLopPyBuffer, std::string, int, char)" return-type="void">
         <extra-includes>
