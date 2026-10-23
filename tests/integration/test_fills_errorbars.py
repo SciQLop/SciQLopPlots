@@ -80,6 +80,18 @@ class TestColumnDecorations:
         with pytest.raises(ValueError, match=r"^invalid column 5$"):
             g.set_fill_color(5, QColor("blue"))
 
+    @pytest.mark.parametrize("clear", ["clear_fill", "clear_error_bars"])
+    @pytest.mark.parametrize("column", [-1, 5])
+    def test_clearing_a_column_the_graph_lacks_raises_like_setting_it(self, plot, clear, column):
+        g = plot.line(X, np.column_stack([X, X]))
+        with pytest.raises(ValueError, match=rf"^invalid column {column}$"):
+            getattr(g, clear)(column)
+
+    @pytest.mark.parametrize("clear", ["clear_fill", "clear_error_bars"])
+    def test_clearing_a_valid_column_without_decoration_is_a_no_op(self, plot, clear):
+        g = plot.line(X, np.column_stack([X, X]))
+        getattr(g, clear)(1)
+
 
     def test_nan_fill_baseline_raises_value_error(self, plot):
         g = plot.line(X, np.sin(X))
