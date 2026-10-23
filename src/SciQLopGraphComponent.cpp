@@ -53,6 +53,8 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
         , m_plottable(multiGraph)
         , m_componentIndex(componentIndex)
 {
+    // The base compares set_name against objectName, so it must start as the name NeoQCP draws.
+    setObjectName(multiGraph->component(componentIndex).name);
     connect(multiGraph, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
             [this, multiGraph]() {
                 bool componentSelected =
