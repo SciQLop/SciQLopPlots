@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QTimer>
@@ -118,22 +119,14 @@ public:
 
 } // namespace impl
 
-class SciQLopItemInterface : public QObject
+class SciQLopItemInterface : public SciQLopDrawnObject
 {
     Q_OBJECT
 
 public:
-    SciQLopItemInterface(QObject* parent = nullptr) : QObject { parent } { }
+    SciQLopItemInterface(QObject* parent = nullptr) : SciQLopDrawnObject { parent } { }
 
     inline virtual ~SciQLopItemInterface() = default;
-
-    inline virtual void set_visible(bool visible) { WARN_ABSTRACT_METHOD; }
-
-    [[nodiscard]] inline virtual bool visible() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
-    }
 
     inline virtual Coordinates coordinates() const noexcept
     {
@@ -148,6 +141,14 @@ public:
 
 protected:
     inline virtual void replot() { WARN_ABSTRACT_METHOD; }
+
+    //! NeoQCP selects an item on click: follow it, so selection_changed fires then too.
+    void _follow_selection(QCPAbstractItem* item)
+    {
+        if (item)
+            connect(item, &QCPAbstractItem::selectionChanged, this,
+                    &SciQLopItemInterface::_notify_selected, Qt::UniqueConnection);
+    }
 
     inline virtual impl::SciQLopPlotItemBase* impl()
     {
@@ -168,6 +169,12 @@ public:
     inline virtual void move(double dx, double dy) noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void set_movable(bool movable) noexcept { WARN_ABSTRACT_METHOD; }
+
+    [[nodiscard]] inline virtual bool movable() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
 
     [[nodiscard]] inline virtual QPointF position() const noexcept
     {
@@ -191,14 +198,6 @@ public:
     SciQLopLineItemInterface(QObject* parent = nullptr) : SciQLopItemInterface { parent } { }
 
     inline virtual ~SciQLopLineItemInterface() = default;
-
-    inline virtual void set_color(const QColor& color) noexcept { WARN_ABSTRACT_METHOD; }
-
-    [[nodiscard]] inline virtual QColor color() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return {};
-    }
 
     inline virtual void set_line_width(double width) { WARN_ABSTRACT_METHOD; }
 

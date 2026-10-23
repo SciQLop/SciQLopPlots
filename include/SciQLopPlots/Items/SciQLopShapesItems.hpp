@@ -224,6 +224,7 @@ public:
         else
             m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates,
                                      toolTip);
+        _follow_selection(m_item);
     }
 
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
@@ -237,6 +238,7 @@ public:
         else
             m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable,
                                      coordinates, toolTip);
+        _follow_selection(m_item);
     }
 
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
@@ -251,20 +253,10 @@ public:
             m_item
                 = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
                                   QBrush(fillColor), movable, coordinates, toolTip);
+        _follow_selection(m_item);
     }
 
     ~SciQLopEllipseItem() { qcp_item_remove(m_item); }
-
-    inline void set_visible(bool visible) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    [[nodiscard]] inline bool visible() const noexcept override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
 
     [[nodiscard]] virtual inline QPen pen() const noexcept override
     {
@@ -315,15 +307,16 @@ public:
         qptr_apply(m_item, [toolTip](auto&& item) { item->setToolTip(toolTip); });
     }
 
-    inline void set_color(const QColor& color) noexcept
+    inline void set_movable(bool movable) noexcept override
     {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        auto p = pen();
-        p.setColor(color);
-        set_pen(p);
+        SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
+        qptr_apply(m_item, [movable](auto&& item) { item->setMovable(movable); });
     }
 
-    [[nodiscard]] inline QColor color() const noexcept { return pen().color(); }
+    [[nodiscard]] inline bool movable() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->movable(); }, false);
+    }
 
     inline void set_line_width(double width) noexcept
     {
@@ -344,6 +337,36 @@ public:
     }
 
     [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return pen().style(); }
+
+protected:
+    void _set_visible(bool visible) override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    bool _visible() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
+
+    void _set_selected(bool selected) override
+    {
+        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
+    }
+
+    bool _selected() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
+    }
+
+    void _set_color(const QColor& color) override
+    {
+        auto outline = pen();
+        outline.setColor(color);
+        set_pen(outline);
+    }
+
+    QColor _color() const override { return pen().color(); }
 };
 
 class SciQLopCurvedLineItem : public SciQLopLineItemInterface
@@ -366,20 +389,10 @@ public:
         else
             m_item = new CurvedLineItem(plot->qcp_plot(), start, stop, startTerminator,
                                         stopTerminator, coordinates, toolTip);
+        _follow_selection(m_item);
     }
 
     ~SciQLopCurvedLineItem() { qcp_item_remove(m_item); }
-
-    inline void set_visible(bool visible) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    [[nodiscard]] inline bool visible() const noexcept override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
 
     [[nodiscard]] inline QPointF start_position() const noexcept
     {
@@ -447,17 +460,38 @@ public:
         qptr_apply(m_item, [pos](auto&& item) { item->setStopDirPos(pos); });
     }
 
-    inline void set_color(const QColor& color) noexcept override
+protected:
+    void _set_visible(bool visible) override
     {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        qptr_apply(m_item, [color](auto&& item) { item->setColor(color); });
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 
-    [[nodiscard]] inline QColor color() const noexcept override
+    bool _visible() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
+
+    void _set_selected(bool selected) override
+    {
+        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
+    }
+
+    bool _selected() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
+    }
+
+    void _set_color(const QColor& color) override
+    {
+        qptr_apply(m_item, [color](auto&& item) { item->setColor(color); item->replot(); });
+    }
+
+    QColor _color() const override
     {
         return qptr_apply_or(m_item, [](auto&& item) { return item->color(); });
     }
 
+public:
     inline void set_line_width(double width) override
     {
         SCIQLOP_ON_OWNER_THREAD(set_line_width(width));

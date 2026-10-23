@@ -24,6 +24,7 @@
 #include "SciQLopPlots/ThreadGuard.hpp"
 
 #include "SciQLopPlotItem.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/helpers.hpp"
@@ -145,7 +146,7 @@ signals:
     Q_SIGNAL void moved(double new_position);
 };
 
-class SciQLopStraightLine : public QObject
+class SciQLopStraightLine : public SciQLopDrawnObject
 {
     Q_OBJECT
 
@@ -169,6 +170,8 @@ public:
         SciQLopPlots::require_owner_thread(plot, "SciQLopStraightLine");
         m_line = new StraightLine(plot->qcp_plot(), position, movable, coordinates, orientation);
         connect(m_line, &StraightLine::moved, this, &SciQLopStraightLine::position_changed);
+        connect(m_line, &QCPAbstractItem::selectionChanged, this,
+                &SciQLopStraightLine::_notify_selected, Qt::UniqueConnection);
     }
 
     void set_position(double pos);
@@ -178,20 +181,6 @@ public:
         if (!m_line.isNull())
             return m_line->position();
         return std::numeric_limits<double>::quiet_NaN();
-    }
-
-    inline void set_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        if (!m_line.isNull())
-            this->m_line->set_color(color);
-    }
-
-    [[nodiscard]] inline QColor color() const
-    {
-        if (!m_line.isNull())
-            return this->m_line->color();
-        return {};
     }
 
     inline void set_line_width(double width)
@@ -220,21 +209,6 @@ public:
         if (!m_line.isNull())
             return this->m_line->line_style();
         return Qt::SolidLine;
-    }
-
-    inline void set_visible(bool visible)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        if (!m_line.isNull())
-        {
-            m_line->setVisible(visible);
-            m_line->replot();
-        }
-    }
-
-    [[nodiscard]] inline bool visible() const
-    {
-        return !m_line.isNull() && m_line->visible();
     }
 
     inline void set_movable(bool movable)
@@ -291,6 +265,36 @@ public:
             m_line->clear_max_value();
     }
 
+protected:
+    void _set_visible(bool visible) override
+    {
+        if (m_line.isNull())
+            return;
+        m_line->setVisible(visible);
+        m_line->replot();
+    }
+
+    bool _visible() const override { return !m_line.isNull() && m_line->visible(); }
+
+    void _set_selected(bool selected) override
+    {
+        if (m_line.isNull())
+            return;
+        m_line->setSelected(selected);
+        m_line->replot();
+    }
+
+    bool _selected() const override { return !m_line.isNull() && m_line->selected(); }
+
+    void _set_color(const QColor& color) override
+    {
+        if (!m_line.isNull())
+            m_line->set_color(color);
+    }
+
+    QColor _color() const override { return m_line.isNull() ? QColor() : m_line->color(); }
+
+public:
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:

@@ -91,6 +91,13 @@ class SciQLopVerticalSpan : public SciQLopRangeItemInterface
     friend class MultiPlotsVerticalSpan;
 
 protected:
+    void _set_visible(bool visible) override { _base.set_visible(visible); }
+    bool _visible() const override { return _base.visible(); }
+    void _set_color(const QColor& color) override { _base.set_color(color); }
+    QColor _color() const override { return _base.color(); }
+    void _set_selected(bool selected) override { _base.set_selected(selected); }
+    bool _selected() const override { return _base.selected(); }
+
     inline void select_lower_border(bool selected)
     {
         qptr_apply(_impl, [selected](auto& item) { item->select_lower_border(selected); });
@@ -117,13 +124,6 @@ public:
     virtual ~SciQLopVerticalSpan() override = default;
 
     inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
-
-    inline void set_visible(bool visible) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        _base.set_visible(visible);
-    }
-    inline bool visible() const noexcept override { return _base.visible(); }
 
     inline void set_range(const SciQLopPlotRange& horizontal_range) noexcept override
     {
@@ -159,13 +159,6 @@ public:
         qptr_apply(_impl, [px_range](auto& item) { item->set_pixel_range(px_range); });
     }
 
-    inline void set_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        _base.set_color(color);
-    }
-    [[nodiscard]] inline QColor color() const { return _base.color(); }
-
     inline void set_borders_color(const QColor& color)
     {
         SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
@@ -186,13 +179,6 @@ public:
         _base.set_line_style(style);
     }
     [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
-
-    inline void set_selected(bool selected)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
-        _base.set_selected(selected);
-    }
-    [[nodiscard]] inline bool selected() const noexcept { return _base.selected(); }
 
     inline void set_read_only(bool read_only)
     {

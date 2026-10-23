@@ -105,20 +105,10 @@ public:
             throw std::invalid_argument("plot cannot be nullptr");
         else
             m_item = new impl::PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
+        _follow_selection(m_item);
     }
 
     virtual ~SciQLopPixmapItem() { qcp_item_remove(m_item); }
-
-    inline void set_visible(bool visible) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    [[nodiscard]] inline bool visible() const noexcept override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
 
     //! The top-left corner, in the item's coordinates.
     [[nodiscard]] inline QPointF position() const noexcept override
@@ -150,5 +140,42 @@ public:
     {
         SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
         qptr_apply(m_item, [movable](auto&& item) { item->setMovable(movable); });
+    }
+
+    [[nodiscard]] inline bool movable() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->movable(); }, false);
+    }
+
+    [[nodiscard]] inline QString tool_tip() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
+    }
+
+    inline void set_tool_tip(const QString& tool_tip) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+        qptr_apply(m_item, [tool_tip](auto&& item) { item->setToolTip(tool_tip); });
+    }
+
+protected:
+    void _set_visible(bool visible) override
+    {
+        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
+    }
+
+    bool _visible() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
+    }
+
+    void _set_selected(bool selected) override
+    {
+        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
+    }
+
+    bool _selected() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
     }
 };

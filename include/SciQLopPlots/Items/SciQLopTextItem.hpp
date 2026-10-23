@@ -34,7 +34,7 @@
 
 namespace impl
 {
-class TextItem : public SciQLopPlotItem<QCPItemText>
+class TextItem : public SciQLopPlotItem<QCPItemText>, public SciQlopItemWithToolTip
 {
     Q_OBJECT
 
@@ -96,21 +96,65 @@ public:
             throw std::runtime_error("Plot is null");
         else
             m_item = new impl::TextItem(plot->qcp_plot(), text, position, movable, coordinates);
+        _follow_selection(m_item);
     }
 
     virtual ~SciQLopTextItem() { qcp_item_remove(m_item); }
 
-    inline void set_visible(bool visible) noexcept override
+    [[nodiscard]] inline QString tool_tip() const noexcept override
     {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
+        return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
+    }
+
+    inline void set_tool_tip(const QString& tool_tip) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+        qptr_apply(m_item, [tool_tip](auto&& item) { item->setToolTip(tool_tip); });
+    }
+
+    inline void set_movable(bool movable) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
+        qptr_apply(m_item, [movable](auto&& item) { item->setMovable(movable); });
+    }
+
+    [[nodiscard]] inline bool movable() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->movable(); }, false);
+    }
+
+protected:
+    void _set_visible(bool visible) override
+    {
         qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
     }
 
-    [[nodiscard]] inline bool visible() const noexcept override
+    bool _visible() const override
     {
         return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
     }
 
+    void _set_selected(bool selected) override
+    {
+        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
+    }
+
+    bool _selected() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
+    }
+
+    void _set_color(const QColor& color) override
+    {
+        qptr_apply(m_item, [color](auto&& item) { item->setColor(color); item->replot(); });
+    }
+
+    QColor _color() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->color(); });
+    }
+
+public:
     virtual inline void set_position(const QPointF& pos) noexcept override
     {
         SCIQLOP_ON_OWNER_THREAD(set_position(pos));
@@ -131,17 +175,6 @@ public:
     QString text() const
     {
         return qptr_apply_or(m_item, [](auto& item) { return item->text(); });
-    }
-
-    void set_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
-    }
-
-    [[nodiscard]] QColor color() const
-    {
-        return qptr_apply_or(m_item, [](auto& item) { return item->color(); });
     }
 
     void set_font_size(double size)

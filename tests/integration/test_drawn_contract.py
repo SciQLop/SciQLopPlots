@@ -10,11 +10,15 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtGui import QColor, QPixmap
 
 import SciQLopPlots
-from SciQLopPlots import (GraphType, SciQLopDrawnObject, SciQLopMultiPlotPanel, SciQLopNDProjectionPlot,
-                          SciQLopPlot, SciQLopPlotRange, SciQLopTimeSeriesPlot)
+from SciQLopPlots import (GraphType, SciQLopCurvedLineItem, SciQLopDrawnObject, SciQLopEllipseItem,
+                          SciQLopHorizontalLine, SciQLopHorizontalSpan, SciQLopMultiPlotPanel,
+                          SciQLopNDProjectionPlot, SciQLopPixmapItem, SciQLopPlot, SciQLopPlotRange,
+                          SciQLopRectangularSpan, SciQLopStraightLine, SciQLopTextItem, SciQLopTimeSeriesPlot,
+                          SciQLopVerticalLine, SciQLopVerticalSpan)
 from conftest import off_thread, record
 
 OK, RAISE = "ok", "raise"
@@ -169,6 +173,34 @@ NOT_BUILDABLE["SciQLopHistogramRemote"] = "no Python factory makes one"
 ROWS.append(Row("component", ("SciQLopGraphComponentInterface",), {
     "SciQLopGraphComponentInterface": lambda h: h.plot.plot(X, np.sin(X), labels=["a"]).components()[0],
 }, {"visible": OK, "selected": OK, "name": OK, "color": OK}))
+
+
+ALL = {"visible": OK, "selected": OK, "name": OK, "color": OK}
+R = SciQLopPlotRange
+
+ROWS += [
+    Row("text and lines", ("SciQLopTextItem", "SciQLopCurvedLineItem", "SciQLopStraightLine",
+                           "SciQLopVerticalLine", "SciQLopHorizontalLine"), {
+        "SciQLopTextItem": lambda h: SciQLopTextItem(h.plot, "t", QPointF(10, 10)),
+        "SciQLopCurvedLineItem": lambda h: SciQLopCurvedLineItem(h.plot, QPointF(0, 0), QPointF(5, 5)),
+        "SciQLopStraightLine": lambda h: SciQLopStraightLine(h.plot, 1.0),
+        "SciQLopVerticalLine": lambda h: SciQLopVerticalLine(h.plot, 1.0),
+        "SciQLopHorizontalLine": lambda h: SciQLopHorizontalLine(h.plot, 0.5),
+    }, ALL),
+    Row("ellipse", ("SciQLopEllipseItem",), {
+        "SciQLopEllipseItem": lambda h: SciQLopEllipseItem(h.plot, QRectF(10, 10, 20, 20)),
+    }, ALL),
+    Row("pixmap", ("SciQLopPixmapItem",), {
+        "SciQLopPixmapItem": lambda h: SciQLopPixmapItem(h.plot, QPixmap(4, 4), QRectF(1, 1, 2, 2)),
+    }, {"visible": OK, "selected": OK, "name": OK, "color": RAISE}),
+    Row("span", ("SciQLopVerticalSpan", "SciQLopHorizontalSpan", "SciQLopRectangularSpan"), {
+        "SciQLopVerticalSpan": lambda h: SciQLopVerticalSpan(h.plot, R(1.0, 2.0)),
+        "SciQLopHorizontalSpan": lambda h: SciQLopHorizontalSpan(h.plot, R(1.0, 2.0)),
+        "SciQLopRectangularSpan": lambda h: SciQLopRectangularSpan(h.plot, R(1.0, 2.0), R(1.0, 2.0)),
+    }, ALL),
+]
+ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
+             "SciQLopBoundingRectItemInterface", "SciQLopPolygonItemInterface", "SciQLopRangeItemInterface"}
 
 
 # --- rows: each task inserts its families above this line --------------------------------------

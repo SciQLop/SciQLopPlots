@@ -1,0 +1,63 @@
+"""Items under SciQLopDrawnObject: the stubs that did nothing, and items whose plot is gone."""
+import pytest
+from PySide6.QtCore import QCoreApplication, QEvent, QPointF, QRectF
+from PySide6.QtGui import QColor, QPixmap
+
+from SciQLopPlots import SciQLopEllipseItem, SciQLopPixmapItem, SciQLopPlot, SciQLopTextItem
+from conftest import off_thread, process_events, record
+
+MAKERS = {
+    "text": lambda p: SciQLopTextItem(p, "t", QPointF(10, 10)),
+    "ellipse": lambda p: SciQLopEllipseItem(p, QRectF(10, 10, 20, 20)),
+    "pixmap": lambda p: SciQLopPixmapItem(p, QPixmap(4, 4), QRectF(1, 1, 2, 2)),
+}
+
+
+@pytest.mark.parametrize("kind", ["text", "pixmap"])
+def test_a_tooltip_round_trips(plot, kind):
+    item = MAKERS[kind](plot)
+    item.set_tool_tip("hello")
+    assert item.tool_tip() == "hello"
+
+
+@pytest.mark.parametrize("kind", ["text", "ellipse", "pixmap"])
+def test_movable_round_trips(plot, kind):
+    item = MAKERS[kind](plot)
+    item.set_movable(True)
+    assert item.movable()
+    item.set_movable(False)
+    assert not item.movable()
+
+
+def test_selecting_a_text_item_signals_once_though_neoqcp_signals_too(plot):
+    text = MAKERS["text"](plot)
+    seen = record(text.selection_changed)
+    text.set_selected(True)
+    assert (text.selected(), seen) == (True, [True])
+
+
+def _flush_deferred_delete():
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    process_events()
+
+
+def test_an_item_whose_plot_is_gone_ignores_every_set(qtbot):  # Review Focus 3
+    plot = SciQLopPlot()
+    text = SciQLopTextItem(plot, "t", QPointF(10, 10))  # no parent: it outlives the plot
+    seen = [record(text.selection_changed), record(text.visible_changed), record(text.color_changed)]
+    plot.deleteLater()
+    _flush_deferred_delete()
+    text.set_selected(True)
+    text.set_visible(True)
+    text.set_color(QColor("red"))
+    assert (text.selected(), text.visible(), text.color().isValid(), seen) == (False, False, False, [[], [], []])
+
+
+def test_a_queued_set_running_after_the_plot_is_gone_is_harmless(qtbot):  # Review Focus 2
+    plot = SciQLopPlot()
+    text = SciQLopTextItem(plot, "t", QPointF(10, 10))
+    seen = record(text.visible_changed)
+    off_thread(lambda: text.set_visible(False))
+    plot.deleteLater()
+    _flush_deferred_delete()  # the plot goes first, then the queued set runs on a null item
+    assert (text.visible(), seen) == (False, [])

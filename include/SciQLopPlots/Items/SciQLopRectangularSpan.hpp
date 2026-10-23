@@ -84,13 +84,6 @@ public:
 
     inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
 
-    inline void set_visible(bool visible) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        _base.set_visible(visible);
-    }
-    inline bool visible() const noexcept override { return _base.visible(); }
-
     inline void set_key_range(const SciQLopPlotRange& range) noexcept
     {
         SCIQLOP_ON_OWNER_THREAD(set_key_range(range));
@@ -113,13 +106,6 @@ public:
         return qptr_apply_or(_impl, [](auto& item) { return item->value_range(); });
     }
 
-    inline void set_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        _base.set_color(color);
-    }
-    [[nodiscard]] inline QColor color() const { return _base.color(); }
-
     inline void set_borders_color(const QColor& color)
     {
         SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
@@ -141,13 +127,6 @@ public:
     }
     [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
 
-    inline void set_selected(bool selected)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
-        _base.set_selected(selected);
-    }
-    [[nodiscard]] inline bool selected() const noexcept { return _base.selected(); }
-
     inline void set_read_only(bool read_only)
     {
         SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
@@ -163,6 +142,16 @@ public:
     [[nodiscard]] inline QString tool_tip() const noexcept override { return _base.tool_tip(); }
 
     inline void replot() override { _base.replot(); }
+
+protected:
+    void _set_visible(bool visible) override { _base.set_visible(visible); }
+    bool _visible() const override { return _base.visible(); }
+    void _set_color(const QColor& color) override { _base.set_color(color); }
+    QColor _color() const override { return _base.color(); }
+    void _set_selected(bool selected) override { _base.set_selected(selected); }
+    bool _selected() const override { return _base.selected(); }
+
+public:
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
