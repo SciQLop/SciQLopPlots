@@ -91,6 +91,7 @@ void SciQLopNDProjectionPane::rescale_axes(const QList<SciQLopPlotAxisInterface*
 }
 
 SciQLopNDProjectionPlot::SciQLopNDProjectionPlot(std::size_t projection_count, QWidget* parent)
+        : SciQLopPlotInterface(parent)
 {
     auto layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);

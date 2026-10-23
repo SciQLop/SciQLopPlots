@@ -439,3 +439,10 @@ class TestProjectionGraphIsConcrete:
         panel.set_time_axis_range(SciQLopPlotRange(1.0e9, 1.0e9 + 3600))
         qtbot.waitUntil(lambda: len(calls) > 0, timeout=5000)
         assert calls, "the projection callable was never invoked"
+
+
+def test_a_projection_plot_takes_the_parent_it_is_given(qtbot):
+    from PySide6.QtWidgets import QWidget
+    parent = QWidget()
+    qtbot.addWidget(parent)
+    assert SciQLopNDProjectionPlot(3, parent).parent() is parent
