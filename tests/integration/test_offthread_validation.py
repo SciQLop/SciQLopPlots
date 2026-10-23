@@ -75,6 +75,8 @@ def _two_graphs_components(qtbot):
 CASES = {
     "column fill against itself": (_graph, lambda g: g.set_fill_between(0, 0)),
     "column fill negative": (_graph, lambda g: g.set_fill_between(-1, 1)),
+    "column fill to value negative": (_graph, lambda g: g.set_fill_to_value(-1, 0.0)),
+    "column fill colour negative": (_graph, lambda g: g.set_fill_color(-1, QColor("red"))),
     "column error bars same bound twice": (_graph, lambda g: g.set_error_bars(0, 1, 1)),
     "component fill against itself": (_components, lambda cs: cs[0].set_fill_between(cs[0])),
     "component error bars same bound twice": (

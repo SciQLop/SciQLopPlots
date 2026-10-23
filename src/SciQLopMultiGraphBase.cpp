@@ -279,9 +279,10 @@ void notify_component(const SciQLopMultiGraphBase& graph, int column,
 void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
 {
     sqp::validation::validate_finite(value, "set_fill_to_value");
+    const auto invalid = "set_fill_to_value: invalid column " + std::to_string(column);
+    require(column >= 0, invalid);
     SCIQLOP_ON_OWNER_THREAD(set_fill_to_value(column, value));
-    require(_multiGraph && _multiGraph->setComponentFill(column, value),
-            "set_fill_to_value: invalid column " + std::to_string(column));
+    require(_multiGraph && _multiGraph->setComponentFill(column, value), invalid);
     notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
     Q_EMIT replot();
 }
@@ -309,11 +310,12 @@ void SciQLopMultiGraphBase::clear_fill(int column)
 
 void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
 {
+    const auto no_fill = "column " + std::to_string(column) + " has no fill";
+    require(column >= 0, no_fill);
     SCIQLOP_ON_OWNER_THREAD(set_fill_color(column, color));
     if (!_multiGraph)
         return;
-    require(_multiGraph->componentFill(column).has_value(),
-            "column " + std::to_string(column) + " has no fill");
+    require(_multiGraph->componentFill(column).has_value(), no_fill);
     _multiGraph->setComponentFillBrush(column, QBrush(color));
     notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
     Q_EMIT replot();
