@@ -139,9 +139,13 @@ void SciQLopDrawnObject::set_name(const QString& name)
         return;
     if (objectName() == name)
         return;
+    // objectNameChanged and the parts _named renames run slots, which may delete this.
+    const QPointer<SciQLopDrawnObject> alive(this);
     setObjectName(name);
-    _named(name);
-    Q_EMIT name_changed(name);
+    if (alive)
+        _named(name);
+    if (alive)
+        Q_EMIT name_changed(name);
 }
 
 QColor SciQLopDrawnObject::color() const

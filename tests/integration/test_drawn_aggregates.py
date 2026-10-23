@@ -202,3 +202,34 @@ def test_a_slot_deleting_another_pane_curve_mid_hide_keeps_the_projection_signal
     first.visible_changed.connect(lambda _: shiboken6.delete(second))
     projection.set_visible(False)  # the first curve hides, its slot deletes the second
     assert (len(projection.components()), projection.visible(), seen) == (2, False, [False])
+
+
+def _first_pane_curve(projection):
+    return projection.components()[0].parent()
+
+
+def test_a_slot_deleting_the_projection_mid_hide_does_not_crash(qtbot):
+    import shiboken6
+    _nd, projection = _three_pane_projection(qtbot)
+    _first_pane_curve(projection).visible_changed.connect(lambda _: shiboken6.delete(projection))
+    projection.set_visible(False)  # _set_visible went on to update the colour scale of a dead self
+    process_events()
+    assert not shiboken6.isValid(projection)
+
+
+def test_a_slot_deleting_the_projection_mid_select_does_not_crash(qtbot):  # guard
+    import shiboken6
+    _nd, projection = _three_pane_projection(qtbot)
+    _first_pane_curve(projection).selection_changed.connect(lambda _: shiboken6.delete(projection))
+    projection.set_selected(True)
+    process_events()
+    assert not shiboken6.isValid(projection)
+
+
+def test_a_slot_deleting_the_projection_mid_rename_does_not_crash(qtbot):
+    import shiboken6
+    _nd, projection = _three_pane_projection(qtbot)
+    projection.components()[0].name_changed.connect(lambda _: shiboken6.delete(projection))
+    projection.name = "renamed"  # the base emitted name_changed on a dead self after _named
+    process_events()
+    assert not shiboken6.isValid(projection)

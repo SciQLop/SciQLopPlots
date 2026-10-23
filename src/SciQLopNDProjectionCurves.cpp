@@ -127,8 +127,13 @@ void SciQLopNDProjectionCurves::_seed_parts()
 void SciQLopNDProjectionCurves::_named(const QString& name)
 {
     SciQLopGraphInterface::_named(name);
+    // A component's name_changed slot may delete this projection and the later components.
+    QList<QPointer<SciQLopGraphComponentInterface>> guarded;
     for (auto* component : components())
-        component->set_name(name);
+        guarded.append(component);
+    for (const auto& component : guarded)
+        if (component)
+            component->set_name(name);
 }
 
 QStringList SciQLopNDProjectionCurves::labels() const noexcept
@@ -362,8 +367,11 @@ void SciQLopNDProjectionCurves::set_in_legend(bool in_legend)
 
 void SciQLopNDProjectionCurves::_set_visible(bool visible)
 {
+    // A pane curve's visible_changed slot may delete this projection mid-loop.
+    const QPointer<SciQLopNDProjectionCurves> self(this);
     _for_each_curve([visible](SciQLopCurve* curve) { curve->set_visible(visible); });
-    _update_color_scale();
+    if (self)
+        _update_color_scale();
 }
 
 bool SciQLopNDProjectionCurves::_visible() const
