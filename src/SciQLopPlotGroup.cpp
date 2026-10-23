@@ -53,8 +53,9 @@ bool is_projection_piece(const SciQLopNDProjectionPlot* projection,
 }
 
 SciQLopPlotGroup::SciQLopPlotGroup(const QString& name, SciQLopPlotInterface* plot)
-        : QObject(plot), m_plot(plot), m_name(name)
+        : SciQLopDrawnObject(plot), m_plot(plot)
 {
+    set_name(name);
 }
 
 SciQLopPlotGroup::~SciQLopPlotGroup()
@@ -64,10 +65,8 @@ SciQLopPlotGroup::~SciQLopPlotGroup()
             (void)group->parentPlot()->removePlottableGroup(group);
 }
 
-void SciQLopPlotGroup::set_name(const QString& name)
+void SciQLopPlotGroup::_named(const QString& name)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_name(name));
-    m_name = name;
     for (const auto& group : m_canvas_groups)
         if (group)
         {
@@ -115,6 +114,9 @@ void SciQLopPlotGroup::add(SciQLopPlottableInterface* member)
             left.append(other);
     m_members.append(member);
     connect(member, &QObject::destroyed, this, &SciQLopPlotGroup::forget_destroyed_members);
+    connect(member, &SciQLopDrawnObject::visible_changed, this,
+            [this] { _notify_visible(_visible()); });
+    _seed_parts();
     if (auto* graph = qobject_cast<SciQLopGraphInterface*>(member))
         connect(graph, &SciQLopGraphInterface::component_list_changed, this,
                 [this, member] { sync_canvas_groups(member); });
@@ -134,6 +136,7 @@ bool SciQLopPlotGroup::forget(SciQLopPlottableInterface* member)
         return false;
     disconnect(member, nullptr, this, nullptr);
     m_members.removeAll(member);
+    _seed_parts();
     return true;
 }
 
@@ -156,7 +159,7 @@ QCPPlottableGroup* SciQLopPlotGroup::canvas_group(QCustomPlot* canvas)
     for (const auto& group : m_canvas_groups)
         if (group && group->parentPlot() == canvas)
             return group;
-    auto* group = canvas->addPlottableGroup(m_name);
+    auto* group = canvas->addPlottableGroup(objectName());
     m_canvas_groups.append(group);
     // Toggling the members, not the per-pane groups, keeps every pane in step and fires each
     // member's visible_changed (QCPLayerable::setVisible alone would leave the inspector stale).
@@ -178,22 +181,28 @@ void SciQLopPlotGroup::sync_canvas_groups(SciQLopPlottableInterface* member)
 void SciQLopPlotGroup::forget_destroyed_members()
 {
     // destroyed() fires after Qt has nulled the QPointer to the dying member.
-    if (m_members.removeIf([](const auto& m) { return m.isNull(); }) > 0)
+    const bool forgot = m_members.removeIf([](const auto& m) { return m.isNull(); }) > 0;
+    _seed_parts();
+    if (forgot)
         Q_EMIT members_changed();
 }
 
-bool SciQLopPlotGroup::visible() const
+bool SciQLopPlotGroup::_visible() const
 {
     const auto live = members();
     return std::ranges::any_of(live, [](SciQLopPlottableInterface* m) { return m->visible(); });
 }
 
-void SciQLopPlotGroup::set_visible(bool visible)
+void SciQLopPlotGroup::_set_visible(bool visible)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
     // A member's visible_changed slot may remove another member: iterate guarded pointers.
     const auto snapshot = m_members;
     for (const auto& member : snapshot)
         if (member)
             member->set_visible(visible);
+}
+
+void SciQLopPlotGroup::_seed_parts()
+{
+    _seed_visible(_visible());
 }

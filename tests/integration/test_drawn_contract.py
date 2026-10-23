@@ -217,6 +217,15 @@ ROWS += [
 ABSTRACT.add("SciQLopMultiPlotObject")
 
 
+def _group(hosts):
+    plot = hosts.plot
+    return plot.group("g", [plot.plot(X, np.sin(X), labels=["a"]), plot.plot(X, np.cos(X), labels=["b"])])
+
+
+ROWS.append(Row("group", ("SciQLopPlotGroup",), {"SciQLopPlotGroup": _group},
+                {"visible": OK, "selected": RAISE, "name": OK, "color": RAISE}))
+
+
 # --- rows: each task inserts its families above this line --------------------------------------
 # (parametrize reads ROWS when the test functions below are defined, so rows must come first)
 

@@ -26,6 +26,8 @@
 #include <QPointer>
 #include <QString>
 
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
+
 class SciQLopPlotInterface;
 class SciQLopPlottableInterface;
 class QCPPlottableGroup;
@@ -37,12 +39,11 @@ class QCustomPlot;
  *
  *  The group holds its members, it doesn't own them. Create it with SciQLopPlotInterface::group.
  */
-class SciQLopPlotGroup : public QObject
+class SciQLopPlotGroup : public SciQLopDrawnObject
 {
     Q_OBJECT
 
     SciQLopPlotInterface* m_plot;
-    QString m_name;
     QList<QPointer<SciQLopPlottableInterface>> m_members;
     QList<QPointer<QCPPlottableGroup>> m_canvas_groups;
 
@@ -51,6 +52,7 @@ class SciQLopPlotGroup : public QObject
     QCPPlottableGroup* canvas_group(QCustomPlot* canvas);
     void forget_destroyed_members();
     bool forget(SciQLopPlottableInterface* member);
+    void _seed_parts();
 
     // Made by SciQLopPlotInterface::group, which checks the thread and the members.
     SciQLopPlotGroup(const QString& name, SciQLopPlotInterface* plot);
@@ -59,21 +61,21 @@ class SciQLopPlotGroup : public QObject
 public:
     ~SciQLopPlotGroup() override;
 
-    QString name() const { return m_name; }
-    void set_name(const QString& name);
-
     QList<SciQLopPlottableInterface*> members() const;
     //! Raises ValueError for a plottable of another plot, or a pane piece of a projection curve.
     void add(SciQLopPlottableInterface* member);
     void remove(SciQLopPlottableInterface* member);
-
-    //! True while any member is visible.
-    bool visible() const;
-    void set_visible(bool visible);
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
     Q_SIGNAL void members_changed();
+
+protected:
+    bool _always_apply() const override { return true; }
+    //! True while any member is visible.
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    void _named(const QString& name) override;
 };
