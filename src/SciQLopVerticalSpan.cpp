@@ -156,8 +156,7 @@ SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange hor
 
     connect(_impl.data(), &impl::VerticalSpan::range_changed, this,
         &SciQLopVerticalSpan::range_changed);
-    connect(_impl.data(), &QCPAbstractItem::selectionChanged, this,
-        &SciQLopVerticalSpan::selectionChanged);
+    _follow_selection(_impl.data());
     connect(_impl.data(), &impl::VerticalSpan::lower_border_selection_changed, this,
         &SciQLopVerticalSpan::lower_border_selection_changed);
     connect(_impl.data(), &impl::VerticalSpan::upper_border_selection_changed, this,

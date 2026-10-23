@@ -158,6 +158,5 @@ signals:
 #endif
     Q_SIGNAL void key_range_changed(SciQLopPlotRange new_range);
     Q_SIGNAL void value_range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 };

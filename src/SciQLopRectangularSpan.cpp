@@ -101,8 +101,7 @@ SciQLopRectangularSpan::SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRan
         &SciQLopRectangularSpan::key_range_changed);
     connect(_impl.data(), &impl::RectangularSpan::value_range_changed, this,
         &SciQLopRectangularSpan::value_range_changed);
-    connect(_impl.data(), &QCPAbstractItem::selectionChanged, this,
-        &SciQLopRectangularSpan::selectionChanged);
+    _follow_selection(_impl.data());
     connect(_impl.data(), &impl::RectangularSpan::delete_requested, this,
         &SciQLopRectangularSpan::delete_requested);
 

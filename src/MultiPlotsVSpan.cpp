@@ -58,7 +58,7 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
         new_span->set_selected(_selected);
         QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
                          &MultiPlotsVerticalSpan::set_range);
-        QObject::connect(new_span, &SciQLopVerticalSpan::selectionChanged, this,
+        QObject::connect(new_span, &SciQLopVerticalSpan::selection_changed, this,
                          &MultiPlotsVerticalSpan::set_selected);
         QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
                          &MultiPlotsVerticalSpan::select_lower_border);

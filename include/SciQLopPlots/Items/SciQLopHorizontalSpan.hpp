@@ -162,6 +162,5 @@ public:
 signals:
 #endif
     Q_SIGNAL void range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void selectionChanged(bool);
     Q_SIGNAL void delete_requested();
 };

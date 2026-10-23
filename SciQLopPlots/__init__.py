@@ -612,13 +612,22 @@ _SNAKE_CASE_ALIASES = {
        # The two subclasses override addObject/removeObject: each needs its own alias.
        for cls in (SciQLopPlotsBindings.SciQLopMultiPlotObject, SciQLopPlotsBindings.MultiPlotsVerticalSpan,
                    SciQLopPlotsBindings.MultiPlotsVerticalLine)},
-    SciQLopPlotsBindings.SciQLopVerticalSpan: {"selection_changed": "selectionChanged"},
-    SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selection_changed": "selectionChanged"},
-    SciQLopPlotsBindings.SciQLopRectangularSpan: {"selection_changed": "selectionChanged"},
 }
 for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
     for _new, _old in _aliases.items():
         setattr(_cls, _new, getattr(_cls, _old))
+
+# Old names kept as aliases of the native ones (docs/plans/2026-10-22-drawn-object-base-design.md),
+# deprecated. The same attribute under a second name, never a wrapper (see above); a warning on
+# connect would need a proxy object.
+_DEPRECATED_ALIASES = {
+    SciQLopPlotsBindings.SciQLopVerticalSpan: {"selectionChanged": "selection_changed"},
+    SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selectionChanged": "selection_changed"},
+    SciQLopPlotsBindings.SciQLopRectangularSpan: {"selectionChanged": "selection_changed"},
+}
+for _cls, _aliases in _DEPRECATED_ALIASES.items():
+    for _alias, _native in _aliases.items():
+        setattr(_cls, _alias, getattr(_cls, _native))
 
 
 def _public_names():

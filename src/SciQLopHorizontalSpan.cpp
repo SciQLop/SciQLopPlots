@@ -87,8 +87,7 @@ SciQLopHorizontalSpan::SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange
 
     connect(_impl.data(), &impl::HorizontalSpan::range_changed, this,
         &SciQLopHorizontalSpan::range_changed);
-    connect(_impl.data(), &QCPAbstractItem::selectionChanged, this,
-        &SciQLopHorizontalSpan::selectionChanged);
+    _follow_selection(_impl.data());
     connect(_impl.data(), &impl::HorizontalSpan::lower_border_selection_changed, this,
         &SciQLopHorizontalSpan::lower_border_selection_changed);
     connect(_impl.data(), &impl::HorizontalSpan::upper_border_selection_changed, this,
