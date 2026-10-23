@@ -181,10 +181,10 @@ void SciQLopPlotGroup::sync_canvas_groups(SciQLopPlottableInterface* member)
 void SciQLopPlotGroup::forget_destroyed_members()
 {
     // destroyed() fires after Qt has nulled the QPointer to the dying member.
-    const bool forgot = m_members.removeIf([](const auto& m) { return m.isNull(); }) > 0;
+    if (m_members.removeIf([](const auto& m) { return m.isNull(); }) == 0)
+        return;
     _seed_parts();
-    if (forgot)
-        Q_EMIT members_changed();
+    Q_EMIT members_changed();
 }
 
 bool SciQLopPlotGroup::_visible() const
