@@ -32,6 +32,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/Items/SciQLopTextItem.hpp"
 
@@ -52,6 +53,12 @@
 
 namespace
 {
+
+void select_drawn(QObject* obj, bool selected)
+{
+    if (auto* drawn = qobject_cast<SciQLopDrawnObject*>(obj))
+        drawn->set_selected(selected);
+}
 
 // The pane drawing \a component when it is a piece of a projection curve, else null.
 SciQLopNDProjectionPane* projection_piece_pane(const QObject* component)
@@ -303,11 +310,7 @@ void register_all_types()
                     }),
             };
         },
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto g = qobject_cast<SciQLopGraphInterface*>(obj);
-                g && g->selected() != s)
-                g->set_selected(s);
-        },
+        .set_selected = select_drawn,
     });
 
     types.register_type<SciQLopGraphComponentInterface>({
@@ -315,44 +318,32 @@ void register_all_types()
         .connect_children = nullptr,
         .label = projection_piece_label,
         .label_sources = projection_piece_label_sources,
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto c = qobject_cast<SciQLopGraphComponentInterface*>(obj))
-                c->set_selected(s);
-        },
+        .set_selected = select_drawn,
         .deletable = false,
     });
 
     types.register_type<SciQLopColorMap>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto cm = qobject_cast<SciQLopColorMap*>(obj))
-                cm->set_selected(s);
-        },
+        .set_selected = select_drawn,
     });
 
     types.register_type<SciQLopHistogram2D>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto h = qobject_cast<SciQLopHistogram2D*>(obj))
-                h->set_selected(s);
-        },
+        .set_selected = select_drawn,
     });
 
     types.register_type<SciQLopTimeline>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
-        .set_selected = [](QObject* obj, bool s) {
-            if (auto t = qobject_cast<SciQLopTimeline*>(obj))
-                t->set_selected(s);
-        },
+        .set_selected = select_drawn,
     });
 
     types.register_type<SciQLopTextItem>({
         .children = [](QObject*) -> QList<QObject*> { return {}; },
         .connect_children = nullptr,
-        .set_selected = nullptr,
+        .set_selected = select_drawn,
         .deletable = true,
     });
 

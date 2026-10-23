@@ -5,9 +5,9 @@ node deselects the old one, and that must happen before the new one is selected.
 """
 import numpy as np
 import pytest
-from PySide6.QtCore import QItemSelectionModel, QModelIndex
+from PySide6.QtCore import QItemSelectionModel, QModelIndex, QPointF
 
-from SciQLopPlots import InspectorView, PlotsModel, PlotsTreeView, SciQLopMultiPlotPanel
+from SciQLopPlots import InspectorView, PlotsModel, PlotsTreeView, SciQLopMultiPlotPanel, SciQLopTextItem
 from conftest import process_events
 
 X = np.linspace(0.0, 10.0, 50)
@@ -68,3 +68,20 @@ def test_graph_node_then_another_graph_node_moves_the_selection(inspected):
     inspected.click(inspected.graph)
     inspected.click(inspected.other)
     assert (_selection(inspected.graph), _selection(inspected.other)) == ([False] * 3, [True])
+
+
+def test_the_inspector_selects_a_text_item(plot):
+    text = SciQLopTextItem(plot, "note", QPointF(10, 10))
+    model = PlotsModel.instance()
+    model.addTopLevelNode(text)
+    model.set_selected([_row(model, QModelIndex(), text)], True)
+    assert text.selected()
+
+
+def test_the_inspector_selects_a_partly_selected_graph_whole(plot):
+    graph = plot.plot(X, THREE, labels=["a", "b", "c"])
+    graph.component(0).set_selected(True)
+    model = PlotsModel.instance()
+    model.addTopLevelNode(graph)
+    model.set_selected([_row(model, QModelIndex(), graph)], True)
+    assert _selection(graph) == [True, True, True]
