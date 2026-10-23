@@ -24,6 +24,8 @@
 #include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/helpers.hpp"
+#include <QPointer>
 #include <QTimer>
 #include <qcustomplot.h>
 
@@ -36,6 +38,7 @@ public:
     virtual void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) = 0;
     virtual void mouseReleaseEvent(QMouseEvent* event, const QPointF& startPos) = 0;
     virtual QCursor cursor(QMouseEvent* event) const noexcept = 0;
+    virtual void replot(bool immediate = false) = 0;
 };
 
 template <typename QCPAbstractItem_T>
@@ -58,7 +61,7 @@ public:
 
     virtual void move(double dx, double dy) = 0;
 
-    inline virtual void replot(bool immediate = false)
+    inline void replot(bool immediate = false) override
     {
         if (immediate)
         {
@@ -123,6 +126,14 @@ class SciQLopItemInterface : public SciQLopDrawnObject
 {
     Q_OBJECT
 
+    QPointer<QCPAbstractItem> m_qcp_item;
+
+    static void _replot(QCPAbstractItem* item)
+    {
+        if (auto* own = dynamic_cast<impl::SciQLopPlotItemBase*>(item))
+            own->replot();
+    }
+
 public:
     SciQLopItemInterface(QObject* parent = nullptr) : SciQLopDrawnObject { parent } { }
 
@@ -143,11 +154,33 @@ protected:
     inline virtual void replot() { WARN_ABSTRACT_METHOD; }
 
     //! NeoQCP selects an item on click: follow it, so selection_changed fires then too.
+    //! The item is also the one the visible and selected hooks below act on.
     void _follow_selection(QCPAbstractItem* item)
     {
+        m_qcp_item = item;
         if (item)
             connect(item, &QCPAbstractItem::selectionChanged, this,
                     &SciQLopItemInterface::_notify_selected, Qt::UniqueConnection);
+    }
+
+    void _set_visible(bool visible) override
+    {
+        qptr_apply(m_qcp_item, [visible](auto&& item) { item->setVisible(visible); _replot(item); });
+    }
+
+    bool _visible() const override
+    {
+        return qptr_apply_or(m_qcp_item, [](auto&& item) { return item->visible(); }, false);
+    }
+
+    void _set_selected(bool selected) override
+    {
+        qptr_apply(m_qcp_item, [selected](auto&& item) { item->setSelected(selected); _replot(item); });
+    }
+
+    bool _selected() const override
+    {
+        return qptr_apply_or(m_qcp_item, [](auto&& item) { return item->selected(); }, false);
     }
 
     inline virtual impl::SciQLopPlotItemBase* impl()

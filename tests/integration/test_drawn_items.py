@@ -2,8 +2,9 @@
 import pytest
 from PySide6.QtCore import QCoreApplication, QEvent, QPointF, QRectF
 from PySide6.QtGui import QColor, QPixmap
+from PySide6.QtWidgets import QWidget
 
-from SciQLopPlots import SciQLopEllipseItem, SciQLopPixmapItem, SciQLopPlot, SciQLopTextItem
+from SciQLopPlots import SciQLopCurvedLineItem, SciQLopEllipseItem, SciQLopPixmapItem, SciQLopPlot, SciQLopTextItem
 from conftest import off_thread, process_events, record
 
 MAKERS = {
@@ -18,6 +19,13 @@ def test_a_tooltip_round_trips(plot, kind):
     item = MAKERS[kind](plot)
     item.set_tool_tip("hello")
     assert item.tool_tip() == "hello"
+
+
+def test_a_curved_line_reads_the_tooltip_hover_shows_and_round_trips(plot):
+    line = SciQLopCurvedLineItem(plot, QPointF(0, 0), QPointF(5, 5), toolTip="ctor")
+    assert line.tool_tip() == "ctor"
+    line.set_tool_tip("hello")
+    assert line.tool_tip() == "hello"
 
 
 @pytest.mark.parametrize("kind", ["text", "ellipse", "pixmap"])
@@ -61,3 +69,14 @@ def test_a_queued_set_running_after_the_plot_is_gone_is_harmless(qtbot):  # Revi
     plot.deleteLater()
     _flush_deferred_delete()  # the plot goes first, then the queued set runs on a null item
     assert (text.visible(), seen) == (False, [])
+
+
+def test_an_ellipse_whose_neoqcp_item_is_gone_has_no_colour(qtbot):
+    plot = SciQLopPlot()
+    ellipse = MAKERS["ellipse"](plot)
+    qcp = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+    seen = []  # the ellipse outlives its NeoQCP item until the plot deletes its own children
+    qcp.destroyed.connect(lambda *_: seen.append(ellipse.color().isValid()))
+    plot.deleteLater()
+    _flush_deferred_delete()
+    assert seen == [False]

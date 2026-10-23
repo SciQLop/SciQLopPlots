@@ -152,7 +152,6 @@ protected:
     bool _selected() const override { return _base.selected(); }
 
 public:
-
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:

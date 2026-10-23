@@ -124,26 +124,6 @@ public:
     }
 
 protected:
-    void _set_visible(bool visible) override
-    {
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    bool _visible() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
-
-    void _set_selected(bool selected) override
-    {
-        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
-    }
-
-    bool _selected() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
-    }
-
     void _set_color(const QColor& color) override
     {
         qptr_apply(m_item, [color](auto&& item) { item->setColor(color); item->replot(); });

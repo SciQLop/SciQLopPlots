@@ -339,26 +339,6 @@ public:
     [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return pen().style(); }
 
 protected:
-    void _set_visible(bool visible) override
-    {
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    bool _visible() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
-
-    void _set_selected(bool selected) override
-    {
-        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
-    }
-
-    bool _selected() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
-    }
-
     void _set_color(const QColor& color) override
     {
         auto outline = pen();
@@ -366,7 +346,10 @@ protected:
         set_pen(outline);
     }
 
-    QColor _color() const override { return pen().color(); }
+    QColor _color() const override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->pen().color(); });
+    }
 };
 
 class SciQLopCurvedLineItem : public SciQLopLineItemInterface
@@ -393,6 +376,17 @@ public:
     }
 
     ~SciQLopCurvedLineItem() { qcp_item_remove(m_item); }
+
+    [[nodiscard]] inline QString tool_tip() const noexcept override
+    {
+        return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
+    }
+
+    inline void set_tool_tip(const QString& tool_tip) noexcept override
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+        qptr_apply(m_item, [tool_tip](auto&& item) { item->setToolTip(tool_tip); });
+    }
 
     [[nodiscard]] inline QPointF start_position() const noexcept
     {
@@ -461,26 +455,6 @@ public:
     }
 
 protected:
-    void _set_visible(bool visible) override
-    {
-        qptr_apply(m_item, [visible](auto&& item) { item->setVisible(visible); item->replot(); });
-    }
-
-    bool _visible() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->visible(); }, false);
-    }
-
-    void _set_selected(bool selected) override
-    {
-        qptr_apply(m_item, [selected](auto&& item) { item->setSelected(selected); item->replot(); });
-    }
-
-    bool _selected() const override
-    {
-        return qptr_apply_or(m_item, [](auto&& item) { return item->selected(); }, false);
-    }
-
     void _set_color(const QColor& color) override
     {
         qptr_apply(m_item, [color](auto&& item) { item->setColor(color); item->replot(); });
