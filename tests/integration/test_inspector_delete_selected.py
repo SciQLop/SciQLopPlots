@@ -56,14 +56,24 @@ def test_delete_current_component_does_not_crash(qtbot, sample_data):
     force_gc()
 
 
-def test_graph_selected_after_component_deleted(qtbot, sample_data):
+def _tree_selection(inspector):
+    """(current object, selected objects) of the inspector's tree."""
+    selection = inspector.findChild(PlotsTreeView).selectionModel()
+    return (PlotsModel.object(selection.currentIndex()),
+            [PlotsModel.object(i) for i in selection.selectedIndexes()])
+
+
+def test_the_tree_selects_the_graph_after_its_current_component_is_deleted(qtbot, sample_data):
     panel, inspector, graph, component = _make_component_current(qtbot, sample_data)
 
     component.deleteLater()
     _flush_deferred_deletes()
 
-    # The dead component is not read; the tree then selects the graph, which keeps that
-    # selection for components still to come.
+    # Intended, not an accident: removing the current row moves Qt's current index to its
+    # parent, and the inspector selects what is current. So the graph ends up selected, in the
+    # tree and in the graph itself, which keeps that selection for components still to come.
+    # The dead component is never read on the way (#116).
+    assert _tree_selection(inspector) == (graph, [graph])
     assert (graph.components(), graph.selected()) == ([], True)
     del panel, inspector
     force_gc()
