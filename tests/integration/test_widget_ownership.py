@@ -28,6 +28,7 @@ def _kept(obj):
 
 WIDGETS = {
     "SciQLopPlot": lambda parent: SciQLopPlot(parent),
+    "SciQLopPlot, parent keyword": lambda parent: SciQLopPlot(parent=parent),
     "SciQLopTimeSeriesPlot": lambda parent: SciQLopTimeSeriesPlot(parent),
     "SciQLopNDProjectionPlot": lambda parent: SciQLopNDProjectionPlot(3, parent),
     "SciQLopMultiPlotPanel": lambda parent: SciQLopMultiPlotPanel(parent),
@@ -65,6 +66,7 @@ def test_a_widget_built_with_a_parent_lives_as_long_as_the_parent(qtbot, name):
 @pytest.mark.parametrize("name", sorted(WIDGETS))
 def test_a_widget_built_without_a_parent_belongs_to_python(qtbot, name):  # guard
     widget, gone = _probe(name, None)
+    assert (widget.parent(), shiboken6.ownedByPython(widget)) == (None, True)
     del widget
     collect()
     assert gone == [True]
@@ -84,13 +86,15 @@ def test_a_widget_dies_with_a_python_owned_parent_that_is_collected(qtbot):  # r
 def test_a_queued_call_to_a_child_is_dropped_when_its_parent_dies_first(qtbot):  # review focus 4
     host = QWidget()
     plot = SciQLopPlot(host)
+    gone = on_destroyed(plot)
     worker = threading.Thread(target=lambda: plot.set_title("late"))
     worker.start()
     worker.join(timeout=10)
     assert not worker.is_alive()
+    assert plot.title() != "late"  # queued, not run yet
     shiboken6.delete(host)
     collect()  # set_title would run here; Qt dropped it with its context object
-    assert not shiboken6.isValid(plot)
+    assert (gone, shiboken6.isValid(plot)) == ([True], False)
 
 
 class _Panel(SciQLopMultiPlotPanel):

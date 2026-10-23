@@ -31,7 +31,8 @@ def _wrapped_original(function):
     if hasattr(function, "__wrapped__"):
         return function.__wrapped__
     cells = [c.cell_contents for c in getattr(function, "__closure__", None) or []]
-    return next((c for c in cells if _signatures(c)), None)
+    same_name = (c for c in cells if getattr(c, "__name__", None) == function.__name__)
+    return next((c for c in same_name if _signatures(c)), None)
 
 
 def _walk_bound_functions():
