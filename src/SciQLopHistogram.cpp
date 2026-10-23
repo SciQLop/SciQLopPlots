@@ -260,6 +260,7 @@ void SciQLopHistogram::set_bin_range(double lower, double upper)
     if (!(lower < upper))
         throw std::invalid_argument("histogram range: lower must be below upper");
     SCIQLOP_ON_OWNER_THREAD(set_bin_range(lower, upper));
+    // After the hop: set_log_bins is queued too, so only the owner thread reads log_bins() in call order.
     if (log_bins() && lower <= 0)
         throw std::invalid_argument("histogram range: log bins need a positive lower bound");
     if (_hist)

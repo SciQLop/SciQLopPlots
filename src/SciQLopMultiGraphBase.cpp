@@ -288,10 +288,11 @@ void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
 
 void SciQLopMultiGraphBase::set_fill_between(int column, int other)
 {
+    const auto invalid = "set_fill_between: invalid columns " + std::to_string(column) + ", "
+        + std::to_string(other);
+    require(column >= 0 && other >= 0 && column != other, invalid);
     SCIQLOP_ON_OWNER_THREAD(set_fill_between(column, other));
-    require(_multiGraph && _multiGraph->setComponentFillBetween(column, other),
-            "set_fill_between: invalid columns " + std::to_string(column) + ", "
-                + std::to_string(other));
+    require(_multiGraph && _multiGraph->setComponentFillBetween(column, other), invalid);
     notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
     Q_EMIT replot();
 }
@@ -321,10 +322,14 @@ void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
 void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, double cap_width)
 {
     require(cap_width >= 0, "set_error_bars: cap_width must be >= 0");
+    const auto invalid = "set_error_bars: invalid columns " + std::to_string(column) + ", "
+        + std::to_string(lower) + ", " + std::to_string(upper);
+    require(column >= 0 && lower >= 0 && upper >= 0 && lower != upper && column != lower
+                && column != upper,
+            invalid);
     SCIQLOP_ON_OWNER_THREAD(set_error_bars(column, lower, upper, cap_width));
     require(_multiGraph && _multiGraph->setComponentErrorBars(column, lower, upper, cap_width),
-            "set_error_bars: invalid columns " + std::to_string(column) + ", "
-                + std::to_string(lower) + ", " + std::to_string(upper));
+            invalid);
     notify_component(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
     Q_EMIT replot();
 }

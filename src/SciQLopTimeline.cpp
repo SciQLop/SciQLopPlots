@@ -320,7 +320,6 @@ QStringList SciQLopTimeline::edit_modes() const
 
 void SciQLopTimeline::set_edit_modes(const QStringList& names)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_edit_modes(names));
     QCPIntervals::EditModes modes;
     for (const auto& name : names)
     {
@@ -330,6 +329,7 @@ void SciQLopTimeline::set_edit_modes(const QStringList& names)
             throw std::invalid_argument("unknown edit mode: " + name.toStdString());
         modes |= it->second;
     }
+    SCIQLOP_ON_OWNER_THREAD(set_edit_modes(names));
     _intervals->setEditModes(modes);
 }
 
