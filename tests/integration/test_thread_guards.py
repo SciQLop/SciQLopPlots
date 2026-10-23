@@ -13,6 +13,8 @@ from PySide6.QtGui import QBrush, QColor, QFont, QPen, QPixmap
 
 from conftest import process_events
 from SciQLopPlots import (
+    GraphLineStyle,
+    GraphMarkerShape,
     LineTermination,
     MultiPlotsVerticalLine,
     MultiPlotsVerticalSpan,
@@ -369,3 +371,73 @@ def test_queued_call_on_deleted_item_is_dropped(plot):
     _in_thread(lambda: span.set_range(R(5.0, 6.0)))
     span.deleteLater()
     _settle()  # deletion and the queued call both run; must not crash
+
+
+def _three_components(plot):
+    import numpy as np
+    x = np.linspace(0, 10, 50)
+    graph = plot.plot(x, np.column_stack([np.sin(x), np.sin(x) - 1, np.sin(x) + 1]),
+                      labels=["a", "lo", "hi"])
+    _settle()
+    return graph.components()
+
+
+def _filled(component):
+    component.set_fill_to_value(0.0)
+    return component
+
+
+COMPONENT_CASES = {
+    "set_line_width": (lambda c, cs: c.set_line_width(7.0), lambda c: c.line_width(), 7.0),
+    "set_line_style": (lambda c, cs: c.set_line_style(GraphLineStyle.NoLine),
+                       lambda c: c.line_style(), GraphLineStyle.NoLine),
+    "set_marker_shape": (lambda c, cs: c.set_marker_shape(GraphMarkerShape.Circle),
+                         lambda c: c.marker_shape(), GraphMarkerShape.Circle),
+    "set_marker_size": (lambda c, cs: c.set_marker_size(13.0), lambda c: c.marker_size(), 13.0),
+    "set_marker_pen": (lambda c, cs: c.set_marker_pen(QPen(RED)),
+                       lambda c: c.marker_pen().color(), RED),
+    "set_fill_to_value": (lambda c, cs: c.set_fill_to_value(0.5), lambda c: c.has_fill(), True),
+    "set_fill_between": (lambda c, cs: c.set_fill_between(cs[1]), lambda c: c.has_fill(), True),
+}
+
+
+@pytest.mark.parametrize("name", sorted(COMPONENT_CASES))
+def test_component_setter_lands_on_gui_thread(plot, name):
+    call, read, value = COMPONENT_CASES[name]
+    components = _three_components(plot)
+    component = components[0]
+    before = read(component)
+    assert before != value, "pick a value that differs from the default"
+    out = _in_thread(lambda: call(component, components))
+    assert "error" not in out, out.get("error")
+    assert read(component) == before, "applied on the calling thread"
+    _settle()
+    assert read(component) == value
+
+
+def test_component_clear_fill_lands_on_gui_thread(plot):
+    component = _filled(_three_components(plot)[0])
+    _in_thread(component.clear_fill)
+    assert component.has_fill(), "applied on the calling thread"
+    _settle()
+    assert not component.has_fill()
+
+
+def test_component_fill_color_lands_on_gui_thread(plot):
+    component = _filled(_three_components(plot)[0])
+    _in_thread(lambda: component.set_fill_color(RED))
+    assert component.fill_color() != RED, "applied on the calling thread"
+    _settle()
+    assert component.fill_color() == RED
+
+
+def test_component_error_bars_land_on_gui_thread(plot):
+    """No getter for error bars: a direct slot records the thread that applied them."""
+    a, lo, hi = _three_components(plot)
+    appliers = []
+    a.error_bars_changed.connect(lambda: appliers.append(threading.get_ident()),
+                                 Qt.ConnectionType.DirectConnection)
+    _in_thread(lambda: a.set_error_bars(lo, hi))
+    _in_thread(a.clear_error_bars)
+    _settle()
+    assert appliers == [threading.get_ident()] * 2

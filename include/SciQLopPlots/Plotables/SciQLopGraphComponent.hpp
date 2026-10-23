@@ -28,6 +28,7 @@
 #include <plottables/plottable-graph2.h>
 #include <layoutelements/layoutelement-legend-group.h>
 #include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 
 class QMouseEvent;
 
@@ -132,10 +133,12 @@ public:
 
     inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
 
-    virtual void set_pen(const QPen& pen) noexcept override;
+    // The setters below are not noexcept: off the owner thread they queue themselves (allocates).
+    virtual void set_pen(const QPen& pen) override;
 
-    inline virtual void set_line_style(GraphLineStyle style) noexcept override
+    inline virtual void set_line_style(GraphLineStyle style) override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
         if (m_plottable)
         {
             std::visit(visitor { [style](QCPGraph* any)
@@ -159,8 +162,9 @@ public:
         }
     }
 
-    inline virtual void set_marker_shape(GraphMarkerShape marker) noexcept override
+    inline virtual void set_marker_shape(GraphMarkerShape marker) override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_marker_shape(marker));
         if (m_plottable)
         {
             auto set_scatter = [marker](auto* any)
@@ -181,8 +185,9 @@ public:
         }
     }
 
-    inline virtual void set_marker_pen(const QPen& pen) noexcept override
+    inline virtual void set_marker_pen(const QPen& pen) override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_marker_pen(pen));
         if (m_plottable)
         {
             auto set_scatter_pen = [&pen](auto* any)
@@ -204,8 +209,9 @@ public:
         }
     }
 
-    inline virtual void set_marker_size(qreal size) noexcept override
+    inline virtual void set_marker_size(qreal size) override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_marker_size(size));
         if (m_plottable)
         {
             auto set_scatter_size = [size](auto* any)
@@ -227,7 +233,7 @@ public:
         }
     }
 
-    virtual void set_line_width(const qreal width) noexcept override;
+    virtual void set_line_width(const qreal width) override;
 
     void set_fill_to_value(double value) override;
     void set_fill_between(SciQLopGraphComponentInterface* other) override;

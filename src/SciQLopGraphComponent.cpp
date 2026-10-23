@@ -93,7 +93,7 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
     _set_selected(false);
 }
 
-void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept
+void SciQLopGraphComponent::set_pen(const QPen& pen)
 {
     SCIQLOP_ON_OWNER_THREAD(set_pen(pen));
     const QColor before = _color();
@@ -128,8 +128,9 @@ void SciQLopGraphComponent::_apply_pen(const QPen& pen)
     }
 }
 
-void SciQLopGraphComponent::set_line_width(const qreal width) noexcept
+void SciQLopGraphComponent::set_line_width(const qreal width)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
     if (m_plottable)
     {
         if (m_componentIndex >= 0)
@@ -355,6 +356,7 @@ int SciQLopGraphComponent::sibling_index(SciQLopGraphComponentInterface* other) 
 void SciQLopGraphComponent::set_fill_to_value(double value)
 {
     sqp::validation::validate_finite(value, "set_fill_to_value");
+    SCIQLOP_ON_OWNER_THREAD(set_fill_to_value(value));
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -368,6 +370,7 @@ void SciQLopGraphComponent::set_fill_to_value(double value)
 
 void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* other)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(other, set_fill_between(other));
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -383,6 +386,7 @@ void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* oth
 
 void SciQLopGraphComponent::clear_fill()
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_fill());
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -396,6 +400,7 @@ void SciQLopGraphComponent::clear_fill()
 
 void SciQLopGraphComponent::set_fill_color(const QColor& color)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_fill_color(color));
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -428,6 +433,12 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
 {
     if (!(cap_width >= 0))
         throw std::invalid_argument("set_error_bars: cap_width must be >= 0");
+    if (SciQLopPlots::posted_to_owner_thread(
+            this, [this, lower = QPointer(lower), upper = QPointer(upper), cap_width] {
+                if (lower && upper)
+                    set_error_bars(lower, upper, cap_width);
+            }))
+        return;
     const auto ref = multi_ref();
     if (!ref)
     {
@@ -443,6 +454,7 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
 
 void SciQLopGraphComponent::clear_error_bars()
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_error_bars());
     const auto ref = multi_ref();
     if (!ref)
     {

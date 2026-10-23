@@ -51,17 +51,17 @@ public:
 
     virtual ~SciQLopGraphComponentInterface() = default;
 
-    inline virtual void set_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_pen(const QPen& pen) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_line_style(GraphLineStyle style) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_line_style(GraphLineStyle style) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_marker_shape(GraphMarkerShape marker) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_marker_shape(GraphMarkerShape marker) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_marker_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_marker_pen(const QPen& pen) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_marker_size(qreal size) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_marker_size(qreal size) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_line_width(const qreal width) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_line_width(const qreal width) { WARN_ABSTRACT_METHOD; }
 
     inline virtual QPen pen() const noexcept
     {
