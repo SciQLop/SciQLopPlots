@@ -374,7 +374,7 @@ void SciQLopGraphComponent::set_fill_to_value(double value)
 void SciQLopGraphComponent::set_fill_between(SciQLopGraphComponentInterface* other)
 {
     if (!other)
-        throw std::invalid_argument("the other component must belong to the same graph");
+        throw std::invalid_argument("set_fill_between: the other component is missing");
     if (other == this)
         throw std::invalid_argument("a component cannot be filled against itself");
     SCIQLOP_ON_OWNER_THREAD_WITH(other, set_fill_between(other));
@@ -441,7 +441,7 @@ void SciQLopGraphComponent::set_error_bars(SciQLopGraphComponentInterface* lower
     if (!(cap_width >= 0))
         throw std::invalid_argument("set_error_bars: cap_width must be >= 0");
     if (!lower || !upper)
-        throw std::invalid_argument("the other component must belong to the same graph");
+        throw std::invalid_argument("set_error_bars: a bound component is missing");
     if (lower == upper || lower == this || upper == this)
         throw std::invalid_argument("error bars need three distinct components");
     if (SciQLopPlots::posted_to_owner_thread(

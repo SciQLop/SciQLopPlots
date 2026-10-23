@@ -325,3 +325,26 @@ def test_wrapped_callback_rejects_the_dict_batch_form(to_batch):
         lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, getattr(SciQLopPlots, to_batch))
     with pytest.raises(TypeError, match="not the"):
         wrapped(0.0, 1.0)
+
+
+ONE_LINE = {
+    "single-line graph": lambda plot: plot.line(X, np.sin(X)).components()[0],
+    "curve (not a multigraph)": lambda plot: plot.parametric_curve(X, np.sin(X)).components()[0],
+}
+
+BAD_PARTNERS = {
+    "missing fill partner": (lambda c: c.set_fill_between(None), "missing"),
+    "fill against itself": (lambda c: c.set_fill_between(c), "against itself"),
+    "missing error bound": (lambda c: c.set_error_bars(None, c), "missing"),
+    "error bars on itself": (lambda c: c.set_error_bars(c, c), "three distinct"),
+}
+
+
+@pytest.mark.parametrize("bad", BAD_PARTNERS)
+@pytest.mark.parametrize("kind", ONE_LINE)
+def test_a_missing_or_identical_partner_raises_on_any_component(plot, kind, bad):
+    """Before the off-thread checks, a curve component only warned "unsupported" here."""
+    component = ONE_LINE[kind](plot)
+    call, message = BAD_PARTNERS[bad]
+    with pytest.raises(ValueError, match=message):
+        call(component)

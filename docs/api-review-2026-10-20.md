@@ -158,4 +158,5 @@ Item 1.1 for widgets, done:
 - A widget or non-drawn QObject built with a parent belongs to the parent, as in PySide. Shiboken skips its constructor heuristic on parent-management classes, so each constructor got explicit markup; a walk over the bound signatures catches a new class.
 - Fixed on the way: PropertiesPanel ignored its parent.
 - Break: code that dropped the last reference to delete a parented widget now keeps it until the parent dies. It calls deleteLater() or removes it.
+- Break: a component's set_fill_between and set_error_bars raise ValueError for a missing (None) or identical partner on every component, before the hop to the GUI thread. A component that is not part of a multigraph (a curve's) used to warn "unsupported" instead.
 - Drawn objects (items, graphs, legend) are part B.
