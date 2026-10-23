@@ -62,7 +62,9 @@ def test_graph_selected_after_component_deleted(qtbot, sample_data):
     component.deleteLater()
     _flush_deferred_deletes()
 
-    assert graph.selected() is False
+    # The dead component is not read; the tree then selects the graph, which keeps that
+    # selection for components still to come.
+    assert (graph.components(), graph.selected()) == ([], True)
     del panel, inspector
     force_gc()
 

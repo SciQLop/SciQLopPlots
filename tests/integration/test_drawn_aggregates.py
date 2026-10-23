@@ -164,3 +164,13 @@ def test_deleting_the_only_selected_component_is_silent_like_a_shrinking_set_dat
     assert (len(graph.components()), seen) == (1, [])
     graph.components()[0].set_selected(True)
     assert seen == [True]
+
+
+def test_a_graph_whose_last_selected_component_is_deleted_is_not_selected(plot):
+    import shiboken6
+    graph = plot.plot(X, np.sin(X), labels=["a"])
+    graph.components()[0].set_selected(True)
+    seen = record(graph.selection_changed)
+    shiboken6.delete(graph.components()[0])
+    process_events()
+    assert (graph.components(), graph.selected(), seen) == ([], False, [])

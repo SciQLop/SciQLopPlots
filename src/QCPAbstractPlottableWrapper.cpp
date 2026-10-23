@@ -80,6 +80,19 @@ void SQPQCPAbstractPlottableWrapper::_apply_graph_state(SciQLopGraphComponent* c
         component->set_selected(true);
 }
 
+// Parts added or removed: the graph's state is theirs again. With none left nothing drawn is
+// selected, while a hidden graph stays hidden for the next data.
+void SQPQCPAbstractPlottableWrapper::_track_parts()
+{
+    if (m_components.isEmpty())
+    {
+        m_selected_state = false;
+        return;
+    }
+    m_visible_state = _visible();
+    m_selected_state = _selected();
+}
+
 void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
 {
     // destroyed() fires after Qt has nulled the QPointer to the dying component.
@@ -91,6 +104,7 @@ void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
 
 void SQPQCPAbstractPlottableWrapper::_seed_parts()
 {
+    _track_parts();
     _seed_visible(_visible());
     _seed_selected(_selected());
 }
