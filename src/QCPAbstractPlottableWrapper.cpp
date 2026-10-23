@@ -56,6 +56,7 @@ void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* 
     m_components.append(component);
     if (component->plottable())
         component->plottable()->setWantsLegend(in_legend());
+    _apply_graph_state(component);
     connect(component, &SciQLopGraphComponent::replot, this,
             &SQPQCPAbstractPlottableWrapper::replot);
     // Connected before the inspector model sees the component, so this runs
@@ -63,11 +64,20 @@ void SQPQCPAbstractPlottableWrapper::_register_component(SciQLopGraphComponent* 
     connect(component, &QObject::destroyed, this,
             &SQPQCPAbstractPlottableWrapper::_forget_destroyed_components);
     connect(component, &SciQLopGraphComponentInterface::visible_changed, this,
-            [this] { _notify_visible(_visible()); });
+            [this] { _notify_visible(m_visible_state = _visible()); });
     connect(component, &SciQLopGraphComponentInterface::selection_changed, this,
-            [this] { _notify_selected(_selected()); });
+            [this] { _notify_selected(m_selected_state = _selected()); });
     _seed_parts();
     Q_EMIT this->component_list_changed();
+}
+
+// Before the component's signals reach this graph: its first state is no change.
+void SQPQCPAbstractPlottableWrapper::_apply_graph_state(SciQLopGraphComponent* component)
+{
+    if (!m_visible_state)
+        component->set_visible(false);
+    if (m_selected_state)
+        component->set_selected(true);
 }
 
 void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
@@ -140,6 +150,7 @@ QList<QColor> SQPQCPAbstractPlottableWrapper::colors() const noexcept
 // The components are copied: a slot of one may delete another.
 void SQPQCPAbstractPlottableWrapper::_set_visible(bool visible)
 {
+    m_visible_state = visible;
     const auto components = m_components;
     for (const auto& component : components)
         if (component)
@@ -148,11 +159,14 @@ void SQPQCPAbstractPlottableWrapper::_set_visible(bool visible)
 
 bool SQPQCPAbstractPlottableWrapper::_visible() const
 {
+    if (m_components.isEmpty())
+        return m_visible_state;
     return std::ranges::any_of(m_components, [](const auto& c) { return c && c->visible(); });
 }
 
 void SQPQCPAbstractPlottableWrapper::_set_selected(bool selected)
 {
+    m_selected_state = selected;
     const auto components = m_components;
     for (const auto& component : components)
         if (component)
@@ -161,5 +175,7 @@ void SQPQCPAbstractPlottableWrapper::_set_selected(bool selected)
 
 bool SQPQCPAbstractPlottableWrapper::_selected() const
 {
+    if (m_components.isEmpty())
+        return m_selected_state;
     return std::ranges::any_of(m_components, [](const auto& c) { return c && c->selected(); });
 }

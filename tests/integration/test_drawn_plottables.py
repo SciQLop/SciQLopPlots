@@ -58,3 +58,33 @@ def test_a_queued_set_on_a_graph_of_a_deleted_plot_is_dropped(qtbot):  # Review 
     plot.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     process_events()  # the graph was the queued call's context: Qt dropped the call with it
+
+
+def _late_graph(plot, kind):
+    plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
+    if kind == "line":
+        return plot.plot(lambda start, stop: [X, TWO])
+    return plot.parametric_curve(lambda start, stop: [X, TWO])
+
+
+@pytest.mark.parametrize("kind", ["line", "curve"])
+def test_hiding_a_graph_before_its_first_data_keeps_it_hidden(qtbot, plot, kind):
+    graph = _late_graph(plot, kind)
+    assert graph.components() == []
+    seen = record(graph.visible_changed)
+    graph.set_visible(False)
+    assert (graph.visible(), seen) == (False, [False])
+    qtbot.waitUntil(lambda: len(graph.components()) == 2, timeout=3000)
+    assert [c.visible() for c in graph.components()] == [False, False]
+    assert (graph.visible(), seen) == (False, [False])
+
+
+@pytest.mark.parametrize("kind", ["line", "curve"])
+def test_selecting_a_graph_before_its_first_data_keeps_it_selected(qtbot, plot, kind):
+    graph = _late_graph(plot, kind)
+    seen = record(graph.selection_changed)
+    graph.set_selected(True)
+    assert (graph.selected(), seen) == (True, [True])
+    qtbot.waitUntil(lambda: len(graph.components()) == 2, timeout=3000)
+    assert [c.selected() for c in graph.components()] == [True, True]
+    assert seen == [True]

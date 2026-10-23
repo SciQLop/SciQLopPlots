@@ -31,8 +31,13 @@ class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 
 protected:
     QList<QPointer<SciQLopGraphComponent>> m_components;
+    // The graph's last state, kept for components still to come: a callback graph has none
+    // until its first data, and a graph hidden before then must come up hidden.
+    bool m_visible_state = true;
+    bool m_selected_state = false;
 
     void _register_component(SciQLopGraphComponent* component);
+    void _apply_graph_state(SciQLopGraphComponent* component);
     void _forget_destroyed_components();
     void _seed_parts();
 
