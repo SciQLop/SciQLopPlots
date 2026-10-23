@@ -36,6 +36,23 @@ protected:
     void _forget_destroyed_components();
     void _seed_parts();
 
+    //! Detaches the components from \a first on before deleting any: a deleting one makes the
+    //! owner (a multigraph) shrink its own array first, so a wrapper left listed would read past
+    //! its end. Disconnected too: a dying component signals, and this graph may be half destroyed
+    //! (the destructor) or about to rebuild them (create_graphs, a shrinking set_data).
+    inline void _drop_components_from(qsizetype first)
+    {
+        const auto gone = m_components.sliced(first);
+        m_components.resize(first);
+        for (const auto& component : gone)
+            if (component)
+            {
+                disconnect(component, nullptr, this, nullptr);
+                delete component.data();
+            }
+        _seed_parts();
+    }
+
 #ifndef BINDINGS_H
     //! Tells the plot to re-read its colour scale; a gradient is requested on it too.
     void notify_color_scale(std::optional<::ColorGradient> gradient = std::nullopt);
@@ -51,19 +68,7 @@ public:
 
     virtual ~SQPQCPAbstractPlottableWrapper() { clear_plottables(); }
 
-    inline void clear_plottables()
-    {
-        for (auto component : std::exchange(m_components, {}))
-            if (component)
-            {
-                // A dying component signals; this graph may be half destroyed already. This drops
-                // every component-to-graph connection (replot included): only teardown and a
-                // shrinking set_data reach here, and both rebuild or discard the components.
-                disconnect(component, nullptr, this, nullptr);
-                delete component.data();
-            }
-        _seed_parts();
-    }
+    inline void clear_plottables() { _drop_components_from(0); }
 
     const QList<QCPAbstractPlottable*> qcp_plottables() const noexcept
     {

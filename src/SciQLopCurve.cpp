@@ -244,8 +244,8 @@ void SciQLopCurve::_sync_component_count(int count)
 
     // Fewer columns than last time: a stale wrapper would keep drawing the
     // previous batch's curve.
-    while (static_cast<int>(plottable_count()) > count)
-        delete m_components.takeLast().data();
+    if (static_cast<int>(plottable_count()) > count)
+        _drop_components_from(count);
 
     for (int i = static_cast<int>(plottable_count()); i < count; ++i)
         newComponent<SciQLopTimeColoredCurve>(_keyAxis->qcp_axis(), _valueAxis->qcp_axis(),

@@ -145,14 +145,11 @@ void SciQLopMultiGraphBase::sync_components()
         // New data with fewer columns shrank QCPMultiGraph's component array:
         // drop the trailing wrappers too — a stale wrapper would index
         // component(i) out of bounds.
-        bool shrunk = false;
-        while (static_cast<int>(plottable_count()) > nComponents)
+        if (static_cast<int>(plottable_count()) > nComponents)
         {
-            delete m_components.takeLast().data();
-            shrunk = true;
-        }
-        if (shrunk)
+            _drop_components_from(nComponents);
             Q_EMIT this->component_list_changed();
+        }
     }
 }
 

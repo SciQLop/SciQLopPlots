@@ -58,3 +58,56 @@ def test_hiding_every_pane_curve_hides_the_projection_once(qtbot):
     for component in projection.components():
         component.set_visible(False)
     assert seen == [False]
+
+
+FIVE = np.column_stack([X] * 5)
+
+
+def _curve(plot, columns):
+    return plot.parametric_curve(X, np.column_stack([np.sin(X)] * columns))
+
+
+def test_shrinking_past_hidden_leading_columns_is_safe_for_a_line_graph(plot):
+    graph = plot.plot(X, FIVE, labels=list("abcde"))
+    for component in graph.components()[:-1]:
+        component.set_visible(False)
+    graph.set_data(X, np.sin(X)[:, None])
+    process_events()
+    assert len(graph.components()) == 1 and not graph.visible()
+
+
+def test_shrinking_past_hidden_leading_columns_is_safe_for_a_curve(plot, qtbot):
+    curve = _curve(plot, 5)
+    for component in curve.components()[:-1]:
+        component.set_visible(False)
+    curve.set_data(X, np.sin(X)[:, None])  # the curve's data lands asynchronously
+    qtbot.waitUntil(lambda: len(curve.components()) == 1, timeout=3000)
+    assert not curve.visible()
+
+
+def test_a_curve_follows_its_components(plot):
+    curve = _curve(plot, 2)
+    seen = record(curve.visible_changed)
+    for component in curve.components():
+        component.set_visible(False)
+    assert seen == [False]
+
+
+def test_removing_the_only_selected_component_is_silent(plot):
+    graph, (a, b) = _two(plot)
+    b.set_selected(True)
+    seen = record(graph.selection_changed)
+    graph.set_data(X, np.sin(X)[:, None])
+    process_events()
+    assert seen == []
+    graph.components()[0].set_selected(True)
+    assert seen == [True]
+
+
+def test_graph_setters_emit_once_even_with_component_signals(plot):
+    graph, _ = _two(plot)
+    visible, selected = record(graph.visible_changed), record(graph.selection_changed)
+    graph.set_visible(False)
+    graph.set_selected(True)
+    assert (visible, selected) == ([False], [True])
+
