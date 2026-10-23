@@ -75,8 +75,10 @@ void StraightLine::set_position(double pos)
         this->point1->setCoords(0, pos);
         this->point2->setCoords(1, pos);
     }
+    const QPointer<StraightLine> self(this);
     emit moved(pos);
-    this->replot();
+    if (self)
+        this->replot();
 }
 
 double StraightLine::position() const

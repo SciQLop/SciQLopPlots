@@ -86,6 +86,7 @@ SPAN_MUTATIONS = {
     "visible": ("visible_changed", lambda s: setattr(s, "visible", False)),
     "selected": ("selection_changed", lambda s: setattr(s, "selected", True)),
     "color": ("color_changed", lambda s: setattr(s, "color", QColor("red"))),
+    "range": ("range_changed", lambda s: s.set_range(SciQLopPlotRange(3.0, 4.0))),
 }
 
 
@@ -102,6 +103,7 @@ def test_a_slot_deleting_the_panel_span_mid_mutation_does_not_crash(panel, name)
 LINE_MUTATIONS = {
     "visible": ("visible_changed", lambda l: setattr(l, "visible", False)),
     "color": ("color_changed", lambda l: setattr(l, "color", QColor("red"))),
+    "position": ("position_changed", lambda l: l.set_position(5.0)),
 }
 
 
@@ -111,5 +113,22 @@ def test_a_slot_deleting_the_panel_line_mid_mutation_does_not_crash(panel, name)
     line, plot_line = _line_and_plot_line(panel)
     deleted = _delete_on(getattr(plot_line, signal_name), line)
     mutate(line)
+    process_events()
+    assert deleted()
+
+
+def test_a_slot_deleting_a_plot_span_from_its_own_range_signal_does_not_crash(panel):
+    span, plot_span = _span_and_plot_span(panel)
+    deleted = _delete_on(plot_span.range_changed, span)
+    plot_span.set_range(SciQLopPlotRange(3.0, 4.0))
+    process_events()
+    assert deleted()
+
+
+@pytest.mark.parametrize("border", ["lower", "upper"])
+def test_a_slot_deleting_a_plot_span_from_its_border_signal_does_not_crash(panel, border):
+    span, plot_span = _span_and_plot_span(panel)
+    deleted = _delete_on(getattr(plot_span, f"{border}_border_selection_changed"), span)
+    getattr(plot_span, f"select_{border}_border")(True)
     process_events()
     assert deleted()

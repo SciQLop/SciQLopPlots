@@ -63,8 +63,10 @@ void MultiPlotsVerticalLine::set_position(double position)
         return;
     // Store first: each line echoes the move back through position_changed.
     _position = position;
+    const QPointer<MultiPlotsVerticalLine> self(this);
     for_each_line([position](SciQLopVerticalLine* line) { line->set_position(position); });
-    Q_EMIT position_changed(position);
+    if (self)
+        Q_EMIT position_changed(position);
 }
 
 void MultiPlotsVerticalLine::_set_color(const QColor& color)

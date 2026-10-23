@@ -26,12 +26,10 @@ void MultiPlotsVerticalSpan::select_lower_border(bool selected)
     if (_lower_border_selected != selected)
     {
         _lower_border_selected = selected;
-        for (auto span : _spans)
-        {
-            if (span)
-                span->select_lower_border(selected);
-        }
-        replotAll();
+        const QPointer<MultiPlotsVerticalSpan> self(this);
+        for_each_span([selected](SciQLopVerticalSpan* span) { span->select_lower_border(selected); });
+        if (self)
+            replotAll();
     }
 }
 
@@ -40,12 +38,10 @@ void MultiPlotsVerticalSpan::select_upper_border(bool selected)
     if (_upper_border_selected != selected)
     {
         _upper_border_selected = selected;
-        for (auto span : _spans)
-        {
-            if (span)
-                span->select_upper_border(selected);
-        }
-        replotAll();
+        const QPointer<MultiPlotsVerticalSpan> self(this);
+        for_each_span([selected](SciQLopVerticalSpan* span) { span->select_upper_border(selected); });
+        if (self)
+            replotAll();
     }
 }
 
@@ -122,9 +118,11 @@ void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     if (horizontal_range != _horizontal_range)
     {
         _horizontal_range = horizontal_range;
+        const QPointer<MultiPlotsVerticalSpan> self(this);
         for_each_span([&horizontal_range](SciQLopVerticalSpan* span)
                       { span->set_range(horizontal_range); });
-        Q_EMIT range_changed(horizontal_range);
+        if (self)
+            Q_EMIT range_changed(horizontal_range);
     }
 }
 

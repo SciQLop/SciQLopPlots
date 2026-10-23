@@ -58,8 +58,14 @@ void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     auto sorted = horizontal_range.sorted();
     if (range() == sorted)
         return;
+    // setRange touches the item after emitting rangeChanged: emit ourselves, once it is done.
+    const QPointer<impl::VerticalSpan> self(this);
+    const bool was_blocked = blockSignals(true);
     setRange(QCPRange(sorted.first, sorted.second));
-    replot();
+    blockSignals(was_blocked);
+    emit range_changed(sorted);
+    if (self)
+        replot();
 }
 
 SciQLopPlotRange impl::VerticalSpan::range() const noexcept
