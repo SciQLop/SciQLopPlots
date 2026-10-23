@@ -174,3 +174,12 @@ def test_a_graph_whose_last_selected_component_is_deleted_is_not_selected(plot):
     shiboken6.delete(graph.components()[0])
     process_events()
     assert (graph.components(), graph.selected(), seen) == ([], False, [])
+
+
+def test_a_slot_deleting_the_other_component_after_the_flip_keeps_the_signal(plot):
+    import shiboken6
+    graph, (a, b) = _two(plot)
+    seen = record(graph.visible_changed)
+    a.visible_changed.connect(lambda _: shiboken6.delete(b))
+    graph.set_visible(False)
+    assert (len(graph.components()), graph.visible(), seen) == (1, False, [False])

@@ -61,3 +61,31 @@ def test_the_legend_colour_signals_once(plot):
     plot.legend().set_color(QColor("red"))
     plot.legend().set_color(QColor("red"))
     assert seen == [QColor("red")]
+
+
+def _legend_row(plot, tmp_path):
+    from PySide6.QtGui import QImage
+    plot.replot(True)
+    path = str(tmp_path / "legend.png")
+    plot.save_png(path, plot.width(), plot.height())
+    return QImage(path).copy(plot.legend().row_rect(0))
+
+
+def test_a_graph_hidden_before_its_first_data_has_a_hidden_graphs_legend_row(qtbot, tmp_path):
+    """Review M2 was a false positive: a group row draws no icon for a hidden component, and an
+    empty graph has none to draw. NeoQCP's legend ignores the plottable's own visibility."""
+    import numpy as np
+    from SciQLopPlots import SciQLopPlot
+    x = np.linspace(0.0, 10.0, 50)
+    rows = []
+    for graph_of in (lambda p: p.plot(lambda start, stop: [x[:0], x[:0]]),
+                     lambda p: p.plot(x, np.sin(x), labels=["a"])):
+        plot = SciQLopPlot()
+        qtbot.addWidget(plot)
+        plot.resize(600, 400)
+        graph = graph_of(plot)
+        graph.set_name("g")
+        graph.set_visible(False)
+        process_events()
+        rows.append(_legend_row(plot, tmp_path))
+    assert rows[0] == rows[1]

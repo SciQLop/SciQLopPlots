@@ -86,8 +86,21 @@ protected:
     //! After a change made outside set_color (a new pen): emit if the colour moved from \a before.
     void _notify_color_since(const QColor& before);
 
-    //! Record the current value without emitting.
-    void _seed_visible(bool visible) { m_last_visible = visible; }
-    void _seed_selected(bool selected) { m_last_selected = selected; }
-    void _seed_color(const QColor& color) { m_last_color = color; }
+    //! Record the current value without emitting. Skipped while a setter applies: it seeded the
+    //! value it started from and emits against it (a part removed mid-loop must not swallow that).
+    void _seed_visible(bool visible)
+    {
+        if (!m_applying_visible)
+            m_last_visible = visible;
+    }
+    void _seed_selected(bool selected)
+    {
+        if (!m_applying_selected)
+            m_last_selected = selected;
+    }
+    void _seed_color(const QColor& color)
+    {
+        if (!m_applying_color)
+            m_last_color = color;
+    }
 };

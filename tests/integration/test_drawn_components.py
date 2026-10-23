@@ -121,3 +121,14 @@ def test_deselecting_one_component_leaves_the_other_framed(plot, shown_pair, tmp
     shown_pair.set_selected(True)
     shown_pair.components()[1].set_selected(False)
     assert _framed_rows(plot, tmp_path) == (True, False)
+
+
+def test_set_pen_off_the_gui_thread_lands_on_it_and_signals_once(plot):
+    from PySide6.QtGui import QPen
+    from conftest import off_thread, process_events
+    component = plot.plot(X, np.sin(X), labels=["a"]).components()[0]
+    seen = record(component.color_changed)
+    off_thread(lambda: component.set_pen(QPen(QColor("red"))))
+    queued = component.pen().color() != QColor("red")
+    process_events()
+    assert (queued, component.pen().color(), seen) == (True, QColor("red"), [QColor("red")])

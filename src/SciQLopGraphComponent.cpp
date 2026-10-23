@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Python/Validation.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <QMouseEvent>
 #include <layoutelements/layoutelement-legend.h>
 #include <layoutelements/layoutelement-legend-group.h>
@@ -94,6 +95,7 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
 
 void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_pen(pen));
     const QColor before = _color();
     _apply_pen(pen);
     _notify_color_since(before);

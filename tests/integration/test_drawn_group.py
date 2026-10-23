@@ -69,3 +69,14 @@ def test_renaming_a_group_renames_its_legend_entry(plot, pair):
     group, _, _ = pair
     group.set_name("model")
     assert "model" in plot.legend().row_labels()
+
+
+def test_a_slot_deleting_the_other_member_after_the_flip_keeps_the_signal(plot):  # opencode M1
+    import shiboken6
+    a = plot.plot(X, np.sin(X), labels=["a"])
+    b = plot.plot(X, np.cos(X), labels=["b"])
+    group = plot.group("ab", [a, b])
+    seen = record(group.visible_changed)
+    a.visible_changed.connect(lambda _: shiboken6.delete(b))
+    group.set_visible(False)  # a hides, then its slot deletes b: the group is already all hidden
+    assert (group.members(), group.visible(), seen) == ([a], False, [False])

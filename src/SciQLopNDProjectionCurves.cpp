@@ -233,9 +233,10 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>& data,
                                                    const SciQLopPyBuffer& color)
 {
-    if (data.size() != _curves().size() + 1)
+    const auto curves = _curves();
+    if (data.size() != curves.size() + 1)
         throw std::invalid_argument("Projection: a coloured batch needs [t, d0..d"
-                                    + std::to_string(_curves().size() - 1) + "], got "
+                                    + std::to_string(curves.size() - 1) + "], got "
                                     + std::to_string(data.size()) + " buffers");
     const std::size_t samples = data[0].is_valid() ? data[0].flat_size() : 0;
     const std::size_t count = color.is_valid() ? color.flat_size() : 0;
@@ -245,7 +246,7 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
                                     + std::to_string(count));
     set_data(data);
     const auto values = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
-    for (auto* curve : _curves())
+    for (auto* curve : curves)
     {
         curve->set_color_values(values);
         curve->set_time_color_enabled(!values.isEmpty());
