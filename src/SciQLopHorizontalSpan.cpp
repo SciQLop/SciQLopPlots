@@ -65,14 +65,20 @@ SciQLopPlotRange impl::HorizontalSpan::range() const noexcept
 
 void impl::HorizontalSpan::select_lower_border(bool selected)
 {
+    // setSelected() emits selectionChanged first, and a slot on it may delete this span.
+    const QPointer<HorizontalSpan> self(this);
     setSelected(selected);
-    emit lower_border_selection_changed(selected);
+    if (self)
+        emit lower_border_selection_changed(selected);
 }
 
 void impl::HorizontalSpan::select_upper_border(bool selected)
 {
+    // setSelected() emits selectionChanged first, and a slot on it may delete this span.
+    const QPointer<HorizontalSpan> self(this);
     setSelected(selected);
-    emit upper_border_selection_changed(selected);
+    if (self)
+        emit upper_border_selection_changed(selected);
 }
 
 SciQLopHorizontalSpan::SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,

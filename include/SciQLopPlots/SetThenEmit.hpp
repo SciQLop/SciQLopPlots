@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QPointer>
+#include <QSignalBlocker>
 
 namespace SciQLopPlots
 {
@@ -11,9 +12,10 @@ template <typename Item, typename Set, typename Emit>
 [[nodiscard]] bool set_then_emit(Item* item, Set&& set, Emit&& emit_signal)
 {
     const QPointer<Item> self(item);
-    const bool was_blocked = item->blockSignals(true);
-    set();
-    item->blockSignals(was_blocked);
+    {
+        const QSignalBlocker blocker(item);
+        set();
+    }
     emit_signal();
     return !self.isNull();
 }

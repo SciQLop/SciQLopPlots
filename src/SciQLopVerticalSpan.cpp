@@ -134,14 +134,20 @@ void impl::VerticalSpan::set_pixel_range(const SciQLopPlotRange& px_range)
 
 void impl::VerticalSpan::select_lower_border(bool selected)
 {
+    // setSelected() emits selectionChanged first, and a slot on it may delete this span.
+    const QPointer<VerticalSpan> self(this);
     setSelected(selected);
-    emit lower_border_selection_changed(selected);
+    if (self)
+        emit lower_border_selection_changed(selected);
 }
 
 void impl::VerticalSpan::select_upper_border(bool selected)
 {
+    // setSelected() emits selectionChanged first, and a slot on it may delete this span.
+    const QPointer<VerticalSpan> self(this);
     setSelected(selected);
-    emit upper_border_selection_changed(selected);
+    if (self)
+        emit upper_border_selection_changed(selected);
 }
 
 SciQLopVerticalSpan::SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
