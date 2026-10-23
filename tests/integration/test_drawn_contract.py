@@ -166,6 +166,10 @@ ABSTRACT |= {"SciQLopPlottableInterface", "SciQLopGraphInterface", "SQPQCPAbstra
              "SciQLopMultiGraphBase", "SciQLopColorMapInterface", "SciQLopColorMapBase"}
 NOT_BUILDABLE["SciQLopHistogramRemote"] = "no Python factory makes one"
 
+ROWS.append(Row("component", ("SciQLopGraphComponentInterface",), {
+    "SciQLopGraphComponentInterface": lambda h: h.plot.plot(X, np.sin(X), labels=["a"]).components()[0],
+}, {"visible": OK, "selected": OK, "name": OK, "color": OK}))
+
 
 # --- rows: each task inserts its families above this line --------------------------------------
 # (parametrize reads ROWS when the test functions below are defined, so rows must come first)

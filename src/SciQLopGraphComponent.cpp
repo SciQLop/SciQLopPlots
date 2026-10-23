@@ -134,121 +134,105 @@ void SciQLopGraphComponent::set_line_width(const qreal width) noexcept
     }
 }
 
-void SciQLopGraphComponent::set_visible(bool visible) noexcept
+void SciQLopGraphComponent::_set_visible(bool visible)
 {
-    if (m_plottable)
-    {
-        if (m_componentIndex >= 0)
-        {
-            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
-            if (mg)
-                mg->setComponentVisible(m_componentIndex, visible);
-            emit visible_changed(visible);
-            emit replot();
-            return;
-        }
+    if (!m_plottable)
+        return;
+    if (m_componentIndex < 0)
         m_plottable->setVisible(visible);
-        emit visible_changed(visible);
-        emit replot();
-    }
+    else if (auto* mg = qobject_cast<QCPMultiGraph*>(m_plottable.data()))
+        mg->setComponentVisible(m_componentIndex, visible);
+    emit replot();
 }
 
-void SciQLopGraphComponent::set_name(const QString& name) noexcept
+bool SciQLopGraphComponent::_visible() const
 {
-    this->setObjectName(name);
-    if (m_plottable)
-    {
-        if (m_componentIndex >= 0)
-        {
-            auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
-            if (mg && mg->component(m_componentIndex).name != name)
-            {
-                mg->component(m_componentIndex).name = name;
-                emit name_changed(name);
-            }
-            return;
-        }
-        if (m_plottable->name() != name)
-        {
-            m_plottable->setName(name);
-            emit name_changed(name);
-        }
-    }
+    if (!m_plottable)
+        return false;
+    if (m_componentIndex < 0)
+        return m_plottable->visible();
+    auto* mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
+    return mg && mg->component(m_componentIndex).visible;
 }
 
-void SciQLopGraphComponent::set_selected(bool selected) noexcept
+void SciQLopGraphComponent::_named(const QString& name)
 {
-    if (m_plottable)
-    {
-        if (m_selected != selected)
-        {
-            m_selected = selected;
-            if (m_componentIndex >= 0)
-            {
-                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
-                if (mg)
-                {
-                    if (selected)
-                        mg->setComponentSelection(
-                            m_componentIndex,
-                            QCPDataSelection(QCPDataRange(0, mg->dataCount())));
-                    else
-                        mg->setComponentSelection(m_componentIndex, QCPDataSelection());
-                }
-            }
-            else
-            {
-                std::visit(visitor { [selected](QCPGraph* any)
-                                     {
-                                         if (selected)
-                                             any->setSelection(
-                                                 QCPDataSelection(any->data()->dataRange()));
-                                         else
-                                             any->setSelection(QCPDataSelection());
-                                     },
-                                     [selected](QCPCurve* any)
-                                     {
-                                         if (selected)
-                                             any->setSelection(
-                                                 QCPDataSelection(any->data()->dataRange()));
-                                         else
-                                             any->setSelection(QCPDataSelection());
-                                     },
-                                     [](MultiGraphRef) {},
-                                     [](std::monostate) {} },
-                           to_variant());
-            }
-            emit selection_changed(selected);
-            emit replot();
-        }
-        if (m_componentIndex >= 0)
-        {
-            if (auto* gi = _group_legend_item(); gi)
-            {
-                if (selected && gi->selectedComponent() != m_componentIndex)
-                {
-                    gi->setExpanded(true);
-                    gi->setSelectedComponent(m_componentIndex);
-                    gi->setSelected(true);
-                    emit replot();
-                }
-                else if (!selected && gi->selected()
-                         && gi->selectedComponent() == m_componentIndex)
-                {
-                    gi->setSelected(false);
-                    emit replot();
-                }
-            }
-        }
-        else if (auto legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
-        {
-            legend_item->setSelected(selected);
-            emit replot();
-        }
-    }
+    if (!m_plottable)
+        return;
+    if (m_componentIndex < 0)
+        m_plottable->setName(name);
+    else if (auto* mg = qobject_cast<QCPMultiGraph*>(m_plottable.data()))
+        mg->component(m_componentIndex).name = name;
 }
 
-QColor SciQLopGraphComponent::color() const noexcept
+void SciQLopGraphComponent::_set_color(const QColor& color)
+{
+    if (!m_plottable)
+        return;
+    auto line = pen();
+    line.setColor(color);
+    set_pen(line);
+    auto marker = marker_pen();
+    if (marker.style() == Qt::NoPen)
+        marker = QPen(color);
+    else
+        marker.setColor(color);
+    set_marker_pen(marker);
+}
+
+void SciQLopGraphComponent::_set_selected(bool selected)
+{
+    if (!m_plottable)
+        return;
+    // Stored first: NeoQCP's selectionChanged comes back to set_selected, which then sees no change.
+    m_selected = selected;
+    _select_in_plottable(selected);
+    _select_in_legend(selected);
+    emit replot();
+}
+
+void SciQLopGraphComponent::_select_in_plottable(bool selected)
+{
+    if (m_componentIndex >= 0)
+    {
+        if (auto* mg = qobject_cast<QCPMultiGraph*>(m_plottable.data()))
+            mg->setComponentSelection(m_componentIndex,
+                                      selected ? QCPDataSelection(QCPDataRange(0, mg->dataCount()))
+                                               : QCPDataSelection());
+        return;
+    }
+    std::visit(visitor { [selected](auto* any)
+                         {
+                             any->setSelection(selected
+                                                   ? QCPDataSelection(any->data()->dataRange())
+                                                   : QCPDataSelection());
+                         },
+                         [](MultiGraphRef) {}, [](std::monostate) {} },
+               to_variant());
+}
+
+void SciQLopGraphComponent::_select_in_legend(bool selected)
+{
+    if (m_componentIndex < 0)
+    {
+        if (auto* item = _legend_item(); item && item->selected() != selected)
+            item->setSelected(selected);
+        return;
+    }
+    auto* group = _group_legend_item();
+    if (!group)
+        return;
+    if (selected && group->selectedComponent() != m_componentIndex)
+    {
+        group->setExpanded(true);
+        group->setSelectedComponent(m_componentIndex);
+        group->setSelected(true);
+    }
+    else if (!selected && group->selected() && group->selectedComponent() == m_componentIndex)
+        group->setSelected(false);
+}
+
+QColor SciQLopGraphComponent::_color() const
 {
     if (m_plottable)
     {

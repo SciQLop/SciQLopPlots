@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 
@@ -32,7 +33,7 @@
 #include <QPen>
 #include <memory>
 
-class SciQLopGraphComponentInterface : public QObject
+class SciQLopGraphComponentInterface : public SciQLopDrawnObject
 {
     SciQLopPlotRange m_range;
     Q_OBJECT
@@ -41,10 +42,8 @@ protected:
     std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
 
 public:
-    Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
-
     SciQLopGraphComponentInterface(QObject* parent = nullptr)
-        : QObject(parent)
+        : SciQLopDrawnObject(parent)
         , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
               this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
     {
@@ -53,8 +52,6 @@ public:
     virtual ~SciQLopGraphComponentInterface() = default;
 
     inline virtual void set_pen(const QPen& pen) noexcept { WARN_ABSTRACT_METHOD; }
-
-    inline virtual void set_color(const QColor& color) noexcept { WARN_ABSTRACT_METHOD; }
 
     inline virtual void set_line_style(GraphLineStyle style) noexcept { WARN_ABSTRACT_METHOD; }
 
@@ -66,26 +63,10 @@ public:
 
     inline virtual void set_line_width(const qreal width) noexcept { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_visible(bool visible) noexcept { WARN_ABSTRACT_METHOD; }
-
-    inline virtual void set_name(const QString& name) noexcept { this->setObjectName(name); }
-
-    inline virtual void set_selected(bool selected) noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        Q_UNUSED(selected);
-    }
-
     inline virtual QPen pen() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return QPen();
-    }
-
-    inline virtual QColor color() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return QColor();
     }
 
     inline virtual GraphLineStyle line_style() const noexcept
@@ -118,12 +99,6 @@ public:
         return 0;
     }
 
-    inline virtual bool visible() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
-    }
-
     virtual void set_fill_to_value(double value) { WARN_ABSTRACT_METHOD; }
     virtual void set_fill_between(SciQLopGraphComponentInterface* other) { WARN_ABSTRACT_METHOD; }
     virtual void clear_fill() { WARN_ABSTRACT_METHOD; }
@@ -137,14 +112,6 @@ public:
     }
     virtual void clear_error_bars() { WARN_ABSTRACT_METHOD; }
     virtual int component_index() const noexcept { return -1; }
-
-    inline virtual QString name() const noexcept { return this->objectName(); }
-
-    inline virtual bool selected() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
-    }
 
     void add_inspector_extension(InspectorExtension* extension)
     {
@@ -165,14 +132,11 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void visible_changed(bool visible);
-    Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void marker_pen_changed(const QPen& pen);
     Q_SIGNAL void marker_size_changed(qreal size);
     Q_SIGNAL void replot();
     Q_SIGNAL void fill_changed();
     Q_SIGNAL void error_bars_changed();
-    Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void inspector_extensions_changed();
 };

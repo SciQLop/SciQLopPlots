@@ -111,6 +111,18 @@ private Q_SLOTS:
 private:
     bool m_selected = false;
 
+    void _select_in_plottable(bool selected);
+    void _select_in_legend(bool selected);
+
+protected:
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    bool _selected() const override { return m_selected; }
+    void _set_selected(bool selected) override;
+    void _named(const QString& name) override;
+    QColor _color() const override;
+    void _set_color(const QColor& color) override;
+
 public:
     SciQLopGraphComponent(QCPAbstractPlottable* plottable, QObject* parent = nullptr);
     SciQLopGraphComponent(QCPMultiGraph* multiGraph, int componentIndex,
@@ -120,22 +132,6 @@ public:
     inline QCPAbstractPlottable* plottable() const noexcept { return m_plottable; }
 
     virtual void set_pen(const QPen& pen) noexcept override;
-
-    inline virtual void set_color(const QColor& color) noexcept override
-    {
-        if (m_plottable)
-        {
-            auto pen = this->pen();
-            pen.setColor(color);
-            this->set_pen(pen);
-            auto mp = this->marker_pen();
-            if (mp.style() == Qt::NoPen)
-                mp = QPen(color);
-            else
-                mp.setColor(color);
-            this->set_marker_pen(mp);
-        }
-    }
 
     inline virtual void set_line_style(GraphLineStyle style) noexcept override
     {
@@ -232,10 +228,6 @@ public:
 
     virtual void set_line_width(const qreal width) noexcept override;
 
-    virtual void set_visible(bool visible) noexcept override;
-
-    virtual void set_name(const QString& name) noexcept override;
-
     void set_fill_to_value(double value) override;
     void set_fill_between(SciQLopGraphComponentInterface* other) override;
     void clear_fill() override;
@@ -246,8 +238,6 @@ public:
                         SciQLopGraphComponentInterface* upper, double cap_width = 6.) override;
     void clear_error_bars() override;
     int component_index() const noexcept override { return m_componentIndex; }
-
-    virtual void set_selected(bool selected) noexcept override;
 
     inline virtual QPen pen() const noexcept override
     {
@@ -264,8 +254,6 @@ public:
         }
         return QPen();
     }
-
-    virtual QColor color() const noexcept override;
 
     inline virtual GraphLineStyle line_style() const noexcept override
     {
@@ -360,24 +348,4 @@ public:
         }
         return 0;
     }
-
-    inline virtual bool visible() const noexcept override
-    {
-        if (m_plottable)
-        {
-            if (m_componentIndex >= 0)
-            {
-                auto mg = qobject_cast<QCPMultiGraph*>(m_plottable.data());
-                if (mg)
-                    return mg->component(m_componentIndex).visible;
-                return false;
-            }
-            return m_plottable->visible();
-        }
-        return false;
-    }
-
-    inline virtual QString name() const noexcept override { return this->objectName(); }
-
-    inline virtual bool selected() const noexcept override { return m_selected; }
 };
