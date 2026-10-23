@@ -859,8 +859,10 @@
     </object-type>
     <object-type name="SciQLopPlotAxis" parent-management="yes"/>
 
+    <!-- No constructor markup: its constructor takes an unbound QCPOverlay*. Add <parent> markup if that type becomes bound. -->
     <object-type name="SciQLopOverlay" parent-management="yes"/>
 
+    <!-- No constructor markup: its constructor takes an unbound QCPTheme*. Add <parent> markup if that type becomes bound. -->
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
@@ -1871,6 +1873,7 @@
             </modify-argument>
         </modify-function>
     </object-type>
+    <!-- No constructor markup: its constructor takes an unbound QCPLegend*. Add <parent> markup if that type becomes bound. -->
     <object-type name="SciQLopPlotLegend" parent-management="yes"/>
     <object-type name="SciQLopPlotGroup" parent-management="yes">
         <modify-function signature="add(SciQLopPlottableInterface*)">
