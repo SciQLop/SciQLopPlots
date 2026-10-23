@@ -797,7 +797,7 @@ note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), movable=False, coordina
 
 - On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
 - `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
-- Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text and pixmap tooltips work, and so does `set_movable` on text, ellipse and pixmap.
+- Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
 
 `MultiPlotsVerticalLine` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 

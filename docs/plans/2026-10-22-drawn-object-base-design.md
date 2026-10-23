@@ -106,6 +106,8 @@ Notes:
 
 - Items forward selection to NeoQCP's `QCPAbstractItem::setSelected` / `selected`; whether a click can select an item is unchanged.
 - A multi-line graph has no single colour: `color` raises and names `colors()`. A single line's colour is `graph.component(0).color()`. The colour map's raise names `gradient()` / `set_gradient()`, the timeline's `category_color()` / `set_category_colors()`.
+- A panel span owns its state. Its per-plot spans are subordinate: no public API returns them (only Qt's `findChildren` reaches them), so the panel span writes them and never reads them back; only their selection (a click) flows up.
+- The legend's `visible_changed` follows the setter only. NeoQCP hides a legend on its own just once, when the plot is built, before the wrapper exists.
 - A multi-line graph's legend is one NeoQCP group item, which frames either one row or the whole group. One selected component frames its row; several frame the group.
 
 ## Compatibility

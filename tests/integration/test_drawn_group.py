@@ -63,3 +63,9 @@ def test_showing_an_all_hidden_group_signals_after_every_member_shows(pair):
     group.visible_changed.connect(lambda v: seen.append((v, [a.visible(), b.visible()])))
     group.set_visible(True)
     assert seen == [(True, [True, True])]
+
+
+def test_renaming_a_group_renames_its_legend_entry(plot, pair):
+    group, _, _ = pair
+    group.set_name("model")
+    assert "model" in plot.legend().row_labels()

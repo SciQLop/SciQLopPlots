@@ -18,11 +18,26 @@ def test_a_span_declares_no_selection_signal_of_its_own(cls):
     assert meta.indexOfSignal("selection_changed(bool)") != -1  # the base's
 
 
-def test_the_camel_case_alias_still_connects(plot):
-    span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.2, 0.4))
-    seen = record(span.selectionChanged)
+SPAN_FACTORIES = {
+    SciQLopVerticalSpan: lambda p: SciQLopVerticalSpan(p, SciQLopPlotRange(0.2, 0.4)),
+    SciQLopHorizontalSpan: lambda p: SciQLopHorizontalSpan(p, SciQLopPlotRange(0.2, 0.4)),
+    SciQLopRectangularSpan: lambda p: SciQLopRectangularSpan(p, SciQLopPlotRange(0.2, 0.4),
+                                                             SciQLopPlotRange(0.2, 0.4)),
+}
+
+
+@pytest.mark.parametrize("cls", SPANS)
+def test_the_camel_case_name_is_the_same_signal(cls):
+    assert cls.selectionChanged is cls.selection_changed
+
+
+@pytest.mark.parametrize("cls", SPANS)
+def test_both_names_signal_once_per_change(plot, cls):
+    span = SPAN_FACTORIES[cls](plot)
+    seen = record(span.selectionChanged), record(span.selection_changed)
     span.set_selected(True)
-    assert seen == [True]
+    span.set_selected(False)
+    assert seen == ([True, False], [True, False])
 
 
 def test_clicking_a_span_selects_it_and_signals_once(qtbot, plot):

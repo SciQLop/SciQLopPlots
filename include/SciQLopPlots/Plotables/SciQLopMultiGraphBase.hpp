@@ -71,10 +71,10 @@ public:
         return _multiGraph ? _multiGraph->componentCount() : 0;
     }
 
+protected:
     // Propagate the user-facing name to the underlying QCPMultiGraph so the
     // legend shows it even before any data/components arrive (the loading cue),
     // instead of falling back to a meaningless placeholder.
-protected:
     void _named(const QString& name) override
     {
         SQPQCPAbstractPlottableWrapper::_named(name);
@@ -83,7 +83,6 @@ protected:
     }
 
 public:
-
     // Busy belongs to the QCPMultiGraph, not to the components: components are
     // only created on the first set_data, and each one wraps this very same
     // plottable anyway. The base implementation walks m_components, so it is a

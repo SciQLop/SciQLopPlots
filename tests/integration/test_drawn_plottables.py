@@ -52,12 +52,16 @@ def test_a_graph_colour_points_to_colors(plot):
 
 
 def test_a_queued_set_on_a_graph_of_a_deleted_plot_is_dropped(qtbot):  # Review Focus 2
+    import shiboken6
     plot = SciQLopPlot()
     graph = plot.plot(X, np.sin(X), labels=["a"])
+    component = graph.components()[0]
+    signals = [record(graph.visible_changed), record(component.visible_changed)]
     off_thread(lambda: graph.set_visible(False))
     plot.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     process_events()  # the graph was the queued call's context: Qt dropped the call with it
+    assert (shiboken6.isValid(graph), signals) == (False, [[], []])
 
 
 def _late_graph(plot, kind):

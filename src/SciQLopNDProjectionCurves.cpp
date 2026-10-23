@@ -194,7 +194,8 @@ QList<QPair<int, int>> SciQLopNDProjectionCurves::_dimension_pairs(qsizetype cou
 
 void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 {
-    const auto curves_count = _curves().size();
+    const auto curves = _curves();
+    const auto curves_count = curves.size();
     check_batch_size(curves_count, data.size());
 
     if (data.size() == curves_count + 1)
@@ -202,21 +203,21 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
         const auto dims = data.sliced(1);
         const auto pairs = _dimension_pairs(curves_count);
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
-            _curves()[i]->set_data(dims[pairs[i].first], dims[pairs[i].second]);
+            curves[i]->set_data(dims[pairs[i].first], dims[pairs[i].second]);
         const auto& time_buf = data[0];
         QVector<double> times = to_double_vector<QVector<double>>(time_buf);
-        for (auto* curve : _curves())
+        for (auto* curve : curves)
             curve->set_time_values(times);
     }
     else if (data.size() == 3 * curves_count)
     {
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
-            _curves()[i]->set_data(data[3 * i], data[3 * i + 1]);
+            curves[i]->set_data(data[3 * i], data[3 * i + 1]);
             const auto& scalar_buf = data[3 * i + 2];
             QVector<double> scalars = to_double_vector<QVector<double>>(scalar_buf);
-            _curves()[i]->set_color_values(scalars);
-            _curves()[i]->set_time_color_enabled(!scalars.isEmpty());
+            curves[i]->set_color_values(scalars);
+            curves[i]->set_time_color_enabled(!scalars.isEmpty());
         }
         _update_color_scale();
     }
@@ -224,7 +225,7 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
     {
         for (decltype(data.size()) i = 0; i < curves_count; ++i)
         {
-            _curves()[i]->set_data(data[2 * i], data[2 * i + 1]);
+            curves[i]->set_data(data[2 * i], data[2 * i + 1]);
         }
     }
 }
@@ -254,8 +255,9 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
 
 void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
 {
-    for (int i = 0; i < _curves().size() && i < colors.size(); ++i)
-        _curves()[i]->set_colors({ colors[i] });
+    const auto curves = _curves();
+    for (int i = 0; i < curves.size() && i < colors.size(); ++i)
+        curves[i]->set_colors({ colors[i] });
 }
 
 QList<QColor> SciQLopNDProjectionCurves::colors() const noexcept
