@@ -22,6 +22,7 @@
 
 #include "SciQLopPlots/SciQLopPlotLegend.hpp"
 #include "SciQLopPlots/Debug.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <qcp.h>
 
 SciQLopPlotLegend::SciQLopPlotLegend(QCPLegend* legend, QObject* parent)
@@ -70,6 +71,7 @@ QPointF SciQLopPlotLegend::position() const
 
 void SciQLopPlotLegend::set_position(const QPointF& position)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_position(position));
     auto [inset, index] = inset_slot(m_legend);
     if (!inset)
         return;
@@ -82,6 +84,7 @@ void SciQLopPlotLegend::set_position(const QPointF& position)
 
 void SciQLopPlotLegend::set_alignment(Qt::Alignment alignment)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_alignment(alignment));
     auto [inset, index] = inset_slot(m_legend);
     if (!inset)
         return;
@@ -99,6 +102,7 @@ Qt::Alignment SciQLopPlotLegend::alignment() const
 
 void SciQLopPlotLegend::set_columns(int columns)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_columns(columns));
     if (columns <= 1)
     {
         m_legend->setFillOrder(QCPLayoutGrid::foRowsFirst);
@@ -124,6 +128,7 @@ QFont SciQLopPlotLegend::font() const
 
 void SciQLopPlotLegend::set_font(const QFont& font)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_font(font));
     if (m_legend->font() != font)
     {
         m_legend->setFont(font);

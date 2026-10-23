@@ -4,6 +4,7 @@
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Profiling.hpp"
 #include "SciQLopPlots/Tracing.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <algorithm>
 #include <cmath>
 #include <datasource/row-major-multi-datasource.h>
@@ -236,6 +237,7 @@ void SciQLopMultiGraphBase::collect_visible_values(const SciQLopPlotRange& visib
 
 void SciQLopMultiGraphBase::set_gap_threshold(double threshold)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_gap_threshold(threshold));
     if (!_multiGraph)
         return;
     _multiGraph->setGapThreshold(threshold);
@@ -277,6 +279,7 @@ void notify_component(const SciQLopMultiGraphBase& graph, int column,
 void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
 {
     sqp::validation::validate_finite(value, "set_fill_to_value");
+    SCIQLOP_ON_OWNER_THREAD(set_fill_to_value(column, value));
     require(_multiGraph && _multiGraph->setComponentFill(column, value),
             "set_fill_to_value: invalid column " + std::to_string(column));
     notify_component(*this, column, &SciQLopGraphComponentInterface::fill_changed);
@@ -285,6 +288,7 @@ void SciQLopMultiGraphBase::set_fill_to_value(int column, double value)
 
 void SciQLopMultiGraphBase::set_fill_between(int column, int other)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_fill_between(column, other));
     require(_multiGraph && _multiGraph->setComponentFillBetween(column, other),
             "set_fill_between: invalid columns " + std::to_string(column) + ", "
                 + std::to_string(other));
@@ -294,6 +298,7 @@ void SciQLopMultiGraphBase::set_fill_between(int column, int other)
 
 void SciQLopMultiGraphBase::clear_fill(int column)
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_fill(column));
     if (!_multiGraph)
         return;
     _multiGraph->clearComponentFill(column);
@@ -303,6 +308,7 @@ void SciQLopMultiGraphBase::clear_fill(int column)
 
 void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_fill_color(column, color));
     if (!_multiGraph)
         return;
     require(_multiGraph->componentFill(column).has_value(),
@@ -315,6 +321,7 @@ void SciQLopMultiGraphBase::set_fill_color(int column, const QColor& color)
 void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, double cap_width)
 {
     require(cap_width >= 0, "set_error_bars: cap_width must be >= 0");
+    SCIQLOP_ON_OWNER_THREAD(set_error_bars(column, lower, upper, cap_width));
     require(_multiGraph && _multiGraph->setComponentErrorBars(column, lower, upper, cap_width),
             "set_error_bars: invalid columns " + std::to_string(column) + ", "
                 + std::to_string(lower) + ", " + std::to_string(upper));
@@ -324,6 +331,7 @@ void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, dou
 
 void SciQLopMultiGraphBase::clear_error_bars(int column)
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_error_bars(column));
     if (!_multiGraph)
         return;
     _multiGraph->clearComponentErrorBars(column);
@@ -334,6 +342,7 @@ void SciQLopMultiGraphBase::clear_error_bars(int column)
 void SciQLopMultiGraphBase::set_column_line_style(int column, GraphLineStyle style)
 {
     require(column >= 0, "set_column_line_style: invalid column " + std::to_string(column));
+    SCIQLOP_ON_OWNER_THREAD(set_column_line_style(column, style));
     _column_presets[column].line_style = style;
     apply_preset(column);
     Q_EMIT replot();
@@ -342,6 +351,7 @@ void SciQLopMultiGraphBase::set_column_line_style(int column, GraphLineStyle sty
 void SciQLopMultiGraphBase::set_column_marker_shape(int column, GraphMarkerShape shape)
 {
     require(column >= 0, "set_column_marker_shape: invalid column " + std::to_string(column));
+    SCIQLOP_ON_OWNER_THREAD(set_column_marker_shape(column, shape));
     _column_presets[column].marker = shape;
     apply_preset(column);
     Q_EMIT replot();
@@ -350,6 +360,7 @@ void SciQLopMultiGraphBase::set_column_marker_shape(int column, GraphMarkerShape
 void SciQLopMultiGraphBase::set_column_in_legend(int column, bool in_legend)
 {
     require(column >= 0, "set_column_in_legend: invalid column " + std::to_string(column));
+    SCIQLOP_ON_OWNER_THREAD(set_column_in_legend(column, in_legend));
     _column_presets[column].in_legend = in_legend;
     apply_preset(column);
     Q_EMIT replot();

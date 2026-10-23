@@ -22,6 +22,7 @@
 
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 
 #include <algorithm>
 
@@ -111,6 +112,7 @@ void SQPQCPAbstractPlottableWrapper::_seed_parts()
 
 void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_labels(labels));
     if (std::size(labels) == std::size(m_components))
     {
         for (decltype(std::size(m_components)) i = 0UL; i < std::size(m_components); ++i)
@@ -127,6 +129,7 @@ void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 
 void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
     if (std::size(colors) == std::size(m_components))
     {
         for (decltype(std::size(m_components)) i = 0; i < std::size(m_components); ++i)

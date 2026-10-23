@@ -25,6 +25,7 @@
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <datasource/row-major-multi-datasource.h>
 #include <datasource/soa-multi-datasource.h>
 #include <cmath>
@@ -242,6 +243,7 @@ void SciQLopHistogram::set_bins(int bins)
     // QCPHistogram silently ignores non-positive values.
     if (bins <= 0)
         throw std::invalid_argument("histogram bins must be positive");
+    SCIQLOP_ON_OWNER_THREAD(set_bins(bins));
     if (_hist)
         _hist->setBins(bins);
 }
@@ -257,6 +259,7 @@ void SciQLopHistogram::set_bin_range(double lower, double upper)
         throw std::invalid_argument("histogram range: bounds must be finite");
     if (!(lower < upper))
         throw std::invalid_argument("histogram range: lower must be below upper");
+    SCIQLOP_ON_OWNER_THREAD(set_bin_range(lower, upper));
     if (log_bins() && lower <= 0)
         throw std::invalid_argument("histogram range: log bins need a positive lower bound");
     if (_hist)
@@ -265,12 +268,14 @@ void SciQLopHistogram::set_bin_range(double lower, double upper)
 
 void SciQLopHistogram::clear_bin_range()
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_bin_range());
     if (_hist)
         _hist->setFixedRange(std::nullopt);
 }
 
 void SciQLopHistogram::reset_edges()
 {
+    SCIQLOP_ON_OWNER_THREAD(reset_edges());
     if (_hist)
         _hist->resetEdges();
 }
@@ -306,6 +311,7 @@ bool SciQLopHistogram::log_bins() const noexcept
 
 void SciQLopHistogram::set_normalization(HistogramNormalization normalization)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_normalization(normalization));
     if (_hist)
         _hist->setNormalization(to_qcp(normalization));
 }
@@ -317,6 +323,7 @@ HistogramNormalization SciQLopHistogram::normalization() const noexcept
 
 void SciQLopHistogram::set_style(HistogramStyle style)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_style(style));
     _style = style;
     if (_hist)
         _hist->setStyle(to_qcp(style));
@@ -341,6 +348,7 @@ QString SciQLopHistogram::layer() const noexcept
 
 void SciQLopHistogram::set_colors(const QList<QColor>& colors)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
     if (!_hist)
         return;
     _hist->setColumnColors(colors);

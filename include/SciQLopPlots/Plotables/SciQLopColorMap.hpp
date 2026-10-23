@@ -27,6 +27,7 @@
 #include "SciQLopColorMapBase.hpp"
 #include "QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/enums.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <plottables/plottable-colormap2.h>
 #include <datasource/soa-datasource-2d.h>
 #include <QSignalBlocker>
@@ -74,6 +75,7 @@ public:
 
     inline void set_contour_levels(const QVector<double>& levels)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_contour_levels(levels));
         if (_cmap)
         {
             _cmap->setContourLevels(levels);
@@ -89,6 +91,7 @@ public:
 
     inline void set_auto_contour_levels(int count)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_auto_contour_levels(count));
         if (_cmap)
         {
             _cmap->setAutoContourLevels(count);
@@ -103,6 +106,7 @@ public:
 
     inline void set_contour_pen(const QPen& pen)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_contour_pen(pen));
         if (_cmap)
         {
             _cmap->setContourPen(pen);
@@ -117,6 +121,7 @@ public:
 
     inline void set_contour_color(const QColor& color)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_contour_color(color));
         if (_cmap)
         {
             auto pen = _cmap->contourPen();
@@ -133,6 +138,7 @@ public:
 
     inline void set_contour_width(double width)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_contour_width(width));
         if (_cmap)
         {
             auto pen = _cmap->contourPen();
@@ -151,6 +157,7 @@ public:
     // no visible effect (known limitation, not yet implemented).
     inline void set_contour_labels_enabled(bool enabled)
     {
+        SCIQLOP_ON_OWNER_THREAD(set_contour_labels_enabled(enabled));
         if (_cmap)
         {
             _cmap->setContourLabelEnabled(enabled);

@@ -27,6 +27,7 @@
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -281,6 +282,7 @@ void SciQLopCurve::create_graphs(const QStringList& labels)
 
 void SciQLopCurve::set_time_color_enabled(bool enabled)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_time_color_enabled(enabled));
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_time_color_enabled(enabled);
@@ -310,6 +312,7 @@ void SciQLopCurve::set_color_values(const QVector<double>& values)
 
 void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& end)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_time_color_gradient(start, end));
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_gradient_colors(start, end);
@@ -317,6 +320,7 @@ void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& en
 
 void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
     _gradient_preset = gradient;
     const QCPColorGradient qcp_gradient { to_qcp(gradient) };
     for (auto comp : m_components)

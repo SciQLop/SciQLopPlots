@@ -22,6 +22,7 @@
 #include "SciQLopPlots/Plotables/SciQLopLineGraph.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 
 #include <cmath>
 #include <limits>
@@ -118,6 +119,7 @@ void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gr
 
 void SciQLopLineGraph::set_color_gradient(::ColorGradient gradient)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
     _gradient_preset = gradient;
     _color_gradient = QCPColorGradient(to_qcp(gradient));
     push_color_mapping();

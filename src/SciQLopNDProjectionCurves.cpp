@@ -256,6 +256,7 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
 
 void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
     const auto curves = _curves();
     for (int i = 0; i < curves.size() && i < colors.size(); ++i)
         curves[i]->set_colors({ colors[i] });
@@ -280,6 +281,7 @@ void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGr
 
 void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
     for (auto* curve : _curves())
         curve->set_color_gradient(gradient);
     _set_scale_gradient(gradient);
@@ -385,6 +387,7 @@ SciQLopGraphComponentInterface* SciQLopNDProjectionCurves::component(const QStri
 
 void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_time_color_enabled(enabled));
     for (auto* curve : _curves())
         curve->set_time_color_enabled(enabled);
 }
@@ -396,6 +399,7 @@ bool SciQLopNDProjectionCurves::time_color_enabled() const
 
 void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, const QColor& end)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_time_color_gradient(start, end));
     for (auto* curve : _curves())
         curve->set_time_color_gradient(start, end);
     if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
