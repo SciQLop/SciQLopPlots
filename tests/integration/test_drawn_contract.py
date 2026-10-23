@@ -14,11 +14,28 @@ from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QColor, QPixmap
 
 import SciQLopPlots
-from SciQLopPlots import (GraphType, MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopCurvedLineItem, SciQLopDrawnObject, SciQLopEllipseItem,
-                          SciQLopHorizontalLine, SciQLopHorizontalSpan, SciQLopMultiPlotPanel,
-                          SciQLopNDProjectionPlot, SciQLopPixmapItem, SciQLopPlot, SciQLopPlotRange,
-                          SciQLopRectangularSpan, SciQLopStraightLine, SciQLopTextItem, SciQLopTimeSeriesPlot,
-                          SciQLopVerticalLine, SciQLopVerticalSpan)
+from SciQLopPlots import (
+    GraphType,
+    MultiPlotsVerticalLine,
+    MultiPlotsVerticalSpan,
+    MultiPlotsVSpanCollection,
+    SciQLopCurvedLineItem,
+    SciQLopDrawnObject,
+    SciQLopEllipseItem,
+    SciQLopHorizontalLine,
+    SciQLopHorizontalSpan,
+    SciQLopMultiPlotPanel,
+    SciQLopNDProjectionPlot,
+    SciQLopPixmapItem,
+    SciQLopPlot,
+    SciQLopPlotRange,
+    SciQLopRectangularSpan,
+    SciQLopStraightLine,
+    SciQLopTextItem,
+    SciQLopTimeSeriesPlot,
+    SciQLopVerticalLine,
+    SciQLopVerticalSpan,
+)
 from conftest import off_thread, record
 
 OK, RAISE = "ok", "raise"
