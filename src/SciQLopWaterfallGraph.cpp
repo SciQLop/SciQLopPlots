@@ -53,8 +53,11 @@ void SciQLopWaterfallGraph::set_offset_mode(WaterfallOffsetMode mode)
     {
         if (from_qcp(w->offsetMode()) == mode)
             return;
-        w->setOffsetMode(to_qcp(mode));
+        // Its busy signal may reach a slot that deletes this graph.
         const QPointer self(this);
+        w->setOffsetMode(to_qcp(mode));
+        if (!self)
+            return;
         Q_EMIT offset_mode_changed(mode);
         if (self)
             Q_EMIT replot();
@@ -67,8 +70,11 @@ void SciQLopWaterfallGraph::set_uniform_spacing(double spacing)
     {
         if (w->uniformSpacing() == spacing)
             return;
-        w->setUniformSpacing(spacing);
+        // Its busy signal may reach a slot that deletes this graph.
         const QPointer self(this);
+        w->setUniformSpacing(spacing);
+        if (!self)
+            return;
         Q_EMIT uniform_spacing_changed(spacing);
         if (self)
             Q_EMIT replot();
@@ -85,8 +91,11 @@ void SciQLopWaterfallGraph::set_offsets(const QVector<double>& offsets)
                 "offsets length must match number of traces");
         if (w->offsets() == offsets)
             return;
-        w->setOffsets(offsets);
+        // Its busy signal may reach a slot that deletes this graph.
         const QPointer self(this);
+        w->setOffsets(offsets);
+        if (!self)
+            return;
         Q_EMIT offsets_changed(offsets);
         if (self)
             Q_EMIT replot();
@@ -99,8 +108,11 @@ void SciQLopWaterfallGraph::set_normalize(bool enabled)
     {
         if (w->normalize() == enabled)
             return;
-        w->setNormalize(enabled);
+        // Its busy signal may reach a slot that deletes this graph.
         const QPointer self(this);
+        w->setNormalize(enabled);
+        if (!self)
+            return;
         Q_EMIT normalize_changed(enabled);
         if (self)
             Q_EMIT replot();
@@ -113,8 +125,11 @@ void SciQLopWaterfallGraph::set_gain(double gain)
     {
         if (w->gain() == gain)
             return;
-        w->setGain(gain);
+        // Its busy signal may reach a slot that deletes this graph.
         const QPointer self(this);
+        w->setGain(gain);
+        if (!self)
+            return;
         Q_EMIT gain_changed(gain);
         if (self)
             Q_EMIT replot();

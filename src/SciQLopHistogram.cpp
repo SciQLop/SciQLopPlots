@@ -165,17 +165,25 @@ void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         return;
     if (x.is_valid())
         sqp::validation::validate_same_length(x, "x", y, "y");
+    // NeoQCP's busy and ready signals inside _bin, and data_changed, may reach a slot deleting this.
+    const QPointer self(this);
     _bin(x, y);
+    if (!self)
+        return;
     _buffers = { x, y };
     Q_EMIT data_changed(x, y);
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 void SciQLopHistogram::set_values(SciQLopPyBuffer values)
 {
     if (!_hist || !values.is_valid())
         return;
+    const QPointer self(this);
     _bin(SciQLopPyBuffer(), values);
+    if (!self)
+        return;
     _buffers = { values };
     Q_EMIT data_changed();
 }
@@ -203,9 +211,14 @@ void SciQLopHistogram::set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights
     const int bars = static_cast<int>(edges.flat_size()) - 1;
     _apply_default_style(split.size());
     _buffers = { edges, heights };
+    // NeoQCP's busy and ready signals may reach a slot deleting this histogram.
+    const QPointer self(this);
     _hist->setBinned(to_double_vector<std::vector<double>>(edges), std::move(split));
+    if (!self)
+        return;
     _hist->setBins(bars);
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 void SciQLopHistogram::_apply_default_style(std::size_t columns)

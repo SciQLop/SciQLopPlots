@@ -96,12 +96,18 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
         _set_selected(false);
 }
 
+// Signals last: a color_changed or replot slot may delete this component or its graph.
 void SciQLopGraphComponent::set_pen(const QPen& pen)
 {
     SCIQLOP_ON_OWNER_THREAD(set_pen(pen));
+    if (!m_plottable)
+        return;
     const QColor before = _color();
     _apply_pen(pen);
+    const QPointer self(this);
     _notify_color_since(before);
+    if (self)
+        emit replot();
 }
 
 void SciQLopGraphComponent::_apply_pen(const QPen& pen)
@@ -119,7 +125,6 @@ void SciQLopGraphComponent::_apply_pen(const QPen& pen)
                 selPen.setWidthF(pen.widthF() + 3);
                 mg->component(m_componentIndex).selectedPen = selPen;
             }
-            emit replot();
             return;
         }
         m_plottable->setPen(pen);
@@ -127,7 +132,6 @@ void SciQLopGraphComponent::_apply_pen(const QPen& pen)
         selectionPen.setColor(Qt::darkGray);
         selectionPen.setWidthF(pen.widthF() + 3);
         m_plottable->selectionDecorator()->setPen(selectionPen);
-        emit replot();
     }
 }
 
@@ -188,7 +192,11 @@ void SciQLopGraphComponent::_set_color(const QColor& color)
         return;
     auto line = pen();
     line.setColor(color);
+    // set_pen's replot slot may delete this component or its graph.
+    const QPointer self(this);
     set_pen(line);
+    if (!self)
+        return;
     auto marker = marker_pen();
     if (marker.style() == Qt::NoPen)
         marker = QPen(color);

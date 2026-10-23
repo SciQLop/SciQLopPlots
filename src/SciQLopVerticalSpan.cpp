@@ -81,30 +81,40 @@ void impl::VerticalSpan::set_coordinates(Coordinates coordinates)
 {
     if (m_coordinates == coordinates)
         return;
-    auto current = range();
-    const double origin = plot_area_left();
-    if (coordinates == Coordinates::Pixels)
+    const auto before = range();
+    const auto convert = [this, coordinates]
     {
-        auto pr = pixel_range();
-        lowerEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
-        upperEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
-        setRange(QCPRange(pr.first, pr.second));
-    }
-    else
-    {
-        lowerEdge->setTypeX(QCPItemPosition::ptPlotCoords);
-        upperEdge->setTypeX(QCPItemPosition::ptPlotCoords);
-        auto* keyAxis = lowerEdge->keyAxis();
-        if (keyAxis)
+        auto current = range();
+        const double origin = plot_area_left();
+        if (coordinates == Coordinates::Pixels)
         {
-            // current holds plot-area-relative pixels; pixelToCoord wants widget ones.
-            double lower = keyAxis->pixelToCoord(current.first + origin);
-            double upper = keyAxis->pixelToCoord(current.second + origin);
-            setRange(QCPRange(lower, upper));
+            auto pr = pixel_range();
+            lowerEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
+            upperEdge->setTypeX(QCPItemPosition::ptAxisRectAbsolute);
+            setRange(QCPRange(pr.first, pr.second));
         }
-    }
-    m_coordinates = coordinates;
-    replot();
+        else
+        {
+            lowerEdge->setTypeX(QCPItemPosition::ptPlotCoords);
+            upperEdge->setTypeX(QCPItemPosition::ptPlotCoords);
+            auto* keyAxis = lowerEdge->keyAxis();
+            if (keyAxis)
+            {
+                // current holds plot-area-relative pixels; pixelToCoord wants widget ones.
+                double lower = keyAxis->pixelToCoord(current.first + origin);
+                double upper = keyAxis->pixelToCoord(current.second + origin);
+                setRange(QCPRange(lower, upper));
+            }
+        }
+        m_coordinates = coordinates;
+    };
+    const auto notify = [this, before]
+    {
+        if (range() != before)
+            emit range_changed(range());
+    };
+    if (SciQLopPlots::set_then_emit(this, convert, notify))
+        replot();
 }
 
 SciQLopPlotRange impl::VerticalSpan::pixel_range() const noexcept

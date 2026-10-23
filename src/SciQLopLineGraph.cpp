@@ -48,8 +48,10 @@ SciQLopLineGraph::~SciQLopLineGraph()
 
 void SciQLopLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
+    // The base's replot / data_changed slots may delete this graph.
+    const QPointer self(this);
     SciQLopMultiGraphBase::set_data(std::move(x), std::move(y));
-    if (!_color_values)
+    if (!self || !_color_values)
         return;
     // Same size rule as QCPMultiGraph::setDataSource, which drops its copy on its own.
     if (_color_values->size() != _x.flat_size())
@@ -116,8 +118,11 @@ void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gr
     check_color_length(values, _x.is_valid() ? _x.flat_size() : 0);
     _gradient_preset = gradient;
     _color_gradient = QCPColorGradient(to_qcp(gradient));
+    // apply_color_values' replot slot may delete this graph.
+    const QPointer self(this);
     apply_color_values(values);
-    notify_color_scale(_color_values ? std::optional { gradient } : std::nullopt);
+    if (self)
+        notify_color_scale(_color_values ? std::optional { gradient } : std::nullopt);
 }
 
 void SciQLopLineGraph::set_color_gradient(::ColorGradient gradient)
@@ -125,8 +130,10 @@ void SciQLopLineGraph::set_color_gradient(::ColorGradient gradient)
     SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
     _gradient_preset = gradient;
     _color_gradient = QCPColorGradient(to_qcp(gradient));
+    // push_color_mapping's replot slot may delete this graph.
+    const QPointer self(this);
     push_color_mapping();
-    if (_color_values)
+    if (self && _color_values)
         notify_color_scale(gradient);
 }
 
@@ -143,16 +150,23 @@ void SciQLopLineGraph::set_data_and_color(const QList<SciQLopPyBuffer>& data,
     // the new ones show it again.
     auto previous = std::pair { _color_values, _color_buffer };
     store_color_values(color);
+    // set_data's and push_color_values' slots may delete this graph.
+    const QPointer self(this);
     try
     {
         set_data(data[0], data[1]);
     }
     catch (...)
     {
-        std::tie(_color_values, _color_buffer) = std::move(previous);
+        if (self)
+            std::tie(_color_values, _color_buffer) = std::move(previous);
         throw;
     }
+    if (!self)
+        return;
     push_color_values();
+    if (!self)
+        return;
     // Only a gradient given explicitly, and only when the colouring switches on: the
     // plot's scale keeps the last gradient asked for, so asking on every refresh would
     // undo a gradient picked on the plot.

@@ -95,10 +95,15 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     if (nx_sz == 0 || nz_sz == 0)
     {
         _dataHolder.reset();
-        _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
         m_data_range = SciQLopPlotRange();
+        // NeoQCP's busy signal and data_changed may reach a slot deleting this colour map.
+        const QPointer self(this);
+        _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
+        if (!self)
+            return;
         Q_EMIT data_changed(x, y, z);
-        Q_EMIT data_changed();
+        if (self)
+            Q_EMIT data_changed();
         return;
     }
 
@@ -150,6 +155,8 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     const int nx = static_cast<int>(nx_sz);
 
     m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);
+    // busy_changed, request_rescale and range slots may delete this colour map.
+    const QPointer self(this);
 
     dispatch_dtype(y.format_code(), [&](auto y_tag) {
         dispatch_dtype(z.format_code(), [&](auto z_tag) {
@@ -173,7 +180,11 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
         });
     });
 
+    if (!self)
+        return;
     check_first_data(nx);
+    if (!self)
+        return;
 
     if (_auto_scale_y && _dataHolder && _dataHolder->source && _valueAxis)
     {
@@ -187,9 +198,11 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
         if (found && yRange.lower != yRange.upper)
             _valueAxis->set_range(SciQLopPlotRange(yRange.lower, yRange.upper));
     }
-
+    if (!self)
+        return;
     Q_EMIT data_changed(x, y, z);
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 QList<SciQLopPyBuffer> SciQLopColorMap::data() const noexcept

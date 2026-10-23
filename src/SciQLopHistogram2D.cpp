@@ -78,9 +78,12 @@ void SciQLopHistogram2D::_rebin_on_log_of(SciQLopPlotAxis* axis,
     connection = connect(axis, &SciQLopPlotAxis::log_changed, this,
                          [this, log_changed](bool on)
                          {
+                             // The re-bin's busy signal may reach a slot deleting this.
+                             const QPointer self(this);
                              if (_hist)
                                  _hist->refreshBinning();
-                             Q_EMIT(this->*log_changed)(on);
+                             if (self)
+                                 Q_EMIT(this->*log_changed)(on);
                          });
 }
 
@@ -89,9 +92,11 @@ void SciQLopHistogram2D::_rebin_for_new_axis(bool was_log, bool is_log,
 {
     if (was_log == is_log)
         return;
+    const QPointer self(this);
     if (_hist)
         _hist->refreshBinning();
-    Q_EMIT(this->*log_changed)(is_log);
+    if (self)
+        Q_EMIT(this->*log_changed)(is_log);
 }
 
 void SciQLopHistogram2D::set_x_axis(SciQLopPlotAxisInterface* axis) noexcept
@@ -126,6 +131,8 @@ void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     if (!_hist || !x.is_valid() || !y.is_valid())
         return;
+    // NeoQCP's busy signal inside setDataSource, and data_changed, may reach a slot deleting this.
+    const QPointer self(this);
 
     if (x.flat_size() != y.flat_size())
         throw std::runtime_error(
@@ -150,6 +157,8 @@ void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
             _hist->setDataSource(std::move(aliased));
         });
     });
+    if (!self)
+        return;
 
     if (!_got_first_data && x.flat_size() > 0)
     {
@@ -165,7 +174,8 @@ void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     }
 
     Q_EMIT data_changed(x, y);
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 QList<SciQLopPyBuffer> SciQLopHistogram2D::data() const noexcept
@@ -185,8 +195,11 @@ void SciQLopHistogram2D::set_bins(int x_bins, int y_bins)
     {
         if (_hist->keyBins() == x_bins && _hist->valueBins() == y_bins)
             return;
+        // The re-bin's busy signal may reach a slot deleting this.
+        const QPointer self(this);
         _hist->setBins(x_bins, y_bins);
-        Q_EMIT bins_changed(x_bins, y_bins);
+        if (self)
+            Q_EMIT bins_changed(x_bins, y_bins);
     }
 }
 
@@ -208,8 +221,10 @@ void SciQLopHistogram2D::set_normalization(int normalization)
     {
         if (static_cast<int>(_hist->normalization()) == normalization)
             return;
+        const QPointer self(this);
         _hist->setNormalization(static_cast<QCPHistogram2D::Normalization>(normalization));
-        Q_EMIT normalization_changed(normalization);
+        if (self)
+            Q_EMIT normalization_changed(normalization);
     }
 }
 

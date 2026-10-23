@@ -41,8 +41,12 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
     // data" contract as SciQLopMultiGraphBase::sync_components. A labelled curve
     // keeps its component count as a contract (set_data validates the column
     // count against it), so it is left alone here.
+    // Each signal below may reach a slot that deletes this curve.
+    const QPointer self(this);
     if (_resampler->line_count() == 0)
         _sync_component_count(static_cast<int>(data.size()));
+    if (!self)
+        return;
 
     // The resampler emits via QueuedConnection, so the component count may
     // have grown or shrunk between emit and delivery. Cap iteration to the
@@ -57,9 +61,14 @@ void SciQLopCurve::_setCurveData(QList<QVector<QCPCurveData>> data)
     }
     _resampler_busy = false;
     set_busy(false);
+    if (!self)
+        return;
     Q_EMIT this->replot();
+    if (!self)
+        return;
     check_first_data(data.isEmpty() ? 0 : data.front().size());
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 void SciQLopCurve::clear_curves(bool curve_already_removed)
@@ -140,6 +149,8 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     };
     require_numeric(x, "x");
     require_numeric(y, "y");
+    // component_list_changed and busy_changed slots may delete this curve.
+    const QPointer self(this);
     if (x.is_valid() && y.is_valid())
     {
         sqp::validation::validate_xy(x, y);
@@ -157,6 +168,8 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         if (components == 0 && x.flat_size() > 0)
             _sync_component_count(static_cast<int>(y.flat_size() / x.flat_size()));
     }
+    if (!self)
+        return;
     _point_count = x.is_valid() ? x.flat_size() : 0;
     // The resampler early-returns without emitting setGraphData when x is
     // invalid/empty or y is invalid (and _setCurveData is the only path that
@@ -164,6 +177,8 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     _resampler_busy = x.is_valid() && y.is_valid() && x.flat_size() > 0;
     if (_resampler_busy)
         set_busy(true);
+    if (!self)
+        return;
     this->_resampler->setData(x, y);
     Q_EMIT data_changed(x, y);
 }
@@ -327,8 +342,10 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_color_gradient(qcp_gradient);
     // Like line graphs: an uncoloured curve does not touch the plot's scale yet.
+    const QPointer self(this);
     notify_color_scale(has_color_values() ? std::optional { gradient } : std::nullopt);
-    Q_EMIT this->replot();
+    if (self)
+        Q_EMIT this->replot();
 }
 
 void SciQLopCurve::_set_visible(bool visible)
@@ -407,8 +424,10 @@ void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradie
 
     set_color_values(colors);
     set_time_color_enabled(!colors.isEmpty());
+    const QPointer self(this);
     notify_color_scale(colors.isEmpty() ? std::nullopt : std::optional { gradient });
-    Q_EMIT this->replot();
+    if (self)
+        Q_EMIT this->replot();
 }
 
 void SciQLopCurve::set_data_and_color(const QList<SciQLopPyBuffer>& data,
@@ -424,13 +443,18 @@ void SciQLopCurve::set_data_and_color(const QList<SciQLopPyBuffer>& data,
                                     + std::to_string(samples) + "), got "
                                     + std::to_string(count));
     const bool was_coloured = has_color_values();
+    // set_data's slots may delete this curve.
+    const QPointer self(this);
     set_data(data[0], data[1]);
+    if (!self)
+        return;
     const auto colors = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
     set_color_values(colors);
     set_time_color_enabled(!colors.isEmpty());
     // Same rule as line graphs: the explicit gradient, only when the colouring switches on.
     notify_color_scale(!colors.isEmpty() && !was_coloured ? _gradient_preset : std::nullopt);
-    Q_EMIT this->replot();
+    if (self)
+        Q_EMIT this->replot();
 }
 
 QVariant SciQLopCurve::position_at_time(double t) const

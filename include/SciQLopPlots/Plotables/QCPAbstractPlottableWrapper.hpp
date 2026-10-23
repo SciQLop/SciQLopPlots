@@ -133,10 +133,14 @@ public:
 
     virtual void set_busy(bool busy) noexcept override
     {
-        for (auto component : m_components)
+        // A busy_changed slot may delete this graph and its components: walk a snapshot.
+        const QPointer<QObject> self(this);
+        const auto parts = m_components;
+        for (const auto& part : parts)
         {
-            auto p = component->plottable();
-            if (p)
+            if (!self)
+                return;
+            if (auto* p = part ? part->plottable() : nullptr)
                 p->setBusy(busy);
         }
     }

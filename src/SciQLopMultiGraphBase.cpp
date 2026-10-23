@@ -63,6 +63,8 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
     // new data arrives and replaces _x/_y.
     struct Buffers { SciQLopPyBuffer x, y; };
     auto guard = std::make_shared<Buffers>(Buffers{x, y});
+    // Before setDataSource: its busy signal may reach a slot that deletes this graph.
+    _dataHolder = guard;
 
     dispatch_dtype(y.format_code(), [&](auto tag) {
         using V = typename decltype(tag)::type;
@@ -99,7 +101,6 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
             }
         }
     });
-    _dataHolder = std::move(guard);
 }
 
 void SciQLopMultiGraphBase::apply_preset(int column)
@@ -131,12 +132,16 @@ void SciQLopMultiGraphBase::sync_components()
         if (!_pendingLabels.isEmpty())
             _multiGraph->setComponentNames(_pendingLabels);
         const int old_count = static_cast<int>(plottable_count());
+        // A component_list_changed slot may delete this graph.
+        const QPointer<SciQLopMultiGraphBase> self(this);
         for (int i = old_count; i < nComponents; ++i)
         {
             auto component = new SciQLopGraphComponent(_multiGraph, i, this);
             if (i < _pendingLabels.size())
                 component->set_name(_pendingLabels.value(i));
             _register_component(component);
+            if (!self)
+                return;
         }
         apply_presets_to_new_components(old_count, nComponents);
         _pendingLabels.clear();
@@ -171,13 +176,23 @@ void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     _x = x;
     _y = y;
 
+    // Every step below may reach a slot that deletes this graph.
+    const QPointer<SciQLopMultiGraphBase> self(this);
     build_data_source(x, y);
+    if (!self)
+        return;
     sync_components();
-
+    if (!self)
+        return;
     Q_EMIT this->replot();
+    if (!self)
+        return;
     check_first_data(static_cast<int>(x.flat_size()));
+    if (!self)
+        return;
     Q_EMIT data_changed(x, y);
-    Q_EMIT data_changed();
+    if (self)
+        Q_EMIT data_changed();
 }
 
 QList<SciQLopPyBuffer> SciQLopMultiGraphBase::data() const noexcept
@@ -306,9 +321,9 @@ void SciQLopMultiGraphBase::set_fill_between(int column, int other)
 
 void SciQLopMultiGraphBase::clear_fill(int column)
 {
+    require(column >= 0, invalid_column(column));
     SCIQLOP_ON_OWNER_THREAD(clear_fill(column));
-    if (!_multiGraph)
-        return;
+    require(_multiGraph && _multiGraph->isValidColumn(column), invalid_column(column));
     _multiGraph->clearComponentFill(column);
     notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::fill_changed);
 }
@@ -340,9 +355,9 @@ void SciQLopMultiGraphBase::set_error_bars(int column, int lower, int upper, dou
 
 void SciQLopMultiGraphBase::clear_error_bars(int column)
 {
+    require(column >= 0, invalid_column(column));
     SCIQLOP_ON_OWNER_THREAD(clear_error_bars(column));
-    if (!_multiGraph)
-        return;
+    require(_multiGraph && _multiGraph->isValidColumn(column), invalid_column(column));
     _multiGraph->clearComponentErrorBars(column);
     notify_component_then_replot(*this, column, &SciQLopGraphComponentInterface::error_bars_changed);
 }

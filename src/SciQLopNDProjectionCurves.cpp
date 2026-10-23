@@ -210,6 +210,8 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
     const auto curves = _guarded_curves();
     const auto curves_count = curves.size();
     check_batch_size(curves_count, data.size());
+    // A curve's busy_changed relay may delete this projection.
+    const QPointer self(this);
     // A data_changed slot may delete a later curve: each is checked just before its call.
     const auto each_live = [&curves](auto&& apply)
     {
@@ -237,7 +239,8 @@ void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
                 curve->set_color_values(scalars);
                 curve->set_time_color_enabled(!scalars.isEmpty());
             });
-        _update_color_scale();
+        if (self)
+            _update_color_scale();
     }
     else
     {
@@ -260,7 +263,11 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
         throw std::invalid_argument("Projection: expected one colour value per time sample ("
                                     + std::to_string(samples) + "), got "
                                     + std::to_string(count));
+    // set_data's busy_changed relay may delete this projection.
+    const QPointer self(this);
     set_data(data);
+    if (!self)
+        return;
     const auto values = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
     _for_each_curve(
         [&values](SciQLopCurve* curve)
@@ -268,7 +275,8 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
             curve->set_color_values(values);
             curve->set_time_color_enabled(!values.isEmpty());
         });
-    _update_color_scale();
+    if (self)
+        _update_color_scale();
 }
 
 void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
@@ -290,7 +298,11 @@ QList<QColor> SciQLopNDProjectionCurves::colors() const noexcept
 
 void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
+    // A curve's replot relay may delete this projection.
+    const QPointer self(this);
     _for_each_curve([&](SciQLopCurve* curve) { curve->set_color_data(values, gradient); });
+    if (!self)
+        return;
     _update_color_scale();
     if (values.is_valid() && values.flat_size() > 0)
         _set_scale_gradient(gradient);
