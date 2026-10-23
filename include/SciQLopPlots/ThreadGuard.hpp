@@ -18,6 +18,7 @@
 -------------------------------------------------------------------------------*/
 #pragma once
 
+#include <QDebug>
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
@@ -31,8 +32,31 @@ namespace SciQLopPlots
 {
 
 /*!
+ * Runs a queued \a call. It has no caller left to raise to, and a throw out of a queued call
+ * terminates the process (it unwinds through the event loop): anything thrown only warns.
+ */
+// simplify: a worker-thread caller never learns its call failed; upgrade path = a completion
+// signal or a future returned by the mutator, if a caller ever needs it.
+template <typename Call>
+void run_queued(const Call& call) noexcept
+{
+    try
+    {
+        call();
+    }
+    catch (const std::exception& e)
+    {
+        qWarning() << "SciQLopPlots:" << e.what();
+    }
+    catch (...)
+    {
+        qWarning() << "SciQLopPlots: a queued call threw a non-standard exception";
+    }
+}
+
+/*!
  * Called off \a owner's thread (a Python thread, SciQLop#147), posts \a call to it and returns
- * true: the mutator returns, and \a call runs it again on the owner's thread.
+ * true: the mutator returns, and \a call runs it again on the owner's thread, through run_queued.
  *
  * Queued, never blocking: the GUI thread may be waiting on the caller (the GIL), so a blocking
  * hop can deadlock. \a owner is the call's context object: Qt drops the call if it is deleted
@@ -43,7 +67,8 @@ template <typename Call>
 {
     if (QThread::currentThread() == owner->thread())
         return false;
-    QMetaObject::invokeMethod(owner, std::forward<Call>(call), Qt::QueuedConnection);
+    QMetaObject::invokeMethod(
+        owner, [call = std::forward<Call>(call)] { run_queued(call); }, Qt::QueuedConnection);
     return true;
 }
 

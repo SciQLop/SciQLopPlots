@@ -20,7 +20,6 @@
 #include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 
-#include <QDebug>
 #include <QPointer>
 #include <string>
 #include <typeinfo>
@@ -28,34 +27,6 @@
 
 namespace
 {
-//! A queued set has no caller left to raise to, and a throw out of a queued slot terminates the
-//! process: anything thrown there only warns.
-// simplify: a worker-thread caller never learns its set was unsupported; upgrade path = a
-// completion signal or a future returned by the setter, if a caller ever needs it.
-template <typename Call>
-void run_queued(const Call& call)
-{
-    try
-    {
-        call();
-    }
-    catch (const std::exception& e)
-    {
-        qWarning() << "SciQLopPlots:" << e.what();
-    }
-    catch (...)
-    {
-        qWarning() << "SciQLopPlots: a queued set threw a non-standard exception";
-    }
-}
-
-//! Off the owner thread: re-run \a call there and return true, the setter then returns.
-template <typename Call>
-bool hopped(SciQLopDrawnObject* self, Call call)
-{
-    return SciQLopPlots::posted_to_owner_thread(self, [call] { run_queued(call); });
-}
-
 template <typename T>
 using Getter = T (SciQLopDrawnObject::*)() const;
 template <typename Arg>
@@ -136,7 +107,7 @@ bool SciQLopDrawnObject::visible() const
 
 void SciQLopDrawnObject::set_visible(bool visible)
 {
-    if (hopped(this, [this, visible] { set_visible(visible); }))
+    if (SciQLopPlots::posted_to_owner_thread(this, [this, visible] { set_visible(visible); }))
         return;
     apply_change(this, "set_visible", _always_apply(), m_applying_visible, visible,
                  &SciQLopDrawnObject::_visible, &SciQLopDrawnObject::_set_visible,
@@ -150,7 +121,7 @@ bool SciQLopDrawnObject::selected() const
 
 void SciQLopDrawnObject::set_selected(bool selected)
 {
-    if (hopped(this, [this, selected] { set_selected(selected); }))
+    if (SciQLopPlots::posted_to_owner_thread(this, [this, selected] { set_selected(selected); }))
         return;
     apply_change(this, "set_selected", _always_apply(), m_applying_selected, selected,
                  &SciQLopDrawnObject::_selected, &SciQLopDrawnObject::_set_selected,
@@ -164,7 +135,7 @@ QString SciQLopDrawnObject::name() const
 
 void SciQLopDrawnObject::set_name(const QString& name)
 {
-    if (hopped(this, [this, name] { set_name(name); }))
+    if (SciQLopPlots::posted_to_owner_thread(this, [this, name] { set_name(name); }))
         return;
     if (objectName() == name)
         return;
@@ -180,7 +151,7 @@ QColor SciQLopDrawnObject::color() const
 
 void SciQLopDrawnObject::set_color(const QColor& color)
 {
-    if (hopped(this, [this, color] { set_color(color); }))
+    if (SciQLopPlots::posted_to_owner_thread(this, [this, color] { set_color(color); }))
         return;
     apply_change(this, "set_color", _always_apply(), m_applying_color, color,
                  &SciQLopDrawnObject::_color, &SciQLopDrawnObject::_set_color,

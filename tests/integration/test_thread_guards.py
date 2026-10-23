@@ -441,3 +441,36 @@ def test_component_error_bars_land_on_gui_thread(plot):
     _in_thread(a.clear_error_bars)
     _settle()
     assert appliers == [threading.get_ident()] * 2
+
+
+_QUEUED_THROW_SCRIPT = """
+import threading
+import numpy as np
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication
+from SciQLopPlots import SciQLopPlot
+
+app = QApplication([])
+plot = SciQLopPlot()
+component = plot.plot(np.arange(10.0), np.arange(10.0), labels=["a"]).components()[0]
+worker = threading.Thread(target=lambda: component.set_fill_color(QColor("red")))
+worker.start()
+worker.join()
+app.processEvents()
+print("survived")
+"""
+
+
+def test_a_queued_setter_that_throws_warns_instead_of_terminating(tmp_path):
+    """Off-thread, set_fill_color on a component with no fill throws on the GUI thread, from
+    the event loop: nothing can catch it there, so the hop itself must."""
+    import os
+    import subprocess
+    import sys
+    script = tmp_path / "queued_throw.py"
+    script.write_text(_QUEUED_THROW_SCRIPT)
+    env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+    done = subprocess.run([sys.executable, str(script)], capture_output=True, text=True,
+                          timeout=60, env=env, cwd=tmp_path)
+    assert (done.returncode, done.stdout.strip()) == (0, "survived"), done.stderr
+    assert "this component has no fill" in done.stderr
