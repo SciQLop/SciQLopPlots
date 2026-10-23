@@ -43,6 +43,10 @@ void run_queued(const Call& call)
     {
         qWarning() << "SciQLopPlots:" << e.what();
     }
+    catch (...)
+    {
+        qWarning() << "SciQLopPlots: a queued set threw a non-standard exception";
+    }
 }
 
 //! Off the owner thread: re-run \a call there and return true, the setter then returns.
@@ -80,9 +84,30 @@ T current_value(SciQLopDrawnObject* self, Getter<T> get, const char* setter)
     }
 }
 
+//! Raises \a flag for its lifetime; restores it unless the object died meanwhile.
+class ApplyingScope
+{
+    QPointer<SciQLopDrawnObject> m_alive;
+    bool& m_flag;
+    bool m_was;
+
+public:
+    ApplyingScope(SciQLopDrawnObject* self, bool& flag)
+            : m_alive(self), m_flag(flag), m_was(std::exchange(flag, true))
+    {
+    }
+    ~ApplyingScope()
+    {
+        if (m_alive)
+            m_flag = m_was;
+    }
+    bool alive() const { return !m_alive.isNull(); }
+};
+
 template <typename T, typename Arg>
-void apply_change(SciQLopDrawnObject* self, const char* setter, bool always_apply, const T& value,
-                  Getter<T> get, Setter<Arg> set, Setter<Arg> seed, Setter<Arg> notify)
+void apply_change(SciQLopDrawnObject* self, const char* setter, bool always_apply, bool& applying,
+                  const T& value, Getter<T> get, Setter<Arg> set, Setter<Arg> seed,
+                  Setter<Arg> notify)
 {
     const T before = current_value(self, get, setter);
     if (before == value && !always_apply)
@@ -90,11 +115,13 @@ void apply_change(SciQLopDrawnObject* self, const char* setter, bool always_appl
     // Seeded with the live value, before _set_x and never after: a change that bypassed the
     // setters must not make this one's signal look like a repeat.
     (self->*seed)(before);
-    // A slot run while applying may delete self (a member's slot removing its group).
-    QPointer<SciQLopDrawnObject> alive = self;
-    (self->*set)(value);
-    if (!alive)
-        return;
+    {
+        // A slot run while applying may delete self (a member's slot removing its group).
+        ApplyingScope scope(self, applying);
+        (self->*set)(value);
+        if (!scope.alive())
+            return;
+    }
     if (const T after = (self->*get)(); after != before)
         (self->*notify)(after);
 }
@@ -111,9 +138,9 @@ void SciQLopDrawnObject::set_visible(bool visible)
 {
     if (hopped(this, [this, visible] { set_visible(visible); }))
         return;
-    apply_change(this, "set_visible", _always_apply(), visible, &SciQLopDrawnObject::_visible,
-                 &SciQLopDrawnObject::_set_visible, &SciQLopDrawnObject::_seed_visible,
-                 &SciQLopDrawnObject::_notify_visible);
+    apply_change(this, "set_visible", _always_apply(), m_applying_visible, visible,
+                 &SciQLopDrawnObject::_visible, &SciQLopDrawnObject::_set_visible,
+                 &SciQLopDrawnObject::_seed_visible, &SciQLopDrawnObject::_notify_visible);
 }
 
 bool SciQLopDrawnObject::selected() const
@@ -125,9 +152,9 @@ void SciQLopDrawnObject::set_selected(bool selected)
 {
     if (hopped(this, [this, selected] { set_selected(selected); }))
         return;
-    apply_change(this, "set_selected", _always_apply(), selected, &SciQLopDrawnObject::_selected,
-                 &SciQLopDrawnObject::_set_selected, &SciQLopDrawnObject::_seed_selected,
-                 &SciQLopDrawnObject::_notify_selected);
+    apply_change(this, "set_selected", _always_apply(), m_applying_selected, selected,
+                 &SciQLopDrawnObject::_selected, &SciQLopDrawnObject::_set_selected,
+                 &SciQLopDrawnObject::_seed_selected, &SciQLopDrawnObject::_notify_selected);
 }
 
 QString SciQLopDrawnObject::name() const
@@ -155,27 +182,42 @@ void SciQLopDrawnObject::set_color(const QColor& color)
 {
     if (hopped(this, [this, color] { set_color(color); }))
         return;
-    apply_change(this, "set_color", _always_apply(), color, &SciQLopDrawnObject::_color,
-                 &SciQLopDrawnObject::_set_color, &SciQLopDrawnObject::_seed_color,
-                 &SciQLopDrawnObject::_notify_color);
+    apply_change(this, "set_color", _always_apply(), m_applying_color, color,
+                 &SciQLopDrawnObject::_color, &SciQLopDrawnObject::_set_color,
+                 &SciQLopDrawnObject::_seed_color, &SciQLopDrawnObject::_notify_color);
 }
 
 void SciQLopDrawnObject::_notify_visible(bool visible)
 {
+    if (m_applying_visible)
+        return;
     if (std::exchange(m_last_visible, visible) != visible)
         Q_EMIT visible_changed(visible);
 }
 
 void SciQLopDrawnObject::_notify_selected(bool selected)
 {
+    if (m_applying_selected)
+        return;
     if (std::exchange(m_last_selected, selected) != selected)
         Q_EMIT selection_changed(selected);
 }
 
 void SciQLopDrawnObject::_notify_color(const QColor& color)
 {
+    if (m_applying_color)
+        return;
     if (std::exchange(m_last_color, color) != color)
         Q_EMIT color_changed(color);
+}
+
+void SciQLopDrawnObject::_notify_color_since(const QColor& before)
+{
+    if (const QColor after = _color(); after != before)
+    {
+        _seed_color(before);
+        _notify_color(after);
+    }
 }
 
 bool SciQLopDrawnObject::_visible() const

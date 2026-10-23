@@ -342,6 +342,14 @@ public:
         WARN_ABSTRACT_METHOD;
         return false;
     }
+
+protected:
+    // A colour map's colours come from its gradient.
+    QColor _color() const override
+    {
+        throw sqp::unsupported_call(unsupported_message("color", typeid(*this).name())
+                                    + "; use gradient() / set_gradient()");
+    }
 };
 
 inline void drop_batch(SciQLopPlottableInterface* g, const QString& why)

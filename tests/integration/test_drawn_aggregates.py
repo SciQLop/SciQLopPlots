@@ -111,3 +111,56 @@ def test_graph_setters_emit_once_even_with_component_signals(plot):
     graph.set_selected(True)
     assert (visible, selected) == ([False], [True])
 
+
+
+def _states_when_signalled(signal, parts, state):
+    """What each part reads while a slot on `signal` runs: an aggregate signals once applied."""
+    seen = []
+    signal.connect(lambda value: seen.append((value, [getattr(p, state)() for p in parts()])))
+    return seen
+
+
+def test_showing_an_all_hidden_graph_signals_after_every_component_shows(plot):
+    graph, _ = _two(plot)
+    graph.set_visible(False)
+    seen = _states_when_signalled(graph.visible_changed, graph.components, "visible")
+    graph.set_visible(True)
+    assert seen == [(True, [True, True])]
+
+
+def test_selecting_an_unselected_graph_signals_after_every_component_is_selected(plot):
+    graph, _ = _two(plot)
+    seen = _states_when_signalled(graph.selection_changed, graph.components, "selected")
+    graph.set_selected(True)
+    assert seen == [(True, [True, True])]
+
+
+def test_hiding_a_graph_still_signals_once_every_component_is_hidden(plot):  # guard
+    graph, _ = _two(plot)
+    seen = _states_when_signalled(graph.visible_changed, graph.components, "visible")
+    graph.set_visible(False)
+    assert seen == [(False, [False, False])]
+
+
+def test_showing_an_all_hidden_projection_signals_after_every_pane_shows(qtbot):
+    from SciQLopPlots import SciQLopNDProjectionPlot
+    nd = SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(nd)
+    projection = nd.plot([X, X, np.sin(X), np.cos(X)])
+    qtbot.waitUntil(lambda: len(projection.components()) == 3, timeout=3000)
+    projection.set_visible(False)
+    seen = _states_when_signalled(projection.visible_changed, projection.components, "visible")
+    projection.set_visible(True)
+    assert seen == [(True, [True, True, True])]
+
+
+def test_deleting_the_only_selected_component_is_silent_like_a_shrinking_set_data(plot):
+    import shiboken6
+    graph, (a, b) = _two(plot)
+    b.set_selected(True)
+    seen = record(graph.selection_changed)
+    shiboken6.delete(b)
+    process_events()
+    assert (len(graph.components()), seen) == (1, [])
+    graph.components()[0].set_selected(True)
+    assert seen == [True]

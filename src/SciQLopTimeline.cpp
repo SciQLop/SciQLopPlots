@@ -267,6 +267,12 @@ void SciQLopTimeline::select_ids(const QList<qint64>& ids)
 
 bool SciQLopTimeline::_selected() const { return _intervals && _intervals->selected(); }
 
+QColor SciQLopTimeline::_color() const
+{
+    throw sqp::unsupported_call(unsupported_message("color", typeid(*this).name())
+                                + "; use category_color() / set_category_colors()");
+}
+
 void SciQLopTimeline::_set_selected(bool selected)
 {
     if (!_intervals)

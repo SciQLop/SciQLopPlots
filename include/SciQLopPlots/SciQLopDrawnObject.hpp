@@ -38,6 +38,10 @@ class SciQLopDrawnObject : public QObject
     std::optional<bool> m_last_visible;
     std::optional<bool> m_last_selected;
     std::optional<QColor> m_last_color;
+    // Set while a setter applies: the parts' notifies wait for the setter's own, once all applied.
+    bool m_applying_visible = false;
+    bool m_applying_selected = false;
+    bool m_applying_color = false;
 
 public:
     explicit SciQLopDrawnObject(QObject* parent = nullptr);
@@ -79,6 +83,8 @@ protected:
     void _notify_visible(bool visible);
     void _notify_selected(bool selected);
     void _notify_color(const QColor& color);
+    //! After a change made outside set_color (a new pen): emit if the colour moved from \a before.
+    void _notify_color_since(const QColor& before);
 
     //! Record the current value without emitting.
     void _seed_visible(bool visible) { m_last_visible = visible; }

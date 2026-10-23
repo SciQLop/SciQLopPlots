@@ -703,7 +703,9 @@ except NotImplementedError as error:
 
 - A setter signals once per change and stays silent when the value is the same. Called from
   another thread, it runs on the GUI thread a moment later.
+- A graph or group signals once all its lines or members have changed.
 - A graph hidden or selected before its first data stays hidden or selected when the data comes.
+- `color_changed` also fires when another setter moves the colour, such as `set_pen`.
 - What a kind can't do raises `NotImplementedError` naming the class: a group's colour, a
   pixmap's colour, a panel line's selection.
 - Deprecated names still work: `span.selectionChanged` (use `selection_changed`),

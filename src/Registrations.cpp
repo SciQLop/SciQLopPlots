@@ -32,6 +32,7 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include "SciQLopPlots/Items/SciQLopTextItem.hpp"
@@ -54,10 +55,20 @@
 namespace
 {
 
+// Called from an inspector slot, where an escaping exception terminates the process.
 void select_drawn(QObject* obj, bool selected)
 {
-    if (auto* drawn = qobject_cast<SciQLopDrawnObject*>(obj))
+    auto* drawn = qobject_cast<SciQLopDrawnObject*>(obj);
+    if (!drawn)
+        return;
+    try
+    {
         drawn->set_selected(selected);
+    }
+    catch (const sqp::unsupported_call& e)
+    {
+        qWarning() << "SciQLopPlots:" << e.what();
+    }
 }
 
 // The pane drawing \a component when it is a piece of a projection curve, else null.

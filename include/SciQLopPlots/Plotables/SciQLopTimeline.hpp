@@ -127,4 +127,6 @@ protected:
     void _set_visible(bool visible) override;
     bool _selected() const override;
     void _set_selected(bool selected) override;
+    // A timeline colours its intervals by category.
+    QColor _color() const override;
 };

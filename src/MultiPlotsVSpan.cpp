@@ -98,20 +98,22 @@ void MultiPlotsVerticalSpan::_set_selected(bool selected)
     replotAll();
 }
 
+// Stored after forwarding, unlike selection (no echo here): a plot span that raises leaves the
+// panel span reading its old value, so a retry is not taken for a repeat.
 void MultiPlotsVerticalSpan::_set_color(const QColor& color)
 {
-    m_color = color;
     for (auto span : _spans)
         if (span)
             span->set_color(color);
+    m_color = color;
 }
 
 void MultiPlotsVerticalSpan::_set_visible(bool visible)
 {
-    m_visible = visible;
     for (auto span : _spans)
         if (span)
             span->set_visible(visible);
+    m_visible = visible;
 }
 
 void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)

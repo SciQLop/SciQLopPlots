@@ -54,3 +54,12 @@ def test_a_slot_deleting_a_member_while_the_group_hides_is_safe(plot):
     group.set_visible(False)
     process_events()
     assert (len(group.members()), group.visible(), seen) == (2, False, [False])
+
+
+def test_showing_an_all_hidden_group_signals_after_every_member_shows(pair):
+    group, a, b = pair
+    group.set_visible(False)
+    seen = []
+    group.visible_changed.connect(lambda v: seen.append((v, [a.visible(), b.visible()])))
+    group.set_visible(True)
+    assert seen == [(True, [True, True])]

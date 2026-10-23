@@ -72,11 +72,13 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
     _connect_legend_visibility();
 }
 
+// The hook, not set_selected: a component going away is no selection change to its graph,
+// the same as one a shrinking set_data drops (it re-seeds silently).
 SciQLopGraphComponent::~SciQLopGraphComponent()
 {
     if (m_componentIndex >= 0)
     {
-        set_selected(false);
+        _set_selected(false);
         return;
     }
     if (m_plottable)
@@ -87,10 +89,17 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
             (void)plot->removePlottable(m_plottable.data());
         }
     }
-    set_selected(false);
+    _set_selected(false);
 }
 
 void SciQLopGraphComponent::set_pen(const QPen& pen) noexcept
+{
+    const QColor before = _color();
+    _apply_pen(pen);
+    _notify_color_since(before);
+}
+
+void SciQLopGraphComponent::_apply_pen(const QPen& pen)
 {
     if (m_plottable)
     {
@@ -213,6 +222,32 @@ void SciQLopGraphComponent::_select_in_plottable(bool selected)
                to_variant());
 }
 
+namespace
+{
+QList<int> selected_components(const QCPMultiGraph& graph)
+{
+    QList<int> selected;
+    for (int i = 0; i < graph.componentCount(); ++i)
+        if (!graph.componentSelection(i).isEmpty())
+            selected.append(i);
+    return selected;
+}
+
+// NeoQCP frames one row of a group, or the whole group (row -1): several selected rows get the
+// whole group.
+void frame_selected_components(QCPGroupLegendItem* group)
+{
+    const auto selected = selected_components(*group->multiGraph());
+    if (selected.isEmpty())
+    {
+        group->setSelected(false);
+        return;
+    }
+    group->setSelectedComponent(selected.size() == 1 ? selected.first() : -1);
+    group->setSelected(true);
+}
+}
+
 void SciQLopGraphComponent::_select_in_legend(bool selected)
 {
     if (m_componentIndex < 0)
@@ -221,17 +256,12 @@ void SciQLopGraphComponent::_select_in_legend(bool selected)
             item->setSelected(selected);
         return;
     }
-    auto* group = _group_legend_item();
-    if (!group)
-        return;
-    if (selected && group->selectedComponent() != m_componentIndex)
+    if (auto* group = _group_legend_item())
     {
-        group->setExpanded(true);
-        group->setSelectedComponent(m_componentIndex);
-        group->setSelected(true);
+        if (selected)
+            group->setExpanded(true);
+        frame_selected_components(group);
     }
-    else if (!selected && group->selected() && group->selectedComponent() == m_componentIndex)
-        group->setSelected(false);
 }
 
 QColor SciQLopGraphComponent::_color() const

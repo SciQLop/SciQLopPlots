@@ -88,3 +88,14 @@ def test_selecting_a_graph_before_its_first_data_keeps_it_selected(qtbot, plot, 
     qtbot.waitUntil(lambda: len(graph.components()) == 2, timeout=3000)
     assert [c.selected() for c in graph.components()] == [True, True]
     assert seen == [True]
+
+
+def test_a_colour_map_colour_points_to_the_gradient(plot, sample_colormap_data):
+    colormap = plot.colormap(*sample_colormap_data)
+    with pytest.raises(NotImplementedError, match="use gradient.*set_gradient"):
+        colormap.set_color(QColor("red"))
+
+
+def test_a_timeline_colour_points_to_category_colours(ts_plot):
+    with pytest.raises(NotImplementedError, match="use category_color.*set_category_colors"):
+        ts_plot.add_timeline().color()

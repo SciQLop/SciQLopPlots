@@ -113,6 +113,7 @@ private:
 
     void _select_in_plottable(bool selected);
     void _select_in_legend(bool selected);
+    void _apply_pen(const QPen& pen);
 
 protected:
     bool _visible() const override;

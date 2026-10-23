@@ -271,7 +271,9 @@ public:
     inline virtual void set_pen(const QPen& pen) noexcept override
     {
         SCIQLOP_ON_OWNER_THREAD(set_pen(pen));
+        const QColor before = _color();
         qptr_apply(m_item, [pen](auto&& item) { item->setPen(pen); });
+        _notify_color_since(before);
     }
 
     inline virtual void set_brush(const QBrush& brush) noexcept override

@@ -174,11 +174,8 @@ public:
         return qptr_apply_or(m_item, [](auto& item) { return item->font().pointSizeF(); });
     }
 
-    void set_font_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_font_color(color));
-        qptr_apply(m_item, [color](auto& item) { item->setColor(color); });
-    }
+    //! The text's colour: the same as set_color.
+    void set_font_color(const QColor& color) { set_color(color); }
 
     [[nodiscard]] QColor font_color() const
     {
