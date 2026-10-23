@@ -77,7 +77,7 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
             [this](const QCPDataSelection&)
             {
                 emit selected_intervals_changed(selected_ids());
-                emit selection_changed(selected());
+                _notify_selected(selected());
             });
     connect(_intervals, &QCPIntervals::intervalsEdited, this,
             [this](const QVector<QCPIntervalEdit>& edits)
@@ -210,14 +210,14 @@ QString SciQLopTimeline::layer() const noexcept
     return _intervals ? _intervals->layer()->name() : QString();
 }
 
-void SciQLopTimeline::set_visible(bool visible) noexcept
+void SciQLopTimeline::_set_visible(bool visible)
 {
     if (_intervals)
         _intervals->setVisible(visible);
     emit replot();
 }
 
-bool SciQLopTimeline::visible() const noexcept { return _intervals && _intervals->visible(); }
+bool SciQLopTimeline::_visible() const { return _intervals && _intervals->visible(); }
 
 SciQLopPlotAxisInterface* SciQLopTimeline::y_axis() const noexcept
 {
@@ -265,11 +265,12 @@ void SciQLopTimeline::select_ids(const QList<qint64>& ids)
     emit replot();
 }
 
-bool SciQLopTimeline::selected() const noexcept { return _intervals && _intervals->selected(); }
+bool SciQLopTimeline::_selected() const { return _intervals && _intervals->selected(); }
 
-void SciQLopTimeline::set_selected(bool selected) noexcept
+void SciQLopTimeline::_set_selected(bool selected)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
+    if (!_intervals)
+        return;
     QVector<int> rows;
     if (selected)
         for (int row = 0; row < count(); ++row)

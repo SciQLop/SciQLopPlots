@@ -23,6 +23,8 @@
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
+#include <algorithm>
+
 namespace
 {
 SciQLopPlot* owning_plot(QObject* graph_parent)
@@ -70,15 +72,6 @@ void SQPQCPAbstractPlottableWrapper::_forget_destroyed_components()
         Q_EMIT this->component_list_changed();
 }
 
-void SQPQCPAbstractPlottableWrapper::set_visible(bool visible) noexcept
-{
-    for (auto plottable : m_components)
-    {
-        plottable->set_visible(visible);
-    }
-    Q_EMIT visible_changed(visible);
-}
-
 void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
     if (std::size(labels) == std::size(m_components))
@@ -111,17 +104,6 @@ void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
     }
 }
 
-bool SQPQCPAbstractPlottableWrapper::visible() const noexcept
-{
-    // True if at least one plottable is visible
-    for (const auto& plottable : m_components)
-    {
-        if (plottable->visible())
-            return true;
-    }
-    return false;
-}
-
 QStringList SQPQCPAbstractPlottableWrapper::labels() const noexcept
 {
     QStringList labels;
@@ -142,28 +124,29 @@ QList<QColor> SQPQCPAbstractPlottableWrapper::colors() const noexcept
     return colors;
 }
 
-void SQPQCPAbstractPlottableWrapper::set_selected(bool selected) noexcept
+// The components are copied: a slot of one may delete another.
+void SQPQCPAbstractPlottableWrapper::_set_visible(bool visible)
 {
-    bool changed = false;
-    /*for (auto plottable : m_components)
-    {
-        if (plottable->selected() != selected)
-        {
-            plottable->set_selected(selected);
-            changed = true;
-        }
-    }*/
-    if (changed)
-        Q_EMIT selection_changed(selected);
+    const auto components = m_components;
+    for (const auto& component : components)
+        if (component)
+            component->set_visible(visible);
 }
 
-bool SQPQCPAbstractPlottableWrapper::selected() const noexcept
+bool SQPQCPAbstractPlottableWrapper::_visible() const
 {
-    // True if at least one plottable is selected
-    for (const auto& plottable : m_components)
-    {
-        if (plottable->selected())
-            return true;
-    }
-    return false;
+    return std::ranges::any_of(m_components, [](const auto& c) { return c && c->visible(); });
+}
+
+void SQPQCPAbstractPlottableWrapper::_set_selected(bool selected)
+{
+    const auto components = m_components;
+    for (const auto& component : components)
+        if (component)
+            component->set_selected(selected);
+}
+
+bool SQPQCPAbstractPlottableWrapper::_selected() const
+{
+    return std::ranges::any_of(m_components, [](const auto& c) { return c && c->selected(); });
 }

@@ -89,9 +89,9 @@ SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* paren
     }
 }
 
-void SciQLopNDProjectionCurves::set_name(const QString& name) noexcept
+void SciQLopNDProjectionCurves::_named(const QString& name)
 {
-    SciQLopGraphInterface::set_name(name);
+    SciQLopGraphInterface::_named(name);
     for (auto* component : components())
         component->set_name(name);
 }
@@ -143,21 +143,15 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
     }
 }
 
-void SciQLopNDProjectionCurves::set_selected(bool selected) noexcept
+void SciQLopNDProjectionCurves::_set_selected(bool selected)
 {
-    for (auto curve : std::as_const(m_curves))
-    {
+    for (auto* curve : std::as_const(m_curves))
         curve->set_selected(selected);
-    }
 }
 
-bool SciQLopNDProjectionCurves::selected() const noexcept
+bool SciQLopNDProjectionCurves::_selected() const
 {
-    if (!m_curves.isEmpty())
-    {
-        return m_curves[0]->selected();
-    }
-    return false;
+    return std::ranges::any_of(m_curves, [](const SciQLopCurve* c) { return c->selected(); });
 }
 
 // The owning projection plot's pairs; cyclic for a bare parent, as before pairs existed.
@@ -326,20 +320,16 @@ void SciQLopNDProjectionCurves::set_in_legend(bool in_legend)
         curve->set_in_legend(in_legend);
 }
 
-void SciQLopNDProjectionCurves::set_visible(bool visible) noexcept
+void SciQLopNDProjectionCurves::_set_visible(bool visible)
 {
-    const bool changed = !m_curves.isEmpty() && this->visible() != visible;
     for (auto* curve : std::as_const(m_curves))
         curve->set_visible(visible);
     _update_color_scale();
-    if (changed)
-        Q_EMIT visible_changed(visible);
 }
 
-bool SciQLopNDProjectionCurves::visible() const noexcept
+bool SciQLopNDProjectionCurves::_visible() const
 {
-    return std::any_of(m_curves.begin(), m_curves.end(),
-                       [](auto* curve) { return curve->visible(); });
+    return std::ranges::any_of(m_curves, [](const SciQLopCurve* c) { return c->visible(); });
 }
 
 QList<SciQLopGraphComponentInterface*> SciQLopNDProjectionCurves::components() const noexcept

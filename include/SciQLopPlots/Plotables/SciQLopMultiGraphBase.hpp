@@ -74,12 +74,15 @@ public:
     // Propagate the user-facing name to the underlying QCPMultiGraph so the
     // legend shows it even before any data/components arrive (the loading cue),
     // instead of falling back to a meaningless placeholder.
-    void set_name(const QString& name) noexcept override
+protected:
+    void _named(const QString& name) override
     {
-        SciQLopGraphInterface::set_name(name);
+        SQPQCPAbstractPlottableWrapper::_named(name);
         if (_multiGraph)
             _multiGraph->setName(name);
     }
+
+public:
 
     // Busy belongs to the QCPMultiGraph, not to the components: components are
     // only created on the first set_data, and each one wraps this very same

@@ -85,21 +85,11 @@ void SciQLopColorMapBase::_apply_legend_visibility_style(bool visible)
     }
 }
 
-void SciQLopColorMapBase::set_selected(bool selected) noexcept
+void SciQLopColorMapBase::_set_selected(bool selected)
 {
-    if (_selected != selected)
-    {
-        _selected = selected;
-        auto legend_item = _legend_item();
-        if (legend_item && legend_item->selected() != selected)
-            legend_item->setSelected(selected);
-        emit selection_changed(selected);
-    }
-}
-
-bool SciQLopColorMapBase::selected() const noexcept
-{
-    return _selected;
+    m_selected = selected;
+    if (auto* legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
+        legend_item->setSelected(selected);
 }
 
 void SciQLopColorMapBase::set_autoscale_percentile_low(double percentile) noexcept

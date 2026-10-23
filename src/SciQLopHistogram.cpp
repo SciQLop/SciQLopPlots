@@ -327,9 +327,9 @@ HistogramStyle SciQLopHistogram::style() const noexcept
     return _hist ? from_qcp(_hist->style()) : _style.value_or(HistogramStyle::Bars);
 }
 
-void SciQLopHistogram::set_name(const QString& name) noexcept
+void SciQLopHistogram::_named(const QString& name)
 {
-    SciQLopGraphInterface::set_name(name);
+    SciQLopGraphInterface::_named(name);
     if (_hist)
         _hist->setName(name);
 }
@@ -352,28 +352,24 @@ QList<QColor> SciQLopHistogram::colors() const noexcept
     return _hist ? _hist->columnColors() : QList<QColor>();
 }
 
-void SciQLopHistogram::set_visible(bool visible) noexcept
+void SciQLopHistogram::_set_visible(bool visible)
 {
-    if (!_hist || _hist->visible() == visible)
+    if (!_hist)
         return;
     _hist->setVisible(visible);
-    Q_EMIT visible_changed(visible);
     Q_EMIT replot();
 }
 
-bool SciQLopHistogram::visible() const noexcept
+bool SciQLopHistogram::_visible() const
 {
     return _hist && _hist->visible();
 }
 
-void SciQLopHistogram::set_selected(bool selected) noexcept
+void SciQLopHistogram::_set_selected(bool selected)
 {
-    if (_selected == selected)
-        return;
-    _selected = selected;
+    m_selected = selected;
     if (auto* legend_item = _legend_item(); legend_item && legend_item->selected() != selected)
         legend_item->setSelected(selected);
-    Q_EMIT selection_changed(selected);
 }
 
 bool SciQLopHistogram::busy() const noexcept

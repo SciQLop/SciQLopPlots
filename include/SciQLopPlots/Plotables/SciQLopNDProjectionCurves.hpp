@@ -66,18 +66,12 @@ public:
     //! \throws std::invalid_argument if there are fewer than 2 panes.
     static void check_pane_count(qsizetype panes);
 
-    //! Also renames every pane's legend entry: a projection is one curve.
-    virtual void set_name(const QString& name) noexcept override;
     //! One legend label per pane.
     virtual QStringList labels() const noexcept override;
-    virtual void set_selected(bool selected) noexcept override;
-    virtual  bool selected() const noexcept override;
 
     virtual void set_colors(const QList<QColor>& colors) override;
 
-    virtual void set_visible(bool visible) noexcept override;
     virtual void set_in_legend(bool in_legend) override;
-    virtual bool visible() const noexcept override;
 
     //! A fetch in flight, or a pane still resampling its data.
     virtual bool busy() const noexcept override;
@@ -133,6 +127,15 @@ public:
     void set_time_color_gradient(const QColor& start, const QColor& end);
     //! One entry per subplot: the QPointF to mark, or an invalid QVariant.
     QList<QVariant> positions_at_time(double t) const;
+
+protected:
+    bool _always_apply() const override { return true; }
+    //! Also renames every pane's legend entry: a projection is one curve.
+    void _named(const QString& name) override;
+    bool _selected() const override;
+    void _set_selected(bool selected) override;
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
 };
 
 class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, public SciQLopFunctionGraph

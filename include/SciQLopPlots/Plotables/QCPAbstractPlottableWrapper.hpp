@@ -25,30 +25,6 @@
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 
-template <typename T>
-inline void _set_selected(T* plottable, bool selected)
-{
-    if (plottable->selected() != selected)
-    {
-        if (selected)
-            plottable->setSelection(QCPDataSelection(plottable->data()->dataRange()));
-        else
-            plottable->setSelection(QCPDataSelection());
-    }
-}
-
-inline void set_selected(QCPAbstractPlottable* plottable, bool selected)
-{
-    if (auto graph = dynamic_cast<QCPGraph*>(plottable); graph != nullptr)
-    {
-        _set_selected(graph, selected);
-    }
-    else if (auto curve = dynamic_cast<QCPCurve*>(plottable); curve != nullptr)
-    {
-        _set_selected(curve, selected);
-    }
-}
-
 class SQPQCPAbstractPlottableWrapper : public SciQLopGraphInterface
 {
     Q_OBJECT
@@ -116,16 +92,11 @@ public:
 
     std::size_t plottable_count() const noexcept { return std::size(m_components); }
 
-    virtual void set_visible(bool visible) noexcept override;
     virtual void set_labels(const QStringList& labels) override;
     virtual void set_colors(const QList<QColor>& colors) override;
 
-    virtual bool visible() const noexcept override;
     virtual QStringList labels() const noexcept override;
     virtual QList<QColor> colors() const noexcept override;
-
-    virtual void set_selected(bool selected) noexcept override;
-    virtual bool selected() const noexcept override;
 
     virtual bool busy() const noexcept override
     {
@@ -176,7 +147,14 @@ public:
         return components;
     }
 
+protected:
+    bool _always_apply() const override { return true; }
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    bool _selected() const override;
+    void _set_selected(bool selected) override;
 
+public:
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:

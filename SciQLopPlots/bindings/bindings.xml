@@ -400,7 +400,7 @@
     <object-type name="SciQLopColorMapInterface" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopColorMapBase" parent-management="yes" allow-thread="yes"/>
     <object-type name="SciQLopMultiGraphBase" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_fill_to_value(int,double)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
@@ -944,7 +944,7 @@
     </object-type>
 
     <object-type name="SciQLopLineGraph" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
                 // This code replaces the call, and with it the base class's conversion rule.
@@ -964,7 +964,7 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopWaterfallGraph" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_offsets(QVector&lt;double&gt;)">
             <inject-code class="target" position="beginning">
                 try {
@@ -980,7 +980,7 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
                 // This code replaces the call, and with it the base class's conversion rule.
@@ -1000,11 +1000,11 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopColorMap" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
     </object-type>
     <object-type name="SciQLopHistogram" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
@@ -1032,11 +1032,11 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopHistogram2D" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)" exception-handling="auto-on"/>
     </object-type>
     <object-type name="SciQLopTimeline" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="SciQLopTimeline(QCustomPlot*,QCPLaneLayout*,SciQLopPlotAxis*,QVariantMap)" remove="all"/>
         <modify-function signature="set_intervals_coded(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer,const QStringList&amp;,SciQLopPyBuffer,const QStringList&amp;,const QStringList&amp;,SciQLopPyBuffer)" exception-handling="auto-on"/>
         <modify-function signature="rename_lane(const QString&amp;,const QString&amp;)" exception-handling="auto-on"/>
@@ -1047,17 +1047,17 @@
     <object-type name="SciQLopRemoteGraph" parent-management="no"/>
 
     <object-type name="SciQLopLineGraphFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopLineGraphRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <!-- Without these the projection graphs came back to Python as the base
          SciQLopGraphInterface, which hides observe(): a callable on a
          projection plot could never be bound to a time axis, so it never
          fetched anything. -->
     <object-type name="SciQLopNDProjectionCurves" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
         <modify-function signature="set_data(const QList&lt;SciQLopPyBuffer&gt;&amp;)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
@@ -1082,37 +1082,37 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopNDProjectionCurvesFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopCurveFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopCurveRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopColorMapFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopColorMapRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogram2DFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogram2DRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogramFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopHistogramRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopWaterfallGraphFunction" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="SciQLopWaterfallGraphRemote" parent-management="yes">
-        <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
+        <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
     </object-type>
 
     <object-type name="SciQLopItemInterface" parent-management="yes"/>

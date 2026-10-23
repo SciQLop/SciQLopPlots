@@ -58,6 +58,8 @@ protected:
         return new QCPMultiGraph(keyAxis, valueAxis);
     }
 
+    void _set_visible(bool visible) override;
+
 public:
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
@@ -67,7 +69,6 @@ public:
 
     //! A refresh of another length drops the colour values (a same-length one keeps them).
     Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
-    void set_visible(bool visible) noexcept override;
 
     /*!
      * \brief set_color_data Colour the line (every component) point by point.

@@ -13,7 +13,7 @@ import pytest
 from PySide6.QtGui import QColor
 
 import SciQLopPlots
-from SciQLopPlots import (SciQLopDrawnObject, SciQLopMultiPlotPanel, SciQLopNDProjectionPlot,
+from SciQLopPlots import (GraphType, SciQLopDrawnObject, SciQLopMultiPlotPanel, SciQLopNDProjectionPlot,
                           SciQLopPlot, SciQLopPlotRange, SciQLopTimeSeriesPlot)
 from conftest import off_thread, record
 
@@ -96,6 +96,75 @@ class Hosts:
 @pytest.fixture
 def hosts(qtbot):
     return Hosts(qtbot)
+
+
+LINES = np.column_stack([np.sin(X), np.cos(X)])
+
+
+def _with_components(hosts, graph):
+    hosts.qtbot.waitUntil(lambda: len(graph.components()) > 0, timeout=3000)
+    return graph
+
+
+def _shown(hosts, plottable):
+    hosts.qtbot.waitUntil(plottable.visible, timeout=3000)
+    return plottable
+
+
+def _fed(hosts, graph, *batch):
+    """A remote graph answering every request with `batch`; a new x range asks for one."""
+    channel = graph.remote_channel()
+    answer = lambda _range: channel.set_data(*batch)
+    channel.data_requested.connect(answer)
+    hosts.keep.append(answer)
+    hosts.plot.x_axis().set_range(SciQLopPlotRange(1.0, 9.0))
+    return _with_components(hosts, graph)
+
+
+def _timeline(hosts):
+    timeline = hosts.ts_plot.add_timeline()
+    timeline.set_intervals([0.0, 6.0], [5.0, 9.0], lane=["A", "A"])
+    return timeline
+
+
+PLOTTABLE_CELLS = {"visible": OK, "selected": OK, "name": OK, "color": RAISE}
+
+ROWS += [
+    Row("graph", ("SciQLopLineGraph", "SciQLopCurve", "SciQLopWaterfallGraph", "SciQLopNDProjectionCurves"), {
+        "SciQLopLineGraph": lambda h: h.plot.plot(X, LINES, labels=["a", "b"]),
+        "SciQLopLineGraphFunction": lambda h: _with_components(h, h.plot.plot(lambda a, b: [X, LINES])),
+        "SciQLopLineGraphRemote": lambda h: _fed(h, h.plot.add_remote_line_graph(["a", "b"]), X, LINES),
+        "SciQLopCurve": lambda h: h.plot.plot(X, np.sin(X), graph_type=GraphType.ParametricCurve),
+        "SciQLopCurveFunction": lambda h: _with_components(
+            h, h.plot.plot(lambda a, b: [X, np.sin(X)], graph_type=GraphType.ParametricCurve)),
+        "SciQLopCurveRemote": lambda h: _fed(h, h.plot.add_remote_curve(["c"]), X, np.sin(X)),
+        "SciQLopWaterfallGraph": lambda h: h.plot.plot(X, LINES, graph_type=GraphType.Waterfall),
+        "SciQLopWaterfallGraphFunction": lambda h: _with_components(
+            h, h.plot.plot(lambda a, b: [X, LINES], graph_type=GraphType.Waterfall)),
+        "SciQLopWaterfallGraphRemote": lambda h: _fed(h, h.plot.add_remote_waterfall(["a", "b"]), X, LINES),
+        "SciQLopNDProjectionCurves": lambda h: _with_components(h, h.nd.plot([X, X, np.sin(X), np.cos(X)])),
+        "SciQLopNDProjectionCurvesFunction": lambda h: _with_components(
+            h, h.nd.plot(lambda a, b: [X, X, np.sin(X), np.cos(X)], graph_type=GraphType.ParametricCurve)),
+    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    Row("colour map", ("SciQLopColorMap", "SciQLopHistogram2D"), {
+        "SciQLopColorMap": lambda h: h.plot.colormap(X, Y, Z),
+        "SciQLopColorMapFunction": lambda h: h.plot.plot(lambda a, b: [X, Y, Z], graph_type=GraphType.ColorMap),
+        "SciQLopColorMapRemote": lambda h: h.plot.add_remote_color_map("cm"),
+        "SciQLopHistogram2D": lambda h: h.plot.histogram2d(X, np.sin(X)),
+        "SciQLopHistogram2DFunction": lambda h: h.plot.plot(lambda a, b: [X, np.sin(X)],
+                                                            graph_type=GraphType.Histogram2D),
+        "SciQLopHistogram2DRemote": lambda h: h.plot.add_remote_histogram2d("h"),
+    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    Row("histogram", ("SciQLopHistogram",), {
+        "SciQLopHistogram": lambda h: h.plot.histogram(np.sin(X)),
+        "SciQLopHistogramFunction": lambda h: _shown(h, h.plot.histogram(lambda a, b: [np.sin(X)])),
+    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    Row("timeline", ("SciQLopTimeline",), {"SciQLopTimeline": _timeline},
+        PLOTTABLE_CELLS, frozenset({"name"})),
+]
+ABSTRACT |= {"SciQLopPlottableInterface", "SciQLopGraphInterface", "SQPQCPAbstractPlottableWrapper",
+             "SciQLopMultiGraphBase", "SciQLopColorMapInterface", "SciQLopColorMapBase"}
+NOT_BUILDABLE["SciQLopHistogramRemote"] = "no Python factory makes one"
 
 
 # --- rows: each task inserts its families above this line --------------------------------------

@@ -32,12 +32,11 @@
 #include <QDebug>
 
 SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObject* parent)
-    : QObject(parent)
+    : SciQLopDrawnObject(parent)
     , m_metaData { std::move(metaData) }
     , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
           this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
 {
-    connect(this, &QObject::objectNameChanged, this, &SciQLopPlottableInterface::name_changed);
 }
 
 QList<QCPAbstractPlottable*> qcp_plottables_of(const SciQLopPlottableInterface* plottable)

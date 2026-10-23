@@ -327,9 +327,9 @@ void SciQLopCurve::set_color_gradient(::ColorGradient gradient)
     Q_EMIT this->replot();
 }
 
-void SciQLopCurve::set_visible(bool visible) noexcept
+void SciQLopCurve::_set_visible(bool visible)
 {
-    SQPQCPAbstractPlottableWrapper::set_visible(visible);
+    SQPQCPAbstractPlottableWrapper::_set_visible(visible);
     notify_color_scale();
 }
 

@@ -80,6 +80,9 @@ private:
         return curves;
     }
 
+protected:
+    void _set_visible(bool visible) override;
+
 public:
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                           const QStringList& labels, QVariantMap metaData={});
@@ -88,8 +91,6 @@ public:
                           SciQLopPlotAxis* valueAxis, QVariantMap metaData={});
 
     virtual ~SciQLopCurve() override;
-
-    virtual void set_visible(bool visible) noexcept override;
 
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;

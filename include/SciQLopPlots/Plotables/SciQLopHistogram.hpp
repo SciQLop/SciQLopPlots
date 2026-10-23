@@ -39,7 +39,7 @@ class SciQLopHistogram : public SciQLopGraphInterface
     SciQLopPlotAxis* _valueAxis;
     QList<SciQLopPyBuffer> _buffers;
     std::optional<HistogramStyle> _style;
-    bool _selected = false;
+    bool m_selected = false;
     bool _had_result = false;
     bool _edges_moved = false;
     QMetaObject::Connection _key_log_connection;
@@ -89,7 +89,6 @@ public:
 
     inline QCPHistogram* histogram() const { return _hist; }
 
-    virtual void set_name(const QString& name) noexcept override;
     virtual QString layer() const noexcept override;
     virtual QStringList labels() const noexcept override { return { name() }; }
     virtual void set_colors(const QList<QColor>& colors) override;
@@ -99,10 +98,6 @@ public:
         return {};
     }
 
-    virtual void set_visible(bool visible) noexcept override;
-    virtual bool visible() const noexcept override;
-    virtual void set_selected(bool selected) noexcept override;
-    virtual bool selected() const noexcept override { return _selected; }
     virtual bool busy() const noexcept override;
     virtual void set_busy(bool busy) noexcept override;
 
@@ -117,6 +112,13 @@ signals:
 #endif
     //! The bin edges moved.
     Q_SIGNAL void bins_changed();
+
+protected:
+    void _named(const QString& name) override;
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    bool _selected() const override { return m_selected; }
+    void _set_selected(bool selected) override;
 };
 
 class SciQLopHistogramFunction : public SciQLopHistogram, public SciQLopFunctionGraph

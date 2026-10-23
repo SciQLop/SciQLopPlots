@@ -33,7 +33,7 @@ class SciQLopColorMapBase : public SciQLopColorMapInterface
     Q_OBJECT
 
 protected:
-    bool _selected = false;
+    bool m_selected = false;
     SciQLopPlotAxis* _keyAxis;
     SciQLopPlotAxis* _valueAxis;
     // QPointer because the color-scale axis is owned by the parent QCustomPlot
@@ -75,15 +75,34 @@ public:
         return QString();
     }
 
-    inline virtual void set_name(const QString& name) noexcept override
+protected:
+    void _named(const QString& name) override
     {
-        SciQLopPlottableInterface::set_name(name);
+        SciQLopColorMapInterface::_named(name);
         if (auto* p = plottable(); p)
             p->setName(name);
     }
 
-    virtual void set_selected(bool selected) noexcept override;
-    virtual bool selected() const noexcept override;
+    bool _selected() const override { return m_selected; }
+    void _set_selected(bool selected) override;
+
+    bool _visible() const override
+    {
+        auto* p = plottable();
+        return p && p->visible();
+    }
+
+    void _set_visible(bool visible) override
+    {
+        if (auto* p = plottable(); p)
+        {
+            p->setVisible(visible);
+            if (auto* plot = _plot())
+                plot->replot(QCustomPlot::rpQueuedReplot);
+        }
+    }
+
+public:
 
     virtual bool busy() const noexcept override
     {
@@ -114,24 +133,6 @@ public:
     {
         if (_colorScaleAxis)
             _colorScaleAxis->set_color_gradient(gradient);
-    }
-
-    inline virtual void set_visible(bool visible) noexcept override
-    {
-        if (auto* p = plottable(); p && p->visible() != visible)
-        {
-            p->setVisible(visible);
-            Q_EMIT visible_changed(visible);
-            if (auto* plot = _plot())
-                plot->replot(QCustomPlot::rpQueuedReplot);
-        }
-    }
-
-    inline virtual bool visible() const noexcept override
-    {
-        if (auto* p = plottable(); p)
-            return p->visible();
-        return false;
     }
 
     inline virtual void set_y_log_scale(bool y_log_scale) noexcept override

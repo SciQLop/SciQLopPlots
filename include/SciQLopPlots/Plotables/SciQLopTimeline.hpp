@@ -67,11 +67,7 @@ public:
     QColor category_color(const QString& category) const;
 
     QString layer() const noexcept override;
-    void set_visible(bool visible) noexcept override;
-    bool visible() const noexcept override;
     SciQLopPlotAxisInterface* y_axis() const noexcept override;
-    bool selected() const noexcept override;
-    void set_selected(bool selected) noexcept override;
 
     QList<qint64> selected_ids() const;
     void select_ids(const QList<qint64>& ids);
@@ -125,4 +121,10 @@ signals:
     Q_SIGNAL void interval_created_in(double start, double stop, const QString& lane,
                                       const QString& category);
     Q_SIGNAL void delete_requested(const QList<qint64>& ids);
+
+protected:
+    bool _visible() const override;
+    void _set_visible(bool visible) override;
+    bool _selected() const override;
+    void _set_selected(bool selected) override;
 };

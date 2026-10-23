@@ -64,9 +64,9 @@ void SciQLopLineGraph::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         _multiGraph->setColorValues(_color_values);
 }
 
-void SciQLopLineGraph::set_visible(bool visible) noexcept
+void SciQLopLineGraph::_set_visible(bool visible)
 {
-    SciQLopMultiGraphBase::set_visible(visible);
+    SciQLopMultiGraphBase::_set_visible(visible);
     notify_color_scale();
 }
 

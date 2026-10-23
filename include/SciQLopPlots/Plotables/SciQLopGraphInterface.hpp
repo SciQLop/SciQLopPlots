@@ -24,6 +24,7 @@
 
 #include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 #include "SciQLopPlots/enums.hpp"
 
@@ -48,7 +49,7 @@ class QCPColorScale;
 class InspectorExtension;
 class InspectorExtensionHolder;
 
-class SciQLopPlottableInterface : public QObject
+class SciQLopPlottableInterface : public SciQLopDrawnObject
 {
     Q_OBJECT
 
@@ -66,7 +67,6 @@ protected:
     bool m_in_legend = true;
 
 public:
-    Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
     Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
@@ -82,14 +82,6 @@ public:
 
     virtual void set_range(const SciQLopPlotRange& range);
 
-    virtual void set_visible(bool visible) noexcept { WARN_ABSTRACT_METHOD; }
-
-    inline virtual void set_name(const QString& name) noexcept
-    {
-        m_user_named = true;
-        this->setObjectName(name);
-    }
-
     // True once a caller has set a meaningful name via set_name() (i.e. the
     // objectName is no longer just the auto-generated placeholder id).
     inline bool has_user_name() const noexcept { return m_user_named; }
@@ -97,14 +89,6 @@ public:
     virtual SciQLopPlotRange range() const noexcept { return m_range; }
 
     SciQLopPlotRange data_range() const noexcept { return m_data_range; }
-
-    virtual bool visible() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
-    }
-
-    virtual QString name() const noexcept { return this->objectName(); }
 
     //! False keeps this plottable out of every legend, e.g. a decoration like a planet's outline.
     virtual void set_in_legend(bool in_legend);
@@ -154,14 +138,6 @@ public:
     virtual QBindable<QList<SciQLopPyBuffer>> bindable_data() const noexcept
     {
         return QBindable<QList<SciQLopPyBuffer>>(&m_data);
-    }
-
-    virtual void set_selected(bool selected) noexcept { WARN_ABSTRACT_METHOD; }
-
-    virtual bool selected() const noexcept
-    {
-        WARN_ABSTRACT_METHOD;
-        return false;
     }
 
     virtual bool busy() const noexcept { return false; }
@@ -222,14 +198,11 @@ signals:
 #endif
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void inspector_extensions_changed();
-    Q_SIGNAL void visible_changed(bool visible);
-    Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void replot();
     Q_SIGNAL void data_changed();
     Q_SIGNAL void data_changed(SciQLopPyBuffer x, SciQLopPyBuffer y);
     Q_SIGNAL void data_changed(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
     Q_SIGNAL void data_changed(const QList<SciQLopPyBuffer>& values);
-    Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void busy_changed(bool busy);
     //! A data callback raised or returned data the graph can't take: the traceback or the reason.
     Q_SIGNAL void fetch_failed(const QString& message);
@@ -238,6 +211,13 @@ signals:
 
     protected:
     bool _got_first_data = false;
+
+    //! A name given through set_name() is the caller's: it then labels late components.
+    void _named(const QString& name) override
+    {
+        Q_UNUSED(name);
+        m_user_named = true;
+    }
 
     void check_first_data(std::size_t n);
     bool data_off_view() const;
@@ -256,8 +236,6 @@ class SciQLopGraphInterface : public SciQLopPlottableInterface
     Q_OBJECT
 
 public:
-    Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
-
     SciQLopGraphInterface(const QString& prefix = "Graph",QVariantMap metaData={}, QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() Q_DECL_OVERRIDE = default;
 
@@ -323,6 +301,20 @@ public:
     Q_SIGNAL void colors_changed(const QList<QColor>& colors);
     Q_SIGNAL void component_list_changed();
 #endif
+
+protected:
+    // A graph has one colour per component.
+    QColor _color() const override
+    {
+        throw sqp::unsupported_call(unsupported_message("color", typeid(*this).name())
+                                    + "; use colors()");
+    }
+
+    void _set_color(const QColor&) override
+    {
+        throw sqp::unsupported_call(unsupported_message("set_color", typeid(*this).name())
+                                    + "; use set_colors()");
+    }
 };
 
 class SciQLopColorMapInterface : public SciQLopPlottableInterface
