@@ -76,8 +76,10 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
             this,
             [this](const QCPDataSelection&)
             {
+                const QPointer<SciQLopTimeline> self(this);
                 emit selected_intervals_changed(selected_ids());
-                _notify_selected(selected());
+                if (self)
+                    _notify_selected(selected());
             });
     connect(_intervals, &QCPIntervals::intervalsEdited, this,
             [this](const QVector<QCPIntervalEdit>& edits)
@@ -92,8 +94,10 @@ SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQL
             [this](double start, double stop, int lane, int category)
             {
                 const QString laneName = _layout->laneNames().value(lane);
+                const QPointer<SciQLopTimeline> self(this);
                 emit interval_created(start, stop, laneName);
-                emit interval_created_in(start, stop, laneName,
+                if (self)
+                    emit interval_created_in(start, stop, laneName,
                                          CategoryPalette::instance().names.value(category));
             });
     connect(_intervals, &QCPIntervals::deleteRequested, this,
@@ -261,8 +265,10 @@ void SciQLopTimeline::select_ids(const QList<qint64>& ids)
     for (int row = 0; row < static_cast<int>(all.size()); ++row)
         if (ids.contains(all[row]))
             rows.append(row);
+    const QPointer<SciQLopTimeline> self(this);
     _intervals->setSelectedRows(rows);
-    emit replot();
+    if (self)
+        emit replot();
 }
 
 bool SciQLopTimeline::_selected() const { return _intervals && _intervals->selected(); }
@@ -281,8 +287,10 @@ void SciQLopTimeline::_set_selected(bool selected)
     if (selected)
         for (int row = 0; row < count(); ++row)
             rows.append(row);
+    const QPointer<SciQLopTimeline> self(this);
     _intervals->setSelectedRows(rows);
-    emit replot();
+    if (self)
+        emit replot();
 }
 
 QPointF SciQLopTimeline::pixel_of(double key, const QString& lane) const

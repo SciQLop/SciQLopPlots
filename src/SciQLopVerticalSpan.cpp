@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include "SciQLopPlots/SetThenEmit.hpp"
 
 impl::VerticalSpan::VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
                                   Coordinates coordinates,
@@ -58,13 +59,9 @@ void impl::VerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
     auto sorted = horizontal_range.sorted();
     if (range() == sorted)
         return;
-    // setRange touches the item after emitting rangeChanged: emit ourselves, once it is done.
-    const QPointer<impl::VerticalSpan> self(this);
-    const bool was_blocked = blockSignals(true);
-    setRange(QCPRange(sorted.first, sorted.second));
-    blockSignals(was_blocked);
-    emit range_changed(sorted);
-    if (self)
+    if (SciQLopPlots::set_then_emit(
+            this, [&] { setRange(QCPRange(sorted.first, sorted.second)); },
+            [&] { emit range_changed(sorted); }))
         replot();
 }
 

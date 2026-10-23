@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/Items/SciQLopHorizontalSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include "SciQLopPlots/SetThenEmit.hpp"
 
 impl::HorizontalSpan::HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertical_range,
                                       bool do_not_replot, bool immediate_replot)
@@ -50,8 +51,10 @@ void impl::HorizontalSpan::set_range(const SciQLopPlotRange vertical_range)
     auto sorted = vertical_range.sorted();
     if (range() == sorted)
         return;
-    setRange(QCPRange(sorted.first, sorted.second));
-    replot();
+    if (SciQLopPlots::set_then_emit(
+            this, [&] { setRange(QCPRange(sorted.first, sorted.second)); },
+            [&] { emit range_changed(sorted); }))
+        replot();
 }
 
 SciQLopPlotRange impl::HorizontalSpan::range() const noexcept

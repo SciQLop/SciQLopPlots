@@ -23,6 +23,7 @@
 
 #include "SciQLopPlots/Items/SciQLopRectangularSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
+#include "SciQLopPlots/SetThenEmit.hpp"
 
 impl::RectangularSpan::RectangularSpan(QCustomPlot* plot, SciQLopPlotRange key_range,
                                         SciQLopPlotRange value_range, bool do_not_replot,
@@ -57,8 +58,10 @@ void impl::RectangularSpan::set_key_range(const SciQLopPlotRange range)
     auto sorted = range.sorted();
     if (key_range() == sorted)
         return;
-    setKeyRange(QCPRange(sorted.first, sorted.second));
-    replot();
+    if (SciQLopPlots::set_then_emit(
+            this, [&] { setKeyRange(QCPRange(sorted.first, sorted.second)); },
+            [&] { emit key_range_changed(sorted); }))
+        replot();
 }
 
 SciQLopPlotRange impl::RectangularSpan::key_range() const noexcept
@@ -72,8 +75,10 @@ void impl::RectangularSpan::set_value_range(const SciQLopPlotRange range)
     auto sorted = range.sorted();
     if (value_range() == sorted)
         return;
-    setValueRange(QCPRange(sorted.first, sorted.second));
-    replot();
+    if (SciQLopPlots::set_then_emit(
+            this, [&] { setValueRange(QCPRange(sorted.first, sorted.second)); },
+            [&] { emit value_range_changed(sorted); }))
+        replot();
 }
 
 SciQLopPlotRange impl::RectangularSpan::value_range() const noexcept
