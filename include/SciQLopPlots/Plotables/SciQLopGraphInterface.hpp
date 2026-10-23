@@ -307,13 +307,7 @@ protected:
     QColor _color() const override
     {
         throw sqp::unsupported_call(unsupported_message("color", typeid(*this).name())
-                                    + "; use colors()");
-    }
-
-    void _set_color(const QColor&) override
-    {
-        throw sqp::unsupported_call(unsupported_message("set_color", typeid(*this).name())
-                                    + "; use set_colors()");
+                                    + "; use colors() / set_colors()");
     }
 };
 

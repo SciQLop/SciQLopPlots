@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 from PySide6.QtCore import QCoreApplication, QEvent
+from PySide6.QtGui import QColor
 
 from SciQLopPlots import SciQLopPlot, SciQLopPlotRange
 from conftest import off_thread, process_events, record
@@ -46,6 +47,8 @@ def test_a_graph_colour_points_to_colors(plot):
     graph = plot.plot(X, TWO, labels=["a", "b"])
     with pytest.raises(NotImplementedError, match="use colors"):
         graph.color()
+    with pytest.raises(NotImplementedError, match="use colors.*set_colors"):
+        graph.set_color(QColor("red"))
 
 
 def test_a_queued_set_on_a_graph_of_a_deleted_plot_is_dropped(qtbot):  # Review Focus 2

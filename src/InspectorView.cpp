@@ -37,8 +37,10 @@ void InspectorView::expand_recursively(const QModelIndex& index)
 void InspectorView::selectionChanged(
     const QItemSelection& selected, const QItemSelection& deselected)
 {
-    PlotsModel::instance()->set_selected(selected.indexes(), true);
+    // Deselect first: deselecting a graph deselects all its components, the newly selected
+    // one included when it is one of them.
     PlotsModel::instance()->set_selected(deselected.indexes(), false);
+    PlotsModel::instance()->set_selected(selected.indexes(), true);
     auto selected_objects = QList<QObject*>();
     for (const auto& index : selected.indexes())
     {

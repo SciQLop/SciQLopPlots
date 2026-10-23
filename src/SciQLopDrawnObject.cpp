@@ -22,6 +22,8 @@
 
 #include <QDebug>
 #include <QPointer>
+#include <string>
+#include <typeinfo>
 #include <utility>
 
 namespace
@@ -55,7 +57,16 @@ using Getter = T (SciQLopDrawnObject::*)() const;
 template <typename Arg>
 using Setter = void (SciQLopDrawnObject::*)(Arg);
 
-//! A setter whose getter is unsupported is unsupported too, and says so under its own name.
+//! What a family adds after "...not supported by <Class>": "; use colors()", or nothing.
+std::string hint_of(const sqp::unsupported_call& e)
+{
+    const std::string what = e.what();
+    const auto hint = what.find("; ");
+    return hint == std::string::npos ? std::string() : what.substr(hint);
+}
+
+//! A setter whose getter is unsupported is unsupported too, and says so under its own name,
+//! keeping the getter's hint.
 template <typename T>
 T current_value(SciQLopDrawnObject* self, Getter<T> get, const char* setter)
 {
@@ -63,9 +74,9 @@ T current_value(SciQLopDrawnObject* self, Getter<T> get, const char* setter)
     {
         return (self->*get)();
     }
-    catch (const sqp::unsupported_call&)
+    catch (const sqp::unsupported_call& e)
     {
-        throw_unsupported(setter, *self);
+        throw sqp::unsupported_call(unsupported_message(setter, typeid(*self).name()) + hint_of(e));
     }
 }
 
