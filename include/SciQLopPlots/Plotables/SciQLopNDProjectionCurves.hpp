@@ -42,6 +42,16 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
     Q_OBJECT
     QList<QPointer<SciQLopCurve>> m_curves;
     QList<SciQLopCurve*> _curves() const;
+    //! The live curves, guarded: a slot run while one is set may delete another (destroyed).
+    QList<QPointer<SciQLopCurve>> _guarded_curves() const;
+    //! Calls \a apply on each curve still alive when its turn comes.
+    template <typename Apply>
+    void _for_each_curve(Apply&& apply) const
+    {
+        for (const auto& curve : _guarded_curves())
+            if (curve)
+                apply(curve.data());
+    }
     QList<QPair<int, int>> _dimension_pairs(qsizetype count) const;
     bool m_fetching = false;
     bool m_reported_busy = false;

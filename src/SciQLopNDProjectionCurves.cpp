@@ -109,6 +109,15 @@ QList<SciQLopCurve*> SciQLopNDProjectionCurves::_curves() const
     return live;
 }
 
+QList<QPointer<SciQLopCurve>> SciQLopNDProjectionCurves::_guarded_curves() const
+{
+    QList<QPointer<SciQLopCurve>> live;
+    for (const auto& curve : m_curves)
+        if (curve)
+            live.append(curve);
+    return live;
+}
+
 void SciQLopNDProjectionCurves::_seed_parts()
 {
     _seed_visible(_visible());
@@ -171,8 +180,7 @@ SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlot
 
 void SciQLopNDProjectionCurves::_set_selected(bool selected)
 {
-    for (auto* curve : _curves())
-        curve->set_selected(selected);
+    _for_each_curve([selected](SciQLopCurve* curve) { curve->set_selected(selected); });
 }
 
 bool SciQLopNDProjectionCurves::_selected() const
@@ -194,39 +202,42 @@ QList<QPair<int, int>> SciQLopNDProjectionCurves::_dimension_pairs(qsizetype cou
 
 void SciQLopNDProjectionCurves::set_data(const QList<SciQLopPyBuffer>& data)
 {
-    const auto curves = _curves();
+    const auto curves = _guarded_curves();
     const auto curves_count = curves.size();
     check_batch_size(curves_count, data.size());
+    // A data_changed slot may delete a later curve: each is checked just before its call.
+    const auto each_live = [&curves](auto&& apply)
+    {
+        for (decltype(curves.size()) i = 0; i < curves.size(); ++i)
+            if (auto* curve = curves[i].data())
+                apply(i, curve);
+    };
 
     if (data.size() == curves_count + 1)
     {
         const auto dims = data.sliced(1);
         const auto pairs = _dimension_pairs(curves_count);
-        for (decltype(data.size()) i = 0; i < curves_count; ++i)
-            curves[i]->set_data(dims[pairs[i].first], dims[pairs[i].second]);
-        const auto& time_buf = data[0];
-        QVector<double> times = to_double_vector<QVector<double>>(time_buf);
-        for (auto* curve : curves)
-            curve->set_time_values(times);
+        each_live([&](auto i, SciQLopCurve* curve)
+                  { curve->set_data(dims[pairs[i].first], dims[pairs[i].second]); });
+        const QVector<double> times = to_double_vector<QVector<double>>(data[0]);
+        each_live([&times](auto, SciQLopCurve* curve) { curve->set_time_values(times); });
     }
     else if (data.size() == 3 * curves_count)
     {
-        for (decltype(data.size()) i = 0; i < curves_count; ++i)
-        {
-            curves[i]->set_data(data[3 * i], data[3 * i + 1]);
-            const auto& scalar_buf = data[3 * i + 2];
-            QVector<double> scalars = to_double_vector<QVector<double>>(scalar_buf);
-            curves[i]->set_color_values(scalars);
-            curves[i]->set_time_color_enabled(!scalars.isEmpty());
-        }
+        each_live(
+            [&data](auto i, SciQLopCurve* curve)
+            {
+                curve->set_data(data[3 * i], data[3 * i + 1]);
+                const auto scalars = to_double_vector<QVector<double>>(data[3 * i + 2]);
+                curve->set_color_values(scalars);
+                curve->set_time_color_enabled(!scalars.isEmpty());
+            });
         _update_color_scale();
     }
     else
     {
-        for (decltype(data.size()) i = 0; i < curves_count; ++i)
-        {
-            curves[i]->set_data(data[2 * i], data[2 * i + 1]);
-        }
+        each_live([&data](auto i, SciQLopCurve* curve)
+                  { curve->set_data(data[2 * i], data[2 * i + 1]); });
     }
 }
 
@@ -246,20 +257,22 @@ void SciQLopNDProjectionCurves::set_data_and_color(const QList<SciQLopPyBuffer>&
                                     + std::to_string(count));
     set_data(data);
     const auto values = count > 0 ? to_double_vector<QVector<double>>(color) : QVector<double> {};
-    for (auto* curve : curves)
-    {
-        curve->set_color_values(values);
-        curve->set_time_color_enabled(!values.isEmpty());
-    }
+    _for_each_curve(
+        [&values](SciQLopCurve* curve)
+        {
+            curve->set_color_values(values);
+            curve->set_time_color_enabled(!values.isEmpty());
+        });
     _update_color_scale();
 }
 
 void SciQLopNDProjectionCurves::set_colors(const QList<QColor>& colors)
 {
     SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
-    const auto curves = _curves();
+    const auto curves = _guarded_curves();
     for (int i = 0; i < curves.size() && i < colors.size(); ++i)
-        curves[i]->set_colors({ colors[i] });
+        if (curves[i])
+            curves[i]->set_colors({ colors[i] });
 }
 
 QList<QColor> SciQLopNDProjectionCurves::colors() const noexcept
@@ -272,8 +285,7 @@ QList<QColor> SciQLopNDProjectionCurves::colors() const noexcept
 
 void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
-    for (auto* curve : _curves())
-        curve->set_color_data(values, gradient);
+    _for_each_curve([&](SciQLopCurve* curve) { curve->set_color_data(values, gradient); });
     _update_color_scale();
     if (values.is_valid() && values.flat_size() > 0)
         _set_scale_gradient(gradient);
@@ -282,8 +294,7 @@ void SciQLopNDProjectionCurves::set_color_data(SciQLopPyBuffer values, ::ColorGr
 void SciQLopNDProjectionCurves::set_color_gradient(::ColorGradient gradient)
 {
     SCIQLOP_ON_OWNER_THREAD(set_color_gradient(gradient));
-    for (auto* curve : _curves())
-        curve->set_color_gradient(gradient);
+    _for_each_curve([gradient](SciQLopCurve* curve) { curve->set_color_gradient(gradient); });
     _set_scale_gradient(gradient);
 }
 
@@ -312,8 +323,7 @@ void SciQLopNDProjectionCurves::_set_scale_gradient(::ColorGradient gradient)
 
 void SciQLopNDProjectionCurves::attach_color_scale(QCPColorScale* scale)
 {
-    for (auto* curve : _curves())
-        curve->set_color_scale(scale);
+    _for_each_curve([scale](SciQLopCurve* curve) { curve->set_color_scale(scale); });
 }
 
 bool SciQLopNDProjectionCurves::has_color_values() const
@@ -335,8 +345,7 @@ std::optional<std::pair<double, double>> SciQLopNDProjectionCurves::color_range(
 
 void SciQLopNDProjectionCurves::set_line_width(qreal width)
 {
-    for (auto* curve : _curves())
-        curve->set_line_width(width);
+    _for_each_curve([width](SciQLopCurve* curve) { curve->set_line_width(width); });
 }
 
 qreal SciQLopNDProjectionCurves::line_width() const
@@ -348,14 +357,12 @@ void SciQLopNDProjectionCurves::set_in_legend(bool in_legend)
 {
     SCIQLOP_ON_OWNER_THREAD(set_in_legend(in_legend));
     m_in_legend = in_legend;
-    for (auto* curve : _curves())
-        curve->set_in_legend(in_legend);
+    _for_each_curve([in_legend](SciQLopCurve* curve) { curve->set_in_legend(in_legend); });
 }
 
 void SciQLopNDProjectionCurves::_set_visible(bool visible)
 {
-    for (auto* curve : _curves())
-        curve->set_visible(visible);
+    _for_each_curve([visible](SciQLopCurve* curve) { curve->set_visible(visible); });
     _update_color_scale();
 }
 
@@ -388,8 +395,7 @@ SciQLopGraphComponentInterface* SciQLopNDProjectionCurves::component(const QStri
 void SciQLopNDProjectionCurves::set_time_color_enabled(bool enabled)
 {
     SCIQLOP_ON_OWNER_THREAD(set_time_color_enabled(enabled));
-    for (auto* curve : _curves())
-        curve->set_time_color_enabled(enabled);
+    _for_each_curve([enabled](SciQLopCurve* curve) { curve->set_time_color_enabled(enabled); });
 }
 
 bool SciQLopNDProjectionCurves::time_color_enabled() const
@@ -400,8 +406,7 @@ bool SciQLopNDProjectionCurves::time_color_enabled() const
 void SciQLopNDProjectionCurves::set_time_color_gradient(const QColor& start, const QColor& end)
 {
     SCIQLOP_ON_OWNER_THREAD(set_time_color_gradient(start, end));
-    for (auto* curve : _curves())
-        curve->set_time_color_gradient(start, end);
+    _for_each_curve([&](SciQLopCurve* curve) { curve->set_time_color_gradient(start, end); });
     if (auto* plot = qobject_cast<SciQLopNDProjectionPlot*>(parent()))
         plot->set_z_gradient_colors(start, end);
 }

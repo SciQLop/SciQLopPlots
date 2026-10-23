@@ -183,3 +183,22 @@ def test_a_slot_deleting_the_other_component_after_the_flip_keeps_the_signal(plo
     a.visible_changed.connect(lambda _: shiboken6.delete(b))
     graph.set_visible(False)
     assert (len(graph.components()), graph.visible(), seen) == (1, False, [False])
+
+
+def _three_pane_projection(qtbot):
+    from SciQLopPlots import SciQLopNDProjectionPlot
+    nd = SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(nd)
+    projection = nd.plot([X, X, np.sin(X), np.cos(X)])
+    qtbot.waitUntil(lambda: len(projection.components()) == 3, timeout=3000)
+    return nd, projection
+
+
+def test_a_slot_deleting_another_pane_curve_mid_hide_keeps_the_projection_signal(qtbot):
+    import shiboken6
+    _nd, projection = _three_pane_projection(qtbot)
+    first, second, _ = (component.parent() for component in projection.components())
+    seen = record(projection.visible_changed)
+    first.visible_changed.connect(lambda _: shiboken6.delete(second))
+    projection.set_visible(False)  # the first curve hides, its slot deletes the second
+    assert (len(projection.components()), projection.visible(), seen) == (2, False, [False])
