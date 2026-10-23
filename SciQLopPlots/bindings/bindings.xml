@@ -1069,7 +1069,6 @@
     </object-type>
     <object-type name="SciQLopTimeline" parent-management="yes">
         <property name="name" type="QString" get="objectName" set="set_name" generate-getsetdef="yes"/>
-        <modify-function signature="SciQLopTimeline(QCustomPlot*,QCPLaneLayout*,SciQLopPlotAxis*,QVariantMap)" remove="all"/>
         <modify-function signature="set_intervals_coded(SciQLopPyBuffer,SciQLopPyBuffer,SciQLopPyBuffer,const QStringList&amp;,SciQLopPyBuffer,const QStringList&amp;,const QStringList&amp;,SciQLopPyBuffer)" exception-handling="auto-on"/>
         <modify-function signature="rename_lane(const QString&amp;,const QString&amp;)" exception-handling="auto-on"/>
         <modify-function signature="set_edit_modes(const QStringList&amp;)" exception-handling="auto-on"/>

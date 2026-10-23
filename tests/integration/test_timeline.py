@@ -95,6 +95,14 @@ def test_assigning_lanes_hides_the_missing_ones(ts_plot):
     assert ts_plot.add_timeline().lanes == ["B"]
 
 
+def test_a_timeline_is_made_by_its_plot_not_constructed_from_python(ts_plot):
+    """Its constructor takes NeoQCP types the bindings do not know: shiboken drops it, and
+    plot.add_timeline() is the only way in."""
+    with pytest.raises(TypeError, match="cannot create"):
+        SciQLopTimeline()
+    assert isinstance(ts_plot.add_timeline(), SciQLopTimeline)
+
+
 def test_add_timeline_off_the_gui_thread_raises(ts_plot):
     errors = []
 
