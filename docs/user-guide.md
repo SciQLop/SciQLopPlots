@@ -674,6 +674,42 @@ Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma 
 
 A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`.
 
+### Visible, selected, name and colour
+
+Everything drawn answers the same four questions, with the same signals. That covers graphs and
+their components, colour maps, histograms, timelines, items, spans, groups and the legend.
+
+```python
+import numpy as np
+from PySide6.QtCore import QPointF
+from SciQLopPlots import SciQLopPlot, SciQLopTextItem
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+graph = plot.plot(x, np.sin(x), labels=["sin"])
+note = SciQLopTextItem(plot, "peak", QPointF(20, 20))
+
+note.visible_changed.connect(lambda visible: print("note visible:", visible))
+note.set_visible(False)                         # visible / set_visible / visible_changed
+note.set_selected(True)                         # selected / set_selected / selection_changed
+note.set_name("marker")                         # name / set_name / name_changed
+note.set_color(graph.component(0).color())      # color / set_color / color_changed
+graph.name = "sine"                             # a plottable's name is a property
+try:
+    graph.color()                               # a graph has one colour per line
+except NotImplementedError as error:
+    print(error)                                # "... use colors()"
+```
+
+- A setter signals once per change and stays silent when the value is the same. Called from
+  another thread, it runs on the GUI thread a moment later.
+- What a kind can't do raises `NotImplementedError` naming the class: a group's colour, a
+  pixmap's colour, a panel line's selection.
+- Deprecated names still work: `span.selectionChanged` (use `selection_changed`),
+  `legend.is_visible()` and `legend.visibility_changed` (use `visible()` and `visible_changed`).
+- C++ subclasses: override the protected hooks (`_visible`, `_set_visible`, ...), not the
+  accessors, and without `noexcept`.
+
 ## Legends
 
 Every graph gets a legend row. Two calls keep a busy legend short.
@@ -758,6 +794,7 @@ note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), movable=False, coordina
 
 - On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
 - `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
+- Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text and pixmap tooltips work, and so does `set_movable` on text, ellipse and pixmap.
 
 `MultiPlotsVerticalLine` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
