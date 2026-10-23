@@ -114,6 +114,17 @@ def test_an_unsupported_attribute_raises_naming_the_class(qtbot, call):
         call(Lamp())
 
 
+@pytest.mark.parametrize("call", [
+    lambda o: o._selected(), lambda o: o._set_selected(True),
+    lambda o: o._color(), lambda o: o._set_color(QColor("red")),
+    lambda o: super(Lamp, o)._visible(), lambda o: super(Lamp, o)._set_visible(False),
+], ids=["_selected", "_set_selected", "_color", "_set_color", "super()._visible",
+        "super()._set_visible"])
+def test_an_unsupported_hook_called_from_python_raises_not_implemented(qtbot, call):
+    with pytest.raises(NotImplementedError, match="SciQLopDrawnObject"):
+        call(Lamp())
+
+
 def test_an_unsupported_set_from_a_worker_thread_only_warns(qtbot, qtlog):
     lamp = Lamp()
     off_thread(lambda: lamp.set_selected(True))

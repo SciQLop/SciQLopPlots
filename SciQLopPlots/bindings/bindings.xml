@@ -347,6 +347,38 @@
                 <insert-template name="void_raises_python_errors"/>
             </inject-code>
         </modify-function>
+        <!-- The protected hooks too, as Python sees them: super()._x() from an override, or
+             _x() on a family, runs SciQLopDrawnObject's default. -->
+        <modify-function signature="_visible() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="bool"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="_selected() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="bool"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="_color() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="QColor"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="_set_visible(bool)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="_set_selected(bool)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="_set_color(const QColor&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopGraphComponentInterface" parent-management="yes">
         <modify-function signature="set_fill_to_value(double)">
