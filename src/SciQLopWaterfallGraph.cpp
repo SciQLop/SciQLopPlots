@@ -54,8 +54,10 @@ void SciQLopWaterfallGraph::set_offset_mode(WaterfallOffsetMode mode)
         if (from_qcp(w->offsetMode()) == mode)
             return;
         w->setOffsetMode(to_qcp(mode));
+        const QPointer self(this);
         Q_EMIT offset_mode_changed(mode);
-        Q_EMIT replot();
+        if (self)
+            Q_EMIT replot();
     }
 }
 
@@ -66,8 +68,10 @@ void SciQLopWaterfallGraph::set_uniform_spacing(double spacing)
         if (w->uniformSpacing() == spacing)
             return;
         w->setUniformSpacing(spacing);
+        const QPointer self(this);
         Q_EMIT uniform_spacing_changed(spacing);
-        Q_EMIT replot();
+        if (self)
+            Q_EMIT replot();
     }
 }
 
@@ -82,8 +86,10 @@ void SciQLopWaterfallGraph::set_offsets(const QVector<double>& offsets)
         if (w->offsets() == offsets)
             return;
         w->setOffsets(offsets);
+        const QPointer self(this);
         Q_EMIT offsets_changed(offsets);
-        Q_EMIT replot();
+        if (self)
+            Q_EMIT replot();
     }
 }
 
@@ -94,8 +100,10 @@ void SciQLopWaterfallGraph::set_normalize(bool enabled)
         if (w->normalize() == enabled)
             return;
         w->setNormalize(enabled);
+        const QPointer self(this);
         Q_EMIT normalize_changed(enabled);
-        Q_EMIT replot();
+        if (self)
+            Q_EMIT replot();
     }
 }
 
@@ -106,8 +114,10 @@ void SciQLopWaterfallGraph::set_gain(double gain)
         if (w->gain() == gain)
             return;
         w->setGain(gain);
+        const QPointer self(this);
         Q_EMIT gain_changed(gain);
-        Q_EMIT replot();
+        if (self)
+            Q_EMIT replot();
     }
 }
 

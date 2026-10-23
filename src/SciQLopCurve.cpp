@@ -363,11 +363,21 @@ std::optional<std::pair<double, double>> SciQLopCurve::color_range(bool log) con
     return std::nullopt;
 }
 
+// The components are copied: a component's replot reaches user slots, which may delete this graph
+// or another component.
 void SciQLopCurve::set_line_width(qreal width)
 {
-    for (auto comp : m_components)
-        comp->set_line_width(width);
-    Q_EMIT this->replot();
+    const QPointer self(this);
+    const auto components = m_components;
+    for (const auto& comp : components)
+    {
+        if (!self)
+            return;
+        if (comp)
+            comp->set_line_width(width);
+    }
+    if (self)
+        Q_EMIT this->replot();
 }
 
 qreal SciQLopCurve::line_width() const

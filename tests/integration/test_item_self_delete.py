@@ -8,7 +8,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 
 from SciQLopPlots import (MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
-                          SciQLopVerticalSpan)
+                          SciQLopVerticalSpan, WaterfallOffsetMode)
 from conftest import process_events
 
 R = SciQLopPlotRange
@@ -88,6 +88,37 @@ def test_a_slot_deleting_the_timeline_after_a_nested_repack_does_not_crash(ts_pl
                      ids=[8, 9, 10])
     process_events()
     assert not shiboken6.isValid(tl)
+
+
+WATERFALL_SETTERS = {
+    "set_offset_mode": lambda w: w.set_offset_mode(WaterfallOffsetMode.Custom),
+    "set_uniform_spacing": lambda w: w.set_uniform_spacing(w.uniform_spacing() + 1.0),
+    "set_offsets": lambda w: w.set_offsets([1.0, 2.0]),
+    "set_normalize": lambda w: w.set_normalize(not w.normalize()),
+    "set_gain": lambda w: w.set_gain(w.gain() + 1.0),
+}
+
+
+@pytest.mark.parametrize("setter", WATERFALL_SETTERS)
+def test_a_slot_deleting_the_waterfall_from_its_change_signal_does_not_crash(plot, setter):
+    wf = plot.add_waterfall("w", labels=["a", "b"])
+    wf.set_data(np.linspace(0.0, 1.0, 10), np.random.rand(10, 2))
+    process_events()
+    getattr(wf, setter.removeprefix("set_") + "_changed").connect(lambda *_: shiboken6.delete(wf))
+    WATERFALL_SETTERS[setter](wf)
+    process_events()
+    assert not shiboken6.isValid(wf)
+
+
+def test_a_slot_deleting_the_curve_while_it_sets_its_line_width_does_not_crash(plot):
+    t = np.linspace(0.0, 6.0, 50)
+    curve = plot.parametric_curve(np.cos(t), np.column_stack([np.sin(t), np.cos(t)]),
+                                  labels=["a", "b"])
+    process_events()
+    curve.replot.connect(lambda: shiboken6.delete(curve))
+    curve.set_line_width(3.0)
+    process_events()
+    assert not shiboken6.isValid(curve)
 
 
 SPANS = {"vspan": SciQLopVerticalSpan, "hspan": SciQLopHorizontalSpan}
