@@ -33,9 +33,9 @@ void MultiPlotsVerticalLine::addObject(SciQLopPlotInterface* plot)
         auto line = new SciQLopVerticalLine(scp, _position, !_read_only);
         // Owned by the plot so a plot destroyed directly takes its line along.
         line->setParent(scp);
-        line->set_color(_color);
+        line->set_color(m_color);
         line->set_line_width(_line_width);
-        line->set_visible(_visible);
+        line->set_visible(m_visible);
         line->set_tool_tip(_tool_tip);
         QObject::connect(line, &SciQLopVerticalLine::position_changed, this,
                          &MultiPlotsVerticalLine::set_position);
@@ -67,10 +67,9 @@ void MultiPlotsVerticalLine::set_position(double position)
     Q_EMIT position_changed(position);
 }
 
-void MultiPlotsVerticalLine::set_color(const QColor& color)
+void MultiPlotsVerticalLine::_set_color(const QColor& color)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_color(color));
-    _color = color;
+    m_color = color;
     for_each_line([&color](SciQLopVerticalLine* line) { line->set_color(color); });
 }
 
@@ -81,10 +80,9 @@ void MultiPlotsVerticalLine::set_line_width(double width)
     for_each_line([width](SciQLopVerticalLine* line) { line->set_line_width(width); });
 }
 
-void MultiPlotsVerticalLine::set_visible(bool visible)
+void MultiPlotsVerticalLine::_set_visible(bool visible)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-    _visible = visible;
+    m_visible = visible;
     for_each_line([visible](SciQLopVerticalLine* line) { line->set_visible(visible); });
 }
 

@@ -54,8 +54,8 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
         auto new_span
-            = new SciQLopVerticalSpan(scp, _horizontal_range, _color, _read_only, _visible, _tool_tip);
-        new_span->set_selected(_selected);
+            = new SciQLopVerticalSpan(scp, _horizontal_range, m_color, _read_only, m_visible, _tool_tip);
+        new_span->set_selected(m_selected);
         QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
                          &MultiPlotsVerticalSpan::set_range);
         QObject::connect(new_span, &SciQLopVerticalSpan::selection_changed, this,
@@ -88,20 +88,30 @@ void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
     }
 }
 
-void MultiPlotsVerticalSpan::set_selected(bool selected)
+void MultiPlotsVerticalSpan::_set_selected(bool selected)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
-    if (_selected != selected)
-    {
-        _selected = selected;
-        for (auto span : _spans)
-        {
-            if (span)
-                span->set_selected(selected);
-        }
-        replotAll();
-        Q_EMIT selection_changed(selected);
-    }
+    // Stored first: each plot's span echoes the selection back through set_selected.
+    m_selected = selected;
+    for (auto span : _spans)
+        if (span)
+            span->set_selected(selected);
+    replotAll();
+}
+
+void MultiPlotsVerticalSpan::_set_color(const QColor& color)
+{
+    m_color = color;
+    for (auto span : _spans)
+        if (span)
+            span->set_color(color);
+}
+
+void MultiPlotsVerticalSpan::_set_visible(bool visible)
+{
+    m_visible = visible;
+    for (auto span : _spans)
+        if (span)
+            span->set_visible(visible);
 }
 
 void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)

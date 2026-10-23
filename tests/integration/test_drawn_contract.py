@@ -14,7 +14,7 @@ from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QColor, QPixmap
 
 import SciQLopPlots
-from SciQLopPlots import (GraphType, SciQLopCurvedLineItem, SciQLopDrawnObject, SciQLopEllipseItem,
+from SciQLopPlots import (GraphType, MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopCurvedLineItem, SciQLopDrawnObject, SciQLopEllipseItem,
                           SciQLopHorizontalLine, SciQLopHorizontalSpan, SciQLopMultiPlotPanel,
                           SciQLopNDProjectionPlot, SciQLopPixmapItem, SciQLopPlot, SciQLopPlotRange,
                           SciQLopRectangularSpan, SciQLopStraightLine, SciQLopTextItem, SciQLopTimeSeriesPlot,
@@ -201,6 +201,20 @@ ROWS += [
 ]
 ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
              "SciQLopBoundingRectItemInterface", "SciQLopPolygonItemInterface", "SciQLopRangeItemInterface"}
+
+
+ROWS += [
+    Row("panel span", ("MultiPlotsVerticalSpan",), {
+        "MultiPlotsVerticalSpan": lambda h: MultiPlotsVerticalSpan(h.panel, R(1.0, 2.0)),
+    }, ALL, frozenset({"visible", "selected", "color"})),
+    Row("panel line", ("MultiPlotsVerticalLine",), {
+        "MultiPlotsVerticalLine": lambda h: MultiPlotsVerticalLine(h.panel, 2.0),
+    }, {"visible": OK, "selected": RAISE, "name": OK, "color": OK}, frozenset({"visible", "color"})),
+    Row("span collection", ("MultiPlotsVSpanCollection",), {
+        "MultiPlotsVSpanCollection": lambda h: MultiPlotsVSpanCollection(h.panel),
+    }, {"visible": RAISE, "selected": RAISE, "name": OK, "color": RAISE}),
+]
+ABSTRACT.add("SciQLopMultiPlotObject")
 
 
 # --- rows: each task inserts its families above this line --------------------------------------

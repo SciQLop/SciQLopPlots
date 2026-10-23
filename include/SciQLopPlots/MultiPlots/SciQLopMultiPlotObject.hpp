@@ -22,10 +22,11 @@
 #pragma once
 
 #include "SciQLopPlotCollection.hpp"
+#include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include <QObject>
 class SciQLopPlot;
 
-class SciQLopMultiPlotObject : public QObject
+class SciQLopMultiPlotObject : public SciQLopDrawnObject
 {
     Q_OBJECT
 

@@ -38,7 +38,7 @@ void SciQLopMultiPlotObject::replotAll()
 }
 
 SciQLopMultiPlotObject::SciQLopMultiPlotObject(SciQLopPlotCollectionInterface* parent)
-        : QObject { dynamic_cast<QObject*>(parent) }
+        : SciQLopDrawnObject { dynamic_cast<QObject*>(parent) }
 {
     if (auto qobj = dynamic_cast<QObject*>(parent); qobj)
         connect(dynamic_cast<QObject*>(parent),

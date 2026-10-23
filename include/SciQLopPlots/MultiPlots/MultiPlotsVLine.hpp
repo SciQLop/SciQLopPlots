@@ -34,10 +34,10 @@ class MultiPlotsVerticalLine : public SciQLopMultiPlotObject
     Q_OBJECT
     QList<QPointer<SciQLopVerticalLine>> _lines;
     double _position;
-    QColor _color;
+    QColor m_color;
     double _line_width = 1.0;
     bool _read_only;
-    bool _visible;
+    bool m_visible;
     QString _tool_tip;
 
     template <typename F>
@@ -51,6 +51,10 @@ class MultiPlotsVerticalLine : public SciQLopMultiPlotObject
 protected:
     virtual void addObject(SciQLopPlotInterface* plot) override;
     virtual void removeObject(SciQLopPlotInterface* plot) override;
+    QColor _color() const override { return m_color; }
+    void _set_color(const QColor& color) override;
+    bool _visible() const override { return m_visible; }
+    void _set_visible(bool visible) override;
 
 public:
     MultiPlotsVerticalLine(SciQLopMultiPlotPanel* panel, double position,
@@ -58,9 +62,9 @@ public:
                            bool visible = true, const QString tool_tip = "")
             : SciQLopMultiPlotObject(SciQLopPlots::on_owner_thread(panel, "MultiPlotsVerticalLine"))
             , _position { position }
-            , _color { color }
+            , m_color { color }
             , _read_only { read_only }
-            , _visible { visible }
+            , m_visible { visible }
             , _tool_tip { tool_tip }
     {
         updatePlotList(panel->plots());
@@ -71,14 +75,8 @@ public:
     void set_position(double position);
     [[nodiscard]] inline double position() const noexcept { return _position; }
 
-    void set_color(const QColor& color);
-    [[nodiscard]] inline QColor color() const noexcept { return _color; }
-
     void set_line_width(double width);
     [[nodiscard]] inline double line_width() const noexcept { return _line_width; }
-
-    void set_visible(bool visible);
-    [[nodiscard]] inline bool visible() const noexcept { return _visible; }
 
     void set_read_only(bool read_only);
     [[nodiscard]] inline bool read_only() const noexcept { return _read_only; }

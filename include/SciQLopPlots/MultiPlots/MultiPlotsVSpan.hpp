@@ -34,12 +34,12 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
     Q_OBJECT
     QList<QPointer<SciQLopVerticalSpan>> _spans;
     SciQLopPlotRange _horizontal_range;
-    bool _selected = false;
+    bool m_selected = false;
     bool _lower_border_selected = false;
     bool _upper_border_selected = false;
-    bool _visible = true;
+    bool m_visible = true;
     bool _read_only = false;
-    QColor _color;
+    QColor m_color;
     QString _tool_tip;
     QString _id;
 
@@ -49,6 +49,12 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 protected:
     virtual void addObject(SciQLopPlotInterface* plot) override;
     virtual void removeObject(SciQLopPlotInterface* plot) override;
+    bool _selected() const override { return m_selected; }
+    void _set_selected(bool selected) override;
+    QColor _color() const override { return m_color; }
+    void _set_color(const QColor& color) override;
+    bool _visible() const override { return m_visible; }
+    void _set_visible(bool visible) override;
 
 public:
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
@@ -57,8 +63,8 @@ public:
             : SciQLopMultiPlotObject(SciQLopPlots::on_owner_thread(panel, "MultiPlotsVerticalSpan"))
     {
         _horizontal_range = horizontal_range;
-        _color = color;
-        _visible = visible;
+        m_color = color;
+        m_visible = visible;
         _read_only = read_only;
         _tool_tip = tool_tip;
         if (id == "")
@@ -85,45 +91,9 @@ public:
 
     [[nodiscard]] inline QString id() const { return _id; }
 
-    void set_selected(bool selected);
-
-    [[nodiscard]] inline bool selected() const noexcept { return _selected; }
-
-    inline void set_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_color(color));
-        if (_color != color)
-        {
-            for (auto span : _spans)
-            {
-                if (span)
-                    span->set_color(color);
-            }
-            _color = color;
-        }
-    }
-
-    inline QColor color() const { return _color; }
-
     void set_range(const SciQLopPlotRange horizontal_range);
 
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept { return _horizontal_range; }
-
-    inline void set_visible(bool visible)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_visible(visible));
-        if (_visible != visible)
-        {
-            for (auto span : _spans)
-            {
-                if (span)
-                    span->set_visible(visible);
-            }
-            _visible = visible;
-        }
-    }
-
-    [[nodiscard]] inline bool visible() const noexcept { return _visible; }
 
     inline void set_tool_tip(const QString& tool_tip)
     {
@@ -166,7 +136,6 @@ public:
 signals:
 #endif
     Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void selection_changed(bool);
     Q_SIGNAL void delete_requested();
 };
 
