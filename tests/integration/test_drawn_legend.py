@@ -63,29 +63,37 @@ def test_the_legend_colour_signals_once(plot):
     assert seen == [QColor("red")]
 
 
-def _legend_row(plot, tmp_path):
+def _legend_row(qtbot, tmp_path, graph_of, visible):
+    """The legend's first row, drawn, for a graph named "g" made by graph_of."""
     from PySide6.QtGui import QImage
+    from SciQLopPlots import SciQLopPlot
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    plot.resize(600, 400)
+    graph = graph_of(plot)
+    graph.set_name("g")
+    graph.set_visible(visible)
+    # Shown, so the legend is laid out at this size: row_rect(0) of an unshown plot is where the
+    # legend sat before the resize, and the probe would compare plain plot background.
+    plot.show()
+    qtbot.waitExposed(plot)
     plot.replot(True)
+    rect = plot.legend().row_rect(0)
+    assert rect.isValid(), "no legend row to compare"
     path = str(tmp_path / "legend.png")
     plot.save_png(path, plot.width(), plot.height())
-    return QImage(path).copy(plot.legend().row_rect(0))
+    return QImage(path).copy(rect)
 
 
 def test_a_graph_hidden_before_its_first_data_has_a_hidden_graphs_legend_row(qtbot, tmp_path):
     """Review M2 was a false positive: a group row draws no icon for a hidden component, and an
     empty graph has none to draw. NeoQCP's legend ignores the plottable's own visibility."""
     import numpy as np
-    from SciQLopPlots import SciQLopPlot
     x = np.linspace(0.0, 10.0, 50)
-    rows = []
-    for graph_of in (lambda p: p.plot(lambda start, stop: [x[:0], x[:0]]),
-                     lambda p: p.plot(x, np.sin(x), labels=["a"])):
-        plot = SciQLopPlot()
-        qtbot.addWidget(plot)
-        plot.resize(600, 400)
-        graph = graph_of(plot)
-        graph.set_name("g")
-        graph.set_visible(False)
-        process_events()
-        rows.append(_legend_row(plot, tmp_path))
-    assert rows[0] == rows[1]
+    empty = lambda p: p.plot(lambda start, stop: [x[:0], x[:0]])
+    with_data = lambda p: p.plot(x, np.sin(x), labels=["a"])
+    hidden_empty = _legend_row(qtbot, tmp_path, empty, visible=False)
+    hidden = _legend_row(qtbot, tmp_path, with_data, visible=False)
+    shown = _legend_row(qtbot, tmp_path, with_data, visible=True)
+    assert shown != hidden, "the probe must see a row's icon"
+    assert hidden_empty == hidden
