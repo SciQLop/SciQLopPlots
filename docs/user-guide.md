@@ -1305,6 +1305,34 @@ plot.save("figure.svg")                  # the format follows the extension
 `save_jpg` and `save_bmp` also exist. Panels export all their plots together: `panel.save_pdf("panel.pdf")`.
 A save that fails raises `OSError` (a missing folder, say), an unknown extension `ValueError`.
 
+## Threads
+
+Plots live on the GUI thread. You can still call them from another thread:
+
+- **Setters queue themselves.** A setter called from another thread (`set_visible`, `set_title`,
+  `set_range`, `add_plot`, ...) runs on the GUI thread a moment later and returns at once.
+- **Bad arguments still raise in your thread.** A wrong value, a null object, a component filled
+  against itself, an unknown edit mode: the setter checks these before it queues itself.
+- **Mistakes that depend on the plot's state only warn.** The count of labels or colours, a column
+  past the last, a fill whose component is in another graph, a bin range below zero with log bins:
+  these are checked on the GUI thread, after earlier queued calls. From another thread they print
+  a warning there and raise nothing.
+- **Data setters run in your thread, on purpose.** `set_data`, `set_data_and_color`,
+  `set_color_data`, `set_values`, `set_binned`, `set_time_values` and `set_color_values` read the
+  arrays you pass while you still hold them, and `data_changed` fires before they return, in the
+  order you called them.
+- **Factories refuse other threads.** `plot()`, `create_plot()`, item constructors and the like
+  hand an object back, so they raise `RuntimeError` off the GUI thread.
+- **`set_x_axis` / `set_y_axis` run in the calling thread.** The plot calls them itself while it
+  arranges its graphs, on the GUI thread. Call them there too.
+- **Protected hooks are for subclasses.** `_visible()`, `_set_color()` and the other `_x` hooks are
+  where a subclass plugs in. Called from Python on a library object, they run the base default
+  (most raise `NotImplementedError`), not the class's own code. Call the public method instead.
+- **Deleting from a slot.** A slot can delete a graph, an item, a span or a timeline from its own
+  signal. It must not delete the plot or panel that is emitting from inside its own mouse or
+  keyboard event: `shiboken6.delete(plot)` in a selection slot triggered by a click crashes, as Qt
+  forbids it. Use `plot.deleteLater()` or the panel's `remove_plot`.
+
 ## Performance tips
 
 - **Give it everything.** Millions of points are fine: each graph is downsampled to the screen resolution in a background thread. Don't decimate yourself.
