@@ -49,6 +49,7 @@
 #include <SciQLopPlots/Plotables/SciQLopCurve.hpp>
 #include <SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphComponentInterface.hpp>
+#include <SciQLopPlots/SciQLopDrawnObject.hpp>
 #include <SciQLopPlots/Plotables/SciQLopGraphInterface.hpp>
 #include <SciQLopPlots/Plotables/SciQLopLineGraph.hpp>
 #include <SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp>

@@ -25,6 +25,7 @@ sciqlopplots_moc_headers = files(
     '../include/SciQLopPlots/enums.hpp',
     '../include/SciQLopPlots/qcp_enums.hpp',
     '../include/SciQLopPlots/SciQLopPlotRange.hpp',
+    '../include/SciQLopPlots/SciQLopDrawnObject.hpp',
     '../include/SciQLopPlots/SciQLopPlotInterface.hpp',
     '../include/SciQLopPlots/SciQLopPlotLegendInterface.hpp',
     '../include/SciQLopPlots/SciQLopPlotLegend.hpp',
@@ -132,6 +133,7 @@ sciqlopplots_headers = files(
 sciqlopplots_sources = files(
     'Profiling.cpp',
     'Tracing.cpp',
+    'SciQLopDrawnObject.cpp',
     'SciQLopPlotInterface.cpp',
     'SciQLopPlot.cpp',
     'SciQLopPlotLegend.cpp',

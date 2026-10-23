@@ -1,5 +1,6 @@
 import pytest
 import gc
+import threading
 import numpy as np
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
@@ -67,3 +68,18 @@ def force_gc():
     gc.collect()
     QApplication.processEvents()
     gc.collect()
+
+
+def record(signal):
+    """Every value `signal` emits, in order."""
+    seen = []
+    signal.connect(seen.append)
+    return seen
+
+
+def off_thread(call):
+    """Runs `call` on a plain Python thread and waits; the call itself must not block."""
+    thread = threading.Thread(target=call)
+    thread.start()
+    thread.join(timeout=10)
+    assert not thread.is_alive(), "the off-thread call blocked"

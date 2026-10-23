@@ -106,6 +106,17 @@
             return nullptr;
         }
     </template>
+    <template name="void_raises_python_errors">
+        try {
+            %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+        } catch (const sqp::unsupported_call&amp; e) {
+            PyErr_SetString(PyExc_NotImplementedError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return nullptr;
+        }
+    </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />
     <load-typesystem name="typesystem_widgets.xml" generate="no" />
@@ -304,6 +315,39 @@
         </modify-function>
     </value-type>
 
+    <!-- The accessors of everything drawn: an unsupported one is a NotImplementedError. -->
+    <object-type name="SciQLopDrawnObject" parent-management="yes">
+        <modify-function signature="visible() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="bool"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="selected() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="bool"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="color() const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="QColor"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_visible(bool)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_selected(bool)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set_color(const QColor&amp;)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_python_errors"/>
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopGraphComponentInterface" parent-management="yes">
         <modify-function signature="set_fill_to_value(double)">
             <inject-code class="target" position="beginning">
