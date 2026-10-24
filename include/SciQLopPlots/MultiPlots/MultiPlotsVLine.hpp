@@ -38,6 +38,7 @@ class MultiPlotsVerticalLine : public SciQLopMultiPlotObject
     double _line_width = 1.0;
     bool _read_only;
     bool m_visible;
+    bool m_selected = false;
     QString _tool_tip;
 
     template <typename F>
@@ -56,6 +57,8 @@ protected:
     void _set_color(const QColor& color) override;
     bool _visible() const override { return m_visible; }
     void _set_visible(bool visible) override;
+    bool _selected() const override { return m_selected; }
+    void _set_selected(bool selected) override;
 
 public:
     MultiPlotsVerticalLine(SciQLopMultiPlotPanel* panel, double position,

@@ -36,6 +36,9 @@ void MultiPlotsVerticalLine::addObject(SciQLopPlotInterface* plot)
         line->set_line_width(_line_width);
         line->set_visible(m_visible);
         line->set_tool_tip(_tool_tip);
+        line->set_selected(m_selected);
+        QObject::connect(line, &SciQLopVerticalLine::selection_changed, this,
+                         &MultiPlotsVerticalLine::set_selected);
         QObject::connect(line, &SciQLopVerticalLine::position_changed, this,
                          &MultiPlotsVerticalLine::set_position);
         _lines.append(line);
@@ -72,6 +75,16 @@ void MultiPlotsVerticalLine::_set_color(const QColor& color)
 {
     m_color = color;
     for_each_line([&color](SciQLopVerticalLine* line) { line->set_color(color); });
+}
+
+void MultiPlotsVerticalLine::_set_selected(bool selected)
+{
+    // Stored first: each plot's line echoes the selection back through set_selected.
+    m_selected = selected;
+    const QPointer<MultiPlotsVerticalLine> self(this);
+    for_each_line([selected](SciQLopVerticalLine* line) { line->set_selected(selected); });
+    if (self)
+        replotAll();
 }
 
 void MultiPlotsVerticalLine::set_line_width(double width)

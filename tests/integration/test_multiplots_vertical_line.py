@@ -2,7 +2,7 @@
 from SciQLopPlots import MultiPlotsVerticalLine, SciQLopVerticalLine
 from PySide6.QtGui import QColor
 
-from conftest import force_gc
+from conftest import force_gc, record
 
 
 def _lines(panel):
@@ -162,3 +162,32 @@ class TestMultiPlotsVerticalLine:
         vline.destroyed.connect(lambda: destroyed.append(True))
         panel.deleteLater()
         qtbot.waitUntil(lambda: destroyed == [True], timeout=1000)
+
+
+class TestMultiPlotsVerticalLineSelection:
+
+    def test_set_selected_selects_every_line_and_signals_once(self, panel, sample_data):
+        _two_plot_panel(panel, sample_data)
+        vline = panel.vertical_line(3.0)
+        seen = record(vline.selection_changed)
+        vline.set_selected(True)
+        assert vline.selected()
+        assert all(line.selected() for line in _lines(panel))
+        assert seen == [True]
+
+    def test_selecting_one_plot_line_selects_the_panel_line_and_the_others(self, panel, sample_data):
+        _two_plot_panel(panel, sample_data)
+        vline = panel.vertical_line(3.0)
+        seen = record(vline.selection_changed)
+        _lines(panel)[0].set_selected(True)
+        assert vline.selected()
+        assert all(line.selected() for line in _lines(panel))
+        assert seen == [True]
+
+    def test_a_plot_added_later_starts_selected(self, panel, sample_data):
+        x, y = sample_data
+        panel.line(x, y)
+        vline = panel.vertical_line(3.0)
+        vline.set_selected(True)
+        panel.line(x, y)
+        assert all(line.selected() for line in _lines(panel))
