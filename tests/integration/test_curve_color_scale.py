@@ -96,7 +96,7 @@ class TestScaleAppears:
         curve = _curve(qtbot, plot)
         curve.set_color_data(np.linspace(2.0, 7.0, N), ColorGradient.Jet)
         assert plot.z_axis().visible() is True
-        plot.remove_plottable(curve)
+        plot.remove(curve)
         qtbot.waitUntil(lambda: (process_events(), not plot.z_axis().visible())[1], timeout=3000)
 
 
@@ -253,13 +253,13 @@ class TestColormapGoesAway:
     def test_the_scale_goes_with_the_colormap_when_nothing_is_coloured(self, qtbot, plot):
         cmap = _colormap(qtbot, plot)
         assert plot.z_axis().visible() is True
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), not plot.z_axis().visible())[1], timeout=3000)
 
     def test_curves_take_the_scale_back_when_the_colormap_is_removed(self, qtbot, plot):
         cmap = _colormap(qtbot, plot)
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
                         timeout=3000)
         assert plot.z_axis().visible() is True
@@ -273,7 +273,7 @@ class TestGradientSurvivesTheColormap:
         curves came back in the colormap's Jet."""
         cmap = _colormap(qtbot, plot)
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
                         timeout=3000)
         assert plot.z_axis().visible() is True
@@ -283,7 +283,7 @@ class TestGradientSurvivesTheColormap:
         cmap = _colormap(qtbot, plot)
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
         plot.set_z_gradient(ColorGradient.Grayscale)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
                         timeout=3000)
         assert _bar_hues(plot, tmp_path, "gray") <= 2
@@ -291,7 +291,7 @@ class TestGradientSurvivesTheColormap:
     def test_reclaiming_keeps_the_auto_range(self, qtbot, plot):
         cmap = _colormap(qtbot, plot)
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
         process_events()
         assert plot.z_auto_range() is True
@@ -318,7 +318,7 @@ class TestPinSurvivesTheColormap:
         plot.z_axis().set_range(SciQLopPlotRange(0.0, 50.0))
         assert plot.z_auto_range() is False
         cmap = _colormap(qtbot, plot)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
         process_events()
         assert plot.z_auto_range() is False
@@ -342,7 +342,7 @@ class TestPinAgainstAColormapThatDrivesTheScale:
         qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
         process_events()
         assert _range(plot) != (pytest.approx(0.0), pytest.approx(50.0)), "the colormap never drove the scale"
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
         process_events()
         assert plot.z_auto_range() is False
@@ -354,7 +354,7 @@ class TestPinAgainstAColormapThatDrivesTheScale:
         cmap = _colormap(qtbot, plot)
         plot.z_axis().rescale()
         process_events()
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis().visible())[1], timeout=3000)
         process_events()
         assert _range(plot) == (pytest.approx(0.0), pytest.approx(50.0))
@@ -409,7 +409,7 @@ class TestInspectorFollowsTheScale:
         cmap = _colormap(qtbot, plot)
         process_events()
         assert plot.z_axis() in _plot_children(panel, plot)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), plot.z_axis() not in _plot_children(panel, plot))[1],
                         timeout=3000)
         assert plot.y2_axis() not in _plot_children(panel, plot)
@@ -431,7 +431,7 @@ class TestInspectorGradientIsRemembered:
         delegate = _pick_in_inspector(qtbot, plot, "Grayscale")
         assert _bar_hues(plot, tmp_path, "picked") <= 2
         cmap = _colormap(qtbot, plot)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
                         timeout=3000)
         assert _bar_hues(plot, tmp_path, "after") <= 2
@@ -441,7 +441,7 @@ class TestInspectorGradientIsRemembered:
         _curve(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Grayscale)
         delegate = _pick_in_inspector(qtbot, plot, "Grayscale")
         cmap = _colormap(qtbot, plot)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
                         timeout=3000)
         assert _bar_hues(plot, tmp_path, "after") <= 2
@@ -523,7 +523,7 @@ class TestHasColormapMeansAColormap:
         assert plot.has_colormap() is False
         cmap = _colormap(qtbot, plot)
         assert plot.has_colormap() is True
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         process_events()
         assert plot.has_colormap() is False
 

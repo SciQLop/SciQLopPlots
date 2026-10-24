@@ -23,12 +23,12 @@ class TestObservablePropertyAccess:
         assert hasattr(ax.on, "range")
 
     def test_span_has_on_range(self, plot):
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.0, 1.0))
+        span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))
         assert hasattr(span, "on")
         assert hasattr(span.on, "range")
 
     def test_span_has_on_tooltip(self, plot):
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.0, 1.0))
+        span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))
         assert hasattr(span.on, "tooltip")
 
 
@@ -50,7 +50,7 @@ class TestSpanPipeline:
 
     def test_span_range_to_tooltip(self, qtbot, plot):
         """span.on.range >> transform >> span.on.tooltip updates tooltip."""
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.0, 1.0))
+        span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))
 
         def format_range(event):
             r = event.value

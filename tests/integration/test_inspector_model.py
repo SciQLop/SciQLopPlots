@@ -143,10 +143,10 @@ class TestNodeRemovedIdentity:
         model = PlotsModel.instance()
         spy = QSignalSpy(model.node_removed)
 
-        # remove_plottable() `delete`s the plottable synchronously (deleteLater
+        # remove() `delete`s the plottable synchronously (deleteLater
         # on a Python-owned wrapper would never actually free the C++ object,
         # since the plot holds it as a QObject child / C++-owned).
-        plot.remove_plottable(graph)
+        plot.remove(graph)
         process_events()
 
         assert spy.count() >= 1

@@ -171,15 +171,15 @@ class TestLatexElsewhere:
     def test_a_text_item_is_typeset(self, qtbot, tmp_path):
         r"""QCPItemText goes through the same seam, so items typeset too."""
         from PySide6.QtCore import QPointF
-        from SciQLopPlots import SciQLopTextItem, Coordinates
+        from SciQLopPlots import Coordinates
 
         def item_bands(text, tag):
             plot = _quiet_plot(qtbot)
-            item = SciQLopTextItem(plot, text, QPointF(5.0, 0.0), False,
-                                   Coordinates.Data)
+            item = plot.text(text, QPointF(5.0, 0.0), False,
+                             Coordinates.Data)
             process_events()
             bands = _bands_in(_render(plot, tmp_path, tag), 100, 300)
-            del item
+            plot.remove(item)
             return bands
 
         assert item_bands(r"$\frac{a}{b}$", "item_tex") > \
@@ -187,14 +187,14 @@ class TestLatexElsewhere:
 
     def test_a_plain_item_is_unaffected(self, qtbot, tmp_path):
         from PySide6.QtCore import QPointF
-        from SciQLopPlots import SciQLopTextItem, Coordinates
+        from SciQLopPlots import Coordinates
 
         plot = _quiet_plot(qtbot)
-        item = SciQLopTextItem(plot, "hello", QPointF(5.0, 0.0), False,
-                               Coordinates.Data)
+        item = plot.text("hello", QPointF(5.0, 0.0), False,
+                         Coordinates.Data)
         process_events()
         assert _bands_in(_render(plot, tmp_path, "item_plain"), 100, 300) == 1
-        del item
+        plot.remove(item)
 
 
 class TestMathSpanSpacing:

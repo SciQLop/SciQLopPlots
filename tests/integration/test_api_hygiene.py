@@ -94,7 +94,7 @@ class TestSnakeCaseAliases:  # task 3, findings 1.5, 1.6
         assert hasattr(cls, "selection_changed") and hasattr(cls, "selectionChanged")
 
     def test_span_selection_changed_fires(self, qtbot, plot):
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.2, 0.4))
+        span = plot.vertical_span(SciQLopPlotRange(0.2, 0.4))
         seen = []
         span.selection_changed.connect(seen.append)
         span.set_selected(True)
@@ -159,7 +159,7 @@ class TestTimeRanges:  # task 5, finding 3.5
         panel = SciQLopMultiPlotPanel()
         qtbot.addWidget(panel)
         panel.create_plot(-1)
-        span = SciQLopPlots.MultiPlotsVerticalSpan(panel, SciQLopPlotRange(self.T0, self.T1))
+        span = panel.vertical_span(SciQLopPlotRange(self.T0, self.T1))
         assert repr(span.range).startswith("SciQLopPlotTimeRange")
 
 

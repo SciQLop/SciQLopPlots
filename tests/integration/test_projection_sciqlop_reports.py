@@ -113,6 +113,6 @@ def test_marker_follows_the_axes(proj, qtbot, tmp_path):
 
 def test_removing_a_projection_removes_its_curve_from_every_pane(proj):
     graph = proj.add_reference_curve([t, X, Y, Z])
-    proj.remove_plottable(graph)
+    proj.remove(graph)
     assert pane_plottables(proj) == [0, 0, 0]
     assert proj.plottables() == []

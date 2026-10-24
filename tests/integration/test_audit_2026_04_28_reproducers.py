@@ -21,11 +21,9 @@ from SciQLopPlots import (
     ColorGradient,
     Coordinates,
     SciQLopHistogram2D,
-    SciQLopHorizontalLine,
     SciQLopMultiPlotPanel,
     SciQLopPlot,
     SciQLopPlotRange,
-    SciQLopVerticalLine,
 )
 from conftest import force_gc, process_events
 
@@ -42,7 +40,7 @@ class TestC5_StraightLineEmitGuard:
     """
 
     def test_set_position_unchanged_does_not_reemit(self, plot):
-        line = SciQLopVerticalLine(plot, 5.0, True)
+        line = plot.vertical_line(5.0, True)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(5.0)
@@ -66,11 +64,11 @@ class TestC5_StraightLineEmitGuard:
             """
             import sys
             from PySide6.QtWidgets import QApplication
-            from SciQLopPlots import SciQLopPlot, SciQLopVerticalLine
+            from SciQLopPlots import SciQLopPlot
             app = QApplication.instance() or QApplication(sys.argv)
             plot = SciQLopPlot()
-            a = SciQLopVerticalLine(plot, 1.0, True)
-            b = SciQLopVerticalLine(plot, 1.0, True)
+            a = plot.vertical_line(1.0, True)
+            b = plot.vertical_line(1.0, True)
             a.position_changed.connect(b.set_position)
             b.position_changed.connect(a.set_position)
             sys.setrecursionlimit(500)
@@ -91,7 +89,7 @@ class TestC5_StraightLineEmitGuard:
         assert b"OK" in result.stdout, result.stdout
 
     def test_horizontal_line_unchanged_no_emit(self, plot):
-        line = SciQLopHorizontalLine(plot, 7.0, True)
+        line = plot.horizontal_line(7.0, True)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(7.0)
@@ -107,7 +105,7 @@ class TestH7_StraightLineClampValidation:
     """`_clamp` must behave sensibly when min > max or position is NaN."""
 
     def test_min_greater_than_max_does_not_silently_break(self, plot):
-        line = SciQLopVerticalLine(plot, 5.0, True)
+        line = plot.vertical_line(5.0, True)
         line.set_min_value(10.0)
         line.set_max_value(2.0)
         line.set_position(7.0)
@@ -121,7 +119,7 @@ class TestH7_StraightLineClampValidation:
         )
 
     def test_nan_position_does_not_propagate(self, plot):
-        line = SciQLopVerticalLine(plot, 5.0, True)
+        line = plot.vertical_line(5.0, True)
         line.set_min_value(0.0)
         line.set_max_value(10.0)
         line.set_position(float("nan"))

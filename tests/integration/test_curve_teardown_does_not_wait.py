@@ -65,7 +65,7 @@ class TestRemoveWhileTheResamplerRuns:
             pytest.skip(f"a resample takes {resample:.3f}s here, too fast to tell a wait apart")
         curve.set_data(*data)
         start = time.monotonic()
-        plot.remove_plottable(curve)
+        plot.remove(curve)
         assert time.monotonic() - start < resample / 4
 
     def test_deleting_the_plot_returns_before_the_resample_ends(self, qtbot, data):
@@ -85,7 +85,7 @@ class TestRemoveWhileTheResamplerRuns:
         curve = _curve(plot, data)
         resample = _resample_seconds(curve, data)
         curve.set_data(*data)
-        plot.remove_plottable(curve)
+        plot.remove(curve)
         _pump_until(lambda: False, timeout=max(0.5, 3 * resample))
         assert plot.plottables() == []
         bad = [m for mode, m in qt_messages
@@ -96,6 +96,6 @@ class TestRemoveWhileTheResamplerRuns:
     def test_an_idle_curve_is_still_removed_cleanly(self, plot, data):
         curve = _curve(plot, data)
         start = time.monotonic()
-        plot.remove_plottable(curve)
+        plot.remove(curve)
         assert time.monotonic() - start < 1.0
         assert plot.plottables() == []

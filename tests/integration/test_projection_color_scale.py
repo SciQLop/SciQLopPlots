@@ -273,7 +273,7 @@ class TestScaleGoesAwayWithTheColour:
         graph = _graph(qtbot, proj, orbit)
         graph.set_color_data(orbit[3], ColorGradient.Jet)
         assert proj.z_axis().visible() is True
-        proj.remove_plottable(graph)
+        proj.remove(graph)
         qtbot.waitUntil(lambda: (process_events(), not proj.z_axis().visible())[1], timeout=3000)
 
     def test_removing_one_of_two_coloured_graphs_keeps_the_scale(self, qtbot, proj, orbit):
@@ -281,7 +281,7 @@ class TestScaleGoesAwayWithTheColour:
         first.set_color_data(orbit[3], ColorGradient.Jet)
         second = _graph(qtbot, proj, orbit, labels=("a", "b", "c"))
         second.set_color_data(orbit[3] * 10, ColorGradient.Jet)
-        proj.remove_plottable(second)
+        proj.remove(second)
         qtbot.waitUntil(
             lambda: (process_events(), _range(proj.z_axis())[1] == pytest.approx(3.0))[1],
             timeout=3000)

@@ -76,6 +76,18 @@ _SPAN_SETTERS = [
 ]
 
 ITEMS = {
+    "vspan": lambda p: p.vertical_span(R(1.0, 2.0)),
+    "hspan": lambda p: p.horizontal_span(R(1.0, 2.0)),
+    "rspan": lambda p: p.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
+    "pixmap": lambda p: p.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
+    "ellipse": lambda p: p.ellipse(QRectF(1, 1, 2, 2)),
+    "text": lambda p: p.text("hello", QPointF(1, 1)),
+    "curve": lambda p: p.curved_line(QPointF(1, 1), QPointF(2, 2)),
+    "vline": lambda p: p.vertical_line(3.0),
+    "hline": lambda p: p.horizontal_line(3.0),
+}
+
+CTORS = {
     "vspan": lambda p: SciQLopVerticalSpan(p, R(1.0, 2.0)),
     "hspan": lambda p: SciQLopHorizontalSpan(p, R(1.0, 2.0)),
     "rspan": lambda p: SciQLopRectangularSpan(p, R(1.0, 2.0), R(1.0, 2.0)),
@@ -189,7 +201,7 @@ def test_axis_clear_tick_labels_lands_on_gui_thread(plot):
 
 
 def test_straight_line_min_max_land_on_gui_thread(plot):
-    line = SciQLopVerticalLine(plot, 3.0)
+    line = plot.vertical_line(3.0)
     _settle()
     _in_thread(lambda: line.set_min_value(1.0))
     _in_thread(lambda: line.set_max_value(2.0))
@@ -243,7 +255,7 @@ MULTI_LINE_CASES = [
 @pytest.mark.parametrize("prop,value", MULTI_LINE_CASES, ids=[f"set_{p}" for p, _ in MULTI_LINE_CASES])
 def test_multi_plot_line_setter_lands_on_gui_thread(panel, prop, value):
     panel.create_plot()
-    vline = MultiPlotsVerticalLine(panel, 3.0)
+    vline = panel.vertical_line(3.0)
     _settle()
     before = _get(vline, prop)
     assert before != value
@@ -284,9 +296,9 @@ def test_create_span_refuses_off_thread(vspans):
     assert vspans.spans() == []
 
 
-@pytest.mark.parametrize("kind", sorted(ITEMS))
+@pytest.mark.parametrize("kind", sorted(CTORS))
 def test_item_constructor_refuses_off_thread(plot, kind):
-    out = _in_thread(lambda: ITEMS[kind](plot))
+    out = _in_thread(lambda: CTORS[kind](plot))
     assert isinstance(out.get("error"), RuntimeError)
 
 
@@ -354,19 +366,19 @@ def test_add_and_remove_panel_land_on_gui_thread(panel):
     assert panel.size() == 0
 
 
-def test_remove_plottable_lands_on_gui_thread(plot, sample_data):
+def test_remove_lands_on_gui_thread(plot, sample_data):
     x, y = sample_data
     graph = plot.plot(x, y)
     _settle()
     n = len(plot.plottables())
-    _in_thread(lambda: plot.remove_plottable(graph))
+    _in_thread(lambda: plot.remove(graph))
     assert len(plot.plottables()) == n, "removed on the calling thread"
     _settle()
     assert len(plot.plottables()) == n - 1
 
 
 def test_queued_call_on_deleted_item_is_dropped(plot):
-    span = SciQLopVerticalSpan(plot, R(1.0, 2.0))
+    span = plot.vertical_span(R(1.0, 2.0))
     _settle()
     _in_thread(lambda: span.set_range(R(5.0, 6.0)))
     span.deleteLater()

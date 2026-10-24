@@ -139,9 +139,9 @@ class TestPixmapItemGeometry:  # found by SciQLop's suite once stubs raised (fin
     def _pixmap(self, plot):
         from PySide6.QtCore import QRectF
         from PySide6.QtGui import QPixmap
-        from SciQLopPlots import Coordinates, SciQLopPixmapItem
+        from SciQLopPlots import Coordinates
         image = QPixmap(4, 4)
-        return SciQLopPixmapItem(plot, image, QRectF(1.0, 2.0, 3.0, 4.0), False, Coordinates.Data)
+        return plot.pixmap(image, QRectF(1.0, 2.0, 3.0, 4.0), False, Coordinates.Data)
 
     def test_position_is_the_top_left_corner(self, plot):
         item = self._pixmap(plot)

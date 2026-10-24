@@ -49,7 +49,7 @@ _PRELUDE = textwrap.dedent(
 SCENARIOS = {
     "graph_removed": """
         graph = start_stuck_graph()
-        plot.remove_plottable(graph)
+        plot.remove(graph)
         quit_through_the_event_loop()
     """,
     "graph_still_shown": """
@@ -67,7 +67,7 @@ SCENARIOS = {
         y = np.column_stack([np.sin(x * 1e-4), np.cos(x * 1e-4)])
         curve = plot.parametric_curve(x, y, labels=["a", "b"])
         curve.set_data(x, y)
-        plot.remove_plottable(curve)
+        plot.remove(curve)
         quit_through_the_event_loop()
     """,
 }

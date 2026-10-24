@@ -15,7 +15,6 @@ from PySide6.QtGui import QImage
 from SciQLopPlots import (
     Coordinates,
     LineTermination,
-    SciQLopCurvedLineItem,
     SciQLopNDProjectionPlot,
     SciQLopPlotRange,
 )
@@ -48,18 +47,18 @@ def _ink(pane, tmp_path, name, half_range):
 
 
 def _vector(pane, stop_termination):
-    return SciQLopCurvedLineItem(
-        pane, QPointF(-5.0, -5.0), QPointF(5.0, 5.0),
+    return pane.curved_line(
+        QPointF(-5.0, -5.0), QPointF(5.0, 5.0),
         LineTermination.NoneTermination, stop_termination, Coordinates.Data)
 
 
 def _head_ink(pane, tmp_path, half_range):
     plain = _vector(pane, LineTermination.NoneTermination)
     without = _ink(pane, tmp_path, f"plain_{half_range}", half_range)
-    del plain
+    pane.remove(plain)
     with_head = _vector(pane, LineTermination.Arrow)
     ink = _ink(pane, tmp_path, f"arrow_{half_range}", half_range)
-    del with_head
+    pane.remove(with_head)
     return ink - without
 
 

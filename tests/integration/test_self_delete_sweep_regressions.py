@@ -81,7 +81,7 @@ GRAPH_CASES = {
     "color:data": (_lines, "replot", lambda g: g.set_color_data(SCALARS, ColorGradient.Hot)),
     "color:line_set_colors": (_lines, "replot", lambda g: g.set_colors([QColor("red")] * 3)),
     "color:curve_set_colors": (_curve, "replot", lambda g: g.set_colors([QColor("red")] * 2)),
-    "span:set_coordinates": (lambda p: SciQLopVerticalSpan(p, SciQLopPlotRange(1.0, 2.0)), "range_changed",
+    "span:set_coordinates": (lambda p: p.vertical_span(SciQLopPlotRange(1.0, 2.0)), "range_changed",
                              lambda s: s.set_coordinates(Coordinates.Pixels)),
 }
 

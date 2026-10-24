@@ -160,7 +160,7 @@ class TestScale:
     def test_removing_the_coloured_line_graph_hides_the_scale(self, qtbot, plot):
         line = _line(qtbot, plot)
         line.set_color_data(np.linspace(2.0, 7.0, N), ColorGradient.Jet)
-        plot.remove_plottable(line)
+        plot.remove(line)
         qtbot.waitUntil(lambda: (process_events(), not plot.z_axis().visible())[1], timeout=3000)
 
     def test_the_scale_gradient_colours_the_line(self, qtbot, plot, tmp_path):
@@ -224,7 +224,7 @@ class TestColormapWinsTheScale:
     def test_the_scale_comes_back_when_the_colormap_goes(self, qtbot, plot):
         cmap = _colormap(qtbot, plot)
         _line(qtbot, plot).set_color_data(np.linspace(0.0, 3.0, N), ColorGradient.Jet)
-        plot.remove_plottable(cmap)
+        plot.remove(cmap)
         qtbot.waitUntil(
             lambda: (process_events(), _range(plot) == (pytest.approx(0.0), pytest.approx(3.0)))[1],
             timeout=3000)

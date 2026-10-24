@@ -111,17 +111,17 @@ _LINE_GREY = QColor(100, 100, 100)
 
 
 @pytest.mark.parametrize("make", [
-    lambda plot: SciQLopVerticalSpan(plot, _RANGE),
-    lambda plot: SciQLopHorizontalSpan(plot, _RANGE),
-    lambda plot: SciQLopRectangularSpan(plot, _RANGE, _RANGE),
+    lambda plot: plot.vertical_span(_RANGE),
+    lambda plot: plot.horizontal_span(_RANGE),
+    lambda plot: plot.rectangular_span(_RANGE, _RANGE),
 ], ids=["vertical", "horizontal", "rectangular"])
 def test_default_span_color(plot, make):
     assert make(plot).color() == _SPAN_GREY
 
 
 @pytest.mark.parametrize("make", [
-    lambda panel: MultiPlotsVerticalSpan(panel, _RANGE),
-    lambda panel: MultiPlotsVerticalLine(panel, 0.5),
+    lambda panel: panel.vertical_span(_RANGE),
+    lambda panel: panel.vertical_line(0.5),
     lambda panel: MultiPlotsVSpanCollection(panel).create_span(_RANGE),
 ], ids=["span", "line", "collection span"])
 def test_default_panel_item_color(panel, make):

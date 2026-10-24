@@ -17,14 +17,14 @@ from tests.fuzzing.actions import ui_action
     verify=lambda panel, model: True,
 )
 def add_vertical_span(panel, model, plot_index):
-    from SciQLopPlots import SciQLopVerticalSpan, SciQLopPlotRange
+    from SciQLopPlots import SciQLopPlotRange
 
     plot = panel.plot_at(plot_index)
     r = plot.x_axis().range()
     center = r.center()
     span_range = SciQLopPlotRange(center - r.size() * 0.1, center + r.size() * 0.1)
-    SciQLopVerticalSpan(
-        plot, span_range,
+    plot.vertical_span(
+        span_range,
         QColor(100, 100, 200, 80),
         read_only=False, visible=True,
         tool_tip="test span",
@@ -40,7 +40,7 @@ def add_vertical_span(panel, model, plot_index):
 )
 def add_multi_plot_span(panel, model):
     """Add a MultiPlotsVerticalSpan across the whole panel — mimics SciQLop catalog events."""
-    from SciQLopPlots import MultiPlotsVerticalSpan, SciQLopPlotRange
+    from SciQLopPlots import SciQLopPlotRange
 
     # Use the first plot's x range as reference
     plot = panel.plot_at(0)
@@ -55,8 +55,8 @@ def add_multi_plot_span(panel, model):
         int(np.random.randint(50, 255)),
         80,
     )
-    MultiPlotsVerticalSpan(
-        panel, span_range, color,
+    panel.vertical_span(
+        span_range, color,
         read_only=False, visible=True,
         tool_tip="catalog event",
     )
@@ -72,7 +72,7 @@ def add_multi_plot_span(panel, model):
 )
 def add_span_burst(panel, model):
     """Add many spans at once — mimics loading a catalog with dozens of events."""
-    from SciQLopPlots import MultiPlotsVerticalSpan, SciQLopPlotRange
+    from SciQLopPlots import SciQLopPlotRange
 
     plot = panel.plot_at(0)
     r = plot.x_axis().range()
@@ -81,8 +81,8 @@ def add_span_burst(panel, model):
         pos = r.start() + r.size() * (i + 0.5) / count
         width = r.size() * 0.005
         span_range = SciQLopPlotRange(pos - width, pos + width)
-        MultiPlotsVerticalSpan(
-            panel, span_range,
+        panel.vertical_span(
+            span_range,
             QColor(200, 100, 100, 60),
             read_only=False, visible=True,
             tool_tip=f"event_{i}",
@@ -99,7 +99,7 @@ def add_span_burst(panel, model):
 )
 def add_per_plot_span_burst(panel, model, plot_index):
     """Add many per-plot vertical spans — stresses per-plot item management."""
-    from SciQLopPlots import SciQLopVerticalSpan, SciQLopPlotRange
+    from SciQLopPlots import SciQLopPlotRange
 
     plot = panel.plot_at(plot_index)
     r = plot.x_axis().range()
@@ -107,8 +107,8 @@ def add_per_plot_span_burst(panel, model, plot_index):
     for i in range(count):
         pos = r.start() + r.size() * (i + 0.5) / count
         width = r.size() * 0.01
-        SciQLopVerticalSpan(
-            plot, SciQLopPlotRange(pos - width, pos + width),
+        plot.vertical_span(
+            SciQLopPlotRange(pos - width, pos + width),
             QColor(100, 200, 100, 60),
             read_only=False, visible=True,
             tool_tip=f"span_{i}",

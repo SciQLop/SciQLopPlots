@@ -73,7 +73,7 @@ def qt_messages():
 
 def _destroy_seconds(plot, graph):
     start = time.monotonic()
-    plot.remove_plottable(graph)
+    plot.remove(graph)
     return time.monotonic() - start
 
 
@@ -100,7 +100,7 @@ class TestDestroyWhileTheCallbackRuns:
         cb = parked()
         graph = plot.plot(cb, labels=["sig"])
         assert cb.entered.wait(5.0), "the callback never started"
-        plot.remove_plottable(graph)
+        plot.remove(graph)
         cb.release.set()
         assert _pump_until(cb.finished.is_set), "the callback was cut short"
         _pump_until(lambda: False, timeout=0.3)

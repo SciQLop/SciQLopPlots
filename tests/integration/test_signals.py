@@ -24,7 +24,7 @@ class TestAxisSignals:
 class TestSpanSignals:
 
     def test_range_changed_on_set_range(self, qtbot, plot):
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.0, 1.0))
+        span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))
         with qtbot.waitSignal(span.range_changed, timeout=1000):
             span.set_range(SciQLopPlotRange(3.0, 7.0))
 

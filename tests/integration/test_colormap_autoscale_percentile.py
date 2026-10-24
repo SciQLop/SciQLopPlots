@@ -245,7 +245,7 @@ class TestSharedColorScaleProviderOwnership:
         zaxis.rescale()
         before = zaxis.range()
 
-        plot.remove_plottable(hist)  # synchronous C++ delete of the NON-owner
+        plot.remove(hist)  # synchronous C++ delete of the NON-owner
 
         # A materially different (tighter) percentile band on the surviving
         # colormap: if its provider is still installed, this changes the

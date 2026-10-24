@@ -490,7 +490,7 @@ class TestUnusedLeftAxisIsHidden:
         process_events()
         assert plot.y_axis().visible() is False
 
-        plot.remove_plottable(cmap)  # synchronous C++ delete
+        plot.remove(cmap)  # synchronous C++ delete
         process_events()
         assert plot.y_axis().visible() is True
 

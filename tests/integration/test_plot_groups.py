@@ -60,7 +60,7 @@ class TestPlainPlot:
 
     def test_removing_the_group_gives_rows_back(self, plot, lines):
         group = plot.group("abc", lines)
-        plot.remove_group(group)
+        plot.remove(group)
         assert sorted(plot.legend().row_labels()) == ["a", "b", "c"]
         assert plot.groups() == []
 
@@ -101,7 +101,7 @@ class TestPlainPlot:
 
     def test_a_removed_member_leaves_the_group(self, plot, lines):
         group = plot.group("abc", lines)
-        plot.remove_plottable(lines[0])
+        plot.remove(lines[0])
         process_events()
         assert len(group.members()) == 2
         assert plot.legend().row_labels() == ["abc"]
@@ -187,7 +187,7 @@ class TestProjection:
     def test_removing_the_group_gives_every_pane_its_rows(self, proj):
         curves = pane_curves(proj, "Shue")
         group = proj.group("Shue 1998", curves)
-        proj.remove_group(group)
+        proj.remove(group)
         for i in range(proj.subplot_count()):
             assert proj.subplot(i).legend().row_labels() == ["Shue"]
 
@@ -244,7 +244,7 @@ class TestFromTheReview:
 
     def test_removing_the_group_from_a_visibility_slot(self, plot, lines):
         group = plot.group("abc", lines)
-        lines[0].visible_changed.connect(lambda _: plot.remove_group(group))
+        lines[0].visible_changed.connect(lambda _: plot.remove(group))
         group.set_visible(False)  # must not touch the deleted group
         process_events()
         assert plot.groups() == []
@@ -259,7 +259,7 @@ class TestFromTheReview:
         qtbot.addWidget(other)
         foreign = other.group("f", [other.plot(X, X, labels=["f"])])
         with pytest.raises(ValueError):
-            plot.remove_group(foreign)
+            plot.remove(foreign)
         assert other.groups() == [foreign]
 
 
@@ -298,7 +298,7 @@ class TestSecondReview:
 
     def test_a_visibility_slot_may_remove_a_later_member(self, plot, lines):
         group = plot.group("abc", lines)
-        lines[0].visible_changed.connect(lambda _: plot.remove_plottable(lines[2]))
+        lines[0].visible_changed.connect(lambda _: plot.remove(lines[2]))
         group.set_visible(False)  # must not touch the deleted third line
         process_events()
         assert len(group.members()) == 2
@@ -306,7 +306,7 @@ class TestSecondReview:
     def test_moving_survives_a_slot_deleting_the_new_group(self, plot, lines):
         first = plot.group("first", lines[:1])
         second = plot.group("second", lines[1:2])
-        first.members_changed.connect(lambda: plot.remove_group(second))
+        first.members_changed.connect(lambda: plot.remove(second))
         second.add(lines[0])  # first tells its slot mid-move; second is deleted there
         process_events()
         assert plot.groups() == [first]
@@ -330,7 +330,7 @@ class TestSecondReview:
 
     def test_the_last_member_removed_leaves_an_empty_group(self, plot, lines):
         group = plot.group("a", lines[:1])
-        plot.remove_plottable(lines[0])
+        plot.remove(lines[0])
         process_events()
         assert group.members() == []
         assert sorted(plot.legend().row_labels()) == ["b", "c"]
