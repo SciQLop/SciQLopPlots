@@ -40,6 +40,8 @@ class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public i
     std::optional<double> m_min_value;
     std::optional<double> m_max_value;
 
+    std::optional<double> dragged_position(const QPointF& mouse) const;
+
     inline double _clamp(double pos) const
     {
         if (std::isnan(pos))

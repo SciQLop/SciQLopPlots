@@ -26,29 +26,31 @@ void StraightLine::mouseMoveEvent(QMouseEvent* event, const QPointF& startPos)
 {
     if (!_movable || event->buttons() != Qt::LeftButton)
         return;
-    if (m_coordinates == Coordinates::Pixels)
-    {
-        const QPointF fromAxisRect = event->position() - point1->axisRect()->topLeft();
-        if (m_orientation == Qt::Orientation::Vertical)
-            set_position(fromAxisRect.x());
-        else
-            set_position(fromAxisRect.y());
-    }
-    else
-    {
-        if (m_orientation == Qt::Orientation::Vertical)
-        {
-            if (auto* axis = this->point1->keyAxis())
-                set_position(axis->pixelToCoord(event->position().x()));
-        }
-        else
-        {
-            if (auto* axis = this->point1->valueAxis())
-                set_position(axis->pixelToCoord(event->position().y()));
-        }
-    }
+    const QPointer<StraightLine> self(this);
+    if (const auto position = dragged_position(event->position()))
+        set_position(*position);
+    // set_position emits: a slot may have deleted this line.
+    if (!self)
+        return;
     _last_position = event->position();
     event->accept();
+}
+
+std::optional<double> StraightLine::dragged_position(const QPointF& mouse) const
+{
+    const bool vertical = m_orientation == Qt::Orientation::Vertical;
+    if (m_coordinates == Coordinates::Pixels)
+    {
+        const auto* rect = point1->axisRect();
+        if (!rect)
+            return std::nullopt;
+        const QPointF fromAxisRect = mouse - rect->topLeft();
+        return vertical ? fromAxisRect.x() : fromAxisRect.y();
+    }
+    const auto* axis = vertical ? point1->keyAxis() : point1->valueAxis();
+    if (!axis)
+        return std::nullopt;
+    return axis->pixelToCoord(vertical ? mouse.x() : mouse.y());
 }
 
 void StraightLine::move(double dx, double dy)

@@ -7,7 +7,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 
-from SciQLopPlots import (MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
+from SciQLopPlots import (Coordinates, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
                           SciQLopVerticalSpan, WaterfallOffsetMode)
 from conftest import process_events
 
@@ -184,3 +184,33 @@ def test_a_slot_deleting_the_timeline_on_a_selection_gesture_does_not_crash(ts_p
     process_events()
     assert fired
     assert not shiboken6.isValid(tl)
+
+
+@pytest.mark.parametrize("coordinates", [Coordinates.Data, Coordinates.Pixels])
+def test_a_slot_deleting_a_line_on_its_drag_does_not_crash(qtbot, plot, coordinates):
+    plot.resize(800, 400)
+    plot.show()
+    qtbot.waitExposed(plot)
+    plot.x_axis().set_range(R(0.0, 1000.0))
+    line = plot.vertical_line(500.0 if coordinates == Coordinates.Data else 300.0, True, coordinates)
+    plot.replot(True)
+    process_events()
+    canvas = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+    y = canvas.height() // 2
+    hit = next(x for x in range(10, canvas.width() - 10) if _selects(canvas, line, x, y))
+    fired = []
+    line.position_changed.connect(lambda *_: (fired.append(1), shiboken6.delete(line)))
+    QTest.mousePress(canvas, Qt.LeftButton, Qt.NoModifier, QPoint(hit, y))
+    QTest.mouseMove(canvas, QPoint(hit + 30, y))
+    QTest.mouseRelease(canvas, Qt.LeftButton, Qt.NoModifier, QPoint(hit + 30, y))
+    process_events()
+    assert fired
+    assert not shiboken6.isValid(line)
+
+
+def _selects(canvas, line, x, y):
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, QPoint(x, y))
+    process_events()
+    selected = line.selected()
+    line.set_selected(False)
+    return selected

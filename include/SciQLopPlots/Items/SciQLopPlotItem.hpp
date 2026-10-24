@@ -108,11 +108,15 @@ public:
 
     inline void mouseMoveEvent(QMouseEvent* event, const QPointF& startPos) override
     {
+        const QPointer<QCPAbstractItem_T> self(this);
         if (_movable and event->buttons() == Qt::LeftButton)
         {
             move(event->position().x() - this->_last_position.x(),
                  event->position().y() - this->_last_position.y());
         }
+        // move() may emit: a slot may have deleted this item.
+        if (!self)
+            return;
         this->_last_position = event->position();
         event->accept();
     }
