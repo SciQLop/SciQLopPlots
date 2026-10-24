@@ -209,7 +209,7 @@ git commit -m "fix(items): every item is its plot's child and refuses a null plo
 
 - [ ] **Step 1: Write the failing test**
 
-`afterReplot` is the QCustomPlot child's signal. It is reached through the meta-object because it is not bound.
+`afterReplot` is the QCustomPlot child's signal. It is reached through the meta-object because it is not bound. The string-based `QObject.connect(obj, SIGNAL("afterReplot()"), slot)` works in PySide6 6.11.2: it was checked against build-venv, and it fired on `plot.replot()`. `obj.afterReplot` does not exist, because the child comes back as a plain `QWidget`.
 
 ```python
 from PySide6.QtCore import QObject, SIGNAL
@@ -260,6 +260,8 @@ inline auto qcp_item_remove(auto&& ptr) -> void
 ```
 
 Update the comment above it in place: one clause saying a queued replot takes the item off the screen.
+
+The replot must stay inside the QPointer guard. When a plot dies, its QCustomPlot (`m_impl`, the plot's first child, src/SciQLopPlot.cpp:860) deletes its QCP items before Qt deletes the item wrappers. So a wrapper's destructor finds a null QPointer and must not touch the plot. `SciQLopSpanBase::~SciQLopSpanBase` (src/SciQLopSpanBase.cpp:26) does the same through its own check: leave it as it is.
 
 - [ ] **Step 4: Build, run the new test, then the full suite**
 
@@ -666,6 +668,14 @@ def test_remove_from_the_items_own_signal(plot):
     assert not shiboken6.isValid(line)
 
 
+def test_remove_a_span_from_its_own_signal(plot):
+    span = plot.vertical_span(R(1.0, 2.0))
+    span.range_changed.connect(lambda *_: plot.remove(span))
+    span.set_range(R(3.0, 4.0))
+    process_events()
+    assert not shiboken6.isValid(span)
+
+
 def test_remove_off_thread_lands_on_the_gui_thread(plot):
     item = plot.text("t", QPointF(1, 1))
     gone = on_destroyed(item)
@@ -682,7 +692,11 @@ def test_remove_off_thread_is_dropped_if_the_item_dies_first(plot):
     process_events()  # the queued call finds a null QPointer and does nothing
 ```
 
-Use the real accessor names: the group's members list (check `SciQLopPlotGroup.hpp`), `plot.legend()`, `graph.components()`. `remove_twice` covers Review Focus 4. The invalid wrapper raises shiboken's own RuntimeError before C++ runs.
+Use the real accessor names: the group's members list (check `SciQLopPlotGroup.hpp`), `plot.legend()`, `graph.components()`. `remove_twice` covers Review Focus 4.
+
+The `ctor_text` and `ctor_line` cases are what prove the spec's "no ownership markup on the argument" decision. A Python-owned wrapper deleted from C++ must be invalid afterwards, with no double free when Python lets go. Keep the `collect()` after the assertion. Task 1's `test_held_item_dies_with_its_plot` proves the same for the plot's death.
+
+The two own-signal tests pass because their emitters are hardened: `impl::StraightLine::set_position` (src/SciQLopStraightLines.cpp:73-81) emits, then replots only if a QPointer to itself is still alive. The span's `set_range` path is the same kind. If either test crashes, the emitter is missing that guard. Fix it there (emit last, or a QPointer check after the emit), with the test as the reproducer. The invalid wrapper raises shiboken's own RuntimeError before C++ runs.
 
 - [ ] **Step 2: Run them and watch them fail** with `AttributeError: ... has no attribute 'remove'`.
 
