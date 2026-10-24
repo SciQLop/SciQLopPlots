@@ -600,9 +600,9 @@ void SciQLopNDProjectionPlot::export_paint(QPainter* painter, const QRect& targe
 }
 
 bool SciQLopNDProjectionPlot::save(const QString& filename, int width, int height, double scale,
-                                   int quality)
+                                   int quality, const QString& format)
 {
-    return saved_or_throw(save_widget(this, filename, width, height, scale, quality), filename);
+    return saved_or_throw(save_widget(this, filename, width, height, scale, quality, format), filename);
 }
 
 bool SciQLopNDProjectionPlot::save_pdf(const QString& filename, int width, int height)

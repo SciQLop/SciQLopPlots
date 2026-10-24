@@ -1663,20 +1663,18 @@ bool SciQLopPlot::save_bmp(const QString& filename, int width, int height,
 }
 
 bool SciQLopPlot::save(const QString& filename, int width, int height,
-                       double scale, int quality)
+                       double scale, int quality, const QString& format)
 {
-    auto ext = QFileInfo(filename).suffix().toLower();
-    if (ext == "pdf")
+    const auto name = resolve_save_format(filename, format);
+    if (name == "pdf")
         return save_pdf(filename, width, height);
-    if (ext == "svg")
+    if (name == "svg")
         return save_svg(filename, width, height);
-    if (ext == "png")
+    if (name == "png")
         return save_png(filename, width, height, scale, quality);
-    if (ext == "jpg" || ext == "jpeg")
+    if (name == "jpg")
         return save_jpg(filename, width, height, scale, quality);
-    if (ext == "bmp")
-        return save_bmp(filename, width, height, scale);
-    throw_unknown_save_format(filename);
+    return save_bmp(filename, width, height, scale);
 }
 
 void SciQLopPlot::set_title(const QString& title)

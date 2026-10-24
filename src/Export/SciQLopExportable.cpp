@@ -188,21 +188,48 @@ bool save_widget_raster(QWidget* w, const QString& filename, const char* format,
     return pixmap.save(filename, format, quality);
 }
 
-bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
-                 int quality)
+namespace
 {
-    const auto ext = QFileInfo(filename).suffix().toLower();
-    if (ext == "pdf")
+const QStringList save_formats = {"pdf", "svg", "png", "jpg", "bmp"};
+
+QString normalized_format(const QString& format)
+{
+    auto name = format.trimmed().toLower();
+    if (name.startsWith('.'))
+        name.remove(0, 1);
+    return name == "jpeg" ? QString("jpg") : name;
+}
+} // namespace
+
+QString resolve_save_format(const QString& filename, const QString& format)
+{
+    if (format.isEmpty())
+    {
+        const auto ext = normalized_format(QFileInfo(filename).suffix());
+        if (!save_formats.contains(ext))
+            throw_unknown_save_format(filename);
+        return ext;
+    }
+    const auto name = normalized_format(format);
+    if (!save_formats.contains(name))
+        throw std::invalid_argument("can't save " + filename.toStdString() + ": unknown format '"
+                                    + format.toStdString() + "' (pdf, svg, png, jpg or bmp)");
+    return name;
+}
+
+bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
+                 int quality, const QString& format)
+{
+    const auto name = resolve_save_format(filename, format);
+    if (name == "pdf")
         return save_widget_pdf(w, filename, width, height);
-    if (ext == "svg")
+    if (name == "svg")
         return save_widget_svg(w, filename, width, height);
-    if (ext == "png")
+    if (name == "png")
         return save_widget_raster(w, filename, "PNG", width, height, scale, quality);
-    if (ext == "jpg" || ext == "jpeg")
+    if (name == "jpg")
         return save_widget_raster(w, filename, "JPG", width, height, scale, quality);
-    if (ext == "bmp")
-        return save_widget_raster(w, filename, "BMP", width, height, scale, -1);
-    throw_unknown_save_format(filename);
+    return save_widget_raster(w, filename, "BMP", width, height, scale, -1);
 }
 
 bool saved_or_throw(bool saved, const QString& filename)

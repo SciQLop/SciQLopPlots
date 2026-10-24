@@ -895,11 +895,12 @@
             </modify-argument>
         </modify-function>
         <property name="name" type="QString" get="objectName" set="setObjectName" generate-getsetdef="yes"/>
-        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+        <modify-function signature="save(const QString&amp;,int,int,double,int,const QString&amp;)">
             <modify-argument index="2"><rename to="width"/></modify-argument>
             <modify-argument index="3"><rename to="height"/></modify-argument>
             <modify-argument index="4"><rename to="scale"/></modify-argument>
             <modify-argument index="5"><rename to="quality"/></modify-argument>
+            <modify-argument index="6"><rename to="format"/></modify-argument>
         </modify-function>
         <modify-function signature="save_pdf(const QString&amp;,int,int)">
             <modify-argument index="2"><rename to="width"/></modify-argument>
@@ -985,7 +986,7 @@
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
-        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+        <modify-function signature="save(const QString&amp;,int,int,double,int,const QString&amp;)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
         <modify-function signature="save_pdf(const QString&amp;,int,int)">
@@ -1057,7 +1058,7 @@
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
-        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+        <modify-function signature="save(const QString&amp;,int,int,double,int,const QString&amp;)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
         <modify-function signature="save_pdf(const QString&amp;,int,int)">
@@ -1698,11 +1699,12 @@
                 <parent index="1" action="add"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+        <modify-function signature="save(const QString&amp;,int,int,double,int,const QString&amp;)">
             <modify-argument index="2"><rename to="width"/></modify-argument>
             <modify-argument index="3"><rename to="height"/></modify-argument>
             <modify-argument index="4"><rename to="scale"/></modify-argument>
             <modify-argument index="5"><rename to="quality"/></modify-argument>
+            <modify-argument index="6"><rename to="format"/></modify-argument>
         </modify-function>
         <modify-function signature="save_pdf(const QString&amp;,int,int)">
             <modify-argument index="2"><rename to="width"/></modify-argument>
@@ -1773,7 +1775,7 @@
         <modify-function signature="save_svg(const QString&amp;,int,int)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
-        <modify-function signature="save(const QString&amp;,int,int,double,int)">
+        <modify-function signature="save(const QString&amp;,int,int,double,int,const QString&amp;)">
             <inject-code class="target" position="beginning"><insert-template name="save_raises_oserror"/></inject-code>
         </modify-function>
         <modify-function signature="save_pdf(const QString&amp;,int,int)">

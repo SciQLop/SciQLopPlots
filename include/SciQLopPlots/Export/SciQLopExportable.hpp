@@ -67,9 +67,13 @@ bool save_widget_pdf(QWidget* w, const QString& filename, int width, int height)
 bool save_widget_svg(QWidget* w, const QString& filename, int width, int height);
 bool save_widget_raster(QWidget* w, const QString& filename, const char* format, int width,
                         int height, double scale, int quality);
-// The format follows the extension: pdf, svg, png, jpg/jpeg or bmp.
+// The format is `format` when given, else the extension: pdf, svg, png, jpg/jpeg or bmp.
 bool save_widget(QWidget* w, const QString& filename, int width, int height, double scale,
-                 int quality);
+                 int quality, const QString& format = {});
+
+// "pdf", "svg", "png", "jpg" or "bmp": `format` normalised, or the extension of `filename`
+// when `format` is empty. Throws std::invalid_argument for anything else.
+QString resolve_save_format(const QString& filename, const QString& format);
 
 // A failed save throws (OSError in Python, ValueError for an unknown format): a False return
 // was easy to miss.

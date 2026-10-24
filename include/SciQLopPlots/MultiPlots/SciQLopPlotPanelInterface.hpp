@@ -73,7 +73,7 @@ public:
     }
 
     virtual bool save(const QString& filename, int width = 0, int height = 0,
-                      double scale = 1.0, int quality = -1)
+                      double scale = 1.0, int quality = -1, const QString& format = {})
     {
         WARN_ABSTRACT_METHOD;
         return false;

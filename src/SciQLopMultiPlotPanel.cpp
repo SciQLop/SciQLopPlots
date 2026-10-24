@@ -728,9 +728,9 @@ bool SciQLopMultiPlotPanel::save_bmp(const QString& filename, int width, int hei
 }
 
 bool SciQLopMultiPlotPanel::save(const QString& filename, int width, int height,
-                                 double scale, int quality)
+                                 double scale, int quality, const QString& format)
 {
-    return saved_or_throw(save_widget(_container, filename, width, height, scale, quality), filename);
+    return saved_or_throw(save_widget(_container, filename, width, height, scale, quality, format), filename);
 }
 
 void SciQLopMultiPlotPanel::_install_span_creator(SciQLopPlot* plot)
