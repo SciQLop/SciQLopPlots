@@ -14,8 +14,8 @@ import pytest
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
-                          SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
-                          SciQLopVerticalSpan)
+                          SciQLopHorizontalSpan, SciQLopMultiPlotPanel, SciQLopPlotRange,
+                          SciQLopRectangularSpan, SciQLopVerticalSpan)
 
 _SCAN = textwrap.dedent("""
     import json
@@ -50,6 +50,17 @@ def test_no_signature_warnings(scan):
 
 def test_import_does_not_mute_signature_warnings(scan):
     assert scan["muted"] == 0
+
+
+# A type_map entry that stops matching shiboken's spelling goes silent, it does not warn.
+@pytest.mark.parametrize("func, expected", [
+    (lambda: MultiPlotsVSpanCollection.spans, "List[SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr]"),
+    (lambda: SciQLopMultiPlotPanel.plots, "List[SciQLopPlotsBindings.SciQLopPlotInterfacePtr]"),
+    (lambda: MultiPlotsVerticalSpan.__init__, "*, range: SciQLopPlotsBindings.SciQLopPlotRange"),
+])
+def test_type_map_entries_resolve(func, expected):
+    from shibokensupport.signature import get_signature
+    assert expected in str(get_signature(func()))
 
 
 X = np.linspace(0.0, 1.0, 10)
