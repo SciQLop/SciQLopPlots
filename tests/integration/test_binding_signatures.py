@@ -4,6 +4,7 @@ Shiboken's signature parser warns (RuntimeWarning "pyside_type_init ... UNRECOGN
 default or type it cannot spell in Python. Each signature is parsed once per process and then
 cached, so the scan runs in a fresh interpreter: an earlier test may already have parsed them.
 """
+import inspect
 import json
 import subprocess
 import sys
@@ -56,7 +57,7 @@ def test_import_does_not_mute_signature_warnings(scan):
 @pytest.mark.parametrize("func, expected", [
     (lambda: MultiPlotsVSpanCollection.spans, "List[SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr]"),
     (lambda: SciQLopMultiPlotPanel.plots, "List[SciQLopPlotsBindings.SciQLopPlotInterfacePtr]"),
-    (lambda: MultiPlotsVerticalSpan.__init__, "*, range: SciQLopPlotsBindings.SciQLopPlotRange"),
+    (lambda: inspect.unwrap(MultiPlotsVerticalSpan.__init__), "*, range: SciQLopPlotsBindings.SciQLopPlotRange"),
 ])
 def test_type_map_entries_resolve(func, expected):
     from shibokensupport.signature import get_signature

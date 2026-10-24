@@ -267,7 +267,8 @@ def test_multi_plot_line_setter_lands_on_gui_thread(panel, prop, value):
 
 def test_multi_plot_line_constructor_refuses_off_thread(panel):
     panel.create_plot()
-    out = _in_thread(lambda: MultiPlotsVerticalLine(panel, 3.0))
+    with pytest.warns(DeprecationWarning):
+        out = _in_thread(lambda: MultiPlotsVerticalLine(panel, 3.0))
     assert isinstance(out.get("error"), RuntimeError)
 
 
@@ -298,13 +299,15 @@ def test_create_span_refuses_off_thread(vspans):
 
 @pytest.mark.parametrize("kind", sorted(CTORS))
 def test_item_constructor_refuses_off_thread(plot, kind):
-    out = _in_thread(lambda: CTORS[kind](plot))
+    with pytest.warns(DeprecationWarning):
+        out = _in_thread(lambda: CTORS[kind](plot))
     assert isinstance(out.get("error"), RuntimeError)
 
 
 def test_multi_plot_span_constructor_refuses_off_thread(panel):
     panel.create_plot()
-    out = _in_thread(lambda: MultiPlotsVerticalSpan(panel, R(1.0, 2.0)))
+    with pytest.warns(DeprecationWarning):
+        out = _in_thread(lambda: MultiPlotsVerticalSpan(panel, R(1.0, 2.0)))
     assert isinstance(out.get("error"), RuntimeError)
 
 

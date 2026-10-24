@@ -84,7 +84,7 @@ class TestOverloadErrorMessage:
     def test_wrong_args_raise_typeerror_not_nameerror(self):
         # Item ctors are Python-wrapped for Ptr auto-deref (finding #3), which
         # routes around shiboken's tp_init: still a TypeError, never NameError.
-        with pytest.raises(TypeError):
+        with pytest.warns(DeprecationWarning), pytest.raises(TypeError):
             SciQLopHorizontalLine("not a plot", 5.0)
 
     def test_error_message_lists_supported_signatures(self):
@@ -120,7 +120,8 @@ class TestInterfacePtrAutoDeref:
         panel = self._panel_with_plot(qtbot)
         ptr = panel.plots()[0]
         # SciQLopVerticalLine(SciQLopPlot*, ...) — derived-pointer param
-        line = SciQLopVerticalLine(ptr, 5.0)
+        with pytest.warns(DeprecationWarning):
+            line = SciQLopVerticalLine(ptr, 5.0)
         assert line is not None
 
     def test_ptr_accepted_by_base_interface_param(self, qtbot):
@@ -133,7 +134,8 @@ class TestInterfacePtrAutoDeref:
     def test_raw_plot_still_accepted(self, qtbot):
         panel = self._panel_with_plot(qtbot)
         raw = panel.plots()[0].data()
-        line = SciQLopVerticalLine(raw, 5.0)
+        with pytest.warns(DeprecationWarning):
+            line = SciQLopVerticalLine(raw, 5.0)
         assert line is not None
 
 

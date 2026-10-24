@@ -393,7 +393,11 @@ for _cls in (
 #     "(missing signature)" TypeError instead of the "Supported signatures"
 #     listing. Still a TypeError, never the old NameError; the happy path
 #     (raw pointer or auto-deref'd Ptr) is unaffected.
+#
+#     The same wrapper warns that the item constructors are deprecated in favour
+#     of the plot and panel factories.
 import functools
+import warnings
 
 _PTR_HANDLE_TYPES = (
     SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
@@ -413,30 +417,43 @@ def _accept_ptr_handle(func):
     return wrapper
 
 
-def _plot_required(init):
+_ITEM_FACTORIES = {
+    SciQLopPlotsBindings.SciQLopTextItem: "plot.text",
+    SciQLopPlotsBindings.SciQLopPixmapItem: "plot.pixmap",
+    SciQLopPlotsBindings.SciQLopEllipseItem: "plot.ellipse",
+    SciQLopPlotsBindings.SciQLopCurvedLineItem: "plot.curved_line",
+    SciQLopPlotsBindings.SciQLopStraightLine: "plot.vertical_line(...) or plot.horizontal_line",
+    SciQLopPlotsBindings.SciQLopVerticalLine: "plot.vertical_line",
+    SciQLopPlotsBindings.SciQLopHorizontalLine: "plot.horizontal_line",
+    SciQLopPlotsBindings.SciQLopVerticalSpan: "plot.vertical_span",
+    SciQLopPlotsBindings.SciQLopHorizontalSpan: "plot.horizontal_span",
+    SciQLopPlotsBindings.SciQLopRectangularSpan: "plot.rectangular_span",
+    SciQLopPlotsBindings.MultiPlotsVerticalSpan: "panel.vertical_span",
+    SciQLopPlotsBindings.MultiPlotsVerticalLine: "panel.vertical_line",
+}
+
+
+def _deprecated_constructor(cls, factory):
     # Shiboken maps every C++ exception from a constructor to RuntimeError; a null plot is a
     # caller's mistake, so it is a ValueError, raised here before the C++ guard would be.
+    # Panel objects take a panel, which has no such check.
+    init = _accept_ptr_handle(cls.__init__)
+    owner = factory.split(".")[0]
+    needs_plot = owner == "plot"
+    message = f"{cls.__name__}({owner}, ...) is deprecated: use {factory}(...)"
+
     @functools.wraps(init)
     def wrapper(self, plot=None, *args, **kwargs):
-        if plot is None:
+        if type(self) is cls:
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+        if needs_plot and plot is None:
             raise ValueError(f"{type(self).__name__}: plot cannot be None")
         return init(self, plot, *args, **kwargs)
     return wrapper
 
 
-for _item_cls in (
-    SciQLopPlotsBindings.SciQLopTextItem,
-    SciQLopPlotsBindings.SciQLopPixmapItem,
-    SciQLopPlotsBindings.SciQLopEllipseItem,
-    SciQLopPlotsBindings.SciQLopCurvedLineItem,
-    SciQLopPlotsBindings.SciQLopStraightLine,
-    SciQLopPlotsBindings.SciQLopVerticalLine,
-    SciQLopPlotsBindings.SciQLopHorizontalLine,
-    SciQLopPlotsBindings.SciQLopVerticalSpan,
-    SciQLopPlotsBindings.SciQLopHorizontalSpan,
-    SciQLopPlotsBindings.SciQLopRectangularSpan,
-):
-    _item_cls.__init__ = _plot_required(_accept_ptr_handle(_item_cls.__init__))
+for _item_cls, _factory in _ITEM_FACTORIES.items():
+    _item_cls.__init__ = _deprecated_constructor(_item_cls, _factory)
 
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains", "remove"):
     setattr(SciQLopMultiPlotPanel, _method,

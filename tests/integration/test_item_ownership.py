@@ -38,6 +38,9 @@ from SciQLopPlots import (
     SciQLopVerticalSpan,
 )
 
+# this module is about the deprecated constructors' ownership semantics
+pytestmark = pytest.mark.filterwarnings("ignore:.*is deprecated. use plot:DeprecationWarning")
+
 MARKER = QColor(255, 0, 255)
 
 

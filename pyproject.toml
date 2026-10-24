@@ -53,6 +53,9 @@ setup = ['-Doptimization=3', '-Dcpp_std=c++20', '-Dbuildtype=release', '--vsenv'
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 pythonpath = ["tests/integration"]
+filterwarnings = [
+    "error:.*is deprecated. use (plot|panel)\\.:DeprecationWarning",
+]
 
 [tool.cibuildwheel]
 archs = ["auto"]

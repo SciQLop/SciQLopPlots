@@ -121,13 +121,13 @@ def test_a_slot_deleting_the_curve_while_it_sets_its_line_width_does_not_crash(p
     assert not shiboken6.isValid(curve)
 
 
-SPANS = {"vspan": SciQLopVerticalSpan, "hspan": SciQLopHorizontalSpan}
+SPANS = {"vspan": "vertical_span", "hspan": "horizontal_span"}
 
 
 @pytest.mark.parametrize("border", ["lower", "upper"])
 @pytest.mark.parametrize("kind", SPANS)
 def test_a_slot_deleting_a_span_on_selection_does_not_crash_its_border_selector(plot, kind, border):
-    span = SPANS[kind](plot, R(0.2, 0.4))
+    span = getattr(plot, SPANS[kind])(R(0.2, 0.4))
     span.selection_changed.connect(lambda *_: shiboken6.delete(span))
     getattr(span, f"select_{border}_border")(True)
     process_events()

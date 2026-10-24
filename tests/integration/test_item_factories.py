@@ -14,6 +14,7 @@ from SciQLopPlots import (
 )
 from SciQLopPlots import (Coordinates, LineTermination, SciQLopItemInterface,
                           SciQLopNDProjectionPlot)
+from SciQLopPlots import MultiPlotsVerticalLine, MultiPlotsVerticalSpan
 from conftest import collect, off_thread
 
 CONSTRUCTORS = {
@@ -30,22 +31,27 @@ CONSTRUCTORS = {
 }
 
 
+def construct(kind, plot):
+    with pytest.warns(DeprecationWarning):
+        return CONSTRUCTORS[kind](plot)
+
+
 @pytest.mark.parametrize("kind", CONSTRUCTORS)
 def test_constructor_parents_the_item_to_its_plot(plot, kind):
-    item = CONSTRUCTORS[kind](plot)
+    item = construct(kind, plot)
     assert item.parent() is plot
 
 
 @pytest.mark.parametrize("kind", CONSTRUCTORS)
 def test_constructor_rejects_a_null_plot(kind):
     with pytest.raises(ValueError, match="plot cannot be None"):
-        CONSTRUCTORS[kind](None)
+        construct(kind, None)
 
 
 @pytest.mark.parametrize("kind", CONSTRUCTORS)
 def test_held_item_dies_with_its_plot(qtbot, kind):
     plot = SciQLopPlot()
-    item = CONSTRUCTORS[kind](plot)
+    item = construct(kind, plot)
     shiboken6.delete(plot)
     collect()
     assert not shiboken6.isValid(item)
@@ -61,7 +67,7 @@ def _replots(plot):
 
 @pytest.mark.parametrize("kind", CONSTRUCTORS)
 def test_deleting_an_item_repaints_the_plot(plot, kind):
-    item = CONSTRUCTORS[kind](plot)
+    item = construct(kind, plot)
     for _ in range(3):
         QApplication.processEvents()
     hits = _replots(plot)
@@ -170,3 +176,31 @@ def test_every_item_class_has_a_factory():
     abstract = {n for n in items if n.endswith("Interface")}
     missing = items - covered - abstract - set(NO_PLOT_FACTORY)
     assert not missing, f"item classes with no plot factory: {sorted(missing)}"
+
+
+DEPRECATED = {
+    **{k: (v, f"use plot.{k}") for k, v in CONSTRUCTORS.items() if k != "straight_line"},
+    "straight_line": (CONSTRUCTORS["straight_line"], "use plot.vertical_line"),
+}
+
+
+@pytest.mark.parametrize("kind", DEPRECATED)
+def test_constructor_warns_and_names_the_factory(plot, kind):
+    make, hint = DEPRECATED[kind]
+    with pytest.warns(DeprecationWarning, match=hint) as record:
+        item = make(plot)
+    assert record[0].filename == __file__
+    assert shiboken6.isValid(item)
+
+
+def test_panel_constructors_warn(panel):
+    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_span"):
+        MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
+    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_line"):
+        MultiPlotsVerticalLine(panel, 1.0)
+
+
+def test_factories_do_not_warn(plot, recwarn):
+    plot.text("t", QPointF(1, 1))
+    plot.vertical_span(R(1.0, 2.0))
+    assert not [w for w in recwarn if issubclass(w.category, DeprecationWarning)]

@@ -15,8 +15,8 @@ def _panel_with_plot(panel):
 
 def test_panel_span_marks_its_per_plot_parts(panel):
     plot = _panel_with_plot(panel)
-    span = MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
-    line = MultiPlotsVerticalLine(panel, 1.5)
+    span = panel.vertical_span(R(1.0, 2.0))
+    line = panel.vertical_line(1.5)
     process_events()
     parts = plot.findChildren(SciQLopVerticalSpan) + plot.findChildren(SciQLopVerticalLine)
     assert parts and all(p.property("_sciqlop_panel_part") for p in parts)
@@ -27,14 +27,21 @@ from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlot, SciQLopTextItem
 from conftest import collect, off_thread, on_destroyed
 
 
+def _constructed(cls, *args):
+    def make(plot):
+        with pytest.warns(DeprecationWarning):
+            return cls(plot, *args)
+    return make
+
+
 ITEM_MAKERS = {
     "text": lambda p: p.text("t", QPointF(10, 10)),
     "ellipse": lambda p: p.ellipse(QRectF(0, 0, 4, 4)),
     "vertical_line": lambda p: p.vertical_line(1.0),
     "vertical_span": lambda p: p.vertical_span(R(1.0, 2.0)),
     "rectangular_span": lambda p: p.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
-    "ctor_text": lambda p: SciQLopTextItem(p, "t", QPointF(1, 1)),
-    "ctor_line": lambda p: SciQLopVerticalLine(p, 1.0),
+    "ctor_text": _constructed(SciQLopTextItem, "t", QPointF(1, 1)),
+    "ctor_line": _constructed(SciQLopVerticalLine, 1.0),
 }
 
 
@@ -94,7 +101,7 @@ def test_remove_rejects_none(plot):
 
 def test_remove_rejects_a_panel_part(panel):
     plot = _panel_with_plot(panel)
-    span = MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
+    span = panel.vertical_span(R(1.0, 2.0))
     process_events()
     part = plot.findChildren(SciQLopVerticalSpan)[0]
     with pytest.raises(ValueError, match="panel"):

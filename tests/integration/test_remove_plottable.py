@@ -16,7 +16,8 @@ class TestRemovePlottableByRef:
         g = p.line(x, y)
         assert len(p.plottables()) == 1
 
-        p.remove_plottable(g)
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable(g)
         assert len(p.plottables()) == 0
 
     def test_remove_one_of_many(self, qtbot, sample_data):
@@ -28,7 +29,8 @@ class TestRemovePlottableByRef:
         g3 = p.line(x, y, labels=["c"])
         assert len(p.plottables()) == 3
 
-        p.remove_plottable(g2)
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable(g2)
         remaining = p.plottables()
         assert len(remaining) == 2
         assert g1 in remaining
@@ -37,7 +39,8 @@ class TestRemovePlottableByRef:
     def test_remove_none_is_safe(self, qtbot):
         p = SciQLopPlot()
         qtbot.addWidget(p)
-        p.remove_plottable(None)
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable(None)
         assert len(p.plottables()) == 0
 
 
@@ -51,7 +54,8 @@ class TestRemovePlottableByIndex:
         g2 = p.line(x, y, labels=["b"])
         assert len(p.plottables()) == 2
 
-        p.remove_plottable(0)
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable(0)
         remaining = p.plottables()
         assert len(remaining) == 1
         assert remaining[0] is g2
@@ -67,7 +71,8 @@ class TestRemovePlottableByName:
         g.name = "my_graph"
         assert len(p.plottables()) == 1
 
-        p.remove_plottable("my_graph")
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable("my_graph")
         assert len(p.plottables()) == 0
 
     def test_remove_nonexistent_name_is_safe(self, qtbot, sample_data):
@@ -77,7 +82,8 @@ class TestRemovePlottableByName:
         p.line(x, y)
         assert len(p.plottables()) == 1
 
-        p.remove_plottable("does_not_exist")
+        with pytest.warns(DeprecationWarning):
+            p.remove_plottable("does_not_exist")
         assert len(p.plottables()) == 1
 
 
@@ -90,7 +96,8 @@ class TestRemovePlottableSignal:
         g = p.line(x, y)
 
         with qtbot.waitSignal(p.graph_list_changed, timeout=1000):
-            p.remove_plottable(g)
+            with pytest.warns(DeprecationWarning):
+                p.remove_plottable(g)
 
 
 class TestRemovePlottableFromPanel:
@@ -102,5 +109,6 @@ class TestRemovePlottableFromPanel:
         plot, graph = panel.line(x, y)
         assert len(plot.plottables()) == 1
 
-        plot.remove_plottable(graph)
+        with pytest.warns(DeprecationWarning):
+            plot.remove_plottable(graph)
         assert len(plot.plottables()) == 0
