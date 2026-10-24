@@ -169,3 +169,5 @@ Items 1.1 (drawn objects), 1.2, 5.2 and phase-2 task 12, part B, done (spec docs
 - Fixed on the way: `plot.plottable(i)` aborted for i < -1 and returned the last plottable for i past the end; only -1 means the last now, anything else out of range is None.
 - Deprecated: the item constructors (they keep Python ownership), `remove_plottable` and `remove_group`. The suite turns these warnings into errors.
 - Breaks: `remove_plottable` of another plot's plottable raises ValueError (it deleted it); text and line wrappers built with the old constructors die with their plot; `remove_plottable(99)` no longer deletes the last graph.
+
+Item 5.1 done: `.on` follows the convention. `obj.on.x` exists when the class has a getter `x` (a method taking no argument, or an attribute) and `x_changed` and/or `set_x`; about 900 (class, name) pairs on the drawn objects, axes, plots and panels. Five names stay hand-kept in a table: graph `data`, axis `range`, `selected`, waterfall `spacing`, span `tooltip`. A property with no signal can be read and written but not start a pipeline.
