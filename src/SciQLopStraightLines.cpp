@@ -28,10 +28,11 @@ void StraightLine::mouseMoveEvent(QMouseEvent* event, const QPointF& startPos)
         return;
     if (m_coordinates == Coordinates::Pixels)
     {
+        const QPointF fromAxisRect = event->position() - point1->axisRect()->topLeft();
         if (m_orientation == Qt::Orientation::Vertical)
-            set_position(event->position().x());
+            set_position(fromAxisRect.x());
         else
-            set_position(event->position().y());
+            set_position(fromAxisRect.y());
     }
     else
     {
