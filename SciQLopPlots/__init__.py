@@ -302,7 +302,7 @@ from .widget_plot import WidgetPlot
 
 # Names the x / set_x / x_changed convention cannot derive (see properties.py).
 _ON_EXCEPTIONS = (
-    (SciQLopGraphInterface, "data", dict(
+    (SciQLopPlotsBindings.SciQLopGraphInterface, "data", dict(
         signal_name="data_changed", getter_name="data", setter_name="set_data",
         property_type="data", signal_args=(), splat=True)),
     (SciQLopPlotsBindings.SciQLopPlotAxisInterface, "range", dict(

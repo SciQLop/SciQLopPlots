@@ -1,3 +1,4 @@
+import inspect
 import weakref
 
 # Registry: {class: {property_name: property_spec_dict}}
@@ -33,10 +34,26 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
     }
 
 
+def _is_getter(obj, name):
+    """An attribute, or a method callable without arguments.
+
+    Overloaded shiboken methods have no signature (ValueError): skipped.
+    """
+    if not hasattr(obj, name):
+        return False
+    attr = getattr(obj, name)
+    if not callable(attr):
+        return True
+    try:
+        return not inspect.signature(attr).parameters
+    except (ValueError, TypeError):
+        return False
+
+
 def _convention_spec(obj, name):
     """`x` observable and/or writable through `x_changed` and/or `set_x`; the getter is required."""
     signal, setter = f"{name}_changed", f"set_{name}"
-    if not hasattr(obj, name) or not (hasattr(obj, signal) or hasattr(obj, setter)):
+    if not _is_getter(obj, name) or not (hasattr(obj, signal) or hasattr(obj, setter)):
         return None
     return {
         "signal_name": signal if hasattr(obj, signal) else None,

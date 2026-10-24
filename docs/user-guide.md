@@ -970,7 +970,7 @@ zoomed.plot(x, np.sin(x), labels=["zoom"])
 span.on.range >> zoomed.x_axis().on.range           # second plot shows the span's interval
 ```
 
-The function receives an event whose `.value` is the new value, and returns what to send on; returning `None` sends nothing. Every property `x` that has a getter `x()` and a setter `set_x` and/or a signal `x_changed` is available as `obj.on.x`, on plots, panels, axes, graphs, items and spans. For example:
+The function receives an event whose `.value` is the new value, and returns what to send on; returning `None` sends nothing. Every property `x` that has a getter `x` (a method taking no argument, or an attribute) and a setter `set_x` and/or a signal `x_changed` is available as `obj.on.x`, on plots, panels, axes, graphs, items and spans. For example:
 
 - `plot.on.title`, `plot.on.auto_scale`
 - `axis.on.range`, `axis.on.log`, `axis.on.label`
@@ -978,9 +978,15 @@ The function receives an event whose `.value` is the new value, and returns what
 - `span.on.range`, `line.on.position`
 - the waterfall settings: `offset_mode`, `offsets`, `normalize`, `gain`
 
-Without a setter the property can only be observed. Without a signal it can only be written, so it cannot start a pipeline. A name with no getter is not exposed.
+Without a setter the property can only be observed. Without a signal it can be read and written, but it cannot start a pipeline: `>>` raises `ValueError`. A name with no getter is not exposed. A name the class does not support raises when used, for example `color` on a multi-column graph or `selected` on the legend.
 
-Three names do not follow the convention and are kept by hand: `selected` (signal `selection_changed`), `tooltip` on spans (write and read, no signal) and `spacing` on waterfalls (the `uniform_spacing` accessors).
+A few names do not follow the convention and are kept by hand:
+
+- `data`: the signal is `data_changed()` without arguments, and `set_data(x, y)` takes several arguments.
+- `range` on axes: `set_range(start, stop)` takes two arguments.
+- `selected`: the signal is `selection_changed`.
+- `spacing` on waterfalls: the accessors are `uniform_spacing`.
+- `tooltip` on spans: the accessors are `tool_tip`, and there is no signal.
 
 ## N-D projections
 

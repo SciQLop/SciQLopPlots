@@ -1,32 +1,10 @@
 """`.on.x` is derived from the x / set_x / x_changed convention (API review 5.1)."""
-import inspect
-
 import numpy as np
 import pytest
 from PySide6.QtCore import QPointF
 
 import SciQLopPlots as sp
-from SciQLopPlots import SciQLopPlotsBindings as bindings
-from SciQLopPlots.properties import OnDescriptor
-
-ROOTS = (
-    bindings.SciQLopDrawnObject,
-    bindings.SciQLopPlotAxisInterface,
-    bindings.SciQLopPlotInterface,
-    bindings.SciQLopPlotPanelInterface,
-)
-
-
-def _bound_classes_under_roots():
-    return [c for _, c in inspect.getmembers(bindings, inspect.isclass) if issubclass(c, ROOTS)]
-
-
-def _convention_names(cls):
-    names = set(dir(cls))
-    return sorted(
-        n for n in names
-        if not n.startswith("_") and (f"{n}_changed" in names or f"set_{n}" in names)
-    )
+import SciQLopPlots.properties
 
 
 def _read(obj, name):
@@ -79,11 +57,39 @@ def legend(plot, line_graph):
     return plot.legend()
 
 
-def test_class_walk_every_convention_class_has_on():
-    classes = _bound_classes_under_roots()
-    assert len(classes) > 10
-    missing = [c.__name__ for c in classes if _convention_names(c) and not isinstance(c.on, OnDescriptor)]
-    assert missing == []
+ALL_WITNESSES = ["plot", "panel", "x_axis", "line_graph", "vline", "legend", "waterfall", "span"]
+
+
+def _convention_names(obj):
+    names = set(dir(obj))
+    return sorted(n for n in names
+                  if not n.startswith("_") and (f"{n}_changed" in names or f"set_{n}" in names))
+
+
+@pytest.mark.parametrize("fixture", ALL_WITNESSES)
+def test_every_resolved_name_reads_without_type_error(request, fixture):
+    obj = _witness(request, fixture)
+    resolved = 0
+    for name in _convention_names(obj):
+        try:
+            prop = getattr(obj.on, name)
+        except AttributeError:
+            continue
+        resolved += 1
+        try:
+            prop.value
+        except NotImplementedError:
+            pass
+    assert resolved
+
+
+@pytest.mark.parametrize("fixture,name", [
+    ("plot", "axis_synchronized"), ("panel", "plot_stretch"), ("line_graph", "column_in_legend"),
+    ("waterfall", "column_in_legend"),
+])
+def test_getter_needing_an_argument_is_not_exposed(request, fixture, name):
+    with pytest.raises(AttributeError):
+        getattr(_witness(request, fixture).on, name)
 
 
 @pytest.mark.parametrize("fixture,name,value", WITNESSES, ids=[f"{f}.{n}" for f, n, _ in WITNESSES])
@@ -97,7 +103,7 @@ def test_witness_read_write_signal(request, fixture, name, value):
     assert _read(obj, name) == value
     assert prop.value == value
     assert seen, "signal did not fire"
-    del pipeline
+    pipeline.disconnect()
 
 
 def test_exception_data(line_graph):
@@ -144,7 +150,29 @@ def test_span_range_through_convention(span):
     span.on.range.value = sp.SciQLopPlotRange(2.0, 3.0)
     assert span.range().start() == 2.0
     assert seen
-    del pipeline
+    pipeline.disconnect()
+
+
+DELETED_REGISTRATIONS = [
+    ("waterfall", "offset_mode", "offset_mode_changed", "offset_mode", "set_offset_mode"),
+    ("waterfall", "offsets", "offsets_changed", "offsets", "set_offsets"),
+    ("waterfall", "normalize", "normalize_changed", "normalize", "set_normalize"),
+    ("waterfall", "gain", "gain_changed", "gain", "set_gain"),
+    ("span", "range", "range_changed", "range", "set_range"),
+]
+
+
+@pytest.mark.parametrize("fixture,name,signal,getter,setter", DELETED_REGISTRATIONS,
+                         ids=[f"{f}.{n}" for f, n, *_ in DELETED_REGISTRATIONS])
+def test_convention_resolves_like_the_old_registration(request, fixture, name, signal, getter, setter):
+    spec = sp.properties._convention_spec(_witness(request, fixture), name)
+    assert (spec["signal_name"], spec["getter_name"], spec["setter_name"]) == (signal, getter, setter)
+    assert (spec["splat"], spec["signal_args"]) == (False, None)
+
+
+def test_tooltip_cannot_start_a_pipeline(span):
+    with pytest.raises(ValueError, match="no signal"):
+        span.on.tooltip >> (lambda event: None)
 
 
 @pytest.mark.parametrize("name", ["no_such_property", "_private"])

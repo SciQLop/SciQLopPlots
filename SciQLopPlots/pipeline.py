@@ -125,6 +125,9 @@ class PartialPipeline:
         self._transform = transform
         self._sink_pipeline = Pipeline(source_prop, transform, None)
 
+    def disconnect(self):
+        self._sink_pipeline.disconnect()
+
     def __rshift__(self, other):
         try:
             from .properties import ObservableProperty
