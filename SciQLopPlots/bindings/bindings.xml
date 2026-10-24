@@ -485,6 +485,72 @@
                 <parent index="1" action="add"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="text(const QString&amp;,const QPointF&amp;,bool,Coordinates)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopTextItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="pixmap(const QPixmap&amp;,const QRectF&amp;,bool,Coordinates)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPixmapItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="ellipse(const QRectF&amp;,bool,Coordinates,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopEllipseItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="ellipse(const QRectF&amp;,const QPen&amp;,const QBrush&amp;,bool,Coordinates,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopEllipseItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="ellipse(const QRectF&amp;,const QColor&amp;,qreal,const QColor&amp;,bool,Coordinates,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopEllipseItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="curved_line(const QPointF&amp;,const QPointF&amp;,LineTermination,LineTermination,Coordinates,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopCurvedLineItem*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="vertical_line(double,bool,Coordinates)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopVerticalLine*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="horizontal_line(double,bool,Coordinates)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopHorizontalLine*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="vertical_span(SciQLopPlotRange,QColor,bool,bool,const QString&amp;,Coordinates)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopVerticalSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="horizontal_span(SciQLopPlotRange,QColor,bool,bool,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopHorizontalSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="rectangular_span(SciQLopPlotRange,SciQLopPlotRange,QColor,bool,bool,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopRectangularSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
         <modify-function signature="remove_group(SciQLopPlotGroup*)">
             <inject-code class="target" position="beginning">
                 try {

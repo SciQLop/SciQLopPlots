@@ -37,6 +37,16 @@
 #include <memory>
 #include <qcustomplot.h>
 
+class QPixmap;
+class SciQLopTextItem;
+class SciQLopPixmapItem;
+class SciQLopEllipseItem;
+class SciQLopCurvedLineItem;
+class SciQLopVerticalLine;
+class SciQLopHorizontalLine;
+class SciQLopVerticalSpan;
+class SciQLopHorizontalSpan;
+class SciQLopRectangularSpan;
 class SciQLopTheme;
 class InspectorExtension;
 class SciQLopHistogram;
@@ -477,6 +487,63 @@ public:
     {
         SCIQLOP_ON_OWNER_THREAD(remove_plottable(name));
         delete plottable(name);
+    }
+
+    //! Item factories: the item belongs to this plot (QObject child, C++-owned in Python) until
+    //! remove() or the plot's death.
+    inline virtual SciQLopTextItem* text(const QString& text, const QPointF& position, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopCurvedLineItem* curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator = LineTermination::NoneTermination, LineTermination stop_terminator = LineTermination::Arrow, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopVerticalLine* vertical_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopHorizontalLine* horizontal_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopVerticalSpan* vertical_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopHorizontalSpan* horizontal_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
+
+    inline virtual SciQLopRectangularSpan* rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
     //! One legend row for \a members, a SciQLopPlotGroup owned by this plot. Raises ValueError

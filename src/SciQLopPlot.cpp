@@ -29,6 +29,13 @@
 #include <QFontMetrics>
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
+#include "SciQLopPlots/Items/SciQLopTextItem.hpp"
+#include "SciQLopPlots/Items/SciQLopPixmapItem.hpp"
+#include "SciQLopPlots/Items/SciQLopShapesItems.hpp"
+#include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
+#include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
+#include "SciQLopPlots/Items/SciQLopHorizontalSpan.hpp"
+#include "SciQLopPlots/Items/SciQLopRectangularSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <layoutelements/layoutelement-legend-group.h>
 #include <plottables/plottable-intervals.h>
@@ -1555,6 +1562,61 @@ void SciQLopPlot::toggle_selected_objects_visibility() noexcept
         item->setVisible(!item->visible());
     }
     replot();
+}
+
+SciQLopTextItem* SciQLopPlot::text(const QString& text, const QPointF& position, bool movable, Coordinates coordinates)
+{
+    return new SciQLopTextItem(this, text, position, movable, coordinates);
+}
+
+SciQLopPixmapItem* SciQLopPlot::pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable, Coordinates coordinates)
+{
+    return new SciQLopPixmapItem(this, pixmap, rect, movable, coordinates);
+}
+
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, bool movable, Coordinates coordinates, const QString& tool_tip)
+{
+    return new SciQLopEllipseItem(this, rect, movable, coordinates, tool_tip);
+}
+
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable, Coordinates coordinates, const QString& tool_tip)
+{
+    return new SciQLopEllipseItem(this, rect, pen, brush, movable, coordinates, tool_tip);
+}
+
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable, Coordinates coordinates, const QString& tool_tip)
+{
+    return new SciQLopEllipseItem(this, rect, line_color, line_width, fill_color, movable, coordinates, tool_tip);
+}
+
+SciQLopCurvedLineItem* SciQLopPlot::curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator, LineTermination stop_terminator, Coordinates coordinates, const QString& tool_tip)
+{
+    return new SciQLopCurvedLineItem(this, start, stop, start_terminator, stop_terminator, coordinates, tool_tip);
+}
+
+SciQLopVerticalLine* SciQLopPlot::vertical_line(double position, bool movable, Coordinates coordinates)
+{
+    return new SciQLopVerticalLine(this, position, movable, coordinates);
+}
+
+SciQLopHorizontalLine* SciQLopPlot::horizontal_line(double position, bool movable, Coordinates coordinates)
+{
+    return new SciQLopHorizontalLine(this, position, movable, coordinates);
+}
+
+SciQLopVerticalSpan* SciQLopPlot::vertical_span(SciQLopPlotRange range, QColor color, bool read_only, bool visible, const QString& tool_tip, Coordinates coordinates)
+{
+    return new SciQLopVerticalSpan(this, range, color, read_only, visible, tool_tip, coordinates);
+}
+
+SciQLopHorizontalSpan* SciQLopPlot::horizontal_span(SciQLopPlotRange range, QColor color, bool read_only, bool visible, const QString& tool_tip)
+{
+    return new SciQLopHorizontalSpan(this, range, color, read_only, visible, tool_tip);
+}
+
+SciQLopRectangularSpan* SciQLopPlot::rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color, bool read_only, bool visible, const QString& tool_tip)
+{
+    return new SciQLopRectangularSpan(this, key_range, value_range, color, read_only, visible, tool_tip);
 }
 
 SciQLopPlottableInterface* SciQLopPlot::plottable(int index)
