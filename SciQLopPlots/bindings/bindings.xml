@@ -551,6 +551,26 @@
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopRectangularSpan*"/></insert-template>
             </inject-code>
         </modify-function>
+        <modify-function signature="remove(SciQLopPlottableInterface*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(SciQLopPlotGroup*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(SciQLopItemInterface*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(SciQLopStraightLine*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="remove_group(SciQLopPlotGroup*)">
             <inject-code class="target" position="beginning">
                 try {

@@ -48,6 +48,8 @@ class SciQLopVerticalSpan;
 class SciQLopHorizontalSpan;
 class SciQLopRectangularSpan;
 class SciQLopTheme;
+class SciQLopItemInterface;
+class SciQLopStraightLine;
 class InspectorExtension;
 class SciQLopHistogram;
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
@@ -65,6 +67,7 @@ class SciQLopPlotInterface : public QFrame
     Q_OBJECT
 
     QList<AxisType> m_unsynchronized_axes;
+    void check_removable(const QObject* x) const;
 
 protected:
     QList<SciQLopPlotAxisInterface*> m_axes_to_rescale;
@@ -560,6 +563,12 @@ public:
     QList<SciQLopPlotGroup*> groups() const;
     //! Deletes \a group. Its members stay, with their own legend rows back.
     void remove_group(SciQLopPlotGroup* group);
+    //! Deletes \a x now (or on the plot's thread). Raises ValueError for None, an object of
+    //! another plot, or a part of a panel-wide object.
+    void remove(SciQLopPlottableInterface* plottable);
+    void remove(SciQLopPlotGroup* group);
+    void remove(SciQLopItemInterface* item);
+    void remove(SciQLopStraightLine* line);
 
     inline bool selected() const noexcept { return m_selected; }
 
