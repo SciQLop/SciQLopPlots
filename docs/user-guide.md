@@ -125,6 +125,21 @@ plot.deleteLater()       # delete a widget now, whoever owns it
 Adding a plot to a panel or a layout gives it to that panel or layout's widget. The panel's
 `remove_plot`, `remove_widget` and `remove_panel` delete what they remove.
 
+What a plot draws belongs to the plot. That covers graphs, groups, text, pixmaps, ellipses, curved
+lines, lines and spans. The plot's factories (`plot.plot`, `plot.text`, `plot.vertical_span` and
+the others) hand you an object the plot owns. Dropping your Python reference does nothing.
+`plot.remove(item)` deletes it now, and so does the plot's death.
+
+```python
+from PySide6.QtCore import QPointF
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+plot.text("peak", QPointF(20, 20))     # kept: the plot owns it, no reference needed
+note = plot.text("later", QPointF(20, 40))
+plot.remove(note)                      # deleted now; `note` is dead after this
+```
+
 ## Plot types
 
 `plot.plot(*args, graph_type=None, **kwargs)` picks the graph type from its arguments. Pass `graph_type=` to choose another one.
@@ -701,12 +716,12 @@ their components, colour maps, histograms, timelines, items, spans, groups and t
 ```python
 import numpy as np
 from PySide6.QtCore import QPointF
-from SciQLopPlots import SciQLopPlot, SciQLopTextItem
+from SciQLopPlots import SciQLopPlot
 
 plot = SciQLopPlot()
 x = np.linspace(0, 10, 100)
 graph = plot.plot(x, np.sin(x), labels=["sin"])
-note = SciQLopTextItem(plot, "peak", QPointF(20, 20))
+note = plot.text("peak", QPointF(20, 20))
 
 note.visible_changed.connect(lambda visible: print("note visible:", visible))
 note.set_visible(False)                         # visible / set_visible / visible_changed
@@ -752,7 +767,7 @@ model = plot.group("model", [centre, low, high])   # one row: "model"
 model.add(plot.plot(x, np.cos(x), labels=["extra"]))
 model.set_visible(False)                           # hides the four members
 model.set_visible(True)
-plot.remove_group(model)                           # the four rows come back
+plot.remove(model)                                 # the four rows come back
 
 outline = plot.plot(x, 0 * x, labels=["zero"])
 outline.set_in_legend(False)                       # a decoration: no row at all
@@ -793,44 +808,44 @@ panel.set_legend_visible(False)                 # every plot's legend, later one
 import numpy as np
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QColor
-from SciQLopPlots import (SciQLopPlot, SciQLopPlotRange, SciQLopVerticalSpan,
-                          SciQLopHorizontalLine, SciQLopTextItem, Coordinates)
+from SciQLopPlots import SciQLopPlot, SciQLopPlotRange, Coordinates
 
 plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
 
 # A shaded x interval the user can drag and resize
-span = SciQLopVerticalSpan(plot, SciQLopPlotRange(2.0, 4.0), QColor(100, 100, 220, 80),
-                           read_only=False, visible=True, tool_tip="event")
+span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 100, 220, 80),
+                          read_only=False, visible=True, tool_tip="event")
 span.range_changed.connect(lambda r: print("span now", r.start(), r.stop()))
 
 # A threshold line at y = 0.5
-threshold = SciQLopHorizontalLine(plot, 0.5)
+threshold = plot.horizontal_line(0.5)
 
 # A text label placed in data coordinates
-note = SciQLopTextItem(plot, "peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordinates.Data)
+note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordinates.Data)
 ```
 
 ![A span, a threshold line and a text label](images/overlays.png)
 
-- On a panel, `MultiPlotsVerticalSpan(panel, range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
-- `SciQLopVerticalLine`, `SciQLopRectangularSpan`, `SciQLopEllipseItem` and `SciQLopPixmapItem` follow the same pattern.
+- On a panel, `panel.vertical_span(range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
+- The other factories are `plot.vertical_line(position)`, `plot.horizontal_span(range)`, `plot.rectangular_span(key_range, value_range)`, `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`.
+- The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
 - Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
 
-`MultiPlotsVerticalLine` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
+`panel.vertical_line(position)` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
 ```python
 import numpy as np
 from PySide6.QtGui import QColor
-from SciQLopPlots import SciQLopMultiPlotPanel, MultiPlotsVerticalLine
+from SciQLopPlots import SciQLopMultiPlotPanel
 
 panel = SciQLopMultiPlotPanel()
 x = np.linspace(0, 10, 1000)
 panel.plot(x, np.sin(x), labels=["sin"])
 panel.plot(x, np.cos(x), labels=["cos"])
 
-cursor = MultiPlotsVerticalLine(panel, 2.0, tool_tip="cursor")
+cursor = panel.vertical_line(2.0, tool_tip="cursor")
 cursor.position_changed.connect(lambda t: print("cursor at", t))
 cursor.position = 5.0          # moves it on every plot
 cursor.color = QColor("red")   # also line_width, visible, read_only, tooltip
@@ -936,13 +951,13 @@ Plot objects expose some properties under `.on`. Connect them with `>>` to build
 ```python
 import numpy as np
 from PySide6.QtGui import QColor
-from SciQLopPlots import SciQLopPlot, SciQLopVerticalSpan, SciQLopPlotRange
+from SciQLopPlots import SciQLopPlot, SciQLopPlotRange
 
 plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
-span = SciQLopVerticalSpan(plot, SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
-                           read_only=False, visible=True, tool_tip="")
+span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
+                          read_only=False, visible=True, tool_tip="")
 
 def describe(event):
     r = event.value
@@ -1340,7 +1355,7 @@ Plots live on the GUI thread. You can still call them from another thread:
   `set_color_data`, `set_values`, `set_binned`, `set_time_values` and `set_color_values` read the
   arrays you pass while you still hold them, and `data_changed` fires before they return, in the
   order you called them.
-- **Factories refuse other threads.** `plot()`, `create_plot()`, item constructors and the like
+- **Factories refuse other threads.** `plot()`, `create_plot()`, `plot.text()` and the other item factories
   hand an object back, so they raise `RuntimeError` off the GUI thread.
 - **`set_x_axis` / `set_y_axis` run in the calling thread.** The plot calls them itself while it
   arranges its graphs, on the GUI thread. Call them there too.
@@ -1348,7 +1363,7 @@ Plots live on the GUI thread. You can still call them from another thread:
   where a subclass plugs in. Called from Python on a library object, they run the base default
   (most raise `NotImplementedError`), not the class's own code. Call the public method instead.
 - **Deleting from a slot.** A slot can delete a graph, an item, a span or a timeline from its own
-  signal. It must not delete the plot or panel that is emitting from inside its own mouse or
+  signal: `plot.remove(item)` from the item's own signal is safe. It must not delete the plot or panel that is emitting from inside its own mouse or
   keyboard event: `shiboken6.delete(plot)` in a selection slot triggered by a click crashes, as Qt
   forbids it. Use `plot.deleteLater()` or the panel's `remove_plot`.
 
@@ -1391,6 +1406,6 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays always makes a projection, so leave `plot_type` out or pass `PlotType.Projections`.
 
-**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
+**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`. The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable` and `remove_group` are aliases of `plot.remove`, and warn too.
 
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.

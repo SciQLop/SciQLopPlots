@@ -1,7 +1,7 @@
 """Interactive vertical spans with tooltips.
 
 Showcases:
-- SciQLopVerticalSpan creation and interaction
+- plot.vertical_span creation and interaction
 - Read-only vs editable spans
 - Span tooltips and colors
 - Reactive pipeline: span.on.range >> tooltip_updater >> span.on.tooltip
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QColorConstants
 
 from SciQLopPlots import (
-    SciQLopMultiPlotPanel, SciQLopVerticalSpan, SciQLopPlotRange, PlotType,
+    SciQLopMultiPlotPanel, SciQLopPlotRange, PlotType,
 )
 
 
@@ -48,8 +48,7 @@ colors = [
 r = plot.x_axis().range()
 for i, color in enumerate(colors):
     offset = r.size() * (0.2 + i * 0.25)
-    span = SciQLopVerticalSpan(
-        plot,
+    span = plot.vertical_span(
         SciQLopPlotRange(r.start() + offset, r.start() + offset + r.size() * 0.1),
         color,
         read_only=(i == 0),

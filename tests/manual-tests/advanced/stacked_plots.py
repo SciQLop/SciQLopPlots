@@ -3,7 +3,7 @@
 Showcases:
 - SciQLopMultiPlotPanel with multiple stacked plots
 - Time axis synchronization
-- MultiPlotsVerticalSpan across all plots
+- panel.vertical_span across all plots
 """
 import sys
 import numpy as np
@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColorConstants, QColor
 
 from SciQLopPlots import (
-    SciQLopMultiPlotPanel, MultiPlotsVerticalSpan, PlotType,
+    SciQLopMultiPlotPanel, PlotType,
 )
 
 
@@ -39,8 +39,8 @@ for i in range(4):
     )
 
 x_range = panel.plot_at(0).x_axis().range()
-MultiPlotsVerticalSpan(
-    panel, x_range / 10,
+panel.vertical_span(
+    x_range / 10,
     QColor(100, 100, 200, 80),
     read_only=False, visible=True,
     tool_tip="Drag across all plots",

@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt, QTimer
 
 from SciQLopPlots import (
     SciQLopMultiPlotPanel, SciQLopTimeSeriesPlot,
-    MultiPlotsVerticalSpan, SciQLopPlotRange, PlotType,
+    SciQLopPlotRange, PlotType,
 )
 
 
@@ -39,8 +39,8 @@ def make_panel(parent):
         )
 
     x_range = panel.plot_at(0).x_axis().range()
-    MultiPlotsVerticalSpan(
-        panel, x_range / 10,
+    panel.vertical_span(
+        x_range / 10,
         QColor(100, 100, 100, 100),
         read_only=False, visible=True,
         tool_tip="Vertical Span",

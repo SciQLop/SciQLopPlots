@@ -2,7 +2,7 @@
 
 Showcases:
 - GraphType.ParametricCurve for non-time-series data
-- Decorative items: EllipseItem
+- Decorative items: plot.ellipse
 """
 import sys
 import numpy as np
@@ -11,7 +11,7 @@ from PySide6.QtGui import QColorConstants, QPen, QBrush
 from PySide6.QtCore import Qt, QRectF
 
 from SciQLopPlots import (
-    SciQLopPlot, GraphType, SciQLopEllipseItem, Coordinates,
+    SciQLopPlot, GraphType, Coordinates,
 )
 
 
@@ -39,8 +39,8 @@ plot.plot(
 )
 
 # Decorative item at center
-SciQLopEllipseItem(
-    plot, QRectF(-0.5, -0.5, 1, 1),
+plot.ellipse(
+    QRectF(-0.5, -0.5, 1, 1),
     QPen(Qt.red), QBrush(QColorConstants.Transparent),
     True, Coordinates.Data,
 )

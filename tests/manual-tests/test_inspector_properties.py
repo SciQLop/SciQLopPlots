@@ -1202,11 +1202,9 @@ class TestTextItemFontControls(unittest.TestCase):
             x, y, plot_type=PlotType.BasicXY,
             graph_type=GraphType.Line, labels=["s"],
         )
-        # SciQLopTextItem(plot, text, position, movable=False, coordinates=Pixels)
-        from SciQLopPlots import SciQLopTextItem, Coordinates
-        self.item = SciQLopTextItem(self.plot, "hello",
-                                    QPointF(0.5, 0.5), False,
-                                    Coordinates.Data)
+        from SciQLopPlots import Coordinates
+        self.item = self.plot.text("hello", QPointF(0.5, 0.5), False,
+                                   Coordinates.Data)
 
     def tearDown(self):
         self.panel.deleteLater()
@@ -1348,7 +1346,7 @@ class TestTextItemDelegate(unittest.TestCase):
     """Inspector delegate for SciQLopTextItem: text + font controls."""
 
     def setUp(self):
-        from SciQLopPlots import SciQLopTextItem, Coordinates
+        from SciQLopPlots import Coordinates
         from PySide6.QtCore import QPointF
         self.panel = SciQLopMultiPlotPanel(synchronize_x=False)
         x = np.linspace(0, 1, 100)
@@ -1357,9 +1355,8 @@ class TestTextItemDelegate(unittest.TestCase):
             x, y, plot_type=PlotType.BasicXY,
             graph_type=GraphType.Line, labels=["s"],
         )
-        self.item = SciQLopTextItem(self.plot, "label",
-                                    QPointF(0.5, 0.5), False,
-                                    Coordinates.Data)
+        self.item = self.plot.text("label", QPointF(0.5, 0.5), False,
+                                   Coordinates.Data)
         self.delegate = make_delegate_for(self.item)
         self.assertIsNotNone(self.delegate, "TextItem delegate should resolve")
 

@@ -6,8 +6,8 @@ from PySide6.QtGui import QColor, QColorConstants, QPen, QBrush
 from PySide6.QtCore import Qt, QRectF
 
 from SciQLopPlots import (
-    SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
-    SciQLopPlotRange, MultiPlotsVerticalSpan, SciQLopEllipseItem,
+    SciQLopPlot, SciQLopMultiPlotPanel,
+    SciQLopPlotRange,
     SciQLopNDProjectionPlot, SciQLopTimeSeriesPlot,
     PlotType, GraphType, GraphMarkerShape, ColorGradient, Coordinates,
     OverlayLevel, OverlaySizeMode, OverlayPosition, WidgetPlot,
@@ -142,8 +142,8 @@ def create_curve_tab():
         colors=[QColorConstants.DarkMagenta],
         graph_type=GraphType.ParametricCurve,
     )
-    SciQLopEllipseItem(
-        plot, QRectF(-0.5, -0.5, 1, 1),
+    plot.ellipse(
+        QRectF(-0.5, -0.5, 1, 1),
         QPen(Qt.red), QBrush(QColorConstants.Transparent),
         True, Coordinates.Data,
     )
@@ -166,8 +166,7 @@ def create_spans_tab():
     ]
     for i, color in enumerate(span_colors):
         offset = r.size() * (0.2 + i * 0.25)
-        span = SciQLopVerticalSpan(
-            plot,
+        span = plot.vertical_span(
             SciQLopPlotRange(r.start() + offset, r.start() + offset + r.size() * 0.1),
             color,
             read_only=(i == 0),
@@ -286,8 +285,8 @@ def create_stacked_tab():
             plot_type=PlotType.TimeSeries,
         )
     x_range = panel.plot_at(0).x_axis().range()
-    MultiPlotsVerticalSpan(
-        panel, x_range / 10,
+    panel.vertical_span(
+        x_range / 10,
         QColor(100, 100, 200, 80),
         read_only=False, visible=True,
         tool_tip="Drag across all plots",
@@ -306,8 +305,8 @@ def create_pipeline_tab():
     panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
     plot1, graph1 = panel.plot(two_freq_signal, labels=["signal"])
 
-    SciQLopVerticalSpan(
-        plot1, SciQLopPlotRange(2.0, 4.0),
+    plot1.vertical_span(
+        SciQLopPlotRange(2.0, 4.0),
         QColor(100, 100, 200, 80), read_only=False,
         visible=True, tool_tip="Drag me!",
     )

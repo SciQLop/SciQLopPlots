@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (
-    SciQLopPlot, SciQLopMultiPlotPanel, SciQLopVerticalSpan,
+    SciQLopPlot, SciQLopMultiPlotPanel,
     SciQLopPlotRange, GraphType,
 )
 
@@ -57,8 +57,8 @@ panel.setWindowTitle("Pipeline API Test")
 plot1, graph1 = panel.plot(make_data, labels=["signal"])
 
 # Add a vertical span on plot 1
-span = SciQLopVerticalSpan(
-    plot1, SciQLopPlotRange(2.0, 4.0),
+span = plot1.vertical_span(
+    SciQLopPlotRange(2.0, 4.0),
     QColor(100, 100, 200, 80), read_only=False,
     visible=True, tool_tip="Drag me!"
 )

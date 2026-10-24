@@ -80,13 +80,13 @@ Connect plot properties with the `>>` operator, optionally through a function:
 ```python
 import numpy as np
 from PySide6.QtGui import QColor
-from SciQLopPlots import SciQLopPlot, SciQLopVerticalSpan, SciQLopPlotRange
+from SciQLopPlots import SciQLopPlot, SciQLopPlotRange
 
 plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
-span = SciQLopVerticalSpan(plot, SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
-                           read_only=False, visible=True, tool_tip="")
+span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
+                          read_only=False, visible=True, tool_tip="")
 
 def describe(event):
     return f"{event.value.start():.2f} .. {event.value.stop():.2f}"
