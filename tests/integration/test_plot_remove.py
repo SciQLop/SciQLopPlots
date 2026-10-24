@@ -186,13 +186,17 @@ def test_pane_item_dies_with_the_projection_plot():
 
 
 def test_panel_factories_return_panel_owned_objects(panel):
-    _panel_with_plot(panel)
-    span = panel.vertical_span(R(1.0, 2.0), tool_tip="s", id="a")
-    line = panel.vertical_line(1.5)
+    plot = _panel_with_plot(panel)
+    panel.vertical_span(R(1.0, 2.0), tool_tip="s", id="a")
+    panel.vertical_line(1.5)
     import gc; gc.collect(); process_events()
-    assert isinstance(span, MultiPlotsVerticalSpan) and span.parent() is panel
-    assert isinstance(line, MultiPlotsVerticalLine) and line.parent() is panel
-    assert shiboken6.isValid(span) and shiboken6.isValid(line)
+    spans = panel.findChildren(MultiPlotsVerticalSpan)
+    lines = panel.findChildren(MultiPlotsVerticalLine)
+    assert len(spans) == 1 and len(lines) == 1
+    assert spans[0].parent() is panel and lines[0].parent() is panel
+    assert shiboken6.isValid(spans[0]) and shiboken6.isValid(lines[0])
+    assert len(plot.findChildren(SciQLopVerticalSpan)) == 1
+    assert len(plot.findChildren(SciQLopVerticalLine)) == 1
 
 
 def test_panel_remove_deletes_a_span_and_its_parts(panel):
