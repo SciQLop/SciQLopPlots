@@ -97,8 +97,8 @@ def test_a_slot_deleting_the_object_while_its_setter_runs_does_not_crash(qtbot, 
     slot, fired = _delete_once(obj)
     getattr(obj, signal).connect(slot)
     mutate(obj)
+    qtbot.waitUntil(lambda: bool(fired), timeout=5000)  # a histogram bins on a worker thread
     _pump()
-    assert fired
     assert not shiboken6.isValid(obj)
 
 
