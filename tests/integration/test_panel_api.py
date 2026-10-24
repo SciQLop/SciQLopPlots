@@ -8,7 +8,7 @@ from SciQLopPlots import (
     SciQLopPlotRange, SciQLopGraphInterface, PlotType,
     MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopVerticalSpan,
 )
-from conftest import force_gc
+from conftest import force_gc, process_events
 
 
 class TestPanelPlotManagement:
@@ -276,3 +276,57 @@ class TestMultiPlotsVerticalSpanProperties:
         getattr(span, signal).connect(received.append)
         act(span)
         assert len(received) == 1
+
+
+class TestSpanCollectionCulling:
+    """The collection hides spans outside the time range; a span the user hid stays hidden."""
+
+    def _collection(self, panel, sample_data):
+        x, y = sample_data
+        panel.line(x, y)
+        panel.set_time_axis_range(SciQLopPlotRange(0.0, 10.0))
+        process_events()
+        return MultiPlotsVSpanCollection(panel)
+
+    def _move_time_range(self, panel, start, stop):
+        panel.time_range_changed.emit(SciQLopPlotRange(start, stop))
+        process_events()
+
+    def _plot_span(self, panel):
+        [item] = panel.plot_at(0).findChildren(SciQLopVerticalSpan)
+        return item
+
+    def test_a_span_hidden_by_the_user_stays_hidden_when_it_comes_back_into_range(
+            self, panel, sample_data):
+        collection = self._collection(panel, sample_data)
+        span = collection.create_span(SciQLopPlotRange(2.0, 3.0))
+        span.set_visible(False)
+        self._move_time_range(panel, 100.0, 200.0)
+        self._move_time_range(panel, 0.0, 10.0)
+        assert not self._plot_span(panel).visible()
+        assert not span.visible
+
+    def test_a_span_the_user_did_not_hide_reappears_in_range(self, panel, sample_data):
+        collection = self._collection(panel, sample_data)
+        span = collection.create_span(SciQLopPlotRange(2.0, 3.0))
+        self._move_time_range(panel, 100.0, 200.0)
+        assert not self._plot_span(panel).visible()
+        self._move_time_range(panel, 0.0, 10.0)
+        assert self._plot_span(panel).visible()
+        assert span.visible
+
+    def test_a_span_created_out_of_range_appears_when_the_range_reaches_it(
+            self, panel, sample_data):
+        collection = self._collection(panel, sample_data)
+        collection.create_span(SciQLopPlotRange(500.0, 600.0))
+        assert not self._plot_span(panel).visible()
+        self._move_time_range(panel, 450.0, 650.0)
+        assert self._plot_span(panel).visible()
+
+    def test_hiding_a_span_while_it_is_out_of_range_sticks(self, panel, sample_data):
+        collection = self._collection(panel, sample_data)
+        span = collection.create_span(SciQLopPlotRange(2.0, 3.0))
+        self._move_time_range(panel, 100.0, 200.0)
+        span.set_visible(False)
+        self._move_time_range(panel, 0.0, 10.0)
+        assert not self._plot_span(panel).visible()

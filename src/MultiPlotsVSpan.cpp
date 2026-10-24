@@ -50,7 +50,7 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
         auto new_span
-            = new SciQLopVerticalSpan(scp, _horizontal_range, m_color, _read_only, m_visible, _tool_tip);
+            = new SciQLopVerticalSpan(scp, _horizontal_range, m_color, _read_only, _visible(), _tool_tip);
         SciQLopPlots::mark_panel_part(new_span);
         new_span->set_selected(m_selected);
         QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
@@ -108,9 +108,21 @@ void MultiPlotsVerticalSpan::_set_color(const QColor& color)
 void MultiPlotsVerticalSpan::_set_visible(bool visible)
 {
     const QPointer<MultiPlotsVerticalSpan> self(this);
-    for_each_span([visible](SciQLopVerticalSpan* span) { span->set_visible(visible); });
+    for_each_span([effective = visible && m_in_range](SciQLopVerticalSpan* span)
+                  { span->set_visible(effective); });
     if (self)
         m_visible = visible;
+}
+
+void MultiPlotsVerticalSpan::set_in_range(bool in_range)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_in_range(in_range));
+    m_in_range = in_range;
+    const bool effective = _visible();
+    const QPointer<MultiPlotsVerticalSpan> self(this);
+    for_each_span([effective](SciQLopVerticalSpan* span) { span->set_visible(effective); });
+    if (self)
+        _notify_visible(effective);
 }
 
 void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
@@ -138,7 +150,7 @@ void MultiPlotsVSpanCollection::updateVisibleSpans(const SciQLopPlotRange& horiz
     const auto spans = _spans;
     for (const auto& span : spans)
         if (span)
-            span->set_visible(horizontal_range.intersects(span->range()));
+            span->set_in_range(horizontal_range.intersects(span->range()));
 }
 
 void MultiPlotsVSpanCollection::delete_span(const QString &id)
@@ -158,8 +170,8 @@ MultiPlotsVSpanCollection::create_span(SciQLopPlotRange horizontal_range, QColor
     SciQLopPlots::require_owner_thread(this, "MultiPlotsVSpanCollection::create_span");
     auto p = panel();
     MultiPlotsVerticalSpan* vspan = new MultiPlotsVerticalSpan(
-        p, horizontal_range, color, read_only, horizontal_range.intersects(p->time_axis_range()),
-        tool_tip, id);
+        p, horizontal_range, color, read_only, true, tool_tip, id);
+    vspan->set_in_range(horizontal_range.intersects(p->time_axis_range()));
     _spans.append(vspan);
     connect(vspan, &MultiPlotsVerticalSpan::destroyed, this,
             [this, vspan]() { _spans.removeAll(vspan); });

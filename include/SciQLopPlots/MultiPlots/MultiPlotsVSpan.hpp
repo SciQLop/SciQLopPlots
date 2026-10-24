@@ -48,6 +48,7 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
     bool _lower_border_selected = false;
     bool _upper_border_selected = false;
     bool m_visible = true;
+    bool m_in_range = true;
     bool _read_only = false;
     QColor m_color;
     QString _tool_tip;
@@ -63,8 +64,10 @@ protected:
     void _set_selected(bool selected) override;
     QColor _color() const override { return m_color; }
     void _set_color(const QColor& color) override;
-    bool _visible() const override { return m_visible; }
+    bool _visible() const override { return m_visible && m_in_range; }
     void _set_visible(bool visible) override;
+    // A hide while culled reads as unchanged (the span is already hidden) but must be remembered.
+    bool _always_apply() const override { return true; }
 
 public:
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
@@ -100,6 +103,9 @@ public:
     }
 
     [[nodiscard]] inline QString id() const { return _id; }
+
+    //! Out-of-range culling, kept apart from set_visible: a hidden span stays hidden in range.
+    void set_in_range(bool in_range);
 
     void set_range(const SciQLopPlotRange horizontal_range);
 
