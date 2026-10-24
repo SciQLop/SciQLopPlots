@@ -160,3 +160,12 @@ Item 1.1 for widgets, done:
 - Break: code that dropped the last reference to delete a parented widget now keeps it until the parent dies. It calls deleteLater() or removes it.
 - Break: a component's set_fill_between and set_error_bars raise ValueError for a missing (None) or identical partner on every component, before the hop to the GUI thread. A component that is not part of a multigraph (a curve's) used to warn "unsupported" instead.
 - Drawn objects (items, graphs, legend) are part B.
+
+Items 1.1 (drawn objects), 1.2, 5.2 and phase-2 task 12, part B, done (spec docs/plans/2026-10-24-item-factories-design.md):
+
+- What a plot draws belongs to the plot. Items come from plot factories: `plot.text`, `pixmap`, `ellipse`, `curved_line`, `vertical_line`, `horizontal_line`, `vertical_span`, `horizontal_span`, `rectangular_span`. Panel-wide ones come from `panel.vertical_span` and `panel.vertical_line`. Dropping the Python reference does nothing.
+- One removal: `plot.remove(x)` for a plottable, a group or an item; `panel.remove(x)` for a panel span, line or plot. A foreign object, one plot's part of a panel object, or None raise ValueError.
+- Every item's QObject parent is its plot; a null plot raises ValueError in every constructor. A removed item repaints the plot at once.
+- Fixed on the way: `plot.plottable(i)` aborted for i < -1 and returned the last plottable for i past the end; only -1 means the last now, anything else out of range is None.
+- Deprecated: the item constructors (they keep Python ownership), `remove_plottable` and `remove_group`. The suite turns these warnings into errors.
+- Breaks: `remove_plottable` of another plot's plottable raises ValueError (it deleted it); text and line wrappers built with the old constructors die with their plot; `remove_plottable(99)` no longer deletes the last graph.
