@@ -1,8 +1,9 @@
 """Items belong to their plot: QObject parent, null plot, death with the plot (part B)."""
 import pytest
 import shiboken6
-from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtCore import QObject, QPointF, QRectF, SIGNAL
 from PySide6.QtGui import QColor, QPixmap
+from PySide6.QtWidgets import QApplication, QWidget
 
 from SciQLopPlots import (
     SciQLopCurvedLineItem, SciQLopEllipseItem, SciQLopHorizontalLine, SciQLopHorizontalSpan,
@@ -44,3 +45,23 @@ def test_held_item_dies_with_its_plot(qtbot, kind):
     shiboken6.delete(plot)
     collect()
     assert not shiboken6.isValid(item)
+
+
+def _replots(plot):
+    qcp = next(w for w in plot.findChildren(QWidget)
+               if w.metaObject().indexOfSignal("afterReplot()") >= 0)
+    hits = []
+    QObject.connect(qcp, SIGNAL("afterReplot()"), lambda: hits.append(True))
+    return hits
+
+
+@pytest.mark.parametrize("kind", CONSTRUCTORS)
+def test_deleting_an_item_repaints_the_plot(plot, kind):
+    item = CONSTRUCTORS[kind](plot)
+    for _ in range(3):
+        QApplication.processEvents()
+    hits = _replots(plot)
+    shiboken6.delete(item)
+    for _ in range(3):
+        QApplication.processEvents()
+    assert hits, "the plot was not repainted after the item was detached"

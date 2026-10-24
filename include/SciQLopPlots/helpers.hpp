@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include <qcustomplot.h>
+
 /*Apply a function to a QPointer if it is not null and return the result or a default value
 */
 inline auto qptr_apply_or(auto&& ptr, auto&& func) -> decltype(func(ptr))
@@ -48,15 +50,19 @@ inline auto qptr_apply(auto&& ptr, auto&& func) -> void
 
 /* Detach a QCP item from its plot, for an item wrapper's destructor.
    Without this the wrapper goes away and leaves its item painted on the plot,
-   unreachable -- so deleteLater() could not remove it. Null-safe both ways: the
-   QPointer clears if the plot destroyed the item first. */
+   unreachable -- so deleteLater() could not remove it. A queued replot takes the
+   item off the screen at once. Null-safe both ways: the QPointer clears if the
+   plot destroyed the item first. */
 inline auto qcp_item_remove(auto&& ptr) -> void
 {
     qptr_apply(ptr,
                [](auto&& item)
                {
                    if (auto* plot = item->parentPlot())
+                   {
                        (void)plot->removeItem(item);
+                       plot->replot(QCustomPlot::rpQueuedReplot);
+                   }
                });
 }
 
