@@ -23,11 +23,27 @@
 #include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/helpers.hpp"
 #include <QPointer>
 #include <QTimer>
 #include <qcustomplot.h>
+#include <stdexcept>
+#include <string>
+
+namespace SciQLopPlots
+{
+//! The plot an item is built on, for the item's first base-class initializer: the item's
+//! QObject parent, checked before anything is built on it.
+template <typename Plot>
+Plot* item_plot(Plot* plot, const char* what)
+{
+    if (plot == nullptr)
+        throw std::invalid_argument(std::string(what) + ": plot cannot be None");
+    return on_owner_thread(plot, what);
+}
+}
 
 namespace impl
 {

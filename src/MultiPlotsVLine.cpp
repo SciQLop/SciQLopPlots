@@ -31,8 +31,6 @@ void MultiPlotsVerticalLine::addObject(SciQLopPlotInterface* plot)
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
         auto line = new SciQLopVerticalLine(scp, _position, !_read_only);
-        // Owned by the plot so a plot destroyed directly takes its line along.
-        line->setParent(scp);
         line->set_color(m_color);
         line->set_line_width(_line_width);
         line->set_visible(m_visible);

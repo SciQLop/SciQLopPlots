@@ -98,13 +98,9 @@ public:
      */
     SciQLopPixmapItem(SciQLopPlot* plot, const QPixmap& pixmap, const QRectF& rect,
                       bool movable = false, Coordinates coordinates = Coordinates::Pixels)
-            : SciQLopBoundingRectItemInterface(plot)
+            : SciQLopBoundingRectItemInterface(SciQLopPlots::item_plot(plot, "SciQLopPixmapItem"))
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopPixmapItem");
-        if (plot == nullptr)
-            throw std::invalid_argument("plot cannot be nullptr");
-        else
-            m_item = new impl::PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
+        m_item = new impl::PixmapItem(plot->qcp_plot(), pixmap, rect, movable, coordinates);
         _follow_selection(m_item);
     }
 

@@ -413,6 +413,17 @@ def _accept_ptr_handle(func):
     return wrapper
 
 
+def _plot_required(init):
+    # Shiboken maps every C++ exception from a constructor to RuntimeError; a null plot is a
+    # caller's mistake, so it is a ValueError, raised here before the C++ guard would be.
+    @functools.wraps(init)
+    def wrapper(self, plot=None, *args, **kwargs):
+        if plot is None:
+            raise ValueError(f"{type(self).__name__}: plot cannot be None")
+        return init(self, plot, *args, **kwargs)
+    return wrapper
+
+
 for _item_cls in (
     SciQLopPlotsBindings.SciQLopTextItem,
     SciQLopPlotsBindings.SciQLopPixmapItem,
@@ -425,7 +436,7 @@ for _item_cls in (
     SciQLopPlotsBindings.SciQLopHorizontalSpan,
     SciQLopPlotsBindings.SciQLopRectangularSpan,
 ):
-    _item_cls.__init__ = _accept_ptr_handle(_item_cls.__init__)
+    _item_cls.__init__ = _plot_required(_accept_ptr_handle(_item_cls.__init__))
 
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains"):
     setattr(SciQLopMultiPlotPanel, _method,

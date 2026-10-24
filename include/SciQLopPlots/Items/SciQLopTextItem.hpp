@@ -90,12 +90,9 @@ class SciQLopTextItem : public SciQLopBoundingRectItemInterface
 public:
     SciQLopTextItem(SciQLopPlot* plot, const QString& text, const QPointF& position,
                     bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+            : SciQLopBoundingRectItemInterface { SciQLopPlots::item_plot(plot, "SciQLopTextItem") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopTextItem");
-        if (plot == nullptr)
-            throw std::runtime_error("Plot is null");
-        else
-            m_item = new impl::TextItem(plot->qcp_plot(), text, position, movable, coordinates);
+        m_item = new impl::TextItem(plot->qcp_plot(), text, position, movable, coordinates);
         _follow_selection(m_item);
     }
 

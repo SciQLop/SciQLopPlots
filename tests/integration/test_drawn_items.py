@@ -1,5 +1,6 @@
 """Items under SciQLopDrawnObject: the stubs that did nothing, and items whose plot is gone."""
 import pytest
+import shiboken6
 from PySide6.QtCore import QCoreApplication, QEvent, QPointF, QRectF
 from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QWidget
@@ -49,26 +50,21 @@ def _flush_deferred_delete():
     process_events()
 
 
-def test_an_item_whose_plot_is_gone_ignores_every_set(qtbot):  # Review Focus 3
+def test_an_item_dies_with_its_plot(qtbot):  # Review Focus 3
     plot = SciQLopPlot()
-    text = SciQLopTextItem(plot, "t", QPointF(10, 10))  # no parent: it outlives the plot
-    seen = [record(text.selection_changed), record(text.visible_changed), record(text.color_changed)]
+    text = SciQLopTextItem(plot, "t", QPointF(10, 10))  # parented to the plot since part B
     plot.deleteLater()
     _flush_deferred_delete()
-    text.set_selected(True)
-    text.set_visible(True)
-    text.set_color(QColor("red"))
-    assert (text.selected(), text.visible(), text.color().isValid(), seen) == (False, False, False, [[], [], []])
+    assert not shiboken6.isValid(text)
 
 
 def test_a_queued_set_running_after_the_plot_is_gone_is_harmless(qtbot):  # Review Focus 2
     plot = SciQLopPlot()
     text = SciQLopTextItem(plot, "t", QPointF(10, 10))
-    seen = record(text.visible_changed)
     off_thread(lambda: text.set_visible(False))
     plot.deleteLater()
-    _flush_deferred_delete()  # the plot goes first, then the queued set runs on a null item
-    assert (text.visible(), seen) == (False, [])
+    _flush_deferred_delete()  # the plot and the item go first, then the queued set finds nothing
+    assert not shiboken6.isValid(text)
 
 
 def test_an_ellipse_whose_neoqcp_item_is_gone_has_no_colour(qtbot):

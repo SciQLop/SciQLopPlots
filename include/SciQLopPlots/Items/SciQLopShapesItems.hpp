@@ -216,12 +216,8 @@ public:
      */
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, bool movable = false,
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
-            : SciQLopPolygonItemInterface { plot }
+            : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
-        if (plot == nullptr)
-            throw std::invalid_argument("plot is nullptr");
-        else
             m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates,
                                      toolTip);
         _follow_selection(m_item);
@@ -230,12 +226,8 @@ public:
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
                        const QBrush& brush, bool movable = false,
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
-            : SciQLopPolygonItemInterface { plot }
+            : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
-        if (plot == nullptr)
-            throw std::invalid_argument("plot is nullptr");
-        else
             m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable,
                                      coordinates, toolTip);
         _follow_selection(m_item);
@@ -244,12 +236,8 @@ public:
     SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
                        qreal lineWidth, const QColor& fillColor, bool movable = false,
                        Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
-            : SciQLopPolygonItemInterface { plot }
+            : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopEllipseItem");
-        if (plot == nullptr)
-            throw std::invalid_argument("plot is nullptr");
-        else
             m_item
                 = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
                                   QBrush(fillColor), movable, coordinates, toolTip);
@@ -366,12 +354,8 @@ public:
                           LineTermination stopTerminator = LineTermination::Arrow,
                           Coordinates coordinates = Coordinates::Pixels,
                           const QString& toolTip = "")
-            : SciQLopLineItemInterface { plot }
+            : SciQLopLineItemInterface { SciQLopPlots::item_plot(plot, "SciQLopCurvedLineItem") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopCurvedLineItem");
-        if (plot == nullptr)
-            throw std::invalid_argument("plot is nullptr");
-        else
             m_item = new CurvedLineItem(plot->qcp_plot(), start, stop, startTerminator,
                                         stopTerminator, coordinates, toolTip);
         _follow_selection(m_item);

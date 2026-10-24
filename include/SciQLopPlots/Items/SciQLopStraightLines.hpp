@@ -166,8 +166,8 @@ public:
     SciQLopStraightLine(SciQLopPlot* plot, const double position, const bool movable = false,
                         Coordinates coordinates = Coordinates::Data,
                         Qt::Orientation orientation = Qt::Orientation::Vertical)
+            : SciQLopDrawnObject { SciQLopPlots::item_plot(plot, "SciQLopStraightLine") }
     {
-        SciQLopPlots::require_owner_thread(plot, "SciQLopStraightLine");
         m_line = new StraightLine(plot->qcp_plot(), position, movable, coordinates, orientation);
         connect(m_line, &StraightLine::moved, this, &SciQLopStraightLine::position_changed);
         connect(m_line, &QCPAbstractItem::selectionChanged, this,
