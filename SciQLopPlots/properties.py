@@ -14,7 +14,8 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         signal_name: Qt signal attribute name (e.g. "range_changed"), or None for write-only.
         getter_name: Method name to get current value (e.g. "range"), or None.
         setter_name: Method name to set value (e.g. "set_range"), or None for read-only.
-        property_type: One of "data", "range", "string" - determines threading strategy.
+        property_type: Only "data" has behaviour: the pipeline's threaded() carries it.
+            Any other label is informational.
         signal_args: Tuple of types to select a specific signal overload, or None for default.
         splat: True when the setter is multi-argument (set_data(x, y), set_range(start, stop))
             and an assigned list/tuple must be unpacked. False for setters taking the sequence
@@ -32,12 +33,27 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
     }
 
 
+def _convention_spec(obj, name):
+    """`x` observable and/or writable through `x_changed` and/or `set_x`; the getter is required."""
+    signal, setter = f"{name}_changed", f"set_{name}"
+    if not hasattr(obj, name) or not (hasattr(obj, signal) or hasattr(obj, setter)):
+        return None
+    return {
+        "signal_name": signal if hasattr(obj, signal) else None,
+        "getter_name": name,
+        "setter_name": setter if hasattr(obj, setter) else None,
+        "property_type": "data" if name == "data" else "value",
+        "signal_args": None,
+        "splat": False,
+    }
+
+
 def _lookup_property_spec(obj, property_name):
-    """Look up a property spec, walking the MRO."""
+    """The exceptions table (walking the MRO) first, then the convention."""
     for cls in type(obj).__mro__:
         if cls in _property_registry and property_name in _property_registry[cls]:
             return _property_registry[cls][property_name]
-    return None
+    return _convention_spec(obj, property_name)
 
 
 class ObservableProperty:
@@ -75,7 +91,8 @@ class ObservableProperty:
     def value(self):
         if self._getter_name is None:
             raise AttributeError(f"Property '{self.property_name}' is not readable")
-        return getattr(self.qobject, self._getter_name)()
+        attr = getattr(self.qobject, self._getter_name)
+        return attr() if callable(attr) else attr
 
     @value.setter
     def value(self, val):

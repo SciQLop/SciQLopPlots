@@ -300,80 +300,33 @@ from .pipeline import Pipeline, PartialPipeline
 from .event import Event
 from .widget_plot import WidgetPlot
 
-register_property(
-    SciQLopGraphInterface, "data",
-    signal_name="data_changed",
-    getter_name="data",
-    setter_name="set_data",
-    property_type="data",
-    signal_args=(),
-    splat=True,  # set_data(x, y[, z])
+# Names the x / set_x / x_changed convention cannot derive (see properties.py).
+_ON_EXCEPTIONS = (
+    (SciQLopGraphInterface, "data", dict(
+        signal_name="data_changed", getter_name="data", setter_name="set_data",
+        property_type="data", signal_args=(), splat=True)),
+    (SciQLopPlotsBindings.SciQLopPlotAxisInterface, "range", dict(
+        signal_name="range_changed", getter_name="range", setter_name="set_range",
+        property_type="range", splat=True)),
+    (SciQLopPlotsBindings.SciQLopDrawnObject, "selected", dict(
+        signal_name="selection_changed", getter_name="selected", setter_name="set_selected",
+        property_type="value")),
+    (SciQLopPlotsBindings.SciQLopWaterfallGraph, "spacing", dict(
+        signal_name="uniform_spacing_changed", getter_name="uniform_spacing",
+        setter_name="set_uniform_spacing", property_type="value")),
+    (SciQLopPlotsBindings.SciQLopVerticalSpan, "tooltip", dict(
+        signal_name=None, getter_name="tool_tip", setter_name="set_tool_tip",
+        property_type="value")),
 )
 
-from .SciQLopPlotsBindings import SciQLopWaterfallGraph
-
-register_property(
-    SciQLopWaterfallGraph, "offset_mode",
-    signal_name="offset_mode_changed",
-    getter_name="offset_mode", setter_name="set_offset_mode",
-    property_type="enum",
-)
-register_property(
-    SciQLopWaterfallGraph, "spacing",
-    signal_name="uniform_spacing_changed",
-    getter_name="uniform_spacing", setter_name="set_uniform_spacing",
-    property_type="float",
-)
-register_property(
-    SciQLopWaterfallGraph, "offsets",
-    signal_name="offsets_changed",
-    getter_name="offsets", setter_name="set_offsets",
-    property_type="array",
-)
-register_property(
-    SciQLopWaterfallGraph, "normalize",
-    signal_name="normalize_changed",
-    getter_name="normalize", setter_name="set_normalize",
-    property_type="bool",
-)
-register_property(
-    SciQLopWaterfallGraph, "gain",
-    signal_name="gain_changed",
-    getter_name="gain", setter_name="set_gain",
-    property_type="float",
-)
-
-SciQLopWaterfallGraph.on = OnDescriptor()
-
-register_property(
-    SciQLopPlotsBindings.SciQLopPlotAxisInterface, "range",
-    signal_name="range_changed",
-    getter_name="range",
-    setter_name="set_range",
-    property_type="range",
-    splat=True,  # set_range(start, stop) — unlike the span's set_range(range)
-)
-
-register_property(
-    SciQLopPlotsBindings.SciQLopVerticalSpan, "range",
-    signal_name="range_changed",
-    getter_name="range",
-    setter_name="set_range",
-    property_type="range",
-)
-
-register_property(
-    SciQLopPlotsBindings.SciQLopVerticalSpan, "tooltip",
-    signal_name=None,
-    getter_name="tool_tip",
-    setter_name="set_tool_tip",
-    property_type="string",
-)
+for _cls, _name, _spec in _ON_EXCEPTIONS:
+    register_property(_cls, _name, **_spec)
 
 for _cls in (
-    SciQLopGraphInterface,
+    SciQLopPlotsBindings.SciQLopDrawnObject,
     SciQLopPlotsBindings.SciQLopPlotAxisInterface,
-    SciQLopPlotsBindings.SciQLopVerticalSpan,
+    SciQLopPlotsBindings.SciQLopPlotInterface,
+    SciQLopPlotsBindings.SciQLopPlotPanelInterface,
 ):
     _cls.on = OnDescriptor()
 

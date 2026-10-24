@@ -970,12 +970,17 @@ zoomed.plot(x, np.sin(x), labels=["zoom"])
 span.on.range >> zoomed.x_axis().on.range           # second plot shows the span's interval
 ```
 
-The function receives an event whose `.value` is the new value, and returns what to send on; returning `None` sends nothing. Observable properties include:
+The function receives an event whose `.value` is the new value, and returns what to send on; returning `None` sends nothing. Every property `x` that has a getter `x()` and a setter `set_x` and/or a signal `x_changed` is available as `obj.on.x`, on plots, panels, axes, graphs, items and spans. For example:
 
-- `axis.on.range`
-- `span.on.range` and `span.on.tooltip`
-- `graph.on.data`
-- the waterfall settings: `offset_mode`, `offsets`, `spacing`, `normalize`, `gain`
+- `plot.on.title`, `plot.on.auto_scale`
+- `axis.on.range`, `axis.on.log`, `axis.on.label`
+- `graph.on.data`, `graph.on.visible`, `graph.on.name`
+- `span.on.range`, `line.on.position`
+- the waterfall settings: `offset_mode`, `offsets`, `normalize`, `gain`
+
+Without a setter the property can only be observed. Without a signal it can only be written, so it cannot start a pipeline. A name with no getter is not exposed.
+
+Three names do not follow the convention and are kept by hand: `selected` (signal `selection_changed`), `tooltip` on spans (write and read, no signal) and `spacing` on waterfalls (the `uniform_spacing` accessors).
 
 ## N-D projections
 
