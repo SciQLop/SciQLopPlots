@@ -587,14 +587,14 @@
         </modify-function>
         <modify-function signature="remove_plottable(int)">
             <inject-code class="target" position="beginning">
-                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(plot.plottable(...))", 1) &lt; 0)
                     return nullptr;
                 <insert-template name="void_raises_valueerror"/>
             </inject-code>
         </modify-function>
         <modify-function signature="remove_plottable(const QString&amp;)">
             <inject-code class="target" position="beginning">
-                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(plot.plottable(...))", 1) &lt; 0)
                     return nullptr;
                 <insert-template name="void_raises_valueerror"/>
             </inject-code>

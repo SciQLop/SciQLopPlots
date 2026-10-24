@@ -194,13 +194,26 @@ def test_constructor_warns_and_names_the_factory(plot, kind):
 
 
 def test_panel_constructors_warn(panel):
-    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_span"):
+    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_span") as record:
         MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
-    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_line"):
+    assert record[0].filename == __file__
+    with pytest.warns(DeprecationWarning, match=r"use panel\.vertical_line") as record:
         MultiPlotsVerticalLine(panel, 1.0)
+    assert record[0].filename == __file__
 
 
 def test_factories_do_not_warn(plot, recwarn):
     plot.text("t", QPointF(1, 1))
     plot.vertical_span(R(1.0, 2.0))
     assert not [w for w in recwarn if issubclass(w.category, DeprecationWarning)]
+
+
+def test_pyproject_filter_turns_a_bare_deprecated_call_into_an_error(plot, panel, sample_data):
+    """Pins the filterwarnings entry in pyproject.toml: no pytest.warns wrapper here."""
+    with pytest.raises(DeprecationWarning, match=r"is deprecated: use plot\."):
+        SciQLopTextItem(plot, "t", QPointF(1, 1))
+    graph = plot.line(*sample_data)
+    with pytest.raises(DeprecationWarning, match=r"use plot\.remove"):
+        plot.remove_plottable(graph)
+    with pytest.raises(DeprecationWarning, match=r"use panel\."):
+        MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
