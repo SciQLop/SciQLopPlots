@@ -195,7 +195,7 @@ protected:
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
-              QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+              QString name = "ColorMap", bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
@@ -213,7 +213,7 @@ protected:
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
 
     virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+    plot_impl(GetDataPyCallable callable, QString name = "ColorMap",
               bool y_log_scale = false, bool z_log_scale = false,
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={}) Q_DECL_OVERRIDE;
@@ -287,15 +287,15 @@ public:
     SciQLopPlotInterface* create_plot(int index = -1, PlotType plot_type = PlotType::BasicXY);
 
     QPair<SciQLopPlotInterface*, SciQLopHistogram*>
-    histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
+    histogram(const SciQLopPyBuffer& values, QString name = "Histogram",
               int bins = 64, int index = -1, QVariantMap metadata = {}) Q_DECL_OVERRIDE;
     QPair<SciQLopPlotInterface*, SciQLopHistogram*>
-    histogram(GetDataPyCallable callable, QString name = QStringLiteral("Histogram"),
+    histogram(GetDataPyCallable callable, QString name = "Histogram",
               int bins = 64, QObject* sync_with = nullptr, int index = -1,
               QVariantMap metadata = {}) Q_DECL_OVERRIDE;
     QPair<SciQLopPlotInterface*, SciQLopHistogram*>
     bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
-         QString name = QStringLiteral("Bars"), int index = -1,
+         QString name = "Bars", int index = -1,
          QVariantMap metadata = {}) Q_DECL_OVERRIDE;
 
     //! A compact time-series plot with lane names on its y axis (see

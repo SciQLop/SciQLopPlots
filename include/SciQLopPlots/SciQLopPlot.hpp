@@ -321,7 +321,7 @@ protected:
 
     virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                 const SciQLopPyBuffer& z,
-                                                QString name = QStringLiteral("ColorMap"),
+                                                QString name = "ColorMap",
                                                 bool y_log_scale = false,
                                                 bool z_log_scale = false,QVariantMap metaData={}) override;
 
@@ -332,18 +332,18 @@ protected:
               QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
-                                                QString name = QStringLiteral("ColorMap"),
+                                                QString name = "ColorMap",
                                                 bool y_log_scale = false, bool z_log_scale = false,
                                                 QObject* sync_with = nullptr,QVariantMap metaData={}) override;
 
     virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-              QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+              QString name = "Histogram2D", int x_bins = 100,
               int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
               QVariantMap metaData = {}) override;
 
     virtual SciQLopColorMapInterface*
-    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+    plot_impl(GetDataPyCallable callable, QString name = "Histogram2D",
               int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
               bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {}) override;
@@ -424,16 +424,16 @@ public:
 
     //! \throws std::invalid_argument if bins <= 0.
     SciQLopHistogram* histogram(const SciQLopPyBuffer& values,
-                                QString name = QStringLiteral("Histogram"), int bins = 64,
+                                QString name = "Histogram", int bins = 64,
                                 QVariantMap metadata = {}) override;
     //! Fetches over the time axis (or sync_with), never over x: x holds the values.
     //! \throws std::invalid_argument if bins <= 0.
     SciQLopHistogram* histogram(GetDataPyCallable callable,
-                                QString name = QStringLiteral("Histogram"), int bins = 64,
+                                QString name = "Histogram", int bins = 64,
                                 QObject* sync_with = nullptr, QVariantMap metadata = {}) override;
     //! \throws std::invalid_argument unless edges has one more entry than heights has rows.
     SciQLopHistogram* bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
-                           QString name = QStringLiteral("Bars"),
+                           QString name = "Bars",
                            QVariantMap metadata = {}) override;
 
     SciQLopTimeline* add_timeline(int lane_height = 22);

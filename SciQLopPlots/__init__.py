@@ -36,16 +36,18 @@ def _register_with_shiboken_signatures():
         instead of a catchable TypeError. Keep ``_PRIMITIVE_TYPE_MAP`` in sync
         with the ``<primitive-type>`` list at the top of bindings.xml.
 
-    Finally, some C++ defaults have no Python spelling in the generated
-    signatures (``QStringLiteral("ColorMap")``, ``QColor(100, 100, 100)``,
-    ``QPointer[...]``). That only warns — once per signature, and only while
-    formatting an error — but it would bury the now-useful message under a
-    wall of RuntimeWarnings, so the specific warning is muted. (Enum defaults
-    must not start with ``::``: ``= ::GraphMarkerShape::NoMarker`` rendered as
-    an unresolvable ``.GraphMarkerShape.NoMarker``.)
+    Shiboken also writes a few of our types under names the parser cannot
+    resolve: a ``QPointer<T>`` inside a container keeps its C++ name instead
+    of the ``<smart-pointer-type>`` instantiation, and a ``<property>`` type is
+    left unqualified. Each would raise a "pyside_type_init ... UNRECOGNIZED"
+    RuntimeWarning, so they are mapped too. Header defaults must stay
+    parseable: a plain literal (``"ColorMap"``, not ``QStringLiteral``),
+    ``Type()``, a qualified enum value, or ``QColor::fromRgb(...)`` (resolved
+    through PySide6.QtGui); never ``QColor(r, g, b)``. Enum defaults must not
+    start with ``::``: ``= ::GraphMarkerShape::NoMarker`` rendered as an
+    unresolvable ``.GraphMarkerShape.NoMarker``.
     """
     import collections.abc
-    import warnings
 
     # The whole body is best-effort: this only makes binding-misuse errors
     # readable, so any shift in shiboken's signature internals (missing module,
@@ -64,12 +66,12 @@ def _register_with_shiboken_signatures():
             # some paths up under the original spelling, so register both.
             "std::string": str, "std.string": str,
             "std::size_t": int, "std.size_t": int,
+            "QPointer[SciQLopPlotsBindings.SciQLopPlotInterface]":
+                SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
+            "QPointer[SciQLopPlotsBindings.MultiPlotsVerticalSpan]":
+                SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr,
+            "SciQLopPlotRange": SciQLopPlotsBindings.SciQLopPlotRange,
         })
-        # Scoped to the parser that emits it so we never hide a same-named
-        # RuntimeWarning from unrelated code.
-        warnings.filterwarnings(
-            "ignore", message="pyside_type_init", category=RuntimeWarning,
-            module=r"shibokensupport\.signature")
     except Exception:
         pass
 

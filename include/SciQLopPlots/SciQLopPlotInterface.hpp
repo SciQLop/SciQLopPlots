@@ -74,7 +74,7 @@ protected:
 
     inline virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                        const SciQLopPyBuffer& z,
-                                                       QString name = QStringLiteral("ColorMap"),
+                                                       QString name = "ColorMap",
                                                        bool y_log_scale = false,
                                                        bool z_log_scale = false, QVariantMap metaData={})
     {
@@ -91,7 +91,7 @@ protected:
     }
 
     inline virtual SciQLopColorMapInterface*
-    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+    plot_impl(GetDataPyCallable callable, QString name = "ColorMap",
               bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
         throw_unsupported("colormap", *this);
@@ -99,7 +99,7 @@ protected:
 
     inline virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-              QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+              QString name = "Histogram2D", int x_bins = 100,
               int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
               QVariantMap metaData = {})
     {
@@ -107,7 +107,7 @@ protected:
     }
 
     inline virtual SciQLopColorMapInterface*
-    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+    plot_impl(GetDataPyCallable callable, QString name = "Histogram2D",
               int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
               bool y_bins_log = false, QObject* sync_with = nullptr,
               QVariantMap metaData = {})
@@ -348,7 +348,7 @@ public:
 
     inline virtual SciQLopColorMapInterface* colormap(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                       const SciQLopPyBuffer& z,
-                                                      QString name = QStringLiteral("ColorMap"),
+                                                      QString name = "ColorMap",
                                                       bool y_log_scale = false,
                                                       bool z_log_scale = false, QVariantMap metaData={})
     {
@@ -381,7 +381,7 @@ public:
     }
 
     inline virtual SciQLopColorMapInterface*
-    colormap(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+    colormap(GetDataPyCallable callable, QString name = "ColorMap",
              bool y_log_scale = false, bool z_log_scale = false, QObject* sync_with = nullptr, QVariantMap metaData={})
     {
         return plot_impl(callable, name, y_log_scale, z_log_scale, sync_with,metaData);
@@ -408,7 +408,7 @@ public:
 
     inline virtual SciQLopColorMapInterface*
     histogram2d(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-                QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+                QString name = "Histogram2D", int x_bins = 100,
                 int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
                 QVariantMap metaData = {})
     {
@@ -416,7 +416,7 @@ public:
     }
 
     inline virtual SciQLopColorMapInterface*
-    histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+    histogram2d(GetDataPyCallable callable, QString name = "Histogram2D",
                 int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
                 bool y_bins_log = false, QObject* sync_with = nullptr,
                 QVariantMap metaData = {})
@@ -426,7 +426,7 @@ public:
     }
 
     inline virtual SciQLopHistogram* histogram(const SciQLopPyBuffer& values,
-                                               QString name = QStringLiteral("Histogram"),
+                                               QString name = "Histogram",
                                                int bins = 64, QVariantMap metadata = {})
     {
         report_unsupported_call("histogram", typeid(*this).name());
@@ -434,7 +434,7 @@ public:
     }
 
     inline virtual SciQLopHistogram* histogram(GetDataPyCallable callable,
-                                               QString name = QStringLiteral("Histogram"),
+                                               QString name = "Histogram",
                                                int bins = 64, QObject* sync_with = nullptr,
                                                QVariantMap metadata = {})
     {
@@ -444,7 +444,7 @@ public:
 
     inline virtual SciQLopHistogram* bars(const SciQLopPyBuffer& edges,
                                           const SciQLopPyBuffer& heights,
-                                          QString name = QStringLiteral("Bars"),
+                                          QString name = "Bars",
                                           QVariantMap metadata = {})
     {
         report_unsupported_call("bars", typeid(*this).name());

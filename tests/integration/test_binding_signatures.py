@@ -1,36 +1,117 @@
-"""The signatures shiboken generates parse: an enum default must name its enum.
+"""Every binding signature parses cleanly, and the defaults behind them stay the same.
 
-A default spelled ``= ::GraphMarkerShape::NoMarker`` in C++ rendered as
-``.GraphMarkerShape.NoMarker`` (the leading ``::`` became a dot the parser cannot resolve), and
-every signature holding one warned "UNRECOGNIZED" when read (help(), .pyi stubs, error
-messages).
+Shiboken's signature parser warns (RuntimeWarning "pyside_type_init ... UNRECOGNIZED") on a
+default or type it cannot spell in Python. Each signature is parsed once per process and then
+cached, so the scan runs in a fresh interpreter: an earlier test may already have parsed them.
 """
-import re
-import warnings
+import json
+import subprocess
+import sys
+import textwrap
 
-from shibokensupport.signature import get_signature
+import numpy as np
+import pytest
+from PySide6.QtGui import QColor
 
-from SciQLopPlots import SciQLopPlotsBindings
+from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
+                          SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
+                          SciQLopVerticalSpan)
 
+_SCAN = textwrap.dedent("""
+    import json
+    import warnings
+    from SciQLopPlots import SciQLopPlotsBindings as bindings
+    from shibokensupport.signature import get_signature
 
-def _bound_callables():
-    for obj in vars(SciQLopPlotsBindings).values():
-        yield obj
-        if isinstance(obj, type):
-            yield from vars(obj).values()
+    def scan(obj, depth=0):
+        get_signature(obj)
+        if isinstance(obj, type) and depth < 2:
+            for member in list(vars(obj).values()):
+                scan(member, depth + 1)
 
-
-def _unrecognized_values():
+    muted = [f for f in warnings.filters if f[0] == "ignore" and f[1] and f[1].match("pyside_type_init")]
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        for obj in _bound_callables():
-            try:
-                get_signature(obj)
-            except Exception:  # noqa: BLE001 - not every attribute has a signature
-                pass
-    found = (re.search(r"UNRECOGNIZED:\s+'([^']*)'", str(w.message)) for w in caught)
-    return {m.group(1) for m in found if m}
+        for name in dir(bindings):
+            scan(getattr(bindings, name))
+    print(json.dumps({"muted": len(muted), "warnings": [str(w.message) for w in caught]}))
+""")
 
 
-def test_no_enum_default_loses_its_enum():
-    assert {v for v in _unrecognized_values() if v.startswith(".")} == set()
+@pytest.fixture(scope="module")
+def scan():
+    out = subprocess.run([sys.executable, "-c", _SCAN], capture_output=True, text=True, check=True)
+    return json.loads(out.stdout.strip().splitlines()[-1])
+
+
+def test_no_signature_warnings(scan):
+    assert scan["warnings"] == []
+
+
+def test_import_does_not_mute_signature_warnings(scan):
+    assert scan["muted"] == 0
+
+
+X = np.linspace(0.0, 1.0, 10)
+Z = np.zeros((10, 10))
+
+
+def _xyz(start, stop):
+    return X, X, Z
+
+
+def _xy(start, stop):
+    return X, X
+
+
+def _values(start, stop):
+    return X
+
+
+_DEFAULT_NAMES = [
+    ("colormap", lambda host: host.colormap(X, X, Z), "ColorMap"),
+    ("colormap callback", lambda host: host.colormap(_xyz), "ColorMap"),
+    ("histogram2d", lambda host: host.histogram2d(X, X), "Histogram2D"),
+    ("histogram2d callback", lambda host: host.histogram2d(_xy), "Histogram2D"),
+    ("histogram", lambda host: host.histogram(X), "Histogram"),
+    ("histogram callback", lambda host: host.histogram(_values), "Histogram"),
+    ("bars", lambda host: host.bars(X, X[:-1]), "Bars"),
+]
+
+
+def _graph(result):
+    return result[1] if isinstance(result, tuple) else result
+
+
+@pytest.mark.parametrize("host_name", ["plot", "panel"])
+@pytest.mark.parametrize("label,make,expected", _DEFAULT_NAMES, ids=[d[0] for d in _DEFAULT_NAMES])
+def test_default_graph_names(request, host_name, label, make, expected):
+    host = request.getfixturevalue(host_name)
+    assert _graph(make(host)).name == expected
+
+
+def test_time_series_colormap_default_name(ts_plot):
+    assert _graph(ts_plot.colormap(X, X, Z)).name == "ColorMap"
+
+
+_RANGE = SciQLopPlotRange(0.0, 1.0)
+_SPAN_GREY = QColor(100, 100, 100, 100)
+_LINE_GREY = QColor(100, 100, 100)
+
+
+@pytest.mark.parametrize("make", [
+    lambda plot: SciQLopVerticalSpan(plot, _RANGE),
+    lambda plot: SciQLopHorizontalSpan(plot, _RANGE),
+    lambda plot: SciQLopRectangularSpan(plot, _RANGE, _RANGE),
+], ids=["vertical", "horizontal", "rectangular"])
+def test_default_span_color(plot, make):
+    assert make(plot).color() == _SPAN_GREY
+
+
+@pytest.mark.parametrize("make", [
+    lambda panel: MultiPlotsVerticalSpan(panel, _RANGE),
+    lambda panel: MultiPlotsVerticalLine(panel, 0.5),
+    lambda panel: MultiPlotsVSpanCollection(panel).create_span(_RANGE),
+], ids=["span", "line", "collection span"])
+def test_default_panel_item_color(panel, make):
+    assert make(panel).color == _LINE_GREY

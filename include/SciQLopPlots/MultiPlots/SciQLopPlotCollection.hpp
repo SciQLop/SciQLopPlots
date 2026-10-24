@@ -104,7 +104,7 @@ protected:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
-              QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+              QString name = "ColorMap", bool y_log_scale = false,
               bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
         throw_unsupported("colormap", *this);
@@ -121,7 +121,7 @@ protected:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    plot_impl(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+    plot_impl(GetDataPyCallable callable, QString name = "ColorMap",
               bool y_log_scale = false, bool z_log_scale = false,
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
               int index = -1, QVariantMap metaData={})
@@ -302,7 +302,7 @@ public:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     colormap(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
-             QString name = QStringLiteral("ColorMap"), bool y_log_scale = false,
+             QString name = "ColorMap", bool y_log_scale = false,
              bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData={})
     {
         return plot_impl(x, y, z, name, y_log_scale, z_log_scale, plot_type, index,metaData);
@@ -347,7 +347,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    colormap(GetDataPyCallable callable, QString name = QStringLiteral("ColorMap"),
+    colormap(GetDataPyCallable callable, QString name = "ColorMap",
              bool y_log_scale = false, bool z_log_scale = false,
              ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
              int index = -1, QVariantMap metaData={})
@@ -366,7 +366,7 @@ public:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     histogram2d(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
-                QString name = QStringLiteral("Histogram2D"), int x_bins = 100,
+                QString name = "Histogram2D", int x_bins = 100,
                 int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
                 ::PlotType plot_type = PlotType::BasicXY,
                 int index = -1, QVariantMap metaData = {})
@@ -376,7 +376,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
-    histogram2d(GetDataPyCallable callable, QString name = QStringLiteral("Histogram2D"),
+    histogram2d(GetDataPyCallable callable, QString name = "Histogram2D",
                 int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
                 bool y_bins_log = false,
                 ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
@@ -387,7 +387,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
-    histogram(const SciQLopPyBuffer& values, QString name = QStringLiteral("Histogram"),
+    histogram(const SciQLopPyBuffer& values, QString name = "Histogram",
               int bins = 64, int index = -1, QVariantMap metadata = {})
     {
         report_unsupported_call("histogram", typeid(*this).name());
@@ -395,7 +395,7 @@ public:
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
-    histogram(GetDataPyCallable callable, QString name = QStringLiteral("Histogram"),
+    histogram(GetDataPyCallable callable, QString name = "Histogram",
               int bins = 64, QObject* sync_with = nullptr, int index = -1,
               QVariantMap metadata = {})
     {
@@ -405,7 +405,7 @@ public:
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
     bars(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights,
-         QString name = QStringLiteral("Bars"), int index = -1, QVariantMap metadata = {})
+         QString name = "Bars", int index = -1, QVariantMap metadata = {})
     {
         report_unsupported_call("bars", typeid(*this).name());
         return { nullptr, nullptr };

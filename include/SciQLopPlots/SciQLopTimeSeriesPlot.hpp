@@ -53,14 +53,14 @@ public:
 
     // x is the time axis here, so bars binned over values would land off screen:
     // a histogram needs a plain plot (or panel.histogram, which makes one).
-    inline SciQLopHistogram* histogram(const SciQLopPyBuffer&, QString = QStringLiteral("Histogram"),
+    inline SciQLopHistogram* histogram(const SciQLopPyBuffer&, QString = "Histogram",
                                        int = 64, QVariantMap = {}) override
     {
         report_unsupported_call("histogram", typeid(*this).name());
         return nullptr;
     }
 
-    inline SciQLopHistogram* histogram(GetDataPyCallable, QString = QStringLiteral("Histogram"),
+    inline SciQLopHistogram* histogram(GetDataPyCallable, QString = "Histogram",
                                        int = 64, QObject* = nullptr, QVariantMap = {}) override
     {
         report_unsupported_call("histogram", typeid(*this).name());
@@ -68,7 +68,7 @@ public:
     }
 
     inline SciQLopHistogram* bars(const SciQLopPyBuffer&, const SciQLopPyBuffer&,
-                                  QString = QStringLiteral("Bars"), QVariantMap = {}) override
+                                  QString = "Bars", QVariantMap = {}) override
     {
         report_unsupported_call("bars", typeid(*this).name());
         return nullptr;

@@ -117,7 +117,7 @@ signals:
 
 public:
     SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
-                        QColor color = QColor(100, 100, 100, 100), bool read_only = false,
+                        QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
                         bool visible = true, const QString& tool_tip = "",
                         Coordinates coordinates = Coordinates::Data);
 

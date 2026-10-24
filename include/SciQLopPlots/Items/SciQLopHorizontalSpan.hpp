@@ -102,7 +102,7 @@ signals:
 
 public:
     SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
-                          QColor color = QColor(100, 100, 100, 100), bool read_only = false,
+                          QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
                           bool visible = true, const QString& tool_tip = "");
 
     virtual ~SciQLopHorizontalSpan() override = default;
