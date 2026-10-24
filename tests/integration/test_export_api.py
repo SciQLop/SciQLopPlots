@@ -8,71 +8,71 @@ from SciQLopPlots import SciQLopPlot, SciQLopMultiPlotPanel
 
 
 class TestPlotExportPdf:
-    def test_save_pdf_creates_file(self, plot, tmp_path):
+    def test_save_writes_pdf_file(self, plot, tmp_path):
         path = str(tmp_path / "test.pdf")
         assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_pdf_with_dimensions(self, plot, tmp_path):
+    def test_save_writes_pdf_with_dimensions(self, plot, tmp_path):
         path = str(tmp_path / "test.pdf")
         assert plot.save(path, 800, 600) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPlotExportRaster:
-    def test_save_png_creates_file(self, plot, tmp_path):
+    def test_save_writes_png_file(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
         assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_png_roundtrip(self, plot, tmp_path):
+    def test_save_writes_png_roundtrip(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
         plot.save(path)
         img = QImage(path)
         assert not img.isNull()
 
-    def test_save_png_with_dimensions(self, plot, tmp_path):
+    def test_save_writes_png_with_dimensions(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
         plot.save(path, 640, 480)
         img = QImage(path)
         assert img.width() == 640
         assert img.height() == 480
 
-    def test_save_png_with_scale(self, plot, tmp_path):
+    def test_save_writes_png_with_scale(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
         plot.save(path, scale=2.0)
         assert Path(path).stat().st_size > 0
 
-    def test_save_jpg_creates_file(self, plot, tmp_path):
+    def test_save_writes_jpg_file(self, plot, tmp_path):
         path = str(tmp_path / "test.jpg")
         assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_bmp_creates_file(self, plot, tmp_path):
+    def test_save_writes_bmp_file(self, plot, tmp_path):
         path = str(tmp_path / "test.bmp")
         assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPlotSaveDispatch:
-    def test_save_pdf(self, plot, tmp_path):
+    def test_save_picks_pdf_from_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.pdf")
         assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_png(self, plot, tmp_path):
+    def test_save_picks_png_from_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
         assert plot.save(path) is True
 
-    def test_save_jpg(self, plot, tmp_path):
+    def test_save_picks_jpg_from_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.jpg")
         assert plot.save(path) is True
 
-    def test_save_jpeg(self, plot, tmp_path):
+    def test_save_picks_jpeg_from_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.jpeg")
         assert plot.save(path) is True
 
-    def test_save_bmp(self, plot, tmp_path):
+    def test_save_picks_bmp_from_extension(self, plot, tmp_path):
         path = str(tmp_path / "test.bmp")
         assert plot.save(path) is True
 
@@ -100,46 +100,46 @@ def panel_with_plots(qtbot):
 
 
 class TestPanelExportPdf:
-    def test_save_pdf_creates_file(self, panel_with_plots, tmp_path):
+    def test_save_writes_pdf_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.pdf")
         assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_pdf_with_dimensions(self, panel_with_plots, tmp_path):
+    def test_save_writes_pdf_with_dimensions(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.pdf")
         assert panel_with_plots.save(path, 800, 1200) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPanelExportRaster:
-    def test_save_png_creates_file(self, panel_with_plots, tmp_path):
+    def test_save_writes_png_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.png")
         assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_png_roundtrip(self, panel_with_plots, tmp_path):
+    def test_save_writes_png_roundtrip(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.png")
         panel_with_plots.save(path)
         img = QImage(path)
         assert not img.isNull()
 
-    def test_save_jpg_creates_file(self, panel_with_plots, tmp_path):
+    def test_save_writes_jpg_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.jpg")
         assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
-    def test_save_bmp_creates_file(self, panel_with_plots, tmp_path):
+    def test_save_writes_bmp_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.bmp")
         assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPanelSaveDispatch:
-    def test_save_pdf(self, panel_with_plots, tmp_path):
+    def test_save_picks_pdf_from_extension(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.pdf")
         assert panel_with_plots.save(path) is True
 
-    def test_save_png(self, panel_with_plots, tmp_path):
+    def test_save_picks_png_from_extension(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.png")
         assert panel_with_plots.save(path) is True
 

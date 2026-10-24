@@ -213,7 +213,7 @@ QString resolve_save_format(const QString& filename, const QString& format)
     const auto name = normalized_format(format);
     if (!save_formats.contains(name))
         throw std::invalid_argument("can't save " + filename.toStdString() + ": unknown format '"
-                                    + format.toStdString() + "' (pdf, svg, png, jpg or bmp)");
+                                    + format.toStdString() + "' (pdf, svg, png, jpg (or jpeg), bmp)");
     return name;
 }
 
@@ -244,5 +244,5 @@ void throw_unknown_save_format(const QString& filename)
 {
     throw std::invalid_argument("can't save " + filename.toStdString() + ": unknown format '"
                              + QFileInfo(filename).suffix().toStdString()
-                             + "' (pdf, svg, png, jpg or bmp)");
+                             + "' (pdf, svg, png, jpg (or jpeg), bmp)");
 }

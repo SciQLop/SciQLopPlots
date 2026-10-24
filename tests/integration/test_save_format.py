@@ -1,4 +1,6 @@
 """save(path, format=...): one entry point for every export format."""
+import warnings
+
 import numpy as np
 import pytest
 
@@ -8,7 +10,7 @@ from conftest import process_events
 MAGIC = {"png": b"\x89PNG", "pdf": b"%PDF", "svg": b"<?xml"}
 EXTENSIONS = {"x.pdf": "pdf", "x.svg": "svg", "x.png": "png", "x.PNG": "png",
               "x.jpg": "jpg", "x.jpeg": "jpg", "x.bmp": "bmp"}
-ACCEPTED = "pdf, svg, png, jpg or bmp"
+ACCEPTED = r"pdf, svg, png, jpg \(or jpeg\), bmp"
 SAVE_KEYWORDS = dict(width=200, height=100, scale=1.0, quality=80)
 DEPRECATED = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
 
@@ -55,7 +57,7 @@ def test_format_beats_the_extension(exportable, tmp_path, kind):
 
 def test_format_is_normalised(exportable, tmp_path):
     path = tmp_path / "x.out"
-    exportable.save(str(path), format=" .JPEG ")
+    assert exportable.save(str(path), format=" .JPEG ") is True
     assert _is_format(path, "jpg")
 
 
@@ -124,3 +126,9 @@ def test_a_subclass_warns_once(qtbot, tmp_path):
 def test_a_bare_per_format_call_fails_under_the_suite_filter(plot, tmp_path):
     with pytest.raises(DeprecationWarning, match="use plot.save"):
         plot.save_png(str(tmp_path / "a.png"))
+
+
+def test_save_itself_never_warns(exportable, tmp_path):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert exportable.save(str(tmp_path / "x.png")) is True
