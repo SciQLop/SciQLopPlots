@@ -511,10 +511,10 @@ void SciQLopNDProjectionPlot::clear_time_marker()
 SciQLopPlottableInterface* SciQLopNDProjectionPlot::plottable(int index)
 {
     auto all = plottables();
-    if (all.isEmpty())
+    if (index == -1)
+        index = static_cast<int>(all.size()) - 1;
+    if (index < 0 || index >= static_cast<int>(all.size()))
         return nullptr;
-    if (index < 0 || index >= all.size())
-        index = all.size() - 1;
     return all.at(index);
 }
 

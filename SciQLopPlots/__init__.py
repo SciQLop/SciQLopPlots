@@ -444,7 +444,7 @@ def _deprecated_constructor(cls, factory, needs_plot):
 
     @functools.wraps(init)
     def wrapper(self, plot=None, *args, **kwargs):
-        if type(self) is cls:  # a Python subclass of an item must not warn twice, nor needs its own entry
+        if type(self) is cls:  # the guard silences the warning entirely for a Python subclass of an item class
             warnings.warn(message, DeprecationWarning, stacklevel=2)
         if needs_plot and plot is None:
             raise ValueError(f"{type(self).__name__}: plot cannot be None")

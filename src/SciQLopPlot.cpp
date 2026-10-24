@@ -149,7 +149,7 @@ SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(int index)
 {
     if (index == -1)
         index = static_cast<int>(std::size(m_plottables)) - 1;
-    if (index < 0 || index >= std::size(m_plottables))
+    if (index < 0 || index >= static_cast<int>(std::size(m_plottables)))
         return nullptr;
     return m_plottables[index];
 }

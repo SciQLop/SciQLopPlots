@@ -1,9 +1,10 @@
 """plot.remove / panel.remove (part B)."""
+import numpy as np
 import pytest
 import shiboken6
 from PySide6.QtCore import QPointF
 from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, SciQLopPlotRange as R,
-                          SciQLopVerticalLine, SciQLopVerticalSpan)
+                          SciQLopNDProjectionPlot, SciQLopVerticalLine, SciQLopVerticalSpan)
 from conftest import process_events
 
 
@@ -368,3 +369,34 @@ def test_remove_plottable_out_of_range_index_leaves_the_graph(plot, sample_data)
         plot.remove_plottable(-2)
     assert shiboken6.isValid(graph)
     assert len(plot.plottables()) == 1
+
+
+@pytest.fixture
+def projection(qtbot):
+    proj = SciQLopNDProjectionPlot(3)
+    qtbot.addWidget(proj)
+    t = np.linspace(0.0, 1.0, 20)
+    proj.parametric_curve([t, np.sin(t), np.cos(t), t])
+    return proj
+
+
+def test_projection_plottable_index_out_of_range_is_none(projection):
+    assert projection.plottable(99) is None
+
+
+def test_projection_plottable_index_below_minus_one_is_none(projection):
+    assert projection.plottable(-2) is None
+
+
+def test_projection_plottable_minus_one_is_the_last(projection):
+    assert projection.plottable(-1) is projection.plottables()[-1]
+
+
+def test_projection_remove_plottable_out_of_range_index_leaves_the_graph(projection):
+    graph = projection.plottables()[0]
+    with pytest.warns(DeprecationWarning):
+        projection.remove_plottable(99)
+    with pytest.warns(DeprecationWarning):
+        projection.remove_plottable(-2)
+    assert shiboken6.isValid(graph)
+    assert len(projection.plottables()) == 1
