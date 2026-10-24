@@ -40,7 +40,7 @@ def test_the_group_name_is_its_object_name(pair):
 
 def test_a_slot_removing_the_group_while_it_hides_is_safe(plot, pair):
     group, a, _ = pair
-    a.visible_changed.connect(lambda _: plot.remove_group(group))
+    a.visible_changed.connect(lambda _: plot.remove(group))
     group.set_visible(False)  # the group is deleted while it applies; nothing reads it after
     process_events()
     assert plot.groups() == []
@@ -50,7 +50,7 @@ def test_a_slot_deleting_a_member_while_the_group_hides_is_safe(plot):
     lines = [plot.plot(X, np.sin(X + i), labels=[str(i)]) for i in range(3)]
     group = plot.group("g", lines)
     seen = record(group.visible_changed)
-    lines[0].visible_changed.connect(lambda _: plot.remove_plottable(lines[2]))
+    lines[0].visible_changed.connect(lambda _: plot.remove(lines[2]))
     group.set_visible(False)
     process_events()
     assert (len(group.members()), group.visible(), seen) == (2, False, [False])

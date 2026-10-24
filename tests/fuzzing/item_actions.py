@@ -23,12 +23,13 @@ def add_vertical_span(panel, model, plot_index):
     r = plot.x_axis().range()
     center = r.center()
     span_range = SciQLopPlotRange(center - r.size() * 0.1, center + r.size() * 0.1)
-    plot.vertical_span(
+    span = plot.vertical_span(
         span_range,
         QColor(100, 100, 200, 80),
         read_only=False, visible=True,
         tool_tip="test span",
     )
+    plot.remove(span)
 
 
 @ui_action(
@@ -55,11 +56,12 @@ def add_multi_plot_span(panel, model):
         int(np.random.randint(50, 255)),
         80,
     )
-    panel.vertical_span(
+    span = panel.vertical_span(
         span_range, color,
         read_only=False, visible=True,
         tool_tip="catalog event",
     )
+    panel.remove(span)
 
 
 @ui_action(
@@ -81,12 +83,13 @@ def add_span_burst(panel, model):
         pos = r.start() + r.size() * (i + 0.5) / count
         width = r.size() * 0.005
         span_range = SciQLopPlotRange(pos - width, pos + width)
-        panel.vertical_span(
+        span = panel.vertical_span(
             span_range,
             QColor(200, 100, 100, 60),
             read_only=False, visible=True,
             tool_tip=f"event_{i}",
         )
+        panel.remove(span)
 
 
 @ui_action(
@@ -107,9 +110,10 @@ def add_per_plot_span_burst(panel, model, plot_index):
     for i in range(count):
         pos = r.start() + r.size() * (i + 0.5) / count
         width = r.size() * 0.01
-        plot.vertical_span(
+        span = plot.vertical_span(
             SciQLopPlotRange(pos - width, pos + width),
             QColor(100, 200, 100, 60),
             read_only=False, visible=True,
             tool_tip=f"span_{i}",
         )
+        plot.remove(span)
