@@ -71,7 +71,7 @@ def test_graph_node_then_another_graph_node_moves_the_selection(inspected):
 
 
 def test_the_inspector_selects_a_text_item(plot):
-    text = SciQLopTextItem(plot, "note", QPointF(10, 10))
+    text = plot.text("note", QPointF(10, 10))
     model = PlotsModel.instance()
     model.addTopLevelNode(text)
     model.set_selected([_row(model, QModelIndex(), text)], True)

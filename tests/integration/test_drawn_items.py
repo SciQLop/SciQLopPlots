@@ -9,9 +9,9 @@ from SciQLopPlots import SciQLopCurvedLineItem, SciQLopEllipseItem, SciQLopPixma
 from conftest import off_thread, process_events, record
 
 MAKERS = {
-    "text": lambda p: SciQLopTextItem(p, "t", QPointF(10, 10)),
-    "ellipse": lambda p: SciQLopEllipseItem(p, QRectF(10, 10, 20, 20)),
-    "pixmap": lambda p: SciQLopPixmapItem(p, QPixmap(4, 4), QRectF(1, 1, 2, 2)),
+    "text": lambda p: p.text("t", QPointF(10, 10)),
+    "ellipse": lambda p: p.ellipse(QRectF(10, 10, 20, 20)),
+    "pixmap": lambda p: p.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
 }
 
 
@@ -23,7 +23,7 @@ def test_a_tooltip_round_trips(plot, kind):
 
 
 def test_a_curved_line_reads_the_tooltip_hover_shows_and_round_trips(plot):
-    line = SciQLopCurvedLineItem(plot, QPointF(0, 0), QPointF(5, 5), toolTip="ctor")
+    line = plot.curved_line(QPointF(0, 0), QPointF(5, 5), tool_tip="ctor")
     assert line.tool_tip() == "ctor"
     line.set_tool_tip("hello")
     assert line.tool_tip() == "hello"
@@ -52,7 +52,7 @@ def _flush_deferred_delete():
 
 def test_an_item_dies_with_its_plot(qtbot):  # Review Focus 3
     plot = SciQLopPlot()
-    text = SciQLopTextItem(plot, "t", QPointF(10, 10))  # parented to the plot since part B
+    text = plot.text("t", QPointF(10, 10))  # parented to the plot since part B
     plot.deleteLater()
     _flush_deferred_delete()
     assert not shiboken6.isValid(text)
@@ -60,7 +60,7 @@ def test_an_item_dies_with_its_plot(qtbot):  # Review Focus 3
 
 def test_a_queued_set_running_after_the_plot_is_gone_is_harmless(qtbot):  # Review Focus 2
     plot = SciQLopPlot()
-    text = SciQLopTextItem(plot, "t", QPointF(10, 10))
+    text = plot.text("t", QPointF(10, 10))
     off_thread(lambda: text.set_visible(False))
     plot.deleteLater()
     _flush_deferred_delete()  # the plot and the item go first, then the queued set finds nothing

@@ -198,22 +198,22 @@ R = SciQLopPlotRange
 ROWS += [
     Row("text and lines", ("SciQLopTextItem", "SciQLopCurvedLineItem", "SciQLopStraightLine",
                            "SciQLopVerticalLine", "SciQLopHorizontalLine"), {
-        "SciQLopTextItem": lambda h: SciQLopTextItem(h.plot, "t", QPointF(10, 10)),
-        "SciQLopCurvedLineItem": lambda h: SciQLopCurvedLineItem(h.plot, QPointF(0, 0), QPointF(5, 5)),
+        "SciQLopTextItem": lambda h: h.plot.text("t", QPointF(10, 10)),
+        "SciQLopCurvedLineItem": lambda h: h.plot.curved_line(QPointF(0, 0), QPointF(5, 5)),
         "SciQLopStraightLine": lambda h: SciQLopStraightLine(h.plot, 1.0),
-        "SciQLopVerticalLine": lambda h: SciQLopVerticalLine(h.plot, 1.0),
-        "SciQLopHorizontalLine": lambda h: SciQLopHorizontalLine(h.plot, 0.5),
+        "SciQLopVerticalLine": lambda h: h.plot.vertical_line(1.0),
+        "SciQLopHorizontalLine": lambda h: h.plot.horizontal_line(0.5),
     }, ALL),
     Row("ellipse", ("SciQLopEllipseItem",), {
-        "SciQLopEllipseItem": lambda h: SciQLopEllipseItem(h.plot, QRectF(10, 10, 20, 20)),
+        "SciQLopEllipseItem": lambda h: h.plot.ellipse(QRectF(10, 10, 20, 20)),
     }, ALL),
     Row("pixmap", ("SciQLopPixmapItem",), {
-        "SciQLopPixmapItem": lambda h: SciQLopPixmapItem(h.plot, QPixmap(4, 4), QRectF(1, 1, 2, 2)),
+        "SciQLopPixmapItem": lambda h: h.plot.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
     }, {"visible": OK, "selected": OK, "name": OK, "color": RAISE}),
     Row("span", ("SciQLopVerticalSpan", "SciQLopHorizontalSpan", "SciQLopRectangularSpan"), {
-        "SciQLopVerticalSpan": lambda h: SciQLopVerticalSpan(h.plot, R(1.0, 2.0)),
-        "SciQLopHorizontalSpan": lambda h: SciQLopHorizontalSpan(h.plot, R(1.0, 2.0)),
-        "SciQLopRectangularSpan": lambda h: SciQLopRectangularSpan(h.plot, R(1.0, 2.0), R(1.0, 2.0)),
+        "SciQLopVerticalSpan": lambda h: h.plot.vertical_span(R(1.0, 2.0)),
+        "SciQLopHorizontalSpan": lambda h: h.plot.horizontal_span(R(1.0, 2.0)),
+        "SciQLopRectangularSpan": lambda h: h.plot.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
     }, ALL),
 ]
 ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
@@ -222,10 +222,10 @@ ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLine
 
 ROWS += [
     Row("panel span", ("MultiPlotsVerticalSpan",), {
-        "MultiPlotsVerticalSpan": lambda h: MultiPlotsVerticalSpan(h.panel, R(1.0, 2.0)),
+        "MultiPlotsVerticalSpan": lambda h: h.panel.vertical_span(R(1.0, 2.0)),
     }, ALL, frozenset({"visible", "selected", "color"})),
     Row("panel line", ("MultiPlotsVerticalLine",), {
-        "MultiPlotsVerticalLine": lambda h: MultiPlotsVerticalLine(h.panel, 2.0),
+        "MultiPlotsVerticalLine": lambda h: h.panel.vertical_line(2.0),
     }, {"visible": OK, "selected": RAISE, "name": OK, "color": OK}, frozenset({"visible", "color"})),
     Row("span collection", ("MultiPlotsVSpanCollection",), {
         "MultiPlotsVSpanCollection": lambda h: MultiPlotsVSpanCollection(h.panel),

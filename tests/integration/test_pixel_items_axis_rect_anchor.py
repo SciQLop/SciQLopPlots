@@ -79,27 +79,25 @@ def _add_probe(plot):
     is clipped, and a hairline is antialiased into non-pure colours.
     """
     plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
-    probe = SciQLopStraightLine(plot, 0.0, False, Coordinates.Data, Qt.Orientation.Vertical)
+    probe = plot.vertical_line(0.0, False, Coordinates.Data)
     probe.set_color(PROBE)
     probe.set_line_width(5.0)
     return probe
 
 
 def _text(plot, x):
-    item = SciQLopTextItem(plot, "MMMM", QPointF(x, 60.0), False, Coordinates.Pixels)
+    item = plot.text("MMMM", QPointF(x, 60.0), False, Coordinates.Pixels)
     item.set_font_size(18)
     item.set_color(SUBJECT)
     return item
 
 
 def _ellipse(plot, x):
-    return SciQLopEllipseItem(
-        plot, QRectF(x, 60.0, 40, 40), SUBJECT, 1.0, SUBJECT, False, Coordinates.Pixels)
+    return plot.ellipse(QRectF(x, 60.0, 40, 40), SUBJECT, 1.0, SUBJECT, False, Coordinates.Pixels)
 
 
 def _curved_line(plot, x):
-    item = SciQLopCurvedLineItem(
-        plot, QPointF(x, 60.0), QPointF(x + 60, 60.0),
+    item = plot.curved_line(QPointF(x, 60.0), QPointF(x + 60, 60.0),
         LineTermination.NoneTermination, LineTermination.NoneTermination,
         Coordinates.Pixels)
     item.set_color(SUBJECT)
@@ -110,19 +108,18 @@ def _curved_line(plot, x):
 def _pixmap(plot, x):
     pixmap = QPixmap(40, 40)
     pixmap.fill(SUBJECT)
-    return SciQLopPixmapItem(plot, pixmap, QRectF(x, 60.0, 40, 40), False, Coordinates.Pixels)
+    return plot.pixmap(pixmap, QRectF(x, 60.0, 40, 40), False, Coordinates.Pixels)
 
 
 def _straight_line(plot, x):
-    item = SciQLopStraightLine(plot, x, False, Coordinates.Pixels, Qt.Orientation.Vertical)
+    item = plot.vertical_line(x, False, Coordinates.Pixels)
     item.set_color(SUBJECT)
     item.set_line_width(3.0)
     return item
 
 
 def _vertical_span(plot, x):
-    return SciQLopVerticalSpan(
-        plot, SciQLopPlotRange(x, x + 40), SUBJECT, False, True, "", Coordinates.Pixels)
+    return plot.vertical_span(SciQLopPlotRange(x, x + 40), SUBJECT, False, True, "", Coordinates.Pixels)
 
 
 # (id, factory, centre of the painted shape relative to the item's pixel origin)
@@ -176,7 +173,7 @@ class TestDataCoordinatesUnaffected:
     def test_data_mode_item_still_tracks_the_axis(self, plot, tmp_path):
         # No probe here: it sits at the x-axis minimum and would pan out of view.
         plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
-        line = SciQLopStraightLine(plot, 50.0, False, Coordinates.Data, Qt.Orientation.Vertical)
+        line = plot.vertical_line(50.0, False, Coordinates.Data)
         line.set_color(SUBJECT)
         line.set_line_width(3.0)
         centre_before = _subject_centre(plot, tmp_path, "data_centre")

@@ -28,6 +28,6 @@ def _move_mouse_over(plot):
 @pytest.mark.parametrize("coord", [1e15, math.nan], ids=["far", "nan"])
 def test_mouse_move_over_a_far_text_item(ts_plot, coord):
     ts_plot.x_axis().set_range(0, 3600)
-    item = SciQLopTextItem(ts_plot, "far", QPointF(coord, coord), False, Coordinates.Data)
+    item = ts_plot.text("far", QPointF(coord, coord), False, Coordinates.Data)
     _move_mouse_over(ts_plot)
     assert item is not None  # reaching here means no abort

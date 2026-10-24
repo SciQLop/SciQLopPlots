@@ -39,15 +39,15 @@ class TestGraphOwnership:
 class TestSpanOwnership:
 
     def test_delete_span_plot_survives(self, plot):
-        span = SciQLopVerticalSpan(plot, SciQLopPlotRange(0.0, 1.0))
-        del span
+        span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        plot.remove(span)
         force_gc()
         assert plot is not None
 
     def test_delete_plot_with_span(self, qtbot):
         p = SciQLopPlot()
         qtbot.addWidget(p)
-        span = SciQLopVerticalSpan(p, SciQLopPlotRange(0.0, 1.0))
+        span = p.vertical_span(SciQLopPlotRange(0.0, 1.0))
         del p
         force_gc()
         # span reference is now dangling — just don't crash
@@ -90,18 +90,14 @@ class TestMultiSpanOwnership:
     def test_delete_multi_span(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = MultiPlotsVerticalSpan(
-            panel, SciQLopPlotRange(0.0, 1.0), QColor(100, 100, 200),
-        )
-        del span
+        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0), QColor(100, 100, 200))
+        panel.remove(span)
         force_gc()
 
     def test_clear_panel_with_multi_span(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = MultiPlotsVerticalSpan(
-            panel, SciQLopPlotRange(0.0, 1.0),
-        )
+        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
         panel.clear()
         force_gc()
 
@@ -136,8 +132,9 @@ class TestStressMemory:
     def test_mass_spans(self, plot):
         spans = []
         for i in range(50):
-            spans.append(SciQLopVerticalSpan(
-                plot, SciQLopPlotRange(float(i), float(i + 1)),
+            spans.append(plot.vertical_span(SciQLopPlotRange(float(i), float(i + 1)),
             ))
+        for span in spans:
+            plot.remove(span)
         del spans
         force_gc()

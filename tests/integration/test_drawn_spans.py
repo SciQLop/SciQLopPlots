@@ -19,9 +19,9 @@ def test_a_span_declares_no_selection_signal_of_its_own(cls):
 
 
 SPAN_FACTORIES = {
-    SciQLopVerticalSpan: lambda p: SciQLopVerticalSpan(p, SciQLopPlotRange(0.2, 0.4)),
-    SciQLopHorizontalSpan: lambda p: SciQLopHorizontalSpan(p, SciQLopPlotRange(0.2, 0.4)),
-    SciQLopRectangularSpan: lambda p: SciQLopRectangularSpan(p, SciQLopPlotRange(0.2, 0.4),
+    SciQLopVerticalSpan: lambda p: p.vertical_span(SciQLopPlotRange(0.2, 0.4)),
+    SciQLopHorizontalSpan: lambda p: p.horizontal_span(SciQLopPlotRange(0.2, 0.4)),
+    SciQLopRectangularSpan: lambda p: p.rectangular_span(SciQLopPlotRange(0.2, 0.4),
                                                              SciQLopPlotRange(0.2, 0.4)),
 }
 
@@ -42,7 +42,7 @@ def test_both_names_signal_once_per_change(plot, cls):
 
 def test_clicking_a_span_selects_it_and_signals_once(qtbot, plot):
     plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
-    span = SciQLopVerticalSpan(plot, SciQLopPlotRange(2.0, 8.0))
+    span = plot.vertical_span(SciQLopPlotRange(2.0, 8.0))
     seen = record(span.selection_changed)
     plot.resize(600, 400)
     plot.show()

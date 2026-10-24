@@ -37,13 +37,13 @@ def _category_timeline(ts_plot):
 
 
 CASES = {
-    "vspan_range": (lambda p, _: SciQLopVerticalSpan(p, R(0.2, 0.4)), "range_changed",
+    "vspan_range": (lambda p, _: p.vertical_span(R(0.2, 0.4)), "range_changed",
                     lambda s: s.set_range(R(0.5, 0.6))),
-    "hspan_range": (lambda p, _: SciQLopHorizontalSpan(p, R(0.2, 0.4)), "range_changed",
+    "hspan_range": (lambda p, _: p.horizontal_span(R(0.2, 0.4)), "range_changed",
                     lambda s: s.set_range(R(0.5, 0.6))),
-    "rspan_key_range": (lambda p, _: SciQLopRectangularSpan(p, R(0.2, 0.4), R(0.2, 0.4)),
+    "rspan_key_range": (lambda p, _: p.rectangular_span(R(0.2, 0.4), R(0.2, 0.4)),
                         "key_range_changed", lambda s: s.set_key_range(R(0.5, 0.6))),
-    "rspan_value_range": (lambda p, _: SciQLopRectangularSpan(p, R(0.2, 0.4), R(0.2, 0.4)),
+    "rspan_value_range": (lambda p, _: p.rectangular_span(R(0.2, 0.4), R(0.2, 0.4)),
                           "value_range_changed", lambda s: s.set_value_range(R(0.5, 0.6))),
     "timeline_select": (lambda _, ts: _timeline(ts), "selected_intervals_changed",
                         lambda t: t.select_ids([7])),
@@ -140,7 +140,7 @@ def test_a_slot_deleting_a_panel_span_on_selection_does_not_crash_its_border_sel
     panel.plot(x, np.sin(x))
     panel.plot(x, np.cos(x))
     process_events()
-    span = MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
+    span = panel.vertical_span(R(1.0, 2.0))
     plot_span = panel.plots()[0].findChildren(SciQLopVerticalSpan)[0]
     span.selection_changed.connect(lambda *_: shiboken6.delete(span))
     getattr(plot_span, f"select_{border}_border")(True)

@@ -71,8 +71,8 @@ def test_an_ellipse_pen_and_a_text_font_colour_signal_color_changed(plot):
     from PySide6.QtCore import QPointF, QRectF
     from PySide6.QtGui import QPen
     from SciQLopPlots import SciQLopEllipseItem, SciQLopTextItem
-    ellipse = SciQLopEllipseItem(plot, QRectF(10, 10, 20, 20))
-    text = SciQLopTextItem(plot, "t", QPointF(10, 10))
+    ellipse = plot.ellipse(QRectF(10, 10, 20, 20))
+    text = plot.text("t", QPointF(10, 10))
     seen = record(ellipse.color_changed), record(text.color_changed)
     ellipse.set_pen(QPen(QColor("red")))
     text.set_font_color(QColor("blue"))

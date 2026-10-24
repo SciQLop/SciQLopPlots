@@ -24,7 +24,7 @@ def test_the_catalogue_overlay_pattern_signals_once(panel):
 
 def test_panel_span_state_stays_attributes(panel):
     panel.plot(X, np.sin(X))
-    span = MultiPlotsVerticalSpan(panel, SciQLopPlotRange(1.0, 2.0))
+    span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
     seen = record(span.visible_changed)
     span.visible = False
     span.color = QColor("red")
@@ -33,7 +33,7 @@ def test_panel_span_state_stays_attributes(panel):
 
 def test_a_panel_line_colour_signals_once(panel):
     panel.plot(X, np.sin(X))
-    line = MultiPlotsVerticalLine(panel, 2.0)
+    line = panel.vertical_line(2.0)
     seen = record(line.color_changed)
     line.color = QColor("red")
     line.color = QColor("red")
@@ -46,7 +46,7 @@ def _plot_spans(plot):
 
 def test_a_panel_span_reaches_a_later_plot_and_outlives_a_removed_one(panel):
     panel.plot(X, np.sin(X))
-    span = MultiPlotsVerticalSpan(panel, SciQLopPlotRange(1.0, 2.0))
+    span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
     span.visible = False
     panel.plot(X, np.cos(X))
     process_events()
@@ -69,7 +69,7 @@ def _span_and_plot_span(panel):
     panel.plot(X, np.sin(X))
     panel.plot(X, np.cos(X))
     process_events()
-    span = MultiPlotsVerticalSpan(panel, SciQLopPlotRange(1.0, 2.0))
+    span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
     return span, _plot_spans(panel.plots()[0])[0]
 
 
@@ -78,7 +78,7 @@ def _line_and_plot_line(panel):
     panel.plot(X, np.sin(X))
     panel.plot(X, np.cos(X))
     process_events()
-    line = MultiPlotsVerticalLine(panel, 2.0)
+    line = panel.vertical_line(2.0)
     return line, panel.plots()[0].findChildren(SciQLopVerticalLine)[0]
 
 
