@@ -116,11 +116,7 @@ public:
         SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
         if (_tool_tip != tool_tip)
         {
-            for (auto span : _spans)
-            {
-                if (span)
-                    span->set_tool_tip(tool_tip);
-            }
+            for_each_span([&tool_tip](SciQLopVerticalSpan* span) { span->set_tool_tip(tool_tip); });
             _tool_tip = tool_tip;
         }
     }
@@ -132,11 +128,7 @@ public:
         SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
         if (_read_only != read_only)
         {
-            for (auto span : _spans)
-            {
-                if (span)
-                    span->set_read_only(read_only);
-            }
+            for_each_span([&read_only](SciQLopVerticalSpan* span) { span->set_read_only(read_only); });
             _read_only = read_only;
         }
     }
