@@ -52,6 +52,13 @@ class InspectorExtension;
 class SciQLopHistogram;
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
 
+namespace SciQLopPlots
+{
+//! Marks \a part as built by a panel-wide object: removing it alone would leave that object out of step.
+inline void mark_panel_part(QObject* part) { part->setProperty("_sciqlop_panel_part", true); }
+inline bool is_panel_part(const QObject* part) { return part->property("_sciqlop_panel_part").toBool(); }
+}
+
 class SciQLopPlotInterface : public QFrame
 {
 

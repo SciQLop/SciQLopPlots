@@ -51,6 +51,7 @@ void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
     {
         auto new_span
             = new SciQLopVerticalSpan(scp, _horizontal_range, m_color, _read_only, m_visible, _tool_tip);
+        SciQLopPlots::mark_panel_part(new_span);
         new_span->set_selected(m_selected);
         QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
                          &MultiPlotsVerticalSpan::set_range);

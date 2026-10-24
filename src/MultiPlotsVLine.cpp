@@ -31,6 +31,7 @@ void MultiPlotsVerticalLine::addObject(SciQLopPlotInterface* plot)
     if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
     {
         auto line = new SciQLopVerticalLine(scp, _position, !_read_only);
+        SciQLopPlots::mark_panel_part(line);
         line->set_color(m_color);
         line->set_line_width(_line_width);
         line->set_visible(m_visible);
