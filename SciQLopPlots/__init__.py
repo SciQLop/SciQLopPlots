@@ -408,6 +408,27 @@ def _deprecated_constructor(cls, factory, needs_plot):
 for _item_cls, (_factory, _needs_plot) in _ITEM_FACTORIES.items():
     _item_cls.__init__ = _deprecated_constructor(_item_cls, _factory, _needs_plot)
 
+_FORMAT_SAVERS = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
+_SAVE_OWNERS = {"plot": (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot, SciQLopNDProjectionPlot),
+                "panel": (SciQLopPlotsBindings.SciQLopPlotPanelInterface, SciQLopMultiPlotPanel)}
+
+
+def _deprecated_saver(name, method, receiver):
+    message = f"{name}(...) is deprecated: use {receiver}.save(...)"
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+for _receiver, _classes in _SAVE_OWNERS.items():
+    for _cls in _classes:
+        for _name in _FORMAT_SAVERS:
+            if _name in vars(_cls):
+                setattr(_cls, _name, _deprecated_saver(_name, vars(_cls)[_name], _receiver))
+
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains", "remove"):
     setattr(SciQLopMultiPlotPanel, _method,
             _accept_ptr_handle(getattr(SciQLopMultiPlotPanel, _method)))

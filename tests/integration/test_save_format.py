@@ -10,6 +10,7 @@ EXTENSIONS = {"x.pdf": "pdf", "x.svg": "svg", "x.png": "png", "x.PNG": "png",
               "x.jpg": "jpg", "x.jpeg": "jpg", "x.bmp": "bmp"}
 ACCEPTED = "pdf, svg, png, jpg or bmp"
 SAVE_KEYWORDS = dict(width=200, height=100, scale=1.0, quality=80)
+DEPRECATED = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
 
 
 @pytest.fixture
@@ -88,3 +89,33 @@ def test_the_interface_typed_receiver_takes_format(panel_with_plot, tmp_path):
     path = tmp_path / "x.out"
     panel_with_plot.plot_at(0).save(str(path), format="png")
     assert _is_format(path, "png")
+
+
+@pytest.mark.parametrize("name", DEPRECATED)
+def test_per_format_methods_warn_and_still_write(exportable, tmp_path, name):
+    path = tmp_path / f"x.{name.removeprefix('save_')}"
+    with pytest.warns(DeprecationWarning, match=rf"{name}\(\.\.\.\) is deprecated: use \w+\.save"):
+        assert getattr(exportable, name)(str(path)) is True
+    assert path.stat().st_size > 0
+
+
+@pytest.mark.parametrize("name", DEPRECATED)
+def test_per_format_methods_still_raise_oserror(exportable, tmp_path, name):
+    with pytest.warns(DeprecationWarning), pytest.raises(OSError):
+        getattr(exportable, name)(str(tmp_path / "no" / "such" / "x.png"))
+
+
+def test_the_warning_names_the_right_receiver(plot, panel_with_plot, tmp_path):
+    with pytest.warns(DeprecationWarning, match=r"use plot\.save"):
+        plot.save_png(str(tmp_path / "a.png"))
+    with pytest.warns(DeprecationWarning, match=r"use panel\.save"):
+        panel_with_plot.save_png(str(tmp_path / "b.png"))
+
+
+def test_a_subclass_warns_once(qtbot, tmp_path):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    with pytest.warns(DeprecationWarning) as seen:
+        ts.save_png(str(tmp_path / "a.png"))
+    assert len(seen) == 1
