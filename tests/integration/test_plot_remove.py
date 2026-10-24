@@ -183,3 +183,72 @@ def test_pane_item_dies_with_the_projection_plot():
     shiboken6.delete(nd)
     collect()
     assert not shiboken6.isValid(item)
+
+
+def test_panel_factories_return_panel_owned_objects(panel):
+    _panel_with_plot(panel)
+    span = panel.vertical_span(R(1.0, 2.0), tool_tip="s", id="a")
+    line = panel.vertical_line(1.5)
+    import gc; gc.collect(); process_events()
+    assert isinstance(span, MultiPlotsVerticalSpan) and span.parent() is panel
+    assert isinstance(line, MultiPlotsVerticalLine) and line.parent() is panel
+    assert shiboken6.isValid(span) and shiboken6.isValid(line)
+
+
+def test_panel_remove_deletes_a_span_and_its_parts(panel):
+    plot = _panel_with_plot(panel)
+    span = panel.vertical_span(R(1.0, 2.0))
+    process_events()
+    panel.remove(span)
+    assert not shiboken6.isValid(span)
+    assert plot.findChildren(SciQLopVerticalSpan) == []
+
+
+def test_panel_remove_deletes_a_line(panel):
+    _panel_with_plot(panel)
+    line = panel.vertical_line(1.5)
+    panel.remove(line)
+    assert not shiboken6.isValid(line)
+
+
+def test_panel_remove_removes_a_plot(panel):
+    plot = _panel_with_plot(panel)
+    panel.remove(plot)
+    collect()
+    assert len(panel.plots()) == 0
+
+
+def test_panel_remove_accepts_handles(panel):
+    from SciQLopPlots import MultiPlotsVSpanCollection
+    _panel_with_plot(panel)
+    collection = MultiPlotsVSpanCollection(panel)
+    handle = collection.create_span(R(1.0, 2.0))
+    panel.remove(handle)
+    panel.remove(panel.plots()[0])
+    collect()
+    assert len(panel.plots()) == 0
+
+
+def test_panel_remove_rejects_foreign_and_none(qtbot, panel):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    other = SciQLopMultiPlotPanel()
+    qtbot.addWidget(other)
+    foreign = other.vertical_span(R(1.0, 2.0))
+    with pytest.raises(ValueError):
+        panel.remove(foreign)
+    with pytest.raises(ValueError):
+        panel.remove(other.create_plot())
+    with pytest.raises(ValueError):
+        panel.remove(None)
+
+
+def test_part_built_for_a_later_plot_is_refused(panel):
+    from SciQLopPlots import SciQLopPlot
+    _panel_with_plot(panel)
+    panel.vertical_span(R(1.0, 2.0))
+    late = SciQLopPlot()
+    panel.add_plot(late)
+    process_events()
+    part = late.findChildren(SciQLopVerticalSpan)[0]
+    with pytest.raises(ValueError, match="panel"):
+        late.remove(part)

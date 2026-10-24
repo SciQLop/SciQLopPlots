@@ -45,6 +45,7 @@ class QCPItemVSpan;
 class QCPAbstractItem;
 class QCustomPlot;
 class MultiPlotsVerticalSpan;
+class MultiPlotsVerticalLine;
 
 class InspectorExtension;
 class InspectorExtensionHolder;
@@ -256,6 +257,18 @@ public:
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
+
+    MultiPlotsVerticalSpan* vertical_span(SciQLopPlotRange range,
+                                          QColor color = QColor::fromRgb(100, 100, 100),
+                                          bool read_only = false, bool visible = true,
+                                          const QString& tool_tip = "", const QString& id = "");
+    MultiPlotsVerticalLine* vertical_line(double position,
+                                          QColor color = QColor::fromRgb(100, 100, 100),
+                                          bool read_only = false, bool visible = true,
+                                          const QString& tool_tip = "");
+    void remove(MultiPlotsVerticalSpan* span);
+    void remove(MultiPlotsVerticalLine* line);
+    void remove(SciQLopPlotInterface* plot);
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;

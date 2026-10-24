@@ -32,6 +32,7 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
+#include "SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 
@@ -157,6 +158,59 @@ void SciQLopMultiPlotPanel::remove_plot(SciQLopPlotInterface* plot)
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(plot, remove_plot(plot));
     _container->remove_plot(plot);
+}
+
+namespace
+{
+template <typename T>
+void check_removable_here(const SciQLopMultiPlotPanel* panel, const T* x)
+{
+    if (x == nullptr)
+        throw std::invalid_argument("remove: got None");
+    if (x->parent() != panel)
+        throw std::invalid_argument(std::string("remove: this ") + x->metaObject()->className()
+                                    + " belongs to another panel");
+}
+} // namespace
+
+MultiPlotsVerticalSpan* SciQLopMultiPlotPanel::vertical_span(SciQLopPlotRange range, QColor color,
+                                                             bool read_only, bool visible,
+                                                             const QString& tool_tip,
+                                                             const QString& id)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::vertical_span");
+    return new MultiPlotsVerticalSpan(this, range, color, read_only, visible, tool_tip, id);
+}
+
+MultiPlotsVerticalLine* SciQLopMultiPlotPanel::vertical_line(double position, QColor color,
+                                                             bool read_only, bool visible,
+                                                             const QString& tool_tip)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::vertical_line");
+    return new MultiPlotsVerticalLine(this, position, color, read_only, visible, tool_tip);
+}
+
+void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalSpan* span)
+{
+    check_removable_here(this, span);
+    SCIQLOP_ON_OWNER_THREAD_WITH(span, remove(span));
+    delete span;
+}
+
+void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalLine* line)
+{
+    check_removable_here(this, line);
+    SCIQLOP_ON_OWNER_THREAD_WITH(line, remove(line));
+    delete line;
+}
+
+void SciQLopMultiPlotPanel::remove(SciQLopPlotInterface* plot)
+{
+    if (plot == nullptr)
+        throw std::invalid_argument("remove: got None");
+    if (!contains(plot))
+        throw std::invalid_argument("remove: this plot is not in this panel");
+    remove_plot(plot);
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const

@@ -438,7 +438,7 @@ for _item_cls in (
 ):
     _item_cls.__init__ = _plot_required(_accept_ptr_handle(_item_cls.__init__))
 
-for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains"):
+for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains", "remove"):
     setattr(SciQLopMultiPlotPanel, _method,
             _accept_ptr_handle(getattr(SciQLopMultiPlotPanel, _method)))
 

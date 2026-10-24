@@ -1713,6 +1713,33 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="vertical_span(SciQLopPlotRange,QColor,bool,bool,const QString&amp;,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="MultiPlotsVerticalSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="vertical_line(double,QColor,bool,bool,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="MultiPlotsVerticalLine*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(MultiPlotsVerticalSpan*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(MultiPlotsVerticalLine*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(SciQLopPlotInterface*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="histogram(const SciQLopPyBuffer&amp;,QString,int,int,QVariantMap)">
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopHistogram*&gt;"/></insert-template>
