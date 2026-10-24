@@ -12,7 +12,9 @@ cd tests/sweeps/self_delete
 ./bt.sh line_graph set_busy 0 self busy_changed self   # gdb backtrace of one pair
 ```
 
-`SQP_BUILD` picks the build dir (default `build-venv`), `SWEEP_OUT` where the jsonl files go.
+`SQP_BUILD` picks the build dir (default `build-venv`), `SWEEP_OUT` where the jsonl files go,
+`QT_QPA_PLATFORM` the platform (default `offscreen`, which never paints through QRhi). GPU paths:
+`xvfb-run -a -s "-screen 0 1600x1200x24" env QT_QPA_PLATFORM=xcb ../../../.venv/bin/python driver.py pairs`.
 Delete `discovery.jsonl` / `pairs.jsonl` for a fresh run: both phases resume from them.
 
 Setter statuses: `emitted` (pairs run), `no emit` (ran, fired nothing), `no args` (every candidate

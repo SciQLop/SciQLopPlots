@@ -1,6 +1,7 @@
 """driver.py discover|pairs|summary [KIND...]: runs every subprocess sequentially under poisoned malloc.
 
-SQP_BUILD (default <repo>/build-venv) is the build dir; SWEEP_OUT (default this dir) gets the jsonl files.
+SQP_BUILD (default <repo>/build-venv) is the build dir; SWEEP_OUT (default this dir) gets the jsonl files;
+QT_QPA_PLATFORM (default offscreen) is passed through, e.g. xcb under xvfb-run to paint through QRhi.
 """
 import collections
 import json
@@ -19,7 +20,7 @@ sys.path.insert(0, BUILD)  # common imports SciQLopPlots for the kind list
 import common as C  # noqa: E402
 OUT = os.environ.get("SWEEP_OUT", HERE)
 ENV = dict(os.environ, GLIBC_TUNABLES="glibc.malloc.tcache_count=0", MALLOC_PERTURB_="165",
-           QT_QPA_PLATFORM="offscreen", PYTHONPATH=f"{BUILD}:{HERE}")
+           PYTHONPATH=f"{BUILD}:{HERE}")
 DISC = os.path.join(OUT, "discovery.jsonl")
 PAIRS = os.path.join(OUT, "pairs.jsonl")
 
