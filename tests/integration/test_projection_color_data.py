@@ -38,7 +38,7 @@ def _pane_image(proj, tmp_path, name):
     pane.legend().set_visible(False)
     pane.rescale_axes()
     path = tmp_path / f"{name}.png"
-    assert pane.save_png(str(path), 400, 400) is True
+    assert pane.save(str(path), 400, 400) is True
     return QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
 
 

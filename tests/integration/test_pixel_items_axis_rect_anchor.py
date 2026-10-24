@@ -45,7 +45,7 @@ OFFSET = 120.0
 def _subject_columns(plot, tmp_path, name):
     """Columns painted with SUBJECT, plus the probe mask, from a rendered export."""
     path = str(tmp_path / f"{name}.png")
-    assert plot.save_png(path, EXPORT_W, EXPORT_H) is True
+    assert plot.save(path, EXPORT_W, EXPORT_H) is True
     img = QImage(path).convertToFormat(QImage.Format_RGB32)
     assert not img.isNull()
     h, w = img.height(), img.width()

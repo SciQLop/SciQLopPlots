@@ -65,7 +65,7 @@ def _image(plot, tmp_path, name, rescale=True):
     if rescale:
         plot.rescale_axes()
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     return img.copy(0, 0, int(img.width() * 0.7), img.height())  # without the colour bar
 

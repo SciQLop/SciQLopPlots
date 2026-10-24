@@ -84,7 +84,7 @@ def test_set_name_renames_every_pane_legend(proj):
 
 def red_pixels(plot, tmp_path):
     path = str(tmp_path / "marker.png")
-    assert plot.save_png(path, 900, 300)
+    assert plot.save(path, 900, 300)
     img = QImage(path)
     return sum(1 for x in range(img.width()) for y in range(img.height())
                if (c := img.pixelColor(x, y)).red() > 200 and c.green() < 60 and c.blue() < 60)

@@ -37,8 +37,8 @@ def _gap_row(panel, first, second):
 def test_pdf_gaps_between_plots_take_the_panel_background(panel, tmp_path):
     first, second = _dark_panel_with_two_plots(panel)
     row = _gap_row(panel, first, second)
-    panel.save_pdf(str(tmp_path / "p.pdf"))
-    panel.save_png(str(tmp_path / "p.png"))
+    panel.save(str(tmp_path / "p.pdf"))
+    panel.save(str(tmp_path / "p.png"))
     pdf = _render_pdf(tmp_path / "p.pdf", QSize(panel.width(), panel.height()))
     png = QImage(str(tmp_path / "p.png"))
     x = panel.width() // 2

@@ -12,7 +12,7 @@ X = np.linspace(0, 10, 200)
 def _render(plot, tmp_path, name="p"):
     plot.resize(600, 400)
     path = str(tmp_path / f"{name}.png")
-    plot.save_png(path, 600, 400)
+    plot.save(path, 600, 400)
     return QImage(path).convertToFormat(QImage.Format_ARGB32)
 
 

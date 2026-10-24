@@ -46,7 +46,7 @@ MARKER = QColor(255, 0, 255)
 
 def _painted_pixels(plot, tmp_path, name):
     path = str(tmp_path / f"{name}.png")
-    assert plot.save_png(path, 800, 600) is True
+    assert plot.save(path, 800, 600) is True
     img = QImage(path).convertToFormat(QImage.Format_RGB32)
     h, w = img.height(), img.width()
     buf = np.frombuffer(img.constBits(), dtype=np.uint8)

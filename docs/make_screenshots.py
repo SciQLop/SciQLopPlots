@@ -9,7 +9,7 @@ A snippet gets a screenshot when an image link follows its code block:
     ![First plot](images/first-plot.png)
 
 Each snippet runs in a fresh namespace, like in tests/integration/test_user_guide.py.
-Its first top-level widget is exported with save_png. Run it headless, then look at
+Its first top-level widget is exported with save. Run it headless, then look at
 every picture before committing it:
 
     QT_QPA_PLATFORM=offscreen PYTHONPATH=build-venv python docs/make_screenshots.py [name ...]
@@ -47,7 +47,7 @@ def settle(app, namespace, seconds=1.0):
 
 def subject(namespace):
     return next(v for v in namespace.values()
-                if isinstance(v, QWidget) and v.parent() is None and hasattr(v, "save_png"))
+                if isinstance(v, QWidget) and v.parent() is None and hasattr(v, "save"))
 
 
 def is_blank(path):
@@ -66,7 +66,7 @@ def screenshot(app, code, path):
     widget.show()
     settle(app, namespace)
     path.parent.mkdir(exist_ok=True)
-    if not widget.save_png(str(path), width, height) or is_blank(path):
+    if not widget.save(str(path), width, height) or is_blank(path):
         raise RuntimeError(f"{path}: export failed or blank")
     widget.close()
     namespace.clear()

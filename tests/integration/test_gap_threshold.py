@@ -19,7 +19,7 @@ STATES = np.array([1.0, 0.0, 1.0, 0.0, 0.0])
 def _drawn_fraction(plot, tmp_path):
     """Share of the pixel columns between the trace's ends that hold some of it."""
     path = str(tmp_path / "plot.png")
-    assert plot.save_png(path, 600, 300)
+    assert plot.save(path, 600, 300)
     img = QImage(path)
     columns = [x for x in range(img.width())
                if any(_is_red(img.pixelColor(x, y)) for y in range(img.height()))]

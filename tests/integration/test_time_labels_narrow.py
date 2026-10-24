@@ -42,7 +42,7 @@ def test_time_labels_do_not_overlap(qtbot, tmp_path, width, with_colour_bar):
     qtbot.wait(200)
     process_events()
     path = str(tmp_path / "narrow.png")
-    assert plot.save_png(path)
+    assert plot.save(path)
     img = QImage(path)
     widest = max(b - a for a, b in _label_clusters(img, img.height() - 32))
     # One "yyyy/MM/dd" label is about 70-100 px wide; two that ran together are far wider.

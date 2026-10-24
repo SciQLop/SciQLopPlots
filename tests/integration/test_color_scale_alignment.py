@@ -21,7 +21,7 @@ def test_colour_bar_ends_where_the_data_area_ends(qtbot, tmp_path):
     qtbot.waitUntil(lambda: not cmap.busy(), timeout=5000)
     process_events()
     path = str(tmp_path / "bar.png")
-    assert plot.save_png(path, 600, 300)
+    assert plot.save(path, 600, 300)
     img = QImage(path)
 
     data_rows = _coloured_rows(img, 250)
@@ -56,7 +56,7 @@ def test_spectrogram_above_a_line_has_no_extra_band(qtbot, tmp_path):
     below_axis = []   # empty rows under the x axis line
     for p, name in ((line_plot, "line"), (map_plot, "map")):
         path = str(tmp_path / f"{name}.png")
-        assert p.save_png(path)   # at the widget's own size: the panel's layout
+        assert p.save(path)   # at the widget's own size: the panel's layout
         img = QImage(path)
         below_axis.append(img.height() - 1 - _lowest_dark_row(img, p.width() // 3))
     line_gap, map_gap = below_axis
@@ -78,7 +78,7 @@ def test_upper_plots_of_a_panel_end_at_their_axis(qtbot, tmp_path):
     panel.plot(t, np.cos(t), plot_type=PlotType.TimeSeries)
     qtbot.wait(300)
     path = str(tmp_path / "upper.png")
-    assert upper.save_png(path)
+    assert upper.save(path)
     img = QImage(path)
     below_axis = img.height() - 1 - _lowest_dark_row(img, upper.width() // 3)
     assert below_axis <= 2, f"{below_axis} px under the x axis of an upper plot"

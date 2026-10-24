@@ -40,7 +40,7 @@ def _plot_with_label(qtbot, label):
 
 def _render(plot, tmp_path, name):
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 600, 400) is True
+    assert plot.save(str(path), 600, 400) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     assert not img.isNull()
     return img

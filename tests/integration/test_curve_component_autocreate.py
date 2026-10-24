@@ -32,7 +32,7 @@ def spiral():
 def _ink(plot, tmp_path, name):
     """Foreground pixel count — everything that is not the background fill."""
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     assert not img.isNull()
     pixels = Counter(img.pixelColor(x, y).rgb()

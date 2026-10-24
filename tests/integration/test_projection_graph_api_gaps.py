@@ -37,7 +37,7 @@ def _coloured(proj, tmp_path, name):
     pane.legend().set_visible(False)
     pane.rescale_axes()
     path = tmp_path / f"{name}.png"
-    assert pane.save_png(str(path), 400, 400) is True
+    assert pane.save(str(path), 400, 400) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     return sum(1 for y in range(img.height()) for x in range(img.width())
                if img.pixelColor(x, y).saturation() > 100)

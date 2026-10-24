@@ -39,7 +39,7 @@ def test_projection_saves_every_format(projection, tmp_path, ext):
 
 def test_every_pane_is_in_the_picture(projection, tmp_path):
     path = tmp_path / "projection.png"
-    assert projection.save_png(str(path), 900, 300) is True
+    assert projection.save(str(path), 900, 300) is True
     img = QImage(str(path))
     assert (img.width(), img.height()) == (900, 300)
     thirds = [img.copy(i * 300, 0, 300, 300) for i in range(3)]

@@ -28,7 +28,7 @@ def test_zoomed_out_log_z_colormap_shows_the_geometric_mean(plot, tmp_path, qtbo
     def centre_colour():
         process_events()
         path = tmp_path / "cmap.png"
-        assert plot.save_png(str(path), 400, 300)
+        assert plot.save(str(path), 400, 300)
         img = QImage(str(path))
         return img.pixelColor(img.width() // 3, img.height() // 2)
 

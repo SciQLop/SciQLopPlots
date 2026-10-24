@@ -36,7 +36,7 @@ def test_the_panel_finds_every_method_it_calls(panel, row, qtlog):
     panel.plot(np.linspace(0, 10, 100), np.linspace(0, 10, 100))
     panel.set_time_axis_range(SciQLopPlotRange(1, 2))
     panel.set_theme(SciQLopTheme.dark())
-    panel.save_png("/dev/null")
+    panel.save("/dev/null", format="png")
     process_events()
     assert _abstract_calls(qtlog) == []
 

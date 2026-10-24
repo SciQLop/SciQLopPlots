@@ -83,7 +83,7 @@ def _render(plot, tmp_path):
     from PySide6.QtGui import QImage
     plot.replot(True)
     path = str(tmp_path / "legend.png")
-    plot.save_png(path, plot.width(), plot.height())
+    plot.save(path, plot.width(), plot.height())
     return QImage(path)
 
 

@@ -66,7 +66,7 @@ def test_a_colormap_draws_the_gradient_top_colour(plot, tmp_path, name):
     plot.rescale_axes()
     process_events()
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path))
     c = img.pixelColor(int(img.width() * 0.4), int(img.height() * 0.4))
     expected = NEW[name][1]

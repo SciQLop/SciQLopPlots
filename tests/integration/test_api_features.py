@@ -77,7 +77,7 @@ def _top_band(plot, tmp_path, name):
     """The top 40 pixel rows of a 600x400 export, as bytes: where a title draws."""
     from PySide6.QtGui import QImage
     path = str(tmp_path / f"{name}.png")
-    plot.save_png(path, 600, 400)
+    plot.save(path, 600, 400)
     img = QImage(path).convertToFormat(QImage.Format_ARGB32)
     return bytes(img.copy(0, 0, 600, 40).constBits())
 
@@ -117,7 +117,7 @@ def _gradient_beside_the_plot_area(plot, tmp_path, name):
     with the plot area: the colour bar. Put in the title's row, it collapses to a stub at the top."""
     from PySide6.QtGui import QImage
     path = str(tmp_path / f"{name}.png")
-    plot.save_png(path, 600, 400)
+    plot.save(path, 600, 400)
     img = QImage(path).convertToFormat(QImage.Format_ARGB32)
     return sum(1 for x in range(552, 578) for y in range(120, 330)
                if img.pixelColor(x, y).saturation() > 80) > 50
@@ -137,11 +137,10 @@ class TestSvgExport:  # task 18, finding 4.7
         return {"plot": plot, "panel": panel, "projection": proj}
 
     @pytest.mark.parametrize("kind", ["plot", "panel", "projection"])
-    @pytest.mark.parametrize("method", ["save_svg", "save"])
-    def test_writes_an_svg(self, qtbot, tmp_path, kind, method):
+    def test_writes_an_svg(self, qtbot, tmp_path, kind):
         targets = self._targets(qtbot)
         path = tmp_path / f"{kind}.svg"
-        assert getattr(targets[kind], method)(str(path), 400, 300) is True
+        assert targets[kind].save(str(path), 400, 300) is True
         text = path.read_text()
         assert "<svg" in text and "</svg>" in text
         if kind != "projection":  # an empty projection draws only its frames
@@ -208,7 +207,7 @@ class TestSvgExport:  # task 18, finding 4.7
             p.replot(True)
         process_events()
         path = tmp_path / "zoomed.svg"
-        assert root.save_svg(str(path), root.width(), root.height()) is True
+        assert root.save(str(path), root.width(), root.height()) is True
         svg_root = ET.parse(path).getroot()
         assert svg_root.get("version") == "1.1" and svg_root.get("baseProfile") != "tiny"
         for p, color in zip(plots, self.LINE_COLORS):
@@ -222,7 +221,7 @@ class TestSvgExport:  # task 18, finding 4.7
     def test_a_bad_path_raises(self, qtbot, tmp_path):
         targets = self._targets(qtbot)
         with pytest.raises(OSError, match="failed to save"):
-            targets["plot"].save_svg(str(tmp_path / "no_such_dir" / "x.svg"))
+            targets["plot"].save(str(tmp_path / "no_such_dir" / "x.svg"))
 
     def test_unknown_format_lists_svg(self, qtbot, tmp_path):
         targets = self._targets(qtbot)

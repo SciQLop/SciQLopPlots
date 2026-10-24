@@ -53,7 +53,7 @@ def _image(plot, tmp_path, name):
     plot.legend().set_visible(False)
     plot.rescale_axes()
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     return img.copy(0, 0, int(img.width() * 0.7), img.height())  # without the colour bar
 
@@ -208,7 +208,7 @@ def _bar_hues(plot, tmp_path, name):
     """Hues in the right fifth of the image: the colour bar."""
     plot.legend().set_visible(False)
     path = tmp_path / f"{name}.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     return len({img.pixelColor(x, y).hue() // 10
                 for y in range(img.height()) for x in range(int(img.width() * 0.8), img.width())

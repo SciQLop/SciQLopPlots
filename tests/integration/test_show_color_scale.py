@@ -30,7 +30,7 @@ def test_the_scale_range_drives_the_colormap(qtbot, tmp_path, show_first):
     plot.z_axis().set_range(SciQLopPlotRange(100.0, 100.2))
     process_events()
     path = tmp_path / "cmap.png"
-    assert plot.save_png(str(path), 400, 300) is True
+    assert plot.save(str(path), 400, 300) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     centre = img.pixelColor(150, 130)
     assert centre.red() > centre.blue(), f"map is not saturated to the top colour: {centre.name()}"

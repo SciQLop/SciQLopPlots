@@ -1341,14 +1341,15 @@ plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
 
-plot.save_png("figure.png", 1200, 800)   # raster, width and height in pixels
-plot.save_pdf("figure.pdf")              # vector, current size
-plot.save_svg("figure.svg", 800, 500)    # vector, for the web or to edit
-plot.save("figure.svg")                  # the format follows the extension
+plot.save("figure.png", 1200, 800)   # raster, width and height in pixels
+plot.save("figure.pdf")              # vector, current size
+plot.save("figure.svg", 800, 500)    # vector, for the web or to edit
+plot.save("figure.out", format="png")  # format= wins over the extension
 ```
 
-`save_jpg` and `save_bmp` also exist. Panels export all their plots together: `panel.save_pdf("panel.pdf")`.
-A save that fails raises `OSError` (a missing folder, say), an unknown extension `ValueError`.
+The format follows the extension: pdf, svg, png, jpg (or jpeg) and bmp. `format=` names it
+instead, in any case (`"PNG"`, `".jpeg"`). Panels export all their plots together: `panel.save("panel.pdf")`.
+A save that fails raises `OSError` (a missing folder, say), an unknown format or extension `ValueError`.
 
 ## Threads
 
@@ -1419,6 +1420,6 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
 
-**Deprecated calls.** The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable(graph)` and `remove_group(group)` forward to `plot.remove(...)` and warn. The index and name forms of `remove_plottable` have no `remove` equivalent and stay as they are. To remove by index or name, write `plot.remove(plot.plottable(i))` or `plot.remove(plot.plottable("name"))`. A missing index or name gives `None`, and `plot.remove(None)` raises `ValueError`, while the old call did nothing.
+**Deprecated calls.** The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable(graph)` and `remove_group(group)` forward to `plot.remove(...)` and warn. The index and name forms of `remove_plottable` have no `remove` equivalent and stay as they are. To remove by index or name, write `plot.remove(plot.plottable(i))` or `plot.remove(plot.plottable("name"))`. A missing index or name gives `None`, and `plot.remove(None)` raises `ValueError`, while the old call did nothing. `save_pdf`, `save_svg`, `save_png`, `save_jpg` and `save_bmp` work but warn: use `save(path, ...)`, which picks the format from the extension, or `save(path, format="png")`.
 
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.

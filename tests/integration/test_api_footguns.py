@@ -50,12 +50,10 @@ class TestProjectionAxes:  # task 10, finding 2.2: rejected
 
 
 class TestSaveRaises:  # task 13, finding 3.9
-    @pytest.mark.parametrize("method", ["save", "save_png", "save_pdf", "save_jpg", "save_bmp"])
-    def test_a_bad_path_raises(self, plot, method, tmp_path):
-        ext = {"save": "png", "save_png": "png", "save_pdf": "pdf", "save_jpg": "jpg",
-               "save_bmp": "bmp"}[method]
+    @pytest.mark.parametrize("ext", ["png", "pdf", "svg", "jpg", "bmp"])
+    def test_a_bad_path_raises(self, plot, ext, tmp_path):
         with pytest.raises(OSError, match="no_such_dir"):
-            getattr(plot, method)(str(tmp_path / "no_such_dir" / f"x.{ext}"))
+            plot.save(str(tmp_path / "no_such_dir" / f"x.{ext}"))
 
     def test_an_unknown_format_raises(self, plot, tmp_path):
         with pytest.raises(ValueError, match="format"):
@@ -68,17 +66,17 @@ class TestSaveRaises:  # task 13, finding 3.9
         if make == "panel":
             target.create_plot(-1)
         with pytest.raises(OSError, match="no_such_dir"):
-            target.save_png(str(tmp_path / "no_such_dir" / "x.png"))
+            target.save(str(tmp_path / "no_such_dir" / "x.png"))
         with pytest.raises(ValueError, match="format"):
             target.save(str(tmp_path / "x.tiff"))
 
     def test_the_message_matches_sciqlop(self, plot, tmp_path):
         # SciQLop raises OSError("failed to save ...") itself on a False return; same words now.
         with pytest.raises(OSError, match="failed to save"):
-            plot.save_png(str(tmp_path / "no_such_dir" / "x.png"))
+            plot.save(str(tmp_path / "no_such_dir" / "x.png"))
 
     def test_a_good_save_still_returns_true(self, plot, tmp_path):
-        assert plot.save_png(str(tmp_path / "ok.png"), 200, 100) is True
+        assert plot.save(str(tmp_path / "ok.png"), 200, 100) is True
 
 
 class TestDataCallbackErrors:  # task 9, finding 3.2

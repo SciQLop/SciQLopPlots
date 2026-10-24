@@ -38,7 +38,7 @@ def _ink(pane, tmp_path, name, half_range):
     pane.y_axis().set_range(SciQLopPlotRange(-half_range, half_range))
     process_events()
     path = tmp_path / f"{name}.png"
-    assert pane.save_png(str(path), 400, 400) is True
+    assert pane.save(str(path), 400, 400) is True
     img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
     pixels = Counter(img.pixelColor(x, y).rgb()
                      for y in range(img.height()) for x in range(img.width()))

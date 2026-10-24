@@ -44,7 +44,7 @@ class TestCurveLayout:
         plot.replot(True)
 
         path = str(tmp_path / "curve.png")
-        assert plot.save_png(path, 640, 480) is True
+        assert plot.save(path, 640, 480) is True
         coverage = _colored_row_fraction(path)
         # Two thin horizontal lines cover a few percent of rows; an interleaved
         # zigzag spans the full value range and covers nearly every row.

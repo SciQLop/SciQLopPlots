@@ -119,3 +119,8 @@ def test_a_subclass_warns_once(qtbot, tmp_path):
     with pytest.warns(DeprecationWarning) as seen:
         ts.save_png(str(tmp_path / "a.png"))
     assert len(seen) == 1
+
+
+def test_a_bare_per_format_call_fails_under_the_suite_filter(plot, tmp_path):
+    with pytest.raises(DeprecationWarning, match="use plot.save"):
+        plot.save_png(str(tmp_path / "a.png"))

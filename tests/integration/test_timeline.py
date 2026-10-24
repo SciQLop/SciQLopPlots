@@ -310,7 +310,7 @@ def staircase(panel, qtbot):
 @pytest.mark.parametrize("height", [None, 300], ids=["natural", "taller"])
 def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
     path = tmp_path / "timeline.png"
-    assert staircase.save_png(str(path), 1000, height or staircase.minimumHeight())
+    assert staircase.save(str(path), 1000, height or staircase.minimumHeight())
     labels, bars = _label_and_bar_centres(path)
     assert len(bars) == 6
     assert len(labels) == 6, f"lane names at rows {labels}, bars at {bars}"
@@ -365,7 +365,7 @@ def test_lanes_fill_a_taller_timeline_plot(staircase, panel, qtbot, tmp_path):
     qtbot.waitUntil(lambda: staircase.height() == natural + 120, timeout=2000)
     qtbot.wait(100)
     path = tmp_path / "taller.png"
-    assert staircase.save_png(str(path), 1000, staircase.height())
+    assert staircase.save(str(path), 1000, staircase.height())
     labels, bars = _label_and_bar_centres(path)
     assert len(bars) == 6
     assert np.diff(bars).mean() > 18 + 15, f"lanes did not grow: bars at {bars}"

@@ -81,7 +81,7 @@ def _legend_row(qtbot, tmp_path, graph_of, visible):
     rect = plot.legend().row_rect(0)
     assert rect.isValid(), "no legend row to compare"
     path = str(tmp_path / "legend.png")
-    plot.save_png(path, plot.width(), plot.height())
+    plot.save(path, plot.width(), plot.height())
     return QImage(path).copy(rect)
 
 

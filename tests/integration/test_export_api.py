@@ -10,47 +10,47 @@ from SciQLopPlots import SciQLopPlot, SciQLopMultiPlotPanel
 class TestPlotExportPdf:
     def test_save_pdf_creates_file(self, plot, tmp_path):
         path = str(tmp_path / "test.pdf")
-        assert plot.save_pdf(path) is True
+        assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_pdf_with_dimensions(self, plot, tmp_path):
         path = str(tmp_path / "test.pdf")
-        assert plot.save_pdf(path, 800, 600) is True
+        assert plot.save(path, 800, 600) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPlotExportRaster:
     def test_save_png_creates_file(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
-        assert plot.save_png(path) is True
+        assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_png_roundtrip(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
-        plot.save_png(path)
+        plot.save(path)
         img = QImage(path)
         assert not img.isNull()
 
     def test_save_png_with_dimensions(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
-        plot.save_png(path, 640, 480)
+        plot.save(path, 640, 480)
         img = QImage(path)
         assert img.width() == 640
         assert img.height() == 480
 
     def test_save_png_with_scale(self, plot, tmp_path):
         path = str(tmp_path / "test.png")
-        plot.save_png(path, scale=2.0)
+        plot.save(path, scale=2.0)
         assert Path(path).stat().st_size > 0
 
     def test_save_jpg_creates_file(self, plot, tmp_path):
         path = str(tmp_path / "test.jpg")
-        assert plot.save_jpg(path) is True
+        assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_bmp_creates_file(self, plot, tmp_path):
         path = str(tmp_path / "test.bmp")
-        assert plot.save_bmp(path) is True
+        assert plot.save(path) is True
         assert Path(path).stat().st_size > 0
 
 
@@ -102,35 +102,35 @@ def panel_with_plots(qtbot):
 class TestPanelExportPdf:
     def test_save_pdf_creates_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.pdf")
-        assert panel_with_plots.save_pdf(path) is True
+        assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_pdf_with_dimensions(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.pdf")
-        assert panel_with_plots.save_pdf(path, 800, 1200) is True
+        assert panel_with_plots.save(path, 800, 1200) is True
         assert Path(path).stat().st_size > 0
 
 
 class TestPanelExportRaster:
     def test_save_png_creates_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.png")
-        assert panel_with_plots.save_png(path) is True
+        assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_png_roundtrip(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.png")
-        panel_with_plots.save_png(path)
+        panel_with_plots.save(path)
         img = QImage(path)
         assert not img.isNull()
 
     def test_save_jpg_creates_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.jpg")
-        assert panel_with_plots.save_jpg(path) is True
+        assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
     def test_save_bmp_creates_file(self, panel_with_plots, tmp_path):
         path = str(tmp_path / "panel.bmp")
-        assert panel_with_plots.save_bmp(path) is True
+        assert panel_with_plots.save(path) is True
         assert Path(path).stat().st_size > 0
 
 
@@ -166,13 +166,13 @@ class TestPanelScrolledContent:
 
     def test_scrolled_png_captures_all(self, scrolled_panel, tmp_path):
         path = str(tmp_path / "scrolled.png")
-        assert scrolled_panel.save_png(path) is True
+        assert scrolled_panel.save(path) is True
         img = QImage(path)
         assert img.height() > 300
 
     def test_scrolled_pdf_creates_file(self, scrolled_panel, tmp_path):
         path = str(tmp_path / "scrolled.pdf")
-        assert scrolled_panel.save_pdf(path) is True
+        assert scrolled_panel.save(path) is True
         assert Path(path).stat().st_size > 0
 
 
@@ -242,19 +242,19 @@ class TestNestedPanelExport:
 
     def test_nested_only_pdf_succeeds(self, nested_only, tmp_path):
         path = tmp_path / "nested.pdf"
-        assert nested_only.save_pdf(str(path)) is True
+        assert nested_only.save(str(path)) is True
         assert path.stat().st_size > 0
 
     def test_nested_only_png_has_content(self, nested_only, tmp_path):
         path = tmp_path / "nested.png"
-        assert nested_only.save_png(str(path)) is True
+        assert nested_only.save(str(path)) is True
         opaque, colors = _render_stats(path)
         assert opaque > 0.5  # nested plot painted its (opaque) background
         assert colors > 8  # axes / grid / line / legend present, not a flat fill
 
     def test_top_plus_nested_png_both_regions_rendered(self, top_plus_nested, tmp_path):
         path = tmp_path / "mixed.png"
-        assert top_plus_nested.save_png(str(path)) is True
+        assert top_plus_nested.save(str(path)) is True
         # top half = top-level plot, bottom half = nested sub-panel.
         # The bug dropped the nested region (left transparent); assert BOTH
         # halves render an opaque background with real plot content.
@@ -265,13 +265,13 @@ class TestNestedPanelExport:
 
     def test_top_plus_nested_pdf_has_nested(self, top_plus_nested, tmp_path):
         nested_path = tmp_path / "mixed.pdf"
-        assert top_plus_nested.save_pdf(str(nested_path)) is True
+        assert top_plus_nested.save(str(nested_path)) is True
         single = SciQLopMultiPlotPanel()
         single.resize(800, 600)
         x = np.linspace(0, 10, 100).astype(np.float64)
         single.plot(x, np.cos(x), labels=["top"])
         single_path = tmp_path / "single.pdf"
-        assert single.save_pdf(str(single_path)) is True
+        assert single.save(str(single_path)) is True
         assert nested_path.stat().st_size > single_path.stat().st_size
 
     def test_empty_panel_pdf_returns_true(self, qtbot, tmp_path):
@@ -281,7 +281,7 @@ class TestNestedPanelExport:
         panel.resize(400, 300)
         qtbot.addWidget(panel)
         path = tmp_path / "empty.pdf"
-        assert panel.save_pdf(str(path)) is True
+        assert panel.save(str(path)) is True
         assert path.stat().st_size > 0
 
     def test_nested_overflow_all_bands_rendered(self, qtbot, tmp_path):
@@ -299,7 +299,7 @@ class TestNestedPanelExport:
         qtbot.waitExposed(panel)
         qtbot.wait(300)
         path = tmp_path / "overflow.png"
-        assert panel.save_png(str(path)) is True
+        assert panel.save(str(path)) is True
         # sample 5 horizontal bands; each must carry opaque plot content
         for k in range(5):
             opaque, colors = _render_stats(path, region=(0.0, k / 5, 1.0, (k + 1) / 5))
@@ -327,7 +327,7 @@ class TestPlainWidgetExport:
         qtbot.waitExposed(panel)
         qtbot.wait(200)
         path = tmp_path / "label.png"
-        assert panel.save_png(str(path)) is True
+        assert panel.save(str(path)) is True
         opaque, colors = _render_stats(path)
         assert opaque > 0.5  # the red label filled its region
         assert colors > 8  # background + anti-aliased text, not a flat fill
@@ -349,7 +349,7 @@ class TestOffscreenExport:
         sub.plot(x, np.sin(x), labels=["offscreen"])
         qtbot.wait(300)  # let the resampler deliver; deliberately never show()
         path = tmp_path / "offscreen.png"
-        assert panel.save_png(str(path)) is True
+        assert panel.save(str(path)) is True
         opaque, colors = _render_stats(path)
         assert opaque > 0.5 and colors > 8
 
@@ -361,5 +361,5 @@ class TestOffscreenExport:
         panel.plot(x, np.cos(x), labels=["offscreen"])
         qtbot.wait(200)  # never show()
         path = tmp_path / "offscreen.pdf"
-        assert panel.save_pdf(str(path)) is True
+        assert panel.save(str(path)) is True
         assert path.stat().st_size > 0

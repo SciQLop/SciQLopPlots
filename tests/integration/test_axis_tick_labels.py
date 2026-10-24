@@ -63,7 +63,7 @@ def _settle(plot, timeout=5.0):
 def _render(plot, tmp_path, name):
     _settle(plot)
     path = str(tmp_path / f"{name}.png")
-    assert plot.save_png(path, 500, 300)
+    assert plot.save(path, 500, 300)
     return QImage(path)
 
 

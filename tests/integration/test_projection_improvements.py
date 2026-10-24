@@ -214,7 +214,7 @@ class TestTimeColorEncoding:
             pane.legend().set_visible(False)
             pane.rescale_axes()
             path = tmp_path / "pane.png"
-            assert pane.save_png(str(path), 400, 400) is True
+            assert pane.save(str(path), 400, 400) is True
             img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
             return len({img.pixelColor(x, y).hue() // 10
                         for y in range(img.height()) for x in range(img.width())
@@ -362,7 +362,7 @@ class TestTimeColoredReferenceCurve:
 
         def hues(plot, name):
             path = tmp_path / f"{name}.png"
-            assert plot.save_png(str(path), 500, 400) is True
+            assert plot.save(str(path), 500, 400) is True
             img = QImage(str(path)).convertToFormat(QImage.Format_ARGB32)
             assert not img.isNull()
             return len({img.pixelColor(px, py).hue() // 10
