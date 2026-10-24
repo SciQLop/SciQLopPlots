@@ -171,7 +171,7 @@ class TestMultiPlotsVerticalLineSelection:
         vline = panel.vertical_line(3.0)
         seen = record(vline.selection_changed)
         vline.set_selected(True)
-        assert vline.selected()
+        assert vline.selected
         assert all(line.selected() for line in _lines(panel))
         assert seen == [True]
 
@@ -180,7 +180,7 @@ class TestMultiPlotsVerticalLineSelection:
         vline = panel.vertical_line(3.0)
         seen = record(vline.selection_changed)
         _lines(panel)[0].set_selected(True)
-        assert vline.selected()
+        assert vline.selected
         assert all(line.selected() for line in _lines(panel))
         assert seen == [True]
 

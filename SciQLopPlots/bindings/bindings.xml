@@ -1943,6 +1943,7 @@
         <property name="color" type="QColor" get="color" set="set_color" generate-getsetdef="yes"/>
         <property name="line_width" type="double" get="line_width" set="set_line_width" generate-getsetdef="yes"/>
         <property name="visible" type="bool" get="visible" set="set_visible" generate-getsetdef="yes"/>
+        <property name="selected" type="bool" get="selected" set="set_selected" generate-getsetdef="yes"/>
         <property name="tooltip" type="QString" get="tool_tip" set="set_tool_tip" generate-getsetdef="yes"/>
         <property name="read_only" type="bool" get="read_only" set="set_read_only" generate-getsetdef="yes"/>
     </object-type>

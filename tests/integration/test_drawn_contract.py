@@ -232,7 +232,7 @@ ROWS += [
     }, ALL, frozenset({"visible", "selected", "color"})),
     Row("panel line", ("MultiPlotsVerticalLine",), {
         "MultiPlotsVerticalLine": lambda h: h.panel.vertical_line(2.0),
-    }, {"visible": OK, "selected": RAISE, "name": OK, "color": OK}, frozenset({"visible", "color"})),
+    }, {"visible": OK, "selected": OK, "name": OK, "color": OK}, frozenset({"visible", "selected", "color"})),
     Row("span collection", ("MultiPlotsVSpanCollection",), {
         "MultiPlotsVSpanCollection": lambda h: MultiPlotsVSpanCollection(h.panel),
     }, {"visible": RAISE, "selected": RAISE, "name": OK, "color": RAISE}),
