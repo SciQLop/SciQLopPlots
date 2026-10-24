@@ -256,3 +256,36 @@ def test_part_built_for_a_later_plot_is_refused(panel):
     part = late.findChildren(SciQLopVerticalSpan)[0]
     with pytest.raises(ValueError, match="panel"):
         late.remove(part)
+
+
+def test_remove_plottable_warns_and_raises_for_foreign(qtbot, plot, sample_data):
+    other = SciQLopPlot()
+    qtbot.addWidget(other)
+    x, y = sample_data
+    graph = other.line(x, y)
+    with pytest.warns(DeprecationWarning, match=r"remove_plottable\(\.\.\.\) is deprecated: use plot\.remove"):
+        with pytest.raises(ValueError):
+            plot.remove_plottable(graph)
+    assert shiboken6.isValid(graph)
+
+
+@pytest.mark.parametrize("arg", [None, 99, "nope"])
+def test_remove_plottable_noops_stay(plot, arg):
+    with pytest.warns(DeprecationWarning):
+        plot.remove_plottable(arg)
+
+
+def test_remove_group_warns(plot, sample_data):
+    x, y = sample_data
+    group = plot.group("g", [plot.line(x, y)])
+    with pytest.warns(DeprecationWarning, match=r"remove_group\(\.\.\.\) is deprecated"):
+        plot.remove_group(group)
+    assert not shiboken6.isValid(group)
+
+
+def test_deprecation_names_the_callers_line(plot, sample_data):
+    x, y = sample_data
+    graph = plot.line(x, y)
+    with pytest.warns(DeprecationWarning) as record:
+        plot.remove_plottable(graph)
+    assert record[0].filename == __file__

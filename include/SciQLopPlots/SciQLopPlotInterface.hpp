@@ -481,10 +481,11 @@ public:
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
+    //! Deprecated: remove(). A plottable of another plot raises, a null one does nothing.
     virtual void remove_plottable(SciQLopPlottableInterface* plottable)
     {
-        SCIQLOP_ON_OWNER_THREAD_WITH(plottable, remove_plottable(plottable));
-        delete plottable;
+        if (plottable)
+            remove(plottable);
     }
 
     virtual void remove_plottable(int index)

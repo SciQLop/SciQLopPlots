@@ -471,7 +471,7 @@ void remove_object(int id)
     if (auto* plottable = dynamic_cast<SciQLopPlottableInterface*>(object))
     {
         if (auto* plot = owner<SciQLopPlotInterface>(plottable))
-            return plot->remove_plottable(plottable);
+            return plot->remove(plottable);
     }
     else if (auto* plot = dynamic_cast<SciQLopPlotInterface*>(object))
     {

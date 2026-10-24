@@ -58,7 +58,7 @@ ColorMap* the_only_color_map(ColorMap* created)
 {
     if (!created)
         throw std::runtime_error("this plot already has a colour map and holds only one: remove "
-                                 "it first (remove_plottable) or put the new one on another plot");
+                                 "it first (plot.remove) or put the new one on another plot");
     return created;
 }
 }

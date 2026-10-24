@@ -573,15 +573,30 @@
         </modify-function>
         <modify-function signature="remove_group(SciQLopPlotGroup*)">
             <inject-code class="target" position="beginning">
-                try {
-                    %CPPSELF.%FUNCTION_NAME(%1);
-                } catch (const std::invalid_argument&amp; e) {
-                    PyErr_SetString(PyExc_ValueError, e.what());
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_group(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
                     return nullptr;
-                } catch (const std::exception&amp; e) {
-                    PyErr_SetString(PyExc_RuntimeError, e.what());
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove_plottable(SciQLopPlottableInterface*)">
+            <inject-code class="target" position="beginning">
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
                     return nullptr;
-                }
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove_plottable(int)">
+            <inject-code class="target" position="beginning">
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
+                    return nullptr;
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove_plottable(const QString&amp;)">
+            <inject-code class="target" position="beginning">
+                if (PyErr_WarnEx(PyExc_DeprecationWarning, "remove_plottable(...) is deprecated: use plot.remove(...)", 1) &lt; 0)
+                    return nullptr;
+                <insert-template name="void_raises_valueerror"/>
             </inject-code>
         </modify-function>
         <modify-function signature="group(const QString&amp;,const QList&lt;SciQLopPlottableInterface*&gt;&amp;)">

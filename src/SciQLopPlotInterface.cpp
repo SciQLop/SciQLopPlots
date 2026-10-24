@@ -72,14 +72,11 @@ QList<SciQLopPlotGroup*> SciQLopPlotInterface::groups() const
     return findChildren<SciQLopPlotGroup*>(Qt::FindDirectChildrenOnly);
 }
 
+//! Deprecated: remove(). A group of another plot raises, a null one does nothing.
 void SciQLopPlotInterface::remove_group(SciQLopPlotGroup* group)
 {
-    // Checked before queuing: off-thread, a throw from the queued call would escape the event loop.
-    if (group && group->parent() != this)
-        throw std::invalid_argument("Group: '" + group->name().toStdString()
-                                    + "' belongs to another plot");
-    SCIQLOP_ON_OWNER_THREAD_WITH(group, remove_group(group));
-    delete group;
+    if (group)
+        remove(group);
 }
 
 namespace
