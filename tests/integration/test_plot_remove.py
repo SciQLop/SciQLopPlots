@@ -142,11 +142,30 @@ def test_remove_off_thread_lands_on_the_gui_thread(plot):
     assert gone == [True]
 
 
+def _off_thread_errors(call):
+    errors = []
+
+    def run():
+        try:
+            call()
+        except Exception as e:
+            errors.append(e)
+
+    off_thread(run)
+    return errors
+
+
 def test_remove_off_thread_is_dropped_if_the_item_dies_first(plot):
     item = plot.text("t", QPointF(1, 1))
-    off_thread(lambda: plot.remove(item))
+    other = plot.text("u", QPointF(2, 2))
+    item_gone, other_gone = on_destroyed(item), on_destroyed(other)
+    assert _off_thread_errors(lambda: plot.remove(item)) == []
     shiboken6.delete(item)
-    process_events()  # the queued call finds a null QPointer and does nothing
+    assert _off_thread_errors(lambda: plot.remove(other)) == []
+    process_events()  # both queued calls run, in order: the first finds a null QPointer
+    assert item_gone == [True]
+    assert other_gone == [True]
+    assert not shiboken6.isValid(other)
 
 
 def test_remove_works_on_a_projection_pane():
