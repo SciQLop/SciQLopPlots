@@ -147,10 +147,10 @@ SciQLopPlot::~SciQLopPlot()
 
 SciQLopPlottableInterface* SciQLopPlot::sqp_plottable(int index)
 {
-    if (m_plottables.isEmpty())
+    if (index == -1)
+        index = static_cast<int>(std::size(m_plottables)) - 1;
+    if (index < 0 || index >= std::size(m_plottables))
         return nullptr;
-    if (index == -1 || index >= std::size(m_plottables))
-        index = std::size(m_plottables) - 1;
     return m_plottables[index];
 }
 

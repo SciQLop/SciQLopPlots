@@ -296,3 +296,33 @@ def test_deprecation_names_the_callers_line(plot, sample_data):
     with pytest.warns(DeprecationWarning) as record:
         plot.remove_plottable(graph)
     assert record[0].filename == __file__
+
+
+def test_plottable_index_out_of_range_is_none(plot, sample_data):
+    x, y = sample_data
+    plot.line(x, y)
+    assert plot.plottable(99) is None
+
+
+def test_plottable_index_below_minus_one_is_none(plot, sample_data):
+    x, y = sample_data
+    plot.line(x, y)
+    assert plot.plottable(-2) is None
+
+
+def test_plottable_minus_one_is_the_last(plot, sample_data):
+    x, y = sample_data
+    plot.line(x, y)
+    last = plot.line(x, y)
+    assert plot.plottable(-1) is last
+
+
+def test_remove_plottable_out_of_range_index_leaves_the_graph(plot, sample_data):
+    x, y = sample_data
+    graph = plot.line(x, y)
+    with pytest.warns(DeprecationWarning):
+        plot.remove_plottable(99)
+    with pytest.warns(DeprecationWarning):
+        plot.remove_plottable(-2)
+    assert shiboken6.isValid(graph)
+    assert len(plot.plottables()) == 1
