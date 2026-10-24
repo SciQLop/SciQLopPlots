@@ -84,6 +84,16 @@ def test_remove_rejects_another_plots_item(qtbot, plot):
     assert shiboken6.isValid(item)
 
 
+def test_remove_rejects_an_unnamed_plots_item_without_an_empty_name(qtbot, plot):
+    other = SciQLopPlot()
+    other.setObjectName("")
+    qtbot.addWidget(other)
+    item = other.text("t", QPointF(1, 1))
+    with pytest.raises(ValueError, match="belongs to another plot") as e:
+        plot.remove(item)
+    assert "('" not in str(e.value)
+
+
 def test_remove_rejects_another_plots_plottable(qtbot, plot, sample_data):
     other = SciQLopPlot()
     qtbot.addWidget(other)
@@ -216,10 +226,36 @@ def test_panel_remove_deletes_a_span_and_its_parts(panel):
 
 
 def test_panel_remove_deletes_a_line(panel):
-    _panel_with_plot(panel)
+    plot = _panel_with_plot(panel)
     line = panel.vertical_line(1.5)
+    process_events()
     panel.remove(line)
     assert not shiboken6.isValid(line)
+    assert plot.findChildren(SciQLopVerticalLine) == []
+
+
+def test_panel_span_removed_from_its_own_signal(panel):
+    plot = _panel_with_plot(panel)
+    span = panel.vertical_span(R(1.0, 2.0))
+    process_events()
+    part = plot.findChildren(SciQLopVerticalSpan)[0]
+    part.range_changed.connect(lambda *_: panel.remove(span))
+    part.set_range(R(3.0, 4.0))
+    process_events()
+    assert not shiboken6.isValid(span)
+    assert plot.findChildren(SciQLopVerticalSpan) == []
+
+
+def test_panel_remove_off_thread_lands_on_the_gui_thread(panel):
+    plot = _panel_with_plot(panel)
+    span = panel.vertical_span(R(1.0, 2.0))
+    process_events()
+    gone = on_destroyed(span)
+    off_thread(lambda: panel.remove(span))
+    assert gone == []
+    process_events()
+    assert gone == [True]
+    assert plot.findChildren(SciQLopVerticalSpan) == []
 
 
 def test_panel_remove_removes_a_plot(panel):
@@ -279,6 +315,12 @@ def test_remove_plottable_warns_and_raises_for_foreign(qtbot, plot, sample_data)
 @pytest.mark.parametrize("arg", [None, 99, "nope"])
 def test_remove_plottable_noops_stay(plot, arg):
     with pytest.warns(DeprecationWarning):
+        plot.remove_plottable(arg)
+
+
+@pytest.mark.parametrize("arg", [0, "name"])
+def test_remove_plottable_index_and_name_forms_name_their_replacement(plot, arg):
+    with pytest.warns(DeprecationWarning, match=r"use plot\.remove\(plot\.plottable\(\.\.\.\)\)"):
         plot.remove_plottable(arg)
 
 

@@ -88,6 +88,12 @@ SciQLopPlotInterface* owning_plot(const QObject* object)
             return plot;
     return nullptr;
 }
+
+std::string owner_label(const QObject* owner)
+{
+    const auto name = owner->objectName().toStdString();
+    return name.empty() ? "" : " ('" + name + "')";
+}
 }
 
 void SciQLopPlotInterface::check_removable(const QObject* x) const
@@ -101,8 +107,7 @@ void SciQLopPlotInterface::check_removable(const QObject* x) const
                                       "the panel (panel.remove)");
     if (auto* owner = owning_plot(x); owner != this)
         throw std::invalid_argument(
-            owner ? "remove: this " + what + " belongs to another plot ('"
-                    + owner->objectName().toStdString() + "')"
+            owner ? "remove: this " + what + " belongs to another plot" + owner_label(owner)
                   : "remove: this " + what + " does not belong to any plot");
 }
 

@@ -61,7 +61,7 @@ It deletes `x` now, as `remove_plottable` and `remove_group` do today, and the p
 - From another thread the removal queues to the plot's thread and is dropped if `x` dies first (the `SCIQLOP_ON_OWNER_THREAD_WITH` rule `remove_plottable` follows).
 - No ownership markup on the argument. A Python-owned item (old constructor) deleted from C++ invalidates its wrapper without a double free, as `item.deleteLater()` already does (tests/integration/test_item_ownership.py:163-174). Markup moving ownership on the argument would also run before the checks, so a rejected `remove` would leave the item owned by nobody.
 
-`panel.remove(x)` removes a panel-wide span or line (deleted now) or a plot (as `remove_plot`: the widget is deleted later, since Qt forbids deleting a widget inside its own event). Anything else raises `ValueError`.
+`panel.remove(x)` removes a panel-wide span or line (deleted now) or a plot (as `remove_plot`: the widget is deleted later, since Qt forbids deleting a widget inside its own event). A foreign span, line or plot, or None, raises `ValueError`. Another kind of object is a `TypeError` from the binding, as for `plot.remove`.
 
 `remove_plottable` and `remove_group` stay as deprecated aliases of `plot.remove` with one change: `remove_plottable` raises `ValueError` for a plottable of another plot (it deleted it). `remove_plottable(None)` stays a no-op, as do `remove_plottable(index)` and `remove_plottable(name)` for an unknown index or name (deprecated, unchanged). `delete_span` stays.
 
