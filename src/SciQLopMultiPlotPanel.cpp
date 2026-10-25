@@ -151,6 +151,8 @@ void SciQLopMultiPlotPanel::move_panel(int from, int to) { }
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
 {
+    if (plot == nullptr)
+        throw std::invalid_argument("add_plot: plot cannot be None");
     SCIQLOP_ON_OWNER_THREAD_WITH(plot, add_plot(plot));
     _container->add_plot(plot);
 }
@@ -291,6 +293,8 @@ void SciQLopMultiPlotPanel::export_paint(QPainter* painter, const QRect& target,
 
 void SciQLopMultiPlotPanel::insert_plot(int index, SciQLopPlotInterface* plot)
 {
+    if (plot == nullptr)
+        throw std::invalid_argument("insert_plot: plot cannot be None");
     SCIQLOP_ON_OWNER_THREAD_WITH(plot, insert_plot(index, plot));
     _container->insert_plot(index, plot);
 }

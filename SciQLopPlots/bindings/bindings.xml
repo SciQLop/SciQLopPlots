@@ -1815,7 +1815,7 @@
 // plot dies is what a wrapper class's destructor does for Python-built plots.
 static void unlink_wrapper_when_destroyed(QObject* plot)
 {
-    if (plot->property("_sqp_unlinks_wrapper").isValid())
+    if (plot == nullptr || plot->property("_sqp_unlinks_wrapper").isValid())
         return;
     plot->setProperty("_sqp_unlinks_wrapper", true);
     QObject::connect(plot, &amp;QObject::destroyed, plot,
@@ -1984,6 +1984,12 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
+          <inject-code class="target" position="beginning">
+            if (%1 == nullptr) {
+                PyErr_SetString(PyExc_ValueError, "add_plot: plot cannot be None");
+                return nullptr;
+            }
+          </inject-code>
           <inject-code class="target" position="end">
             if (!PyErr_Occurred())
                 unlink_wrapper_when_destroyed(%1);
@@ -1993,6 +1999,12 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
           <modify-argument index="2">
             <parent index="this" action="add"/>
           </modify-argument>
+          <inject-code class="target" position="beginning">
+            if (%2 == nullptr) {
+                PyErr_SetString(PyExc_ValueError, "insert_plot: plot cannot be None");
+                return nullptr;
+            }
+          </inject-code>
           <inject-code class="target" position="end">
             if (!PyErr_Occurred())
                 unlink_wrapper_when_destroyed(%2);

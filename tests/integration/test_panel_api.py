@@ -1,4 +1,8 @@
 """Tests for SciQLopMultiPlotPanel: plot management, data, spans."""
+import subprocess
+import sys
+import tempfile
+import textwrap
 import pytest
 import numpy as np
 import shiboken6
@@ -363,3 +367,23 @@ class TestSpanCollectionCulling:
         span.set_visible(False)
         self._move_time_range(panel, 0.0, 10.0)
         assert not self._plot_span(panel).visible()
+
+
+@pytest.mark.parametrize("call", ["panel.add_plot(None)", "panel.insert_plot(0, None)"])
+def test_adding_none_as_a_plot_raises_value_error_instead_of_crashing(call):
+    """A subprocess: the bug is a segfault in the container."""
+    script = textwrap.dedent(f"""
+        import sys
+        from PySide6.QtWidgets import QApplication
+        from SciQLopPlots import SciQLopMultiPlotPanel
+        app = QApplication.instance() or QApplication(sys.argv)
+        panel = SciQLopMultiPlotPanel()
+        try:
+            {call}
+        except ValueError as e:
+            print("VALUEERROR", e)
+    """)
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, timeout=30,
+                            cwd=tempfile.gettempdir())
+    assert (result.returncode, b"VALUEERROR" in result.stdout) == (0, True), \
+        result.stderr.decode(errors="replace")[-400:]
