@@ -306,3 +306,34 @@ def test_plot_remove_refuses_a_part_and_the_panel_line(qtbot):
         panel.plot_at(0).remove(_parts(panel)[0])
     with pytest.raises(ValueError, match=r"panel\.remove"):
         panel.plot_at(0).remove(line)
+
+
+def _state_of(part):
+    return (part.position(), part.orientation(), part.coordinates(), part.read_only(),
+            part.tool_tip(), part.color(), part.line_width(), part.line_style(), part.visible(),
+            part.selected(), part.min_value(), part.max_value())
+
+
+def test_a_part_built_later_carries_the_lines_state_and_a_removed_plot_takes_its_part(qtbot):
+    """Guard: pins make_part's transfer, passes before the test was written."""
+    panel = _panel(qtbot)
+    line = panel.straight_line(3.0, Qt.Orientation.Horizontal, color=QColor("red"),
+                               read_only=False, tool_tip="tip")
+    line.set_min_value(2.0)
+    line.set_max_value(4.0)
+    line.set_line_width(3.0)
+    line.set_line_style(Qt.PenStyle.DashLine)
+    line.set_visible(False)
+    line.set_selected(True)
+    panel.plot(*_xy())
+    process_events()
+    parts = _parts(panel)
+    assert len(parts) == 3
+    expected = (3.0, Qt.Orientation.Horizontal, Coordinates.Data, False, "tip", QColor("red"),
+                3.0, Qt.PenStyle.DashLine, False, True, 2.0, 4.0)
+    assert [_state_of(part) for part in parts] == [expected] * 3
+    gone = parts[-1]
+    panel.remove_plot(panel.plot_at(2))
+    process_events()
+    assert not shiboken6.isValid(gone)
+    assert [_state_of(part) for part in _parts(panel)] == [expected] * 2
