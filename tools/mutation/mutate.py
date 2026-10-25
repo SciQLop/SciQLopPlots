@@ -47,40 +47,39 @@ def _left(count, what):
     return MORE if count else 0
 
 
-def _plan(project, args):
+def _plan(project, data, args):
     data = runner.plan(project)
     for target in project.targets:
         mine = [m for m in data["mutants"].values() if m["path"] == target.path]
         print(f"{target.path}: {len(mine)} mutants, {len(data['uncovered'].get(target.path, []))} uncovered code lines")
+    print(f"targets without coverage data, nothing planned: {data['not_measured'] or 'none'}")
     failing = sorted(f"{n} ({e.get('note') or e['status']})" for n, e in data["tests"].items() if e["status"] != "passed")
-    print(f"baseline failures, left out of every mutant run: {failing or 'none'}")
+    print(f"tests without a passing baseline, left out of every mutant run: {failing or 'none'}")
     for e in data["stale_equivalents"]:
         print(f"warning: equivalent entry matches no mutant: {e['path']} {e['op']} {e['before'].strip()!r}")
     return 0
 
 
-def _report(project, args):
-    print(report.write(project, st.load(project.state_path), args.out))
+def _report(project, data, args):
+    print(report.write(project, data, args.out))
     return 0
 
 
-def _restore(project, args):
-    data = st.load(project.state_path)
-    print("restored:", covermap.recover(project, data) or "nothing")
+def _restore(project, data, args):
     covermap.build_or_die(project)
     return 0
 
 
-def _try(project, args):
+def _try(project, data, args):
     result = runner.try_mutant(project, args.path, args.line, args.op, args.tests)
     print(f"{result['status']}: {', '.join(result.get('killed_by', [])) or 'no test failed'}")
     return 0
 
 
 COMMANDS = {
-    "cover": lambda project, args: _left(covermap.cover(project, args.budget, reset=args.reset), "cover"),
+    "cover": lambda project, data, args: _left(covermap.cover(project, args.budget, reset=args.reset), "cover"),
     "plan": _plan,
-    "run": lambda project, args: _left(runner.run(project, args.budget), "run"),
+    "run": lambda project, data, args: _left(runner.run(project, args.budget), "run"),
     "report": _report,
     "restore": _restore,
     "try": _try,
@@ -122,7 +121,11 @@ def main(argv=None):
     proc.install_signal_handlers()
     with build_dir_lock(project):
         try:
-            return COMMANDS[args.command](project, args)
+            data = st.load(project.state_path)
+            restored = covermap.recover(project, data)
+            if restored:
+                print("restored leftovers:", restored, file=sys.stderr)
+            return COMMANDS[args.command](project, data, args)
         except proc.Interrupted as why:
             print(f"interrupted ({why}); sources restored, run the same command again", file=sys.stderr)
             return INTERRUPTED

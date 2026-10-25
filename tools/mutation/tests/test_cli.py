@@ -73,6 +73,26 @@ def _wait(condition, seconds=20):
         time.sleep(0.05)
 
 
+def _is_sleeper(group_file):
+    try:
+        return b"sleep" in Path(f"/proc/{int(group_file.read_text())}/cmdline").read_bytes()
+    except (FileNotFoundError, ValueError):
+        return False
+
+
+def _leave_a_mutant_in_flight(project):
+    source = project.repo / "calc.cpp"
+    original = st.read_source(source)
+    backup = project.scratch / "calc.cpp.orig"
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    backup.write_text(original)
+    data = st.load(project.state_path)
+    data["in_flight"] = [{"path": str(source), "backup": str(backup), "sha": st.sha(source)}]
+    st.save(project.state_path, data)
+    st.write_source(source, original.replace("i < 0", "i >= 0"))
+    return source, original
+
+
 def _gone(pid, wait=5.0):
     deadline = time.monotonic() + wait
     while time.monotonic() < deadline:
@@ -105,8 +125,7 @@ def test_sigkill_of_the_whole_cli_group_is_recovered_by_the_next_command(tmp_pat
     source = project.repo / "calc.cpp"
     original = st.read_source(source)
     child = subprocess.Popen(_cli(tmp_path, "slow", "run", "--budget", "600"), start_new_session=True)
-    _wait(lambda: st.read_source(source) != original and project.group_file.exists())
-    time.sleep(0.5)
+    _wait(lambda: st.read_source(source) != original and _is_sleeper(project.group_file))
     sleeper = int(project.group_file.read_text())
     os.killpg(child.pid, signal.SIGKILL)
     child.wait(timeout=10)
@@ -141,3 +160,27 @@ def test_report_writes_the_file(tmp_path):
     assert result.returncode == 0, result.stderr
     assert out.read_text().startswith("# Mutation report: slow")
     assert (tmp_path / "r-kill-matrix.json").exists()
+
+
+def test_report_restores_a_leftover_mutant_before_anything_else(tmp_path):
+    project = _slow(tmp_path)
+    source, original = _leave_a_mutant_in_flight(project)
+    result = subprocess.run(_cli(tmp_path, "slow", "report"), capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr
+    assert st.read_source(source) == original
+    assert st.load(project.state_path)["in_flight"] == []
+
+
+def test_plan_restores_a_leftover_mutant_before_anything_else(tmp_path):
+    project = _slow(tmp_path)
+    source, original = _leave_a_mutant_in_flight(project)
+    result = subprocess.run(_cli(tmp_path, "slow", "plan"), capture_output=True, text=True, timeout=60)
+    assert "uncommitted changes" not in result.stderr + result.stdout
+    assert st.read_source(source) == original
+
+
+def test_run_with_work_left_exits_10_and_says_to_run_again(tmp_path):
+    _slow(tmp_path)
+    result = subprocess.run(_cli(tmp_path, "slow", "run", "--budget", "0"), capture_output=True, text=True, timeout=60)
+    assert result.returncode == 10, result.stderr
+    assert "1 left, run the same command again" in result.stdout

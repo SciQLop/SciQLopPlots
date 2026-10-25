@@ -88,3 +88,7 @@ def test_redundancy_credits_only_the_per_function_killer():
 
 def test_redundancy_credits_every_function_of_a_class_for_a_bare_class_killer():
     assert _per_function(["TestA"]) == ([], [])
+
+
+def test_cell_replaces_backticks_so_the_span_cannot_end_early():
+    assert report.cell("a `b` | c") == "`a 'b' \\| c`"

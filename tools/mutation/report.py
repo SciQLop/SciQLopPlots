@@ -17,7 +17,8 @@ def ranges(numbers):
 
 
 def cell(text):
-    return "`" + text.strip().replace("|", "\\|") + "`"
+    # why replaced, not escaped: a backslash does not escape inside a Markdown code span
+    return "`" + text.strip().replace("`", "'").replace("|", "\\|") + "`"
 
 
 def kill_matrix(data):
@@ -72,8 +73,8 @@ def render(name, data, fail_fast=False):
         "| id | file:line | operator | before | after | tests run | triage |",
         "|---|---|---|---|---|---|---|", *_survivor_rows(data), "",
         "## Uncovered target lines", "", "A missing test or dead code.", "", *_bullets(uncovered), "",
-        "## Baseline failures", "", "Left out of every mutant run.", "", *_bullets(failing), "",
-        "## Targets without coverage", "", "No test covers any line of these files: nothing was planned for them.", "",
+        "## Tests without a passing baseline", "", "Failed, or not run yet: left out of every mutant run.", "", *_bullets(failing), "",
+        "## Targets without coverage", "", "No coverage data for these files, nothing was planned for them.", "",
         *_bullets(unmeasured), "",
         "## Stale equivalents", "", "Entries in the config that match no planned mutant: re-check or delete them.", "",
         *_bullets(stale), "",
