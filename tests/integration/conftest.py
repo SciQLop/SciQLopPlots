@@ -99,3 +99,37 @@ def off_thread(call):
     thread.start()
     thread.join(timeout=10)
     assert not thread.is_alive(), "the off-thread call blocked"
+
+
+def plots_of(host):
+    """The plots of a plot (itself) or of a panel, in order."""
+    from SciQLopPlots import SciQLopPlot
+    if isinstance(host, SciQLopPlot):
+        return [host]
+    return [host.plot_at(i) for i in range(host.size())]
+
+
+def canvas_of(plot):
+    """The QCustomPlot widget of a plot: where mouse and key events go."""
+    from PySide6.QtWidgets import QWidget
+    return next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+
+
+def scoped_host(scope, qtbot):
+    """A plot ("plot") or a two-plot panel ("panel"), x over 0..10 and y over -1..1."""
+    from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot, SciQLopPlotRange
+    x = np.linspace(0.0, 10.0, 200)
+    if scope == "plot":
+        host = SciQLopPlot()
+        host.plot(x, np.sin(x))
+        host.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
+    else:
+        host = SciQLopMultiPlotPanel()
+        host.plot(x, np.sin(x))
+        host.plot(x, np.cos(x))
+        host.set_time_axis_range(SciQLopPlotRange(0.0, 10.0))
+    qtbot.addWidget(host)
+    QApplication.processEvents()
+    for plot in plots_of(host):
+        plot.y_axis().set_range(SciQLopPlotRange(-1.0, 1.0))
+    return host

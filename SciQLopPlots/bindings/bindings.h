@@ -28,6 +28,7 @@
 #include <SciQLopPlots/Items/SciQLopVerticalSpan.hpp>
 #include <SciQLopPlots/Items/SciQLopHorizontalSpan.hpp>
 #include <SciQLopPlots/Items/SciQLopRectangularSpan.hpp>
+#include <SciQLopPlots/Items/SciQLopSpan.hpp>
 #include <SciQLopPlots/Items/SciQLopPixmapItem.hpp>
 #include <SciQLopPlots/Items/SciQLopShapesItems.hpp>
 #include <SciQLopPlots/Items/SciQLopTextItem.hpp>

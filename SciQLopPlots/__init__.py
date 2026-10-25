@@ -61,6 +61,7 @@ def _register_with_shiboken_signatures():
             "SciQLopPyBuffer": object,          # PyObject-backed buffer
             "GetDataPyCallable": collections.abc.Callable,
             "long": int,
+            "std.nullopt": None, "std::nullopt": None,
             # Shiboken emits namespaced primitives with dots in the generated
             # signature strings (``std::size_t`` -> ``std.size_t``) but looks
             # some paths up under the original spelling, so register both.

@@ -35,6 +35,7 @@
 #include <QPointF>
 #include <QUuid>
 #include <memory>
+#include <optional>
 #include <qcustomplot.h>
 
 class QPixmap;
@@ -50,6 +51,7 @@ class SciQLopRectangularSpan;
 class SciQLopTheme;
 class SciQLopItemInterface;
 class SciQLopStraightLine;
+class SciQLopSpan;
 class InspectorExtension;
 class SciQLopHistogram;
 #include "SciQLopPlots/Inspector/InspectorExtensionHolder.hpp"
@@ -556,6 +558,18 @@ public:
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
+    //! A span over the key axis, the value axis or both: an axis given None is unbounded.
+    //! Raises ValueError when both are None.
+    inline virtual SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
+                                     std::optional<SciQLopPlotRange> value_range = std::nullopt,
+                                     QColor color = QColor::fromRgb(100, 100, 100, 100),
+                                     bool read_only = false, bool visible = true,
+                                     const QString& tool_tip = "",
+                                     Coordinates coordinates = Coordinates::Data,
+                                     const QString& id = "")
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
 
     //! One legend row for \a members, a SciQLopPlotGroup owned by this plot. Raises ValueError
     //! for a member of another plot.
@@ -570,6 +584,7 @@ public:
     void remove(SciQLopPlotGroup* group);
     void remove(SciQLopItemInterface* item);
     void remove(SciQLopStraightLine* line);
+    void remove(SciQLopSpan* span);
 
     inline bool selected() const noexcept { return m_selected; }
 

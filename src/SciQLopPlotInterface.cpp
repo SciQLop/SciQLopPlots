@@ -22,6 +22,7 @@
 
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 #include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include <QColor>
@@ -138,4 +139,11 @@ void SciQLopPlotInterface::remove(SciQLopStraightLine* line)
     check_removable(line);
     SCIQLOP_ON_OWNER_THREAD_WITH(line, remove(line));
     delete line;
+}
+
+void SciQLopPlotInterface::remove(SciQLopSpan* span)
+{
+    check_removable(span);
+    SCIQLOP_ON_OWNER_THREAD_WITH(span, remove(span));
+    delete span;
 }

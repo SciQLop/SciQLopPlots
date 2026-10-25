@@ -137,6 +137,7 @@
     <enum-type name="ProductsModelNodeType" python-type="IntEnum"/>
     <enum-type name="ParameterType" python-type="IntEnum"/>
     <enum-type name="Coordinates" python-type="IntEnum"/>
+    <enum-type name="SpanKind" python-type="IntEnum"/>
     <enum-type name="LineTermination" python-type="IntEnum"/>
     <enum-type name="OverlayLevel" python-type="IntEnum"/>
     <enum-type name="OverlaySizeMode" python-type="IntEnum"/>
@@ -166,6 +167,26 @@
     </inject-code>
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
+    <!-- std::optional<T> as T or None (span/line unification plan, spike ledger: branch O). -->
+    <container-type name="std::optional" type="list">
+        <include file-name="optional" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                if (!%in.has_value())
+                    Py_RETURN_NONE;
+                return %CONVERTTOPYTHON[%INTYPE_0](*%in);
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="Py_None" check="%in == Py_None">
+                    %out = %OUTTYPE();
+                </add-conversion>
+                <add-conversion type="PyObject" check="%ISCONVERTIBLE[%OUTTYPE_0](%in)">
+                    %OUTTYPE_0 value = %CONVERTTOCPP[%OUTTYPE_0](%in);
+                    %out = %OUTTYPE(value);
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
 
     <primitive-type name="SciQLopPyBuffer" target-lang-api-name="PyObject" allow-thread="yes">
         <conversion-rule>
@@ -549,6 +570,17 @@
             <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopRectangularSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="span(std::optional&lt;SciQLopPlotRange&gt;,std::optional&lt;SciQLopPlotRange&gt;,QColor,bool,bool,const QString&amp;,Coordinates,const QString&amp;)">
+            <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopSpan*"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="remove(SciQLopSpan*)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
             </inject-code>
         </modify-function>
         <modify-function signature="remove(SciQLopPlottableInterface*)">
@@ -1311,6 +1343,24 @@
     </object-type>
     <object-type name="SciQLopHorizontalSpan" parent-management="yes"/>
     <object-type name="SciQLopRectangularSpan" parent-management="yes"/>
+    <object-type name="SciQLopSpan" parent-management="yes">
+        <!-- Made by the factories only (plot.span, panel.span and their shorthands). -->
+        <modify-function signature="SciQLopSpan(SciQLopPlot*,SpanKind,const SciQLopPlotRange&amp;,const SciQLopPlotRange&amp;,const QColor&amp;,bool,bool,const QString&amp;,Coordinates,const QString&amp;)" remove="all"/>
+        <modify-function signature="set_key_range(const SciQLopPlotRange&amp;)">
+            <inject-code class="target" position="beginning"><insert-template name="void_raises_valueerror"/></inject-code>
+        </modify-function>
+        <modify-function signature="set_value_range(const SciQLopPlotRange&amp;)">
+            <inject-code class="target" position="beginning"><insert-template name="void_raises_valueerror"/></inject-code>
+        </modify-function>
+        <modify-function signature="set_range(const SciQLopPlotRange&amp;)">
+            <inject-code class="target" position="beginning"><insert-template name="void_raises_valueerror"/></inject-code>
+        </modify-function>
+        <modify-function signature="range()const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="SciQLopPixmapItem" parent-management="yes"/>
     <object-type name="SciQLopStraightLine" parent-management="yes">
         <modify-function signature="position() const" rename="_position"/>

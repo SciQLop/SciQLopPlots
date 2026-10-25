@@ -36,6 +36,7 @@
 #include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
 #include "SciQLopPlots/Items/SciQLopHorizontalSpan.hpp"
 #include "SciQLopPlots/Items/SciQLopRectangularSpan.hpp"
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include <layoutelements/layoutelement-legend-group.h>
 #include <plottables/plottable-intervals.h>
@@ -1617,6 +1618,17 @@ SciQLopHorizontalSpan* SciQLopPlot::horizontal_span(SciQLopPlotRange range, QCol
 SciQLopRectangularSpan* SciQLopPlot::rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color, bool read_only, bool visible, const QString& tool_tip)
 {
     return new SciQLopRectangularSpan(this, key_range, value_range, color, read_only, visible, tool_tip);
+}
+
+SciQLopSpan* SciQLopPlot::span(std::optional<SciQLopPlotRange> key_range,
+                               std::optional<SciQLopPlotRange> value_range, QColor color,
+                               bool read_only, bool visible, const QString& tool_tip,
+                               Coordinates coordinates, const QString& id)
+{
+    return new SciQLopSpan(this, SciQLopPlots::span_kind(key_range.has_value(), value_range.has_value()),
+                           key_range.value_or(SciQLopPlotRange()),
+                           value_range.value_or(SciQLopPlotRange()), color, read_only, visible,
+                           tool_tip, coordinates, id);
 }
 
 SciQLopPlottableInterface* SciQLopPlot::plottable(int index)

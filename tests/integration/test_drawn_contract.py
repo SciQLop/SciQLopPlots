@@ -221,6 +221,9 @@ ROWS += [
         "SciQLopHorizontalSpan": lambda h: h.plot.horizontal_span(R(1.0, 2.0)),
         "SciQLopRectangularSpan": lambda h: h.plot.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
     }, ALL),
+    Row("new span", ("SciQLopSpan",), {
+        "SciQLopSpan": lambda h: h.plot.span(key_range=R(1.0, 2.0)),
+    }, ALL),
 ]
 ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
              "SciQLopBoundingRectItemInterface", "SciQLopPolygonItemInterface", "SciQLopRangeItemInterface"}

@@ -48,6 +48,15 @@ enum class Coordinates
 };
 Q_DECLARE_METATYPE(Coordinates);
 
+//! The axes a span bounds, fixed when it is made: the key axis (x), the value axis (y), or both.
+enum class SpanKind
+{
+    Vertical,
+    Horizontal,
+    Rectangular
+};
+Q_DECLARE_METATYPE(SpanKind);
+
 enum class ParameterType
 {
     NotAParameter,

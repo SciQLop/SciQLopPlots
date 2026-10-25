@@ -559,6 +559,12 @@ public:
     SciQLopVerticalSpan* vertical_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data) override;
     SciQLopHorizontalSpan* horizontal_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "") override;
     SciQLopRectangularSpan* rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "") override;
+    SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
+                      std::optional<SciQLopPlotRange> value_range = std::nullopt,
+                      QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
+                      bool visible = true, const QString& tool_tip = "",
+                      Coordinates coordinates = Coordinates::Data,
+                      const QString& id = "") override;
 
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;
     virtual SciQLopPlottableInterface* plottable(const QString& name) override;
