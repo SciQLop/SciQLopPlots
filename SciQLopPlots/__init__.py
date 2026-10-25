@@ -363,6 +363,8 @@ for _cls in (
 import functools
 import warnings
 
+from shibokensupport.signature import get_signature
+
 _PTR_HANDLE_TYPES = (
     SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
     SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr,
@@ -419,16 +421,46 @@ def _deprecated_constructor(cls, factory, needs_plot):
 for _item_cls, (_factory, _needs_plot) in _ITEM_FACTORIES.items():
     _item_cls.__init__ = _deprecated_constructor(_item_cls, _factory, _needs_plot)
 
-# The plot line shorthands took movable second (5.6); color and read_only replace it. A bool there
-# would silently become a QColor (QColor(int)), so it raises; movable= still works, inverted.
+def _wraps(method):
+    """functools.wraps, plus the C++ signature: inspect cannot see through a shiboken method."""
+    def decorate(wrapper):
+        functools.wraps(method)(wrapper)
+        wrapper.__signature__ = getattr(method, "__signature__", None) or get_signature(method)
+        return wrapper
+    return decorate
+
+
+# Line factories took movable in the colour's place (5.6). A bool there would silently become a
+# QColor (QColor(int)), so every colour slot raises; the slot counts positional arguments after self.
+def _reject_bool_colour(name, method, slot):
+    @_wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if len(args) > slot and isinstance(args[slot], bool):
+            raise TypeError(f"{name}(): positional argument {slot + 1} is the colour; "
+                            "pass read_only=... to choose whether the user can drag the line")
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+_COLOUR_SLOTS = (
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "vertical_line", 1),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "horizontal_line", 1),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "straight_line", 2),
+    (SciQLopPlotsBindings.SciQLopPlot, "straight_line", 2),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "vertical_line", 1),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "horizontal_line", 1),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "straight_line", 2),
+)
+for _cls, _name, _slot in _COLOUR_SLOTS:
+    setattr(_cls, _name, _reject_bool_colour(_name, vars(_cls)[_name], _slot))
+
+
+# The plot line shorthands still accept movable=..., inverted.
 def _line_shorthand(name, method):
     message = f"movable=... is deprecated: use plot.{name}(..., read_only=...)"
 
-    @functools.wraps(method)
+    @_wraps(method)
     def wrapper(self, position, *args, **kwargs):
-        if args and isinstance(args[0], bool):
-            raise TypeError(f"{name}(position, color, ...): the second argument is the colour; "
-                            "pass read_only=... to choose whether the user can drag the line")
         if "movable" in kwargs:
             warnings.warn(message, DeprecationWarning, stacklevel=2)
             kwargs["read_only"] = not kwargs.pop("movable")
@@ -442,7 +474,7 @@ for _name in ("vertical_line", "horizontal_line"):
 
 
 def _deprecated_call(message, method):
-    @functools.wraps(method)
+    @_wraps(method)
     def wrapper(self, *args, **kwargs):
         warnings.warn(message, DeprecationWarning, stacklevel=2)
         return method(self, *args, **kwargs)

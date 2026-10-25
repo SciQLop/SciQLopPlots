@@ -263,11 +263,17 @@ def test_the_movable_keyword_warns_and_inverts(plot, name, movable):
     assert line.read_only() is (not movable)
 
 
-@pytest.mark.parametrize("name", ["vertical_line", "horizontal_line"])
-def test_a_bool_second_argument_raises_instead_of_becoming_a_colour(plot, name):
+@pytest.mark.parametrize("scope", ["plot", "panel"])
+@pytest.mark.parametrize("name, colour_slot", [("vertical_line", 0), ("horizontal_line", 0),
+                                               ("straight_line", 1)])
+def test_a_bool_in_the_colour_slot_raises_instead_of_becoming_a_colour(
+        scope, name, colour_slot, plot, panel):
     """Review Focus 1: QColor(True) is a valid colour, so the old movable slot would pass silently."""
+    host = {"plot": plot, "panel": panel}[scope]
+    leading = (Qt.Orientation.Vertical,) if name == "straight_line" else ()
+    args = (1.0, *leading[:colour_slot], True)
     with pytest.raises(TypeError, match="read_only"):
-        getattr(plot, name)(1.0, True)
+        getattr(host, name)(*args)
 
 
 def _parameters(func):
@@ -334,3 +340,16 @@ def test_the_panel_shorthands_take_the_base_factory_parameters_and_defaults(
 
 def test_panels_have_no_rectangular_span(panel):
     assert not hasattr(panel, "rectangular_span")
+
+
+@pytest.mark.parametrize("cls, name", [
+    (SciQLopPlot, "vertical_line"), (SciQLopPlot, "horizontal_line"), (SciQLopPlot, "straight_line"),
+    (SciQLopPlot, "rectangular_span"), (SciQLopStraightLine, "movable"),
+    (SciQLopStraightLine, "set_movable"),
+])
+def test_python_wrapped_methods_keep_an_introspectable_signature(cls, name):
+    assert inspect.signature(getattr(cls, name)).parameters
+
+
+def test_the_line_shorthand_signature_lists_color_and_read_only():
+    assert {"color", "read_only"} <= set(inspect.signature(SciQLopPlot.vertical_line).parameters)
