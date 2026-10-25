@@ -21,7 +21,10 @@
 namespace impl
 {
 
-SpanBase::SpanBase(QCPAbstractSpanItem* span) : _span { span } { }
+SpanBase::SpanBase(QCPAbstractSpanItem* span) : _span { span }
+{
+    _span->setBorderPen(QPen(QBrush(Qt::black), 3));
+}
 
 void SpanBase::set_color(const QColor& color)
 {

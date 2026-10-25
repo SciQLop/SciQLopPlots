@@ -38,7 +38,6 @@ public:
     {
         this->setLayer(Constants::LayersNames::Spans);
         this->setSelectable(true);
-        this->setBorderPen(QPen(QBrush(Qt::black), 3));
     }
 };
 

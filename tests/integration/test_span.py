@@ -5,7 +5,8 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 
-from SciQLopPlots import Coordinates, SciQLopPlot, SciQLopPlotRange as R, SciQLopSpan, SciQLopVerticalSpan, SpanKind
+from SciQLopPlots import (Coordinates, SciQLopHorizontalSpan, SciQLopPlot, SciQLopPlotRange as R,
+                          SciQLopRectangularSpan, SciQLopSpan, SciQLopVerticalSpan, SpanKind)
 from conftest import canvas_of, off_thread, plots_of, process_events, record, scoped_host
 
 SCOPES = ["plot"]
@@ -360,7 +361,28 @@ def test_recolouring_the_borders_keeps_width_and_style(host, kind):
     assert _style_after_recolour(make(host, kind)) == (QColor("red"), 5.0, Qt.PenStyle.DashLine)
 
 
-def test_recolouring_a_legacy_span_keeps_width_and_style(plot):
-    legacy = plot.vertical_span(R(1.0, 2.0))
-    assert type(legacy) is SciQLopVerticalSpan
-    assert _style_after_recolour(legacy) == (QColor("red"), 5.0, Qt.PenStyle.DashLine)
+LEGACY = {
+    "vertical": lambda plot: SciQLopVerticalSpan(plot, R(1.0, 2.0)),
+    "horizontal": lambda plot: SciQLopHorizontalSpan(plot, R(1.0, 2.0)),
+    "rectangular": lambda plot: SciQLopRectangularSpan(plot, R(1.0, 2.0), R(1.0, 2.0)),
+}
+
+
+def make_legacy(plot, kind):
+    with pytest.warns(DeprecationWarning):
+        return LEGACY[kind](plot)
+
+
+def test_recolouring_a_legacy_span_keeps_width_and_style(plot, kind):
+    assert _style_after_recolour(make_legacy(plot, kind)) == \
+        (QColor("red"), 5.0, Qt.PenStyle.DashLine)
+
+
+def test_a_factory_span_starts_with_a_3px_solid_border(host, kind):
+    span = make(host, kind)
+    assert (span.line_width(), span.line_style()) == (3.0, Qt.PenStyle.SolidLine)
+
+
+def test_a_legacy_span_starts_with_a_3px_solid_border(plot, kind):
+    span = make_legacy(plot, kind)
+    assert (span.line_width(), span.line_style()) == (3.0, Qt.PenStyle.SolidLine)
