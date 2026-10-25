@@ -248,6 +248,21 @@
     </primitive-type>
 
     <value-type name="SciQLopPlotRange">
+        <!-- (start, stop) of any two time values stands for a range wherever one is expected. -->
+        <conversion-rule>
+            <target-to-native>
+                <add-conversion type="PySequence" check="(PyTuple_Check(%in) || PyList_Check(%in)) &amp;&amp; PySequence_Size(%in) == 2">
+                    PyObject* start = PySequence_GetItem(%in, 0);
+                    PyObject* stop = PySequence_GetItem(%in, 1);
+                    const double start_seconds = epoch_seconds_from_py(start);
+                    const double stop_seconds = PyErr_Occurred() ? 0.0 : epoch_seconds_from_py(stop);
+                    const bool plain_numbers = (PyFloat_Check(start) || PyLong_Check(start)) &amp;&amp; (PyFloat_Check(stop) || PyLong_Check(stop));
+                    Py_XDECREF(start);
+                    Py_XDECREF(stop);
+                    %out = PyErr_Occurred() ? %OUTTYPE() : %OUTTYPE(start_seconds, stop_seconds, !plain_numbers);
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
         <add-function signature="datetime_start" >
             <inject-code class="target" position="end">
                 return datetime_from_timestamp(%CPPSELF->start());
