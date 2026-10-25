@@ -29,9 +29,12 @@
 #include "SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
 
+class MultiPlotsVSpanCollection;
+
 class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
 {
     Q_OBJECT
+    friend class MultiPlotsVSpanCollection;
     QList<QPointer<SciQLopVerticalSpan>> _spans;
 
     // Over a snapshot: a slot may delete this span, or a plot span that edits _spans.
@@ -57,6 +60,9 @@ class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
     void select_lower_border(bool selected);
     void select_upper_border(bool selected);
 
+    //! Out-of-range culling, kept apart from set_visible: a hidden span stays hidden in range.
+    void set_in_range(bool in_range);
+
 protected:
     virtual void addObject(SciQLopPlotInterface* plot) override;
     virtual void removeObject(SciQLopPlotInterface* plot) override;
@@ -66,7 +72,9 @@ protected:
     void _set_color(const QColor& color) override;
     bool _visible() const override { return m_visible && m_in_range; }
     void _set_visible(bool visible) override;
-    // A hide while culled reads as unchanged (the span is already hidden) but must be remembered.
+    // Needed by set_visible: a hide while culled reads as unchanged (the span is already hidden)
+    // but must be remembered. It is class-wide because apply_change has no per-setter switch;
+    // colour and selection re-applying when unchanged is harmless.
     bool _always_apply() const override { return true; }
 
 public:
@@ -104,9 +112,6 @@ public:
 
     [[nodiscard]] inline QString id() const { return _id; }
 
-    //! Out-of-range culling, kept apart from set_visible: a hidden span stays hidden in range.
-    void set_in_range(bool in_range);
-
     void set_range(const SciQLopPlotRange horizontal_range);
 
     [[nodiscard]] inline SciQLopPlotRange range() const noexcept { return _horizontal_range; }
@@ -116,8 +121,10 @@ public:
         SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
         if (_tool_tip != tool_tip)
         {
+            const QPointer<MultiPlotsVerticalSpan> self(this);
             for_each_span([&tool_tip](SciQLopVerticalSpan* span) { span->set_tool_tip(tool_tip); });
-            _tool_tip = tool_tip;
+            if (self)
+                _tool_tip = tool_tip;
         }
     }
 
@@ -128,8 +135,10 @@ public:
         SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
         if (_read_only != read_only)
         {
+            const QPointer<MultiPlotsVerticalSpan> self(this);
             for_each_span([&read_only](SciQLopVerticalSpan* span) { span->set_read_only(read_only); });
-            _read_only = read_only;
+            if (self)
+                _read_only = read_only;
         }
     }
 
