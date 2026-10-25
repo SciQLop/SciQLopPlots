@@ -829,6 +829,7 @@ note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordina
 ![A span, a threshold line and a text label](images/overlays.png)
 
 - On a panel, `panel.vertical_span(range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
+- A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
 - The other factories are `plot.vertical_line(position)`, `plot.horizontal_span(range)`, `plot.rectangular_span(key_range, value_range)`, `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`.
 - The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
 - Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
