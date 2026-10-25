@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 
 from SciQLopPlots import (
-    SciQLopPlot, SciQLopPlotRange, SciQLopVerticalSpan,
+    SciQLopPlot, SciQLopPlotRange,
     SciQLopGraphInterface,
 )
 from conftest import process_events

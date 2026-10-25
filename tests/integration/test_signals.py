@@ -4,7 +4,7 @@ import numpy as np
 
 from SciQLopPlots import (
     SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
-    SciQLopPlotRange, SciQLopVerticalSpan, SciQLopGraphInterface,
+    SciQLopPlotRange, SciQLopGraphInterface,
 )
 
 

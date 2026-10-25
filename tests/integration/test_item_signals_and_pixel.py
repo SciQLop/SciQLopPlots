@@ -6,8 +6,6 @@ from SciQLopPlots import (
     Coordinates,
     SciQLopPlot,
     SciQLopPlotRange,
-    SciQLopVerticalLine,
-    SciQLopHorizontalLine,
     SciQLopVerticalSpan,
 )
 from conftest import process_events

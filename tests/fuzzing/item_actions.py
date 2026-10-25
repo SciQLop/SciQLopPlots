@@ -40,7 +40,7 @@ def add_vertical_span(panel, model, plot_index):
     weight=2,
 )
 def add_multi_plot_span(panel, model):
-    """Add a MultiPlotsVerticalSpan across the whole panel — mimics SciQLop catalog events."""
+    """Add a panel vertical span across the whole panel — mimics SciQLop catalog events."""
     from SciQLopPlots import SciQLopPlotRange
 
     # Use the first plot's x range as reference

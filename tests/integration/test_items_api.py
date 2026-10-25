@@ -4,8 +4,7 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtCore import QRectF, QPointF
 
 from SciQLopPlots import (
-    SciQLopPlot, SciQLopVerticalSpan, SciQLopPlotRange,
-    SciQLopVerticalLine, SciQLopHorizontalLine,
+    SciQLopPlot, SciQLopPlotRange,
     SciQLopTextItem, SciQLopEllipseItem, SciQLopPixmapItem,
     SciQLopCurvedLineItem, Coordinates,
 )

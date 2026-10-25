@@ -10,11 +10,6 @@ from SciQLopPlots import (
     SciQLopTextItem,
     SciQLopEllipseItem,
     SciQLopCurvedLineItem,
-    SciQLopVerticalLine,
-    SciQLopHorizontalLine,
-    SciQLopVerticalSpan,
-    SciQLopHorizontalSpan,
-    SciQLopRectangularSpan,
 )
 
 

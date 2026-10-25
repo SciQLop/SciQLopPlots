@@ -9,8 +9,7 @@ import numpy as np
 
 from SciQLopPlots import (
     SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
-    SciQLopPlotRange, SciQLopVerticalSpan,
-    MultiPlotsVerticalSpan,
+    SciQLopPlotRange,
 )
 from PySide6.QtGui import QColor
 from conftest import force_gc

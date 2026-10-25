@@ -26,9 +26,7 @@ from SciQLopPlots import (
     SciQLopEllipseItem,
     SciQLopPixmapItem,
     SciQLopPlotRange,
-    SciQLopStraightLine,
     SciQLopTextItem,
-    SciQLopVerticalSpan,
 )
 
 # Nothing else in a default plot paints these.

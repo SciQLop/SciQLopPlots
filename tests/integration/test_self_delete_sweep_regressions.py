@@ -5,7 +5,7 @@ import pytest
 import shiboken6
 from PySide6.QtGui import QColor, QPen
 
-from SciQLopPlots import ColorGradient, Coordinates, GraphType, SciQLopPlotRange, SciQLopVerticalSpan
+from SciQLopPlots import ColorGradient, Coordinates, GraphType, SciQLopPlotRange
 from conftest import process_events
 
 X = np.linspace(0.0, 10.0, 50)
