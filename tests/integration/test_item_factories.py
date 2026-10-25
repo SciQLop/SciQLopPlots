@@ -271,18 +271,26 @@ def test_a_bool_second_argument_raises_instead_of_becoming_a_colour(plot, name):
         getattr(plot, name)(1.0, True)
 
 
-def _defaults(func):
+def _parameters(func):
+    """Name -> default (or inspect.Parameter.empty), without self."""
     signature = get_signature(inspect.unwrap(func))
-    return {name: p.default for name, p in signature.parameters.items() if p.default is not p.empty}
+    return {name: p.default for name, p in signature.parameters.items() if name != "self"}
 
 
-@pytest.mark.parametrize("base, shorthands", [
-    ("span", ("vertical_span", "horizontal_span", "rectangular_span")),
-    ("straight_line", ("vertical_line", "horizontal_line")),
+SPAN_RANGES = {"key_range", "value_range"}
+
+
+@pytest.mark.parametrize("base, shorthand, replaced, added", [
+    ("span", "vertical_span", SPAN_RANGES, {"range"}),
+    ("span", "horizontal_span", SPAN_RANGES, {"range"}),
+    ("span", "rectangular_span", set(), set()),
+    ("straight_line", "vertical_line", {"orientation"}, set()),
+    ("straight_line", "horizontal_line", {"orientation"}, set()),
 ])
-def test_the_plot_shorthands_take_the_base_factory_defaults(base, shorthands):
+def test_the_plot_shorthands_take_the_base_factory_parameters_and_defaults(
+        base, shorthand, replaced, added):
     cls = SciQLopPlotsBindings.SciQLopPlotInterface
-    defaults = _defaults(getattr(cls, base))
-    for name in shorthands:
-        own = _defaults(getattr(cls, name))
-        assert own == {key: defaults[key] for key in own}, name
+    base_params, own = _parameters(getattr(cls, base)), _parameters(getattr(cls, shorthand))
+    assert set(own) == (set(base_params) - replaced) | added
+    shared = (set(own) & set(base_params)) - SPAN_RANGES
+    assert {k: own[k] for k in shared} == {k: base_params[k] for k in shared}
