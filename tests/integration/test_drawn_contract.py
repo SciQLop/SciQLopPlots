@@ -212,6 +212,7 @@ ROWS += [
         "SciQLopTextItem": lambda h: h.plot.text("t", QPointF(10, 10)),
         "SciQLopCurvedLineItem": lambda h: h.plot.curved_line(QPointF(0, 0), QPointF(5, 5)),
         "SciQLopStraightLine": lambda h: h.plot.straight_line(1.0, Qt.Orientation.Vertical),
+        "SciQLopStraightLine[panel]": lambda h: h.panel.straight_line(2.0, Qt.Orientation.Vertical),
         "SciQLopVerticalLine": lambda h: h.plot.vertical_line(1.0),
         "SciQLopHorizontalLine": lambda h: h.plot.horizontal_line(0.5),
     }, ALL),

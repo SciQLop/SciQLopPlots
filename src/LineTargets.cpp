@@ -21,6 +21,7 @@
 #include "SciQLopPlots/helpers.hpp"
 
 #include <limits>
+#include <utility>
 
 namespace impl
 {
@@ -172,5 +173,204 @@ void PlotLineTarget::set_max_value(std::optional<double> max)
         m_line->set_max_value(*max);
     else
         m_line->clear_max_value();
+}
+
+PanelLineTarget::PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPanel* panel,
+                                 LineState state)
+        : m_line { line }
+        , m_state { std::move(state) }
+        , m_parts { line, [this](SciQLopPlot* plot) { return make_part(plot); } }
+{
+    m_parts.follow(panel);
+}
+
+SciQLopStraightLine* PanelLineTarget::make_part(SciQLopPlot* plot)
+{
+    auto* part = new SciQLopStraightLine(plot, m_state.position, !m_state.read_only,
+                                         m_state.coordinates, m_state.orientation);
+    if (m_state.min_value)
+        part->set_min_value(*m_state.min_value);
+    if (m_state.max_value)
+        part->set_max_value(*m_state.max_value);
+    part->set_color(m_state.color);
+    part->set_line_width(m_state.line_width);
+    part->set_line_style(m_state.line_style);
+    part->set_tool_tip(m_state.tool_tip);
+    part->set_visible(m_state.visible);
+    part->set_selected(m_state.selected);
+    follow(part);
+    return part;
+}
+
+// A part's own edits (a drag, a click, the Delete key) flow up; the line writes them back out to
+// every part, whose echoes writing() swallows.
+void PanelLineTarget::follow(SciQLopStraightLine* part)
+{
+    QObject::connect(part, &SciQLopStraightLine::position_changed, m_line,
+                     [this](double position)
+                     {
+                         if (!m_parts.writing())
+                             set_position(position);
+                     });
+    QObject::connect(part, &SciQLopDrawnObject::selection_changed, m_line,
+                     [this](bool selected)
+                     {
+                         if (!m_parts.writing())
+                             m_line->set_selected(selected);
+                     });
+    QObject::connect(part, &SciQLopStraightLine::delete_requested, m_line,
+                     &SciQLopStraightLine::delete_requested);
+}
+
+template <typename T, typename Setter>
+void PanelLineTarget::write(T& field, const T& value, Setter setter)
+{
+    field = value;
+    (void)m_parts.write([value, setter](SciQLopStraightLine* part) { (part->*setter)(value); });
+}
+
+double PanelLineTarget::position() const
+{
+    return m_state.position;
+}
+
+void PanelLineTarget::set_position(double position)
+{
+    // The min/max clamps are data values: meaningless against a pixel offset.
+    const bool data = m_state.coordinates == Coordinates::Data;
+    position = clamp_line_position(position, data ? m_state.min_value : std::nullopt,
+                                   data ? m_state.max_value : std::nullopt);
+    if (position == m_state.position)
+        return;
+    m_state.position = position;
+    if (m_parts.write([position](SciQLopStraightLine* part) { part->set_position(position); }))
+        Q_EMIT m_line->position_changed(position);
+}
+
+Coordinates PanelLineTarget::coordinates() const
+{
+    return m_state.coordinates;
+}
+
+// simplify: each part converts on its own plot, then the first part's number becomes the line's
+// and every part takes it; with no plot yet the number stays. A position per plot would lift it.
+void PanelLineTarget::set_coordinates(Coordinates coordinates)
+{
+    m_state.coordinates = coordinates;
+    if (!m_parts.write([coordinates](SciQLopStraightLine* part)
+                       { part->set_coordinates(coordinates); }))
+        return;
+    auto* first = m_parts.first();
+    if (!first)
+        return;
+    m_state.position = first->position();
+    (void)m_parts.write([position = m_state.position](SciQLopStraightLine* part)
+                        { part->set_position(position); });
+}
+
+bool PanelLineTarget::read_only() const
+{
+    return m_state.read_only;
+}
+
+void PanelLineTarget::set_read_only(bool read_only)
+{
+    write(m_state.read_only, read_only, &SciQLopStraightLine::set_read_only);
+}
+
+QString PanelLineTarget::tool_tip() const
+{
+    return m_state.tool_tip;
+}
+
+void PanelLineTarget::set_tool_tip(const QString& tool_tip)
+{
+    write(m_state.tool_tip, tool_tip, &SciQLopStraightLine::set_tool_tip);
+}
+
+QColor PanelLineTarget::color() const
+{
+    return m_state.color;
+}
+
+void PanelLineTarget::set_color(const QColor& color)
+{
+    write(m_state.color, color, &SciQLopDrawnObject::set_color);
+}
+
+double PanelLineTarget::line_width() const
+{
+    return m_state.line_width;
+}
+
+void PanelLineTarget::set_line_width(double width)
+{
+    write(m_state.line_width, width, &SciQLopStraightLine::set_line_width);
+}
+
+Qt::PenStyle PanelLineTarget::line_style() const
+{
+    return m_state.line_style;
+}
+
+void PanelLineTarget::set_line_style(Qt::PenStyle style)
+{
+    write(m_state.line_style, style, &SciQLopStraightLine::set_line_style);
+}
+
+bool PanelLineTarget::visible() const
+{
+    return m_state.visible;
+}
+
+void PanelLineTarget::set_visible(bool visible)
+{
+    write(m_state.visible, visible, &SciQLopDrawnObject::set_visible);
+}
+
+bool PanelLineTarget::selected() const
+{
+    return m_state.selected;
+}
+
+void PanelLineTarget::set_selected(bool selected)
+{
+    write(m_state.selected, selected, &SciQLopDrawnObject::set_selected);
+}
+
+std::optional<double> PanelLineTarget::min_value() const
+{
+    return m_state.min_value;
+}
+
+void PanelLineTarget::set_min_value(std::optional<double> min)
+{
+    m_state.min_value = min;
+    (void)m_parts.write(
+        [min](SciQLopStraightLine* part)
+        {
+            if (min)
+                part->set_min_value(*min);
+            else
+                part->clear_min_value();
+        });
+}
+
+std::optional<double> PanelLineTarget::max_value() const
+{
+    return m_state.max_value;
+}
+
+void PanelLineTarget::set_max_value(std::optional<double> max)
+{
+    m_state.max_value = max;
+    (void)m_parts.write(
+        [max](SciQLopStraightLine* part)
+        {
+            if (max)
+                part->set_max_value(*max);
+            else
+                part->clear_max_value();
+        });
 }
 } // namespace impl

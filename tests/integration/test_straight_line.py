@@ -9,7 +9,7 @@ from SciQLopPlots import (Coordinates, SciQLopHorizontalLine, SciQLopPlot, SciQL
                           SciQLopStraightLine, SciQLopVerticalLine)
 from conftest import canvas_of, off_thread, plots_of, process_events, record, scoped_host
 
-SCOPES = ["plot"]
+SCOPES = ["plot", "panel"]
 ORIENTATIONS = {"vertical": (Qt.Orientation.Vertical, 5.0),
                 "horizontal": (Qt.Orientation.Horizontal, 0.5)}
 
@@ -202,3 +202,107 @@ def test_the_tool_tip_round_trips_and_signals_once(host, orientation):
 
 def test_on_tool_tip_has_a_signal(host):
     assert make(host, "vertical").on.tool_tip.signal is not None
+
+
+def _panel(qtbot, n=2):
+    panel = scoped_host("panel", qtbot)
+    for _ in range(n - 2):
+        panel.plot(*_xy())
+    process_events()
+    return panel
+
+
+def _xy():
+    import numpy as np
+    x = np.linspace(0.0, 10.0, 200)
+    return x, np.sin(x)
+
+
+def _parts(panel):
+    return [part for plot in plots_of(panel) for part in plot.findChildren(SciQLopStraightLine)
+            if part.is_panel_part()]
+
+
+def test_a_panel_line_has_one_plain_marked_part_per_plot(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical)
+    parts = _parts(panel)
+    assert [type(part) for part in parts] == [SciQLopStraightLine] * 2
+    assert [part.scope() for part in parts] == plots_of(panel)
+    assert (line.scope(), line.is_panel_part()) == (panel, False)
+
+
+def test_the_line_is_the_panels_child_and_outlives_its_python_reference(qtbot):
+    from conftest import collect
+    panel = _panel(qtbot)
+    panel.straight_line(5.0, Qt.Orientation.Vertical)
+    collect()
+    assert len([c for c in panel.children() if isinstance(c, SciQLopStraightLine)]) == 1
+    assert len(_parts(panel)) == 2
+
+
+def test_an_edit_on_a_part_moves_the_line_and_the_other_part_once(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical, read_only=False)
+    first, second = _parts(panel)
+    seen = record(line.position_changed)
+    first.set_position(3.0)
+    assert (seen, line.position(), second.position()) == ([3.0], 3.0, 3.0)
+
+
+def test_selecting_a_part_selects_the_line_once(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical)
+    first, second = _parts(panel)
+    seen = record(line.selection_changed)
+    first.set_selected(True)
+    assert (line.selected(), second.selected(), seen) == (True, True, [True])
+
+
+def test_the_panel_line_clamps_like_its_parts(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(3.0, Qt.Orientation.Vertical)
+    line.set_min_value(2.0)
+    line.set_max_value(4.0)
+    line.set_position(9.0)
+    assert [line.position()] + [part.position() for part in _parts(panel)] == [4.0] * 3
+    assert [(part.min_value(), part.max_value()) for part in _parts(panel)] == [(2.0, 4.0)] * 2
+
+
+def test_reordering_plots_keeps_one_line_part_per_plot(qtbot):
+    """Review Focus 2, for lines."""
+    panel = _panel(qtbot, 3)
+    panel.straight_line(5.0, Qt.Orientation.Vertical)
+    panel.move_plot(0, 2)
+    process_events()
+    assert len(_parts(panel)) == 3
+
+
+def test_a_slot_removing_the_line_during_a_part_edit(qtbot):
+    """Review Focus 5, for lines: the emitting part dies with the line."""
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical, read_only=False)
+    first, _ = _parts(panel)
+    line.position_changed.connect(lambda *_: panel.remove(line))
+    first.set_position(3.0)
+    process_events()
+    assert not shiboken6.isValid(line)
+    assert _parts(panel) == []
+
+
+def test_panel_remove_deletes_the_line_and_its_parts(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical)
+    parts = _parts(panel)
+    panel.remove(line)
+    assert not shiboken6.isValid(line)
+    assert not any(shiboken6.isValid(part) for part in parts)
+
+
+def test_plot_remove_refuses_a_part_and_the_panel_line(qtbot):
+    panel = _panel(qtbot)
+    line = panel.straight_line(5.0, Qt.Orientation.Vertical)
+    with pytest.raises(ValueError, match="part of a panel-wide object"):
+        panel.plot_at(0).remove(_parts(panel)[0])
+    with pytest.raises(ValueError, match=r"panel\.remove"):
+        panel.plot_at(0).remove(line)

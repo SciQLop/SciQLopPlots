@@ -152,6 +152,8 @@ signals:
     Q_SIGNAL void moved(double new_position);
 };
 
+class SciQLopMultiPlotPanel;
+
 namespace impl
 {
 class LineTarget;
@@ -189,6 +191,10 @@ public:
     SciQLopStraightLine(SciQLopPlot* plot, const double position, const bool movable = false,
                         Coordinates coordinates = Coordinates::Data,
                         Qt::Orientation orientation = Qt::Orientation::Vertical);
+    //! At panel scope: one plot-scope part on each SciQLopPlot of \a panel.
+    SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double position, Qt::Orientation orientation,
+                        const QColor& color, bool read_only, bool visible,
+                        const QString& tool_tip, Coordinates coordinates);
     ~SciQLopStraightLine() override;
 
     [[nodiscard]] Qt::Orientation orientation() const noexcept;

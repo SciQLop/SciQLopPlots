@@ -20,6 +20,8 @@
 
 #include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
 
+#include "SciQLopPlots/Items/impl/PanelParts.hpp"
+
 #include <QPointer>
 #include <optional>
 
@@ -66,6 +68,62 @@ public:
     PlotLineTarget(SciQLopStraightLine* line, SciQLopPlot* plot, double position, bool movable,
                    Coordinates coordinates, Qt::Orientation orientation);
     ~PlotLineTarget() override;
+
+    double position() const override;
+    void set_position(double position) override;
+    Coordinates coordinates() const override;
+    void set_coordinates(Coordinates coordinates) override;
+    bool read_only() const override;
+    void set_read_only(bool read_only) override;
+    QString tool_tip() const override;
+    void set_tool_tip(const QString& tool_tip) override;
+    QColor color() const override;
+    void set_color(const QColor& color) override;
+    double line_width() const override;
+    void set_line_width(double width) override;
+    Qt::PenStyle line_style() const override;
+    void set_line_style(Qt::PenStyle style) override;
+    bool visible() const override;
+    void set_visible(bool visible) override;
+    bool selected() const override;
+    void set_selected(bool selected) override;
+    std::optional<double> min_value() const override;
+    void set_min_value(std::optional<double> min) override;
+    std::optional<double> max_value() const override;
+    void set_max_value(std::optional<double> max) override;
+};
+
+//! Everything a panel line keeps and writes to its parts.
+struct LineState
+{
+    double position = 0.;
+    Qt::Orientation orientation = Qt::Vertical;
+    Coordinates coordinates = Coordinates::Data;
+    bool read_only = true;
+    QString tool_tip;
+    QColor color = QColor(0, 0, 0);
+    double line_width = 1.0;
+    Qt::PenStyle line_style = Qt::SolidLine;
+    bool visible = true;
+    bool selected = false;
+    std::optional<double> min_value;
+    std::optional<double> max_value;
+};
+
+//! A line on every SciQLopPlot of a panel: the state, and one plot-scope part per plot.
+class PanelLineTarget final : public LineTarget
+{
+    SciQLopStraightLine* m_line;
+    LineState m_state;
+    PanelParts<SciQLopStraightLine> m_parts; // last: destroyed first, while the state still exists
+
+    SciQLopStraightLine* make_part(SciQLopPlot* plot);
+    void follow(SciQLopStraightLine* part);
+    template <typename T, typename Setter>
+    void write(T& field, const T& value, Setter setter);
+
+public:
+    PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPanel* panel, LineState state);
 
     double position() const override;
     void set_position(double position) override;

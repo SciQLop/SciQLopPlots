@@ -242,6 +242,24 @@ void SciQLopMultiPlotPanel::remove(SciQLopSpan* span)
     delete span;
 }
 
+SciQLopStraightLine* SciQLopMultiPlotPanel::straight_line(double position,
+                                                          Qt::Orientation orientation,
+                                                          QColor color, bool read_only,
+                                                          bool visible, const QString& tool_tip,
+                                                          Coordinates coordinates)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::straight_line");
+    return new SciQLopStraightLine(this, position, orientation, color, read_only, visible,
+                                   tool_tip, coordinates);
+}
+
+void SciQLopMultiPlotPanel::remove(SciQLopStraightLine* line)
+{
+    check_removable_here(this, line);
+    SCIQLOP_ON_OWNER_THREAD_WITH(line, remove(line));
+    delete line;
+}
+
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const
 {
     return _container->plot_at(index);

@@ -48,6 +48,7 @@ class QCustomPlot;
 class MultiPlotsVerticalSpan;
 class MultiPlotsVerticalLine;
 class SciQLopSpan;
+class SciQLopStraightLine;
 
 class InspectorExtension;
 class InspectorExtensionHolder;
@@ -278,6 +279,13 @@ public:
                       bool visible = true, const QString& tool_tip = "",
                       Coordinates coordinates = Coordinates::Data, const QString& id = "");
     void remove(SciQLopSpan* span);
+    //! A straight line on every plot of the panel, plot.straight_line's arguments and defaults.
+    SciQLopStraightLine* straight_line(double position, Qt::Orientation orientation,
+                                       QColor color = QColor::fromRgb(0, 0, 0),
+                                       bool read_only = true, bool visible = true,
+                                       const QString& tool_tip = "",
+                                       Coordinates coordinates = Coordinates::Data);
+    void remove(SciQLopStraightLine* line);
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
