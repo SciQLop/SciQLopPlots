@@ -61,6 +61,19 @@
         if (PyErr_Occurred())
             return {};
     </template>
+    <!-- The catch clauses closing a try block that returns a value: one copy for every returning template. -->
+    <template name="python_error_ladder">
+        } catch (const sqp::unsupported_call&amp; e) {
+            PyErr_SetString(PyExc_NotImplementedError, e.what());
+            return nullptr;
+        } catch (const std::invalid_argument&amp; e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+            return nullptr;
+        } catch (const std::exception&amp; e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+            return nullptr;
+        }
+    </template>
     <!-- Line factories convert their position here: inject-code replaces the generated call and its conversion
          rule, and %ARGUMENT_NAMES hands the lambda the raw first argument. -->
     <template name="line_at_time">
@@ -73,16 +86,7 @@
             if (PyErr_Occurred())
                 return {};
             %PYARG_0 = %CONVERTTOPYTHON[SciQLopStraightLine*](result);
-        } catch (const sqp::unsupported_call&amp; e) {
-            PyErr_SetString(PyExc_NotImplementedError, e.what());
-            return nullptr;
-        } catch (const std::invalid_argument&amp; e) {
-            PyErr_SetString(PyExc_ValueError, e.what());
-            return nullptr;
-        } catch (const std::exception&amp; e) {
-            PyErr_SetString(PyExc_RuntimeError, e.what());
-            return nullptr;
-        }
+        <insert-template name="python_error_ladder"/>
     </template>
     <template name="save_raises_oserror">
         try {
@@ -125,16 +129,7 @@
         try {
             $TYPE result = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
             %PYARG_0 = %CONVERTTOPYTHON[$TYPE](result);
-        } catch (const sqp::unsupported_call&amp; e) {
-            PyErr_SetString(PyExc_NotImplementedError, e.what());
-            return nullptr;
-        } catch (const std::invalid_argument&amp; e) {
-            PyErr_SetString(PyExc_ValueError, e.what());
-            return nullptr;
-        } catch (const std::exception&amp; e) {
-            PyErr_SetString(PyExc_RuntimeError, e.what());
-            return nullptr;
-        }
+        <insert-template name="python_error_ladder"/>
     </template>
     <template name="void_raises_python_errors">
         try {
@@ -233,6 +228,11 @@
                     try
                     {
                         %out = %OUTTYPE(%in);
+                    }
+                    catch (const std::invalid_argument&amp; e)
+                    {
+                        %out = %OUTTYPE();
+                        PyErr_SetString(PyExc_ValueError, e.what());
                     }
                     catch (const std::runtime_error&amp; e)
                     {

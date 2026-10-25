@@ -342,7 +342,7 @@ PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
 // GIL held. SciQLopPlots.to_epoch_seconds, looked up once: set_position runs in drag loops.
 static PyObject* _to_epoch_seconds_function()
 {
-    static PyObject* function = nullptr;
+    static PyObject* function = nullptr; // never released, on purpose: it lives as long as the process
     if (!function)
     {
         PyObject* module = PyImport_ImportModule("SciQLopPlots");
@@ -364,10 +364,17 @@ static bool _is_datetime_or_object_array(PyObject* obj)
     return result;
 }
 
-static std::string _fetch_error_message()
+struct _FetchedError
+{
+    std::string message;
+    bool is_value_error = false;
+};
+
+static _FetchedError _fetch_error()
 {
     PyObject *type, *value, *traceback;
     PyErr_Fetch(&type, &value, &traceback);
+    const bool is_value_error = type && PyErr_GivenExceptionMatches(type, PyExc_ValueError);
     PyObject* text = value ? PyObject_Str(value) : nullptr;
     const char* utf8 = text ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
     std::string message = utf8 ? utf8 : "not a valid time array";
@@ -376,19 +383,19 @@ static std::string _fetch_error_message()
     Py_XDECREF(value);
     Py_XDECREF(traceback);
     PyErr_Clear();
-    return message;
+    return { message, is_value_error };
 }
 
 // GIL held. NumPy cannot export datetime64 through the buffer protocol, so a datetime64 or object
 // array of dates becomes a float64 array of epoch seconds (NaT as NaN, a gap). A new reference,
 // or nullptr when obj is not such an array (error empty) or the converter refused it (error holds
-// its message, which says more than "not a numeric buffer").
-static PyObject* _epoch_seconds_array(PyObject* obj, std::string& error)
+// its message and exception kind, which say more than "not a numeric buffer").
+static PyObject* _epoch_seconds_array(PyObject* obj, _FetchedError& error)
 {
     PyObject* function = _is_datetime_or_object_array(obj) ? _to_epoch_seconds_function() : nullptr;
     PyObject* seconds = function ? PyObject_CallFunctionObjArgs(function, obj, Py_True, nullptr) : nullptr;
     if (function && !seconds)
-        error = _fetch_error_message();
+        error = _fetch_error();
     PyErr_Clear();
     return seconds;
 }
@@ -459,7 +466,7 @@ struct _PyBuffer_impl
             this->acquire(obj, numeric_type);
             if (!this->is_valid)
             {
-                std::string converter_error;
+                _FetchedError converter_error;
                 if (PyObject* seconds = _epoch_seconds_array(obj, converter_error))
                 {
                     this->py_obj.set_obj(seconds);
@@ -467,8 +474,12 @@ struct _PyBuffer_impl
                     bool converted_is_numeric = true;
                     this->acquire(this->py_obj.py_object(), converted_is_numeric);
                 }
-                else if (!converter_error.empty())
-                    throw std::runtime_error(converter_error);
+                else if (!converter_error.message.empty())
+                {
+                    if (converter_error.is_value_error)
+                        throw std::invalid_argument(converter_error.message);
+                    throw std::runtime_error(converter_error.message);
+                }
             }
             if (!this->is_valid && numeric_type && _is_strided_buffer(obj))
                 throw std::runtime_error(
@@ -871,6 +882,11 @@ SciQLopPyBuffer buffer_from_py(PyObject* value)
     try
     {
         return SciQLopPyBuffer(value);
+    }
+    catch (const std::invalid_argument& e)
+    {
+        PyErr_SetString(PyExc_ValueError, e.what());
+        return {};
     }
     catch (const std::runtime_error& e)
     {

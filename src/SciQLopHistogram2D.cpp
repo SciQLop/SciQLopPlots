@@ -215,6 +215,8 @@ int SciQLopHistogram2D::y_bins() const
 
 void SciQLopHistogram2D::set_normalization(Histogram2DNormalization normalization)
 {
+    if (!magic_enum::enum_contains(normalization))
+        throw std::invalid_argument("invalid Histogram2DNormalization value");
     if (_hist)
     {
         if (this->normalization() == normalization)

@@ -12,7 +12,7 @@ def test_validate_buffer_none_raises_typeerror():
 
 
 def test_validate_buffer_non_numeric_raises_typeerror():
-    arr = np.array(["a", "b"], dtype=object)
+    arr = np.array([None, None], dtype=object)
     with pytest.raises(TypeError):
         sqp.validate_buffer(arr, "x")
 
@@ -225,3 +225,10 @@ def test_validate_buffer_rejects_float16():
 def test_exception_taxonomy(call, exc_cls):
     with pytest.raises(exc_cls):
         call()
+
+
+def test_validate_buffer_unparsable_date_strings_raise_valueerror():
+    arr = np.array(["a", "b"], dtype=object)
+    with pytest.raises(ValueError):
+        sqp.validate_buffer(arr, "x")
+
