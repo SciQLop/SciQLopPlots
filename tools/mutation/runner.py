@@ -82,6 +82,7 @@ def plan(project):
             names = file_cover[m.line]
             fresh = {**asdict(m), "tests": _by_speed(names, data["tests"]), "covering": len(names)}
             data["mutants"][m.id] = _merge(data["mutants"].get(m.id), fresh, (m.path, m.op, m.before) in equivalents)
+    data["not_measured"] = [t.path for t in project.targets if not any(e.get("code_lines", {}).get(t.path) for e in data["tests"].values())]
     data["stale_equivalents"] = _stale_equivalents(project, data["mutants"])
     st.save(project.state_path, data)
     return data
@@ -93,7 +94,15 @@ def _status(killed):
     return "timeout" if all(k.endswith("::<timeout>") for k in killed) else "killed"
 
 
+def _fail_if_nothing_ran(killed):
+    ran_nothing = [k.removesuffix("::<ran no test>") for k in killed if k.endswith("::<ran no test>")]
+    if ran_nothing:
+        raise SystemExit(f"{ran_nothing[0]} ran no test: run cover --reset, then plan")
+
+
 def _run_tests(project, names, baseline):
+    if not names:
+        return [], 0.0
     batches = [names] if project.raw.get("batch_tests") else [[n] for n in names]
     killed, seconds = [], 0.0
     for batch in batches:
@@ -101,7 +110,9 @@ def _run_tests(project, names, baseline):
         result = project.run(project.command("test_cmd", batch), cwd=project.cwd(), env=project.env(batch, mutation=True), timeout=timeout)
         shutil.rmtree(project.run_dir / "gcda-junk", ignore_errors=True)
         seconds += result.seconds
-        killed += outcomes.failures(project.raw["failure_parser"], result, batch)
+        found = outcomes.failures(project.raw["failure_parser"], result, batch)
+        _fail_if_nothing_ran(found)
+        killed += found
         if killed and project.raw.get("stop_on_first_kill"):
             break
     return killed, seconds
@@ -153,6 +164,8 @@ def _finish(project, data):
 
 def run(project, budget):
     data = st.load(project.state_path)
+    if not data["files"]:
+        raise SystemExit("run: nothing planned yet: run plan first")
     covermap.recover(project, data)
     _check_sources(project, data)
     started = time.monotonic()

@@ -239,3 +239,29 @@ def test_try_refuses_an_empty_test_list(calc):
     with pytest.raises(SystemExit, match="no tests"):
         runner.try_mutant(calc, "calc.cpp", 5, "ge_to_gt", [])
 
+
+
+def test_a_test_that_ran_nothing_is_fatal_not_a_kill(calc):
+    calc.raw["test_cmd"] = ["true"]
+    with pytest.raises(SystemExit, match="ran no test: run cover --reset, then plan"):
+        runner.run(calc, budget=600)
+    assert st.read_source(calc.repo / "calc.cpp") == st.read_source(FIXTURE / "calc.cpp")
+    assert all(m["status"] != "killed" for m in st.load(calc.state_path)["mutants"].values())
+
+
+def test_run_tests_with_no_names_runs_nothing(calc):
+    assert runner._run_tests(calc, [], {}) == ([], 0.0)
+
+
+def test_a_target_without_any_coverage_is_listed_as_not_measured(calc):
+    data = st.load(calc.state_path)
+    for entry in data["tests"].values():
+        entry["code_lines"], entry["lines"] = {}, {}
+    st.save(calc.state_path, data)
+    assert runner.plan(calc)["not_measured"] == ["calc.cpp"]
+
+
+def test_run_before_plan_names_plan(tmp_path):
+    project = _setup(tmp_path, "calc")
+    with pytest.raises(SystemExit, match="plan"):
+        runner.run(project, budget=600)
