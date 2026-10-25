@@ -138,7 +138,7 @@ CASES = (
         ("vline", "line_width", 7.0),
         ("vline", "line_style", Qt.PenStyle.DashLine),
         ("vline", "visible", False),
-        ("vline", "movable", True),
+        ("vline", "read_only", False),
         ("vline", "tool_tip", "off-thread"),
         ("hline", "position", 4.5),
     ]

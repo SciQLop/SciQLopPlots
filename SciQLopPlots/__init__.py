@@ -296,7 +296,7 @@ for _cls in _HISTOGRAM_HOSTS:
 
 
 # --- Reactive pipeline API ---
-from .properties import register_property, OnDescriptor
+from .properties import register_property, register_hidden, OnDescriptor
 from .pipeline import Pipeline, PartialPipeline
 from .event import Event
 from .widget_plot import WidgetPlot
@@ -315,9 +315,6 @@ _ON_EXCEPTIONS = (
     (SciQLopPlotsBindings.SciQLopWaterfallGraph, "spacing", dict(
         signal_name="uniform_spacing_changed", getter_name="uniform_spacing",
         setter_name="set_uniform_spacing", property_type="value")),
-    (SciQLopPlotsBindings.SciQLopVerticalSpan, "tooltip", dict(
-        signal_name=None, getter_name="tool_tip", setter_name="set_tool_tip",
-        property_type="value")),
     (SciQLopPlotsBindings.SciQLopSpan, "tooltip", dict(
         signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
         property_type="value")),
@@ -328,6 +325,13 @@ _ON_EXCEPTIONS = (
 
 for _cls, _name, _spec in _ON_EXCEPTIONS:
     register_property(_cls, _name, **_spec)
+
+# Deprecated methods the .on convention would otherwise pick up (set_movable makes movable a
+# "property"): reading them through .on would call the deprecated method.
+_ON_HIDDEN = {(SciQLopPlotsBindings.SciQLopStraightLine, "movable")}
+
+for _cls, _name in _ON_HIDDEN:
+    register_hidden(_cls, _name)
 
 for _cls in (
     SciQLopPlotsBindings.SciQLopDrawnObject,
@@ -449,6 +453,10 @@ def _deprecated_call(message, method):
 _DEPRECATED_CALLS = {
     (SciQLopPlotsBindings.SciQLopPlotInterface, "rectangular_span"):
         "rectangular_span(...) is deprecated: use plot.span(...)",
+    (SciQLopPlotsBindings.SciQLopStraightLine, "movable"):
+        "movable() is deprecated: use line.read_only()",
+    (SciQLopPlotsBindings.SciQLopStraightLine, "set_movable"):
+        "set_movable(...) is deprecated: use line.set_read_only(...)",
 }
 for (_cls, _name), _message in _DEPRECATED_CALLS.items():
     setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
@@ -672,9 +680,6 @@ for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
 # connect would need a proxy object.
 _DEPRECATED_ALIASES = {
     SciQLopPlotsBindings.SciQLopSpan: {"selectionChanged": "selection_changed"},
-    SciQLopPlotsBindings.SciQLopVerticalSpan: {"selectionChanged": "selection_changed"},
-    SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selectionChanged": "selection_changed"},
-    SciQLopPlotsBindings.SciQLopRectangularSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopPlotLegendInterface: {"is_visible": "visible",
                                                       "visibility_changed": "visible_changed"},
 }

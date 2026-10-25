@@ -346,3 +346,32 @@ def test_on_tooltip_is_observable(host, orientation):
     line.set_tool_tip("tip")
     assert seen == ["tip"]
     pipeline.disconnect()
+
+
+@pytest.mark.parametrize("movable", [True, False])
+def test_set_movable_warns_and_inverts(host, movable):
+    line = make(host, "vertical")
+    with pytest.warns(DeprecationWarning,
+                      match=r"set_movable\(\.\.\.\) is deprecated: use line\.set_read_only\(\.\.\.\)") as record:
+        line.set_movable(movable)
+    assert record[0].filename == __file__
+    assert line.read_only() is (not movable)
+
+
+def test_movable_warns_and_reads_the_inverse(host):
+    line = make(host, "vertical", read_only=False)
+    with pytest.warns(DeprecationWarning, match=r"movable\(\) is deprecated: use line\.read_only\(\)"):
+        assert line.movable() is True
+
+
+def test_the_suite_filter_turns_a_bare_set_movable_into_an_error(host):
+    """Pins the filterwarnings entry in pyproject.toml: no pytest.warns wrapper here."""
+    with pytest.raises(DeprecationWarning, match=r"use line\."):
+        make(host, "vertical").set_movable(True)
+
+
+def test_on_does_not_expose_the_deprecated_movable(host):
+    line = make(host, "vertical")
+    with pytest.raises(AttributeError):
+        line.on.movable
+    assert line.on.read_only.value is True

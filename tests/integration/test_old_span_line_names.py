@@ -149,3 +149,20 @@ def test_the_old_panel_line_keeps_its_defaults_and_properties(panel):
 def test_the_old_panel_line_lost_its_plumbing():
     assert not any(hasattr(MultiPlotsVerticalLine, name) for name in
                    ("addObject", "add_object", "removeObject", "replotAll", "update_plot_list"))
+
+
+@pytest.mark.parametrize("cls", OLD_PLOT_SPANS, ids=lambda cls: cls.__name__)
+def test_the_old_spans_keep_on_tooltip_and_selection_changed(plot, cls):
+    span = _old(OLD_PLOT_SPANS[cls][0], plot)
+    span.on.tooltip.value = "tip"
+    assert span.tool_tip() == "tip"
+    assert cls.selectionChanged is cls.selection_changed
+
+
+def test_the_old_panel_objects_keep_on_tooltip(panel):
+    _with_plots(panel)
+    span = _old(lambda p: MultiPlotsVerticalSpan(p, R(1.0, 2.0)), panel)
+    line = _old(lambda p: MultiPlotsVerticalLine(p, 2.0), panel)
+    for item in (span, line):
+        item.on.tooltip.value = "tip"
+        assert item.tool_tip() == "tip"

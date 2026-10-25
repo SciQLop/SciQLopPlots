@@ -59,9 +59,9 @@ class TestMultiPlotsVerticalLine:
         _two_plot_panel(panel, sample_data)
         vline = old(MultiPlotsVerticalLine, panel, 3.0, read_only=True)
         assert vline.read_only
-        assert not any(line.movable() for line in _lines(panel))
+        assert all(line.read_only() for line in _lines(panel))
         vline.set_read_only(False)
-        assert all(line.movable() for line in _lines(panel))
+        assert not any(line.read_only() for line in _lines(panel))
 
     def test_setters_propagate_to_every_line(self, panel, sample_data):
         _two_plot_panel(panel, sample_data)
@@ -86,7 +86,7 @@ class TestMultiPlotsVerticalLine:
         late = _lines(panel)[-1]
         assert late.color().green() == 255
         assert late.line_width() == 2.0
-        assert not late.movable()
+        assert late.read_only()
         assert not late.visible()
         assert late.tool_tip() == "cursor"
 
@@ -124,7 +124,7 @@ class TestMultiPlotsVerticalLine:
             assert line.color().red() == 255
             assert line.line_width() == 3.0
             assert not line.visible()
-            assert not line.movable()
+            assert line.read_only()
             assert line.tool_tip() == "cursor"
 
     def test_moving_any_line_moves_all(self, panel, sample_data):

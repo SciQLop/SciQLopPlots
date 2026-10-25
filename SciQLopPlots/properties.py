@@ -3,6 +3,13 @@ import weakref
 
 # Registry: {class: {property_name: property_spec_dict}}
 _property_registry = {}
+# Registry: {(class, property_name)} names that never resolve through .on, even by convention.
+_hidden_registry = set()
+
+
+def register_hidden(cls, property_name):
+    """Hide a name from the .on namespace: a deprecated method must not be reachable through it."""
+    _hidden_registry.add((cls, property_name))
 
 
 def register_property(cls, property_name, signal_name, getter_name, setter_name, property_type,
@@ -66,7 +73,9 @@ def _convention_spec(obj, name):
 
 
 def _lookup_property_spec(obj, property_name):
-    """The exceptions table (walking the MRO) first, then the convention."""
+    """Hidden names first, then the exceptions table (walking the MRO), then the convention."""
+    if any((cls, property_name) in _hidden_registry for cls in type(obj).__mro__):
+        return None
     for cls in type(obj).__mro__:
         if cls in _property_registry and property_name in _property_registry[cls]:
             return _property_registry[cls][property_name]

@@ -150,10 +150,10 @@ def test_exception_tooltip_has_a_signal(span):
     assert span.on.tooltip.signal is not None
 
 
-def test_exception_tooltip_has_no_signal_on_the_old_span(old_span):
+def test_exception_tooltip_has_a_signal_on_the_old_span(old_span):
     old_span.on.tooltip.value = "tip"
     assert old_span.on.tooltip.value == old_span.tool_tip() == "tip"
-    assert old_span.on.tooltip.signal is None
+    assert old_span.on.tooltip.signal is not None
 
 
 def test_span_range_through_convention(span):
@@ -182,9 +182,12 @@ def test_convention_resolves_like_the_old_registration(request, fixture, name, s
     assert (spec["splat"], spec["signal_args"]) == (False, None)
 
 
-def test_tooltip_cannot_start_a_pipeline_on_the_old_span(old_span):
-    with pytest.raises(ValueError, match="no signal"):
-        old_span.on.tooltip >> (lambda event: None)
+def test_tooltip_pipeline_fires_once_on_the_old_span(old_span):
+    seen = []
+    pipeline = old_span.on.tooltip >> (lambda event: seen.append(event.value))
+    old_span.set_tool_tip("tip")
+    assert seen == ["tip"]
+    pipeline.disconnect()
 
 
 @pytest.mark.parametrize("name", ["no_such_property", "_private"])
