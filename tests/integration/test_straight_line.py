@@ -337,3 +337,12 @@ def test_a_part_built_later_carries_the_lines_state_and_a_removed_plot_takes_its
     process_events()
     assert not shiboken6.isValid(gone)
     assert [_state_of(part) for part in _parts(panel)] == [expected] * 2
+
+
+def test_on_tooltip_is_observable(host, orientation):
+    line = make(host, orientation)
+    seen = []
+    pipeline = line.on.tooltip >> (lambda event: seen.append(event.value))
+    line.set_tool_tip("tip")
+    assert seen == ["tip"]
+    pipeline.disconnect()

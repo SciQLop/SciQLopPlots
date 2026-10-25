@@ -386,3 +386,16 @@ def test_a_factory_span_starts_with_a_3px_solid_border(host, kind):
 def test_a_legacy_span_starts_with_a_3px_solid_border(plot, kind):
     span = make_legacy(plot, kind)
     assert (span.line_width(), span.line_style()) == (3.0, Qt.PenStyle.SolidLine)
+
+
+def test_on_tooltip_is_observable(host, kind):
+    span = make(host, kind)
+    seen = []
+    pipeline = span.on.tooltip >> (lambda event: seen.append(event.value))
+    span.set_tool_tip("tip")
+    assert seen == ["tip"]
+    pipeline.disconnect()
+
+
+def test_selection_changed_keeps_its_old_alias():
+    assert SciQLopSpan.selectionChanged is SciQLopSpan.selection_changed

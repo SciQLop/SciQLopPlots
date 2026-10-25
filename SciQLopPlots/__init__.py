@@ -318,6 +318,12 @@ _ON_EXCEPTIONS = (
     (SciQLopPlotsBindings.SciQLopVerticalSpan, "tooltip", dict(
         signal_name=None, getter_name="tool_tip", setter_name="set_tool_tip",
         property_type="value")),
+    (SciQLopPlotsBindings.SciQLopSpan, "tooltip", dict(
+        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
+        property_type="value")),
+    (SciQLopPlotsBindings.SciQLopStraightLine, "tooltip", dict(
+        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
+        property_type="value")),
 )
 
 for _cls, _name, _spec in _ON_EXCEPTIONS:
@@ -628,6 +634,7 @@ for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
 # deprecated. The same attribute under a second name, never a wrapper (see above); a warning on
 # connect would need a proxy object.
 _DEPRECATED_ALIASES = {
+    SciQLopPlotsBindings.SciQLopSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopVerticalSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopHorizontalSpan: {"selectionChanged": "selection_changed"},
     SciQLopPlotsBindings.SciQLopRectangularSpan: {"selectionChanged": "selection_changed"},
