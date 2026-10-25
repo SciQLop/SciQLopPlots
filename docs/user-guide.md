@@ -585,6 +585,8 @@ That covers ranges (`SciQLopPlotRange(start, stop)`, `axis.set_range`, `set_time
 
 Data takes them too: `x` may be a `datetime64` array, or an object array of `datetime`, `date` or ISO strings, and so may what a data callback returns. A `NaT` in data becomes a gap. A `NaT` or an unparsable string as a range or a position raises `ValueError`.
 
+Some things keep plain numbers. The `position` property of the old line classes (`line.position = ...`) and their deprecated constructors take seconds only: use `set_position()` or the factories (`plot.vertical_line(...)`). A pandas `Series` is not a buffer: call `.to_numpy()` first. A `QDateTime` keeps Qt's meaning, so one without a time zone is local time, whereas a `datetime` without a time zone is UTC.
+
 To convert yourself, `SciQLopPlots.to_epoch_seconds(value)` is the function all of this goes through. It returns a float for a scalar and a `float64` array for an array.
 
 ## Several plots in a panel

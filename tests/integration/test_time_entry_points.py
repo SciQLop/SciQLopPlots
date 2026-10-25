@@ -251,9 +251,40 @@ def test_a_non_contiguous_datetime64_array_is_accepted(ts_plot):
     np.testing.assert_array_equal(_first_array(graph), T0 + 2.0 * np.arange(N))
 
 
-def test_an_object_array_that_is_not_dates_is_still_rejected(ts_plot):
-    with pytest.raises((TypeError, ValueError)):
+def test_an_object_array_that_is_not_dates_is_rejected_with_the_converters_message(ts_plot):
+    with pytest.raises(TypeError, match="expected a number or a date, not None"):
         ts_plot.line(np.array([None] * N, dtype=object), Y)
+
+
+def test_an_object_array_of_bare_numbers_says_so(ts_plot):
+    with pytest.raises(TypeError, match="object array"):
+        ts_plot.plot(np.array([1.0, 2.0], dtype=object), np.array([1.0, 2.0]))
+
+
+def test_an_array_like_that_is_not_a_buffer_is_refused(ts_plot):
+    class ArrayLike:
+        def __array__(self, dtype=None, copy=None):
+            return np.arange(N, dtype=np.float64)
+
+    with pytest.raises((TypeError, ValueError)):
+        ts_plot.line(ArrayLike(), Y)
+
+
+def test_a_pandas_series_needs_to_numpy(ts_plot):
+    pd = pytest.importorskip("pandas")
+    series = pd.Series(np.datetime64("2030-01-01", "s") + np.arange(N))
+    with pytest.raises((TypeError, ValueError)):
+        ts_plot.line(series, Y)
+    graph = _graph(ts_plot.line(series.to_numpy(), Y))
+    process_events()
+    np.testing.assert_array_equal(_first_array(graph), T0 + np.arange(N, dtype=np.float64))
+
+
+def test_panel_span_takes_datetime64_and_iso_pairs(panel):
+    panel.plot(np.array([T0, T0 + DAY]), np.array([0.0, 1.0]))
+    from_datetime64 = panel.span(key_range=(np.datetime64("2030-01-01", "s"), np.datetime64("2030-01-02", "s")))
+    from_iso = panel.span(key_range=("2030-01-01", "2030-01-02"))
+    assert bounds(from_datetime64.key_range()) == bounds(from_iso.key_range()) == (T0, T0 + DAY)
 
 
 def test_a_callback_returning_datetime64_is_converted(qtbot, ts_plot):

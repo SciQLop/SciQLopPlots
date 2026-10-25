@@ -86,3 +86,11 @@ def test_unparsable_string_raises_value_error_naming_it(bad):
 def test_unknown_type_raises_type_error(bad):
     with pytest.raises(TypeError, match="expected a number or a date"):
         to_epoch_seconds(bad)
+
+
+def test_qdatetime_keeps_qts_meaning_while_a_naive_datetime_is_utc():
+    from PySide6.QtCore import QDate, QTime
+    local = QDateTime(QDate(2030, 1, 1), QTime(0, 0))
+    assert to_epoch_seconds(local) == float(local.toSecsSinceEpoch())
+    assert to_epoch_seconds(QDateTime(QDate(2030, 1, 1), QTime(0, 0), QTimeZone.UTC)) == T
+    assert to_epoch_seconds(datetime(2030, 1, 1)) == T

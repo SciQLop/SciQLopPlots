@@ -364,13 +364,31 @@ static bool _is_datetime_or_object_array(PyObject* obj)
     return result;
 }
 
+static std::string _fetch_error_message()
+{
+    PyObject *type, *value, *traceback;
+    PyErr_Fetch(&type, &value, &traceback);
+    PyObject* text = value ? PyObject_Str(value) : nullptr;
+    const char* utf8 = text ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
+    std::string message = utf8 ? utf8 : "not a valid time array";
+    Py_XDECREF(text);
+    Py_XDECREF(type);
+    Py_XDECREF(value);
+    Py_XDECREF(traceback);
+    PyErr_Clear();
+    return message;
+}
+
 // GIL held. NumPy cannot export datetime64 through the buffer protocol, so a datetime64 or object
 // array of dates becomes a float64 array of epoch seconds (NaT as NaN, a gap). A new reference,
-// or nullptr with no error set when obj is not such an array or does not convert.
-static PyObject* _epoch_seconds_array(PyObject* obj)
+// or nullptr when obj is not such an array (error empty) or the converter refused it (error holds
+// its message, which says more than "not a numeric buffer").
+static PyObject* _epoch_seconds_array(PyObject* obj, std::string& error)
 {
     PyObject* function = _is_datetime_or_object_array(obj) ? _to_epoch_seconds_function() : nullptr;
     PyObject* seconds = function ? PyObject_CallFunctionObjArgs(function, obj, Py_True, nullptr) : nullptr;
+    if (function && !seconds)
+        error = _fetch_error_message();
     PyErr_Clear();
     return seconds;
 }
@@ -441,13 +459,16 @@ struct _PyBuffer_impl
             this->acquire(obj, numeric_type);
             if (!this->is_valid)
             {
-                if (PyObject* seconds = _epoch_seconds_array(obj))
+                std::string converter_error;
+                if (PyObject* seconds = _epoch_seconds_array(obj, converter_error))
                 {
                     this->py_obj.set_obj(seconds);
                     Py_DECREF(seconds);
                     bool converted_is_numeric = true;
                     this->acquire(this->py_obj.py_object(), converted_is_numeric);
                 }
+                else if (!converter_error.empty())
+                    throw std::runtime_error(converter_error);
             }
             if (!this->is_valid && numeric_type && _is_strided_buffer(obj))
                 throw std::runtime_error(
