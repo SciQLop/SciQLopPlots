@@ -72,9 +72,139 @@
 
 Task 1 fills this in. Every later task reads it and follows the branch it names.
 
-- **Outcome:** PENDING (one of `O`, `F`, `F-py`)
-- **Evidence:** PENDING (the probe output lines, pasted)
-- **Extra lines needed by the outcome:** PENDING (for `O`: any `mapping.type_map` entries the signature check needed; otherwise "none")
+- **Outcome:** `O` (std::optional both ways, through our own `<container-type name="std::optional">`).
+- **Evidence:** every O probe passes after the signature type_map entries below (run 3 shows the probes passing and the two `std.nullopt` signature warnings; run 4 shows the same probes with no warning). Generator log before the container-type existed (`grep OptionalSpike build-venv/SciQLopPlots/bindings/mjb_rejected_functions.log`):
+
+```
+1305: - std::optional<SciQLopPlotRange> OptionalSpike::echo_range(std::optional<SciQLopPlotRange>)const: unmatched return type 'std::optional<SciQLopPlotRange>': Unable to translate type "std::optional<SciQLopPlotRange>": Cannot find type entry for "std::optional".
+1306: - std::optional<double> OptionalSpike::echo_value(std::optional<double>)const: unmatched return type 'std::optional<double>': Unable to translate type "std::optional<double>": Cannot find type entry for "std::optional".
+```
+
+Run 1, F markup only, no container-type (the O methods are rejected, as expected):
+
+```
+F key_range unbounded (want None): None
+F min_value unset (want None): None
+F key_range bounded (want the range): SciQLopPlotRange(1, 2)
+F min_value set (want 3.0): 3.0
+F arg omitted (want False): False
+F arg None (want False): False
+F arg keyword None (want False): False
+F arg range (want True): True
+F arg wrong type (want TypeError): TypeError: a span range must be a SciQLopPlotRange or None
+O echo None (want None): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_range'
+O echo omitted (want None): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_range'
+O echo range (want the range): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_range'
+O echo wrong type (want TypeError): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_range'
+O echo value (want 2.5): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_value'
+O echo value None (want None): AttributeError: 'SciQLopPlotsBindings.OptionalSpike' object has no attribute 'echo_value'
+signature key_range: '(self, /) -> SciQLopPlotsBindings.SciQLopPlotRange'
+signature min_value: '(self, /) -> float'
+signature is_bounded_by: "(self, /, key_range: object = 'Py_None', tag: int | None = None) -> bool"
+signature warnings (want []): ["pyside_type_init:_resolve_value\n\n        UNRECOGNIZED:   'Py_None'\n        OFFENDING LINE: 'SciQLopPlotsBindings.OptionalSpike.is_bounded_by(self,key_range:PyObject=Py_None,tag:int=0)->bool'\n        "]
+```
+
+Run 3, container-type in place, no type_map entry:
+
+```
+shibokensupport/signature/parser.py:266: RuntimeWarning: pyside_type_init:_resolve_value
+
+        UNRECOGNIZED:   'std.nullopt'
+        OFFENDING LINE: 'SciQLopPlotsBindings.OptionalSpike.echo_range(self,range:std.optional[SciQLopPlotsBindings.SciQLopPlotRange]=std.nullopt)->std.optional[SciQLopPlotsBindings.SciQLopPlotRange]'
+        
+shibokensupport/signature/parser.py:266: RuntimeWarning: pyside_type_init:_resolve_value
+
+        UNRECOGNIZED:   'std.nullopt'
+        OFFENDING LINE: 'SciQLopPlotsBindings.OptionalSpike.echo_value(self,value:std.optional[double]=std.nullopt)->std.optional[double]'
+        
+shibokensupport/signature/parser.py:266: RuntimeWarning: pyside_type_init:_resolve_value
+
+        UNRECOGNIZED:   'Py_None'
+        OFFENDING LINE: 'SciQLopPlotsBindings.OptionalSpike.is_bounded_by(self,key_range:PyObject=Py_None,tag:int=0)->bool'
+        
+F key_range unbounded (want None): None
+F min_value unset (want None): None
+F key_range bounded (want the range): SciQLopPlotRange(1, 2)
+F min_value set (want 3.0): 3.0
+F arg omitted (want False): False
+F arg None (want False): False
+F arg keyword None (want False): False
+F arg range (want True): True
+F arg wrong type (want TypeError): TypeError: a span range must be a SciQLopPlotRange or None
+O echo None (want None): None
+O echo omitted (want None): None
+O echo range (want the range): SciQLopPlotRange(1, 2)
+O echo wrong type (want TypeError): TypeError: 'SciQLopPlotsBindings.OptionalSpike.echo_range' called with wrong argument types:
+  SciQLopPlotsBindings.OptionalSpike.echo_range(str)
+Supported signatures:
+  SciQLopPlotsBindings.OptionalSpike.echo_range(range: SciQLopPlotsBindings.SciQLopPlotRange | None = 'std.nullopt')
+O echo value (want 2.5): 2.5
+O echo value None (want None): None
+signature key_range: '(self, /) -> SciQLopPlotsBindings.SciQLopPlotRange'
+signature min_value: '(self, /) -> float'
+signature is_bounded_by: "(self, /, key_range: object = 'Py_None', tag: int | None = None) -> bool"
+signature echo_range: "(self, /, range: SciQLopPlotsBindings.SciQLopPlotRange | None = 'std.nullopt') -> SciQLopPlotsBindings.SciQLopPlotRange | None"
+signature echo_value: "(self, /, value: float | None = 'std.nullopt') -> float | None"
+signature warnings (want []): []
+```
+
+Run 4, container-type plus the type_map entries (decisive run):
+
+```
+F key_range unbounded (want None): None
+F min_value unset (want None): None
+F key_range bounded (want the range): SciQLopPlotRange(1, 2)
+F min_value set (want 3.0): 3.0
+F arg omitted (want False): False
+F arg None (want False): False
+F arg keyword None (want False): False
+F arg range (want True): True
+F arg wrong type (want TypeError): TypeError: a span range must be a SciQLopPlotRange or None
+O echo None (want None): None
+O echo omitted (want None): None
+O echo range (want the range): SciQLopPlotRange(1, 2)
+O echo wrong type (want TypeError): TypeError: 'SciQLopPlotsBindings.OptionalSpike.echo_range' called with wrong argument types:
+  SciQLopPlotsBindings.OptionalSpike.echo_range(str)
+Supported signatures:
+  SciQLopPlotsBindings.OptionalSpike.echo_range(range: SciQLopPlotsBindings.SciQLopPlotRange | None = None)
+O echo value (want 2.5): 2.5
+O echo value None (want None): None
+signature key_range: '(self, /) -> SciQLopPlotsBindings.SciQLopPlotRange'
+signature min_value: '(self, /) -> float'
+signature is_bounded_by: '(self, /, key_range: object | None = None, tag: int | None = None) -> bool'
+signature echo_range: '(self, /, range: SciQLopPlotsBindings.SciQLopPlotRange | None = None) -> SciQLopPlotsBindings.SciQLopPlotRange | None'
+signature echo_value: '(self, /, value: float | None = None) -> float | None'
+signature warnings (want []): []
+```
+
+- **Extra lines needed by the outcome:**
+  1. The container-type text of Task 2 is not the brief's text. Two changes were needed. The generator auto-generates the `Py_None` conversion's check as `convertibleSequenceTypes(...)`, so `echo_range(None)` raised ValueError; the explicit `check="%in == Py_None"` fixes it. And `%CONVERTTOCPP[...]` was not expanded when nested inside the `%OUTTYPE(...)` call, so the element is converted on its own line first. Use this text, in bindings.xml next to the `<smart-pointer-type name="QPointer" .../>` line:
+
+```xml
+    <!-- std::optional<T> as T or None (span/line unification plan, spike ledger: branch O). -->
+    <container-type name="std::optional" type="list">
+        <include file-name="optional" location="global"/>
+        <conversion-rule>
+            <native-to-target>
+                if (!%in.has_value())
+                    Py_RETURN_NONE;
+                return %CONVERTTOPYTHON[%INTYPE_0](*%in);
+            </native-to-target>
+            <target-to-native>
+                <add-conversion type="Py_None" check="%in == Py_None">
+                    %out = %OUTTYPE();
+                </add-conversion>
+                <add-conversion type="PyObject" check="%ISCONVERTIBLE[%OUTTYPE_0](%in)">
+                    %OUTTYPE_0 value = %CONVERTTOCPP[%OUTTYPE_0](%in);
+                    %out = %OUTTYPE(value);
+                </add-conversion>
+            </target-to-native>
+        </conversion-rule>
+    </container-type>
+```
+
+  2. Two entries in `mapping.type_map` of `_register_with_shiboken_signatures` (SciQLopPlots/__init__.py), after the `"long": int,` line: `"std.nullopt": None, "std::nullopt": None,`. Without them the signature scan warns `UNRECOGNIZED: 'std.nullopt'` for every `std::optional` default. (The spike also tried `"Py_None": None`, which only the F markup needed. It is not needed for O.) Note: build-venv/SciQLopPlots/__init__.py is a copy of the source file, refreshed by `meson compile`, so a type_map edit needs a compile before a probe sees it.
+  3. Branch F, for the record only (F is not used): the brief's `<conversion-rule class="native">` on a `modify-argument` is ignored by shiboken for a plain method (`class="target"` too); the call then fails to compile with `cannot convert 'PyObject*' to 'const SciQLopPlotRange&'`. What worked was converting `%PYARG_1` inside the `inject-code` and calling with the converted value. The F getters (`key_range`, `min_value`) and that argument mapping all passed every F probe.
 
 What is already known before the spike: the build-venv generator log has no type entry for `std::optional` at all. For example, `build-venv/SciQLopPlots/bindings/mjb_rejected_functions.log` lists `std::optional<QFont> QFontComboBox::displayFont(const QString&)const: unmatched return type 'std::optional<QFont>': Unable to translate type "std::optional<QFont>": Cannot find type entry for "std::optional"`. So bare `std::optional` is rejected. The question the spike answers is whether a `<container-type name="std::optional">` entry of ours makes it work (branch O), or whether we map None by hand (branch F, or F-py).
 
