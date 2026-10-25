@@ -432,7 +432,7 @@ def _wraps(method):
     return decorate
 
 
-# Line factories took movable in the colour's place (5.6). A bool there would silently become a
+# Line and span factories took movable in the colour's place (5.6). A bool there would silently become a
 # QColor (QColor(int)), so every colour slot raises; the slot counts positional arguments after self.
 def _reject_bool_colour(name, method, slot):
     @_wraps(method)
@@ -452,6 +452,14 @@ _COLOUR_SLOTS = (
     (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "vertical_line", 1),
     (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "horizontal_line", 1),
     (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "straight_line", 2),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "vertical_span", 1),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "horizontal_span", 1),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "rectangular_span", 2),
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "span", 2),
+    (SciQLopPlotsBindings.SciQLopPlot, "span", 2),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "vertical_span", 1),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "horizontal_span", 1),
+    (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "span", 2),
 )
 for _cls, _name, _slot in _COLOUR_SLOTS:
     _method = getattr(_cls, _name, None)

@@ -134,13 +134,7 @@
     <template name="void_raises_python_errors">
         try {
             %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
-        } catch (const sqp::unsupported_call&amp; e) {
-            PyErr_SetString(PyExc_NotImplementedError, e.what());
-            return nullptr;
-        } catch (const std::exception&amp; e) {
-            PyErr_SetString(PyExc_RuntimeError, e.what());
-            return nullptr;
-        }
+        <insert-template name="python_error_ladder"/>
     </template>
     <load-typesystem name="typesystem_core.xml" generate="no" />
     <load-typesystem name="typesystem_gui.xml" generate="no" />

@@ -11,7 +11,7 @@ def test_validate_buffer_none_raises_typeerror():
         sqp.validate_buffer(None, "x")
 
 
-def test_validate_buffer_non_numeric_raises_typeerror():
+def test_validate_buffer_object_array_of_non_dates_raises_typeerror():
     arr = np.array([None, None], dtype=object)
     with pytest.raises(TypeError):
         sqp.validate_buffer(arr, "x")

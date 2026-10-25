@@ -363,3 +363,26 @@ def test_a_bool_colour_keyword_raises_instead_of_becoming_a_colour(scope, name, 
     with pytest.raises(TypeError, match="read_only"):
         getattr(host, name)(1.0, *leading, color=True)
 
+
+SPAN_COLOUR_SLOTS = [("vertical_span", 1), ("horizontal_span", 1), ("rectangular_span", 2), ("span", 2)]
+
+
+def _span_args(name, colour_slot):
+    ranges = (R(0.0, 1.0), R(0.0, 1.0))[:colour_slot]
+    return ranges
+
+
+@pytest.mark.filterwarnings("ignore:rectangular_span.*is deprecated:DeprecationWarning")
+@pytest.mark.parametrize("scope", ["plot", "panel"])
+@pytest.mark.parametrize("name, colour_slot", SPAN_COLOUR_SLOTS)
+@pytest.mark.parametrize("form", ["positional", "keyword"])
+def test_a_bool_colour_raises_in_the_span_factories(scope, name, colour_slot, form, plot, panel):
+    host = {"plot": plot, "panel": panel}[scope]
+    if not hasattr(host, name):
+        pytest.skip(f"{scope} has no {name}")
+    ranges = _span_args(name, colour_slot)
+    call = (lambda: getattr(host, name)(*ranges, True)) if form == "positional" \
+        else (lambda: getattr(host, name)(*ranges, color=True))
+    with pytest.raises(TypeError, match="read_only"):
+        call()
+
