@@ -13,7 +13,7 @@
 
 **Tech Stack:** C++20, Qt 6.11.2, NeoQCP, Shiboken6 6.11.2 (bindings.xml), pytest + pytest-qt.
 
-**Spec:** docs/plans/2026-10-25-span-line-unification-design.md (revision 3). Implement **Plan A only**. Read the spec before your task. Where this plan and the spec disagree, the spec wins, except for the deviations listed at the end of this plan, which the controller approved.
+**Spec:** docs/plans/2026-10-25-span-line-unification-design.md (revision 4). Implement **Plan A only**. Read the spec before your task. Where this plan and the spec disagree, the spec wins, except for the deviations listed at the end of this plan, which the controller approved.
 
 ## Global Constraints
 
@@ -60,11 +60,11 @@
 
 ## Review Focus
 
-1. **A bool second argument to `plot.vertical_line` / `plot.horizontal_line`.** It meant `movable` before this plan. The spec says it "now fails on the colour slot", but it doesn't: PySide converts a bool to a `QColor` (`True` gives rgb (0, 0, 1)). It was checked against build-venv: `plot.vertical_span(R(1, 2), True)` is accepted today. So an old call would silently make a near-black, read-only line. It must raise TypeError, naming the colour and `read_only=`. Task 6 adds the guard and its test.
-2. **Reordering plots in a panel (`panel.move_plot`).** `plot_list_changed` fires with the same plots. A panel span or line must keep exactly one part per plot, never a duplicate. Task 3 tests it for spans, Task 5 for lines.
-3. **A panel holding a plot that isn't a `SciQLopPlot`** (an N-D projection plot next to time series). Panel spans and lines must skip it: no part on it, no crash, edits still reach the other plots. Task 3 tests it.
+1. **A bool second argument to `plot.vertical_line` / `plot.horizontal_line`.** It meant `movable` before this plan. The spec says it "now fails on the colour slot", but it doesn't: PySide converts a bool to a `QColor` (`True` gives rgb (0, 0, 1)). It was checked against build-venv: `plot.vertical_span(R(1, 2), True)` is accepted today. So an old call would silently make a near-black, read-only line. It must raise TypeError, naming the colour and `read_only=`. Task 9 adds the guard and its test.
+2. **Reordering plots in a panel (`panel.move_plot`).** `plot_list_changed` fires with the same plots. A panel span or line must keep exactly one part per plot, never a duplicate. Task 4 tests it for spans, Task 7 for lines.
+3. **A panel holding a plot that isn't a `SciQLopPlot`** (an N-D projection plot next to time series). Panel spans and lines must skip it: no part on it, no crash, edits still reach the other plots. Task 4 tests it.
 4. **A setter on an unbounded axis, called from a worker thread** (`span.set_value_range(...)` on a vertical span). It must raise ValueError in the worker, never post a call that throws inside the GUI event loop. Task 2 tests it.
-5. **A slot on the panel span's `range_changed` that removes the panel span**, triggered by an edit on one of its parts. This deletes the part that is emitting. It must not crash, and nothing must emit afterwards. Task 3 tests it for spans, Task 5 for lines (`position_changed`).
+5. **A slot on the panel span's `range_changed` that removes the panel span**, triggered by an edit on one of its parts. This deletes the part that is emitting. It must not crash, and nothing must emit afterwards. Task 4 tests it for spans, Task 7 for lines (`position_changed`).
 
 ---
 
@@ -237,7 +237,7 @@ for _cls in (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot, SciQLopMult
     if "span" in vars(_cls):
         _cls.span = _none_is_unbounded(vars(_cls)["span"])
 ```
-Task 2 adds the loop with the first two classes; Task 3 adds `SciQLopMultiPlotPanel`.
+Task 2 adds the loop with the first two classes; Task 4 adds `SciQLopMultiPlotPanel`.
 
 ### B5: `SciQLopStraightLine::min_value()` / `max_value()`
 
@@ -300,7 +300,7 @@ and inside `<object-type name="SciQLopStraightLine">`:
 
 ### B6: "unbounded" in a shorthand body
 
-The shorthands call `span()` with one range unbounded. Branch O writes `std::nullopt`; branches F and F-py write `SciQLopPlotRange()`. Tasks 6 and 7 show the O spelling; under F and F-py, replace each `std::nullopt` in those bodies with `SciQLopPlotRange()`.
+The shorthands call `span()` with one range unbounded. Branch O writes `std::nullopt`; branches F and F-py write `SciQLopPlotRange()`. Tasks 9 and 10 show the O spelling; under F and F-py, replace each `std::nullopt` in those bodies with `SciQLopPlotRange()`.
 
 ---
 
@@ -309,28 +309,28 @@ The shorthands call `span()` with one range unbounded. Branch O writes `std::nul
 | File | Change | Tasks |
 |---|---|---|
 | `include/SciQLopPlots/enums.hpp` | `SpanKind` | 2 |
-| `include/SciQLopPlots/Items/SciQLopSpan.hpp` (new) | the public span class, `SpanAxis`, `span_kind` | 2, 3, 8 |
-| `src/SciQLopSpan.cpp` (new) | its definitions | 2, 3, 8 |
-| `include/SciQLopPlots/Items/impl/SpanTargets.hpp` (new, internal) | `SpanTarget`, `PlotSpanTarget`, `SpanState`, `PanelSpanTarget` | 2, 3, 8 |
-| `src/SpanTargets.cpp` (new) | the targets | 2, 3, 8 |
-| `include/SciQLopPlots/Items/impl/PanelParts.hpp` (new, internal) | the parts template, `panel_host` | 3 |
-| `include/SciQLopPlots/Items/impl/LineTargets.hpp` (new, internal), `src/LineTargets.cpp` (new) | `LineTarget`, `PlotLineTarget`, `LineState`, `PanelLineTarget` | 4, 5, 9 |
-| `include/SciQLopPlots/Items/SciQLopStraightLines.hpp`, `src/SciQLopStraightLines.cpp` | line class on a target; `StraightLine::set_coordinates`; panel constructor | 4, 5, 9 |
-| `include/SciQLopPlots/SciQLopPlotInterface.hpp`, `src/SciQLopPlotInterface.cpp` | `span`, `straight_line`, shorthands, `remove(SciQLopSpan*)`, wrong-scope message | 2, 3, 4, 6 |
-| `include/SciQLopPlots/SciQLopPlot.hpp`, `src/SciQLopPlot.cpp` | `span`, `straight_line` overrides; old factory overrides removed | 2, 4, 6 |
-| `include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp`, `src/SciQLopMultiPlotPanel.cpp` | `span`, `straight_line`, shorthands, `remove` overloads | 3, 5, 7, 8, 9 |
-| `include/SciQLopPlots/Items/SciQLop{Vertical,Horizontal,Rectangular}Span.hpp` | empty subclasses (+ legacy shims) | 8 |
-| `src/SciQLop{Vertical,Horizontal,Rectangular}Span.cpp`, `src/SciQLopSpanBase.cpp`, `include/SciQLopPlots/Items/SciQLopSpanBase.hpp` | deleted | 8 |
-| `include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp`, `src/MultiPlotsVSpan.cpp` | the old panel span on `SciQLopSpan`; the collection unchanged | 8 |
-| `include/SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp`; `src/MultiPlotsVLine.cpp` (deleted) | the old panel line on `SciQLopStraightLine` | 9 |
-| `src/meson.build` | sources and moc headers | 2, 3, 4, 8, 9 |
-| `SciQLopPlots/bindings/bindings.xml`, `bindings.h` | types, ownership, errors, old properties | 1-9 |
-| `SciQLopPlots/__init__.py` | `.on` and alias tables, factory wrappers, deprecations | 2, 4, 6, 8, 9, 10 |
-| `pyproject.toml` | the warning filter also catches `use line.` | 10 |
-| tests (new) | `tests/integration/test_span.py`, `test_panel_span.py`, `test_straight_line.py`, `test_old_span_line_names.py` | 2-9 |
-| tests (changed) | `test_drawn_contract.py` (2, 3, 5, 6, 7, 8, 9, 13), `test_item_factories.py` (4, 6), fallout of the factory switch (6, 7), the rest (11) | |
-| `docs/user-guide.md`, `README.md`, `tests/manual-tests/` | the new API, the migration note | 7, 12 |
-| `tests/sweeps/self_delete/common.py` | builders for every kind and scope | 13 |
+| `include/SciQLopPlots/Items/SciQLopSpan.hpp` (new) | the public span class, `SpanAxis`, `span_kind` | 2, 3, 4, 11 |
+| `src/SciQLopSpan.cpp` (new) | its definitions | 2, 3, 4, 11 |
+| `include/SciQLopPlots/Items/impl/SpanTargets.hpp` (new, internal) | `SpanTarget`, `PlotSpanTarget`, `SpanState`, `PanelSpanTarget` | 2, 3, 4, 11 |
+| `src/SpanTargets.cpp` (new) | the targets | 2, 3, 4, 11 |
+| `include/SciQLopPlots/Items/impl/PanelParts.hpp` (new, internal) | the parts template, `panel_host` | 4 |
+| `include/SciQLopPlots/Items/impl/LineTargets.hpp` (new, internal), `src/LineTargets.cpp` (new) | `LineTarget`, `PlotLineTarget`, `LineState`, `PanelLineTarget` | 5, 7, 12 |
+| `include/SciQLopPlots/Items/SciQLopStraightLines.hpp`, `src/SciQLopStraightLines.cpp` | line class on a target; `StraightLine::set_coordinates`; clamp getters; panel constructor | 5, 6, 7, 12 |
+| `include/SciQLopPlots/SciQLopPlotInterface.hpp`, `src/SciQLopPlotInterface.cpp` | `span`, `straight_line`, shorthands, `remove(SciQLopSpan*)`, wrong-scope message | 2, 4, 5, 9 |
+| `include/SciQLopPlots/SciQLopPlot.hpp`, `src/SciQLopPlot.cpp` | `span`, `straight_line` overrides; old factory overrides removed | 2, 5, 9 |
+| `include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp`, `src/SciQLopMultiPlotPanel.cpp` | `span`, `straight_line`, shorthands, `remove` overloads | 4, 7, 10, 11, 12 |
+| `include/SciQLopPlots/Items/SciQLop{Vertical,Horizontal,Rectangular}Span.hpp` | empty subclasses (+ legacy shims) | 11 |
+| `src/SciQLop{Vertical,Horizontal,Rectangular}Span.cpp`, `src/SciQLopSpanBase.cpp`, `include/SciQLopPlots/Items/SciQLopSpanBase.hpp` | deleted | 11 |
+| `include/SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp`, `src/MultiPlotsVSpan.cpp` | the old panel span on `SciQLopSpan`; the collection unchanged | 11 |
+| `include/SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp`; `src/MultiPlotsVLine.cpp` (deleted) | the old panel line on `SciQLopStraightLine` | 12 |
+| `src/meson.build` | sources and moc headers | 2, 5, 11, 12 |
+| `SciQLopPlots/bindings/bindings.xml`, `bindings.h` | types, ownership, errors, old properties | 1-7, 9-12 |
+| `SciQLopPlots/__init__.py` | `.on` and alias tables, factory wrappers, deprecations | 2 (F-py), 4 (F-py), 5, 8, 9, 11, 12, 13 |
+| `pyproject.toml` | the warning filter also catches `use line.` | 13 |
+| tests (new) | `tests/integration/test_span.py`, `test_panel_span.py`, `test_straight_line.py`, `test_old_span_line_names.py` | 2-8, 11-13 |
+| tests (changed) | `test_drawn_contract.py` (2, 4, 5, 7, 9, 10, 11, 12, 16), `test_item_factories.py` (5, 9, 10, 11), fallout of the factory switch (9, 10), the rest (14) | |
+| `docs/user-guide.md`, `README.md`, `tests/manual-tests/` | the new API, the migration note | 10, 15 |
+| `tests/sweeps/self_delete/common.py` | builders for every kind and scope | 16 |
 
 ---
 
@@ -342,13 +342,15 @@ The shorthands call `span()` with one range unbounded. Branch O writes `std::nul
 - Modify (kept): this plan's **Spike ledger** section
 
 **Interfaces:**
-- Produces: the ledger's outcome, `O`, `F` or `F-py`, with the probe output as evidence. Tasks 2-9 read it.
+- Produces: the ledger's outcome, `O`, `F` or `F-py`, with the probe output as evidence. Tasks 2-12 read it.
 - Leaves no code in the tree.
 
 The question: can a getter return None and an argument take None, for `SciQLopPlotRange` and for `double`?
 - Branch O: `std::optional<T>` both ways, through a `<container-type>` entry of ours.
 - Branch F: plain C++ types, with None mapped by bindings markup (B3, B4, B5).
 - Branch F-py: like F, except the `span()` arguments are mapped by a Python wrapper (B4).
+
+**Exit criterion: the ledger is filled** (outcome, evidence, extra lines). The spike class compiling, or not, is evidence, not the goal.
 
 The decision rule:
 1. O if every O probe passes in Step 6 and the signature scan shows no warning (or only warnings that a `mapping.type_map` entry silences; record those entries).
@@ -534,7 +536,7 @@ Run the same probe again. Branch O passes when every `O ...` line shows the want
 
 - [ ] **Step 7: Decide and fill in the ledger**
 
-Apply the decision rule above. Replace the three PENDING fields of the **Spike ledger** section with the outcome, the pasted probe output of both runs, the rejected-log lines, and the extra lines (or "none"). If an F markup spelling had to change in Step 3, paste the version that worked into the ledger: Tasks 2-5 use it instead of B4's text.
+Apply the decision rule above. Replace the three PENDING fields of the **Spike ledger** section with the outcome, the pasted probe output of both runs, the rejected-log lines, and the extra lines (or "none"). If an F markup spelling had to change in Step 3, paste the version that worked into the ledger: Tasks 2-7 use it instead of B4's text.
 
 - [ ] **Step 8: Remove the spike from the tree, rebuild, check**
 
@@ -554,7 +556,9 @@ git commit -m "docs(plans): span/line unification spike outcome (how None crosse
 
 ---
 
-### Task 2: `SciQLopSpan` at plot scope, and `plot.span()`
+### Task 2: The `SciQLopSpan` core at plot scope, and `plot.span()`
+
+This task builds the class, its plot target, the factory and the kind and unbounded-axis rules. Coordinates switching, pixel accessors, the border pen, click selection and the Delete key come in Task 3; the Python table rows in Task 8.
 
 **Files:**
 - Modify: `include/SciQLopPlots/enums.hpp` (after `Coordinates`, ~line 49)
@@ -564,8 +568,8 @@ git commit -m "docs(plans): span/line unification spike outcome (how None crosse
 - Modify: `include/SciQLopPlots/SciQLopPlot.hpp` (after line 561), `src/SciQLopPlot.cpp` (after `rectangular_span`, ~line 1620; include at ~line 38)
 - Modify: `src/meson.build` (moc header after line 70, sources after line 169)
 - Modify: `SciQLopPlots/bindings/bindings.h` (after line 30), `SciQLopPlots/bindings/bindings.xml`
-- Modify: `SciQLopPlots/__init__.py` (`_ON_EXCEPTIONS` ~line 304, `_DEPRECATED_ALIASES` ~line 629; branch F-py: B4)
-- Test: `tests/integration/test_span.py` (create), `tests/integration/test_drawn_contract.py` (one row), `tests/integration/conftest.py` (three helpers, shared with Tasks 3-5)
+- Modify, branch F-py only: `SciQLopPlots/__init__.py` (B4)
+- Test: `tests/integration/test_span.py` (create), `tests/integration/test_drawn_contract.py` (one row), `tests/integration/conftest.py` (three helpers, shared with Tasks 3-7)
 
 **Interfaces:**
 - Consumes: the ledger's branch (B1, B2, B3, B4).
@@ -575,11 +579,11 @@ git commit -m "docs(plans): span/line unification spike outcome (how None crosse
   - `namespace impl { enum class SpanAxis { Key, Value }; }` in SciQLopSpan.hpp.
   - `SpanKind SciQLopPlots::span_kind(bool bounds_key, bool bounds_value)`: throws `std::invalid_argument("span: give key_range, value_range or both")` for neither.
   - `class SciQLopSpan : public SciQLopDrawnObject` with the plot constructor `SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRange& key_range, const SciQLopPlotRange& value_range, const QColor& color, bool read_only, bool visible, const QString& tool_tip, Coordinates coordinates, const QString& id = "")`. The range of an unbounded axis is ignored. Not constructible from Python.
-  - Its methods: `kind()`, `scope()` (the parent: plot or panel), `is_panel_part()`, `id()`, B1's `key_range()` / `value_range()`, `set_key_range`, `set_value_range`, `range()`, `set_range`, `coordinates()`, `set_coordinates`, `pixel_range()`, `pixel_key_range()`, `pixel_value_range()`, `read_only()`, `set_read_only`, `tool_tip()`, `set_tool_tip`, `borders_color()`, `set_borders_color`, `line_width()`, `set_line_width`, `line_style()`, `set_line_style`. Signals: `range_changed`, `key_range_changed`, `value_range_changed` (each `SciQLopPlotRange`), `coordinates_changed(Coordinates)`, `read_only_changed(bool)`, `tool_tip_changed(const QString&)`, `delete_requested()`.
+  - Its methods: `kind()`, `scope()` (the parent: plot or panel), `is_panel_part()`, `id()`, B1's `key_range()` / `value_range()`, `set_key_range`, `set_value_range`, `range()`, `set_range`, `coordinates()` (the getter; the constructor takes the mode), `read_only()`, `set_read_only`, `tool_tip()`, `set_tool_tip`, and the drawn hooks (visible, selected, colour). Signals: `range_changed`, `key_range_changed`, `value_range_changed` (each `SciQLopPlotRange`), `read_only_changed(bool)`, `tool_tip_changed(const QString&)`.
   - Private, for the targets (friends): `void notify_range(impl::SpanAxis, const SciQLopPlotRange&)`.
-  - `impl::SpanTarget` (abstract), `impl::PlotSpanTarget`, `impl::bounded_axes(SpanKind)`, in `Items/impl/SpanTargets.hpp`.
+  - `impl::SpanTarget` (abstract), `impl::PlotSpanTarget`, `impl::bounded_axes(SpanKind)`, in `Items/impl/SpanTargets.hpp`. Task 3 adds members to both.
   - `SciQLopPlotInterface::span(...)` (virtual, NotImplementedError by default; B2 signature), overridden by `SciQLopPlot`. `SciQLopPlotInterface::remove(SciQLopSpan*)`.
-- Produces, Python: `plot.span(key_range=None, value_range=None, color=QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="", coordinates=Coordinates.Data, id="")`, C++-owned result; `.on.tooltip` on `SciQLopSpan` (signal `tool_tip_changed`); `SciQLopSpan.selectionChanged` alias.
+- Produces, Python: `plot.span(key_range=None, value_range=None, color=QColor(100, 100, 100, 100), read_only=False, visible=True, tool_tip="", coordinates=Coordinates.Data, id="")`, C++-owned result.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -620,7 +624,7 @@ def scoped_host(scope, qtbot):
     return host
 ```
 
-`tests/integration/test_span.py`. `SCOPES` has only `"plot"` here; Task 3 adds `"panel"`, and every test then runs at both scopes.
+`tests/integration/test_span.py`. `SCOPES` has only `"plot"` here; Task 4 adds `"panel"`, and every test then runs at both scopes.
 
 ```python
 """SciQLopSpan: one span class for every kind, at plot and panel scope (API review 5.6, Plan A)."""
@@ -681,14 +685,17 @@ def test_the_factory_returns_the_plain_class(host, kind):
     assert span.kind() == KINDS[kind][0]
 
 
-def test_the_class_has_no_python_constructor(plot):
-    with pytest.raises(TypeError):
-        SciQLopSpan(plot, SpanKind.Vertical, R(1.0, 2.0), R(1.0, 2.0))
+def test_the_class_has_no_python_constructor(plot, panel):
+    """The full C++ argument list, so only a removed constructor can raise here."""
+    for host in (plot, panel):
+        with pytest.raises(TypeError):
+            SciQLopSpan(host, SpanKind.Vertical, R(1.0, 2.0), R(1.0, 2.0), QColor("red"), False,
+                        True, "tip", Coordinates.Data, "id")
 
 
 def test_the_defaults(host, kind):
     span = make(host, kind)
-    assert (span.color(), span.borders_color()) == (GREY, GREY.lighter())
+    assert span.color() == GREY
     assert (span.read_only(), span.visible(), span.selected(), span.tool_tip()) == (False, True, False, "")
     assert span.coordinates() == Coordinates.Data
     assert span.id() and span.id() != make(host, kind).id()
@@ -719,8 +726,6 @@ def test_setting_an_unbounded_axis_raises(host, kind):
         if axis not in bounded(kind):
             with pytest.raises(ValueError, match=f"{axis} axis"):
                 getattr(span, f"set_{axis}_range")(R(0.0, 1.0))
-            with pytest.raises(ValueError, match=f"{axis} axis"):
-                getattr(span, f"pixel_{axis}_range")()
 
 
 def test_a_bounded_axis_round_trips(host, kind):
@@ -741,7 +746,7 @@ def test_range_is_the_bounded_axis(host, kind):
 
 def test_range_on_a_rectangular_span_raises(host):
     span = make(host, "rectangular")
-    for call in (span.range, lambda: span.set_range(R(0.0, 1.0)), span.pixel_range):
+    for call in (span.range, lambda: span.set_range(R(0.0, 1.0))):
         with pytest.raises(ValueError, match="rectangular"):
             call()
 
@@ -798,70 +803,6 @@ def test_signalled_accessors_round_trip_and_emit_once(host, kind, name):
     assert (getattr(span, name)(), seen) == (value, [value])
 
 
-STYLE = {"borders_color": QColor("red"), "line_width": 5.0, "line_style": Qt.PenStyle.DashLine}
-
-
-@pytest.mark.parametrize("name", STYLE)
-def test_the_border_style_round_trips(host, kind, name):
-    span = make(host, kind)
-    getattr(span, f"set_{name}")(STYLE[name])
-    assert getattr(span, name)() == STYLE[name]
-
-
-def test_switching_coordinates_keeps_the_span_in_place(shown_host, kind):
-    span = make(shown_host, kind)
-    process_events()
-    data = {axis: getattr(span, f"{axis}_range")() for axis in bounded(kind)}
-    pixels = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
-    seen = record(span.coordinates_changed)
-    span.set_coordinates(Coordinates.Pixels)
-    process_events()
-    assert seen == [Coordinates.Pixels]
-    for axis in bounded(kind):
-        assert _close(getattr(span, f"{axis}_range")(), pixels[axis], 1.0)
-        assert _close(getattr(span, f"pixel_{axis}_range")(), pixels[axis], 1.0)
-    span.set_coordinates(Coordinates.Data)
-    process_events()
-    for axis in bounded(kind):
-        assert _close(getattr(span, f"{axis}_range")(), data[axis], 0.05)
-
-
-def test_switching_coordinates_signals_the_new_numbers(shown_host):
-    span = make(shown_host, "vertical")
-    process_events()
-    pixels = span.pixel_range()
-    ranges, keys = record(span.range_changed), record(span.key_range_changed)
-    span.set_coordinates(Coordinates.Pixels)
-    assert len(ranges) == 1 and len(keys) == 1 and _close(ranges[0], pixels, 1.0)
-
-
-def test_a_pixels_span_stays_put_on_zoom(shown_host, kind):
-    span = make(shown_host, kind)
-    process_events()
-    span.set_coordinates(Coordinates.Pixels)
-    before = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
-    for plot in plots_of(shown_host):
-        plot.y_axis().set_range(R(-5.0, 5.0))
-    if isinstance(shown_host, SciQLopPlot):
-        shown_host.x_axis().set_range(R(0.0, 100.0))
-    else:
-        shown_host.set_time_axis_range(R(0.0, 100.0))
-    process_events()
-    for axis in bounded(kind):
-        assert _close(getattr(span, f"pixel_{axis}_range")(), before[axis], 1.0)
-
-
-def test_the_delete_key_asks_once(shown_host, kind):
-    span = make(shown_host, kind)
-    asked = []
-    span.delete_requested.connect(lambda: asked.append(True))
-    span.set_selected(True)
-    process_events()
-    QTest.keyClick(canvas_of(plots_of(shown_host)[0]), Qt.Key.Key_Delete)
-    process_events()
-    assert asked == [True]
-
-
 def test_remove_deletes_it(host, kind):
     span = make(host, kind)
     host.remove(span)
@@ -905,17 +846,7 @@ def test_an_unbounded_axis_set_off_thread_raises_in_the_caller(host):
     assert "value axis" in str(out.get("error", ""))
 
 
-def test_on_tooltip_is_observable(host, kind):
-    span = make(host, kind)
-    seen = []
-    pipeline = span.on.tooltip >> (lambda event: seen.append(event.value))
-    span.set_tool_tip("tip")
-    assert seen == ["tip"]
-    pipeline.disconnect()
-
-
-@pytest.mark.parametrize("name", ["read_only", "tool_tip", "coordinates", "range", "key_range",
-                                  "value_range"])
+@pytest.mark.parametrize("name", ["read_only", "tool_tip", "range", "key_range", "value_range"])
 def test_on_resolves_with_a_signal(host, name):
     assert getattr(make(host, "vertical").on, name).signal is not None
 
@@ -936,12 +867,10 @@ def test_on_reads_none_and_refuses_writes_on_an_unbounded_axis(host):
 
 
 def test_on_position_is_absent(host, kind):
+    span = make(host, kind)
+    assert not hasattr(span, "position")
     with pytest.raises(AttributeError):
-        make(host, kind).on.position
-
-
-def test_selection_changed_keeps_its_old_alias():
-    assert SciQLopSpan.selectionChanged is SciQLopSpan.selection_changed
+        span.on.position
 ```
 
 In `tests/integration/test_drawn_contract.py`, after the `Row("span", ...)` entry (~line 222), add:
@@ -1065,25 +994,13 @@ public:
     [[nodiscard]] SciQLopPlotRange range() const;
     void set_range(const SciQLopPlotRange& range);
 
+    //! Data, or Pixels from the plot area's top-left, as made.
     [[nodiscard]] Coordinates coordinates() const;
-    //! Data, or Pixels from the plot area's top-left, for every bounded axis; the span stays put.
-    void set_coordinates(Coordinates coordinates);
-    [[nodiscard]] SciQLopPlotRange pixel_range() const;
-    [[nodiscard]] SciQLopPlotRange pixel_key_range() const;
-    [[nodiscard]] SciQLopPlotRange pixel_value_range() const;
 
     [[nodiscard]] bool read_only() const;
     void set_read_only(bool read_only);
     [[nodiscard]] QString tool_tip() const;
     void set_tool_tip(const QString& tool_tip);
-
-    //! The border pen: colour, width and style.
-    [[nodiscard]] QColor borders_color() const;
-    void set_borders_color(const QColor& color);
-    [[nodiscard]] double line_width() const;
-    void set_line_width(double width);
-    [[nodiscard]] Qt::PenStyle line_style() const;
-    void set_line_style(Qt::PenStyle style);
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -1092,10 +1009,8 @@ signals:
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void key_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void value_range_changed(SciQLopPlotRange range);
-    Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
     Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
-    Q_SIGNAL void delete_requested();
 };
 ```
 
@@ -1141,23 +1056,13 @@ public:
     virtual SciQLopPlotRange range(SpanAxis axis) const = 0;
     //! Applies \a range, and the span notifies once; nothing for the current range.
     virtual void set_range(SpanAxis axis, const SciQLopPlotRange& range) = 0;
-    virtual SciQLopPlotRange pixel_range(SpanAxis axis) const = 0;
     virtual Coordinates coordinates() const = 0;
-    //! Re-expresses every bounded axis in \a coordinates, keeping the span in place. Silent: the
-    //! span reports what changed.
-    virtual void set_coordinates(Coordinates coordinates) = 0;
     virtual bool read_only() const = 0;
     virtual void set_read_only(bool read_only) = 0;
     virtual QString tool_tip() const = 0;
     virtual void set_tool_tip(const QString& tool_tip) = 0;
     virtual QColor color() const = 0;
     virtual void set_color(const QColor& color) = 0;
-    virtual QColor borders_color() const = 0;
-    virtual void set_borders_color(const QColor& color) = 0;
-    virtual double line_width() const = 0;
-    virtual void set_line_width(double width) = 0;
-    virtual Qt::PenStyle line_style() const = 0;
-    virtual void set_line_style(Qt::PenStyle style) = 0;
     virtual bool visible() const = 0;
     virtual void set_visible(bool visible) = 0;
     virtual bool selected() const = 0;
@@ -1180,21 +1085,13 @@ public:
 
     SciQLopPlotRange range(SpanAxis axis) const override;
     void set_range(SpanAxis axis, const SciQLopPlotRange& range) override;
-    SciQLopPlotRange pixel_range(SpanAxis axis) const override;
     Coordinates coordinates() const override;
-    void set_coordinates(Coordinates coordinates) override;
     bool read_only() const override;
     void set_read_only(bool read_only) override;
     QString tool_tip() const override;
     void set_tool_tip(const QString& tool_tip) override;
     QColor color() const override;
     void set_color(const QColor& color) override;
-    QColor borders_color() const override;
-    void set_borders_color(const QColor& color) override;
-    double line_width() const override;
-    void set_line_width(double width) override;
-    Qt::PenStyle line_style() const override;
-    void set_line_style(Qt::PenStyle style) override;
     bool visible() const override;
     void set_visible(bool visible) override;
     bool selected() const override;
@@ -1290,39 +1187,10 @@ void set_type(const Edges& edges, QCPItemPosition::PositionType type)
     }
 }
 
-double area_origin(const Edges& edges)
-{
-    const auto* rect = edges.lower->axisRect();
-    return rect ? along(rect->topLeft(), edges.along) : 0.;
-}
-
 SciQLopPlotRange coords_of(const Edges& edges)
 {
     return SciQLopPlotRange(along(edges.lower->coords(), edges.along),
                             along(edges.upper->coords(), edges.along));
-}
-
-// The resolved pixel positions are right in both modes; coordToPixel() would read pixel
-// coordinates as data values.
-SciQLopPlotRange pixels_of(const Edges& edges)
-{
-    const double origin = area_origin(edges);
-    return SciQLopPlotRange(along(edges.lower->pixelPosition(), edges.along) - origin,
-                            along(edges.upper->pixelPosition(), edges.along) - origin);
-}
-
-//! \a pixels (from the plot area) expressed in \a coordinates, through the edges' axis.
-SciQLopPlotRange from_pixels(const Edges& edges, Coordinates coordinates,
-                             const SciQLopPlotRange& pixels)
-{
-    if (coordinates == Coordinates::Pixels)
-        return pixels;
-    auto* axis = edges.along == Qt::Horizontal ? edges.lower->keyAxis() : edges.lower->valueAxis();
-    if (!axis)
-        return coords_of(edges);
-    const double origin = area_origin(edges);
-    return SciQLopPlotRange(axis->pixelToCoord(pixels.first + origin),
-                            axis->pixelToCoord(pixels.second + origin));
 }
 
 //! Through NeoQCP's setters: they mark the GPU layer dirty, queue a replot and emit last.
@@ -1375,10 +1243,6 @@ PlotSpanTarget::PlotSpanTarget(SciQLopSpan* span, SciQLopPlot* plot, SpanKind ki
         QObject::connect(r, &QCPItemRSpan::keyRangeChanged, span, notify(SpanAxis::Key));
         QObject::connect(r, &QCPItemRSpan::valueRangeChanged, span, notify(SpanAxis::Value));
     }
-    QObject::connect(m_item.data(), &QCPAbstractItem::selectionChanged, span,
-                     [span](bool selected) { span->_notify_selected(selected); });
-    QObject::connect(m_item.data(), &QCPAbstractItem::deleteRequested, span,
-                     &SciQLopSpan::delete_requested);
 }
 
 PlotSpanTarget::~PlotSpanTarget()
@@ -1397,29 +1261,9 @@ void PlotSpanTarget::set_range(SpanAxis axis, const SciQLopPlotRange& range)
         apply_range(m_item.data(), axis, range);
 }
 
-SciQLopPlotRange PlotSpanTarget::pixel_range(SpanAxis axis) const
-{
-    return m_item ? pixels_of(edges_of(m_item.data(), axis)) : SciQLopPlotRange();
-}
-
 Coordinates PlotSpanTarget::coordinates() const
 {
     return m_coordinates;
-}
-
-void PlotSpanTarget::set_coordinates(Coordinates coordinates)
-{
-    if (!m_item || coordinates == m_coordinates)
-        return;
-    const QSignalBlocker blocker(m_item.data());
-    for (const auto axis : bounded_axes(m_kind))
-    {
-        const auto edges = edges_of(m_item.data(), axis);
-        const auto pixels = pixels_of(edges);
-        set_type(edges, position_type(coordinates));
-        apply_range(m_item.data(), axis, from_pixels(edges, coordinates, pixels));
-    }
-    m_coordinates = coordinates;
 }
 
 bool PlotSpanTarget::read_only() const
@@ -1454,47 +1298,6 @@ void PlotSpanTarget::set_color(const QColor& color)
     if (!m_item)
         return;
     m_base->set_color(color);
-    m_base->replot();
-}
-
-QColor PlotSpanTarget::borders_color() const
-{
-    return m_item ? m_item->borderPen().color() : QColor();
-}
-
-void PlotSpanTarget::set_borders_color(const QColor& color)
-{
-    if (!m_item)
-        return;
-    auto pen = m_item->borderPen();
-    pen.setColor(color);
-    m_item->setBorderPen(pen);
-    m_base->replot();
-}
-
-double PlotSpanTarget::line_width() const
-{
-    return m_item ? m_base->line_width() : 0.;
-}
-
-void PlotSpanTarget::set_line_width(double width)
-{
-    if (!m_item)
-        return;
-    m_base->set_line_width(width);
-    m_base->replot();
-}
-
-Qt::PenStyle PlotSpanTarget::line_style() const
-{
-    return m_item ? m_base->line_style() : Qt::SolidLine;
-}
-
-void PlotSpanTarget::set_line_style(Qt::PenStyle style)
-{
-    if (!m_item)
-        return;
-    m_base->set_line_style(style);
     m_base->replot();
 }
 
@@ -1585,7 +1388,6 @@ SciQLopSpan::SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRang
                                                             value_range, coordinates) }
 {
     m_target->set_color(color);
-    m_target->set_borders_color(color.lighter());
     m_target->set_read_only(read_only);
     m_target->set_visible(visible);
     m_target->set_tool_tip(tool_tip);
@@ -1680,46 +1482,6 @@ Coordinates SciQLopSpan::coordinates() const
     return m_target->coordinates();
 }
 
-void SciQLopSpan::set_coordinates(Coordinates coordinates)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_coordinates(coordinates));
-    if (m_target->coordinates() == coordinates)
-        return;
-    std::vector<std::pair<SpanAxis, SciQLopPlotRange>> before;
-    for (const auto axis : impl::bounded_axes(m_kind))
-        before.emplace_back(axis, m_target->range(axis));
-    // A part's slot may delete a panel span while its target writes.
-    const QPointer<SciQLopSpan> alive(this);
-    m_target->set_coordinates(coordinates);
-    if (!alive)
-        return;
-    Q_EMIT coordinates_changed(coordinates);
-    for (const auto& [axis, old] : before)
-    {
-        if (!alive)
-            return;
-        if (const auto now = m_target->range(axis); now != old)
-            notify_range(axis, now);
-    }
-}
-
-SciQLopPlotRange SciQLopSpan::pixel_range() const
-{
-    return m_target->pixel_range(one_axis("pixel_range"));
-}
-
-SciQLopPlotRange SciQLopSpan::pixel_key_range() const
-{
-    require_bounded(SpanAxis::Key, "pixel_key_range");
-    return m_target->pixel_range(SpanAxis::Key);
-}
-
-SciQLopPlotRange SciQLopSpan::pixel_value_range() const
-{
-    require_bounded(SpanAxis::Value, "pixel_value_range");
-    return m_target->pixel_range(SpanAxis::Value);
-}
-
 bool SciQLopSpan::read_only() const
 {
     return m_target->read_only();
@@ -1750,39 +1512,6 @@ void SciQLopSpan::set_tool_tip(const QString& tool_tip)
     m_target->set_tool_tip(tool_tip);
     if (alive)
         Q_EMIT tool_tip_changed(tool_tip);
-}
-
-QColor SciQLopSpan::borders_color() const
-{
-    return m_target->borders_color();
-}
-
-void SciQLopSpan::set_borders_color(const QColor& color)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
-    m_target->set_borders_color(color);
-}
-
-double SciQLopSpan::line_width() const
-{
-    return m_target->line_width();
-}
-
-void SciQLopSpan::set_line_width(double width)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
-    m_target->set_line_width(width);
-}
-
-Qt::PenStyle SciQLopSpan::line_style() const
-{
-    return m_target->line_style();
-}
-
-void SciQLopSpan::set_line_style(Qt::PenStyle style)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
-    m_target->set_line_style(style);
 }
 
 bool SciQLopSpan::_visible() const
@@ -1919,6 +1648,392 @@ Replace both comments with B2's lines for the ledger's branch (drop the `= ...` 
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
             </inject-code>
         </modify-function>
+        <!-- B3: branches F and F-py add the key_range / value_range modify-functions here. -->
+    </object-type>
+  ```
+
+If shiboken warns that the `remove="all"` signature was not found, read the exact spelling it lists in `build-venv/SciQLopPlots/bindings/mjb_shiboken.log` and copy it. `test_the_class_has_no_python_constructor` is the proof.
+
+- [ ] **Step 10: Python, by branch**
+
+`SciQLopPlots/__init__.py` (the `.on` and alias rows come in Task 8):
+- Branch F-py: B4's block, with the loop over `(SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot)`.
+- Branch O: the ledger's `mapping.type_map` entries, if any, in `_register_with_shiboken_signatures` (line 60).
+
+- [ ] **Step 11: Reconfigure, build, run**
+
+Reconfigure (new object-type), then compile: two commands. Then run `tests/integration/test_span.py tests/integration/test_drawn_contract.py tests/integration/test_binding_signatures.py`. Expected: all pass. Then the full suite.
+
+- [ ] **Step 12: Commit**
+
+```bash
+git add include/SciQLopPlots/enums.hpp include/SciQLopPlots/Items/SciQLopSpan.hpp include/SciQLopPlots/Items/impl/SpanTargets.hpp src/SciQLopSpan.cpp src/SpanTargets.cpp include/SciQLopPlots/SciQLopPlotInterface.hpp src/SciQLopPlotInterface.cpp include/SciQLopPlots/SciQLopPlot.hpp src/SciQLopPlot.cpp src/meson.build SciQLopPlots/bindings/bindings.h SciQLopPlots/bindings/bindings.xml tests/integration/conftest.py tests/integration/test_span.py tests/integration/test_drawn_contract.py
+git commit -m "feat(span): SciQLopSpan core, one span class for every kind, and plot.span()"
+```
+
+Branch F-py also stages `SciQLopPlots/__init__.py`.
+
+---
+
+### Task 3: Span coordinates, pixel accessors, the border pen, click selection, the Delete key
+
+**Files:**
+- Modify: `include/SciQLopPlots/Items/SciQLopSpan.hpp`, `src/SciQLopSpan.cpp`
+- Modify: `include/SciQLopPlots/Items/impl/SpanTargets.hpp`, `src/SpanTargets.cpp`
+- Modify: `SciQLopPlots/bindings/bindings.xml` (inside `<object-type name="SciQLopSpan">`)
+- Test: `tests/integration/test_span.py` (append)
+
+**Interfaces:**
+- Consumes: Task 2 (`SciQLopSpan`, `SpanTarget`, `PlotSpanTarget`, the `Edges` helpers in `src/SpanTargets.cpp`).
+- Produces, on `SciQLopSpan`: `set_coordinates(Coordinates)`, `pixel_range()`, `pixel_key_range()`, `pixel_value_range()`, `borders_color()` / `set_borders_color`, `line_width()` / `set_line_width`, `line_style()` / `set_line_style`; signals `coordinates_changed(Coordinates)` and `delete_requested()`. The constructor sets the borders to `color.lighter()`. NeoQCP's click selection reaches `selection_changed`.
+- Produces, on `SpanTarget` (pure virtual) and `PlotSpanTarget`: `pixel_range(SpanAxis)`, `set_coordinates(Coordinates)`, `borders_color`, `set_borders_color`, `line_width`, `set_line_width`, `line_style`, `set_line_style`.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `tests/integration/test_span.py`:
+
+```python
+def test_the_borders_default_to_the_lighter_colour(host, kind):
+    assert make(host, kind).borders_color() == GREY.lighter()
+
+
+def test_pixel_accessors_follow_the_bounded_axes(host, kind):
+    span = make(host, kind)
+    for axis in ("key", "value"):
+        if axis not in bounded(kind):
+            with pytest.raises(ValueError, match=f"{axis} axis"):
+                getattr(span, f"pixel_{axis}_range")()
+    if kind == "rectangular":
+        with pytest.raises(ValueError, match="rectangular"):
+            span.pixel_range()
+
+
+def test_on_coordinates_has_a_signal(host):
+    assert make(host, "vertical").on.coordinates.signal is not None
+
+
+def test_clicking_a_span_selects_it_and_signals_once(shown_host):
+    span = make(shown_host, "vertical")
+    seen = record(span.selection_changed)
+    canvas = canvas_of(plots_of(shown_host)[0])
+    QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier,
+                     QPoint(canvas.width() // 2, canvas.height() // 2))
+    process_events()
+    assert (span.selected(), seen) == (True, [True])
+
+
+STYLE = {"borders_color": QColor("red"), "line_width": 5.0, "line_style": Qt.PenStyle.DashLine}
+
+
+@pytest.mark.parametrize("name", STYLE)
+def test_the_border_style_round_trips(host, kind, name):
+    span = make(host, kind)
+    getattr(span, f"set_{name}")(STYLE[name])
+    assert getattr(span, name)() == STYLE[name]
+
+
+def test_switching_coordinates_keeps_the_span_in_place(shown_host, kind):
+    span = make(shown_host, kind)
+    process_events()
+    data = {axis: getattr(span, f"{axis}_range")() for axis in bounded(kind)}
+    pixels = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
+    seen = record(span.coordinates_changed)
+    span.set_coordinates(Coordinates.Pixels)
+    process_events()
+    assert seen == [Coordinates.Pixels]
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"{axis}_range")(), pixels[axis], 1.0)
+        assert _close(getattr(span, f"pixel_{axis}_range")(), pixels[axis], 1.0)
+    span.set_coordinates(Coordinates.Data)
+    process_events()
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"{axis}_range")(), data[axis], 0.05)
+
+
+def test_switching_coordinates_signals_the_new_numbers(shown_host):
+    span = make(shown_host, "vertical")
+    process_events()
+    pixels = span.pixel_range()
+    ranges, keys = record(span.range_changed), record(span.key_range_changed)
+    span.set_coordinates(Coordinates.Pixels)
+    assert len(ranges) == 1 and len(keys) == 1 and _close(ranges[0], pixels, 1.0)
+
+
+def test_a_pixels_span_stays_put_on_zoom(shown_host, kind):
+    span = make(shown_host, kind)
+    process_events()
+    span.set_coordinates(Coordinates.Pixels)
+    before = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
+    for plot in plots_of(shown_host):
+        plot.y_axis().set_range(R(-5.0, 5.0))
+    if isinstance(shown_host, SciQLopPlot):
+        shown_host.x_axis().set_range(R(0.0, 100.0))
+    else:
+        shown_host.set_time_axis_range(R(0.0, 100.0))
+    process_events()
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"pixel_{axis}_range")(), before[axis], 1.0)
+
+
+def test_the_delete_key_asks_once(shown_host, kind):
+    span = make(shown_host, kind)
+    asked = []
+    span.delete_requested.connect(lambda: asked.append(True))
+    span.set_selected(True)
+    process_events()
+    QTest.keyClick(canvas_of(plots_of(shown_host)[0]), Qt.Key.Key_Delete)
+    process_events()
+    assert asked == [True]
+```
+
+Add `QPoint` to the `PySide6.QtCore` import of the file.
+
+- [ ] **Step 2: Run them and watch them fail**
+
+Run: `tests/integration/test_span.py`. Expected: `AttributeError` for `borders_color`, `pixel_key_range`, `set_coordinates`, `delete_requested`; `coordinates_changed` is missing so `.on.coordinates.signal` is None; the click selects the item but `selection_changed` never fires.
+
+- [ ] **Step 3: The declarations**
+
+`include/SciQLopPlots/Items/SciQLopSpan.hpp`: replace the `coordinates()` getter's two lines with
+
+```cpp
+    [[nodiscard]] Coordinates coordinates() const;
+    //! Data, or Pixels from the plot area's top-left, for every bounded axis; the span stays put.
+    void set_coordinates(Coordinates coordinates);
+    [[nodiscard]] SciQLopPlotRange pixel_range() const;
+    [[nodiscard]] SciQLopPlotRange pixel_key_range() const;
+    [[nodiscard]] SciQLopPlotRange pixel_value_range() const;
+```
+
+after `void set_tool_tip(const QString& tool_tip);` add
+
+```cpp
+
+    //! The border pen: colour, width and style.
+    [[nodiscard]] QColor borders_color() const;
+    void set_borders_color(const QColor& color);
+    [[nodiscard]] double line_width() const;
+    void set_line_width(double width);
+    [[nodiscard]] Qt::PenStyle line_style() const;
+    void set_line_style(Qt::PenStyle style);
+```
+
+and in the signals: `Q_SIGNAL void coordinates_changed(Coordinates coordinates);` after `value_range_changed`, and `Q_SIGNAL void delete_requested();` last.
+
+`include/SciQLopPlots/Items/impl/SpanTargets.hpp`, in `SpanTarget`:
+
+```cpp
+    virtual SciQLopPlotRange pixel_range(SpanAxis axis) const = 0;
+    //! Re-expresses every bounded axis in \a coordinates, keeping the span in place. Silent: the
+    //! span reports what changed.
+    virtual void set_coordinates(Coordinates coordinates) = 0;
+    virtual QColor borders_color() const = 0;
+    virtual void set_borders_color(const QColor& color) = 0;
+    virtual double line_width() const = 0;
+    virtual void set_line_width(double width) = 0;
+    virtual Qt::PenStyle line_style() const = 0;
+    virtual void set_line_style(Qt::PenStyle style) = 0;
+```
+
+and the matching `override` declarations in `PlotSpanTarget`.
+
+- [ ] **Step 4: `src/SpanTargets.cpp`**
+
+In the anonymous namespace, after `set_type`:
+
+```cpp
+double area_origin(const Edges& edges)
+{
+    const auto* rect = edges.lower->axisRect();
+    return rect ? along(rect->topLeft(), edges.along) : 0.;
+}
+```
+
+after `coords_of`:
+
+```cpp
+// The resolved pixel positions are right in both modes; coordToPixel() would read pixel
+// coordinates as data values.
+SciQLopPlotRange pixels_of(const Edges& edges)
+{
+    const double origin = area_origin(edges);
+    return SciQLopPlotRange(along(edges.lower->pixelPosition(), edges.along) - origin,
+                            along(edges.upper->pixelPosition(), edges.along) - origin);
+}
+
+//! \a pixels (from the plot area) expressed in \a coordinates, through the edges' axis.
+SciQLopPlotRange from_pixels(const Edges& edges, Coordinates coordinates,
+                             const SciQLopPlotRange& pixels)
+{
+    if (coordinates == Coordinates::Pixels)
+        return pixels;
+    auto* axis = edges.along == Qt::Horizontal ? edges.lower->keyAxis() : edges.lower->valueAxis();
+    if (!axis)
+        return coords_of(edges);
+    const double origin = area_origin(edges);
+    return SciQLopPlotRange(axis->pixelToCoord(pixels.first + origin),
+                            axis->pixelToCoord(pixels.second + origin));
+}
+```
+
+At the end of `PlotSpanTarget`'s constructor:
+
+```cpp
+    QObject::connect(m_item.data(), &QCPAbstractItem::selectionChanged, span,
+                     [span](bool selected) { span->_notify_selected(selected); });
+    QObject::connect(m_item.data(), &QCPAbstractItem::deleteRequested, span,
+                     &SciQLopSpan::delete_requested);
+```
+
+The lambda reaches `_notify_selected` because `PlotSpanTarget` is a friend of `SciQLopSpan`. And the new members:
+
+```cpp
+SciQLopPlotRange PlotSpanTarget::pixel_range(SpanAxis axis) const
+{
+    return m_item ? pixels_of(edges_of(m_item.data(), axis)) : SciQLopPlotRange();
+}
+
+void PlotSpanTarget::set_coordinates(Coordinates coordinates)
+{
+    if (!m_item || coordinates == m_coordinates)
+        return;
+    const QSignalBlocker blocker(m_item.data());
+    for (const auto axis : bounded_axes(m_kind))
+    {
+        const auto edges = edges_of(m_item.data(), axis);
+        const auto pixels = pixels_of(edges);
+        set_type(edges, position_type(coordinates));
+        apply_range(m_item.data(), axis, from_pixels(edges, coordinates, pixels));
+    }
+    m_coordinates = coordinates;
+}
+
+QColor PlotSpanTarget::borders_color() const
+{
+    return m_item ? m_item->borderPen().color() : QColor();
+}
+
+void PlotSpanTarget::set_borders_color(const QColor& color)
+{
+    if (!m_item)
+        return;
+    auto pen = m_item->borderPen();
+    pen.setColor(color);
+    m_item->setBorderPen(pen);
+    m_base->replot();
+}
+
+double PlotSpanTarget::line_width() const
+{
+    return m_item ? m_base->line_width() : 0.;
+}
+
+void PlotSpanTarget::set_line_width(double width)
+{
+    if (!m_item)
+        return;
+    m_base->set_line_width(width);
+    m_base->replot();
+}
+
+Qt::PenStyle PlotSpanTarget::line_style() const
+{
+    return m_item ? m_base->line_style() : Qt::SolidLine;
+}
+
+void PlotSpanTarget::set_line_style(Qt::PenStyle style)
+{
+    if (!m_item)
+        return;
+    m_base->set_line_style(style);
+    m_base->replot();
+}
+```
+
+- [ ] **Step 5: `src/SciQLopSpan.cpp`**
+
+In the plot constructor, after `m_target->set_color(color);`: `m_target->set_borders_color(color.lighter());`. Then:
+
+```cpp
+void SciQLopSpan::set_coordinates(Coordinates coordinates)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_coordinates(coordinates));
+    if (m_target->coordinates() == coordinates)
+        return;
+    std::vector<std::pair<SpanAxis, SciQLopPlotRange>> before;
+    for (const auto axis : impl::bounded_axes(m_kind))
+        before.emplace_back(axis, m_target->range(axis));
+    // A part's slot may delete a panel span while its target writes.
+    const QPointer<SciQLopSpan> alive(this);
+    m_target->set_coordinates(coordinates);
+    if (!alive)
+        return;
+    Q_EMIT coordinates_changed(coordinates);
+    for (const auto& [axis, old] : before)
+    {
+        if (!alive)
+            return;
+        if (const auto now = m_target->range(axis); now != old)
+            notify_range(axis, now);
+    }
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_range() const
+{
+    return m_target->pixel_range(one_axis("pixel_range"));
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_key_range() const
+{
+    require_bounded(SpanAxis::Key, "pixel_key_range");
+    return m_target->pixel_range(SpanAxis::Key);
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_value_range() const
+{
+    require_bounded(SpanAxis::Value, "pixel_value_range");
+    return m_target->pixel_range(SpanAxis::Value);
+}
+
+QColor SciQLopSpan::borders_color() const
+{
+    return m_target->borders_color();
+}
+
+void SciQLopSpan::set_borders_color(const QColor& color)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
+    m_target->set_borders_color(color);
+}
+
+double SciQLopSpan::line_width() const
+{
+    return m_target->line_width();
+}
+
+void SciQLopSpan::set_line_width(double width)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
+    m_target->set_line_width(width);
+}
+
+Qt::PenStyle SciQLopSpan::line_style() const
+{
+    return m_target->line_style();
+}
+
+void SciQLopSpan::set_line_style(Qt::PenStyle style)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
+    m_target->set_line_style(style);
+}
+```
+
+- [ ] **Step 6: Bindings**
+
+Inside `<object-type name="SciQLopSpan">`, before the B3 comment:
+
+```xml
         <modify-function signature="pixel_range()const">
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
@@ -1934,40 +2049,22 @@ Replace both comments with B2's lines for the ledger's branch (drop the `= ...` 
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
             </inject-code>
         </modify-function>
-        <!-- B3: branches F and F-py add the key_range / value_range modify-functions here. -->
-    </object-type>
-  ```
+```
 
-If shiboken warns that the `remove="all"` signature was not found, read the exact spelling it lists in `build-venv/SciQLopPlots/bindings/mjb_shiboken.log` and copy it. `test_the_class_has_no_python_constructor` is the proof.
+- [ ] **Step 7: Build, run, full suite**
 
-- [ ] **Step 10: Python tables**
+Compile (`rm build-venv/SciQLopPlots/bindings/SciQLopPlotsBindings/sciqlopspan_wrapper.cpp` first if the new methods are missing from Python). Run `tests/integration/test_span.py tests/integration/test_drawn_contract.py tests/integration/test_binding_signatures.py`, then the full suite.
 
-`SciQLopPlots/__init__.py`:
-- In `_ON_EXCEPTIONS`, after the `SciQLopVerticalSpan` row (line 317-319):
-
-  ```python
-    (SciQLopPlotsBindings.SciQLopSpan, "tooltip", dict(
-        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
-        property_type="value")),
-  ```
-- In `_DEPRECATED_ALIASES` (line 629): `SciQLopPlotsBindings.SciQLopSpan: {"selectionChanged": "selection_changed"},`.
-- Branch F-py: B4's block, with the loop over `(SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot)`.
-- Branch O: the ledger's `mapping.type_map` entries, if any, in `_register_with_shiboken_signatures` (line 60).
-
-- [ ] **Step 11: Reconfigure, build, run**
-
-Reconfigure (new object-type), then compile: two commands. Then run `tests/integration/test_span.py tests/integration/test_drawn_contract.py tests/integration/test_binding_signatures.py`. Expected: all pass. Then the full suite.
-
-- [ ] **Step 12: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add include/SciQLopPlots/enums.hpp include/SciQLopPlots/Items/SciQLopSpan.hpp include/SciQLopPlots/Items/impl/SpanTargets.hpp src/SciQLopSpan.cpp src/SpanTargets.cpp include/SciQLopPlots/SciQLopPlotInterface.hpp src/SciQLopPlotInterface.cpp include/SciQLopPlots/SciQLopPlot.hpp src/SciQLopPlot.cpp src/meson.build SciQLopPlots/bindings/bindings.h SciQLopPlots/bindings/bindings.xml SciQLopPlots/__init__.py tests/integration/conftest.py tests/integration/test_span.py tests/integration/test_drawn_contract.py
-git commit -m "feat(span): SciQLopSpan, one span class for every kind, and plot.span()"
+git add include/SciQLopPlots/Items/SciQLopSpan.hpp src/SciQLopSpan.cpp include/SciQLopPlots/Items/impl/SpanTargets.hpp src/SpanTargets.cpp SciQLopPlots/bindings/bindings.xml tests/integration/test_span.py
+git commit -m "feat(span): coordinates switching, pixel accessors, the border pen, click selection and delete_requested"
 ```
 
 ---
 
-### Task 3: Spans at panel scope, and `panel.span()`
+### Task 4: Spans at panel scope, and `panel.span()`
 
 **Files:**
 - Create: `include/SciQLopPlots/Items/impl/PanelParts.hpp`
@@ -1979,9 +2076,9 @@ git commit -m "feat(span): SciQLopSpan, one span class for every kind, and plot.
 - Test: `tests/integration/test_span.py` (`SCOPES`), `tests/integration/test_panel_span.py` (create), `tests/integration/test_drawn_contract.py` (builder variants)
 
 **Interfaces:**
-- Consumes: Task 2 (`SciQLopSpan`, `SpanTarget`, `PlotSpanTarget`, `bounded_axes`, `notify_range`).
+- Consumes: Task 2 (`SciQLopSpan`, `SpanTarget`, `PlotSpanTarget`, `bounded_axes`, `notify_range`), Task 3 (the rest of `SpanTarget`, which `PanelSpanTarget` implements).
 - Produces:
-  - `template <typename Part> class impl::PanelParts` (PanelParts.hpp): `PanelParts(QObject* owner, std::function<Part*(SciQLopPlot*)> make)`, `void follow(SciQLopMultiPlotPanel*)`, `bool writing() const`, `Part* first() const`, `void for_each(F) const`, `[[nodiscard]] bool write(F)` (false when a slot deleted the owner). Its destructor deletes the parts. Task 5 uses it for lines.
+  - `template <typename Part> class impl::PanelParts` (PanelParts.hpp): `PanelParts(QObject* owner, std::function<Part*(SciQLopPlot*)> make)`, `void follow(SciQLopMultiPlotPanel*)`, `bool writing() const`, `Part* first() const`, `void for_each(F) const`, `[[nodiscard]] bool write(F)` (false when a slot deleted the owner). Its destructor deletes the parts. Task 7 uses it for lines.
   - `SciQLopMultiPlotPanel* impl::panel_host(SciQLopMultiPlotPanel* panel, const char* what)`: throws `std::invalid_argument("<what>: panel cannot be None")`, then checks the thread.
   - `struct impl::SpanState`, `class impl::PanelSpanTarget`.
   - `SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind, const SciQLopPlotRange& key_range, const SciQLopPlotRange& value_range, const QColor& color, bool read_only, bool visible, const QString& tool_tip, Coordinates coordinates, const QString& id = "")`. Its parts are plain plot-scope `SciQLopSpan`s, marked with `mark_panel_part`, sharing its `id()`.
@@ -1991,6 +2088,14 @@ git commit -m "feat(span): SciQLopSpan, one span class for every kind, and plot.
 - [ ] **Step 1: Write the failing tests**
 
 In `tests/integration/test_span.py`: `SCOPES = ["plot", "panel"]`. Every test of that file now also runs on a two-plot panel.
+
+Most of them mean the same thing at both scopes. These change meaning at panel scope, and this is what they now expect:
+- `test_scope_and_part_flag`: `scope()` is the panel, and the panel object is not a part.
+- The signal-count tests (`test_one_set_range_emits_once_on_each_signal`, `test_a_rectangular_span_never_emits_range_changed`, `test_signalled_accessors_round_trip_and_emit_once`, `test_a_set_off_thread_lands_on_the_gui_thread`): one emission from the panel object per change, never one per part.
+- The coordinate tests (`test_switching_coordinates_keeps_the_span_in_place`, `test_switching_coordinates_signals_the_new_numbers`, `test_a_pixels_span_stays_put_on_zoom`): the pixel accessors read plot 0's part; after `set_coordinates`, every part holds plot 0's numbers (the `simplify:` rule of Step 4). Zoom goes through `set_time_axis_range` and each plot's y axis.
+- `test_clicking_a_span_selects_it_and_signals_once` and `test_the_delete_key_asks_once`: the click or the key lands on plot 0's canvas, so on part 0; the panel object then signals `selection_changed` once, or `delete_requested` once.
+- `test_remove_deletes_it`: `panel.remove(span)`, which deletes the parts too.
+- `test_the_class_has_no_python_constructor` already covers the panel constructor.
 
 `tests/integration/test_panel_span.py`:
 
@@ -2324,6 +2429,8 @@ public:
     {
     }
 
+    // Deletion needs no writing() guard, unlike write(): a dying part emits none of the signals
+    // its owner follows (only QObject::destroyed, which nobody here connects), so nothing re-enters.
     ~PanelParts()
     {
         for_each([](Part* part) { delete part; });
@@ -2782,7 +2889,9 @@ git commit -m "feat(span): panel-scope spans (panel.span): one part per plot, us
 
 ---
 
-### Task 4: The line at plot scope: one target, the new accessors, `plot.straight_line()`
+### Task 5: The line at plot scope on a target: position, coordinates, read-only, Delete; `plot.straight_line()`
+
+The class moves onto a target, keeping every existing method; the new behaviour here is the coordinates setter, `read_only`, `delete_requested` and the factory. The clamp getters and `tool_tip_changed` come in Task 6; the `.on.tooltip` row in Task 8.
 
 **Files:**
 - Modify: `include/SciQLopPlots/Items/SciQLopStraightLines.hpp` (`StraightLine` ~line 34-149: a clamp function, `coordinates`, `set_coordinates`, `place`; `SciQLopStraightLine` ~line 151-305: rewritten on a target)
@@ -2791,22 +2900,22 @@ git commit -m "feat(span): panel-scope spans (panel.span): one part per plot, us
 - Modify: `include/SciQLopPlots/SciQLopPlotInterface.hpp` (`straight_line` after `span`), `include/SciQLopPlots/SciQLopPlot.hpp`, `src/SciQLopPlot.cpp`
 - Modify: `src/meson.build` (sources, after `'SciQLopStraightLines.cpp',` line 185)
 - Modify: `SciQLopPlots/bindings/bindings.xml` (`SciQLopStraightLine`, `SciQLopVerticalLine`, `SciQLopHorizontalLine` ~line 1315-1321; `SciQLopPlotInterface`)
-- Modify: `SciQLopPlots/__init__.py` (`_ON_EXCEPTIONS`, `_ITEM_FACTORIES` line 379)
+- Modify: `SciQLopPlots/__init__.py` (`_ITEM_FACTORIES` line 379)
 - Test: `tests/integration/test_straight_line.py` (create), `tests/integration/test_item_factories.py`, `tests/integration/test_drawn_contract.py`
 
 **Interfaces:**
-- Consumes: B5 (the ledger's branch); `plots_of`, `canvas_of`, `scoped_host` (Task 2).
+- Consumes: `plots_of`, `canvas_of`, `scoped_host` (Task 2).
 - Produces:
-  - `inline double clamp_line_position(double pos, std::optional<double> min, std::optional<double> max)` (global, SciQLopStraightLines.hpp): `StraightLine::_clamp`'s rule, used by Task 5's panel line too.
+  - `inline double clamp_line_position(double pos, std::optional<double> min, std::optional<double> max)` (global, SciQLopStraightLines.hpp): `StraightLine::_clamp`'s rule, used by Task 7's panel line too.
   - `StraightLine::coordinates()`, `StraightLine::set_coordinates(Coordinates)` (silent: no `moved`).
   - `impl::LineTarget` (abstract), `impl::PlotLineTarget`.
-  - On `SciQLopStraightLine`: `orientation()`, `scope()`, `is_panel_part()`, `position()` / `set_position`, `coordinates()` / `set_coordinates`, `read_only()` / `set_read_only`, `movable()` / `set_movable` (inverse aliases), `tool_tip()` / `set_tool_tip`, `line_width`, `line_style`, B5's `min_value()` / `max_value()`, `set_min_value`, `clear_min_value`, `set_max_value`, `clear_max_value`. Signals: `position_changed(double)`, `coordinates_changed(Coordinates)`, `read_only_changed(bool)`, `tool_tip_changed(const QString&)`, `delete_requested()`. The plot constructor keeps its signature.
+  - On `SciQLopStraightLine`: `orientation()`, `scope()`, `is_panel_part()`, `position()` / `set_position`, `coordinates()` / `set_coordinates`, `read_only()` / `set_read_only`, `movable()` / `set_movable` (inverse aliases), `tool_tip()` / `set_tool_tip`, `line_width`, `line_style`, `set_min_value`, `clear_min_value`, `set_max_value`, `clear_max_value` (as before, now through the target). Signals: `position_changed(double)`, `coordinates_changed(Coordinates)`, `read_only_changed(bool)`, `delete_requested()`. The plot constructor keeps its signature.
   - `SciQLopPlotInterface::straight_line(double position, Qt::Orientation orientation, QColor color = QColor::fromRgb(0, 0, 0), bool read_only = true, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data)` (virtual, NotImplementedError by default), overridden by `SciQLopPlot`.
-  - Python: `position` is a method on `SciQLopStraightLine` and stays a property on `SciQLopVerticalLine` / `SciQLopHorizontalLine`; `.on.tooltip` on lines; `SciQLopStraightLine(plot, ...)` warns `... use plot.straight_line(...)`.
+  - Python: `position` is a method on `SciQLopStraightLine` and stays a property on `SciQLopVerticalLine` / `SciQLopHorizontalLine`; `SciQLopStraightLine(plot, ...)` warns `... use plot.straight_line(...)`.
 
 - [ ] **Step 1: Write the failing tests**
 
-`tests/integration/test_straight_line.py` (`SCOPES` gets `"panel"` in Task 5):
+`tests/integration/test_straight_line.py` (`SCOPES` gets `"panel"` in Task 7):
 
 ```python
 """SciQLopStraightLine: one line class, vertical or horizontal, at plot and panel scope (5.6)."""
@@ -2870,8 +2979,7 @@ def test_the_factory_arguments(host, orientation):
         (QColor("red"), False, False, "tip")
 
 
-SIGNALLED = {"position": (0.25, "position_changed"), "read_only": (False, "read_only_changed"),
-             "tool_tip": ("tip", "tool_tip_changed")}
+SIGNALLED = {"position": (0.25, "position_changed"), "read_only": (False, "read_only_changed")}
 
 
 @pytest.mark.parametrize("name", SIGNALLED)
@@ -2892,19 +3000,6 @@ def test_the_style_round_trips(host, orientation, name):
     line = make(host, orientation)
     getattr(line, f"set_{name}")(STYLE[name])
     assert getattr(line, name)() == STYLE[name]
-
-
-def test_the_clamps_and_their_getters(host, orientation):
-    line = make(host, orientation)
-    assert (line.min_value(), line.max_value()) == (None, None)
-    line.set_min_value(0.2)
-    line.set_max_value(0.8)
-    assert (line.min_value(), line.max_value()) == (0.2, 0.8)
-    line.set_position(5.0)
-    assert line.position() == 0.8
-    line.clear_min_value()
-    line.clear_max_value()
-    assert (line.min_value(), line.max_value()) == (None, None)
 
 
 def test_switching_coordinates_keeps_the_line_in_place(shown_host, orientation):
@@ -2967,16 +3062,7 @@ def test_the_factory_raises_off_thread(host):
     assert "thread" in str(out.get("error", ""))
 
 
-def test_on_tooltip_is_observable(host, orientation):
-    line = make(host, orientation)
-    seen = []
-    pipeline = line.on.tooltip >> (lambda event: seen.append(event.value))
-    line.set_tool_tip("tip")
-    assert seen == ["tip"]
-    pipeline.disconnect()
-
-
-@pytest.mark.parametrize("name", ["position", "read_only", "tool_tip", "coordinates"])
+@pytest.mark.parametrize("name", ["position", "read_only", "coordinates"])
 def test_on_resolves_with_a_signal(host, name):
     assert getattr(make(host, "vertical").on, name).signal is not None
 
@@ -3421,7 +3507,6 @@ public:
     [[nodiscard]] Qt::PenStyle line_style() const;
     void set_line_style(Qt::PenStyle style);
 
-    // B5 (the ledger's branch): min_value() and max_value().
     void set_min_value(double min);
     void clear_min_value();
     void set_max_value(double max);
@@ -3434,12 +3519,11 @@ signals:
     Q_SIGNAL void position_changed(double new_position);
     Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
-    Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
     Q_SIGNAL void delete_requested();
 };
 ```
 
-Replace the `// B5` comment with B5's header lines. `SciQLopVerticalLine` and `SciQLopHorizontalLine` stay as they are.
+`SciQLopVerticalLine` and `SciQLopHorizontalLine` stay as they are.
 
 In `src/SciQLopStraightLines.cpp`, add `#include "SciQLopPlots/Items/impl/LineTargets.hpp"`, `#include "SciQLopPlots/SciQLopPlotInterface.hpp"`, `#include <QPointer>`, and replace the old `SciQLopStraightLine::set_position` (line 138-143) with:
 
@@ -3539,12 +3623,7 @@ QString SciQLopStraightLine::tool_tip() const
 void SciQLopStraightLine::set_tool_tip(const QString& tool_tip)
 {
     SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-    if (m_target->tool_tip() == tool_tip)
-        return;
-    const QPointer<SciQLopStraightLine> alive(this);
     m_target->set_tool_tip(tool_tip);
-    if (alive)
-        Q_EMIT tool_tip_changed(tool_tip);
 }
 
 double SciQLopStraightLine::line_width() const
@@ -3568,8 +3647,6 @@ void SciQLopStraightLine::set_line_style(Qt::PenStyle style)
     SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
     m_target->set_line_style(style);
 }
-
-// B5 (the ledger's branch): SciQLopStraightLine::min_value() and max_value().
 
 void SciQLopStraightLine::set_min_value(double min)
 {
@@ -3626,8 +3703,6 @@ QColor SciQLopStraightLine::_color() const
 }
 ```
 
-Replace the `// B5` comment with B5's definitions.
-
 - [ ] **Step 6: The plot factory**
 
 `include/SciQLopPlots/SciQLopPlotInterface.hpp`, after `span`:
@@ -3675,7 +3750,6 @@ SciQLopStraightLine* SciQLopPlot::straight_line(double position, Qt::Orientation
 `src/meson.build`: `'LineTargets.cpp',` after `'SciQLopStraightLines.cpp',`.
 
 bindings.xml:
-- Branches F and F-py: B5's `nan_is_none` template at the top.
 - In `SciQLopPlotInterface`, after the `span` modify-function:
 
   ```xml
@@ -3690,7 +3764,6 @@ bindings.xml:
 
   ```xml
     <object-type name="SciQLopStraightLine" parent-management="yes">
-        <!-- B5: branches F and F-py add the min_value / max_value modify-functions here. -->
     </object-type>
     <!-- The old line classes keep position as a property during Plan A (SciQLop reads it);
          SciQLopStraightLine itself has position() / set_position(). -->
@@ -3702,15 +3775,7 @@ bindings.xml:
     </object-type>
   ```
 
-`SciQLopPlots/__init__.py`:
-- `_ON_EXCEPTIONS`, after the `SciQLopSpan` row:
-
-  ```python
-    (SciQLopPlotsBindings.SciQLopStraightLine, "tooltip", dict(
-        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
-        property_type="value")),
-  ```
-- `_ITEM_FACTORIES` line 379: `SciQLopPlotsBindings.SciQLopStraightLine: ("plot.straight_line", True),`.
+`SciQLopPlots/__init__.py`, `_ITEM_FACTORIES` line 379: `SciQLopPlotsBindings.SciQLopStraightLine: ("plot.straight_line", True),`.
 
 - [ ] **Step 8: Build, run, full suite**
 
@@ -3720,12 +3785,92 @@ The header change touches a binding: if `sciqlopstraightline_wrapper.cpp` keeps 
 
 ```bash
 git add include/SciQLopPlots/Items/SciQLopStraightLines.hpp src/SciQLopStraightLines.cpp include/SciQLopPlots/Items/impl/LineTargets.hpp src/LineTargets.cpp include/SciQLopPlots/SciQLopPlotInterface.hpp include/SciQLopPlots/SciQLopPlot.hpp src/SciQLopPlot.cpp src/meson.build SciQLopPlots/bindings/bindings.xml SciQLopPlots/__init__.py tests/integration/test_straight_line.py tests/integration/test_item_factories.py tests/integration/test_drawn_contract.py
-git commit -m "feat(lines): SciQLopStraightLine on a target: read_only, coordinates, tool_tip_changed, delete_requested, clamp getters; plot.straight_line()"
+git commit -m "feat(lines): SciQLopStraightLine on a target: read_only, coordinates, delete_requested; plot.straight_line()"
 ```
 
 ---
 
-### Task 5: The line at panel scope, and `panel.straight_line()`
+### Task 6: Line clamp getters and `tool_tip_changed`
+
+**Files:**
+- Modify: `include/SciQLopPlots/Items/SciQLopStraightLines.hpp`, `src/SciQLopStraightLines.cpp`
+- Modify, branches F and F-py: `SciQLopPlots/bindings/bindings.xml`
+- Test: `tests/integration/test_straight_line.py` (append)
+
+**Interfaces:**
+- Consumes: Task 5 (`SciQLopStraightLine` on `LineTarget`, whose `min_value()` / `max_value()` already return `std::optional<double>`); B5 (the ledger's branch).
+- Produces, on `SciQLopStraightLine`: B5's `min_value()` / `max_value()` (None when unset in Python) and the signal `tool_tip_changed(const QString&)`, emitted once per change.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `tests/integration/test_straight_line.py`:
+
+```python
+def test_the_clamps_and_their_getters(host, orientation):
+    line = make(host, orientation)
+    assert (line.min_value(), line.max_value()) == (None, None)
+    line.set_min_value(0.2)
+    line.set_max_value(0.8)
+    assert (line.min_value(), line.max_value()) == (0.2, 0.8)
+    line.set_position(5.0)
+    assert line.position() == 0.8
+    line.clear_min_value()
+    line.clear_max_value()
+    assert (line.min_value(), line.max_value()) == (None, None)
+
+
+def test_the_tool_tip_round_trips_and_signals_once(host, orientation):
+    line = make(host, orientation)
+    seen = record(line.tool_tip_changed)
+    line.set_tool_tip("tip")
+    line.set_tool_tip("tip")
+    assert (line.tool_tip(), seen) == ("tip", ["tip"])
+
+
+def test_on_tool_tip_has_a_signal(host):
+    assert make(host, "vertical").on.tool_tip.signal is not None
+```
+
+- [ ] **Step 2: Run them and watch them fail**
+
+Run: `tests/integration/test_straight_line.py`. Expected: `AttributeError` for `min_value` and `tool_tip_changed`; `.on.tool_tip.signal` is None.
+
+- [ ] **Step 3: Implement**
+
+`include/SciQLopPlots/Items/SciQLopStraightLines.hpp`, in `SciQLopStraightLine`: B5's header lines before `void set_min_value(double min);`, and `Q_SIGNAL void tool_tip_changed(const QString& tool_tip);` after `read_only_changed`.
+
+`src/SciQLopStraightLines.cpp`: B5's definitions before `set_min_value`, and `set_tool_tip` becomes:
+
+```cpp
+void SciQLopStraightLine::set_tool_tip(const QString& tool_tip)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+    if (m_target->tool_tip() == tool_tip)
+        return;
+    // A part's slot may delete a panel line while its target writes.
+    const QPointer<SciQLopStraightLine> alive(this);
+    m_target->set_tool_tip(tool_tip);
+    if (alive)
+        Q_EMIT tool_tip_changed(tool_tip);
+}
+```
+
+Branches F and F-py, bindings.xml: B5's `nan_is_none` template at the top, and B5's two modify-functions inside `<object-type name="SciQLopStraightLine">`.
+
+- [ ] **Step 4: Build, run, full suite**
+
+Compile (`rm` `sciqlopstraightline_wrapper.cpp` first if `min_value` is missing from Python). Run `tests/integration/test_straight_line.py tests/integration/test_binding_signatures.py`, then the full suite.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add include/SciQLopPlots/Items/SciQLopStraightLines.hpp src/SciQLopStraightLines.cpp SciQLopPlots/bindings/bindings.xml tests/integration/test_straight_line.py
+git commit -m "feat(lines): min_value()/max_value() getters (None when unset) and tool_tip_changed"
+```
+
+---
+
+### Task 7: The line at panel scope, and `panel.straight_line()`
 
 **Files:**
 - Modify: `include/SciQLopPlots/Items/impl/LineTargets.hpp`, `src/LineTargets.cpp` (`LineState`, `PanelLineTarget`)
@@ -3735,7 +3880,7 @@ git commit -m "feat(lines): SciQLopStraightLine on a target: read_only, coordina
 - Test: `tests/integration/test_straight_line.py`, `tests/integration/test_drawn_contract.py`
 
 **Interfaces:**
-- Consumes: Task 3 (`PanelParts`, `panel_host`, `check_removable_here`), Task 4 (`LineTarget`, `clamp_line_position`).
+- Consumes: Task 4 (`PanelParts`, `panel_host`, `check_removable_here`), Task 5 (`LineTarget`, `clamp_line_position`), Task 6 (the clamp getters the tests read on parts).
 - Produces:
   - `struct impl::LineState`, `class impl::PanelLineTarget`.
   - `SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double position, Qt::Orientation orientation, const QColor& color, bool read_only, bool visible, const QString& tool_tip, Coordinates coordinates)`. Its parts are plain plot-scope `SciQLopStraightLine`s, marked.
@@ -4227,14 +4372,87 @@ git commit -m "feat(lines): panel-scope lines (panel.straight_line): one part pe
 
 ---
 
-### Fallout rules (Tasks 6 and 7)
+### Task 8: The Python rows of the new classes: `.on.tooltip`, `selectionChanged`
 
-Tasks 6 and 7 change what existing factories return, so existing call sites break. Each task fixes the call sites its own change broke, by these rules, and leaves the full suite green. Task 11 sweeps what is left.
+They must exist before Task 9 switches the factories, or `test_on_convention.py` and `test_drawn_spans.py` lose them on the objects the factories return.
+
+**Files:**
+- Modify: `SciQLopPlots/__init__.py` (`_ON_EXCEPTIONS` ~line 304-320, `_DEPRECATED_ALIASES` ~line 629-635)
+- Test: `tests/integration/test_span.py`, `tests/integration/test_straight_line.py` (append)
+
+**Interfaces:**
+- Consumes: `tool_tip_changed` on `SciQLopSpan` (Task 2) and on `SciQLopStraightLine` (Task 6).
+- Produces: `.on.tooltip` on every `SciQLopSpan` and `SciQLopStraightLine` (signal `tool_tip_changed`); `SciQLopSpan.selectionChanged`, the same signal as `selection_changed`. Task 13 removes the rows these make redundant.
+
+- [ ] **Step 1: Write the failing tests**
+
+Append to `tests/integration/test_span.py`:
+
+```python
+def test_on_tooltip_is_observable(host, kind):
+    span = make(host, kind)
+    seen = []
+    pipeline = span.on.tooltip >> (lambda event: seen.append(event.value))
+    span.set_tool_tip("tip")
+    assert seen == ["tip"]
+    pipeline.disconnect()
+
+
+def test_selection_changed_keeps_its_old_alias():
+    assert SciQLopSpan.selectionChanged is SciQLopSpan.selection_changed
+```
+
+Append to `tests/integration/test_straight_line.py`:
+
+```python
+def test_on_tooltip_is_observable(host, orientation):
+    line = make(host, orientation)
+    seen = []
+    pipeline = line.on.tooltip >> (lambda event: seen.append(event.value))
+    line.set_tool_tip("tip")
+    assert seen == ["tip"]
+    pipeline.disconnect()
+```
+
+- [ ] **Step 2: Run them and watch them fail**
+
+Run both files. Expected: `AttributeError: ... has no observable property 'tooltip'` (the name has no getter of its own) and `AttributeError: ... selectionChanged`.
+
+- [ ] **Step 3: Implement**
+
+`SciQLopPlots/__init__.py`, in `_ON_EXCEPTIONS`, after the `SciQLopVerticalSpan` row (line 317-319):
+
+```python
+    (SciQLopPlotsBindings.SciQLopSpan, "tooltip", dict(
+        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
+        property_type="value")),
+    (SciQLopPlotsBindings.SciQLopStraightLine, "tooltip", dict(
+        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
+        property_type="value")),
+```
+
+In `_DEPRECATED_ALIASES` (line 629): `SciQLopPlotsBindings.SciQLopSpan: {"selectionChanged": "selection_changed"},`.
+
+- [ ] **Step 4: Run, full suite, commit**
+
+Run the two files, then the full suite.
+
+```bash
+git add SciQLopPlots/__init__.py tests/integration/test_span.py tests/integration/test_straight_line.py
+git commit -m "feat(on): .on.tooltip on spans and lines, selectionChanged on SciQLopSpan"
+```
+
+---
+
+### Fallout rules (Tasks 9 and 10)
+
+Tasks 9 and 10 change what existing factories return, so existing call sites break. Each task fixes the call sites its own change broke, by these rules, and leaves the full suite green. Task 14 sweeps what is left.
 - A test **about an old class** (its isinstance, its properties, `set_pixel_range`, the border selection, `MultiPlotsVSpanCollection`, `selectionChanged` on V/H/R) keeps the old class, built through its old entry point: the deprecated constructor inside `with pytest.warns(DeprecationWarning):`, or `MultiPlotsVSpanCollection(panel).create_span(...)` (`.data()` for the object). Everything else moves to the new classes.
 - `plot.vertical_line(p, <bool>, <coords>)` → `plot.vertical_line(p, read_only=not <bool>, coordinates=<coords>)`; the same for `horizontal_line`. A `True` that meant "draggable" becomes `read_only=False`.
 - A line from a factory: `line.position` → `line.position()`; `line.position = v` → `line.set_position(v)`.
 - A span from a factory: `span.pixel_range` → `span.pixel_range()`.
 - `plot.rectangular_span(k, v, ...)` → `plot.span(key_range=k, value_range=v, ...)`, unless the test is about `rectangular_span`.
+- The old constructors named their range `horizontal_range` / `vertical_range`; the shorthands call it `range`, and it is positional-only. A call moved from a constructor to a shorthand passes the range positionally: `SciQLopVerticalSpan(plot, horizontal_range=r)` → `plot.vertical_span(r)`. `grep -rn "horizontal_range=\|vertical_range=" <files>` finds them.
 - Type checks on a factory result: `SciQLopVerticalSpan` / `SciQLopHorizontalSpan` / `SciQLopRectangularSpan` / `MultiPlotsVerticalSpan` → `SciQLopSpan` (plus `kind()` where the kind mattered); `SciQLopVerticalLine` / `SciQLopHorizontalLine` / `MultiPlotsVerticalLine` → `SciQLopStraightLine` (plus `orientation()`).
 - Panel properties on a factory panel object → methods: `span.visible = x` → `span.set_visible(x)`, `span.selected = True` → `span.set_selected(True)`, `span.color = c` → `span.set_color(c)`, `span.range` → `span.range()`, `span.read_only` → `span.read_only()`, `span.tooltip` → `span.tool_tip()`, `span.id` → `span.id()`; for lines also `line.position`, `line.line_width`.
 - The parts on a plot: `plot.findChildren(SciQLopVerticalSpan)` → `[s for s in plot.findChildren(SciQLopSpan) if s.is_panel_part()]`, and `SciQLopVerticalLine` → `SciQLopStraightLine` the same way. Keep the `[0]` / unpacking the test had.
@@ -4244,7 +4462,7 @@ Tasks 6 and 7 change what existing factories return, so existing call sites brea
 
 ---
 
-### Task 6: The plot factories return the new classes
+### Task 9: The plot factories return the new classes
 
 **Files:**
 - Modify: `include/SciQLopPlots/SciQLopPlotInterface.hpp` (the five factory virtuals ~line 535-558 become shorthands; forward declarations line 45-49)
@@ -4254,7 +4472,7 @@ Tasks 6 and 7 change what existing factories return, so existing call sites brea
 - Test: `tests/integration/test_item_factories.py`, `tests/integration/test_drawn_contract.py`, and the fallout (rules above)
 
 **Interfaces:**
-- Consumes: `span` (Task 2), `straight_line` (Task 4), B6.
+- Consumes: `span` (Task 2), `straight_line` (Task 5), B6.
 - Produces, non-virtual on `SciQLopPlotInterface`:
   ```cpp
   SciQLopSpan* vertical_span(const SciQLopPlotRange& range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data, const QString& id = "");
@@ -4263,7 +4481,7 @@ Tasks 6 and 7 change what existing factories return, so existing call sites brea
   SciQLopStraightLine* vertical_line(double position, QColor color = QColor::fromRgb(0, 0, 0), bool read_only = true, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data);
   SciQLopStraightLine* horizontal_line(/* the same */);
   ```
-- Produces, Python: `rectangular_span(...)` warns `rectangular_span(...) is deprecated: use plot.span(...)`; `vertical_line` / `horizontal_line` take `movable=` with `movable=... is deprecated: use plot.vertical_line(..., read_only=...)` (and `horizontal_line`), and raise TypeError for a bool second argument; `_DEPRECATED_CALLS` (a table of `(class, method) -> message`) and `_deprecated_call(message, method)`, which Task 10 reuses.
+- Produces, Python: `rectangular_span(...)` warns `rectangular_span(...) is deprecated: use plot.span(...)`; `vertical_line` / `horizontal_line` take `movable=` with `movable=... is deprecated: use plot.vertical_line(..., read_only=...)` (and `horizontal_line`), and raise TypeError for a bool second argument; `_DEPRECATED_CALLS` (a table of `(class, method) -> message`) and `_deprecated_call(message, method)`, which Task 13 reuses.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4530,7 +4748,7 @@ git commit -m "feat(factories): plot span and line shorthands return SciQLopSpan
 
 ---
 
-### Task 7: The panel factories return the new classes
+### Task 10: The panel factories return the new classes
 
 **Files:**
 - Modify: `include/SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp` (line 261-268), `src/SciQLopMultiPlotPanel.cpp` (line 176-191)
@@ -4539,8 +4757,8 @@ git commit -m "feat(factories): plot span and line shorthands return SciQLopSpan
 - Test: `tests/integration/test_item_factories.py`, `tests/integration/test_binding_signatures.py` (`test_default_panel_item_color`), `tests/integration/test_drawn_contract.py`, and the fallout
 
 **Interfaces:**
-- Consumes: `SciQLopMultiPlotPanel::span` (Task 3), `straight_line` (Task 5), B6.
-- Produces on `SciQLopMultiPlotPanel`: `vertical_span`, `horizontal_span` (→ `SciQLopSpan*`) and `vertical_line`, `horizontal_line` (→ `SciQLopStraightLine*`), with the plot shorthands' signatures. No `rectangular_span` on panels. The old `MultiPlotsVerticalSpan*` / `MultiPlotsVerticalLine*` returning factories are gone. `remove(MultiPlotsVerticalSpan*)` and `remove(MultiPlotsVerticalLine*)` stay until Tasks 8 and 9.
+- Consumes: `SciQLopMultiPlotPanel::span` (Task 4), `straight_line` (Task 7), B6.
+- Produces on `SciQLopMultiPlotPanel`: `vertical_span`, `horizontal_span` (→ `SciQLopSpan*`) and `vertical_line`, `horizontal_line` (→ `SciQLopStraightLine*`), with the plot shorthands' signatures. No `rectangular_span` on panels. The old `MultiPlotsVerticalSpan*` / `MultiPlotsVerticalLine*` returning factories are gone. `remove(MultiPlotsVerticalSpan*)` and `remove(MultiPlotsVerticalLine*)` stay until Tasks 11 and 12.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4601,7 +4819,7 @@ def test_default_collection_span_color(panel):
     assert collection.create_span(_RANGE).color == _LINE_GREY
 ```
 
-In `tests/integration/test_drawn_contract.py`, the `"panel span"` and `"panel line"` rows build the old classes through `_old` (Task 6):
+In `tests/integration/test_drawn_contract.py`, the `"panel span"` and `"panel line"` rows build the old classes through `_old` (Task 9):
 
 ```python
         "MultiPlotsVerticalSpan": lambda h: _old(MultiPlotsVerticalSpan, h.panel, R(1.0, 2.0)),
@@ -4742,7 +4960,7 @@ git commit -m "feat(factories): panel span and line shorthands return SciQLopSpa
 
 ---
 
-### Task 8: The old span names become subclasses of `SciQLopSpan`
+### Task 11: The old span names become subclasses of `SciQLopSpan`
 
 **Files:**
 - Modify (rewrite): `include/SciQLopPlots/Items/SciQLopVerticalSpan.hpp`, `SciQLopHorizontalSpan.hpp`, `SciQLopRectangularSpan.hpp`
@@ -4755,9 +4973,9 @@ git commit -m "feat(factories): panel span and line shorthands return SciQLopSpa
 - Test: `tests/integration/test_old_span_line_names.py` (create), `tests/integration/test_drawn_contract.py`, `tests/integration/test_api_hygiene.py`, `tests/integration/test_item_factories.py`
 
 **Interfaces:**
-- Consumes: Tasks 2, 3.
+- Consumes: Tasks 2, 3, 4.
 - Produces:
-  - `SciQLopVerticalSpan(plot, horizontal_range, color, read_only, visible, tool_tip, coordinates)`, `SciQLopHorizontalSpan(plot, vertical_range, color, read_only, visible, tool_tip)`, `SciQLopRectangularSpan(plot, key_range, value_range, color, read_only, visible, tool_tip)`: the old signatures and defaults, subclasses of `SciQLopSpan` that fix the kind. `SciQLopVerticalSpan` keeps `set_pixel_range` and the `pixel_range` property; V and H keep `select_lower_border` / `select_upper_border` and their signals. None is a `SciQLopItemInterface` any more.
+  - `SciQLopVerticalSpan(plot, horizontal_range, color, read_only, visible, tool_tip, coordinates)`, `SciQLopHorizontalSpan(plot, vertical_range, color, read_only, visible, tool_tip)`, `SciQLopRectangularSpan(plot, key_range, value_range, color, read_only, visible, tool_tip)`: the old signatures and defaults, subclasses of `SciQLopSpan` that fix the kind. `SciQLopVerticalSpan` keeps `set_pixel_range` and the `pixel_range` property; V and H keep `select_lower_border` / `select_upper_border` public, as they are bound and public today, and their signals. None is a `SciQLopItemInterface` any more.
   - `MultiPlotsVerticalSpan(panel, horizontal_range, color = QColor::fromRgb(100, 100, 100), read_only = false, visible = true, tool_tip = "", id = "")`: a panel-scope `SciQLopSpan` whose parts are `SciQLopVerticalSpan`s; it keeps `show()`, `hide()`, the collection's culling (`set_in_range`, friend `MultiPlotsVSpanCollection`) and its Python properties. It loses `addObject` / `removeObject` / `replotAll` / `updatePlotList` and their snake_case aliases.
   - On `SciQLopSpan`: the panel constructor gains a last parameter `bool legacy_parts = false`; protected `void _set_pixel_range(impl::SpanAxis axis, const SciQLopPlotRange& pixels)`.
   - On `SpanTarget`: `virtual SciQLopPlotRange to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const = 0` (pixels from the plot area, in the span's coordinates).
@@ -4876,6 +5094,9 @@ def test_the_old_vertical_span_keeps_pixel_range_and_border_selection(qtbot, plo
     span.lower_border_selection_changed.connect(seen.append)
     span.select_lower_border(True)
     assert (seen, span.selected()) == ([True], True)
+    for cls in (SciQLopVerticalSpan, SciQLopHorizontalSpan):
+        assert all(callable(getattr(cls, name, None))
+                   for name in ("select_lower_border", "select_upper_border"))
 
 
 @pytest.mark.parametrize("cls", OLD_PLOT_SPANS, ids=lambda cls: cls.__name__)
@@ -4982,8 +5203,24 @@ class SciQLopVerticalSpan : public SciQLopSpan
 {
     Q_OBJECT
 
-protected:
-    //! Old API, never fired by user input (NeoQCP does not call it); Plan B removes it.
+public:
+    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
+                        QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
+                        bool visible = true, const QString& tool_tip = "",
+                        Coordinates coordinates = Coordinates::Data)
+            : SciQLopSpan(plot, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
+                          read_only, visible, tool_tip, coordinates)
+    {
+    }
+
+    //! Old API: the range in pixels from the plot area's left edge (Plan B removes it).
+    void set_pixel_range(const SciQLopPlotRange& pixels)
+    {
+        _set_pixel_range(impl::SpanAxis::Key, pixels);
+    }
+
+    //! Old API, public and bound today; never fired by user input (NeoQCP does not call it).
+    //! Plan B removes it.
     void select_lower_border(bool selected)
     {
         const QPointer<SciQLopVerticalSpan> alive(this);
@@ -5006,26 +5243,10 @@ signals:
 #endif
     Q_SIGNAL void lower_border_selection_changed(bool);
     Q_SIGNAL void upper_border_selection_changed(bool);
-
-public:
-    SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
-                        QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                        bool visible = true, const QString& tool_tip = "",
-                        Coordinates coordinates = Coordinates::Data)
-            : SciQLopSpan(plot, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
-                          read_only, visible, tool_tip, coordinates)
-    {
-    }
-
-    //! Old API: the range in pixels from the plot area's left edge (Plan B removes it).
-    void set_pixel_range(const SciQLopPlotRange& pixels)
-    {
-        _set_pixel_range(impl::SpanAxis::Key, pixels);
-    }
 };
 ```
 
-`include/SciQLopPlots/Items/SciQLopHorizontalSpan.hpp`, the same shape: class `SciQLopHorizontalSpan`, doc "bounding the value axis", the two border methods and signals (with `QPointer<SciQLopHorizontalSpan>`), no `set_pixel_range`, and the old constructor:
+`include/SciQLopPlots/Items/SciQLopHorizontalSpan.hpp`, the same shape: class `SciQLopHorizontalSpan`, doc "bounding the value axis", the old constructor below first under `public:`, then the two **public** border methods and the two signals (with `QPointer<SciQLopHorizontalSpan>`), no `set_pixel_range`:
 
 ```cpp
     SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
@@ -5147,7 +5368,7 @@ bindings.xml:
 - `SciQLopVerticalSpan` (line 1301-1311): keep the constructor's `modify-function` with its renames; delete `<modify-function signature="pixel_range() const" rename="_pixel_range"/>`; keep the `pixel_range` property, with the comment `<!-- Old API (Plan A): a property on this class; SciQLopSpan has pixel_range(). -->`.
 - `SciQLopHorizontalSpan`, `SciQLopRectangularSpan`: unchanged (bare).
 - `SciQLopSpan`: the panel constructor's `remove="all"` signature ends with `,const QString&amp;,bool)`.
-- `MultiPlotsVerticalSpan` (line 1895-1922): delete the three `rename` modify-functions (`range() const`, `read_only() const`, `id() const`: they are not declared in this class any more); keep the constructor renames and the seven properties. Each property now names a base-class method, as `color` already did.
+- `MultiPlotsVerticalSpan` (line 1895-1922): delete the three `rename` modify-functions (`range() const`, `read_only() const`, `id() const`: they are not declared in this class any more, and must not be restored); keep the constructor renames and the seven properties. Each property now names a base-class method and shadows it, as `color` already did.
 - `SciQLopMultiPlotPanel`: delete the `remove(MultiPlotsVerticalSpan*)` modify-function (line 1745-1749).
 
 `SciQLopPlots/__init__.py`, `_SNAKE_CASE_ALIASES` (line 612-621): drop `SciQLopPlotsBindings.MultiPlotsVerticalSpan` from the tuple, and make the comment say `# MultiPlotsVerticalLine overrides addObject/removeObject: it needs its own alias.`
@@ -5166,7 +5387,7 @@ git commit -m "refactor(span): the old span classes are SciQLopSpan subclasses t
 
 ---
 
-### Task 9: `MultiPlotsVerticalLine` becomes a subclass of `SciQLopStraightLine`
+### Task 12: `MultiPlotsVerticalLine` becomes a subclass of `SciQLopStraightLine`
 
 **Files:**
 - Modify (rewrite): `include/SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp`
@@ -5177,7 +5398,7 @@ git commit -m "refactor(span): the old span classes are SciQLopSpan subclasses t
 - Test: `tests/integration/test_old_span_line_names.py`, `tests/integration/test_drawn_contract.py`, `tests/integration/test_api_hygiene.py`
 
 **Interfaces:**
-- Consumes: Tasks 4, 5.
+- Consumes: Tasks 5, 6, 7.
 - Produces:
   - `MultiPlotsVerticalLine(panel, position, color = QColor::fromRgb(100, 100, 100), read_only = false, visible = true, tool_tip = "")`: a panel-scope vertical `SciQLopStraightLine` whose parts are `SciQLopVerticalLine`s. Grey and draggable by default, as before; its Python properties stay. It loses the plumbing methods.
   - The `SciQLopStraightLine` panel constructor gains a last parameter `bool legacy_parts = false`.
@@ -5281,7 +5502,7 @@ public:
 
 bindings.xml:
 - `SciQLopStraightLine`: the panel constructor's `remove="all"` signature ends with `,Coordinates,bool)`.
-- `MultiPlotsVerticalLine` (line 1924-1948): delete the three `rename` modify-functions (`position() const`, `line_width() const`, `read_only() const`); keep the constructor renames and the seven properties.
+- `MultiPlotsVerticalLine` (line 1924-1948): delete the three `rename` modify-functions (`position() const`, `line_width() const`, `read_only() const`); keep the constructor renames and the seven properties. Do not restore the renames if a property looks odd: the getters are inherited now, so each property shadows an inherited method, as `color` always did, and a `rename` of a method the class does not declare is an error.
 - `SciQLopMultiPlotPanel`: delete the `remove(MultiPlotsVerticalLine*)` modify-function.
 
 `SciQLopPlots/__init__.py`, `_SNAKE_CASE_ALIASES` becomes:
@@ -5312,15 +5533,15 @@ git commit -m "refactor(lines): MultiPlotsVerticalLine is a panel-scope SciQLopS
 
 ---
 
-### Task 10: The Python surface: one `.on` row, one alias row, `movable` deprecated
+### Task 13: The Python surface: one `.on` row, one alias row, `movable` deprecated
 
 **Files:**
-- Modify: `SciQLopPlots/__init__.py` (`_ON_EXCEPTIONS` ~line 304-320, `_DEPRECATED_ALIASES` ~line 629-635, `_DEPRECATED_CALLS` from Task 6)
+- Modify: `SciQLopPlots/__init__.py` (`_ON_EXCEPTIONS` ~line 304-320, `_DEPRECATED_ALIASES` ~line 629-635, `_DEPRECATED_CALLS` from Task 9)
 - Modify: `pyproject.toml` (`filterwarnings`, line 56-58)
 - Test: `tests/integration/test_straight_line.py`, `tests/integration/test_old_span_line_names.py`, and every test that calls `movable()` / `set_movable()` on a line
 
 **Interfaces:**
-- Consumes: Tasks 2, 4 (the `SciQLopSpan` and `SciQLopStraightLine` rows), 6 (`_DEPRECATED_CALLS`), 8, 9 (the old classes are subclasses now, so the rows on the base classes cover them).
+- Consumes: Task 8 (the `SciQLopSpan` and `SciQLopStraightLine` rows), Task 9 (`_DEPRECATED_CALLS`), Tasks 11 and 12 (the old classes are subclasses now, so the rows on the base classes cover them).
 - Produces: `line.movable()` warns `movable() is deprecated: use line.read_only()`, `line.set_movable(x)` warns `set_movable(...) is deprecated: use line.set_read_only(...)`, both with `stacklevel=2`. The suite's filter also catches `use line.`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -5409,13 +5630,13 @@ git commit -m "feat(lines): movable()/set_movable() deprecated for read_only; on
 
 ---
 
-### Task 11: Move the remaining tests to the new API
+### Task 14: Move the remaining tests to the new API
 
-The suite is green after Tasks 6-10; this task removes what still uses the old API without being about it.
+The suite is green after Tasks 9-13; this task removes what still uses the old API without being about it.
 
 **Files:** every test file the greps below name, under `tests/integration`, `tests/unit`, `tests/fuzzing`.
 
-**Rules:** the **Fallout rules** (before Task 6), plus:
+**Rules:** the **Fallout rules** (before Task 9), plus:
 - A test that builds a span or line through a deprecated constructor, and is not about that constructor or class, uses the factory: `SciQLopVerticalSpan(plot, r, ...)` → `plot.vertical_span(r, ...)`, `SciQLopRectangularSpan(plot, k, v)` → `plot.span(key_range=k, value_range=v)`, `SciQLopStraightLine(plot, p, m, c, o)` → `plot.straight_line(p, o, read_only=not m, coordinates=c)`, `MultiPlotsVerticalSpan(panel, ...)` → `panel.vertical_span(...)`, `MultiPlotsVerticalLine(panel, ...)` → `panel.vertical_line(...)` (add `color=QColor(100, 100, 100), read_only=False` where the test relied on the old defaults).
 - `span.selectionChanged` → `span.selection_changed`, except in the alias tests.
 - The tests **about** the old names keep them: `test_old_span_line_names.py`, `test_item_factories.py` (constructor deprecations), `test_item_ownership.py` (constructor-built ownership), `test_drawn_contract.py` (the `_old` builders), `test_drawn_spans.py` (the `selectionChanged` alias), `test_api_hygiene.py`, `test_binding_signatures.py` (the type map and the collection), `test_multiplots_vertical_line.py`, `test_drawn_panel_objects.py` (the catalogue overlay pattern and the old properties), the `TestMultiPlotsVerticalSpanProperties` and `TestSpanCollectionCulling` classes of `test_panel_api.py`, the constructor guards of `test_thread_guards.py`, and the property guard in `test_straight_line.py`.
@@ -5442,7 +5663,7 @@ git commit -m "test: spans and lines through span()/straight_line() and their sh
 
 ---
 
-### Task 12: Docs, README, manual tests
+### Task 15: Docs, README, manual tests
 
 **Files:**
 - Modify: `docs/user-guide.md` (overlays ~line 805-857, `.on` ~line 959-990, camelCase ~line 1422, deprecations ~line 1424)
@@ -5451,13 +5672,13 @@ git commit -m "test: spans and lines through span()/straight_line() and their sh
 
 - [ ] **Step 1: The overlays section**
 
-In `docs/user-guide.md`, the snippet at ~line 807-827 stays as it is (`plot.vertical_span(...)` and `plot.horizontal_line(0.5)` are the new factories). Replace the bullets after its image (~line 831-835; Task 7 already reworded the first one) with:
+In `docs/user-guide.md`, the snippet at ~line 807-827 stays as it is (`plot.vertical_span(...)` and `plot.horizontal_line(0.5)` are the new factories). Replace the bullets after its image (~line 831-835; Task 10 already reworded the first one) with:
 
 ```markdown
 - A span bounds the key axis, the value axis or both: `plot.span(key_range=..., value_range=...)`. An axis left at `None` is unbounded, and `span.key_range()` / `span.value_range()` read `None` there. `plot.vertical_span(range)` and `plot.horizontal_span(range)` are the one-axis shorthands, with `span.range()`, `set_range()` and `range_changed` for the bounded axis. On a span bounding both axes, `range()` raises `ValueError`: use `key_range()` and `value_range()`.
 - A line is vertical or horizontal: `plot.straight_line(position, Qt.Orientation.Vertical)`, or the shorthands `plot.vertical_line(position)` and `plot.horizontal_line(position)`. Lines are read-only, so the user can't drag them, unless you pass `read_only=False`. Spans are editable unless you pass `read_only=True`.
 - `coordinates=Coordinates.Pixels` keeps a span or a line in place on screen, measured from the plot area's top-left corner. `set_coordinates()` switches later and leaves the object where it is. `span.pixel_range()` (`pixel_key_range()`, `pixel_value_range()`) reads a span's position in pixels in either mode.
-- On a panel, the same factories draw one span or line across every plot, including plots added later: `panel.span(...)`, `panel.vertical_span(...)`, `panel.straight_line(...)`, `panel.vertical_line(...)` and the horizontal ones. That's handy for marking an event in time. A drag, a click or the Delete key on one plot reaches all of them, and the panel object signals once.
+- On a panel, the same factories draw one span or line across every plot, including plots added later: `panel.span(...)`, `panel.vertical_span(...)`, `panel.straight_line(...)`, `panel.vertical_line(...)` and the horizontal ones, with the same arguments. (Only the plot line factories raise `TypeError` for a bool second argument: the panel ones always took the colour there.) That's handy for marking an event in time. A drag, a click or the Delete key on one plot reaches all of them, and the panel object signals once.
 - Every span and line has `selected()`, `visible()`, `color()`, `tool_tip()` and `read_only()`, with their `set_` methods and `_changed` signals, and `delete_requested`, which fires when the user presses Delete on it. Nothing is deleted for you: connect `delete_requested` to `plot.remove(span)` or `panel.remove(span)` if that is what you want.
 - A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
 - The other factories are `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`.
@@ -5491,7 +5712,7 @@ In `docs/user-guide.md`, the snippet at ~line 807-827 stays as it is (`plot.vert
 
 `README.md`: the snippet at line 88-98 already uses the factories and `.on.tooltip`; leave it. Line 22 stays.
 
-`tests/manual-tests/`: rewrite each listed file by the **Fallout rules** and Task 11's rules. Keep `span_created` and `set_span_creation_enabled` in `gallery.py` (interactive creation is unchanged). Manual tests block on `app.exec`, so they are not run: check each with `.venv/bin/python -m py_compile <file>`.
+`tests/manual-tests/`: rewrite each listed file by the **Fallout rules** and Task 14's rules. Keep `span_created` and `set_span_creation_enabled` in `gallery.py` (interactive creation is unchanged). Manual tests block on `app.exec`, so they are not run: check each with `.venv/bin/python -m py_compile <file>`.
 
 - [ ] **Step 5: Run the guide test, then the full suite**
 
@@ -5506,7 +5727,7 @@ git commit -m "docs: one span class and one line class, the factories, the migra
 
 ---
 
-### Task 13: Self-delete sweep, ASan, and the last checks
+### Task 16: Self-delete sweep, ASan, and the last checks
 
 **Files:**
 - Modify: `tests/sweeps/self_delete/common.py` (`BUILDERS`, line 123-130)
@@ -5553,7 +5774,7 @@ and replace the `BUILDERS` entries from `"vertical_line"` to `"panel_line"` (lin
 
 - [ ] **Step 4: ASan**
 
-Is `build-asan` configured with `-Db_sanitize=address`? Rebuild it, alone, in the foreground: `.venv/bin/meson compile -C build-asan -j 4` (same environment as the main build; reconfigure it first, because Tasks 2-9 added and removed object-types and sources). A rebuild longer than 600 s is normal: rerun the same command. Then:
+Is `build-asan` configured with `-Db_sanitize=address`? Rebuild it, alone, in the foreground: `.venv/bin/meson compile -C build-asan -j 4` (same environment as the main build; reconfigure it first, because Tasks 2-12 added and removed object-types and sources). A rebuild longer than 600 s is normal: rerun the same command. Then:
 
 ```bash
 cd /tmp && LD_PRELOAD=/usr/lib64/libasan.so.8 ASAN_OPTIONS=detect_leaks=0 QT_QPA_PLATFORM=offscreen PYTHONPATH=/home/jeandet/Documents/prog/SciQLopPlots/build-asan:/home/jeandet/Documents/prog/SciQLopPlots timeout 540 /home/jeandet/Documents/prog/SciQLopPlots/.venv/bin/python -m pytest /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_span.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_panel_span.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_straight_line.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_old_span_line_names.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_drawn_contract.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_plot_remove.py -q -p no:cacheprovider
@@ -5576,13 +5797,13 @@ Do not commit `discovery.jsonl` or `pairs.jsonl` unless they were tracked before
 
 ## Deviations from the spec, and their reasons
 
-The controller approves these with the plan. Each is small and named where it happens.
+Spec revision 4 folds in 1 to 4 below; 5 stays a plan-level choice. Each is named where it happens.
 
-1. **A bool second argument raises TypeError** (Task 6). The spec says a positional bool "now fails on the colour slot"; PySide accepts it as a colour, so the plan adds the failure.
-2. **The old panel span's border-selection mirror goes in Plan A** (Task 8), not Plan B: a subclass with no behaviour of its own cannot keep it, and no user input ever fires it. The parts keep `select_lower_border` / `select_upper_border` and their signals (Plan B removes those).
+1. **A bool second argument raises TypeError** (Task 9). The spec says a positional bool "now fails on the colour slot"; PySide accepts it as a colour, so the plan adds the failure.
+2. **The old panel span's border-selection mirror goes in Plan A** (Task 11), not Plan B: a subclass with no behaviour of its own cannot keep it, and no user input ever fires it. The parts keep `select_lower_border` / `select_upper_border` and their signals (Plan B removes those).
 3. **Legacy shims on the old subclasses** beyond "only fix kind and scope", each kept because SciQLop may call it: `SciQLopVerticalSpan.set_pixel_range` and its `pixel_range` property; V/H border selection; `MultiPlotsVerticalSpan.show()` / `hide()` and the collection's culling hooks (the spec asks for the bug round's visibility rules); `position` stays a property on `SciQLopVerticalLine` / `SciQLopHorizontalLine` (the spec lists only the panel properties, but the old plot line classes had `position` as a property too). Lost from the old plot spans: `replot()`, `parentPlot()` and the raising `movable` / `position` / `move` stubs (the spec drops the stubs).
-4. **The suite filter also catches `use line.`** (Task 10), so a missed `set_movable` call fails the suite like a missed factory call.
-5. **Panel-scope pixels** (Tasks 3 and 5, `simplify:` comments): `pixel_range()` reads the first plot; `set_coordinates` converts on each plot, then gives every part the first plot's numbers; on a panel without plots the numbers stay as they were.
+4. **The suite filter also catches `use line.`** (Task 13), so a missed `set_movable` call fails the suite like a missed factory call.
+5. **Panel-scope pixels** (Tasks 4 and 7, `simplify:` comments): `pixel_range()` reads the first plot; `set_coordinates` converts on each plot, then gives every part the first plot's numbers; on a panel without plots the numbers stay as they were.
 
 ## Self-review against the spec
 
@@ -5593,26 +5814,28 @@ Each spec requirement, and the task that implements and tests it.
 | `SciQLopSpan` from `SciQLopDrawnObject`, not an item interface; kind fixed; `SpanKind` | 2 |
 | `key_range()` / `value_range()` None on an unbounded axis; their setters raise; their signals | 1 (mechanism), 2 |
 | `range()` shortcut, raises on rectangular, `range_changed` paired once with the axis signal | 2 |
-| `coordinates` (setter, signal), `pixel_range` / `pixel_key_range` / `pixel_value_range` | 2, 3 |
-| `read_only` (default False), `tool_tip`, borders and pen style, `id()`, `delete_requested`, `scope()`, `is_panel_part()` | 2, 3 |
-| `SciQLopStraightLine`: `position`, `orientation`, `coordinates` with a new setter, `read_only` (default True) and the deprecated `movable` aliases, `tool_tip`, style, clamp getters, `delete_requested`, scope | 4, 5, 10 |
-| One class, two targets; `PanelTarget` plumbing: join/leave, QPointers, `mark_panel_part`, snapshots, edits flow up, one emission per edit, C++-owned panel children | 3, 5 |
-| Old names as subclasses fixing kind and scope; built by the old entry points only; old panel properties kept; plumbing methods gone; not `SciQLopRangeItemInterface` | 8, 9 |
-| Factory defaults, the same at both scopes | 2, 4, 6, 7 |
-| `span` and shorthands with the defaults defined once; `straight_line` and shorthands; `rectangular_span` (plots only) deprecated; `movable=` deprecated; the message format; the `_ITEM_FACTORIES` hint | 2, 4, 6, 7 |
-| `remove` overloads at both scopes, wrong-scope messages, part refusal | 2, 3, 5 |
-| `.on`: `range` / `key_range` / `value_range` rules, observable `coordinates` / `read_only` / `tool_tip`, `tooltip` on every span and line, no `.on.position` on spans | 2, 4, 8, 10; guide in 12 |
-| `selectionChanged` on `SciQLopSpan` | 2, 10 |
-| Collection legacy-only, `span_created` unchanged, wasm unchanged | 8 (read check) |
-| Migration of tests, guide, README, manual tests; the migration note | 6, 7, 10, 11, 12 |
-| Self-delete sweep, ASan, contract walk with both scopes | 2, 3, 5, 8, 9, 13 |
+| `coordinates` (setter, signal), `pixel_range` / `pixel_key_range` / `pixel_value_range` | 3, 4 |
+| `read_only` (default False), `tool_tip`, `id()`, `scope()`, `is_panel_part()` | 2, 4 |
+| Borders and pen style, click selection, `delete_requested` | 3, 4 |
+| `SciQLopStraightLine`: `position`, `orientation`, `coordinates` with a new setter, `read_only` (default True), `delete_requested`, scope | 5, 7 |
+| Line clamp getters, `tool_tip_changed`; the deprecated `movable` aliases | 6, 13 |
+| One class, two targets; `PanelTarget` plumbing: join/leave, QPointers, `mark_panel_part`, snapshots, edits flow up, one emission per edit, C++-owned panel children | 4, 7 |
+| Old names as subclasses fixing kind and scope, with the named shims; built by the old entry points only; old panel properties kept; plumbing methods gone; not `SciQLopRangeItemInterface` | 11, 12 |
+| Factory defaults, the same at both scopes | 2, 5, 9, 10 |
+| `span` and shorthands with the defaults defined once; `straight_line` and shorthands; `rectangular_span` (plots only) deprecated; `movable=` deprecated and the bool guard; the message format; the `_ITEM_FACTORIES` hint | 2, 5, 9, 10 |
+| `remove` overloads at both scopes, wrong-scope messages, part refusal | 2, 4, 7 |
+| `.on`: `range` / `key_range` / `value_range` rules, observable `coordinates` / `read_only` / `tool_tip`, no `.on.position` on spans | 2, 3, 11 |
+| `.on.tooltip` on every span and line; `selectionChanged` on `SciQLopSpan` | 8, 13; guide in 15 |
+| Collection legacy-only, `span_created` unchanged, wasm unchanged | 11 (read check) |
+| Migration of tests, guide, README, manual tests; the migration note | 9, 10, 13, 14, 15 |
+| Self-delete sweep, ASan, contract walk with both scopes | 2, 4, 7, 11, 12, 16 |
 
 Gaps found while writing this, and fixed:
 - An explicit `span(key_range=None, ...)` had no test: only omitted arguments did, and branch F maps the two differently. Task 2 now tests it.
-- "Panel-scope objects are the panel's QObject children, C++-owned" had no test. Tasks 3 and 5 now drop the Python reference and find the object among the panel's children.
-- The old plot line classes would have lost their `position` property when `SciQLopStraightLine` moved to methods; the spec only kept the panel properties. Task 4 keeps it on `SciQLopVerticalLine` / `SciQLopHorizontalLine`, with a guard test.
-- `SciQLopVerticalSpan.set_pixel_range` and V/H border selection had no home once the subclasses lost their behaviour; existing tests use both. Task 8 keeps them as named shims (Deviation 3).
-- The `.on` exception and the `selectionChanged` alias had to exist on `SciQLopSpan` before Task 6, or the switch of the factories would break `test_on_convention.py` and `test_drawn_spans.py`. Tasks 2 and 4 add them; Task 10 only removes the redundant rows.
+- "Panel-scope objects are the panel's QObject children, C++-owned" had no test. Tasks 4 and 7 now drop the Python reference and find the object among the panel's children.
+- The old plot line classes would have lost their `position` property when `SciQLopStraightLine` moved to methods; the spec only kept the panel properties. Task 5 keeps it on `SciQLopVerticalLine` / `SciQLopHorizontalLine`, with a guard test.
+- `SciQLopVerticalSpan.set_pixel_range` and V/H border selection had no home once the subclasses lost their behaviour; existing tests use both. Task 11 keeps them as named shims (Deviation 3).
+- The `.on` exception and the `selectionChanged` alias had to exist on `SciQLopSpan` before Task 9, or the switch of the factories would break `test_on_convention.py` and `test_drawn_spans.py`. Task 8 adds them, before the switch; Task 13 only removes the redundant rows.
 - The spec's claim that a bool second argument fails on the colour slot is false (Review Focus 1, Deviation 1).
 
 Not tested, on purpose: interactive span creation (`span_created`) has no automated test today and this plan does not change it; the wasm C++ is read, not compiled.
