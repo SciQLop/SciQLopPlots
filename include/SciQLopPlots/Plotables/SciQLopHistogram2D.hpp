@@ -79,9 +79,8 @@ public:
     int x_bins() const;
     int y_bins() const;
 
-    //! Count (none) or Density (per column); Probability is not defined for a 2D histogram.
-    void set_normalization(HistogramNormalization normalization);
-    HistogramNormalization normalization() const;
+    void set_normalization(Histogram2DNormalization normalization);
+    Histogram2DNormalization normalization() const;
 
     // Logarithmic bin spacing per axis. Bins are spaced evenly in log10 and
     // non-positive samples are dropped; meant to accompany a log-scaled axis.

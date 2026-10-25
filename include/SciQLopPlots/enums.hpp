@@ -186,6 +186,14 @@ enum class HistogramNormalization
 };
 Q_DECLARE_METATYPE(HistogramNormalization);
 
+//! Not HistogramNormalization: 1-D Density divides by the bin width, per-column does not.
+enum class Histogram2DNormalization
+{
+    Count = 0,
+    PerColumn = 1
+};
+Q_DECLARE_METATYPE(Histogram2DNormalization);
+
 enum class HistogramStyle
 {
     Bars,

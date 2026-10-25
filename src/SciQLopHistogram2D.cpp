@@ -213,16 +213,14 @@ int SciQLopHistogram2D::y_bins() const
     return _hist ? _hist->valueBins() : 0;
 }
 
-void SciQLopHistogram2D::set_normalization(HistogramNormalization normalization)
+void SciQLopHistogram2D::set_normalization(Histogram2DNormalization normalization)
 {
-    if (normalization == HistogramNormalization::Probability)
-        throw std::invalid_argument("a 2D histogram is normalized by Count or Density only");
     if (_hist)
     {
         if (this->normalization() == normalization)
             return;
         const QPointer self(this);
-        _hist->setNormalization(normalization == HistogramNormalization::Density
+        _hist->setNormalization(normalization == Histogram2DNormalization::PerColumn
                                     ? QCPHistogram2D::nColumn
                                     : QCPHistogram2D::nNone);
         if (self)
@@ -230,11 +228,11 @@ void SciQLopHistogram2D::set_normalization(HistogramNormalization normalization)
     }
 }
 
-HistogramNormalization SciQLopHistogram2D::normalization() const
+Histogram2DNormalization SciQLopHistogram2D::normalization() const
 {
     return _hist && _hist->normalization() == QCPHistogram2D::nColumn
-               ? HistogramNormalization::Density
-               : HistogramNormalization::Count;
+               ? Histogram2DNormalization::PerColumn
+               : Histogram2DNormalization::Count;
 }
 
 // Log binning is just the axis being logarithmic. Driving the axis re-bins (and

@@ -12,7 +12,7 @@ import os
 import numpy as np
 import pytest
 
-from SciQLopPlots import GraphType, HistogramNormalization, tracing
+from SciQLopPlots import GraphType, Histogram2DNormalization, tracing
 
 
 @pytest.fixture
@@ -52,9 +52,9 @@ class TestHistogramBinValidation:
         assert hist.y_bins() == 64
 
     def test_out_of_range_normalization_raises(self, hist):
-        with pytest.raises((ValueError, RuntimeError)):
+        with pytest.raises(ValueError):
             hist.set_normalization(99)
 
     def test_valid_normalization_still_works(self, hist):
-        hist.set_normalization(HistogramNormalization.Count)
-        assert hist.normalization() == HistogramNormalization.Count
+        hist.set_normalization(Histogram2DNormalization.Count)
+        assert hist.normalization() == Histogram2DNormalization.Count

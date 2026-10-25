@@ -355,7 +355,7 @@ A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `p
 
 ![A 2-D density histogram](images/histogram2d.png)
 
-`hist.set_normalization(HistogramNormalization.Density)` divides each column by its total; `Count` (the default) shows raw counts. `Probability` is not defined for a 2-D histogram. The old `set_normalization(1)` still works but is deprecated.
+`hist.set_normalization(Histogram2DNormalization.PerColumn)` divides each column by its total, so every column adds up to 1; `Count` (the default) shows raw counts. The old `set_normalization(1)` still works but is deprecated.
 
 ### Histograms
 

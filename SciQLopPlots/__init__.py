@@ -673,9 +673,11 @@ def _member_of(enum, names, prop, value, aliases={}):
     if isinstance(value, enum):
         return value
     legacy = {name: member for member, name in names.items() if name} | aliases
-    if value not in legacy:
-        raise ValueError(f"{prop} must be a {enum.__name__}, not {value!r}")
-    member = legacy[value]
+    try:
+        member = legacy[value]
+    except (KeyError, TypeError):
+        raise ValueError(f"{prop} must be a {enum.__name__} ({', '.join(m.name for m in enum)}), "
+                         f"not {value!r}") from None
     warnings.warn(f"{prop}={value!r} is deprecated: use {enum.__name__}.{member.name}",
                   DeprecationWarning, stacklevel=3)
     return member
@@ -750,17 +752,19 @@ SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 
 
-_HISTOGRAM2D_NORMALIZATION_INTS = {0: HistogramNormalization.Count, 1: HistogramNormalization.Density}
+_HISTOGRAM2D_NORMALIZATION_INTS = {0: Histogram2DNormalization.Count, 1: Histogram2DNormalization.PerColumn}
 
 
 def _enum_normalization(method):
     @_wraps(method)
     def wrapper(self, value):
-        if not isinstance(value, HistogramNormalization):
-            if value not in _HISTOGRAM2D_NORMALIZATION_INTS:
-                raise ValueError(f"normalization must be a HistogramNormalization, not {value!r}")
+        if not isinstance(value, Histogram2DNormalization):
+            if isinstance(value, bool) or not isinstance(value, int) \
+                    or value not in _HISTOGRAM2D_NORMALIZATION_INTS:
+                raise ValueError("normalization must be Histogram2DNormalization.Count or "
+                                 f"Histogram2DNormalization.PerColumn, not {value!r}")
             value = _HISTOGRAM2D_NORMALIZATION_INTS[value]
-            warnings.warn(f"set_normalization({int(value)}) is deprecated: use HistogramNormalization.{value.name}",
+            warnings.warn(f"set_normalization({int(value)}) is deprecated: use Histogram2DNormalization.{value.name}",
                           DeprecationWarning, stacklevel=2)
         return method(self, value)
     return wrapper

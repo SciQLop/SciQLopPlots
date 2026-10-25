@@ -2,7 +2,7 @@
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from SciQLopPlots import (HistogramNormalization, SciQLopPlot, TimelineEditMode, TimelineStack,
+from SciQLopPlots import (Histogram2DNormalization, SciQLopPlot, TimelineEditMode, TimelineStack,
                           TimelineStyle)
 
 
@@ -78,29 +78,35 @@ def test_unknown_values_raise(tl, prop, value):
 
 
 def test_histogram2d_normalization_is_an_enum(hist):
-    assert hist.normalization() is HistogramNormalization.Count
-    hist.set_normalization(HistogramNormalization.Density)
-    assert hist.normalization() is HistogramNormalization.Density
+    assert hist.normalization() is Histogram2DNormalization.Count
+    hist.set_normalization(Histogram2DNormalization.PerColumn)
+    assert hist.normalization() is Histogram2DNormalization.PerColumn
     assert hist.normalization() == 1
 
 
-@pytest.mark.parametrize("old, new", [(0, HistogramNormalization.Count), (1, HistogramNormalization.Density)])
+@pytest.mark.parametrize("old, new", [(0, Histogram2DNormalization.Count), (1, Histogram2DNormalization.PerColumn)])
 def test_histogram2d_old_ints_warn_and_map(hist, old, new):
-    with pytest.warns(DeprecationWarning, match=rf"set_normalization\({old}\) is deprecated: use HistogramNormalization\.{new.name}"):
+    with pytest.warns(DeprecationWarning, match=rf"set_normalization\({old}\) is deprecated: use Histogram2DNormalization\.{new.name}"):
         hist.set_normalization(old)
     assert hist.normalization() is new
 
 
-@pytest.mark.parametrize("value", [99, 2, HistogramNormalization.Probability])
-def test_histogram2d_unknown_normalization_raises(hist, value):
-    with pytest.raises((ValueError, RuntimeError)):
+@pytest.mark.parametrize("value", [99, 2, -1, True, [1], "1", None])
+def test_histogram2d_unknown_normalization_raises_value_error(hist, value):
+    with pytest.raises(ValueError, match="Histogram2DNormalization"):
         hist.set_normalization(value)
+
+
+@pytest.mark.parametrize("prop", ["style", "stack"])
+def test_unhashable_timeline_values_raise_value_error(tl, prop):
+    with pytest.raises(ValueError):
+        setattr(tl, prop, [])
 
 
 def test_histogram2d_signal_still_carries_an_int(hist):
     seen = []
     hist.normalization_changed.connect(seen.append)
-    hist.set_normalization(HistogramNormalization.Density)
+    hist.set_normalization(Histogram2DNormalization.PerColumn)
     assert seen == [1]
 
 
@@ -108,5 +114,5 @@ def test_pyproject_filter_turns_the_new_messages_into_errors(tl, hist):
     """Pins the filterwarnings entry in pyproject.toml: no pytest.warns wrapper here."""
     with pytest.raises(DeprecationWarning, match=r"is deprecated: use TimelineStyle\.Bars"):
         tl.style = "bars"
-    with pytest.raises(DeprecationWarning, match=r"use HistogramNormalization\.Density"):
+    with pytest.raises(DeprecationWarning, match=r"use Histogram2DNormalization\.PerColumn"):
         hist.set_normalization(1)

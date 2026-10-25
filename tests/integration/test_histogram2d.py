@@ -8,7 +8,7 @@ from SciQLopPlots import (
     SciQLopHistogram2D,
     SciQLopMultiPlotPanel,
     GraphType,
-    HistogramNormalization,
+    Histogram2DNormalization,
 )
 
 
@@ -89,18 +89,18 @@ class TestHistogram2DProperties:
 
     def test_normalization_default_none(self, plot):
         hist = plot.add_histogram2d("test")
-        assert hist.normalization() is HistogramNormalization.Count
+        assert hist.normalization() is Histogram2DNormalization.Count
 
     def test_set_normalization_column(self, plot):
         hist = plot.add_histogram2d("test")
-        hist.set_normalization(HistogramNormalization.Density)
-        assert hist.normalization() is HistogramNormalization.Density
+        hist.set_normalization(Histogram2DNormalization.PerColumn)
+        assert hist.normalization() is Histogram2DNormalization.PerColumn
 
     def test_set_normalization_back_to_none(self, plot):
         hist = plot.add_histogram2d("test")
-        hist.set_normalization(HistogramNormalization.Density)
-        hist.set_normalization(HistogramNormalization.Count)
-        assert hist.normalization() is HistogramNormalization.Count
+        hist.set_normalization(Histogram2DNormalization.PerColumn)
+        hist.set_normalization(Histogram2DNormalization.Count)
+        assert hist.normalization() is Histogram2DNormalization.Count
 
     def test_name(self, plot):
         hist = plot.add_histogram2d("my_hist")

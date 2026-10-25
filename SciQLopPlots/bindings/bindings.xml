@@ -162,6 +162,7 @@
     <enum-type name="ProjectionAxisLinking" python-type="IntEnum"/>
     <enum-type name="GraphLineStyle" python-type="IntEnum"/>
     <enum-type name="HistogramNormalization" python-type="IntEnum"/>
+    <enum-type name="Histogram2DNormalization" python-type="IntEnum"/>
     <enum-type name="HistogramStyle" python-type="IntEnum"/>
     <enum-type name="ColorGradient" python-type="IntEnum"/>
     <enum-type name="ProductsModelNodeType" python-type="IntEnum"/>
