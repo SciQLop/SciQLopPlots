@@ -21,76 +21,22 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/ThreadGuard.hpp"
-
 #include "../Items/SciQLopStraightLines.hpp"
-#include "SciQLopMultiPlotObject.hpp"
 #include "SciQLopMultiPlotPanel.hpp"
 
-/*! One vertical line shown on every plot of a panel, including plots added later.
-    Dragging it on any plot moves it on all of them. */
-class MultiPlotsVerticalLine : public SciQLopMultiPlotObject
+/*! The old name of a panel-wide vertical line: a SciQLopStraightLine at panel scope whose parts
+    are SciQLopVerticalLines. Grey and draggable by default, as before; its Python properties are
+    in bindings.xml. Built by its deprecated constructor; Plan B removes it. */
+class MultiPlotsVerticalLine : public SciQLopStraightLine
 {
     Q_OBJECT
-    QList<QPointer<SciQLopVerticalLine>> _lines;
-    double _position;
-    QColor m_color;
-    double _line_width = 1.0;
-    bool _read_only;
-    bool m_visible;
-    bool m_selected = false;
-    QString _tool_tip;
-
-    template <typename F>
-    void for_each_line(F&& f)
-    {
-        const auto lines = _lines;
-        for (const auto& line : lines)
-            if (line)
-                f(line.data());
-    }
-
-protected:
-    virtual void addObject(SciQLopPlotInterface* plot) override;
-    virtual void removeObject(SciQLopPlotInterface* plot) override;
-    QColor _color() const override { return m_color; }
-    void _set_color(const QColor& color) override;
-    bool _visible() const override { return m_visible; }
-    void _set_visible(bool visible) override;
-    bool _selected() const override { return m_selected; }
-    void _set_selected(bool selected) override;
 
 public:
     MultiPlotsVerticalLine(SciQLopMultiPlotPanel* panel, double position,
                            QColor color = QColor::fromRgb(100, 100, 100), bool read_only = false,
                            bool visible = true, const QString tool_tip = "")
-            : SciQLopMultiPlotObject(SciQLopPlots::on_owner_thread(panel, "MultiPlotsVerticalLine"))
-            , _position { position }
-            , m_color { color }
-            , _read_only { read_only }
-            , m_visible { visible }
-            , _tool_tip { tool_tip }
+            : SciQLopStraightLine(panel, position, Qt::Orientation::Vertical, color, read_only,
+                                  visible, tool_tip, Coordinates::Data, true)
     {
-        updatePlotList(panel->plots());
     }
-
-    virtual ~MultiPlotsVerticalLine() override;
-
-    void set_position(double position);
-    [[nodiscard]] inline double position() const noexcept { return _position; }
-
-    void set_line_width(double width);
-    [[nodiscard]] inline double line_width() const noexcept { return _line_width; }
-
-    void set_read_only(bool read_only);
-    [[nodiscard]] inline bool read_only() const noexcept { return _read_only; }
-
-    void set_tool_tip(const QString& tool_tip);
-    [[nodiscard]] inline QString tool_tip() const noexcept { return _tool_tip; }
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void position_changed(double new_position);
 };

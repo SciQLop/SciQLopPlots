@@ -176,8 +176,9 @@ void PlotLineTarget::set_max_value(std::optional<double> max)
 }
 
 PanelLineTarget::PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPanel* panel,
-                                 LineState state)
+                                 LineState state, bool legacy_parts)
         : m_line { line }
+        , m_legacy_parts { legacy_parts }
         , m_state { std::move(state) }
         , m_parts { line, [this](SciQLopPlot* plot) { return make_part(plot); } }
 {
@@ -186,8 +187,12 @@ PanelLineTarget::PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPane
 
 SciQLopStraightLine* PanelLineTarget::make_part(SciQLopPlot* plot)
 {
-    auto* part = new SciQLopStraightLine(plot, m_state.position, !m_state.read_only,
-                                         m_state.coordinates, m_state.orientation);
+    // The old panel line keeps old-class parts (Plan A): SciQLop finds them by that class.
+    auto* part = m_legacy_parts
+        ? static_cast<SciQLopStraightLine*>(new SciQLopVerticalLine(
+              plot, m_state.position, !m_state.read_only, m_state.coordinates))
+        : new SciQLopStraightLine(plot, m_state.position, !m_state.read_only, m_state.coordinates,
+                                  m_state.orientation);
     if (m_state.min_value)
         part->set_min_value(*m_state.min_value);
     if (m_state.max_value)

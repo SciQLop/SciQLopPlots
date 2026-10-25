@@ -190,7 +190,7 @@ SciQLopStraightLine::SciQLopStraightLine(SciQLopPlot* plot, const double positio
 SciQLopStraightLine::SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double position,
                                          Qt::Orientation orientation, const QColor& color,
                                          bool read_only, bool visible, const QString& tool_tip,
-                                         Coordinates coordinates)
+                                         Coordinates coordinates, bool legacy_parts)
         : SciQLopDrawnObject { impl::panel_host(panel, "SciQLopStraightLine") }
         , m_orientation { orientation }
         , m_target { std::make_unique<impl::PanelLineTarget>(
@@ -201,7 +201,8 @@ SciQLopStraightLine::SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double po
                                 .read_only = read_only,
                                 .tool_tip = tool_tip,
                                 .color = color,
-                                .visible = visible }) }
+                                .visible = visible },
+              legacy_parts) }
 {
 }
 

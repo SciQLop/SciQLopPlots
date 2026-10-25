@@ -1,11 +1,13 @@
 """The old span and line names during Plan A: subclasses that only fix kind and scope (5.6)."""
 import numpy as np
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 
-from SciQLopPlots import (MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopHorizontalSpan,
-                          SciQLopPlotRange as R, SciQLopRangeItemInterface, SciQLopRectangularSpan,
-                          SciQLopSpan, SciQLopVerticalSpan, SpanKind)
+from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
+                          SciQLopHorizontalSpan, SciQLopPlotRange as R, SciQLopRangeItemInterface,
+                          SciQLopRectangularSpan, SciQLopSpan, SciQLopStraightLine,
+                          SciQLopVerticalLine, SciQLopVerticalSpan, SpanKind)
 from conftest import plots_of, process_events
 
 X = np.linspace(0.0, 10.0, 50)
@@ -115,3 +117,35 @@ def test_on_position_no_longer_resolves_on_an_old_span(plot, cls):
     span = _old(OLD_PLOT_SPANS[cls][0], plot)
     with pytest.raises(AttributeError):
         span.on.position
+
+
+def test_an_old_panel_line_has_old_class_parts(panel):
+    _with_plots(panel)
+    line = _old(lambda p: MultiPlotsVerticalLine(p, 2.0), panel)
+    assert isinstance(line, SciQLopStraightLine)
+    assert (line.orientation(), line.scope()) == (Qt.Orientation.Vertical, panel)
+    parts = [p for plot in plots_of(panel) for p in plot.findChildren(SciQLopVerticalLine)]
+    assert len(parts) == 2
+    assert all(p.is_panel_part() and not isinstance(p, MultiPlotsVerticalLine) for p in parts)
+
+
+def test_the_old_panel_line_keeps_its_defaults_and_properties(panel):
+    _with_plots(panel)
+    line = _old(lambda p: MultiPlotsVerticalLine(p, 2.0), panel)
+    assert (line.color, line.read_only) == (QColor(100, 100, 100), False)
+    line.position = 4.0
+    line.color = QColor("red")
+    line.line_width = 3.0
+    line.visible = False
+    line.selected = True
+    line.tooltip = "tip"
+    line.read_only = True
+    assert (line.position, line.color, line.line_width, line.visible, line.selected, line.tooltip,
+            line.read_only) == (4.0, QColor("red"), 3.0, False, True, "tip", True)
+    with pytest.raises(TypeError):
+        line.position()
+
+
+def test_the_old_panel_line_lost_its_plumbing():
+    assert not any(hasattr(MultiPlotsVerticalLine, name) for name in
+                   ("addObject", "add_object", "removeObject", "replotAll", "update_plot_list"))

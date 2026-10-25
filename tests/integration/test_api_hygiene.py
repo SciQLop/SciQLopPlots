@@ -73,8 +73,6 @@ class TestSnakeCaseAliases:  # task 3, findings 1.5, 1.6
         (SciQLopMultiPlotPanel, "add_widget", "addWidget"),
         (SciQLopMultiPlotPanel, "remove_widget", "removeWidget"),
         (SciQLopMultiPlotPanel, "index_of", "indexOf"),
-        (SciQLopPlots.MultiPlotsVerticalLine, "add_object", "addObject"),
-        (SciQLopPlots.MultiPlotsVerticalLine, "remove_object", "removeObject"),
     ])
     def test_methods_have_both_names(self, cls, new, old):
         assert getattr(cls, new) is getattr(cls, old)

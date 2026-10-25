@@ -215,13 +215,6 @@ SciQLopStraightLine* SciQLopMultiPlotPanel::horizontal_line(double position, QCo
                          coordinates);
 }
 
-void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalLine* line)
-{
-    check_removable_here(this, line);
-    SCIQLOP_ON_OWNER_THREAD_WITH(line, remove(line));
-    delete line;
-}
-
 void SciQLopMultiPlotPanel::remove(SciQLopPlotInterface* plot)
 {
     if (plot == nullptr)

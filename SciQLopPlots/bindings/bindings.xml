@@ -1386,7 +1386,7 @@
     <object-type name="SciQLopPixmapItem" parent-management="yes"/>
     <object-type name="SciQLopStraightLine" parent-management="yes">
         <!-- The panel constructor is for the factory (panel.straight_line) only. -->
-        <modify-function signature="SciQLopStraightLine(SciQLopMultiPlotPanel*,double,Qt::Orientation,const QColor&amp;,bool,bool,const QString&amp;,Coordinates)" remove="all"/>
+        <modify-function signature="SciQLopStraightLine(SciQLopMultiPlotPanel*,double,Qt::Orientation,const QColor&amp;,bool,bool,const QString&amp;,Coordinates,bool)" remove="all"/>
     </object-type>
     <!-- The old line classes keep position as a property during Plan A (SciQLop reads it);
          SciQLopStraightLine itself has position() / set_position(). -->
@@ -1855,11 +1855,6 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopStraightLine*"/></insert-template>
             </inject-code>
         </modify-function>
-        <modify-function signature="remove(MultiPlotsVerticalLine*)">
-            <inject-code class="target" position="beginning">
-                <insert-template name="void_raises_valueerror"/>
-            </inject-code>
-        </modify-function>
         <modify-function signature="remove(SciQLopPlotInterface*)">
             <inject-code class="target" position="beginning">
                 <insert-template name="void_raises_valueerror"/>
@@ -2071,9 +2066,6 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
                 <rename to="tool_tip"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="position() const" rename="_position"/>
-        <modify-function signature="line_width() const" rename="_line_width"/>
-        <modify-function signature="read_only() const" rename="_read_only"/>
         <property name="position" type="double" get="position" set="set_position" generate-getsetdef="yes"/>
         <property name="color" type="QColor" get="color" set="set_color" generate-getsetdef="yes"/>
         <property name="line_width" type="double" get="line_width" set="set_line_width" generate-getsetdef="yes"/>

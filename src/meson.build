@@ -154,7 +154,6 @@ sciqlopplots_sources = files(
     'SciQLopPlotContainer.cpp',
     'Export/SciQLopExportable.cpp',
     'MultiPlotsVSpan.cpp',
-    'MultiPlotsVLine.cpp',
     'SciQLopPixmapItem.cpp',
     'SciQLopShapesItems.cpp',
     'SciQLopTextItem.cpp',

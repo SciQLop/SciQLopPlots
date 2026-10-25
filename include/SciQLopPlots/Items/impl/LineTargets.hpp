@@ -114,6 +114,7 @@ struct LineState
 class PanelLineTarget final : public LineTarget
 {
     SciQLopStraightLine* m_line;
+    bool m_legacy_parts;
     LineState m_state;
     PanelParts<SciQLopStraightLine> m_parts; // last: destroyed first, while the state still exists
 
@@ -123,7 +124,8 @@ class PanelLineTarget final : public LineTarget
     void write(T& field, const T& value, Setter setter);
 
 public:
-    PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPanel* panel, LineState state);
+    PanelLineTarget(SciQLopStraightLine* line, SciQLopMultiPlotPanel* panel, LineState state,
+                    bool legacy_parts);
 
     double position() const override;
     void set_position(double position) override;

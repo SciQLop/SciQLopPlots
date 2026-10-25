@@ -46,7 +46,6 @@ class QCPItemVSpan;
 class QCPAbstractItem;
 class QCustomPlot;
 class MultiPlotsVerticalSpan;
-class MultiPlotsVerticalLine;
 class SciQLopSpan;
 class SciQLopStraightLine;
 
@@ -261,7 +260,6 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
 
-    void remove(MultiPlotsVerticalLine* line);
     void remove(SciQLopPlotInterface* plot);
     //! A span on every plot of the panel, plot.span's arguments and defaults.
     SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,

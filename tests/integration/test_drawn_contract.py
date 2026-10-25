@@ -221,7 +221,8 @@ ROWS += [
         "SciQLopStraightLine[panel]": lambda h: h.panel.straight_line(2.0, Qt.Orientation.Vertical),
         "SciQLopVerticalLine": lambda h: _old(SciQLopVerticalLine, h.plot, 1.0),
         "SciQLopHorizontalLine": lambda h: _old(SciQLopHorizontalLine, h.plot, 0.5),
-    }, ALL),
+        "MultiPlotsVerticalLine": lambda h: _old(MultiPlotsVerticalLine, h.panel, 2.0),
+    }, ALL, builder_properties={"MultiPlotsVerticalLine": frozenset({"visible", "selected", "color"})}),
     Row("ellipse", ("SciQLopEllipseItem",), {
         "SciQLopEllipseItem": lambda h: h.plot.ellipse(QRectF(10, 10, 20, 20)),
     }, ALL),
@@ -242,9 +243,6 @@ ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLine
 
 
 ROWS += [
-    Row("panel line", ("MultiPlotsVerticalLine",), {
-        "MultiPlotsVerticalLine": lambda h: _old(MultiPlotsVerticalLine, h.panel, 2.0),
-    }, {"visible": OK, "selected": OK, "name": OK, "color": OK}, frozenset({"visible", "selected", "color"})),
     Row("span collection", ("MultiPlotsVSpanCollection",), {
         "MultiPlotsVSpanCollection": lambda h: MultiPlotsVSpanCollection(h.panel),
     }, {"visible": RAISE, "selected": RAISE, "name": OK, "color": RAISE}),

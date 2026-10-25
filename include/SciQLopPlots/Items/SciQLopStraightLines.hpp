@@ -192,9 +192,10 @@ public:
                         Coordinates coordinates = Coordinates::Data,
                         Qt::Orientation orientation = Qt::Orientation::Vertical);
     //! At panel scope: one plot-scope part on each SciQLopPlot of \a panel.
+    //! \a legacy_parts: parts are SciQLopVerticalLines, for the old MultiPlotsVerticalLine (Plan A).
     SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double position, Qt::Orientation orientation,
                         const QColor& color, bool read_only, bool visible,
-                        const QString& tool_tip, Coordinates coordinates);
+                        const QString& tool_tip, Coordinates coordinates, bool legacy_parts = false);
     ~SciQLopStraightLine() override;
 
     [[nodiscard]] Qt::Orientation orientation() const noexcept;
