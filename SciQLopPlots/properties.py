@@ -8,7 +8,10 @@ _hidden_registry = set()
 
 
 def register_hidden(cls, property_name):
-    """Hide a name from the .on namespace: a deprecated method must not be reachable through it."""
+    """Hide a name from the .on namespace: a deprecated method must not be reachable through it.
+
+    The hide is process-permanent: there is no way to unregister it.
+    """
     _hidden_registry.add((cls, property_name))
 
 

@@ -42,7 +42,7 @@ class TestStraightLineSignal:
         assert len(received) == 1
         assert received[0] == pytest.approx(7.0)
 
-    def test_position_property_roundtrip(self, plot):
+    def test_set_position_updates_the_position_getter(self, plot):
         line = plot.vertical_line(5.0, read_only=True, coordinates=Coordinates.Data)
         assert line.position() == pytest.approx(5.0)
         line.set_position(12.0)

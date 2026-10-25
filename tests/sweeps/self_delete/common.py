@@ -97,7 +97,7 @@ def _quiet(cls, *args):
     """An old-name object, through its deprecated constructor, without the warning."""
     import warnings
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
+        warnings.filterwarnings("ignore", message=r".*is deprecated", category=DeprecationWarning)
         return cls(*args)
 
 

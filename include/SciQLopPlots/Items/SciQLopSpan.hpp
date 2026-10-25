@@ -17,7 +17,6 @@
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
 #pragma once
-#pragma once
 
 #include "SciQLopPlots/SciQLopDrawnObject.hpp"
 #include "SciQLopPlots/SciQLopPlotRange.hpp"
@@ -71,7 +70,7 @@ class SciQLopSpan : public SciQLopDrawnObject
 
     [[nodiscard]] bool bounds(impl::SpanAxis axis) const noexcept;
     void require_bounded(impl::SpanAxis axis, const char* what) const;
-    [[nodiscard]] impl::SpanAxis one_axis(const char* what) const;
+    [[nodiscard]] impl::SpanAxis one_axis(const char* what, const char* per_axis = "key_range() and value_range()") const;
     //! The axis's signal, then range_changed on a one-axis span: one change, one of each.
     void notify_range(impl::SpanAxis axis, const SciQLopPlotRange& range);
 

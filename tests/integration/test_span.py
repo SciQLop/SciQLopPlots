@@ -256,7 +256,7 @@ def test_pixel_accessors_follow_the_bounded_axes(host, kind):
             with pytest.raises(ValueError, match=f"{axis} axis"):
                 getattr(span, f"pixel_{axis}_range")()
     if kind == "rectangular":
-        with pytest.raises(ValueError, match="rectangular"):
+        with pytest.raises(ValueError, match=r"pixel_key_range\(\) and pixel_value_range\(\)"):
             span.pixel_range()
 
 

@@ -5,6 +5,7 @@ remove_panel all destroy it. SciQLopPlotContainer's remove_plot(plot, destroy) a
 removeWidget(widget, destroy) unparent without destroying, but are not bound.
 """
 import enum
+import inspect
 import sys
 import weakref
 
@@ -29,7 +30,7 @@ def _signatures(function):
 def _wrapped_original(function):
     """The C++ method a Python wrapper (SciQLopPlots/__init__.py) delegates to, if it keeps one."""
     if hasattr(function, "__wrapped__"):
-        return function.__wrapped__
+        return inspect.unwrap(function)
     cells = [c.cell_contents for c in getattr(function, "__closure__", None) or []]
     same_name = (c for c in cells if getattr(c, "__name__", None) == function.__name__)
     return next((c for c in same_name if _signatures(c)), None)

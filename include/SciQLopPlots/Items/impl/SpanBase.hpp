@@ -25,8 +25,8 @@
 namespace impl
 {
 
-// Shared logic for impl::VerticalSpan, impl::HorizontalSpan, impl::RectangularSpan.
-// Uses composition: each impl class passes its QCPAbstractSpanItem* (via upcast from this).
+// Shared logic for the span targets (SpanTargets.hpp). Uses composition: each target passes its
+// QCPAbstractSpanItem* (via upcast from this).
 class SpanBase : public SciQlopItemWithToolTip
 {
     QCPAbstractSpanItem* _span;

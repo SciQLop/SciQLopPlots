@@ -33,7 +33,7 @@
 #include "SciQLopPlots/Inspector/Model/Model.hpp"
 
 #include "SciQLopPlots/Export/SciQLopExportable.hpp"
-#include "SciQLopPlots/MultiPlots/MultiPlotsVLine.hpp"
+#include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 

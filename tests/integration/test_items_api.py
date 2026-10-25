@@ -107,7 +107,7 @@ class TestStraightLines:
 
     def test_movable_line(self, plot):
         line = plot.vertical_line(5.0, read_only=False)
-        assert line is not None
+        assert line.read_only() is False
 
     def test_delete_line_no_crash(self, plot):
         line = plot.vertical_line(5.0)

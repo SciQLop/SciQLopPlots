@@ -6,7 +6,9 @@ import textwrap
 import pytest
 import numpy as np
 import shiboken6
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
+from PySide6.QtTest import QTest
 
 from SciQLopPlots import (
     SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
@@ -14,7 +16,7 @@ from SciQLopPlots import (
     MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
     SciQLopSpan, SciQLopStraightLine,
 )
-from conftest import force_gc, old, process_events
+from conftest import canvas_of, force_gc, old, plots_of, process_events
 
 
 def _parts(plot, cls):
@@ -387,3 +389,31 @@ def test_adding_none_as_a_plot_raises_value_error_instead_of_crashing(call):
                             cwd=tempfile.gettempdir())
     assert (result.returncode, b"VALUEERROR" in result.stdout) == (0, True), \
         result.stderr.decode(errors="replace")[-400:]
+
+
+PANEL_OBJECTS = {
+    "span": (lambda panel: panel.span(SciQLopPlotRange(1.0, 2.0)), SciQLopSpan),
+    "vertical_line": (lambda panel: panel.vertical_line(2.0, read_only=False), SciQLopStraightLine),
+    "old_vertical_span": (lambda panel: old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(1.0, 2.0)),
+                          SciQLopSpan),
+}
+
+
+@pytest.mark.parametrize("name", PANEL_OBJECTS)
+def test_the_documented_delete_requested_pattern_removes_a_panel_object_and_its_parts(
+        name, panel, sample_data, qtbot):
+    x, y = sample_data
+    panel.line(x, y)
+    panel.line(x, y)
+    panel.resize(800, 600)
+    panel.show()
+    qtbot.waitExposed(panel)
+    make, part_class = PANEL_OBJECTS[name]
+    obj = make(panel)
+    obj.delete_requested.connect(lambda: panel.remove(obj))
+    obj.set_selected(True)
+    process_events()
+    QTest.keyClick(canvas_of(plots_of(panel)[0]), Qt.Key.Key_Delete)
+    process_events()
+    assert not shiboken6.isValid(obj)
+    assert [_parts(plot, part_class) for plot in plots_of(panel)] == [[], []]

@@ -16,7 +16,6 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
-#pragma once
 #include "SciQLopPlots/Items/SciQLopSpan.hpp"
 
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
@@ -112,12 +111,11 @@ void SciQLopSpan::require_bounded(SpanAxis axis, const char* what) const
                                     + axis_name(axis) + " axis");
 }
 
-SpanAxis SciQLopSpan::one_axis(const char* what) const
+SpanAxis SciQLopSpan::one_axis(const char* what, const char* per_axis) const
 {
     if (m_kind == SpanKind::Rectangular)
         throw std::invalid_argument(std::string(what)
-                                    + ": a rectangular span has two ranges; use key_range() "
-                                      "and value_range()");
+                                    + ": a rectangular span has two ranges; use " + per_axis);
     return m_kind == SpanKind::Vertical ? SpanAxis::Key : SpanAxis::Value;
 }
 
@@ -223,7 +221,7 @@ void SciQLopSpan::set_coordinates(Coordinates coordinates)
 
 SciQLopPlotRange SciQLopSpan::pixel_range() const
 {
-    return m_target->pixel_range(one_axis("pixel_range"));
+    return m_target->pixel_range(one_axis("pixel_range", "pixel_key_range() and pixel_value_range()"));
 }
 
 void SciQLopSpan::_set_pixel_range(SpanAxis axis, const SciQLopPlotRange& pixels)

@@ -65,7 +65,7 @@ def process_events():
 
 def old(cls, *args, **kwargs):
     """An old-name object, through its deprecated constructor: the factories no longer make one."""
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(DeprecationWarning, match=r"is deprecated"):
         return cls(*args, **kwargs)
 
 
