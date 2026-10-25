@@ -1,6 +1,6 @@
 # One span class, one line class
 
-Status: design, 2026-10-25, revision 3 after two opencode reviews.
+Status: design, 2026-10-25, revision 4: revision 3 after two opencode reviews, amended by what the plan's drafting found.
 
 This is API review item 5.6, and row 1.15 (docs/api-review-2026-10-20.md). The decisions:
 - one span class and one line class, with a plot or panel scope;
@@ -99,7 +99,13 @@ The seven old names stay as **C++ subclasses with no behaviour of their own**:
 - `SciQLopVerticalLine` and `SciQLopHorizontalLine` derive from `SciQLopStraightLine`, as today;
 - `MultiPlotsVerticalLine` (panel scope) derives from `SciQLopStraightLine`.
 
-Each only fixes the kind and scope in its constructor. They are built only by the old entry points, which all stay as they are:
+Each fixes the kind and scope in its constructor. It also keeps the few members that SciQLop or existing tests may use and that the new class doesn't carry under the same name, as named shims to be removed in Plan B:
+- on the vertical span: `set_pixel_range` and the `pixel_range` property;
+- on the vertical and horizontal spans: border selection;
+- on `MultiPlotsVerticalSpan`: `show()` / `hide()` and the collection's culling hooks;
+- on the vertical and horizontal lines: the `position` property.
+
+The old panel span's border-selection mirror can't survive as a subclass. It is dead code (nothing fires it from user input), so it goes in Plan A. The old plot spans also lose `replot()` and `parentPlot()`. They are built only by the old entry points, which all stay as they are:
 - the deprecated constructors;
 - `MultiPlotsVSpanCollection.create_span`;
 - interactive creation (`span_created`);
@@ -140,10 +146,10 @@ On `SciQLopPlotInterface` (NotImplementedError by default), `SciQLopPlot` and `S
 | `vertical_line` / `horizontal_line` | `position, **the rest of straight_line's arguments**` (the defaults are defined on `straight_line` only) |
 
 The plot line factories took `movable` second. It is replaced by `color`, then `read_only`.
-- Positional calls passing a bool second now fail on the colour slot.
+- Shiboken accepts a bool where a QColor is expected (`True` becomes the colour (0,0,1)), so a positional bool second argument would silently give a near-black line. The plot line factories raise TypeError for a bool second argument, naming `read_only=`.
 - The keyword `movable=` keeps working on the plot-scope line factories, inverted to `read_only`, with `movable=... is deprecated: use plot.vertical_line(..., read_only=...)`.
 
-All new deprecation messages use the form `... is deprecated: use plot.X(...)` / `use panel.X(...)`, so the suite's pyproject filter turns missed call sites into errors. They are emitted from Python wrappers (stacklevel 2), in the existing deprecation tables.
+All new deprecation messages use the form `... is deprecated: use plot.X(...)` / `use panel.X(...)`. The method aliases `movable()` / `set_movable()` use `use line.read_only()` / `use line.set_read_only(...)`, and the pyproject filter also matches `use line.`. All of them are emitted from Python wrappers (stacklevel 2), in the existing deprecation tables, so the suite's pyproject filter turns missed call sites into errors. They are emitted from Python wrappers (stacklevel 2), in the existing deprecation tables.
 
 The `SciQLopStraightLine` entry in `_ITEM_FACTORIES` changes its hint to `use plot.straight_line(...)`.
 
@@ -184,7 +190,6 @@ The old names stay in the tests that are about them.
 - Rename the Ptr type to `SciQLopSpanPtr`, with the old spelling an alias in the `SciQLopPlots` namespace only.
 - Drop the panel properties.
 - Remove the border-selection API. With it go the panel span's mirror slots and the hand-emitting test test_drawn_panel_objects.py:131.
-- Remove the spans' movable stubs.
 - Decide on `SciQLopRangeItemInterface`.
 
 Plan B gets its own spec section and plan when it comes.
