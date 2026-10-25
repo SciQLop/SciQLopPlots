@@ -108,13 +108,25 @@ public:
     [[nodiscard]] SciQLopPlotRange range() const;
     void set_range(const SciQLopPlotRange& range);
 
-    //! Data, or Pixels from the plot area's top-left, as made.
     [[nodiscard]] Coordinates coordinates() const;
+    //! Data, or Pixels from the plot area's top-left, for every bounded axis; the span stays put.
+    void set_coordinates(Coordinates coordinates);
+    [[nodiscard]] SciQLopPlotRange pixel_range() const;
+    [[nodiscard]] SciQLopPlotRange pixel_key_range() const;
+    [[nodiscard]] SciQLopPlotRange pixel_value_range() const;
 
     [[nodiscard]] bool read_only() const;
     void set_read_only(bool read_only);
     [[nodiscard]] QString tool_tip() const;
     void set_tool_tip(const QString& tool_tip);
+
+    //! The border pen: colour, width and style.
+    [[nodiscard]] QColor borders_color() const;
+    void set_borders_color(const QColor& color);
+    [[nodiscard]] double line_width() const;
+    void set_line_width(double width);
+    [[nodiscard]] Qt::PenStyle line_style() const;
+    void set_line_style(Qt::PenStyle style);
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
@@ -123,6 +135,8 @@ signals:
     Q_SIGNAL void range_changed(SciQLopPlotRange range);
     Q_SIGNAL void key_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void value_range_changed(SciQLopPlotRange range);
+    Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
     Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
+    Q_SIGNAL void delete_requested();
 };

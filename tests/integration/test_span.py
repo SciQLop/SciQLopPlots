@@ -1,7 +1,7 @@
 """SciQLopSpan: one span class for every kind, at plot and panel scope (API review 5.6, Plan A)."""
 import pytest
 import shiboken6
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 
@@ -242,3 +242,108 @@ def test_on_position_is_absent(host, kind):
     assert not hasattr(span, "position")
     with pytest.raises(AttributeError):
         span.on.position
+
+
+def test_the_borders_default_to_the_lighter_colour(host, kind):
+    assert make(host, kind).borders_color() == GREY.lighter()
+
+
+def test_pixel_accessors_follow_the_bounded_axes(host, kind):
+    span = make(host, kind)
+    for axis in ("key", "value"):
+        if axis not in bounded(kind):
+            with pytest.raises(ValueError, match=f"{axis} axis"):
+                getattr(span, f"pixel_{axis}_range")()
+    if kind == "rectangular":
+        with pytest.raises(ValueError, match="rectangular"):
+            span.pixel_range()
+
+
+def test_on_coordinates_has_a_signal(host):
+    assert make(host, "vertical").on.coordinates.signal is not None
+
+
+def test_clicking_a_span_selects_it_and_signals_once(shown_host):
+    span = make(shown_host, "vertical")
+    seen = record(span.selection_changed)
+    canvas = canvas_of(plots_of(shown_host)[0])
+    QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier,
+                     QPoint(canvas.width() // 2, canvas.height() // 2))
+    process_events()
+    assert (span.selected(), seen) == (True, [True])
+
+
+STYLE = {"borders_color": QColor("red"), "line_width": 5.0, "line_style": Qt.PenStyle.DashLine}
+
+
+@pytest.mark.parametrize("name", STYLE)
+def test_the_border_style_round_trips(host, kind, name):
+    span = make(host, kind)
+    getattr(span, f"set_{name}")(STYLE[name])
+    assert getattr(span, name)() == STYLE[name]
+
+
+def test_switching_coordinates_keeps_the_span_in_place(shown_host, kind):
+    span = make(shown_host, kind)
+    process_events()
+    data = {axis: getattr(span, f"{axis}_range")() for axis in bounded(kind)}
+    pixels = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
+    seen = record(span.coordinates_changed)
+    span.set_coordinates(Coordinates.Pixels)
+    process_events()
+    assert seen == [Coordinates.Pixels]
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"{axis}_range")(), pixels[axis], 1.0)
+        assert _close(getattr(span, f"pixel_{axis}_range")(), pixels[axis], 1.0)
+    span.set_coordinates(Coordinates.Data)
+    process_events()
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"{axis}_range")(), data[axis], 0.05)
+
+
+def test_switching_coordinates_signals_the_new_numbers(shown_host):
+    span = make(shown_host, "vertical")
+    process_events()
+    pixels = span.pixel_range()
+    ranges, keys = record(span.range_changed), record(span.key_range_changed)
+    span.set_coordinates(Coordinates.Pixels)
+    assert len(ranges) == 1 and len(keys) == 1 and _close(ranges[0], pixels, 1.0)
+
+
+def test_a_span_made_in_pixels_reads_and_writes_pixels(shown_host, kind):
+    span = make(shown_host, kind, coordinates=Coordinates.Pixels)
+    process_events()
+    assert span.coordinates() == Coordinates.Pixels
+    for axis in bounded(kind):
+        assert getattr(span, f"{axis}_range")() == KINDS[kind][1][f"{axis}_range"]
+        assert _close(getattr(span, f"pixel_{axis}_range")(), (2.0, 8.0) if axis == "key" else (-0.5, 0.5), 1.0)
+        getattr(span, f"set_{axis}_range")(R(20.0, 60.0))
+        process_events()
+        assert _close(getattr(span, f"pixel_{axis}_range")(), (20.0, 60.0), 1.0)
+
+
+def test_a_pixels_span_stays_put_on_zoom(shown_host, kind):
+    span = make(shown_host, kind)
+    process_events()
+    span.set_coordinates(Coordinates.Pixels)
+    before = {axis: getattr(span, f"pixel_{axis}_range")() for axis in bounded(kind)}
+    for plot in plots_of(shown_host):
+        plot.y_axis().set_range(R(-5.0, 5.0))
+    if isinstance(shown_host, SciQLopPlot):
+        shown_host.x_axis().set_range(R(0.0, 100.0))
+    else:
+        shown_host.set_time_axis_range(R(0.0, 100.0))
+    process_events()
+    for axis in bounded(kind):
+        assert _close(getattr(span, f"pixel_{axis}_range")(), before[axis], 1.0)
+
+
+def test_the_delete_key_asks_once(shown_host, kind):
+    span = make(shown_host, kind)
+    asked = []
+    span.delete_requested.connect(lambda: asked.append(True))
+    span.set_selected(True)
+    process_events()
+    QTest.keyClick(canvas_of(plots_of(shown_host)[0]), Qt.Key.Key_Delete)
+    process_events()
+    assert asked == [True]

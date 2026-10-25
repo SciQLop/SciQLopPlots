@@ -69,6 +69,7 @@ SciQLopSpan::SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRang
                                                             value_range, coordinates) }
 {
     m_target->set_color(color);
+    m_target->set_borders_color(color.lighter());
     m_target->set_read_only(read_only);
     m_target->set_visible(visible);
     m_target->set_tool_tip(tool_tip);
@@ -173,6 +174,79 @@ void SciQLopSpan::set_range(const SciQLopPlotRange& range)
 Coordinates SciQLopSpan::coordinates() const
 {
     return m_target->coordinates();
+}
+
+void SciQLopSpan::set_coordinates(Coordinates coordinates)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_coordinates(coordinates));
+    if (m_target->coordinates() == coordinates)
+        return;
+    std::vector<std::pair<SpanAxis, SciQLopPlotRange>> before;
+    for (const auto axis : impl::bounded_axes(m_kind))
+        before.emplace_back(axis, m_target->range(axis));
+    // A part's slot may delete a panel span while its target writes.
+    const QPointer<SciQLopSpan> alive(this);
+    m_target->set_coordinates(coordinates);
+    if (!alive)
+        return;
+    Q_EMIT coordinates_changed(coordinates);
+    for (const auto& [axis, old] : before)
+    {
+        if (!alive)
+            return;
+        if (const auto now = m_target->range(axis); now != old)
+            notify_range(axis, now);
+    }
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_range() const
+{
+    return m_target->pixel_range(one_axis("pixel_range"));
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_key_range() const
+{
+    require_bounded(SpanAxis::Key, "pixel_key_range");
+    return m_target->pixel_range(SpanAxis::Key);
+}
+
+SciQLopPlotRange SciQLopSpan::pixel_value_range() const
+{
+    require_bounded(SpanAxis::Value, "pixel_value_range");
+    return m_target->pixel_range(SpanAxis::Value);
+}
+
+QColor SciQLopSpan::borders_color() const
+{
+    return m_target->borders_color();
+}
+
+void SciQLopSpan::set_borders_color(const QColor& color)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
+    m_target->set_borders_color(color);
+}
+
+double SciQLopSpan::line_width() const
+{
+    return m_target->line_width();
+}
+
+void SciQLopSpan::set_line_width(double width)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
+    m_target->set_line_width(width);
+}
+
+Qt::PenStyle SciQLopSpan::line_style() const
+{
+    return m_target->line_style();
+}
+
+void SciQLopSpan::set_line_style(Qt::PenStyle style)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
+    m_target->set_line_style(style);
 }
 
 bool SciQLopSpan::read_only() const

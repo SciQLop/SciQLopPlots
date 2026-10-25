@@ -52,11 +52,21 @@ public:
     virtual SciQLopPlotRange range(SpanAxis axis) const = 0;
     //! Applies \a range, and the span notifies once; nothing for the current range.
     virtual void set_range(SpanAxis axis, const SciQLopPlotRange& range) = 0;
+    virtual SciQLopPlotRange pixel_range(SpanAxis axis) const = 0;
     virtual Coordinates coordinates() const = 0;
+    //! Re-expresses every bounded axis in \a coordinates, keeping the span in place. Silent: the
+    //! span reports what changed.
+    virtual void set_coordinates(Coordinates coordinates) = 0;
     virtual bool read_only() const = 0;
     virtual void set_read_only(bool read_only) = 0;
     virtual QString tool_tip() const = 0;
     virtual void set_tool_tip(const QString& tool_tip) = 0;
+    virtual QColor borders_color() const = 0;
+    virtual void set_borders_color(const QColor& color) = 0;
+    virtual double line_width() const = 0;
+    virtual void set_line_width(double width) = 0;
+    virtual Qt::PenStyle line_style() const = 0;
+    virtual void set_line_style(Qt::PenStyle style) = 0;
     virtual QColor color() const = 0;
     virtual void set_color(const QColor& color) = 0;
     virtual bool visible() const = 0;
@@ -81,11 +91,19 @@ public:
 
     SciQLopPlotRange range(SpanAxis axis) const override;
     void set_range(SpanAxis axis, const SciQLopPlotRange& range) override;
+    SciQLopPlotRange pixel_range(SpanAxis axis) const override;
     Coordinates coordinates() const override;
+    void set_coordinates(Coordinates coordinates) override;
     bool read_only() const override;
     void set_read_only(bool read_only) override;
     QString tool_tip() const override;
     void set_tool_tip(const QString& tool_tip) override;
+    QColor borders_color() const override;
+    void set_borders_color(const QColor& color) override;
+    double line_width() const override;
+    void set_line_width(double width) override;
+    Qt::PenStyle line_style() const override;
+    void set_line_style(Qt::PenStyle style) override;
     QColor color() const override;
     void set_color(const QColor& color) override;
     bool visible() const override;

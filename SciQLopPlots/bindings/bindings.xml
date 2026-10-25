@@ -1360,6 +1360,21 @@
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
             </inject-code>
         </modify-function>
+        <modify-function signature="pixel_range()const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="pixel_key_range()const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
+            </inject-code>
+        </modify-function>
+        <modify-function signature="pixel_value_range()const">
+            <inject-code class="target" position="beginning">
+                <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="SciQLopPlotRange"/></insert-template>
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="SciQLopPixmapItem" parent-management="yes"/>
     <object-type name="SciQLopStraightLine" parent-management="yes">

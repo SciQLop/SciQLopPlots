@@ -99,10 +99,39 @@ void set_type(const Edges& edges, QCPItemPosition::PositionType type)
     }
 }
 
+double area_origin(const Edges& edges)
+{
+    const auto* rect = edges.lower->axisRect();
+    return rect ? along(rect->topLeft(), edges.along) : 0.;
+}
+
 SciQLopPlotRange coords_of(const Edges& edges)
 {
     return SciQLopPlotRange(along(edges.lower->coords(), edges.along),
                             along(edges.upper->coords(), edges.along));
+}
+
+// The resolved pixel positions are right in both modes; coordToPixel() would read pixel
+// coordinates as data values.
+SciQLopPlotRange pixels_of(const Edges& edges)
+{
+    const double origin = area_origin(edges);
+    return SciQLopPlotRange(along(edges.lower->pixelPosition(), edges.along) - origin,
+                            along(edges.upper->pixelPosition(), edges.along) - origin);
+}
+
+//! \a pixels (from the plot area) expressed in \a coordinates, through the edges' axis.
+SciQLopPlotRange from_pixels(const Edges& edges, Coordinates coordinates,
+                             const SciQLopPlotRange& pixels)
+{
+    if (coordinates == Coordinates::Pixels)
+        return pixels;
+    auto* axis = edges.along == Qt::Horizontal ? edges.lower->keyAxis() : edges.lower->valueAxis();
+    if (!axis)
+        return coords_of(edges);
+    const double origin = area_origin(edges);
+    return SciQLopPlotRange(axis->pixelToCoord(pixels.first + origin),
+                            axis->pixelToCoord(pixels.second + origin));
 }
 
 //! Through NeoQCP's setters: they mark the GPU layer dirty, queue a replot and emit last.
@@ -146,6 +175,10 @@ PlotSpanTarget::PlotSpanTarget(SciQLopSpan* span, SciQLopPlot* plot, SpanKind ki
         return [span, axis](const QCPRange& r)
         { span->notify_range(axis, SciQLopPlotRange(r.lower, r.upper)); };
     };
+    QObject::connect(m_item.data(), &QCPAbstractItem::selectionChanged, span,
+                     [span](bool selected) { span->_notify_selected(selected); });
+    QObject::connect(m_item.data(), &QCPAbstractItem::deleteRequested, span,
+                     &SciQLopSpan::delete_requested);
     if (auto* v = qobject_cast<QCPItemVSpan*>(m_item.data()))
         QObject::connect(v, &QCPItemVSpan::rangeChanged, span, notify(SpanAxis::Key));
     else if (auto* h = qobject_cast<QCPItemHSpan*>(m_item.data()))
@@ -173,9 +206,29 @@ void PlotSpanTarget::set_range(SpanAxis axis, const SciQLopPlotRange& range)
         apply_range(m_item.data(), axis, range);
 }
 
+SciQLopPlotRange PlotSpanTarget::pixel_range(SpanAxis axis) const
+{
+    return m_item ? pixels_of(edges_of(m_item.data(), axis)) : SciQLopPlotRange();
+}
+
 Coordinates PlotSpanTarget::coordinates() const
 {
     return m_coordinates;
+}
+
+void PlotSpanTarget::set_coordinates(Coordinates coordinates)
+{
+    if (!m_item || coordinates == m_coordinates)
+        return;
+    const QSignalBlocker blocker(m_item.data());
+    for (const auto axis : bounded_axes(m_kind))
+    {
+        const auto edges = edges_of(m_item.data(), axis);
+        const auto pixels = pixels_of(edges);
+        set_type(edges, position_type(coordinates));
+        apply_range(m_item.data(), axis, from_pixels(edges, coordinates, pixels));
+    }
+    m_coordinates = coordinates;
 }
 
 bool PlotSpanTarget::read_only() const
@@ -198,6 +251,47 @@ void PlotSpanTarget::set_tool_tip(const QString& tool_tip)
 {
     if (m_item)
         m_base->setToolTip(tool_tip);
+}
+
+QColor PlotSpanTarget::borders_color() const
+{
+    return m_item ? m_item->borderPen().color() : QColor();
+}
+
+void PlotSpanTarget::set_borders_color(const QColor& color)
+{
+    if (!m_item)
+        return;
+    auto pen = m_item->borderPen();
+    pen.setColor(color);
+    m_item->setBorderPen(pen);
+    m_base->replot();
+}
+
+double PlotSpanTarget::line_width() const
+{
+    return m_item ? m_base->line_width() : 0.;
+}
+
+void PlotSpanTarget::set_line_width(double width)
+{
+    if (!m_item)
+        return;
+    m_base->set_line_width(width);
+    m_base->replot();
+}
+
+Qt::PenStyle PlotSpanTarget::line_style() const
+{
+    return m_item ? m_base->line_style() : Qt::SolidLine;
+}
+
+void PlotSpanTarget::set_line_style(Qt::PenStyle style)
+{
+    if (!m_item)
+        return;
+    m_base->set_line_style(style);
+    m_base->replot();
 }
 
 QColor PlotSpanTarget::color() const
