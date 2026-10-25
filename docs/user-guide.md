@@ -828,11 +828,16 @@ note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordina
 
 ![A span, a threshold line and a text label](images/overlays.png)
 
-- On a panel, `panel.vertical_span(range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Its state is read and set with methods: `span.set_selected(True)`, `span.visible()`, `span.color()`, `span.read_only()`, `span.id()`.
+- A span bounds the key axis, the value axis or both: `plot.span(key_range=..., value_range=...)`. An axis left at `None` is unbounded, and `span.key_range()` / `span.value_range()` read `None` there. `plot.vertical_span(range)` and `plot.horizontal_span(range)` are the one-axis shorthands, with `span.range()`, `set_range()` and `range_changed` for the bounded axis. On a span bounding both axes, `range()` raises `ValueError`: use `key_range()` and `value_range()`.
+- A line is vertical or horizontal: `plot.straight_line(position, Qt.Orientation.Vertical)`, or the shorthands `plot.vertical_line(position)` and `plot.horizontal_line(position)`. Lines are read-only, so the user can't drag them, unless you pass `read_only=False`. Spans are editable unless you pass `read_only=True`.
+- `coordinates=Coordinates.Pixels` keeps a span or a line in place on screen, measured from the plot area's top-left corner. `set_coordinates()` switches later and leaves the object where it is. `span.pixel_range()` (`pixel_key_range()`, `pixel_value_range()`) reads a span's position in pixels in either mode.
+- On a panel, the same factories draw one span or line across every plot, including plots added later: `panel.span(...)`, `panel.vertical_span(...)`, `panel.straight_line(...)`, `panel.vertical_line(...)` and the horizontal ones, with the same arguments. That's handy for marking an event in time. A drag, a click or the Delete key on one plot reaches all of them, and the panel object signals once. Only the plot line factories raise `TypeError` for a bool second argument: the panel ones always took the colour there. Panels have no `rectangular_span`: use `panel.span(key_range=..., value_range=...)`.
+- A panel span or line in `Coordinates.Pixels` takes its pixel numbers from the first plot. That is a known simplification: the plots are not asked to agree.
+- Every span and line has `selected()`, `visible()`, `color()`, `tool_tip()` and `read_only()`, with their `set_` methods and `_changed` signals, and `delete_requested`, which fires when the user presses Delete on it. Nothing is deleted for you: connect `delete_requested` to `plot.remove(span)` or `panel.remove(span)` if that is what you want.
 - A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
-- The other factories are `plot.vertical_line(position)`, `plot.horizontal_span(range)`, `plot.rectangular_span(key_range, value_range)`, `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`.
-- The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
-- Text, line, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
+- The other factories are `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`. `plot.rectangular_span(key_range, value_range)` still works but is deprecated: use `plot.span(key_range=..., value_range=...)`.
+- The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for a panel-wide span or line (that one goes through `panel.remove`), for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line and its parts now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
+- Text, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
 
 `panel.vertical_line(position)` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
@@ -976,10 +981,12 @@ The function receives an event whose `.value` is the new value, and returns what
 - `plot.on.title`, `plot.on.auto_scale`
 - `axis.on.range`, `axis.on.log`, `axis.on.label`
 - `graph.on.data`, `graph.on.visible`, `graph.on.name`
-- `span.on.range`, `line.on.position`
+- `span.on.range`, `span.on.key_range`, `span.on.read_only`, `span.on.coordinates`, `line.on.position`
 - the waterfall settings: `offset_mode`, `offsets`, `normalize`, `gain`
 
-Without a setter the property can only be observed. Without a signal it can be read and written, but it cannot start a pipeline: `>>` raises `ValueError`. A name with no getter is not exposed. A name the class does not support raises when used, for example `color` on a multi-column graph or `selected` on the legend.
+Without a setter the property can only be observed. Without a signal it can be read and written, but it cannot start a pipeline: `>>` raises `ValueError`. A name with no getter is not exposed. A name the class does not support raises when used, for example `color` on a multi-column graph or `selected` on the legend. Deprecated method aliases are hidden: `line.on.movable` raises `AttributeError`, use `line.on.read_only`.
+
+On spans, `span.on.range` resolves on every span and raises `ValueError` when used on one that bounds both axes. `span.on.key_range` and `span.on.value_range` read `None` on an axis the span does not bound, and raise when written there.
 
 A few names do not follow the convention and are kept by hand:
 
@@ -987,7 +994,7 @@ A few names do not follow the convention and are kept by hand:
 - `range` on axes: `set_range(start, stop)` takes two arguments.
 - `selected`: the signal is `selection_changed`.
 - `spacing` on waterfalls: the accessors are `uniform_spacing`.
-- `tooltip` on spans: the accessors are `tool_tip`, and there is no signal.
+- `tooltip` on spans and lines: the accessors are `tool_tip`, and the signal is `tool_tip_changed`.
 
 ## N-D projections
 
@@ -1419,8 +1426,15 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays always makes a projection, so leave `plot_type` out or pass `PlotType.Projections`.
 
-**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on panel-wide lines and spans `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
+**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on `MultiPlotsVSpanCollection` `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
 
 **Deprecated calls.** The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable(graph)` and `remove_group(group)` forward to `plot.remove(...)` and warn. The index and name forms of `remove_plottable` have no `remove` equivalent and stay as they are. To remove by index or name, write `plot.remove(plot.plottable(i))` or `plot.remove(plot.plottable("name"))`. A missing index or name gives `None`, and `plot.remove(None)` raises `ValueError`, while the old call did nothing. `save_pdf`, `save_svg`, `save_png`, `save_jpg` and `save_bmp` work but warn: use `save(path, ...)`, which picks the format from the extension, or `save(path, format="png")`.
+
+**Spans and lines.** The factories return two classes, `SciQLopSpan` and `SciQLopStraightLine`, for every kind of span and line and on plots and panels alike. Their accessors are methods.
+- The old classes stay for code that uses them: `SciQLopVerticalSpan`, `SciQLopHorizontalSpan`, `SciQLopRectangularSpan`, `MultiPlotsVerticalSpan`, `SciQLopVerticalLine`, `SciQLopHorizontalLine` and `MultiPlotsVerticalLine`. Their constructors were already deprecated and still warn. `MultiPlotsVSpanCollection.create_span` and interactive span creation (`span_created`) still build them, with their old defaults.
+- On the old panel classes the state is still read and written as attributes: `span.range`, `span.selected = True`, `line.position = 3.0`. On what the factories return, the same names are methods: `span.range()`, `span.set_selected(True)`, `line.set_position(3.0)`. So a pipeline written against an old panel object (`span.on.range`) does not carry over to a new one until its calls move to the methods.
+- Deprecated calls, each with a warning: `plot.rectangular_span(k, v)` (use `plot.span(key_range=k, value_range=v)`), `movable=` on the line factories (use `read_only=`, which means the opposite), and `line.movable()` / `line.set_movable()` (use `read_only()` and `set_read_only()`). `SciQLopStraightLine(plot, ...)` warns too: use `plot.straight_line(...)`.
+- The plot line factories take the colour second and `read_only` third. A bool in second place raises `TypeError` instead of becoming a colour.
+- The factory defaults are the same on plots and panels: spans are grey with alpha 100 and editable, lines are black and read-only. `panel.vertical_line` used to give a grey, draggable line: pass `color=QColor(100, 100, 100), read_only=False` to keep that.
 
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.

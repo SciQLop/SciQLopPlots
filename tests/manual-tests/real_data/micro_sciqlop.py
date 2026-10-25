@@ -1,6 +1,6 @@
 from SciQLopPlots import (SciQLopPlot,
-                         MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel,
-                         SciQLopVerticalSpan, SciQLopTimeSeriesPlot,
+                         SciQLopMultiPlotPanel,
+                         SciQLopTimeSeriesPlot,
                          PlotType, AxisType, GraphType, SciQLopVerticalLine,
                          SciQLopHorizontalLine)
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget

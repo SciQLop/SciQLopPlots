@@ -1,5 +1,5 @@
 from SciQLopPlots import SciQLopPlot, \
-                         MultiPlotsVerticalSpan ,SciQLopMultiPlotPanel, SciQLopVerticalSpan, \
+                         SciQLopMultiPlotPanel, \
                          SciQLopTimeSeriesPlot, PlotType, AxisType, GraphType, SciQLopNDProjectionPlot
 from PySide6.QtWidgets import QMainWindow, QApplication, QScrollArea,QWidget, QVBoxLayout, QTabWidget, QDockWidget
 from PySide6.QtGui import QColorConstants, QColor
