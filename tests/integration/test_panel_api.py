@@ -1,14 +1,20 @@
 """Tests for SciQLopMultiPlotPanel: plot management, data, spans."""
 import pytest
 import numpy as np
+import shiboken6
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (
     SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
     SciQLopPlotRange, SciQLopGraphInterface, PlotType,
-    MultiPlotsVSpanCollection, SciQLopSpan,
+    MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
+    SciQLopSpan, SciQLopStraightLine,
 )
-from conftest import force_gc, process_events
+from conftest import force_gc, old, process_events
+
+
+def _parts(plot, cls):
+    return [i for i in plot.findChildren(cls) if i.is_panel_part()]
 
 
 class TestPanelPlotManagement:
@@ -200,6 +206,21 @@ class TestPanelVerticalSpan:
         span.set_visible(False)
         span.set_color(QColor(255, 0, 0))
         span.set_selected(True)
+    @pytest.mark.parametrize("change", [
+        ("selection_changed", lambda span: span.set_selected(True)),
+        ("range_changed", lambda span: span.set_range(SciQLopPlotRange(3.0, 4.0))),
+    ], ids=["selected", "range"])
+    def test_change_emits_once_with_several_plots(self, panel, sample_data, change):
+        """Each per-plot span echoes the change back; it must not emit again."""
+        x, y = sample_data
+        panel.line(x, y)
+        panel.line(x, y)
+        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        signal, act = change
+        received = []
+        getattr(span, signal).connect(received.append)
+        act(span)
+        assert len(received) == 1
 
 
 class TestPanelOrganizePlots:
@@ -261,21 +282,33 @@ class TestMultiPlotsVerticalSpanProperties:
         assert received == [True]
         assert collection.span("event").selected is True
 
-    @pytest.mark.parametrize("change", [
-        ("selection_changed", lambda span: span.set_selected(True)),
-        ("range_changed", lambda span: span.set_range(SciQLopPlotRange(3.0, 4.0))),
-    ], ids=["selected", "range"])
-    def test_change_emits_once_with_several_plots(self, panel, sample_data, change):
-        """Each per-plot span echoes the change back; it must not emit again."""
+    def test_removing_a_collection_span_deletes_it_and_its_parts(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
+        handle = MultiPlotsVSpanCollection(panel).create_span(SciQLopPlotRange(0.0, 1.0))
+        span = handle.data()
+        panel.remove(handle)
+        process_events()
+        assert not shiboken6.isValid(span)
+        assert _parts(panel.plot_at(0), SciQLopSpan) == []
+
+    def test_removing_an_old_constructor_span_deletes_it_and_its_parts(self, panel, sample_data):
+        x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
-        signal, act = change
-        received = []
-        getattr(span, signal).connect(received.append)
-        act(span)
-        assert len(received) == 1
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0))
+        panel.remove(span)
+        process_events()
+        assert not shiboken6.isValid(span)
+        assert _parts(panel.plot_at(0), SciQLopSpan) == []
+
+    def test_removing_an_old_constructor_line_deletes_it_and_its_parts(self, panel, sample_data):
+        x, y = sample_data
+        panel.line(x, y)
+        line = old(MultiPlotsVerticalLine, panel, 2.0)
+        panel.remove(line)
+        process_events()
+        assert not shiboken6.isValid(line)
+        assert _parts(panel.plot_at(0), SciQLopStraightLine) == []
 
 
 class TestSpanCollectionCulling:
