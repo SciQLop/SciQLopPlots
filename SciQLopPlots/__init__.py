@@ -361,6 +361,7 @@ for _cls in (
 #
 #     The same wrapper warns that the item constructors are deprecated in favour
 #     of the plot and panel factories.
+import enum
 import functools
 import warnings
 
@@ -436,8 +437,8 @@ def _wraps(method):
 def _reject_bool_colour(name, method, slot):
     @_wraps(method)
     def wrapper(self, *args, **kwargs):
-        if len(args) > slot and isinstance(args[slot], bool):
-            raise TypeError(f"{name}(): positional argument {slot + 1} is the colour; "
+        if (len(args) > slot and isinstance(args[slot], bool)) or isinstance(kwargs.get("color"), bool):
+            raise TypeError(f"{name}(): a bool is not a colour; "
                             "pass read_only=... to choose whether the user can drag the line")
         return method(self, *args, **kwargs)
     return wrapper
@@ -453,7 +454,9 @@ _COLOUR_SLOTS = (
     (SciQLopPlotsBindings.SciQLopMultiPlotPanel, "straight_line", 2),
 )
 for _cls, _name, _slot in _COLOUR_SLOTS:
-    setattr(_cls, _name, _reject_bool_colour(_name, vars(_cls)[_name], _slot))
+    _method = getattr(_cls, _name, None)
+    if _method is not None and not hasattr(_method, "__wrapped__"):
+        setattr(_cls, _name, _reject_bool_colour(_name, _method, _slot))
 
 
 # The plot line shorthands still accept movable=..., inverted.
@@ -603,12 +606,19 @@ def to_epoch_seconds(value, allow_nat=False):
     return _scalar_seconds(value[()] if isinstance(value, np.ndarray) else value)
 
 
+_TIME_INPUTS = (np.datetime64, date, str, QtCore.QDateTime)
+
+
+def _is_time_input(value):
+    return isinstance(value[()] if isinstance(value, np.ndarray) and value.ndim == 0 else value, _TIME_INPUTS)
+
+
 def _accept_dates_in_range(init):
     @functools.wraps(init)
     def wrapper(self, *args, **kwargs):
         if len(args) in (2, 3):
             start, stop = (to_epoch_seconds(a) for a in args[:2])
-            is_time = any(not isinstance(a, (int, float, np.number)) for a in args[:2])
+            is_time = any(_is_time_input(a) for a in args[:2])
             return init(self, start, stop, *(args[2:] or (is_time,)), **kwargs)
         return init(self, *args, **kwargs)
     return wrapper
@@ -756,6 +766,8 @@ _HISTOGRAM2D_NORMALIZATION_INTS = {0: Histogram2DNormalization.Count, 1: Histogr
 
 
 def _enum_normalization(method):
+    # The old HistogramNormalization members are accepted by their numeric value: Count == 0 and
+    # Density == 1 line up with Histogram2DNormalization.Count and .PerColumn.
     @_wraps(method)
     def wrapper(self, value):
         if not isinstance(value, Histogram2DNormalization):
@@ -763,8 +775,9 @@ def _enum_normalization(method):
                     or value not in _HISTOGRAM2D_NORMALIZATION_INTS:
                 raise ValueError("normalization must be Histogram2DNormalization.Count or "
                                  f"Histogram2DNormalization.PerColumn, not {value!r}")
+            given = f"{type(value).__name__}.{value.name}" if isinstance(value, enum.Enum) else int(value)
             value = _HISTOGRAM2D_NORMALIZATION_INTS[value]
-            warnings.warn(f"set_normalization({int(value)}) is deprecated: use Histogram2DNormalization.{value.name}",
+            warnings.warn(f"set_normalization({given}) is deprecated: use Histogram2DNormalization.{value.name}",
                           DeprecationWarning, stacklevel=2)
         return method(self, value)
     return wrapper

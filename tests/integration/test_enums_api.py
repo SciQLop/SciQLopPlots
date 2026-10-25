@@ -2,7 +2,7 @@
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from SciQLopPlots import (Histogram2DNormalization, SciQLopPlot, TimelineEditMode, TimelineStack,
+from SciQLopPlots import (Histogram2DNormalization, HistogramNormalization, SciQLopPlot, TimelineEditMode, TimelineStack,
                           TimelineStyle)
 
 
@@ -89,6 +89,12 @@ def test_histogram2d_old_ints_warn_and_map(hist, old, new):
     with pytest.warns(DeprecationWarning, match=rf"set_normalization\({old}\) is deprecated: use Histogram2DNormalization\.{new.name}"):
         hist.set_normalization(old)
     assert hist.normalization() is new
+
+
+@pytest.mark.parametrize("old, name", [(HistogramNormalization.Count, "Count"), (HistogramNormalization.Density, "Density")])
+def test_histogram2d_old_enum_members_are_named_in_the_warning(hist, old, name):
+    with pytest.warns(DeprecationWarning, match=rf"set_normalization\(HistogramNormalization\.{name}\) is deprecated"):
+        hist.set_normalization(old)
 
 
 @pytest.mark.parametrize("value", [99, 2, -1, True, [1], "1", None])

@@ -353,3 +353,13 @@ def test_python_wrapped_methods_keep_an_introspectable_signature(cls, name):
 
 def test_the_line_shorthand_signature_lists_color_and_read_only():
     assert {"color", "read_only"} <= set(inspect.signature(SciQLopPlot.vertical_line).parameters)
+
+
+@pytest.mark.parametrize("scope", ["plot", "panel"])
+@pytest.mark.parametrize("name", ["vertical_line", "horizontal_line", "straight_line"])
+def test_a_bool_colour_keyword_raises_instead_of_becoming_a_colour(scope, name, plot, panel):
+    host = {"plot": plot, "panel": panel}[scope]
+    leading = (Qt.Orientation.Vertical,) if name == "straight_line" else ()
+    with pytest.raises(TypeError, match="read_only"):
+        getattr(host, name)(1.0, *leading, color=True)
+

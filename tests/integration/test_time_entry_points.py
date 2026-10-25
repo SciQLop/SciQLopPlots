@@ -298,3 +298,20 @@ def test_a_callback_returning_datetime64_is_converted(qtbot, ts_plot):
     ts_plot.x_axis().set_range(SciQLopPlotRange(T0, T0 + N))
     qtbot.waitUntil(lambda: np.asarray(graph.data()[0] if graph.data() else []).ndim > 0, timeout=5000)
     np.testing.assert_array_equal(_first_array(graph), T0 + np.arange(N, dtype=np.float64))
+
+
+@pytest.mark.parametrize("make", [lambda: (np.datetime64("2030-01-01"), np.datetime64("2030-01-02")),
+                                  lambda: (date(2030, 1, 1), date(2030, 1, 2)),
+                                  lambda: ("2030-01-01", "2030-01-02")], ids=["datetime64", "date", "str"])
+def test_a_range_of_dates_is_a_time_range(make):
+    assert "TimeRange" in repr(SciQLopPlotRange(*make()))
+
+
+def test_a_range_of_zero_d_numeric_arrays_is_not_a_time_range():
+    assert "TimeRange" not in repr(SciQLopPlotRange(np.array(1.0), np.array(2.0)))
+
+
+def test_an_object_array_with_a_garbage_string_raises_value_error_like_a_scalar(ts_plot):
+    with pytest.raises(ValueError, match="garbage"):
+        ts_plot.line(np.array(["2030-01-01", "garbage"], dtype=object), np.array([1.0, 2.0]))
+
