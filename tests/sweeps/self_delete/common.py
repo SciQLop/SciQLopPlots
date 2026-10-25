@@ -93,6 +93,14 @@ def _decorated(graph):
     return graph
 
 
+def _quiet(cls, *args):
+    """An old-name object, through its deprecated constructor, without the warning."""
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        return cls(*args)
+
+
 def _group(h):
     p = h.plot
     return p.group("g", [p.plot(X, np.sin(X), labels=["a"]), p.plot(X, np.cos(X), labels=["b"])])
@@ -125,8 +133,14 @@ BUILDERS = {
     "vspan": lambda h: h.plot.vertical_span(R(1.0, 2.0)),
     "hspan": lambda h: h.plot.horizontal_span(R(1.0, 2.0)),
     "rspan": lambda h: h.plot.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
-    "panel_span": lambda h: h.panel.vertical_span(R(1.0, 2.0)),
-    "panel_line": lambda h: h.panel.vertical_line(2.0),
+    "panel_vspan": lambda h: h.panel.vertical_span(R(1.0, 2.0)),
+    "panel_hspan": lambda h: h.panel.horizontal_span(R(1.0, 2.0)),
+    "panel_rspan": lambda h: h.panel.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
+    "panel_vline": lambda h: h.panel.vertical_line(2.0),
+    "panel_hline": lambda h: h.panel.horizontal_line(0.5),
+    "old_vspan": lambda h: _quiet(S.SciQLopVerticalSpan, h.plot, R(1.0, 2.0)),
+    "old_panel_span": lambda h: _quiet(S.MultiPlotsVerticalSpan, h.panel, R(1.0, 2.0)),
+    "old_panel_line": lambda h: _quiet(S.MultiPlotsVerticalLine, h.panel, 2.0),
     "panel_span_collection": lambda h: S.MultiPlotsVSpanCollection(h.panel),
     "plot_group": _group,
     "legend": lambda h: h.plot.legend(),
