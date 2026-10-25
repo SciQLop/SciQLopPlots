@@ -113,3 +113,26 @@ def test_pruning_keeps_the_counters_of_target_objects_only(tmp_path):
         (tmp_path / name).write_text("")
     covermap.prune_counters(tmp_path, names)
     assert sorted(p.name for p in tmp_path.iterdir()) == ["src_plottables_multigraph-fill.cpp.gcda", "t_test-binner.cpp.gcda"]
+
+
+def test_a_report_command_that_writes_no_report_fails_the_row(tmp_path, monkeypatch):
+    project = _project(tmp_path, monkeypatch, CONFIG.replace(REPORT, 'cover_cmds = [["true"]]'))
+    covermap.cover(project, budget=600)
+    a = st.load(project.state_path)["tests"]["a"]
+    assert (a["status"], a["note"]) == ("failed", "no report")
+
+
+def test_cover_rediscovers_tests_without_reset(project):
+    covermap.cover(project, budget=600)
+    (project.repo / "tests.txt").write_text("a b bad empty fresh\n")
+    assert covermap.cover(project, budget=600) == 0
+    tests = st.load(project.state_path)["tests"]
+    assert tests["fresh"]["status"] == "passed"
+    assert tests["a"]["lines"] == {"a.cpp": [1, 2]}
+
+
+def test_cover_drops_tests_that_no_longer_exist(project):
+    covermap.cover(project, budget=600)
+    (project.repo / "tests.txt").write_text("a b\n")
+    covermap.cover(project, budget=600)
+    assert sorted(st.load(project.state_path)["tests"]) == ["a", "b"]

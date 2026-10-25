@@ -101,6 +101,10 @@ def _run_reports(project):
     return broken
 
 
+def _missing_reports(project):
+    return [spec["file"] for spec in project.raw.get("cover_reports", []) if not Path(project.expand(spec["file"])).exists()]
+
+
 def _note(project, result, broken):
     if result.timed_out:
         return "timed out"
@@ -108,7 +112,9 @@ def _note(project, result, broken):
         return f"exit {result.code}"
     if not outcomes.executed(project.raw["failure_parser"], result.output):
         return "ran no test"
-    return "report failed: " + ", ".join(broken) if broken else ""
+    if broken:
+        return "report failed: " + ", ".join(broken)
+    return "no report" if _missing_reports(project) else ""
 
 
 def cover_one(project, name):
@@ -131,6 +137,11 @@ def cover_one(project, name):
     }
 
 
+def merge_tests(old, names, reset):
+    """Discovery runs on every call, so a test added or deleted since the last call is not stale."""
+    return {name: old[name] if name in old and not reset else {"status": "pending"} for name in names}
+
+
 def _estimate(tests):
     return 30 + max((e["seconds"] for e in tests.values() if "seconds" in e), default=60)
 
@@ -144,8 +155,7 @@ def cover(project, budget, reset=False):
     elif data["cover_files"] != shas:
         raise SystemExit("sources changed since cover started: run cover --reset")
     build_or_die(project)
-    if reset or not data["tests"]:
-        data["tests"] = {name: {"status": "pending"} for name in discover_tests(project)}
+    data["tests"] = merge_tests(data["tests"], discover_tests(project), reset)
     st.save(project.state_path, data)
     started = time.monotonic()
     for name, entry in data["tests"].items():
