@@ -555,7 +555,7 @@ plot.x_axis().set_range(0, 20)
 
 ## Time series
 
-For time on the x axis, use seconds since 1970-01-01 UTC (Unix time) as `float64`. Then ask for a time series plot: the x axis shows dates and times.
+For time on the x axis, use seconds since 1970-01-01 UTC (Unix time) as `float64`, or dates (see below). Then ask for a time series plot: the x axis shows dates and times.
 
 ```python
 from datetime import datetime, timezone
@@ -573,9 +573,19 @@ plot.plot(t, np.sin(2 * np.pi * (t - start) / 3600), labels=["hourly wave"])
 
 A time series plot never moves its time axis by itself: you choose the time range. It fits the y axis to the data in that range, so set the range first, or call `plot.y_axis().rescale()` after changing it.
 
-With NumPy `datetime64` data, convert first: `t = times.astype("datetime64[ns]").astype(np.int64) / 1e9`.
+Every time argument accepts the same kinds of value, and all of them mean UTC:
 
-Time ranges are more lenient than data. `SciQLopPlotRange(start, stop)`, `axis.set_range`, a time series plot's `set_time_range` and `panel.set_time_axis_range` also take `np.datetime64` (any unit), `datetime`, `date` or an ISO string. All of them mean UTC: a `datetime` without a time zone counts as UTC, not local time.
+- seconds since 1970-01-01 UTC, as a number;
+- `np.datetime64`, in any unit;
+- `datetime` (one without a time zone counts as UTC, not local time) and `date`;
+- an ISO 8601 string such as `"2025-04-12T06:00:00+02:00"`;
+- `QDateTime`.
+
+That covers ranges (`SciQLopPlotRange(start, stop)`, `axis.set_range`, `set_time_range`, `panel.set_time_axis_range`), the position of a line, the crosshair key and the time marker. A `(start, stop)` tuple of any of them stands for a range wherever a `SciQLopPlotRange` is expected, for example `plot.span(key_range=("2025-04-12", "2025-04-13"))`.
+
+Data takes them too: `x` may be a `datetime64` array, or an object array of `datetime`, `date` or ISO strings, and so may what a data callback returns. A `NaT` in data becomes a gap. A `NaT` or an unparsable string as a range or a position raises `ValueError`.
+
+To convert yourself, `SciQLopPlots.to_epoch_seconds(value)` is the function all of this goes through. It returns a float for a scalar and a `float64` array for an array.
 
 ## Several plots in a panel
 
