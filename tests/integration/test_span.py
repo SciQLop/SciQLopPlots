@@ -5,7 +5,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 
-from SciQLopPlots import Coordinates, SciQLopPlot, SciQLopPlotRange as R, SciQLopSpan, SpanKind
+from SciQLopPlots import Coordinates, SciQLopPlot, SciQLopPlotRange as R, SciQLopSpan, SciQLopVerticalSpan, SpanKind
 from conftest import canvas_of, off_thread, plots_of, process_events, record, scoped_host
 
 SCOPES = ["plot"]
@@ -347,3 +347,20 @@ def test_the_delete_key_asks_once(shown_host, kind):
     QTest.keyClick(canvas_of(plots_of(shown_host)[0]), Qt.Key.Key_Delete)
     process_events()
     assert asked == [True]
+
+
+def _style_after_recolour(span):
+    span.set_line_width(5.0)
+    span.set_line_style(Qt.PenStyle.DashLine)
+    span.set_borders_color(QColor("red"))
+    return span.borders_color(), span.line_width(), span.line_style()
+
+
+def test_recolouring_the_borders_keeps_width_and_style(host, kind):
+    assert _style_after_recolour(make(host, kind)) == (QColor("red"), 5.0, Qt.PenStyle.DashLine)
+
+
+def test_recolouring_a_legacy_span_keeps_width_and_style(plot):
+    legacy = plot.vertical_span(R(1.0, 2.0))
+    assert type(legacy) is SciQLopVerticalSpan
+    assert _style_after_recolour(legacy) == (QColor("red"), 5.0, Qt.PenStyle.DashLine)

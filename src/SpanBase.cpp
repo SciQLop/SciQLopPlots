@@ -37,7 +37,9 @@ QColor SpanBase::color() const noexcept { return _span->brush().color(); }
 
 void SpanBase::set_borders_color(const QColor& color)
 {
-    _span->setBorderPen(QPen(QBrush(color, Qt::SolidPattern), 3));
+    auto pen = _span->borderPen();
+    pen.setColor(color);
+    _span->setBorderPen(pen);
 }
 
 QColor SpanBase::borders_color() const noexcept { return _span->borderPen().color(); }

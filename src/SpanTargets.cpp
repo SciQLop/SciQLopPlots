@@ -255,16 +255,14 @@ void PlotSpanTarget::set_tool_tip(const QString& tool_tip)
 
 QColor PlotSpanTarget::borders_color() const
 {
-    return m_item ? m_item->borderPen().color() : QColor();
+    return m_item ? m_base->borders_color() : QColor();
 }
 
 void PlotSpanTarget::set_borders_color(const QColor& color)
 {
     if (!m_item)
         return;
-    auto pen = m_item->borderPen();
-    pen.setColor(color);
-    m_item->setBorderPen(pen);
+    m_base->set_borders_color(color);
     m_base->replot();
 }
 
