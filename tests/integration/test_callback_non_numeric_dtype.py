@@ -1,7 +1,8 @@
 """Regression test for the "Buffer must be a numeric type" worker-thread crash.
 
 When a Python data-provider callback returns an object with a non-numeric
-PEP-3118 buffer format (bool, datetime64, object, str, struct, float16…),
+PEP-3118 buffer format (bool, object, str, struct, float16…; datetime64 and object arrays of dates
+are converted to epoch seconds instead),
 `PyBuffer`'s constructor throws `std::runtime_error`. The exception used to
 escape `_GetDataPyCallable_impl::get_data`, propagate up through
 `_threaded_update` on the data-provider worker thread, and call
@@ -23,10 +24,9 @@ def _spin(qtbot, calls, target, timeout=2000):
 
 @pytest.mark.parametrize("bad_y", [
     pytest.param(lambda x: np.zeros(x.shape, dtype=np.bool_), id="bool"),
-    pytest.param(lambda x: x.astype("datetime64[ns]"), id="datetime64"),
     pytest.param(lambda x: x.astype(np.float16), id="float16"),
     pytest.param(lambda x: np.array([str(v) for v in x]), id="str"),
-    pytest.param(lambda x: np.array(list(x), dtype=object), id="object"),
+    pytest.param(lambda x: np.array([None] * len(x), dtype=object), id="object"),
 ])
 def test_non_numeric_callback_does_not_crash(plot, qtbot, bad_y):
     """A callback returning a non-numeric buffer must not terminate the process.

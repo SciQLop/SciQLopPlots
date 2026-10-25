@@ -339,6 +339,42 @@ PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
 */
 
 
+// GIL held. SciQLopPlots.to_epoch_seconds, looked up once: set_position runs in drag loops.
+static PyObject* _to_epoch_seconds_function()
+{
+    static PyObject* function = nullptr;
+    if (!function)
+    {
+        PyObject* module = PyImport_ImportModule("SciQLopPlots");
+        function = module ? PyObject_GetAttrString(module, "to_epoch_seconds") : nullptr;
+        Py_XDECREF(module);
+    }
+    return function;
+}
+
+static bool _is_datetime_or_object_array(PyObject* obj)
+{
+    PyObject* dtype = PyObject_GetAttrString(obj, "dtype");
+    PyObject* kind = dtype ? PyObject_GetAttrString(dtype, "kind") : nullptr;
+    const char* text = kind && PyUnicode_Check(kind) ? PyUnicode_AsUTF8AndSize(kind, nullptr) : nullptr;
+    const bool result = text && (text[0] == 'M' || text[0] == 'O');
+    Py_XDECREF(kind);
+    Py_XDECREF(dtype);
+    PyErr_Clear();
+    return result;
+}
+
+// GIL held. NumPy cannot export datetime64 through the buffer protocol, so a datetime64 or object
+// array of dates becomes a float64 array of epoch seconds (NaT as NaN, a gap). A new reference,
+// or nullptr with no error set when obj is not such an array or does not convert.
+static PyObject* _epoch_seconds_array(PyObject* obj)
+{
+    PyObject* function = _is_datetime_or_object_array(obj) ? _to_epoch_seconds_function() : nullptr;
+    PyObject* seconds = function ? PyObject_CallFunctionObjArgs(function, obj, Py_True, nullptr) : nullptr;
+    PyErr_Clear();
+    return seconds;
+}
+
 // GIL held, after a contiguous PyObject_GetBuffer failed: does obj export a strided view?
 static bool _is_strided_buffer(PyObject* obj)
 {
@@ -367,6 +403,34 @@ struct _PyBuffer_impl
 
     ~_PyBuffer_impl() { this->release(); }
 
+    // GIL held. Leaves is_valid set when obj exports a contiguous numeric buffer;
+    // numeric_type tells a non-numeric format from no buffer at all.
+    inline void acquire(PyObject* obj, bool& numeric_type)
+    {
+        numeric_type = true;
+        this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
+                                            PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS
+                                                | PyBUF_FORMAT)
+            == 0;
+        if (!this->is_valid)
+        {
+            PyErr_Clear();
+            return;
+        }
+        static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
+        numeric_type = this->buffer.format != nullptr
+            && numeric_formats.find(this->buffer.format[0]) != std::string_view::npos;
+        if (!numeric_type)
+        {
+            // Release while we still hold the GIL: the ctor throws before
+            // ~_PyBuffer_impl() ever runs, so this is the only chance to drop
+            // the exporter ref PyObject_GetBuffer took (otherwise it leaks on
+            // every rejected dtype).
+            PyBuffer_Release(&this->buffer);
+            this->is_valid = false;
+        }
+    }
+
     inline void init_buffer(PyObject* obj)
     {
         this->py_obj.set_obj(obj);
@@ -374,26 +438,18 @@ struct _PyBuffer_impl
         {
             auto scoped_gil = PyAutoScopedGIL();
             _drain_deferred_queue();
-            this->is_valid = PyObject_GetBuffer(obj, &this->buffer,
-                                                PyBUF_SIMPLE | PyBUF_READ | PyBUF_ANY_CONTIGUOUS
-                                                    | PyBUF_FORMAT)
-                == 0;
-            if (this->is_valid)
+            this->acquire(obj, numeric_type);
+            if (!this->is_valid)
             {
-                static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
-                numeric_type = this->buffer.format != nullptr
-                    && numeric_formats.find(this->buffer.format[0]) != std::string_view::npos;
-                if (!numeric_type)
+                if (PyObject* seconds = _epoch_seconds_array(obj))
                 {
-                    // Release while we still hold the GIL: the ctor threw
-                    // before ~_PyBuffer_impl() ever runs, so this is the
-                    // only chance to drop the exporter ref PyObject_GetBuffer
-                    // took above (otherwise it leaks on every rejected dtype).
-                    PyBuffer_Release(&this->buffer);
-                    this->is_valid = false;
+                    this->py_obj.set_obj(seconds);
+                    Py_DECREF(seconds);
+                    bool converted_is_numeric = true;
+                    this->acquire(this->py_obj.py_object(), converted_is_numeric);
                 }
             }
-            else if (_is_strided_buffer(obj))
+            if (!this->is_valid && numeric_type && _is_strided_buffer(obj))
                 throw std::runtime_error(
                     "array is not contiguous (a strided or reversed view): pass "
                     "numpy.ascontiguousarray(a) or a.copy()");
@@ -804,14 +860,8 @@ SciQLopPyBuffer buffer_from_py(PyObject* value)
 
 double epoch_seconds_from_py(PyObject* value)
 {
-    static PyObject* to_epoch_seconds = nullptr;
-    if (!to_epoch_seconds)
-    {
-        PyObject* module = PyImport_ImportModule("SciQLopPlots");
-        to_epoch_seconds = module ? PyObject_GetAttrString(module, "to_epoch_seconds") : nullptr;
-        Py_XDECREF(module);
-    }
-    PyObject* seconds = to_epoch_seconds ? PyObject_CallFunctionObjArgs(to_epoch_seconds, value, nullptr) : nullptr;
+    PyObject* function = _to_epoch_seconds_function();
+    PyObject* seconds = function ? PyObject_CallFunctionObjArgs(function, value, nullptr) : nullptr;
     const double result = seconds ? PyFloat_AsDouble(seconds) : -1.0;
     Py_XDECREF(seconds);
     return (result == -1.0 && PyErr_Occurred()) ? std::nan("") : result;

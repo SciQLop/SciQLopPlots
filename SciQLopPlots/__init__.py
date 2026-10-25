@@ -572,6 +572,13 @@ def _scalar_seconds(value):
     raise TypeError(f"expected a number or a date, not {value!r}")
 
 
+def _element_seconds(value):
+    """An object array holding bare numbers is a mistake (a column that lost its dtype), not times."""
+    if isinstance(value, (int, float, np.number)):
+        raise TypeError(f"expected a date or a date string in an object array, not {value!r}")
+    return _scalar_seconds(value)
+
+
 def _array_seconds(values, allow_nat):
     a = np.asarray(values)
     if np.issubdtype(a.dtype, np.datetime64):
@@ -580,7 +587,7 @@ def _array_seconds(values, allow_nat):
             raise ValueError("NaT is not a valid time")
         return seconds
     if a.dtype.kind in "OUS":
-        return np.array([_scalar_seconds(v) for v in a.ravel()], dtype=np.float64).reshape(a.shape)
+        return np.array([_element_seconds(v) for v in a.ravel()], dtype=np.float64).reshape(a.shape)
     return np.ascontiguousarray(a, dtype=np.float64)
 
 

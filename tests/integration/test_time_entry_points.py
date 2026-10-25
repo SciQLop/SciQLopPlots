@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QDateTime, Qt, QTimeZone
 
+from conftest import process_events
 from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlotRange
 
 T0 = 1893456000.0  # 2030-01-01T00:00:00Z
@@ -165,3 +166,104 @@ def test_coarse_datetime64_is_accepted_not_a_type_error(plot, unit):
 def test_bad_scalars_raise(plot, panel, entry, bad, error):
     with pytest.raises(error):
         SCALAR_ENTRY_POINTS[entry](plot, panel, bad)
+
+
+# --- data arrays ------------------------------------------------------------------------
+
+N = 6
+Y = np.arange(N, dtype=np.float64)
+Y_COLUMNS = np.column_stack([Y, Y + 1.0])
+Z = np.arange(N * 3, dtype=np.float64).reshape(N, 3)
+Y_AXIS = np.arange(3, dtype=np.float64)
+
+
+def _graph(result):
+    return result[1] if isinstance(result, tuple) else result
+
+
+def _set_data(host, x):
+    graph = _graph(host.line(T0 + np.arange(N, dtype=np.float64), Y))
+    graph.set_data(x, Y)
+    return graph
+
+
+def _colormap_set_data(host, x):
+    graph = _graph(host.colormap(T0 + np.arange(N, dtype=np.float64), Y_AXIS, Z))
+    graph.set_data(x, Y_AXIS, Z)
+    return graph
+
+
+DATA_ENTRY_POINTS = {
+    "plot.plot": lambda plot, panel, x: plot.plot(x, Y),
+    "plot.line": lambda plot, panel, x: plot.line(x, Y),
+    "plot.line columns": lambda plot, panel, x: plot.line(x, Y_COLUMNS),
+    "plot.scatter": lambda plot, panel, x: plot.scatter(x, Y),
+    "plot.waterfall": lambda plot, panel, x: plot.waterfall(x, Z),
+    "plot.colormap": lambda plot, panel, x: plot.colormap(x, Y_AXIS, Z),
+    "panel.plot": lambda plot, panel, x: panel.plot(x, Y),
+    "panel.line": lambda plot, panel, x: panel.line(x, Y),
+    "graph.set_data": lambda plot, panel, x: _set_data(plot, x),
+    "colormap.set_data": lambda plot, panel, x: _colormap_set_data(plot, x),
+}
+
+ARRAY_KINDS = {
+    **{f"datetime64[{u}]": (lambda u=u: (np.datetime64("2030-01-01", "s") + np.arange(N)).astype(f"datetime64[{u}]"))
+       for u in ("ns", "us", "ms", "s")},
+    "datetime64[D]": lambda: np.datetime64("2030-01-01", "D") + np.arange(N),
+    "object array of datetime": lambda: np.array([_utc(T0 + i) for i in range(N)], dtype=object),
+    "object array of ISO strings": lambda: np.array([_utc(T0 + i).isoformat() for i in range(N)], dtype=object),
+    "object array of dates": lambda: np.array([date(2030, 1, 1)] * N, dtype=object),
+}
+
+
+def _expected_seconds(kind):
+    if kind == "datetime64[D]":
+        return np.full(N, T0) + np.arange(N) * DAY
+    if kind == "object array of dates":
+        return np.full(N, T0)
+    return T0 + np.arange(N, dtype=np.float64)
+
+
+def _first_array(graph):
+    return np.asarray(graph.data()[0])
+
+
+@pytest.mark.parametrize("kind", ARRAY_KINDS)
+@pytest.mark.parametrize("entry", DATA_ENTRY_POINTS)
+def test_data_entry_point_accepts_a_date_array(ts_plot, panel, entry, kind):
+    graph = _graph(DATA_ENTRY_POINTS[entry](ts_plot, panel, ARRAY_KINDS[kind]()))
+    process_events()
+    np.testing.assert_array_equal(_first_array(graph), _expected_seconds(kind))
+
+
+def test_nat_in_a_data_array_is_a_gap(ts_plot):
+    x = np.array(["2030-01-01", "NaT", "2030-01-03"], dtype="datetime64[s]")
+    graph = _graph(ts_plot.line(x, np.array([1.0, 2.0, 3.0])))
+    process_events()
+    seconds = _first_array(graph)
+    assert seconds[0] == T0 and math.isnan(seconds[1])
+
+
+def test_a_non_contiguous_datetime64_array_is_accepted(ts_plot):
+    x = (np.datetime64("2030-01-01", "s") + np.arange(2 * N)).astype("datetime64[s]")[::2]
+    graph = _graph(ts_plot.line(x, Y))
+    process_events()
+    np.testing.assert_array_equal(_first_array(graph), T0 + 2.0 * np.arange(N))
+
+
+def test_an_object_array_that_is_not_dates_is_still_rejected(ts_plot):
+    with pytest.raises((TypeError, ValueError)):
+        ts_plot.line(np.array([None] * N, dtype=object), Y)
+
+
+def test_a_callback_returning_datetime64_is_converted(qtbot, ts_plot):
+    seen = []
+
+    def callback(start, stop):
+        seen.append(start)
+        return np.datetime64("2030-01-01", "s") + np.arange(N), Y
+
+    graph = _graph(ts_plot.line(callback))
+    ts_plot.x_axis().set_range(SciQLopPlotRange(T0, T0 + N))
+    qtbot.waitUntil(lambda: np.asarray(graph.data()[0] if graph.data() else []).ndim > 0, timeout=5000)
+    np.testing.assert_array_equal(_first_array(graph), T0 + np.arange(N, dtype=np.float64))
