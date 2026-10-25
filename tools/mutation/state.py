@@ -13,6 +13,9 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
+VERSION = 1
+
+
 def read_source(path):
     with open(path, encoding="utf-8", newline="") as f:
         return f.read()
@@ -28,14 +31,17 @@ def sha(path):
 
 
 def new_state():
-    return {"version": 1, "tests": {}, "mutants": {}, "files": {}, "uncovered": {}, "stale_equivalents": [], "in_flight": []}
+    return {"version": VERSION, "tests": {}, "mutants": {}, "files": {}, "uncovered": {}, "stale_equivalents": [], "in_flight": []}
 
 
 def load(path):
     path = Path(path)
     if not path.exists():
         return new_state()
-    return {**new_state(), **json.loads(path.read_text(encoding="utf-8"))}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("version") != VERSION:
+        raise ValueError(f"{path}: state version {data.get('version')!r}, expected {VERSION}")
+    return {**new_state(), **data}
 
 
 def save(path, data):
@@ -43,11 +49,20 @@ def save(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
-        f.write(json.dumps(data, indent=1, sort_keys=True))
+        f.write(json.dumps({**data, "version": VERSION}, indent=1, sort_keys=True))
         f.flush()
         # the state is hours of mutant runs: it must survive a power loss, not only a crash
         os.fsync(f.fileno())
     os.replace(tmp, path)
+    _fsync_dir(path.parent)
+
+
+def _fsync_dir(directory):
+    fd = os.open(directory, os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def restore_leftovers(state_path, data):
@@ -66,6 +81,8 @@ def restore_leftovers(state_path, data):
 
 @contextmanager
 def mutated(state_path, data, path, text, backup_dir):
+    if data["in_flight"]:
+        raise RuntimeError(f"leftover in flight, restore it first: {data['in_flight']}")
     path = Path(path)
     backup = Path(backup_dir) / (path.name + ".orig")
     backup.parent.mkdir(parents=True, exist_ok=True)

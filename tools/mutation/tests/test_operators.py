@@ -85,3 +85,15 @@ def test_apply_refuses_a_changed_line():
     mutant = mutants_for_file("a.cpp", CPP_SRC, {7})[0]
     with pytest.raises(ValueError, match="line changed"):
         apply(CPP_SRC.replace("v + 1", "v + 2"), mutant)
+
+
+def test_string_literals_are_not_mutated():
+    assert ops("a.cpp", '    throw std::runtime_error("x <= y");') == {}
+    assert ops("m.py", "    warn('a and b')")["delete_statement"] == "    pass"
+    assert "and_to_or" not in ops("m.py", "    warn('a and b')")
+    found = ops("a.cpp", '    f("a + b", x + y);')
+    assert found["plus_to_minus"] == '    f("a + b", x - y);'
+
+
+def test_braced_if_is_negated():
+    assert ops("a.cpp", "    if (x) {")["negate_if"] == "    if (!(x)) {"

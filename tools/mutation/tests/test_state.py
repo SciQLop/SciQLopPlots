@@ -80,3 +80,34 @@ def test_sigterm_inside_the_block_restores(files):
     assert child.wait(timeout=10) != 0
     assert src.read_text() == ORIGINAL
     assert st.load(state_path)["in_flight"] == []
+
+
+def test_mutated_refuses_while_a_leftover_is_recorded(files):
+    src, state_path, backup = files
+    data = st.new_state()
+    data["in_flight"] = [{"path": "x", "backup": "y", "sha": "z"}]
+    with pytest.raises(RuntimeError, match="leftover"):
+        with st.mutated(state_path, data, src, "MUTANT\n", backup):
+            pass
+    assert src.read_text() == ORIGINAL
+    assert data["in_flight"][0]["path"] == "x"
+
+
+def test_restore_with_a_tampered_backup_raises_and_keeps_in_flight(files):
+    src, state_path, backup = files
+    data = st.new_state()
+    with pytest.raises(RuntimeError, match="sha256"):
+        with st.mutated(state_path, data, src, "MUTANT\n", backup):
+            (backup / "f.cpp.orig").write_text("TAMPERED\n")
+    assert len(st.load(state_path)["in_flight"]) == 1
+
+
+def test_load_absent_gives_defaults_and_corrupt_or_unknown_version_raises(tmp_path):
+    path = tmp_path / "state.json"
+    assert st.load(path) == st.new_state()
+    path.write_text("{not json")
+    with pytest.raises(ValueError):
+        st.load(path)
+    path.write_text('{"version": 99}')
+    with pytest.raises(ValueError, match="version"):
+        st.load(path)

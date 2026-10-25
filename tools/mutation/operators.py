@@ -78,6 +78,14 @@ def code_part(line, lang):
     return line.split("//" if lang == CPP else "#", 1)[0]
 
 
+QUOTED = re.compile(r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'")
+
+
+def first_code_match(pattern, code):
+    quoted = [m.span() for m in QUOTED.finditer(code)]
+    return next((m for m in pattern.finditer(code) if not any(a <= m.start() < b for a, b in quoted)), None)
+
+
 def mutants_for_line(path, number, line):
     # simplify: first match only, one mutant per operator per line; the ceiling is a missed
     # second `+` on the same line. Upgrade: finditer, when phase 1 shows those lines survive.
@@ -85,7 +93,7 @@ def mutants_for_line(path, number, line):
     code = code_part(line, lang)
     found = []
     for op in OPERATORS:
-        match = op.pattern.search(code) if lang in op.langs else None
+        match = first_code_match(op.pattern, code) if lang in op.langs else None
         if match is None:
             continue
         replacement = op.replacement(match) if callable(op.replacement) else match.expand(op.replacement)
