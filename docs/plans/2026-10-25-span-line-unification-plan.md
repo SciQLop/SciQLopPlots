@@ -145,7 +145,7 @@ signature min_value: '(self, /) -> float'
 signature is_bounded_by: "(self, /, key_range: object = 'Py_None', tag: int | None = None) -> bool"
 signature echo_range: "(self, /, range: SciQLopPlotsBindings.SciQLopPlotRange | None = 'std.nullopt') -> SciQLopPlotsBindings.SciQLopPlotRange | None"
 signature echo_value: "(self, /, value: float | None = 'std.nullopt') -> float | None"
-signature warnings (want []): []
+signature warnings (want []): []   <- FALSE NEGATIVE: the two std.nullopt RuntimeWarnings at the top of this run are raised at import, outside this collector. Run 4 has none at the top.
 ```
 
 Run 4, container-type plus the type_map entries (decisive run):
@@ -178,7 +178,7 @@ signature warnings (want []): []
 ```
 
 - **Extra lines needed by the outcome:**
-  1. The container-type text of Task 2 is not the brief's text. Two changes were needed. The generator auto-generates the `Py_None` conversion's check as `convertibleSequenceTypes(...)`, so `echo_range(None)` raised ValueError; the explicit `check="%in == Py_None"` fixes it. And `%CONVERTTOCPP[...]` was not expanded when nested inside the `%OUTTYPE(...)` call, so the element is converted on its own line first. Use this text, in bindings.xml next to the `<smart-pointer-type name="QPointer" .../>` line:
+  1. The container-type text of Task 2 is not the brief's text. Two changes were needed. The generator auto-generates the `Py_None` conversion's check as `convertibleSequenceTypes(...)`, so `echo_range(None)` raised ValueError; the explicit `check="%in == Py_None"` fixes it. And `%CONVERTTOCPP[...]` was not expanded when nested inside the `%OUTTYPE(...)` call, so the element is converted on its own line first. Use this text, in bindings.xml next to the `<smart-pointer-type name="QPointer" .../>` line. (`type="list"` is only the container kind the generator requires for a template container-type; our `<conversion-rule>` replaces the list behaviour entirely, so do not change it.)
 
 ```xml
     <!-- std::optional<T> as T or None (span/line unification plan, spike ledger: branch O). -->
@@ -204,7 +204,37 @@ signature warnings (want []): []
 ```
 
   2. Two entries in `mapping.type_map` of `_register_with_shiboken_signatures` (SciQLopPlots/__init__.py), after the `"long": int,` line: `"std.nullopt": None, "std::nullopt": None,`. Without them the signature scan warns `UNRECOGNIZED: 'std.nullopt'` for every `std::optional` default. (The spike also tried `"Py_None": None`, which only the F markup needed. It is not needed for O.) Note: build-venv/SciQLopPlots/__init__.py is a copy of the source file, refreshed by `meson compile`, so a type_map edit needs a compile before a probe sees it.
-  3. Branch F, for the record only (F is not used): the brief's `<conversion-rule class="native">` on a `modify-argument` is ignored by shiboken for a plain method (`class="target"` too); the call then fails to compile with `cannot convert 'PyObject*' to 'const SciQLopPlotRange&'`. What worked was converting `%PYARG_1` inside the `inject-code` and calling with the converted value. The F getters (`key_range`, `min_value`) and that argument mapping all passed every F probe.
+  3. After inserting the entry, run `meson setup --reconfigure build-venv`, then `rm build-venv/SciQLopPlots/bindings/SciQLopPlotsBindings/*_wrapper.cpp` and compile. Inserting an entry shifts the generated type indices, and an incremental build that keeps old wrappers imports with a segfault in `init_SciQLopHorizontalSpan` (`PyTuple_Pack`, a base type still null). A full wrapper regeneration fixes it (measured in fix round 1).
+  4. What the global entry turns on (measured with the entry and a spike class holding no markup, after a full wrapper regeneration; import, `test_binding_signatures.py` 26 passed):
+     - Generator log diff (`mjb_rejected_functions.log`, before vs after): exactly nine lines disappear, all Qt classes the project does not generate: `QFont::Tag::fromString`, `QFont::Tag::fromValue`, `QFontComboBox::displayFont`, `QMetaEnum::keyToValue64`, `keysToValue64`, `value64`, `QStringConverter::encodingForData`, `encodingForHtml`, `encodingForName`. No `std::optional` line remains in the log. Nothing breaks: they are not generated (`generate="no"` typesystems), so no wrapper code exists for them. Recommendation: nothing to do.
+     - Our own `std::optional` functions were never in the rejected log and are not bound before or after: `SciQLopStraightLine::min_value/max_value`, `SciQLopColorMapBase::z_rescale_range`, `SciQLopGraphInterface::color_range` (and the overrides in `SciQLopCurve`, `SciQLopLineGraph`, `SciQLopTimeColoredCurve`, `SciQLopNDProjectionCurves`), `SciQLopGraphComponentInterface::multi_ref`, `QCPAbstractPlottableWrapper::notify_color_scale`. Probe on the built module: `hasattr` is False for every one of them, with and without the entry, and no generated wrapper contains `Func_min_value`, `Func_color_range`, `Func_multi_ref`, `Func_z_rescale_range` or `Func_notify_color_scale`. So the review's expectation that Task 2 silently binds them did not materialise (the cause of the silent drop was not found; it predates the entry). Recommendation: keep them unbound, no `remove="all"` needed. `multi_ref` returns `std::optional<MultiGraphRef>` and `MultiGraphRef` has no type entry in bindings.xml, so it could not be bound without one anyway. Task 5's `min_value`/`max_value` markup (B5) is the only place the plan binds one, and it uses a `double`-returning method. Re-run this check if a later task makes a function with an `std::optional` return public through a new `<object-type>`.
+  5. Two `std::optional<SciQLopPlotRange>` arguments and one `std::optional<double>` in one function (the `span()` shape) compile and convert independently. Each `add-conversion` body is its own generated function, so the local `value` is never redeclared. Spike method `pick(a, b, d)` returned `1*(a given) + 10*(b given) + 100*a.start + 1000*b.start + 10000*d`. Probe output (also checks the wrong-type errors, and that the whole module imports and the earlier probes still pass):
+
+```
+import ok
+SciQLopStraightLine {'min_value': False, 'max_value': False}
+SciQLopVerticalLine {'min_value': False}
+SciQLopColorMapBase {'z_rescale_range': False}
+SciQLopGraphInterface {'color_range': False}
+SciQLopCurve {'color_range': False}
+SciQLopGraphComponentInterface {'multi_ref': False}
+QCPAbstractPlottableWrapper None
+a,b,d 53111.0
+None,b,d 53010.0
+a,None,d 50101.0
+a,b,None 3111.0
+none all 0.0
+omitted 0.0
+kw b only 3010.0 kw d only 50000.0
+TypeError ok
+TypeError arg2 ok
+```
+
+     Expected values: a,b,d = 53111, None,b,d = 53010, a,None,d = 50101, a,b,None = 3111, all None / omitted = 0, b only = 3010, d only = 50000. All match. The probe script itself was throwaway (it lives in the session scratchpad, not in the repo); the ledger output is the only copy.
+
+### Recorded, not used
+
+- Branch F, for the record: the brief's `<conversion-rule class="native">` on a `modify-argument` is ignored by shiboken for a plain method (`class="target"` too); the call then fails to compile with `cannot convert 'PyObject*' to 'const SciQLopPlotRange&'`. What worked was converting `%PYARG_1` inside the `inject-code` and calling with the converted value. The F getters (`key_range`, `min_value`) and that argument mapping all passed every F probe.
 
 What is already known before the spike: the build-venv generator log has no type entry for `std::optional` at all. For example, `build-venv/SciQLopPlots/bindings/mjb_rejected_functions.log` lists `std::optional<QFont> QFontComboBox::displayFont(const QString&)const: unmatched return type 'std::optional<QFont>': Unable to translate type "std::optional<QFont>": Cannot find type entry for "std::optional"`. So bare `std::optional` is rejected. The question the spike answers is whether a `<container-type name="std::optional">` entry of ours makes it work (branch O), or whether we map None by hand (branch F, or F-py).
 
@@ -634,29 +664,7 @@ Expected: every `F ...` line shows the wanted result; the `O ...` lines show `At
 
 - [ ] **Step 5: Add the container-type for branch O**
 
-At the top level of bindings.xml, after the `<smart-pointer-type name="QPointer" .../>` line (~168):
-
-```xml
-    <!-- std::optional<T> as T or None (span/line unification plan, spike ledger: branch O). -->
-    <container-type name="std::optional" type="list">
-        <include file-name="optional" location="global"/>
-        <conversion-rule>
-            <native-to-target>
-                if (!%in.has_value())
-                    Py_RETURN_NONE;
-                return %CONVERTTOPYTHON[%INTYPE_0](*%in);
-            </native-to-target>
-            <target-to-native>
-                <add-conversion type="Py_None">
-                    %out = %OUTTYPE();
-                </add-conversion>
-                <add-conversion type="PyObject" check="%ISCONVERTIBLE[%OUTTYPE_0](%in)">
-                    %out = %OUTTYPE(%CONVERTTOCPP[%OUTTYPE_0](%in));
-                </add-conversion>
-            </target-to-native>
-        </conversion-rule>
-    </container-type>
-```
+The working container-type text is in the Spike ledger (above), under "Extra lines needed by the outcome", item 1. Insert it at the top level of bindings.xml, after the `<smart-pointer-type name="QPointer" .../>` line (~168).
 
 Build (no reconfigure: no object-type changed). If the generator rejects the `check` attribute, try once without it and rely on the wrong-type probe. If no version builds, branch O has failed: record the error and skip to Step 7.
 
@@ -1741,7 +1749,7 @@ Replace both comments with B2's lines for the ledger's branch (drop the `= ...` 
 
 `SciQLopPlots/bindings/bindings.xml`:
 - After `<enum-type name="Coordinates" python-type="IntEnum"/>` (line 139): `<enum-type name="SpanKind" python-type="IntEnum"/>`.
-- Branch O: the ledger's container-type, after the smart-pointer line (~168). Branch F: B4's template.
+- Branch O: the ledger's container-type, after the smart-pointer line (~168). Branch F: B4's template. Branch O: after inserting the entry, reconfigure and `rm` every `build-venv/SciQLopPlots/bindings/SciQLopPlotsBindings/*_wrapper.cpp` before compiling (ledger, extra line 3), or the import segfaults.
 - Inside `<object-type name="SciQLopPlotInterface" ...>`, after the `rectangular_span` modify-function (~line 552):
 
   ```xml
