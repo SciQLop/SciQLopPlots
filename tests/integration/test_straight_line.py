@@ -155,3 +155,25 @@ def test_the_old_line_classes_keep_position_as_a_property(plot):
         horizontal = SciQLopHorizontalLine(plot, 0.5)
     vertical.position = 2.0
     assert (vertical.position, horizontal.position) == (2.0, 0.5)
+
+
+def clamped_pixels_line(shown_host):
+    line = shown_host.straight_line(5.0, Qt.Orientation.Vertical)
+    line.set_min_value(1.0)
+    line.set_max_value(5.0)
+    process_events()
+    line.set_coordinates(Coordinates.Pixels)
+    return line
+
+
+def test_the_data_clamps_do_not_apply_in_pixels(shown_host):
+    line = clamped_pixels_line(shown_host)
+    line.set_position(400.0)
+    assert line.position() == pytest.approx(400.0)
+
+
+def test_the_clamps_apply_again_back_in_data(shown_host):
+    line = clamped_pixels_line(shown_host)
+    line.set_coordinates(Coordinates.Data)
+    line.set_position(50.0)
+    assert line.position() == 5.0

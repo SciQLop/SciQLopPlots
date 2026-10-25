@@ -83,7 +83,9 @@ void StraightLine::place(double pos)
 
 void StraightLine::set_position(double pos)
 {
-    pos = _clamp(pos);
+    // The min/max clamps are data values: meaningless against a pixel offset.
+    pos = m_coordinates == Coordinates::Data ? _clamp(pos)
+                                             : clamp_line_position(pos, std::nullopt, std::nullopt);
     if (position() == pos)
         return;
     place(pos);
