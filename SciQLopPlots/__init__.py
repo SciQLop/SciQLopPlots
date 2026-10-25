@@ -415,6 +415,44 @@ def _deprecated_constructor(cls, factory, needs_plot):
 for _item_cls, (_factory, _needs_plot) in _ITEM_FACTORIES.items():
     _item_cls.__init__ = _deprecated_constructor(_item_cls, _factory, _needs_plot)
 
+# The plot line shorthands took movable second (5.6); color and read_only replace it. A bool there
+# would silently become a QColor (QColor(int)), so it raises; movable= still works, inverted.
+def _line_shorthand(name, method):
+    message = f"movable=... is deprecated: use plot.{name}(..., read_only=...)"
+
+    @functools.wraps(method)
+    def wrapper(self, position, *args, **kwargs):
+        if args and isinstance(args[0], bool):
+            raise TypeError(f"{name}(position, color, ...): the second argument is the colour; "
+                            "pass read_only=... to choose whether the user can drag the line")
+        if "movable" in kwargs:
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            kwargs["read_only"] = not kwargs.pop("movable")
+        return method(self, position, *args, **kwargs)
+    return wrapper
+
+
+for _name in ("vertical_line", "horizontal_line"):
+    setattr(SciQLopPlotsBindings.SciQLopPlotInterface, _name,
+            _line_shorthand(_name, vars(SciQLopPlotsBindings.SciQLopPlotInterface)[_name]))
+
+
+def _deprecated_call(message, method):
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+# (class, method) -> message. Plain methods only: never a Qt slot (a wrapper cuts its connections).
+_DEPRECATED_CALLS = {
+    (SciQLopPlotsBindings.SciQLopPlotInterface, "rectangular_span"):
+        "rectangular_span(...) is deprecated: use plot.span(...)",
+}
+for (_cls, _name), _message in _DEPRECATED_CALLS.items():
+    setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
+
 _FORMAT_SAVERS = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
 _SAVE_OWNERS = {"plot": (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot, SciQLopNDProjectionPlot),
                 "panel": (SciQLopPlotsBindings.SciQLopPlotPanelInterface, SciQLopMultiPlotPanel)}

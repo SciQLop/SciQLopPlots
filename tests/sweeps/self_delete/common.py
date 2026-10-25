@@ -124,7 +124,7 @@ BUILDERS = {
     "horizontal_line": lambda h: h.plot.horizontal_line(0.5),
     "vspan": lambda h: h.plot.vertical_span(R(1.0, 2.0)),
     "hspan": lambda h: h.plot.horizontal_span(R(1.0, 2.0)),
-    "rspan": lambda h: h.plot.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
+    "rspan": lambda h: h.plot.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
     "panel_span": lambda h: h.panel.vertical_span(R(1.0, 2.0)),
     "panel_line": lambda h: h.panel.vertical_line(2.0),
     "panel_span_collection": lambda h: S.MultiPlotsVSpanCollection(h.panel),

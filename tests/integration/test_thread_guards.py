@@ -78,7 +78,7 @@ _SPAN_SETTERS = [
 ITEMS = {
     "vspan": lambda p: p.vertical_span(R(1.0, 2.0)),
     "hspan": lambda p: p.horizontal_span(R(1.0, 2.0)),
-    "rspan": lambda p: p.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
+    "rspan": lambda p: p.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
     "pixmap": lambda p: p.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
     "ellipse": lambda p: p.ellipse(QRectF(1, 1, 2, 2)),
     "text": lambda p: p.text("hello", QPointF(1, 1)),

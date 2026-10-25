@@ -86,6 +86,12 @@ def _ranged(make):
     return made
 
 
+def _old(cls, *args):
+    """An old-name object, through its deprecated constructor: the factories no longer make one."""
+    with pytest.warns(DeprecationWarning):
+        return cls(*args)
+
+
 def _panel():
     panel = SciQLopMultiPlotPanel()
     panel.plot(X, np.sin(X))
@@ -213,8 +219,8 @@ ROWS += [
         "SciQLopCurvedLineItem": lambda h: h.plot.curved_line(QPointF(0, 0), QPointF(5, 5)),
         "SciQLopStraightLine": lambda h: h.plot.straight_line(1.0, Qt.Orientation.Vertical),
         "SciQLopStraightLine[panel]": lambda h: h.panel.straight_line(2.0, Qt.Orientation.Vertical),
-        "SciQLopVerticalLine": lambda h: h.plot.vertical_line(1.0),
-        "SciQLopHorizontalLine": lambda h: h.plot.horizontal_line(0.5),
+        "SciQLopVerticalLine": lambda h: _old(SciQLopVerticalLine, h.plot, 1.0),
+        "SciQLopHorizontalLine": lambda h: _old(SciQLopHorizontalLine, h.plot, 0.5),
     }, ALL),
     Row("ellipse", ("SciQLopEllipseItem",), {
         "SciQLopEllipseItem": lambda h: h.plot.ellipse(QRectF(10, 10, 20, 20)),
@@ -223,9 +229,9 @@ ROWS += [
         "SciQLopPixmapItem": lambda h: h.plot.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
     }, {"visible": OK, "selected": OK, "name": OK, "color": RAISE}),
     Row("span", ("SciQLopVerticalSpan", "SciQLopHorizontalSpan", "SciQLopRectangularSpan"), {
-        "SciQLopVerticalSpan": lambda h: h.plot.vertical_span(R(1.0, 2.0)),
-        "SciQLopHorizontalSpan": lambda h: h.plot.horizontal_span(R(1.0, 2.0)),
-        "SciQLopRectangularSpan": lambda h: h.plot.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
+        "SciQLopVerticalSpan": lambda h: _old(SciQLopVerticalSpan, h.plot, R(1.0, 2.0)),
+        "SciQLopHorizontalSpan": lambda h: _old(SciQLopHorizontalSpan, h.plot, R(1.0, 2.0)),
+        "SciQLopRectangularSpan": lambda h: _old(SciQLopRectangularSpan, h.plot, R(1.0, 2.0), R(1.0, 2.0)),
     }, ALL),
     Row("new span", ("SciQLopSpan",), {
         "SciQLopSpan": lambda h: h.plot.span(key_range=R(1.0, 2.0)),

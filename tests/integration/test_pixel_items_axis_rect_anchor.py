@@ -79,7 +79,7 @@ def _add_probe(plot):
     is clipped, and a hairline is antialiased into non-pure colours.
     """
     plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
-    probe = plot.vertical_line(0.0, False, Coordinates.Data)
+    probe = plot.vertical_line(0.0, read_only=True, coordinates=Coordinates.Data)
     probe.set_color(PROBE)
     probe.set_line_width(5.0)
     return probe
@@ -112,7 +112,7 @@ def _pixmap(plot, x):
 
 
 def _straight_line(plot, x):
-    item = plot.vertical_line(x, False, Coordinates.Pixels)
+    item = plot.vertical_line(x, read_only=True, coordinates=Coordinates.Pixels)
     item.set_color(SUBJECT)
     item.set_line_width(3.0)
     return item
@@ -173,7 +173,7 @@ class TestDataCoordinatesUnaffected:
     def test_data_mode_item_still_tracks_the_axis(self, plot, tmp_path):
         # No probe here: it sits at the x-axis minimum and would pan out of view.
         plot.x_axis().set_range(SciQLopPlotRange(0.0, 100.0))
-        line = plot.vertical_line(50.0, False, Coordinates.Data)
+        line = plot.vertical_line(50.0, read_only=True, coordinates=Coordinates.Data)
         line.set_color(SUBJECT)
         line.set_line_width(3.0)
         centre_before = _subject_centre(plot, tmp_path, "data_centre")

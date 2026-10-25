@@ -40,7 +40,7 @@ ITEM_MAKERS = {
     "ellipse": lambda p: p.ellipse(QRectF(0, 0, 4, 4)),
     "vertical_line": lambda p: p.vertical_line(1.0),
     "vertical_span": lambda p: p.vertical_span(R(1.0, 2.0)),
-    "rectangular_span": lambda p: p.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
+    "rectangular_span": lambda p: p.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
     "ctor_text": _constructed(SciQLopTextItem, "t", QPointF(1, 1)),
     "ctor_line": _constructed(SciQLopVerticalLine, 1.0),
 }
@@ -136,7 +136,7 @@ def test_remove_twice_raises_not_crashes(plot):
 
 
 def test_remove_from_the_items_own_signal(plot):
-    line = plot.vertical_line(1.0, True)
+    line = plot.vertical_line(1.0, read_only=False)
     line.position_changed.connect(lambda *_: plot.remove(line))
     line.set_position(2.0)
     process_events()

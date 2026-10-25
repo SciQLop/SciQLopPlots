@@ -18,12 +18,17 @@ def test_a_span_declares_no_selection_signal_of_its_own(cls):
     assert meta.indexOfSignal("selection_changed(bool)") != -1  # the base's
 
 
-SPAN_FACTORIES = {
-    SciQLopVerticalSpan: lambda p: p.vertical_span(SciQLopPlotRange(0.2, 0.4)),
-    SciQLopHorizontalSpan: lambda p: p.horizontal_span(SciQLopPlotRange(0.2, 0.4)),
-    SciQLopRectangularSpan: lambda p: p.rectangular_span(SciQLopPlotRange(0.2, 0.4),
-                                                             SciQLopPlotRange(0.2, 0.4)),
+SPAN_ARGS = {
+    SciQLopVerticalSpan: (SciQLopPlotRange(0.2, 0.4),),
+    SciQLopHorizontalSpan: (SciQLopPlotRange(0.2, 0.4),),
+    SciQLopRectangularSpan: (SciQLopPlotRange(0.2, 0.4), SciQLopPlotRange(0.2, 0.4)),
 }
+
+
+def _old_span(cls, plot):
+    """The old classes are only built by their deprecated constructors now."""
+    with pytest.warns(DeprecationWarning):
+        return cls(plot, *SPAN_ARGS[cls])
 
 
 @pytest.mark.parametrize("cls", SPANS)
@@ -33,7 +38,7 @@ def test_the_camel_case_name_is_the_same_signal(cls):
 
 @pytest.mark.parametrize("cls", SPANS)
 def test_both_names_signal_once_per_change(plot, cls):
-    span = SPAN_FACTORIES[cls](plot)
+    span = _old_span(cls, plot)
     seen = record(span.selectionChanged), record(span.selection_changed)
     span.set_selected(True)
     span.set_selected(False)

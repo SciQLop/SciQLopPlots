@@ -43,11 +43,6 @@ class SciQLopTextItem;
 class SciQLopPixmapItem;
 class SciQLopEllipseItem;
 class SciQLopCurvedLineItem;
-class SciQLopVerticalLine;
-class SciQLopHorizontalLine;
-class SciQLopVerticalSpan;
-class SciQLopHorizontalSpan;
-class SciQLopRectangularSpan;
 class SciQLopTheme;
 class SciQLopItemInterface;
 class SciQLopStraightLine;
@@ -534,30 +529,59 @@ public:
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
-    inline virtual SciQLopVerticalLine* vertical_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data)
+    //! span(key_range=range, ...): the defaults are span()'s.
+    SciQLopSpan* vertical_span(const SciQLopPlotRange& range,
+                               QColor color = QColor::fromRgb(100, 100, 100, 100),
+                               bool read_only = false, bool visible = true,
+                               const QString& tool_tip = "",
+                               Coordinates coordinates = Coordinates::Data, const QString& id = "")
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        return span(range, std::nullopt, color, read_only, visible, tool_tip, coordinates, id);
     }
 
-    inline virtual SciQLopHorizontalLine* horizontal_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data)
+    //! span(value_range=range, ...): the defaults are span()'s.
+    SciQLopSpan* horizontal_span(const SciQLopPlotRange& range,
+                                 QColor color = QColor::fromRgb(100, 100, 100, 100),
+                                 bool read_only = false, bool visible = true,
+                                 const QString& tool_tip = "",
+                                 Coordinates coordinates = Coordinates::Data,
+                                 const QString& id = "")
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        return span(std::nullopt, range, color, read_only, visible, tool_tip, coordinates, id);
     }
 
-    inline virtual SciQLopVerticalSpan* vertical_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data)
+    //! Deprecated in Python: span(key_range=..., value_range=...).
+    SciQLopSpan* rectangular_span(const SciQLopPlotRange& key_range,
+                                  const SciQLopPlotRange& value_range,
+                                  QColor color = QColor::fromRgb(100, 100, 100, 100),
+                                  bool read_only = false, bool visible = true,
+                                  const QString& tool_tip = "",
+                                  Coordinates coordinates = Coordinates::Data,
+                                  const QString& id = "")
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        return span(key_range, value_range, color, read_only, visible, tool_tip, coordinates, id);
     }
 
-    inline virtual SciQLopHorizontalSpan* horizontal_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "")
+    //! straight_line(position, Qt::Vertical, ...): the defaults are straight_line()'s.
+    SciQLopStraightLine* vertical_line(double position, QColor color = QColor::fromRgb(0, 0, 0),
+                                       bool read_only = true, bool visible = true,
+                                       const QString& tool_tip = "",
+                                       Coordinates coordinates = Coordinates::Data)
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        return straight_line(position, Qt::Vertical, color, read_only, visible, tool_tip,
+                             coordinates);
     }
 
-    inline virtual SciQLopRectangularSpan* rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "")
+    //! straight_line(position, Qt::Horizontal, ...): the defaults are straight_line()'s.
+    SciQLopStraightLine* horizontal_line(double position, QColor color = QColor::fromRgb(0, 0, 0),
+                                         bool read_only = true, bool visible = true,
+                                         const QString& tool_tip = "",
+                                         Coordinates coordinates = Coordinates::Data)
     {
-        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+        return straight_line(position, Qt::Horizontal, color, read_only, visible, tool_tip,
+                             coordinates);
     }
+
     //! A span over the key axis, the value axis or both: an axis given None is unbounded.
     //! Raises ValueError when both are None.
     inline virtual SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,

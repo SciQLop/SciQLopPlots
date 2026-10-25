@@ -114,10 +114,16 @@ _LINE_GREY = QColor(100, 100, 100)
 @pytest.mark.parametrize("make", [
     lambda plot: plot.vertical_span(_RANGE),
     lambda plot: plot.horizontal_span(_RANGE),
-    lambda plot: plot.rectangular_span(_RANGE, _RANGE),
+    lambda plot: plot.span(key_range=_RANGE, value_range=_RANGE),
 ], ids=["vertical", "horizontal", "rectangular"])
 def test_default_span_color(plot, make):
     assert make(plot).color() == _SPAN_GREY
+
+
+def test_default_deprecated_rectangular_span_color(plot):
+    with pytest.warns(DeprecationWarning):
+        span = plot.rectangular_span(_RANGE, _RANGE)
+    assert span.color() == _SPAN_GREY
 
 
 @pytest.mark.parametrize("make", [

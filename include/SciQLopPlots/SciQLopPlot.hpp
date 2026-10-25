@@ -554,11 +554,6 @@ public:
     SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
     SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
     SciQLopCurvedLineItem* curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator = LineTermination::NoneTermination, LineTermination stop_terminator = LineTermination::Arrow, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
-    SciQLopVerticalLine* vertical_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data) override;
-    SciQLopHorizontalLine* horizontal_line(double position, bool movable = false, Coordinates coordinates = Coordinates::Data) override;
-    SciQLopVerticalSpan* vertical_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "", Coordinates coordinates = Coordinates::Data) override;
-    SciQLopHorizontalSpan* horizontal_span(SciQLopPlotRange range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "") override;
-    SciQLopRectangularSpan* rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false, bool visible = true, const QString& tool_tip = "") override;
     SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
                       std::optional<SciQLopPlotRange> value_range = std::nullopt,
                       QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,

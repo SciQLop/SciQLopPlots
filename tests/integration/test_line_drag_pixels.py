@@ -51,9 +51,9 @@ def test_dragging_a_pixels_line_moves_it_by_the_mouse_delta(qtbot, plot, vertica
     axis.set_range(SciQLopPlotRange(0.0, 1000.0))
     process_events()
     make = plot.vertical_line if vertical else plot.horizontal_line
-    line = make(START_PX, True, Coordinates.Pixels)
+    line = make(START_PX, read_only=False, coordinates=Coordinates.Pixels)
     plot.replot(True)
     process_events()
     start, across = _hit_centre(_canvas(plot), line, vertical)
     _drag(_canvas(plot), vertical, start, start + DRAG_PX, across)
-    assert line.position == pytest.approx(START_PX + DRAG_PX, abs=2.0)
+    assert line.position() == pytest.approx(START_PX + DRAG_PX, abs=2.0)

@@ -41,9 +41,9 @@ CASES = {
                     lambda s: s.set_range(R(0.5, 0.6))),
     "hspan_range": (lambda p, _: p.horizontal_span(R(0.2, 0.4)), "range_changed",
                     lambda s: s.set_range(R(0.5, 0.6))),
-    "rspan_key_range": (lambda p, _: p.rectangular_span(R(0.2, 0.4), R(0.2, 0.4)),
+    "rspan_key_range": (lambda p, _: p.span(key_range=R(0.2, 0.4), value_range=R(0.2, 0.4)),
                         "key_range_changed", lambda s: s.set_key_range(R(0.5, 0.6))),
-    "rspan_value_range": (lambda p, _: p.rectangular_span(R(0.2, 0.4), R(0.2, 0.4)),
+    "rspan_value_range": (lambda p, _: p.span(key_range=R(0.2, 0.4), value_range=R(0.2, 0.4)),
                           "value_range_changed", lambda s: s.set_value_range(R(0.5, 0.6))),
     "timeline_select": (lambda _, ts: _timeline(ts), "selected_intervals_changed",
                         lambda t: t.select_ids([7])),
@@ -121,13 +121,14 @@ def test_a_slot_deleting_the_curve_while_it_sets_its_line_width_does_not_crash(p
     assert not shiboken6.isValid(curve)
 
 
-SPANS = {"vspan": "vertical_span", "hspan": "horizontal_span"}
+SPANS = {"vspan": SciQLopVerticalSpan, "hspan": SciQLopHorizontalSpan}
 
 
 @pytest.mark.parametrize("border", ["lower", "upper"])
 @pytest.mark.parametrize("kind", SPANS)
 def test_a_slot_deleting_a_span_on_selection_does_not_crash_its_border_selector(plot, kind, border):
-    span = getattr(plot, SPANS[kind])(R(0.2, 0.4))
+    with pytest.warns(DeprecationWarning):
+        span = SPANS[kind](plot, R(0.2, 0.4))
     span.selection_changed.connect(lambda *_: shiboken6.delete(span))
     getattr(span, f"select_{border}_border")(True)
     process_events()
@@ -192,7 +193,8 @@ def test_a_slot_deleting_a_line_on_its_drag_does_not_crash(qtbot, plot, coordina
     plot.show()
     qtbot.waitExposed(plot)
     plot.x_axis().set_range(R(0.0, 1000.0))
-    line = plot.vertical_line(500.0 if coordinates == Coordinates.Data else 300.0, True, coordinates)
+    line = plot.vertical_line(500.0 if coordinates == Coordinates.Data else 300.0,
+                         read_only=False, coordinates=coordinates)
     plot.replot(True)
     process_events()
     canvas = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))

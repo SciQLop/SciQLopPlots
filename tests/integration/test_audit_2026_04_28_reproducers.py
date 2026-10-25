@@ -40,7 +40,7 @@ class TestC5_StraightLineEmitGuard:
     """
 
     def test_set_position_unchanged_does_not_reemit(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(5.0)
@@ -67,13 +67,13 @@ class TestC5_StraightLineEmitGuard:
             from SciQLopPlots import SciQLopPlot
             app = QApplication.instance() or QApplication(sys.argv)
             plot = SciQLopPlot()
-            a = plot.vertical_line(1.0, True)
-            b = plot.vertical_line(1.0, True)
+            a = plot.vertical_line(1.0, read_only=False)
+            b = plot.vertical_line(1.0, read_only=False)
             a.position_changed.connect(b.set_position)
             b.position_changed.connect(a.set_position)
             sys.setrecursionlimit(500)
             a.set_position(2.0)
-            print("OK", a.position, b.position)
+            print("OK", a.position(), b.position())
             """
         )
         result = subprocess.run(
@@ -89,7 +89,7 @@ class TestC5_StraightLineEmitGuard:
         assert b"OK" in result.stdout, result.stdout
 
     def test_horizontal_line_unchanged_no_emit(self, plot):
-        line = plot.horizontal_line(7.0, True)
+        line = plot.horizontal_line(7.0, read_only=False)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(7.0)
@@ -105,7 +105,7 @@ class TestH7_StraightLineClampValidation:
     """`_clamp` must behave sensibly when min > max or position is NaN."""
 
     def test_min_greater_than_max_does_not_silently_break(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(10.0)
         line.set_max_value(2.0)
         line.set_position(7.0)
@@ -114,19 +114,19 @@ class TestH7_StraightLineClampValidation:
         # caller's most-recent setter is max=2.0) or rejection. Spec: the
         # later setter (max) overrides whichever bound is now invalid.
         # Pragmatic assertion: result must satisfy max constraint.
-        assert line.position <= 2.0 or line.position == pytest.approx(7.0), (
-            f"clamp must not silently violate max; got {line.position}"
+        assert line.position() <= 2.0 or line.position() == pytest.approx(7.0), (
+            f"clamp must not silently violate max; got {line.position()}"
         )
 
     def test_nan_position_does_not_propagate(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(0.0)
         line.set_max_value(10.0)
         line.set_position(float("nan"))
         # NaN passes both `<` and `>` comparisons; bug propagates NaN through.
         # After fix, NaN should be rejected (no-op) or clamped to a bound.
-        assert not (line.position != line.position), (
-            f"clamp must not propagate NaN; got {line.position}"
+        assert not (line.position() != line.position()), (
+            f"clamp must not propagate NaN; got {line.position()}"
         )
 
 

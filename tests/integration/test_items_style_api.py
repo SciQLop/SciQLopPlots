@@ -242,32 +242,32 @@ class TestHorizontalSpanStyle:
 
 class TestRectangularSpanStyle:
     def test_color_roundtrip(self, plot):
-        rs = plot.rectangular_span(SciQLopPlotRange(0, 5), SciQLopPlotRange(0, 10)
-        )
+        rs = plot.span(key_range=SciQLopPlotRange(0, 5),
+                       value_range=SciQLopPlotRange(0, 10))
         rs.set_color(QColor("magenta"))
         assert rs.color() == QColor("magenta")
 
     def test_borders_color_roundtrip(self, plot):
-        rs = plot.rectangular_span(SciQLopPlotRange(0, 5), SciQLopPlotRange(0, 10)
-        )
+        rs = plot.span(key_range=SciQLopPlotRange(0, 5),
+                       value_range=SciQLopPlotRange(0, 10))
         rs.set_borders_color(QColor("orange"))
         assert rs.borders_color() == QColor("orange")
 
     def test_line_width_roundtrip(self, plot):
-        rs = plot.rectangular_span(SciQLopPlotRange(0, 5), SciQLopPlotRange(0, 10)
-        )
+        rs = plot.span(key_range=SciQLopPlotRange(0, 5),
+                       value_range=SciQLopPlotRange(0, 10))
         rs.set_line_width(3.0)
         assert abs(rs.line_width() - 3.0) < 0.01
 
     def test_line_style_roundtrip(self, plot):
-        rs = plot.rectangular_span(SciQLopPlotRange(0, 5), SciQLopPlotRange(0, 10)
-        )
+        rs = plot.span(key_range=SciQLopPlotRange(0, 5),
+                       value_range=SciQLopPlotRange(0, 10))
         rs.set_line_style(Qt.PenStyle.DashLine)
         assert rs.line_style() == Qt.PenStyle.DashLine
 
     def test_key_value_range_roundtrip(self, plot):
-        rs = plot.rectangular_span(SciQLopPlotRange(1, 3), SciQLopPlotRange(4, 7)
-        )
+        rs = plot.span(key_range=SciQLopPlotRange(1, 3),
+                       value_range=SciQLopPlotRange(4, 7))
         kr = rs.key_range()
         vr = rs.value_range()
         assert abs(kr.start() - 1.0) < 0.01

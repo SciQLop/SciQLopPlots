@@ -16,7 +16,7 @@ from conftest import process_events
 class TestStraightLineSignal:
 
     def test_position_changed_on_set(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(10.0)
@@ -25,7 +25,7 @@ class TestStraightLineSignal:
         assert received[0] == pytest.approx(10.0)
 
     def test_position_changed_not_emitted_when_unchanged(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(5.0)
@@ -36,7 +36,7 @@ class TestStraightLineSignal:
         )
 
     def test_horizontal_line_signal(self, plot):
-        line = plot.horizontal_line(3.0, True)
+        line = plot.horizontal_line(3.0, read_only=False)
         received = []
         line.position_changed.connect(lambda v: received.append(v))
         line.set_position(7.0)
@@ -45,10 +45,10 @@ class TestStraightLineSignal:
         assert received[0] == pytest.approx(7.0)
 
     def test_position_property_roundtrip(self, plot):
-        line = plot.vertical_line(5.0, False, Coordinates.Data)
-        assert line.position == pytest.approx(5.0)
-        line.position = 12.0
-        assert line.position == pytest.approx(12.0)
+        line = plot.vertical_line(5.0, read_only=True, coordinates=Coordinates.Data)
+        assert line.position() == pytest.approx(5.0)
+        line.set_position(12.0)
+        assert line.position() == pytest.approx(12.0)
 
 
 class TestStraightLinePixelCoordinates:
@@ -62,7 +62,7 @@ class TestStraightLinePixelCoordinates:
     """
 
     def _vline_pixels(self, plot, px):
-        return plot.vertical_line(px, False, Coordinates.Pixels)
+        return plot.vertical_line(px, read_only=True, coordinates=Coordinates.Pixels)
 
     def test_pixel_position_is_not_reinterpreted_as_data(self, plot):
         plot.resize(800, 600)
@@ -72,7 +72,7 @@ class TestStraightLinePixelCoordinates:
         process_events()
         line = self._vline_pixels(plot, 200.0)
         process_events()
-        assert line.position == pytest.approx(200.0, abs=1.0)
+        assert line.position() == pytest.approx(200.0, abs=1.0)
 
     def test_pixel_line_stays_fixed_on_zoom(self, plot):
         plot.resize(800, 600)
@@ -82,53 +82,53 @@ class TestStraightLinePixelCoordinates:
         process_events()
         line = self._vline_pixels(plot, 200.0)
         process_events()
-        before = line.position
+        before = line.position()
         plot.x_axis().set_range(SciQLopPlotRange(0.0, 1000.0))  # zoom out 10x
         process_events()
-        assert line.position == pytest.approx(before, abs=1.0)  # pixel anchor unmoved
+        assert line.position() == pytest.approx(before, abs=1.0)  # pixel anchor unmoved
 
 
 class TestStraightLineMinMax:
 
     def test_min_clamps_set_position(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(2.0)
         line.set_position(1.0)
-        assert line.position == pytest.approx(2.0)
+        assert line.position() == pytest.approx(2.0)
 
     def test_max_clamps_set_position(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_max_value(10.0)
         line.set_position(15.0)
-        assert line.position == pytest.approx(10.0)
+        assert line.position() == pytest.approx(10.0)
 
     def test_within_range_not_clamped(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(0.0)
         line.set_max_value(10.0)
         line.set_position(7.0)
-        assert line.position == pytest.approx(7.0)
+        assert line.position() == pytest.approx(7.0)
 
     def test_clear_min_removes_limit(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(3.0)
         line.set_position(1.0)
-        assert line.position == pytest.approx(3.0)
+        assert line.position() == pytest.approx(3.0)
         line.clear_min_value()
         line.set_position(1.0)
-        assert line.position == pytest.approx(1.0)
+        assert line.position() == pytest.approx(1.0)
 
     def test_clear_max_removes_limit(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_max_value(8.0)
         line.set_position(20.0)
-        assert line.position == pytest.approx(8.0)
+        assert line.position() == pytest.approx(8.0)
         line.clear_max_value()
         line.set_position(20.0)
-        assert line.position == pytest.approx(20.0)
+        assert line.position() == pytest.approx(20.0)
 
     def test_signal_emits_clamped_value(self, plot):
-        line = plot.vertical_line(5.0, True)
+        line = plot.vertical_line(5.0, read_only=False)
         line.set_min_value(2.0)
         line.set_max_value(10.0)
         received = []
@@ -141,13 +141,13 @@ class TestStraightLineMinMax:
         assert received[-1] == pytest.approx(10.0)
 
     def test_horizontal_line_min_max(self, plot):
-        line = plot.horizontal_line(5.0, True)
+        line = plot.horizontal_line(5.0, read_only=False)
         line.set_min_value(1.0)
         line.set_max_value(9.0)
         line.set_position(0.0)
-        assert line.position == pytest.approx(1.0)
+        assert line.position() == pytest.approx(1.0)
         line.set_position(100.0)
-        assert line.position == pytest.approx(9.0)
+        assert line.position() == pytest.approx(9.0)
 
 
 class TestVSpanPixelRange:
@@ -160,7 +160,7 @@ class TestVSpanPixelRange:
         process_events()
         span = plot.vertical_span(SciQLopPlotRange(20, 80))
         process_events()
-        pr = span.pixel_range
+        pr = span.pixel_range()
         assert pr[0] != pr[1]
 
     def test_pixel_range_set_roundtrip(self, plot):
@@ -169,7 +169,8 @@ class TestVSpanPixelRange:
         process_events()
         plot.x_axis().set_range(SciQLopPlotRange(0, 100))
         process_events()
-        span = plot.vertical_span(SciQLopPlotRange(20, 80))
+        with pytest.warns(DeprecationWarning):
+            span = SciQLopVerticalSpan(plot, SciQLopPlotRange(20, 80))
         process_events()
         original_range = span.range()
         pr = span.pixel_range
@@ -217,7 +218,7 @@ class TestVSpanCoordinates:
         process_events()
         span = plot.vertical_span(SciQLopPlotRange(20, 80))
         process_events()
-        pr_before = span.pixel_range
+        pr_before = span.pixel_range()
         span.set_coordinates(Coordinates.Pixels)
         process_events()
         assert span.coordinates() == Coordinates.Pixels

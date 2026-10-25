@@ -1595,31 +1595,6 @@ SciQLopCurvedLineItem* SciQLopPlot::curved_line(const QPointF& start, const QPoi
     return new SciQLopCurvedLineItem(this, start, stop, start_terminator, stop_terminator, coordinates, tool_tip);
 }
 
-SciQLopVerticalLine* SciQLopPlot::vertical_line(double position, bool movable, Coordinates coordinates)
-{
-    return new SciQLopVerticalLine(this, position, movable, coordinates);
-}
-
-SciQLopHorizontalLine* SciQLopPlot::horizontal_line(double position, bool movable, Coordinates coordinates)
-{
-    return new SciQLopHorizontalLine(this, position, movable, coordinates);
-}
-
-SciQLopVerticalSpan* SciQLopPlot::vertical_span(SciQLopPlotRange range, QColor color, bool read_only, bool visible, const QString& tool_tip, Coordinates coordinates)
-{
-    return new SciQLopVerticalSpan(this, range, color, read_only, visible, tool_tip, coordinates);
-}
-
-SciQLopHorizontalSpan* SciQLopPlot::horizontal_span(SciQLopPlotRange range, QColor color, bool read_only, bool visible, const QString& tool_tip)
-{
-    return new SciQLopHorizontalSpan(this, range, color, read_only, visible, tool_tip);
-}
-
-SciQLopRectangularSpan* SciQLopPlot::rectangular_span(SciQLopPlotRange key_range, SciQLopPlotRange value_range, QColor color, bool read_only, bool visible, const QString& tool_tip)
-{
-    return new SciQLopRectangularSpan(this, key_range, value_range, color, read_only, visible, tool_tip);
-}
-
 SciQLopSpan* SciQLopPlot::span(std::optional<SciQLopPlotRange> key_range,
                                std::optional<SciQLopPlotRange> value_range, QColor color,
                                bool read_only, bool visible, const QString& tool_tip,

@@ -138,10 +138,22 @@ def span(plot):
     return plot.vertical_span(sp.SciQLopPlotRange(0.0, 1.0))
 
 
-def test_exception_tooltip_has_no_signal(span):
+@pytest.fixture
+def old_span(plot):
+    with pytest.warns(DeprecationWarning):
+        return sp.SciQLopVerticalSpan(plot, sp.SciQLopPlotRange(0.0, 1.0))
+
+
+def test_exception_tooltip_has_a_signal(span):
     span.on.tooltip.value = "tip"
     assert span.on.tooltip.value == span.tool_tip() == "tip"
-    assert span.on.tooltip.signal is None
+    assert span.on.tooltip.signal is not None
+
+
+def test_exception_tooltip_has_no_signal_on_the_old_span(old_span):
+    old_span.on.tooltip.value = "tip"
+    assert old_span.on.tooltip.value == old_span.tool_tip() == "tip"
+    assert old_span.on.tooltip.signal is None
 
 
 def test_span_range_through_convention(span):
@@ -170,9 +182,9 @@ def test_convention_resolves_like_the_old_registration(request, fixture, name, s
     assert (spec["splat"], spec["signal_args"]) == (False, None)
 
 
-def test_tooltip_cannot_start_a_pipeline(span):
+def test_tooltip_cannot_start_a_pipeline_on_the_old_span(old_span):
     with pytest.raises(ValueError, match="no signal"):
-        span.on.tooltip >> (lambda event: None)
+        old_span.on.tooltip >> (lambda event: None)
 
 
 @pytest.mark.parametrize("name", ["no_such_property", "_private"])

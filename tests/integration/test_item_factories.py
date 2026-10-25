@@ -1,16 +1,19 @@
 """Items belong to their plot: QObject parent, null plot, death with the plot (part B)."""
 import gc
+import inspect
 
 import pytest
 import shiboken6
 from PySide6.QtCore import QObject, QPointF, QRectF, SIGNAL, Qt
 from PySide6.QtGui import QBrush, QColor, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
+from shibokensupport.signature import get_signature
 
 from SciQLopPlots import (
     SciQLopCurvedLineItem, SciQLopEllipseItem, SciQLopHorizontalLine, SciQLopHorizontalSpan,
     SciQLopPixmapItem, SciQLopPlot, SciQLopPlotRange as R, SciQLopRectangularSpan,
     SciQLopStraightLine, SciQLopTextItem, SciQLopVerticalLine, SciQLopVerticalSpan,
+    SciQLopPlotsBindings, SciQLopSpan, SpanKind,
 )
 from SciQLopPlots import (Coordinates, LineTermination, SciQLopItemInterface,
                           SciQLopNDProjectionPlot)
@@ -87,12 +90,11 @@ FACTORIES = {
                        SciQLopEllipseItem),
     "curved_line": (lambda p: p.curved_line(QPointF(0, 0), QPointF(5, 5)), SciQLopCurvedLineItem),
     "straight_line": (lambda p: p.straight_line(1.0, Qt.Orientation.Vertical), SciQLopStraightLine),
-    "vertical_line": (lambda p: p.vertical_line(1.0), SciQLopVerticalLine),
-    "horizontal_line": (lambda p: p.horizontal_line(1.0), SciQLopHorizontalLine),
-    "vertical_span": (lambda p: p.vertical_span(R(1.0, 2.0)), SciQLopVerticalSpan),
-    "horizontal_span": (lambda p: p.horizontal_span(R(1.0, 2.0)), SciQLopHorizontalSpan),
-    "rectangular_span": (lambda p: p.rectangular_span(R(1.0, 2.0), R(1.0, 2.0)),
-                         SciQLopRectangularSpan),
+    "vertical_line": (lambda p: p.vertical_line(1.0), SciQLopStraightLine),
+    "horizontal_line": (lambda p: p.horizontal_line(1.0), SciQLopStraightLine),
+    "vertical_span": (lambda p: p.vertical_span(R(1.0, 2.0)), SciQLopSpan),
+    "horizontal_span": (lambda p: p.horizontal_span(R(1.0, 2.0)), SciQLopSpan),
+    "span": (lambda p: p.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)), SciQLopSpan),
 }
 
 
@@ -166,6 +168,10 @@ def _all_subclasses(cls):
 NO_PLOT_FACTORY = {
     "MultiPlotsVerticalSpan": "panel-only (panel.vertical_span)",
     "MultiPlotsVerticalLine": "panel-only (panel.vertical_line)",
+    **dict.fromkeys(
+        ["SciQLopVerticalLine", "SciQLopHorizontalLine", "SciQLopVerticalSpan",
+         "SciQLopHorizontalSpan", "SciQLopRectangularSpan"],
+        "old name (Plan A): only its deprecated constructor builds it"),
 }
 
 
@@ -216,3 +222,67 @@ def test_pyproject_filter_turns_a_bare_deprecated_call_into_an_error(plot, panel
         plot.remove_plottable(graph)
     with pytest.raises(DeprecationWarning, match=r"use panel\."):
         MultiPlotsVerticalSpan(panel, R(1.0, 2.0))
+
+
+SPAN_SHORTHANDS = {
+    "vertical_span": (lambda p: p.vertical_span(R(1.0, 2.0)), SpanKind.Vertical),
+    "horizontal_span": (lambda p: p.horizontal_span(R(1.0, 2.0)), SpanKind.Horizontal),
+}
+
+
+@pytest.mark.parametrize("name", SPAN_SHORTHANDS)
+def test_span_shorthands_return_plain_spans(plot, name):
+    make, kind = SPAN_SHORTHANDS[name]
+    span = make(plot)
+    assert (type(span), span.kind(), span.range()) == (SciQLopSpan, kind, R(1.0, 2.0))
+
+
+def test_rectangular_span_warns_and_returns_a_plain_span(plot):
+    with pytest.warns(DeprecationWarning,
+                      match=r"rectangular_span\(\.\.\.\) is deprecated: use plot\.span\(\.\.\.\)") as record:
+        span = plot.rectangular_span(R(1.0, 2.0), R(3.0, 4.0))
+    assert record[0].filename == __file__
+    assert (type(span), span.kind(), span.key_range(), span.value_range()) == \
+        (SciQLopSpan, SpanKind.Rectangular, R(1.0, 2.0), R(3.0, 4.0))
+
+
+@pytest.mark.parametrize("name, orientation", [("vertical_line", Qt.Orientation.Vertical),
+                                               ("horizontal_line", Qt.Orientation.Horizontal)])
+def test_line_shorthands_return_plain_read_only_black_lines(plot, name, orientation):
+    line = getattr(plot, name)(1.0)
+    assert (type(line), line.orientation(), line.read_only(), line.color()) == \
+        (SciQLopStraightLine, orientation, True, QColor(0, 0, 0))
+
+
+@pytest.mark.parametrize("name", ["vertical_line", "horizontal_line"])
+@pytest.mark.parametrize("movable", [True, False])
+def test_the_movable_keyword_warns_and_inverts(plot, name, movable):
+    with pytest.warns(DeprecationWarning,
+                      match=rf"movable=\.\.\. is deprecated: use plot\.{name}\(\.\.\., read_only=\.\.\.\)") as record:
+        line = getattr(plot, name)(1.0, movable=movable)
+    assert record[0].filename == __file__
+    assert line.read_only() is (not movable)
+
+
+@pytest.mark.parametrize("name", ["vertical_line", "horizontal_line"])
+def test_a_bool_second_argument_raises_instead_of_becoming_a_colour(plot, name):
+    """Review Focus 1: QColor(True) is a valid colour, so the old movable slot would pass silently."""
+    with pytest.raises(TypeError, match="read_only"):
+        getattr(plot, name)(1.0, True)
+
+
+def _defaults(func):
+    signature = get_signature(inspect.unwrap(func))
+    return {name: p.default for name, p in signature.parameters.items() if p.default is not p.empty}
+
+
+@pytest.mark.parametrize("base, shorthands", [
+    ("span", ("vertical_span", "horizontal_span", "rectangular_span")),
+    ("straight_line", ("vertical_line", "horizontal_line")),
+])
+def test_the_plot_shorthands_take_the_base_factory_defaults(base, shorthands):
+    cls = SciQLopPlotsBindings.SciQLopPlotInterface
+    defaults = _defaults(getattr(cls, base))
+    for name in shorthands:
+        own = _defaults(getattr(cls, name))
+        assert own == {key: defaults[key] for key in own}, name
