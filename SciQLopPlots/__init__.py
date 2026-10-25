@@ -8,6 +8,7 @@ from .SciQLopPlotsBindings import *
 SciQLopSingleLineGraph = SciQLopLineGraph
 SciQLopSingleLineGraphFunction = SciQLopLineGraphFunction
 from datetime import date, datetime, timezone
+import math
 import traceback
 import warnings
 
@@ -525,50 +526,83 @@ for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", 
 import numpy as np
 
 
+_FINE_UNITS = ("ns", "ps", "fs", "as")
+
+
 def _datetime64_seconds(a):
-    ns = a.astype("datetime64[ns]")
-    return np.where(np.isnat(ns), np.nan, ns.astype(np.int64) / 1e9)
+    """Epoch seconds, NaT as NaN. Microseconds unless the data is finer, so that years
+    beyond 2262 do not wrap around in the int64 nanosecond count."""
+    unit, scale = ("ns", 1e9) if np.datetime_data(a.dtype)[0] in _FINE_UNITS else ("us", 1e6)
+    ticks = a.astype(f"datetime64[{unit}]")
+    return np.where(np.isnat(ticks), np.nan, ticks.astype(np.int64) / scale)
 
 
-def _epoch_seconds(values):
+def _aware(dt):
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def _iso_seconds(text):
+    try:
+        return _aware(datetime.fromisoformat(text)).timestamp()
+    except ValueError:
+        raise ValueError(f"unparsable date string {text!r}") from None
+
+
+# One entry per scalar kind. Order matters: datetime is a date, bool and int are numbers.
+_SCALAR_SECONDS = (
+    (QtCore.QDateTime, lambda v: v.toMSecsSinceEpoch() / 1000.0),
+    (datetime, lambda v: _aware(v).timestamp()),
+    (date, lambda v: datetime(v.year, v.month, v.day, tzinfo=timezone.utc).timestamp()),
+    (str, _iso_seconds),
+    ((int, float, np.integer, np.floating), float),
+)
+
+
+def _scalar_seconds(value):
+    if isinstance(value, np.timedelta64):
+        raise TypeError(f"expected a number or a date, not {value!r}")
+    if isinstance(value, np.datetime64):
+        seconds = float(_datetime64_seconds(np.asarray(value)))
+        if math.isnan(seconds):
+            raise ValueError("NaT is not a valid time")
+        return seconds
+    for kinds, convert in _SCALAR_SECONDS:
+        if isinstance(value, kinds):
+            return convert(value)
+    raise TypeError(f"expected a number or a date, not {value!r}")
+
+
+def _array_seconds(values, allow_nat):
     a = np.asarray(values)
     if np.issubdtype(a.dtype, np.datetime64):
-        return _datetime64_seconds(a)
+        seconds = _datetime64_seconds(a)
+        if not allow_nat and np.isnan(seconds).any():
+            raise ValueError("NaT is not a valid time")
+        return seconds
+    if a.dtype.kind in "OUS":
+        return np.array([_scalar_seconds(v) for v in a.ravel()], dtype=np.float64).reshape(a.shape)
     return np.ascontiguousarray(a, dtype=np.float64)
 
 
-# --- Time ranges take datetime64 (any unit), datetime, date and ISO strings, all
-# meaning UTC (SciQLop#150). Left to shiboken, a datetime64 went through float()
-# (nanoseconds, or a TypeError for coarser units), and a datetime through QDateTime,
-# which drops its zone and reads it in the machine's local time.
-def _epoch_second(value):
-    if isinstance(value, np.datetime64):
-        return float(_datetime64_seconds(value))
-    if isinstance(value, QtCore.QDateTime):
-        return value.toMSecsSinceEpoch() / 1000.0
-    if isinstance(value, datetime):
-        return (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).timestamp()
-    if isinstance(value, date):
-        return datetime(value.year, value.month, value.day, tzinfo=timezone.utc).timestamp()
-    if isinstance(value, str):
-        try:
-            return _epoch_second(datetime.fromisoformat(value))
-        except ValueError:
-            return value  # the C++ parser takes its own formats, and raises on garbage
-    return value
+def to_epoch_seconds(value, allow_nat=False):
+    """UTC epoch seconds from any time value; the conversion every time argument goes through.
 
-
-def _is_date(value):
-    return isinstance(value, (np.datetime64, date, str, QtCore.QDateTime))
+    A scalar (float, int, datetime64 of any unit, datetime, date, ISO string, QDateTime) gives
+    a float; an array or sequence of them gives a float64 ndarray. A naive datetime means UTC.
+    NaT raises ValueError, except in an array when `allow_nat` is set (it becomes NaN, a gap).
+    """
+    if isinstance(value, (np.ndarray, list, tuple)) and np.ndim(value) > 0:
+        return _array_seconds(value, allow_nat)
+    return _scalar_seconds(value[()] if isinstance(value, np.ndarray) else value)
 
 
 def _accept_dates_in_range(init):
     @functools.wraps(init)
     def wrapper(self, *args, **kwargs):
-        if len(args) == 2 and any(map(_is_date, args)):
-            seconds = [_epoch_second(a) for a in args]
-            if not any(isinstance(s, str) for s in seconds):
-                return init(self, *seconds, True, **kwargs)
+        if len(args) in (2, 3):
+            start, stop = (to_epoch_seconds(a) for a in args[:2])
+            is_time = any(not isinstance(a, (int, float, np.number)) for a in args[:2])
+            return init(self, start, stop, *(args[2:] or (is_time,)), **kwargs)
         return init(self, *args, **kwargs)
     return wrapper
 
@@ -597,8 +631,8 @@ def _check_intervals(start, stop, columns):
 
 
 def _set_intervals(self, start, stop=None, lane=None, category=None, label=None, ids=None):
-    start = _epoch_seconds(start)
-    stop = start.copy() if stop is None else _epoch_seconds(stop)
+    start = to_epoch_seconds(start, allow_nat=True)
+    stop = start.copy() if stop is None else to_epoch_seconds(stop, allow_nat=True)
     _check_intervals(start, stop, [lane, category, label, ids])
     lane_codes, lane_names = _first_seen_codes(lane, len(start))
     category_codes, category_names = _first_seen_codes(category, len(start))
@@ -638,7 +672,7 @@ def _set_snap_to(self, value):
     if isinstance(value, (list, tuple, np.ndarray)):
         if len(value) == 0:
             raise ValueError("snap_to times must not be empty")
-        self.set_snap_times([float(t) for t in _epoch_seconds(value).ravel()])
+        self.set_snap_times([float(t) for t in to_epoch_seconds(value).ravel()])
     elif value is None:
         self.clear_snap()
     elif value == "edges":

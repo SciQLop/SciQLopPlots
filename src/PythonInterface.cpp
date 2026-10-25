@@ -804,22 +804,17 @@ SciQLopPyBuffer buffer_from_py(PyObject* value)
 
 double epoch_seconds_from_py(PyObject* value)
 {
-    PyObject* module = PyImport_ImportModule("SciQLopPlots");
-    PyObject* seconds = module ? PyObject_CallMethod(module, "_epoch_second", "O", value) : nullptr;
-    Py_XDECREF(module);
+    static PyObject* to_epoch_seconds = nullptr;
+    if (!to_epoch_seconds)
+    {
+        PyObject* module = PyImport_ImportModule("SciQLopPlots");
+        to_epoch_seconds = module ? PyObject_GetAttrString(module, "to_epoch_seconds") : nullptr;
+        Py_XDECREF(module);
+    }
+    PyObject* seconds = to_epoch_seconds ? PyObject_CallFunctionObjArgs(to_epoch_seconds, value, nullptr) : nullptr;
     const double result = seconds ? PyFloat_AsDouble(seconds) : -1.0;
     Py_XDECREF(seconds);
-    if (result == -1.0 && PyErr_Occurred())
-    {
-        PyErr_Clear();
-        PyObject* repr = PyObject_Repr(value);
-        const char* text = repr ? PyUnicode_AsUTF8AndSize(repr, nullptr) : nullptr;
-        std::string message = std::string("expected a number or a date, not ") + (text ? text : "?");
-        Py_XDECREF(repr);
-        PyErr_SetString(PyExc_TypeError, message.c_str());
-        return std::nan("");
-    }
-    return result;
+    return (result == -1.0 && PyErr_Occurred()) ? std::nan("") : result;
 }
 
 PyObject* datetime_from_timestamp(double timestamp)

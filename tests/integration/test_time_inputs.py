@@ -44,14 +44,25 @@ def test_dates_make_a_time_range():
     assert SciQLopPlotRange(np.datetime64("2030-01-01"), np.datetime64("2030-01-02"))._is_time_range
 
 
-def test_nat_is_nan():
-    r = SciQLopPlotRange(np.datetime64("NaT", "ns"), np.datetime64("2030-01-02", "ns"))
-    assert math.isnan(r.start()) or math.isnan(r.stop())
+def test_nat_raises():
+    with pytest.raises(ValueError, match="NaT"):
+        SciQLopPlotRange(np.datetime64("NaT", "ns"), np.datetime64("2030-01-02", "ns"))
 
 
-def test_unparsable_string_still_raises():
-    with pytest.raises(Exception, match="unparsable"):
-        SciQLopPlotRange("not a date", "2030-01-02")
+@pytest.mark.parametrize("bad", ["not a date", "2024-13-45", "2024-01-01T"])
+def test_unparsable_string_raises_value_error(bad):
+    with pytest.raises(ValueError, match="unparsable date string"):
+        SciQLopPlotRange(bad, "2030-01-02")
+
+
+def test_unbounded_range_is_nan():
+    r = SciQLopPlotRange()
+    assert math.isnan(r.start()) and math.isnan(r.stop())
+
+
+def test_three_argument_constructor_takes_dates():
+    r = SciQLopPlotRange(np.datetime64("2030-01-01"), np.datetime64("2030-01-02"), True)
+    assert (r.start(), r.stop()) == (START, STOP) and r._is_time_range
 
 
 @pytest.mark.parametrize("start, stop", INPUTS.values(), ids=INPUTS.keys())
@@ -80,15 +91,16 @@ def test_panel_set_time_axis_range(qtbot):
     assert (r.start(), r.stop()) == (START, STOP)
 
 
-@pytest.mark.parametrize("bad", ["not a date", object()], ids=["garbage string", "object"])
-def test_bad_values_raise_and_leave_the_range_alone(qtbot, bad):
+@pytest.mark.parametrize("bad, error", [("not a date", ValueError), (object(), TypeError)],
+                         ids=["garbage string", "object"])
+def test_bad_values_raise_and_leave_the_range_alone(qtbot, bad, error):
     """The two-argument setters convert in the bindings: a bad value used to throw a C++
     exception outside the call's try block and abort the process."""
     plot = SciQLopTimeSeriesPlot()
     qtbot.addWidget(plot)
     plot.x_axis().set_range(START, STOP)
     for setter in (plot.x_axis().set_range, plot.set_time_range):
-        with pytest.raises(TypeError, match="expected a number or a date"):
+        with pytest.raises(error):
             setter(bad, STOP)
     r = plot.x_axis().range()
     assert (r.start(), r.stop()) == (START, STOP)
