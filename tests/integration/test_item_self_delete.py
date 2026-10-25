@@ -7,7 +7,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 
-from SciQLopPlots import (Coordinates, TimelineStack, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
+from SciQLopPlots import (Coordinates, TimelineStack, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange,
                           SciQLopVerticalSpan, WaterfallOffsetMode)
 from conftest import old, process_events
 
@@ -194,7 +194,7 @@ def test_a_slot_deleting_a_line_on_its_drag_does_not_crash(qtbot, plot, coordina
     qtbot.waitExposed(plot)
     plot.x_axis().set_range(R(0.0, 1000.0))
     line = plot.vertical_line(500.0 if coordinates == Coordinates.Data else 300.0,
-                         read_only=False, coordinates=coordinates)
+                              read_only=False, coordinates=coordinates)
     plot.replot(True)
     process_events()
     canvas = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))

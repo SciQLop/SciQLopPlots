@@ -161,7 +161,7 @@ An unknown keyword raises `TypeError` and names the kind that owns the keywords.
 | `x, y, z` | colour map (spectrogram) | `GraphType.ColorMap` (implied) |
 | `x, y` where `x` is not sorted (orbits, hodograms) | parametric curve | `GraphType.ParametricCurve` |
 | `x, y` with `y` of shape `(n, k)` | `k` stacked traces | `GraphType.Waterfall` |
-| `x, y` scatter points | 2-D density histogram | `GraphType.Histogram2D` |
+| `x, y` scatter points | 2-D histogram | `GraphType.Histogram2D` |
 
 `x` must be `float64`. Values (`y`, `z`) can be any numeric dtype: `float32`, integers, etc. They are read in place, without a copy.
 
@@ -353,7 +353,7 @@ plot.y_axis().set_range(-2, 2)
 
 A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `plot.time_axis()` has a range, like the 1-D histograms below.
 
-![A 2-D density histogram](images/histogram2d.png)
+![A 2-D histogram](images/histogram2d.png)
 
 `hist.set_normalization(Histogram2DNormalization.PerColumn)` divides each column by its total, so every column adds up to 1; `Count` (the default) shows raw counts. The old `set_normalization(1)` still works but is deprecated.
 
