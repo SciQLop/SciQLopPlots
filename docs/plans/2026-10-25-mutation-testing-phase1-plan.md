@@ -5,15 +5,19 @@
 **Goal:** A small, data-driven mutation tool in `tools/mutation/`, and its first run on the code `feat/fills-histogram` added: fills, error bars, the 1-D histogram, the histogram2d fixes and the pipeline fix, in NeoQCP and in SciQLopPlots.
 
 **Architecture:**
-- A coverage build per repo (`build-cov`, `-Db_coverage=true`). Each test runs alone from zeroed counters, and gcovr (C++) or coverage.py (Python) records which target lines it ran. That map is also the baseline: whether each test passes, and how long it takes.
+- A coverage build per repo (`build-cov`, `-Db_coverage=true`). Each test runs alone from zeroed counters, and gcovr (C++) or coverage.py (Python) records which target lines it ran. That map is also the baseline: whether each test passes, how long it takes, and whether it ran any test at all.
+- A "test" is a NeoQCP QtTest function (`Class::function`, run with `QCP_TEST_CLASS` + `QCP_TEST_FUNCTION`) or a SciQLopPlots pytest file. The coverage map and the kill matrix use that granularity.
+- A run that executed no test is a failure, never a pass. A coverage-report command that fails marks its test failed.
 - Mutants come from one operator table: regex, replacement, languages. They are made only on covered target lines. A target is a whole file, or the lines the branch changed (`git diff -U0 main...HEAD`), or named Python functions.
 - Per mutant:
   1. save a backup and an `in_flight` record in the state file;
   2. write the mutant;
   3. build with ninja through meson, `-j 4`;
-  4. run only the tests that cover that line;
+  4. run the tests that cover that line, fastest first, at most `max_tests` per pass;
   5. restore the file in a `finally`.
-  Every command first restores whatever `in_flight` still lists. This covers SIGKILL, a crash and the shell timeout.
+  A mutant that survives a capped pass stays pending and runs the next slice of its covering tests. No mutant is called a survivor before every covering test ran against it.
+  Every command first kills a process group a killed run left behind, then restores whatever `in_flight` still lists. This covers SIGKILL, a crash and the shell timeout.
+- Mutation happens in place in the checkout, guarded by that restore machinery. A throwaway worktree was considered and rejected: NeoQCP is a nested separate repo, and the restore model is designed and tested here.
 - The state is one JSON file per project, in `<build-cov>/mutation/`. Every command is resumable and stops itself on a time budget. The report is markdown: survivors with a triage column, uncovered lines, and a kill-matrix summary, plus the matrix as JSON.
 
 **Tech Stack:** Python 3.13 stdlib only (tomllib, argparse, re, json, subprocess, fcntl), gcovr 8.6, coverage.py (installed in Task 7), meson 1.10.2 + ninja, Qt 6.11.2, QtTest (NeoQCP `auto-tests`), pytest 9 + pytest-qt (SciQLopPlots).
@@ -42,7 +46,7 @@
   The tool's config sets the same variables for its own builds.
 - **NeoQCP tests need a display.** Run every NeoQCP `cover`/`run`/`try` chunk under `xvfb-run -a -s "-screen 0 1280x1024x24"`, with `xvfb-run` *outside* `timeout`. After each such run, check that `ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'` prints nothing. If it prints a line, kill that pid and say so in your report.
 - **SciQLopPlots Python tests:** they run from `/tmp`, with `PYTHONPATH=<build dir>:<repo>` and `QT_QPA_PLATFORM=offscreen`. The config already does this. The build dir holds copies of `SciQLopPlots/*.py`; a Python mutant is written to that copy, never to the repo file.
-- **NeoQCP per-test filter:** the env vars `QCP_TEST_CLASS` (one QtTest class) and `QCP_TEST_FUNCTION` (needs `QCP_TEST_CLASS`) in `subprojects/NeoQCP/tests/auto/autotest.cpp`. The tool runs one class per invocation and reads per-function kills from QtTest's `FAIL!  : Class::function(` lines.
+- **NeoQCP per-test filter:** the env vars `QCP_TEST_CLASS` (one QtTest class) and `QCP_TEST_FUNCTION` (needs `QCP_TEST_CLASS`) in `subprojects/NeoQCP/tests/auto/autotest.cpp:47-66`. `testArguments` appends `QCP_TEST_FUNCTION` to QtTest's argv, so `QCP_TEST_FUNCTION=-functions` lists a class's test functions. The tool discovers `Class::function` that way and runs one function per invocation.
 - **Tool tests:** `cd /home/jeandet/Documents/prog/SciQLopPlots && timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`. Read the real pass/fail count and exit code. They are not part of the library's full suite (`tests/{integration,unit,fuzzing}`), and this plan does not change the library, so the library suite does not need to run.
 - TDD: write the test first, watch it fail for the expected reason, then implement.
 - Code style: small pure functions, data over code (the operator table, the TOML config), and no comment that restates code. A `why` comment is fine.
@@ -58,10 +62,10 @@
 
 ## Review Focus
 
-1. **A chunk killed in the middle of a mutant.** This can be `timeout -k` escalating to SIGKILL, a crash, or a closed terminal. The mutated file must be back to the original at the next command's start. Task 2 tests SIGKILL at the state level. Task 4 tests that `run` restores a leftover first. Task 6 tests SIGTERM through the CLI.
+1. **A chunk killed in the middle of a mutant.** This can be `timeout -k` escalating to SIGKILL, a crash, or a closed terminal. The mutated file must be back to the original at the next command's start. The build or test the killed run started lives in its own session, so it survives the kill: the next command must kill it, or two builds would run at once. Task 2 tests SIGKILL at the state level and the leftover-group kill. Task 4 tests that `run` restores a leftover first. Task 6 tests SIGTERM and a SIGKILL of the whole CLI process group.
 2. **A chunk that ends, or is interrupted, right after a C++ mutant.** The source is restored, but the last binary was built from the mutant. The next `run`, `cover` or `try` must not test that stale binary. Every command builds before its first test and `run` builds again at the end. Task 4 tests that the fixture binary passes every test after a run.
 3. **Sources changed between `cover`/`plan` and `run`.** This is what triage fixes do. Line numbers shift, so the mutants and the coverage map are stale. `plan` and `run` must refuse, with a message that names `cover --reset`. After `cover --reset` and `plan`, only the changed file's mutants are re-made, and a survivor that a new test covers is queued again. Task 4 tests both.
-4. **A test that fails or flakes in the baseline.** It would "kill" every mutant it runs against. Such a test is left out of every mutant run and listed in the `plan` output and in the report. Task 4 has a `broken` fixture test. Task 8 checks the real baseline.
+4. **A test that fails, flakes or runs nothing in the baseline.** A failing one would "kill" every mutant it runs against. One that silently runs nothing (a renamed class, a typo, a QSKIP) would make every mutant of its lines "survive". Both are failures: left out of every mutant run, and listed with a note in the `plan` output and in the report. A mutant run that executed nothing is recorded as `<test>::<ran no test>`, never as a pass. Task 3 tests the empty run, Task 4 has a `broken` fixture test, Task 8 checks the real baseline.
 5. **Operator text in the report.** `||` and `|` would break the markdown table the triage happens in. Cells escape `|`. Task 5 tests it.
 
 ---
@@ -71,20 +75,23 @@
 | File | Responsibility | Task |
 |---|---|---|
 | `tools/mutation/operators.py` | operator table, mutants for a line or file, `apply` | 1 |
-| `tools/mutation/proc.py` | run a command in its own process group, with timeout; SIGTERM → `Interrupted` | 2 |
-| `tools/mutation/state.py` | source I/O, sha256, atomic JSON state, `mutated()` with backup + `in_flight`, `restore_leftovers` | 2 |
-| `tools/mutation/config.py` | TOML loading, templates, `Project`, target lines (all / diff / Python functions), test discovery | 3 |
-| `tools/mutation/covermap.py` | per-test coverage + baseline, gcovr and coverage.py readers, resumable `cover` | 3 |
-| `tools/mutation/runner.py` | `plan`, resumable `run`, `run_one`, `try_mutant`, failure parsers | 4 |
+| `tools/mutation/proc.py` | run a command in its own process group, with timeout; record the group; kill a leftover group; SIGTERM → `Interrupted` | 2 |
+| `tools/mutation/state.py` | source I/O, sha256, atomic fsynced JSON state, `mutated()` with backup + `in_flight`, `restore_leftovers` | 2 |
+| `tools/mutation/outcomes.py` | read a test run: failed tests, and how many tests ran | 3 |
+| `tools/mutation/config.py` | TOML loading, templates, `Project`, target lines (all / diff / Python functions), test discovery (classes, then functions) | 3 |
+| `tools/mutation/covermap.py` | per-test coverage + baseline, gcovr and coverage.py readers, target-driven counter pruning, resumable `cover` | 3 |
+| `tools/mutation/runner.py` | `plan` (with stale-equivalent warnings), resumable `run` in test slices, `run_one`, `try_mutant` | 4 |
 | `tools/mutation/report.py` | markdown report, kill matrix JSON | 5 |
 | `tools/mutation/mutate.py` | CLI: cover / plan / run / report / restore / try; lock; exit codes | 6 |
 | `tools/mutation/phase1.toml` | phase 1 targets, build and test commands for both projects | 7 |
-| `tools/mutation/tests/` | `conftest.py`, `fixture_repo.py`, `fixture/` (calc.cpp, test_calc.cpp, tests.txt, limits.py, fake_report.py), one `test_<module>.py` per module, `test_phase1_config.py` | 1-7 |
+| `tools/mutation/tests/` | `conftest.py`, `fixture_repo.py`, `fixture/` (calc.cpp, test_calc.cpp, tests.txt, limits.py, fake_report.py), one `test_<module>.py` per module, `test_cli.py`, `test_phase1_config.py` | 1-7 |
 | `.gitignore` | `build-cov` | 7 |
 | `CLAUDE.md` | `coverage` in the dev-venv install line | 7 |
 | `docs/plans/2026-10-22-mutation-testing-design.md` | status line with phase 1 numbers | 8, 9 |
 
 Out of phase 1: the plain declaration headers (`multigraph-fill.h` and the like) and the `gapsBefore()` overrides in the datasource headers. NeoQCP mutants are judged by NeoQCP's own auto-tests only, and SciQLopPlots mutants by the SciQLopPlots pytest suite only.
+
+Granularity, and its cost: NeoQCP has about 1070 test functions. Per-function coverage costs about an hour of `cover` chunks. Per-function mutant runs pay a process start per covering function. If Task 9's measured time per mutant is too high, the stated fallback is `stop_on_first_kill = true` for NeoQCP: survivors still run every covering function, but `killed_by` then names the fastest killer only, and the report says so. Class granularity is not a fallback.
 
 ---
 
@@ -343,8 +350,10 @@ git commit -m "feat(mutation): operator table and mutant generation" -m "Co-Auth
 - Test: `tools/mutation/tests/test_proc.py`, `tools/mutation/tests/test_state.py`
 
 **Interfaces:**
-- Produces (`proc`): `class Interrupted(Exception)`; `install_signal_handlers()`, which turns SIGTERM, SIGHUP and SIGINT into `Interrupted("<SIGNAME>")`; `Result(code: int | None, output: str, seconds: float)` with property `timed_out` (code is None); `run(cmd, *, cwd=None, env=None, timeout) -> Result`. `run` starts the command in a new session, merges stderr into stdout, and on timeout or exception kills the whole process group with SIGKILL.
-- Produces (`state`): `read_source(path) -> str`; `write_source(path, text)` (UTF-8, newlines untouched); `sha(path) -> str`; `new_state() -> dict` with keys `version tests mutants files uncovered in_flight`; `load(path) -> dict`; `save(path, data)` (atomic); `restore_leftovers(state_path, data) -> list[str]`; `mutated(state_path, data, path, text, backup_dir)`, a context manager.
+- Produces (`proc`): `class Interrupted(Exception)`; `install_signal_handlers()`, which turns SIGTERM, SIGHUP and SIGINT into `Interrupted("<SIGNAME>")`; `Result(code: int | None, output: str, seconds: float)` with property `timed_out` (code is None); `run(cmd, *, cwd=None, env=None, timeout, group_file=None) -> Result`; `kill_leftover(group_file)`.
+  - `run` starts the command in a new session, merges stderr into stdout, and on timeout or exception kills the whole process group with SIGKILL.
+  - With `group_file`, `run` writes the child's process-group id there while it runs and removes it after. A SIGKILLed parent leaves the file behind, and `kill_leftover` kills that group and removes the file.
+- Produces (`state`): `read_source(path) -> str`; `write_source(path, text)` (UTF-8, newlines untouched); `sha(path) -> str`; `new_state() -> dict` with keys `version tests mutants files uncovered stale_equivalents in_flight`; `load(path) -> dict`; `save(path, data)` (temp file, fsync, `os.replace`); `restore_leftovers(state_path, data) -> list[str]`; `mutated(state_path, data, path, text, backup_dir)`, a context manager.
 - `in_flight` entries: `{"path": str, "backup": str, "sha": str}`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -383,6 +392,23 @@ def test_timeout_kills_the_whole_process_group(tmp_path):
     result = proc.run(["bash", "-c", f"sleep 60 & echo $! > {pidfile}; wait"], timeout=1)
     assert result.timed_out
     assert _gone(int(pidfile.read_text()))
+
+
+def test_run_records_its_group_while_running_and_clears_it_after(tmp_path):
+    group = tmp_path / "child.pgid"
+    result = proc.run(["bash", "-c", f"sleep 0.3; cat {group}"], timeout=10, group_file=group)
+    assert result.output.strip().isdigit()
+    assert not group.exists()
+
+
+def test_kill_leftover_kills_the_recorded_group(tmp_path):
+    group = tmp_path / "child.pgid"
+    child = subprocess.Popen(["sleep", "60"], start_new_session=True)
+    group.write_text(str(child.pid))
+    proc.kill_leftover(group)
+    assert child.wait(timeout=5) == -9
+    assert not group.exists()
+    proc.kill_leftover(group)
 
 
 def test_sigterm_becomes_interrupted():
@@ -537,10 +563,12 @@ def _kill_group(child):
         pass
 
 
-def run(cmd, *, cwd=None, env=None, timeout):
+def run(cmd, *, cwd=None, env=None, timeout, group_file=None):
     start = time.monotonic()
     child = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                              text=True, errors="replace", start_new_session=True)
+    if group_file:
+        Path(group_file).write_text(str(child.pid))
     try:
         output, _ = child.communicate(timeout=timeout)
         return Result(child.returncode, output, time.monotonic() - start)
@@ -552,7 +580,25 @@ def run(cmd, *, cwd=None, env=None, timeout):
         if child.poll() is None:
             _kill_group(child)
             child.wait()
+        if group_file:
+            Path(group_file).unlink(missing_ok=True)
+
+
+def kill_leftover(group_file):
+    """Kills the group a SIGKILLed run left behind: in its own session, its build or test outlives the kill."""
+    # simplify: trusts the recorded id; the ceiling is a reused process-group id killed by
+    # mistake. Upgrade: store the start time from /proc/<pid>/stat and compare it first.
+    path = Path(group_file)
+    if not path.exists():
+        return
+    try:
+        os.killpg(int(path.read_text()), signal.SIGKILL)
+    except (ProcessLookupError, ValueError):
+        pass
+    path.unlink()
 ```
+
+Add `from pathlib import Path` to the imports.
 
 - [ ] **Step 4: Write `tools/mutation/state.py`**
 
@@ -587,7 +633,7 @@ def sha(path):
 
 
 def new_state():
-    return {"version": 1, "tests": {}, "mutants": {}, "files": {}, "uncovered": {}, "in_flight": []}
+    return {"version": 1, "tests": {}, "mutants": {}, "files": {}, "uncovered": {}, "stale_equivalents": [], "in_flight": []}
 
 
 def load(path):
@@ -601,7 +647,11 @@ def save(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(data, indent=1, sort_keys=True), encoding="utf-8")
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(json.dumps(data, indent=1, sort_keys=True))
+        f.flush()
+        # the state is hours of mutant runs: it must survive a power loss, not only a crash
+        os.fsync(f.fileno())
     os.replace(tmp, path)
 
 
@@ -637,45 +687,63 @@ def mutated(state_path, data, path, text, backup_dir):
 - [ ] **Step 5: Run the tests and watch them pass**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `18 passed` (10 + 3 + 5), exit code 0.
+Expected: `20 passed` (10 + 5 + 5), exit code 0.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add tools/mutation/proc.py tools/mutation/state.py tools/mutation/tests/test_proc.py tools/mutation/tests/test_state.py
-git commit -m "feat(mutation): process-group runner and a state file that always restores the source" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git commit -m "feat(mutation): process-group runner, leftover-group kill, and a state file that always restores the source" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 3: Config, target lines and the per-test coverage map
+### Task 3: Run outcomes, config, target lines and the per-test coverage map
 
 **Files:**
-- Create: `tools/mutation/config.py`, `tools/mutation/covermap.py`
+- Create: `tools/mutation/outcomes.py`, `tools/mutation/config.py`, `tools/mutation/covermap.py`
 - Create: `tools/mutation/tests/fixture_repo.py`, `tools/mutation/tests/fixture/fake_report.py`
-- Test: `tools/mutation/tests/test_config.py`, `tools/mutation/tests/test_covermap.py`
+- Test: `tools/mutation/tests/test_outcomes.py`, `tools/mutation/tests/test_config.py`, `tools/mutation/tests/test_covermap.py`
 
 **Interfaces:**
-- Consumes: `proc.run`, `state.read_source/sha/load/save/restore_leftovers`.
+- Consumes: `proc.run/Result/kill_leftover`, `state.read_source/sha/load/save/restore_leftovers`.
+- Produces (`outcomes`):
+  - `FAILED = {"qtest": re, "pytest": re}`;
+  - `executed(parser, output) -> int`: how many tests ran. For QtTest it counts the `PASS`/`FAIL!` lines, leaving out `initTestCase` and `cleanupTestCase`, which always run. For pytest it sums the `N passed/failed/error(s)` counts;
+  - `failures(parser, result, batch) -> list[str]`. Killer names:
+    - from QtTest: `Class::function`;
+    - from pytest: `tests/.../test_x.py::test_y`;
+    - when a run fails with no matching line: `<test>::<exit N>`;
+    - on timeout: `<test>::<timeout>`;
+    - when a run exits 0 but executed no test: `<test>::<ran no test>`. That is never a pass.
 - Produces (`config`):
-  - `Target(path, scope="all", functions=(), deploy="")`. `deploy` is an absolute path or `""`.
+  - `Target(path, scope="all", functions=(), deploy="", objects=())`. `deploy` is an absolute path or `""`. `objects` names the sources whose objects compile a header target's code.
   - `Equivalent(path, op, before, reason)`.
   - `expand(value, variables)`. A list item that is exactly `"{tests}"` becomes one item per test.
   - `load(config_path, name) -> Project`.
   - `Project` fields: `name, root, repo, build_dir, raw, targets, equivalents`.
-  - `Project` properties: `run_dir` (`build_dir/"mutation"`), `state_path`, `scratch`.
-  - `Project` methods: `variables(tests=())`, `expand(value, tests=())`, `env(tests=(), mutation=False)` (mutation sets `GCOV_PREFIX=<run_dir>/gcda-junk`), `command(key, tests=())`, `cwd()`, `target(path)`, `deploy_path(target) -> Path`, `build() -> proc.Result`.
-  - `changed_lines(repo, base, path) -> set[int]`, `function_lines(text, names) -> set[int]`, `target_lines(project, target) -> set[int]`, `discover_tests(project) -> list[str]`.
+  - `Project` properties: `run_dir` (`build_dir/"mutation"`), `state_path`, `scratch`, `group_file` (`run_dir/"child.pgid"`).
+  - `Project` methods:
+    - `variables(tests=())`, with `{test}`, `{test_class}` and `{test_function}` (from `Class::function`) for a single test;
+    - `expand(value, tests=())`;
+    - `env(tests=(), mutation=False)`; mutation sets `GCOV_PREFIX=<run_dir>/gcda-junk`;
+    - `command(key, tests=())`, `cwd()`, `target(path)`, `deploy_path(target) -> Path`;
+    - `run(cmd, *, cwd=None, env=None, timeout) -> proc.Result`, which records the group in `group_file`;
+    - `build() -> proc.Result`.
+  - `changed_lines(repo, base, path) -> set[int]`, `function_lines(text, names) -> set[int]`, `target_lines(project, target) -> set[int]`, `discover_classes(project) -> list[str]`, `discover_tests(project) -> list[str]`.
 - Produces (`covermap`):
   - `READERS = {"gcovr": ..., "coveragepy": ...}`. Each reader is `(json_data, root) -> {realpath: (covered: set, code: set)}`.
-  - `source_shas(project) -> {target.path: sha}`, `build_or_die(project)`, `reset_counters(build_dir)`, `prune_counters(build_dir, keep_regex)`, `read_reports(project)`.
-  - `cover_one(project, name) -> {"status": "passed"|"failed"|"timeout", "seconds": float, "lines": {path: [int]}, "code_lines": {path: [int]}}`.
-  - `cover(project, budget, reset=False) -> int`: how many tests are still pending. It sets `data["cover_files"]` (shas at cover time) and refuses changed sources unless `reset`.
+  - `recover(project, data)`: `kill_leftover`, then `restore_leftovers`.
+  - `source_shas(project) -> {target.path: sha}`, `build_or_die(project)`, `reset_counters(build_dir)`.
+  - `counter_names(project) -> set[str]` and `prune_counters(build_dir, names)`. Both are driven only by the targets: each non-header target's basename plus every target's `objects`, with `.gcda` added.
+  - `read_reports(project)`.
+  - `cover_one(project, name) -> {"status": "passed"|"failed"|"timeout", "note": str, "seconds": float, "lines": {path: [int]}, "code_lines": {path: [int]}}`. The `note` is empty for a pass. Otherwise it is `timed out`, `exit N`, `ran no test`, or `report failed: <cmd> exited N`. A failed report command fails the row.
+  - `cover(project, budget, reset=False) -> int`: how many tests are still pending. It discovers tests only on the first run or a reset, after the build. It sets `data["cover_files"]` (shas at cover time) and refuses changed sources unless `reset`.
 - Config keys, read by later tasks:
   - top level: `root`;
-  - per project: `name repo base build_dir env require_env build_cmd build_timeout test_cwd test_env test_cmd cover_test_cmd cover_timeout cover_keep_gcda cover_cmds cover_reports batch_tests stop_on_first_kill max_tests failure_parser tests target equivalent`;
-  - `tests` is `{glob=[...], prefix=...}` or `{regex_file=..., pattern=...}`;
-  - `target` is `{path, scope, functions, deploy}`.
+  - per project: `name repo base build_dir env require_env build_cmd build_timeout test_cwd test_env test_cmd cover_test_cmd cover_timeout prune_gcda cover_cmds cover_reports batch_tests stop_on_first_kill max_tests failure_parser tests target equivalent`;
+  - `tests` is `{glob=[...], prefix=...}` or `{regex_file=..., pattern=...}`, optionally with `functions_cmd`, `functions_env` and `functions_pattern`, which list each class's functions;
+  - `target` is `{path, scope, functions, deploy, objects}`.
 
 - [ ] **Step 1: Write the helpers and the failing tests**
 
@@ -722,9 +790,48 @@ lines.append({"line_number": 5, "count": 0, "gcovr/noncode": True})
 json.dump({"files": [{"file": "a.cpp", "lines": lines}]}, open(f"{scratch}/gcovr.json", "w"))
 ```
 
+`tools/mutation/tests/test_outcomes.py`:
+
+```python
+import outcomes
+from proc import Result
+
+QTEST = ("PASS   : TestA::initTestCase()\nPASS   : TestA::one()\nFAIL!  : TestA::two(row) Compared values\n"
+         "FAIL!  : TestA::two(other) x\nPASS   : TestA::cleanupTestCase()\n")
+
+
+def r(code, output):
+    return Result(code, output, 1.0)
+
+
+def test_failures_by_parser():
+    pytest_out = "FAILED tests/integration/test_x.py::test_y[1] - AssertionError\nERROR tests/unit/test_z.py::test_w\n1 failed, 1 error in 0.1s\n"
+    assert outcomes.failures("qtest", r(1, QTEST), ["TestA::two"]) == ["TestA::two"]
+    assert outcomes.failures("pytest", r(1, pytest_out), ["f"]) == [
+        "tests/integration/test_x.py::test_y[1]", "tests/unit/test_z.py::test_w"]
+    assert outcomes.failures("qtest", r(-11, "Received signal"), ["TestA::one"]) == ["TestA::one::<exit -11>"]
+    assert outcomes.failures("qtest", r(None, ""), ["TestA::one"]) == ["TestA::one::<timeout>"]
+    assert outcomes.failures("qtest", r(0, "PASS   : TestA::one()\n"), ["TestA::one"]) == []
+
+
+def test_a_clean_exit_that_ran_nothing_is_a_failure():
+    only_fixtures = "PASS   : TestA::initTestCase()\nPASS   : TestA::cleanupTestCase()\nTotals: 2 passed\n"
+    assert outcomes.failures("qtest", r(0, ""), ["TestA::one"]) == ["TestA::one::<ran no test>"]
+    assert outcomes.failures("qtest", r(0, only_fixtures), ["TestA::one"]) == ["TestA::one::<ran no test>"]
+    assert outcomes.failures("pytest", r(0, "no tests ran in 0.01s\n"), ["f.py"]) == ["f.py::<ran no test>"]
+
+
+def test_executed_counts():
+    assert outcomes.executed("qtest", QTEST) == 3
+    assert outcomes.executed("pytest", "1 failed, 2 passed, 1 error in 3.0s") == 4
+    assert outcomes.executed("pytest", "collected 0 items\nno tests ran") == 0
+```
+
 `tools/mutation/tests/test_config.py`:
 
 ```python
+import sys
+
 import pytest
 
 import config
@@ -765,6 +872,17 @@ repo = "repo"
 base = "main"
 build_dir = "build-q"
 tests = { regex_file = "repo/autotest.cpp", pattern = 'QCPTEST\\((\\w+)\\);' }
+
+[[project.target]]
+path = "a.cpp"
+
+[[project]]
+name = "r"
+repo = "repo"
+base = "main"
+build_dir = "build-r"
+test_env = { CLS = "{test_class}", FN = "{test_function}" }
+tests = { regex_file = "repo/autotest.cpp", pattern = 'QCPTEST\\((\\w+)\\);', functions_cmd = ["{env_PYTHON}", "-c", "import os; print(os.environ['CLS'].lower() + '_one()'); print('QWARN : noise'); print('two()' if os.environ.get('LIST') == '1' else '')"], functions_env = { LIST = "1" }, functions_pattern = '^(\\w+)\\(\\)$' }
 
 [[project.target]]
 path = "a.cpp"
@@ -828,6 +946,14 @@ def test_python_functions_limit_the_lines(root):
 def test_discover_tests_by_glob_and_by_regex(root):
     assert config.discover_tests(config.load(root / "phase.toml", "p")) == ["repo/test_a.py", "repo/test_b.py"]
     assert config.discover_tests(config.load(root / "phase.toml", "q")) == ["TestA", "TestB"]
+
+
+def test_functions_are_listed_per_class_and_split_back_into_class_and_function(root, monkeypatch):
+    monkeypatch.setenv("PYTHON", sys.executable)
+    project = config.load(root / "phase.toml", "r")
+    assert config.discover_tests(project) == ["TestA::testa_one", "TestA::two", "TestB::testb_one", "TestB::two"]
+    env = project.env(["TestA::two"])
+    assert (env["CLS"], env["FN"]) == ("TestA", "two")
 ```
 
 `tools/mutation/tests/test_covermap.py`:
@@ -837,6 +963,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -846,6 +973,7 @@ import state as st
 from fixture_repo import make_repo
 
 FIXTURE = Path(__file__).parent / "fixture"
+REPORT = 'cover_cmds = [["{env_PYTHON}", "{repo}/fake_report.py", "{scratch}"]]'
 
 CONFIG = """
 root = "."
@@ -856,24 +984,29 @@ repo = "repo"
 base = "main"
 build_dir = "build"
 build_cmd = ["true"]
-cover_test_cmd = ["{env_PYTHON}", "-c", "import sys; open(sys.argv[1] + '/ran', 'w').write(sys.argv[2]); sys.exit(sys.argv[2] == 'bad')", "{scratch}", "{test}"]
-cover_cmds = [["{env_PYTHON}", "{repo}/fake_report.py", "{scratch}"]]
+failure_parser = "qtest"
+cover_test_cmd = ["{env_PYTHON}", "-c", "import sys; open(sys.argv[1] + '/ran', 'w').write(sys.argv[2]); print('' if sys.argv[2] == 'empty' else 'PASS   : Fake::' + sys.argv[2] + '()'); sys.exit(sys.argv[2] == 'bad')", "{scratch}", "{test}"]
+%s
 cover_reports = [{ kind = "gcovr", file = "{scratch}/gcovr.json", root = "{repo}" }]
 tests = { regex_file = "repo/tests.txt", pattern = '(\\w+)' }
 
 [[project.target]]
 path = "a.cpp"
-"""
+""" % REPORT
+
+
+def _project(tmp_path, monkeypatch, text=CONFIG):
+    monkeypatch.setenv("PYTHON", sys.executable)
+    repo = make_repo(tmp_path / "repo", {"a.cpp": "1\n2\n3\n4\n5\n", "tests.txt": "a b bad empty\n"})
+    shutil.copy(FIXTURE / "fake_report.py", repo)
+    (tmp_path / "build").mkdir()
+    (tmp_path / "phase.toml").write_text(text)
+    return config.load(tmp_path / "phase.toml", "p")
 
 
 @pytest.fixture
 def project(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTHON", sys.executable)
-    repo = make_repo(tmp_path / "repo", {"a.cpp": "1\n2\n3\n4\n5\n", "tests.txt": "a b bad\n"})
-    shutil.copy(FIXTURE / "fake_report.py", repo)
-    (tmp_path / "build").mkdir()
-    (tmp_path / "phase.toml").write_text(CONFIG)
-    return config.load(tmp_path / "phase.toml", "p")
+    return _project(tmp_path, monkeypatch)
 
 
 def test_cover_maps_each_test_to_its_lines_and_keeps_the_baseline(project):
@@ -882,18 +1015,31 @@ def test_cover_maps_each_test_to_its_lines_and_keeps_the_baseline(project):
     assert tests["a"]["lines"] == {"a.cpp": [1, 2]}
     assert tests["b"]["lines"] == {"a.cpp": [3]}
     assert tests["a"]["code_lines"] == {"a.cpp": [1, 2, 3, 4]}
-    assert tests["a"]["status"] == "passed" and tests["bad"]["status"] == "failed"
-    assert tests["a"]["seconds"] >= 0
+    assert (tests["a"]["status"], tests["a"]["note"]) == ("passed", "")
+    assert (tests["bad"]["status"], tests["bad"]["note"]) == ("failed", "exit 1")
+
+
+def test_a_test_that_ran_nothing_is_a_failed_row(project):
+    covermap.cover(project, budget=600)
+    empty = st.load(project.state_path)["tests"]["empty"]
+    assert (empty["status"], empty["note"]) == ("failed", "ran no test")
+
+
+def test_a_failing_report_command_fails_the_row(tmp_path, monkeypatch):
+    project = _project(tmp_path, monkeypatch, CONFIG.replace(REPORT, 'cover_cmds = [["false"]]'))
+    covermap.cover(project, budget=600)
+    a = st.load(project.state_path)["tests"]["a"]
+    assert (a["status"], a["note"]) == ("failed", "report failed: false exited 1")
 
 
 def test_cover_stops_on_its_budget_and_resumes(project):
-    assert covermap.cover(project, budget=0) == 3
+    assert covermap.cover(project, budget=0) == 4
     assert covermap.cover(project, budget=600) == 0
 
 
 def test_cover_reset_queues_every_test_again(project):
     covermap.cover(project, budget=600)
-    assert covermap.cover(project, budget=0, reset=True) == 3
+    assert covermap.cover(project, budget=0, reset=True) == 4
 
 
 def test_cover_refuses_sources_changed_since_it_started(project):
@@ -904,45 +1050,81 @@ def test_cover_refuses_sources_changed_since_it_started(project):
 
 
 def test_cover_stops_when_the_unmutated_build_fails(tmp_path, monkeypatch):
-    monkeypatch.setenv("PYTHON", sys.executable)
-    make_repo(tmp_path / "repo", {"a.cpp": "1\n", "tests.txt": "a\n"})
-    (tmp_path / "phase.toml").write_text(CONFIG.replace('build_cmd = ["true"]', 'build_cmd = ["false"]'))
+    project = _project(tmp_path, monkeypatch, CONFIG.replace('build_cmd = ["true"]', 'build_cmd = ["false"]'))
     with pytest.raises(SystemExit, match="build failed"):
-        covermap.cover(config.load(tmp_path / "phase.toml", "p"), budget=600)
+        covermap.cover(project, budget=600)
 
 
-def test_gcovr_reader_skips_noncode_lines():
-    data = {"files": [{"file": "a.cpp", "lines": [
+def test_readers():
+    gcovr = {"files": [{"file": "a.cpp", "lines": [
         {"line_number": 1, "count": 2}, {"line_number": 2, "count": 0},
         {"line_number": 3, "count": 0, "gcovr/noncode": True}]}]}
-    assert covermap.READERS["gcovr"](data, "/r") == {os.path.realpath("/r/a.cpp"): ({1}, {1, 2})}
+    assert covermap.READERS["gcovr"](gcovr, "/r") == {os.path.realpath("/r/a.cpp"): ({1}, {1, 2})}
+    coveragepy = {"files": {"/x/m.py": {"executed_lines": [1, 3], "missing_lines": [2]}}}
+    assert covermap.READERS["coveragepy"](coveragepy, "/tmp") == {os.path.realpath("/x/m.py"): ({1, 3}, {1, 2, 3})}
 
 
-def test_coveragepy_reader():
-    data = {"files": {"/x/m.py": {"executed_lines": [1, 3], "missing_lines": [2]}}}
-    assert covermap.READERS["coveragepy"](data, "/tmp") == {os.path.realpath("/x/m.py"): ({1, 3}, {1, 2, 3})}
-
-
-def test_prune_keeps_only_matching_counters(tmp_path):
-    for name in ("src_plottables_multigraph-fill.cpp.gcda", "src_core.cpp.gcda"):
+def test_pruning_keeps_the_counters_of_target_objects_only(tmp_path):
+    targets = (config.Target("src/plottables/multigraph-fill.cpp"),
+               config.Target("src/datasource/binner.h", objects=("tests/auto/t/test-binner.cpp",)))
+    names = covermap.counter_names(SimpleNamespace(targets=targets))
+    assert names == {"multigraph-fill.cpp.gcda", "test-binner.cpp.gcda"}
+    for name in ("src_plottables_multigraph-fill.cpp.gcda", "src_plottables_xmultigraph-fill.cpp.gcda",
+                 "t_test-binner.cpp.gcda", "src_core.cpp.gcda"):
         (tmp_path / name).write_text("")
-    covermap.prune_counters(tmp_path, r"multigraph-fill\.cpp\.gcda$")
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["src_plottables_multigraph-fill.cpp.gcda"]
+    covermap.prune_counters(tmp_path, names)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src_plottables_multigraph-fill.cpp.gcda", "t_test-binner.cpp.gcda"]
 ```
 
 - [ ] **Step 2: Run them and watch them fail**
 
-Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests/test_config.py tools/mutation/tests/test_covermap.py -q -p no:cacheprovider`
-Expected: collection errors, `No module named 'config'` / `'covermap'`.
+Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests/test_outcomes.py tools/mutation/tests/test_config.py tools/mutation/tests/test_covermap.py -q -p no:cacheprovider`
+Expected: collection errors, `No module named 'outcomes'` / `'config'` / `'covermap'`.
 
-- [ ] **Step 3: Write `tools/mutation/config.py`**
+- [ ] **Step 3: Write `tools/mutation/outcomes.py`**
+
+```python
+"""Reading a test run: which tests failed, and whether any test ran at all.
+
+A run that exits 0 but executed nothing (a renamed class, a typo, every test
+skipped) is a failure, never a pass: otherwise every mutant it guards survives.
+"""
+import re
+
+FAILED = {
+    "qtest": re.compile(r"^FAIL!\s+:\s+(\w+::\w+)\(", re.M),
+    "pytest": re.compile(r"^(?:FAILED|ERROR) (\S+)", re.M),
+}
+_QTEST_RAN = re.compile(r"^(?:PASS|FAIL!)\s+:\s+\w+::(?!initTestCase\(|cleanupTestCase\()\w+\(", re.M)
+_PYTEST_RAN = re.compile(r"\b(\d+) (?:passed|failed|errors?)\b")
+EXECUTED = {
+    "qtest": lambda output: len(_QTEST_RAN.findall(output)),
+    "pytest": lambda output: sum(int(n) for n in _PYTEST_RAN.findall(output)),
+}
+
+
+def executed(parser, output):
+    return EXECUTED[parser](output)
+
+
+def failures(parser, result, batch):
+    if result.timed_out:
+        return [f"{n}::<timeout>" for n in batch]
+    found = list(dict.fromkeys(FAILED[parser].findall(result.output)))
+    if result.code != 0:
+        return found or [f"{n}::<exit {result.code}>" for n in batch]
+    return [] if executed(parser, result.output) else [f"{n}::<ran no test>" for n in batch]
+```
+
+- [ ] **Step 4: Write `tools/mutation/config.py`**
 
 ```python
 """A phase config (TOML): what to mutate, and how to build, test and cover each project.
 
 Everything project-specific is data in the TOML; this module only expands it.
 Strings are templates: {root} {repo} {build_dir} {run_dir} {scratch} {test}
-{env_<NAME>}. A list item that is exactly "{tests}" becomes one item per test.
+{test_class} {test_function} {env_<NAME>}. A list item that is exactly
+"{tests}" becomes one item per test.
 """
 import ast
 import dataclasses
@@ -964,6 +1146,7 @@ class Target:
     scope: str = "all"
     functions: tuple = ()
     deploy: str = ""
+    objects: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -1004,13 +1187,19 @@ class Project:
     def scratch(self):
         return self.run_dir / "scratch"
 
+    @property
+    def group_file(self):
+        return self.run_dir / "child.pgid"
+
     def variables(self, tests=()):
         tests = list(tests)
+        single = tests[0] if len(tests) == 1 else ""
+        test_class, _, test_function = single.partition("::")
         base = {
             **{f"env_{key}": value for key, value in os.environ.items()},
             "root": str(self.root), "repo": str(self.repo), "build_dir": str(self.build_dir),
             "run_dir": str(self.run_dir), "scratch": str(self.scratch),
-            "test": tests[0] if len(tests) == 1 else "",
+            "test": single, "test_class": test_class, "test_function": test_function,
         }
         prefix = self.raw.get("tests", {}).get("prefix", "").format_map(base)
         return {**base, "tests": [prefix + t for t in tests]}
@@ -1035,8 +1224,12 @@ class Project:
     def deploy_path(self, target):
         return Path(target.deploy) if target.deploy else self.repo / target.path
 
+    def run(self, cmd, *, cwd=None, env=None, timeout):
+        self.run_dir.mkdir(parents=True, exist_ok=True)
+        return proc.run(cmd, cwd=cwd, env=env, timeout=timeout, group_file=self.group_file)
+
     def build(self):
-        return proc.run(self.command("build_cmd"), cwd=str(self.root), env=self.env(),
+        return self.run(self.command("build_cmd"), cwd=str(self.root), env=self.env(),
                         timeout=self.raw.get("build_timeout", 900))
 
 
@@ -1049,7 +1242,8 @@ def load(config_path, name):
     raw = projects[name]
     root = (config_path.parent / data.get("root", ".")).resolve()
     project = Project(name, root, (root / raw["repo"]).resolve(), (root / raw["build_dir"]).resolve(), raw)
-    targets = tuple(Target(t["path"], t.get("scope", "all"), tuple(t.get("functions", ())), project.expand(t.get("deploy", "")))
+    targets = tuple(Target(t["path"], t.get("scope", "all"), tuple(t.get("functions", ())),
+                           project.expand(t.get("deploy", "")), tuple(t.get("objects", ())))
                     for t in raw["target"])
     equivalents = tuple(Equivalent(e["path"], e["op"], e["before"], e["reason"]) for e in raw.get("equivalent", ()))
     return dataclasses.replace(project, targets=targets, equivalents=equivalents)
@@ -1074,33 +1268,52 @@ def target_lines(project, target):
     return lines & function_lines(text, set(target.functions)) if target.functions else lines
 
 
+def discover_classes(project):
+    spec = project.raw["tests"]
+    return re.findall(spec["pattern"], read_source(project.root / spec["regex_file"]))
+
+
+def _functions(project, spec, cls):
+    env = {**project.env([cls]), **project.expand(spec.get("functions_env", {}), [cls])}
+    result = project.run(project.expand(spec["functions_cmd"], [cls]), cwd=project.cwd(), env=env, timeout=120)
+    names = re.findall(spec["functions_pattern"], result.output, re.M)
+    if result.code != 0 or not names:
+        raise SystemExit(f"listing the test functions of {cls} failed (exit {result.code}):\n{result.output[-1000:]}")
+    return names
+
+
 def discover_tests(project):
     spec = project.raw["tests"]
     if "glob" in spec:
         found = {Path(p).relative_to(project.root).as_posix() for pattern in spec["glob"] for p in glob.glob(str(project.root / pattern))}
         return sorted(found)
-    return re.findall(spec["pattern"], read_source(project.root / spec["regex_file"]))
+    classes = discover_classes(project)
+    if "functions_cmd" not in spec:
+        return classes
+    return [f"{cls}::{fn}" for cls in classes for fn in _functions(project, spec, cls)]
 ```
 
-- [ ] **Step 4: Write `tools/mutation/covermap.py`**
+- [ ] **Step 5: Write `tools/mutation/covermap.py`**
 
 ```python
 """Per-test coverage of the target files: which test runs which target line.
 
 Each test runs alone from zeroed gcov counters; the configured report commands
 (gcovr, coverage.py) then dump what ran. A test's entry also keeps whether it
-passed and how long it took: the baseline the mutant runs rely on.
+passed, ran anything, and how long it took: the baseline the mutant runs rely on.
 """
 import json
 import os
-import re
 import shutil
 import time
 from pathlib import Path
 
+import outcomes
 import proc
 import state as st
 from config import discover_tests
+
+HEADERS = (".h", ".hpp", ".py")
 
 
 def _gcovr(data, root):
@@ -1124,6 +1337,11 @@ def _coveragepy(data, root):
 READERS = {"gcovr": _gcovr, "coveragepy": _coveragepy}
 
 
+def recover(project, data):
+    proc.kill_leftover(project.group_file)
+    return st.restore_leftovers(project.state_path, data)
+
+
 def source_shas(project):
     return {t.path: st.sha(project.repo / t.path) for t in project.targets}
 
@@ -1139,11 +1357,16 @@ def reset_counters(build_dir):
         gcda.unlink()
 
 
-def prune_counters(build_dir, keep):
+def counter_names(project):
+    """A header's code is counted in the objects that include it, so a header target names them."""
+    sources = [t.path for t in project.targets if not t.path.endswith(HEADERS)] + [o for t in project.targets for o in t.objects]
+    return {Path(s).name + ".gcda" for s in sources}
+
+
+def prune_counters(build_dir, names):
     """Drops the counters of non-target objects, so gcovr reads a handful of files, not hundreds."""
-    wanted = re.compile(keep)
     for gcda in Path(build_dir).rglob("*.gcda"):
-        if not wanted.search(gcda.name):
+        if not any(gcda.name == n or gcda.name.endswith("_" + n) for n in names):
             gcda.unlink()
 
 
@@ -1166,25 +1389,40 @@ def _target_files(project):
 
 
 def _run_reports(project):
+    """The report commands that failed, as 'name exited N'."""
+    broken = []
     for cmd in project.raw.get("cover_cmds", []):
-        result = proc.run(project.expand(cmd), cwd=str(project.root), env=project.env(), timeout=300)
+        argv = project.expand(cmd)
+        result = project.run(argv, cwd=str(project.root), env=project.env(), timeout=300)
         if result.code != 0:
-            print(f"warning: {cmd[0]} exited {result.code}: {result.output[-500:]}")
+            broken.append(f"{Path(argv[0]).name} exited {result.code}")
+    return broken
+
+
+def _note(project, result, broken):
+    if result.timed_out:
+        return "timed out"
+    if result.code != 0:
+        return f"exit {result.code}"
+    if not outcomes.executed(project.raw["failure_parser"], result.output):
+        return "ran no test"
+    return "report failed: " + ", ".join(broken) if broken else ""
 
 
 def cover_one(project, name):
     shutil.rmtree(project.scratch, ignore_errors=True)
     project.scratch.mkdir(parents=True)
     reset_counters(project.build_dir)
-    result = proc.run(project.command("cover_test_cmd", [name]), cwd=project.cwd(), env=project.env([name]),
-                      timeout=project.raw.get("cover_timeout", 300))
-    if "cover_keep_gcda" in project.raw:
-        prune_counters(project.build_dir, project.raw["cover_keep_gcda"])
-    _run_reports(project)
+    result = project.run(project.command("cover_test_cmd", [name]), cwd=project.cwd(), env=project.env([name]),
+                         timeout=project.raw.get("cover_timeout", 300))
+    if project.raw.get("prune_gcda"):
+        prune_counters(project.build_dir, counter_names(project))
+    note = _note(project, result, _run_reports(project))
     targets = _target_files(project)
     found = {targets[f]: lines for f, lines in read_reports(project).items() if f in targets}
     return {
-        "status": "timeout" if result.timed_out else "passed" if result.code == 0 else "failed",
+        "status": "timeout" if result.timed_out else "failed" if note else "passed",
+        "note": note,
         "seconds": round(result.seconds, 2),
         "lines": {path: sorted(covered) for path, (covered, _) in found.items() if covered},
         "code_lines": {path: sorted(code) for path, (_, code) in found.items()},
@@ -1197,17 +1435,16 @@ def _estimate(tests):
 
 def cover(project, budget, reset=False):
     data = st.load(project.state_path)
-    st.restore_leftovers(project.state_path, data)
+    recover(project, data)
     shas = source_shas(project)
     if reset or "cover_files" not in data:
         data["cover_files"] = shas
     elif data["cover_files"] != shas:
         raise SystemExit("sources changed since cover started: run cover --reset")
-    for name in discover_tests(project):
-        if reset or name not in data["tests"]:
-            data["tests"][name] = {"status": "pending"}
-    st.save(project.state_path, data)
     build_or_die(project)
+    if reset or not data["tests"]:
+        data["tests"] = {name: {"status": "pending"} for name in discover_tests(project)}
+    st.save(project.state_path, data)
     started = time.monotonic()
     for name, entry in data["tests"].items():
         if entry["status"] != "pending":
@@ -1219,16 +1456,16 @@ def cover(project, budget, reset=False):
     return sum(e["status"] == "pending" for e in data["tests"].values())
 ```
 
-- [ ] **Step 5: Run the tests and watch them pass**
+- [ ] **Step 6: Run the tests and watch them pass**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `33 passed` (18 + 7 + 8), exit code 0.
+Expected: `40 passed` (20 + 3 + 8 + 9), exit code 0.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add tools/mutation/config.py tools/mutation/covermap.py tools/mutation/tests/fixture_repo.py tools/mutation/tests/fixture/fake_report.py tools/mutation/tests/test_config.py tools/mutation/tests/test_covermap.py
-git commit -m "feat(mutation): TOML config, target lines and a resumable per-test coverage map" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git add tools/mutation/outcomes.py tools/mutation/config.py tools/mutation/covermap.py tools/mutation/tests/fixture_repo.py tools/mutation/tests/fixture/fake_report.py tools/mutation/tests/test_outcomes.py tools/mutation/tests/test_config.py tools/mutation/tests/test_covermap.py
+git commit -m "feat(mutation): run outcomes, TOML config with per-function tests, and a resumable per-test coverage map" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
@@ -1243,20 +1480,16 @@ git commit -m "feat(mutation): TOML config, target lines and a resumable per-tes
 **Interfaces:**
 - Consumes: everything from Tasks 1-3.
 - Produces:
-  - `FAILURES = {"qtest": re, "pytest": re}`, `DONE` (status tuple), `MAX_ATTEMPTS = 2`.
+  - `DONE` (status tuple), `MAX_ATTEMPTS = 2`.
   - `covering_tests(tests) -> {path: {line: [names]}}`. Tests whose baseline is not `passed` are left out.
-  - `plan(project) -> dict`. It refuses dirty targets, unfinished cover and changed sources. It drops the mutants of changed or removed files, and re-queues a survivor when a new test covers it.
+  - `plan(project) -> dict`. It refuses dirty targets, unfinished cover and changed sources. It drops the mutants of changed or removed files, re-queues a survivor when a new test covers it, and lists `[[project.equivalent]]` entries that match no planned mutant in `data["stale_equivalents"]`.
   - `run(project, budget) -> int`: mutants still pending.
-  - `run_one(project, data, entry) -> dict`.
+  - `run_one(project, data, entry) -> dict`: one pass, which builds the mutant and runs its next slice of at most `max_tests` covering tests.
   - `try_mutant(project, path, line, op, tests) -> dict`.
-  - `failures(parser, result, batch) -> list[str]`.
-- Mutant entry fields: `path line col op before after status tests covering killed_by seconds build_seconds attempts`.
+- Mutant entry fields: `path line col op before after status tests covering ran killed_by seconds build_seconds attempts`.
+  - `tests` holds every covering test, fastest first. `ran` counts how many have run.
+  - A mutant becomes `survived` only when `ran == len(tests)`. A capped pass that kills nothing leaves it `pending` for its next slice. That is the re-check against all covering tests: it is automatic, and it uses the same `run_one` path as `try --tests`.
 - Statuses: `pending killed survived timeout build_error equivalent interrupted`.
-- Killer names:
-  - from QtTest: `Class::function`;
-  - from pytest: `tests/.../test_x.py::test_y`;
-  - when a run fails with no matching line: `<test>::<exit N>`;
-  - on timeout: `<test>::<timeout>`.
 
 - [ ] **Step 1: Write the fixture files**
 
@@ -1273,7 +1506,7 @@ int clamp_index(int i, int n)
 }
 ```
 
-`tools/mutation/tests/fixture/test_calc.cpp`:
+`tools/mutation/tests/fixture/test_calc.cpp`. It prints QtTest-style lines, so a run that executed its test is visible:
 
 ```cpp
 #include <cstdio>
@@ -1284,7 +1517,10 @@ int clamp_index(int i, int n);
 static int check(const char* name, int got, int want)
 {
     if (got == want)
+    {
+        std::printf("PASS   : Calc::%s()\n", name);
         return 0;
+    }
     std::printf("FAIL!  : Calc::%s() got %d, want %d\n", name, got, want);
     return 1;
 }
@@ -1364,6 +1600,12 @@ op = "lt_to_le"
 before = "    if (i < 0)"
 reason = "i == 0 returns 0 either way"
 
+[[project.equivalent]]
+path = "calc.cpp"
+op = "gt_to_ge"
+before = "    if (i > 99)"
+reason = "a line that no longer exists"
+
 [[project]]
 name = "py"
 repo = "repo"
@@ -1371,7 +1613,7 @@ base = "main"
 build_dir = "build-py"
 build_cmd = ["true"]
 test_env = { PYTHONPATH = "{build_dir}" }
-test_cmd = ["{env_PYTHON}", "-c", "import limits; assert limits.clamp(-1, 0, 5) == 0"]
+test_cmd = ["{env_PYTHON}", "-c", "import limits; assert limits.clamp(-1, 0, 5) == 0; print('1 passed')"]
 failure_parser = "pytest"
 
 [[project.target]]
@@ -1407,6 +1649,11 @@ def test_plan_picks_the_covering_tests_per_line(calc):
     assert mutants[(3, "lt_to_le")]["status"] == "equivalent"
 
 
+def test_plan_warns_about_equivalents_that_match_no_mutant(calc):
+    stale = st.load(calc.state_path)["stale_equivalents"]
+    assert [e["before"] for e in stale] == ["    if (i > 99)"]
+
+
 def test_a_test_failing_its_baseline_runs_against_no_mutant(calc):
     data = st.load(calc.state_path)
     assert data["tests"]["broken"]["status"] == "failed"
@@ -1423,12 +1670,20 @@ def test_run_kills_and_records_survivors(calc):
     assert mutants[(3, "lt_to_le")]["killed_by"] == []
 
 
+def test_a_capped_survivor_runs_every_covering_test_before_it_is_a_survivor(calc):
+    calc.raw["max_tests"] = 1
+    assert runner.run(calc, budget=600) == 0
+    survivor = by_op(calc)[(5, "ge_to_gt")]
+    assert survivor["status"] == "survived" and survivor["ran"] == survivor["covering"] == 2
+    assert by_op(calc)[(6, "minus_to_plus")]["killed_by"] == ["Calc::high"]
+
+
 def test_run_leaves_the_source_and_the_binary_unmutated(calc):
     original = st.read_source(FIXTURE / "calc.cpp")
     runner.run(calc, budget=600)
     assert st.read_source(calc.repo / "calc.cpp") == original
     for name in ("low", "high", "mid", "edge"):
-        assert subprocess.run([str(calc.build_dir / "calc"), name]).returncode == 0, name
+        assert subprocess.run([str(calc.build_dir / "calc"), name], capture_output=True).returncode == 0, name
 
 
 def test_run_stops_on_its_budget_and_resumes(calc):
@@ -1441,7 +1696,7 @@ def test_run_stops_on_its_budget_and_resumes(calc):
 def test_a_mutant_that_does_not_compile_is_a_build_error(calc):
     data = st.load(calc.state_path)
     entry = {"path": "calc.cpp", "line": 3, "col": 4, "op": "manual", "before": "    if (i < 0)",
-             "after": "    if (i <<<< 0)", "tests": ["low"], "attempts": 0}
+             "after": "    if (i <<<< 0)", "tests": ["low"], "ran": 0, "attempts": 0}
     assert runner.run_one(calc, data, entry)["status"] == "build_error"
     assert st.read_source(calc.repo / "calc.cpp") == st.read_source(FIXTURE / "calc.cpp")
 
@@ -1522,25 +1777,9 @@ def test_a_python_mutant_goes_to_the_deploy_copy_only(tmp_path, monkeypatch):
     mutants = by_op(project)
     assert mutants[(2, "lt_to_le")]["status"] == "survived"
     assert mutants[(2, "negate_if")]["killed_by"] == ["t::<exit 1>"]
-
-
-def test_failure_parsers():
-    qtest = "PASS   : TestA::one()\nFAIL!  : TestA::two(row) Compared values\nFAIL!  : TestA::two(other) x\n"
-    pytest_out = "FAILED tests/integration/test_x.py::test_y[1] - AssertionError\nERROR tests/unit/test_z.py::test_w\n"
-    assert runner.failures("qtest", _result(1, qtest), ["TestA"]) == ["TestA::two"]
-    assert runner.failures("pytest", _result(1, pytest_out), ["f"]) == [
-        "tests/integration/test_x.py::test_y[1]", "tests/unit/test_z.py::test_w"]
-    assert runner.failures("qtest", _result(-11, "Received signal"), ["TestA"]) == ["TestA::<exit -11>"]
-    assert runner.failures("qtest", _result(None, ""), ["TestA"]) == ["TestA::<timeout>"]
-    assert runner.failures("qtest", _result(0, qtest), ["TestA"]) == []
-
-
-def _result(code, output):
-    import proc
-    return proc.Result(code, output, 1.0)
 ```
 
-The equivalent `lt_to_le` on line 3 is a real equivalent mutant: at `i == 0` both versions return 0. It exercises the `[[project.equivalent]]` path.
+The equivalent `lt_to_le` on line 3 is a real equivalent mutant: at `i == 0` both versions return 0. It exercises the `[[project.equivalent]]` path. The `gt_to_ge` entry matches nothing, which exercises the stale-entry warning.
 
 - [ ] **Step 3: Run them and watch them fail**
 
@@ -1553,9 +1792,10 @@ Expected: collection error, `No module named 'runner'`.
 """Mutant runs: apply one mutant, build, run the tests that cover its line, record, restore.
 
 Every step is saved to the state file, so a run stopped by its budget, a signal
-or SIGKILL continues where it stopped.
+or SIGKILL continues where it stopped. A mutant is a survivor only after every
+covering test ran against it, slice by slice when `max_tests` caps a pass.
 """
-import re
+import dataclasses
 import shutil
 import subprocess
 import time
@@ -1563,14 +1803,10 @@ from dataclasses import asdict
 
 import covermap
 import operators as ops
-import proc
+import outcomes
 import state as st
 from config import target_lines
 
-FAILURES = {
-    "qtest": re.compile(r"^FAIL!\s+:\s+(\w+::\w+)\(", re.M),
-    "pytest": re.compile(r"^(?:FAILED|ERROR) (\S+)", re.M),
-}
 DONE = ("killed", "survived", "timeout", "build_error", "equivalent", "interrupted")
 MAX_ATTEMPTS = 2
 
@@ -1586,21 +1822,18 @@ def covering_tests(tests):
     return out
 
 
-def _select(names, tests, cap):
-    # simplify: with a cap, a mutant runs only the fastest covering tests; the ceiling is a
-    # survivor a slower test would kill. The report shows "run/covering"; `try` reruns with more.
-    ordered = sorted(names, key=lambda n: tests[n].get("seconds", 0))
-    return ordered[:cap] if cap else ordered
+def _by_speed(names, tests):
+    return sorted(names, key=lambda n: tests[n].get("seconds", 0))
 
 
 def _merge(old, fresh, equivalent):
     if old is None:
-        return {**fresh, "status": "equivalent" if equivalent else "pending", "killed_by": [],
+        return {**fresh, "status": "equivalent" if equivalent else "pending", "killed_by": [], "ran": 0,
                 "seconds": 0.0, "build_seconds": 0.0, "attempts": 0}
     if equivalent:
         return {**old, "status": "equivalent"}
     if old["status"] in ("pending", "survived") and set(fresh["tests"]) - set(old["tests"]):
-        return {**old, **fresh, "status": "pending", "attempts": 0}
+        return {**old, **fresh, "status": "pending", "ran": 0, "attempts": 0}
     return old
 
 
@@ -1610,6 +1843,11 @@ def _check_clean(project, when):
                          capture_output=True, text=True, check=True).stdout
     if out.strip():
         raise SystemExit(f"{when}: target files have uncommitted changes:\n{out}")
+
+
+def _stale_equivalents(project, mutants):
+    planned = {(m["path"], m["op"], m["before"]) for m in mutants.values()}
+    return [dataclasses.asdict(e) for e in project.equivalents if (e.path, e.op, e.before) not in planned]
 
 
 def plan(project):
@@ -1632,19 +1870,11 @@ def plan(project):
         text = st.read_source(project.repo / target.path)
         for m in ops.mutants_for_file(target.path, text, lines & set(file_cover)):
             names = file_cover[m.line]
-            fresh = {**asdict(m), "tests": _select(names, data["tests"], project.raw.get("max_tests")), "covering": len(names)}
+            fresh = {**asdict(m), "tests": _by_speed(names, data["tests"]), "covering": len(names)}
             data["mutants"][m.id] = _merge(data["mutants"].get(m.id), fresh, (m.path, m.op, m.before) in equivalents)
+    data["stale_equivalents"] = _stale_equivalents(project, data["mutants"])
     st.save(project.state_path, data)
     return data
-
-
-def failures(parser, result, batch):
-    if result.timed_out:
-        return [f"{n}::<timeout>" for n in batch]
-    if result.code == 0:
-        return []
-    found = list(dict.fromkeys(FAILURES[parser].findall(result.output)))
-    return found or [f"{n}::<exit {result.code}>" for n in batch]
 
 
 def _status(killed):
@@ -1658,13 +1888,19 @@ def _run_tests(project, names, baseline):
     killed, seconds = [], 0.0
     for batch in batches:
         timeout = 30 + 3 * sum(baseline.get(n, {}).get("seconds", 60) for n in batch)
-        result = proc.run(project.command("test_cmd", batch), cwd=project.cwd(), env=project.env(batch, mutation=True), timeout=timeout)
+        result = project.run(project.command("test_cmd", batch), cwd=project.cwd(), env=project.env(batch, mutation=True), timeout=timeout)
         shutil.rmtree(project.run_dir / "gcda-junk", ignore_errors=True)
         seconds += result.seconds
-        killed += failures(project.raw["failure_parser"], result, batch)
+        killed += outcomes.failures(project.raw["failure_parser"], result, batch)
         if killed and project.raw.get("stop_on_first_kill"):
             break
     return killed, seconds
+
+
+def _next_slice(project, entry):
+    start = entry.get("ran", 0)
+    size = project.raw.get("max_tests") or len(entry["tests"])
+    return start, entry["tests"][start:start + size]
 
 
 def run_one(project, data, entry):
@@ -1675,12 +1911,16 @@ def run_one(project, data, entry):
     mutant = ops.Mutant(**{k: entry[k] for k in ("path", "line", "col", "op", "before", "after")})
     deploy = project.deploy_path(project.target(mutant.path))
     text = ops.apply(st.read_source(deploy), mutant)
+    start, batch = _next_slice(project, entry)
     with st.mutated(project.state_path, data, deploy, text, project.run_dir / "backup"):
         built = project.build()
         if built.code != 0:
             return {"status": "build_error", "seconds": round(built.seconds, 1), "build_seconds": round(built.seconds, 1)}
-        killed, seconds = _run_tests(project, entry["tests"], data["tests"])
-    return {"status": _status(killed), "killed_by": killed,
+        killed, seconds = _run_tests(project, batch, data["tests"])
+    ran = start + len(batch)
+    finished = bool(killed) or ran >= len(entry["tests"])
+    return {"status": _status(killed) if finished else "pending", "killed_by": killed, "ran": ran,
+            "attempts": entry["attempts"] if finished else 0,
             "seconds": round(built.seconds + seconds, 1), "build_seconds": round(built.seconds, 1)}
 
 
@@ -1691,46 +1931,51 @@ def _check_sources(project, data):
 
 
 def _estimate(mutants):
-    done = [m for m in mutants.values() if m["status"] in DONE and m.get("seconds")]
-    return max((m["seconds"] for m in done), default=120) + max((m.get("build_seconds", 0) for m in done), default=60)
+    timed = [m for m in mutants.values() if m.get("seconds")]
+    return max((m["seconds"] for m in timed), default=120) + max((m.get("build_seconds", 0) for m in timed), default=60)
 
 
-def run(project, budget):
-    data = st.load(project.state_path)
-    st.restore_leftovers(project.state_path, data)
-    _check_sources(project, data)
-    started = time.monotonic()
-    covermap.build_or_die(project)
-    for entry in data["mutants"].values():
-        if entry["status"] != "pending":
-            continue
-        if time.monotonic() - started + _estimate(data["mutants"]) > budget:
-            break
-        entry.update(run_one(project, data, entry))
-        st.save(project.state_path, data)
+def _finish(project, data):
     covermap.build_or_die(project)
     _check_clean(project, "run")
     return sum(m["status"] == "pending" for m in data["mutants"].values())
 
 
+def run(project, budget):
+    data = st.load(project.state_path)
+    covermap.recover(project, data)
+    _check_sources(project, data)
+    started = time.monotonic()
+    covermap.build_or_die(project)
+    for entry in data["mutants"].values():
+        while entry["status"] == "pending":
+            if time.monotonic() - started + _estimate(data["mutants"]) > budget:
+                return _finish(project, data)
+            entry.update(run_one(project, data, entry))
+            st.save(project.state_path, data)
+    return _finish(project, data)
+
+
 def try_mutant(project, path, line, op, tests):
     """One mutant of the current source against `tests`, outside the plan: the check after a triage fix."""
     data = st.load(project.state_path)
-    st.restore_leftovers(project.state_path, data)
+    covermap.recover(project, data)
     covermap.build_or_die(project)
     text = st.read_source(project.repo / path)
     found = [m for m in ops.mutants_for_line(path, line, text.splitlines()[line - 1]) if m.op == op]
     if not found:
         raise SystemExit(f"no {op} mutant on {path}:{line}")
-    result = run_one(project, data, {**asdict(found[0]), "tests": list(tests), "attempts": 0})
+    entry = {**asdict(found[0]), "tests": list(tests), "ran": 0, "attempts": 0, "status": "pending"}
+    while entry["status"] == "pending":
+        entry.update(run_one(project, data, entry))
     covermap.build_or_die(project)
-    return result
+    return entry
 ```
 
 - [ ] **Step 5: Run the tests and watch them pass**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `47 passed` (33 + 14), exit code 0.
+Expected: `55 passed` (40 + 15), exit code 0.
 
 If `test_plan_picks_the_covering_tests_per_line` fails because gcov put a line on a neighbour, print the coverage map (`st.load(calc.state_path)["tests"]`) and fix the fixture, not the expectation. The fixture is built with `-O0`, so gcov's lines are exact.
 
@@ -1738,7 +1983,7 @@ If `test_plan_picks_the_covering_tests_per_line` fails because gcov put a line o
 
 ```bash
 git add tools/mutation/runner.py tools/mutation/tests/fixture/calc.cpp tools/mutation/tests/fixture/test_calc.cpp tools/mutation/tests/fixture/tests.txt tools/mutation/tests/fixture/limits.py tools/mutation/tests/test_runner.py
-git commit -m "feat(mutation): plan and run mutants on covered lines, resumable, always restored" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git commit -m "feat(mutation): plan and run mutants on covered lines, every covering test before a survivor, always restored" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
@@ -1750,13 +1995,13 @@ git commit -m "feat(mutation): plan and run mutants on covered lines, resumable,
 - Test: `tools/mutation/tests/test_report.py`
 
 **Interfaces:**
-- Consumes: the state dict, with the mutant entry fields from Task 4.
+- Consumes: the state dict, with the mutant entry fields from Task 4, test `note`s from Task 3 and `stale_equivalents` from Task 4.
 - Produces:
   - `STATUSES`;
   - `ranges(numbers) -> str`, for example `"10-12, 20"`;
   - `cell(text) -> str`, a code span with `|` escaped;
   - `kill_matrix(data) -> {killer: [mutant ids]}`;
-  - `redundancy(data) -> (never_killed_units: list, no_unique_kill: list)`;
+  - `redundancy(data) -> (tests_that_killed_nothing: list, killers_with_no_kill_of_their_own: list)`. A killer belongs to a test when it is the test's name or starts with `<test>::`.
   - `render(name, data, fail_fast=False) -> str`;
   - `write(project, data, out=None) -> Path`. It writes `<out>` and `<out stem>-kill-matrix.json`. `project` only needs `.name`, `.run_dir` and `.raw`.
 
@@ -1773,12 +2018,12 @@ import report
 
 def mutant(line, op, status, tests=("TestA",), killed_by=(), before="    if (a || b)", after="    if (a && b)", path="a.cpp"):
     return {"path": path, "line": line, "col": 4, "op": op, "before": before, "after": after, "status": status,
-            "tests": list(tests), "covering": len(tests) + 1, "killed_by": list(killed_by),
+            "tests": list(tests), "covering": len(tests), "ran": len(tests), "killed_by": list(killed_by),
             "seconds": 1.0, "build_seconds": 0.5, "attempts": 1}
 
 
 DATA = {
-    "tests": {"TestA": {"status": "passed"}, "TestX": {"status": "failed"}},
+    "tests": {"TestA": {"status": "passed", "note": ""}, "TestX": {"status": "failed", "note": "ran no test"}},
     "mutants": {
         "a.cpp:3:4:or_to_and": mutant(3, "or_to_and", "survived"),
         "a.cpp:5:4:lt_to_le": mutant(5, "lt_to_le", "killed", ("TestA", "TestB"), ("TestA::f", "TestB::g")),
@@ -1788,6 +2033,7 @@ DATA = {
         "b.cpp:4:4:plus_to_minus": mutant(4, "plus_to_minus", "survived", ("TestD",), path="b.cpp"),
     },
     "uncovered": {"a.cpp": [10, 11, 12, 20], "b.cpp": []},
+    "stale_equivalents": [{"path": "a.cpp", "op": "eq_to_ne", "before": "    x == y", "reason": "demo"}],
 }
 
 
@@ -1799,7 +2045,7 @@ def test_ranges():
 
 def test_survivor_rows_escape_pipes_and_leave_triage_empty():
     text = report.render("p", DATA)
-    assert "| a.cpp:3:4:or_to_and | a.cpp:3 | or_to_and | `if (a \\|\\| b)` | `if (a && b)` | 1/2 |  |" in text
+    assert "| a.cpp:3:4:or_to_and | a.cpp:3 | or_to_and | `if (a \\|\\| b)` | `if (a && b)` | 1/1 |  |" in text
     assert "a.cpp:5:4:lt_to_le |" not in text
 
 
@@ -1809,11 +2055,12 @@ def test_counts_and_score():
     assert "Mutation score (killed + timeout over decided): 60.0%" in text
 
 
-def test_uncovered_lines_and_baseline_failures():
+def test_uncovered_lines_baseline_notes_and_stale_equivalents():
     text = report.render("p", DATA)
     assert "- a.cpp: 10-12, 20" in text
     assert "- b.cpp:" not in text
-    assert "- TestX" in text
+    assert "- TestX: ran no test" in text
+    assert "- a.cpp eq_to_ne `x == y`: demo" in text
 
 
 def test_kill_matrix_and_redundancy():
@@ -1822,9 +2069,9 @@ def test_kill_matrix_and_redundancy():
     assert report.redundancy(DATA) == (["TestD"], ["TestB::g"])
 
 
-def test_fail_fast_runs_are_flagged():
-    assert "only hints" in report.render("p", DATA, fail_fast=True)
-    assert "only hints" not in report.render("p", DATA)
+def test_fail_fast_runs_say_killed_by_is_the_fastest_killer_only():
+    assert "fastest killing test only" in report.render("p", DATA, fail_fast=True)
+    assert "fastest killing test only" not in report.render("p", DATA)
 
 
 def test_write_creates_the_report_and_the_matrix(tmp_path):
@@ -1851,6 +2098,8 @@ from pathlib import Path
 
 STATUSES = ("pending", "killed", "timeout", "survived", "build_error", "equivalent", "interrupted")
 TRIAGE = "real bug / weak test / dead code / equivalent"
+FAIL_FAST = ("These runs stop at the first kill: killed_by names the fastest killing test only "
+             "(for SciQLopPlots, the fastest test file), so the two lists below are only hints.")
 
 
 def ranges(numbers):
@@ -1871,22 +2120,23 @@ def kill_matrix(data):
     return matrix
 
 
-def _unit(killer):
-    return killer.split("::", 1)[0]
+def _belongs(killer, test):
+    return killer == test or killer.startswith(test + "::")
 
 
 def redundancy(data):
-    """Test units that ran against mutants and killed none, and killers with no kill of their own."""
     matrix = kill_matrix(data)
-    ran = {t for m in data["mutants"].values() if m["status"] in ("killed", "survived", "timeout") for t in m["tests"]}
+    ran = {t for m in data["mutants"].values() if m["status"] in ("killed", "survived", "timeout")
+           for t in m["tests"][: m.get("ran", len(m["tests"]))]}
+    killing = {t for t in ran if any(_belongs(k, t) for k in matrix)}
     sole = {m["killed_by"][0] for m in data["mutants"].values() if len(m.get("killed_by", [])) == 1}
-    return sorted(ran - {_unit(k) for k in matrix}), sorted(k for k in matrix if k not in sole)
+    return sorted(ran - killing), sorted(k for k in matrix if k not in sole)
 
 
 def _survivor_rows(data):
     survivors = sorted((m["path"], m["line"], mid, m) for mid, m in data["mutants"].items() if m["status"] == "survived")
     return [f"| {mid} | {m['path']}:{m['line']} | {m['op']} | {cell(m['before'])} | {cell(m['after'])} "
-            f"| {len(m['tests'])}/{m.get('covering', len(m['tests']))} |  |"
+            f"| {m.get('ran', len(m['tests']))}/{m.get('covering', len(m['tests']))} |  |"
             for _, _, mid, m in survivors]
 
 
@@ -1900,20 +2150,23 @@ def render(name, data, fail_fast=False):
     score = f"{100 * (counts['killed'] + counts['timeout']) / decided:.1f}%" if decided else "n/a"
     never, no_unique = redundancy(data)
     uncovered = [f"{path}: {ranges(lines)}" for path, lines in sorted(data["uncovered"].items()) if lines]
-    failing = sorted(n for n, e in data["tests"].items() if e.get("status") != "passed")
+    failing = [f"{n}: {e.get('note') or e.get('status')}" for n, e in sorted(data["tests"].items()) if e.get("status") != "passed"]
+    stale = [f"{e['path']} {e['op']} {cell(e['before'])}: {e['reason']}" for e in data.get("stale_equivalents", [])]
     return "\n".join([
         f"# Mutation report: {name}", "",
         "| status | count |", "|---|---|", *(f"| {s} | {counts[s]} |" for s in STATUSES), "",
         f"Mutation score (killed + timeout over decided): {score}", "",
         "## Survivors", "",
         f"One row, one follow-up. Fill the triage column: {TRIAGE}. "
-        "'tests run' is run/covering: below covering means the run was capped.", "",
+        "'tests run' is ran/covering: every covering test ran against each survivor.", "",
         "| id | file:line | operator | before | after | tests run | triage |",
         "|---|---|---|---|---|---|---|", *_survivor_rows(data), "",
         "## Uncovered target lines", "", "A missing test or dead code.", "", *_bullets(uncovered), "",
         "## Baseline failures", "", "Left out of every mutant run.", "", *_bullets(failing), "",
+        "## Stale equivalents", "", "Entries in the config that match no planned mutant: re-check or delete them.", "",
+        *_bullets(stale), "",
         "## Kill matrix", "", "The full matrix is the -kill-matrix.json file next to this report.", "",
-        *(["Runs stopped at the first kill: the lists below are only hints.", ""] if fail_fast else []),
+        *([FAIL_FAST, ""] if fail_fast else []),
         "Ran against mutants and killed none (removal candidates if they cover nothing unique):", "",
         *_bullets(never), "",
         "Killed only mutants that other tests killed too:", "", *_bullets(no_unique), "",
@@ -1931,7 +2184,7 @@ def write(project, data, out=None):
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `54 passed` (47 + 7), exit code 0.
+Expected: `62 passed` (55 + 7), exit code 0.
 
 - [ ] **Step 5: Commit**
 
@@ -1949,12 +2202,13 @@ git commit -m "feat(mutation): markdown survivor report with a triage column, an
 - Test: `tools/mutation/tests/test_cli.py`
 
 **Interfaces:**
-- Consumes: `config.load`, `covermap.cover/build_or_die`, `runner.plan/run/try_mutant`, `report.write`, `state.load/restore_leftovers`, `proc.install_signal_handlers/Interrupted`.
+- Consumes: `config.load`, `covermap.cover/recover/build_or_die`, `runner.plan/run/try_mutant`, `report.write`, `state.load`, `proc.install_signal_handlers/Interrupted`.
 - Produces: `python tools/mutation/mutate.py --config <toml> --project <name> <command>`.
   - Commands: `cover [--reset] [--budget S]`, `plan`, `run [--budget S]`, `report [--out FILE]`, `restore`, `try --path P --line N --op OP --tests T [T ...]`.
   - Default budget: 520 s.
   - Exit codes: 0 done; 10 work left (run the same command again); 3 interrupted, sources restored; 4 another command holds this build dir's lock; 2 usage error (argparse).
   - A missing `require_env` variable aborts before anything runs, with a message that names `xvfb-run -a`.
+  - `plan` prints a warning line for each stale `[[project.equivalent]]` entry.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1962,6 +2216,7 @@ git commit -m "feat(mutation): markdown survivor report with a triage column, an
 
 ```python
 import fcntl
+import os
 import shutil
 import signal
 import subprocess
@@ -1970,8 +2225,8 @@ import time
 from pathlib import Path
 
 import config
-import operators as ops
 import covermap
+import operators as ops
 import state as st
 from fixture_repo import init_repo
 
@@ -2018,7 +2273,8 @@ def _slow(tmp_path):
     data["files"] = data["cover_files"] = covermap.source_shas(project)
     data["mutants"] = {mutant.id: {"path": mutant.path, "line": mutant.line, "col": mutant.col, "op": mutant.op,
                                    "before": mutant.before, "after": mutant.after, "status": "pending", "tests": ["t"],
-                                   "covering": 1, "killed_by": [], "seconds": 0.0, "build_seconds": 0.0, "attempts": 0}}
+                                   "covering": 1, "ran": 0, "killed_by": [], "seconds": 0.0, "build_seconds": 0.0,
+                                   "attempts": 0}}
     st.save(project.state_path, data)
     return project
 
@@ -2027,15 +2283,31 @@ def _cli(tmp_path, project, *args):
     return [sys.executable, str(MUTATE), "--config", str(tmp_path / "phase.toml"), "--project", project, *args]
 
 
+def _wait(condition, seconds=20):
+    deadline = time.monotonic() + seconds
+    while not condition():
+        assert time.monotonic() < deadline, "timed out waiting"
+        time.sleep(0.05)
+
+
+def _gone(pid, wait=5.0):
+    deadline = time.monotonic() + wait
+    while time.monotonic() < deadline:
+        try:
+            if Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1].startswith("Z"):
+                return True
+        except FileNotFoundError:
+            return True
+        time.sleep(0.05)
+    return False
+
+
 def test_sigterm_mid_mutant_restores_and_exits_3(tmp_path):
     project = _slow(tmp_path)
     source = project.repo / "calc.cpp"
     original = st.read_source(source)
     child = subprocess.Popen(_cli(tmp_path, "slow", "run", "--budget", "600"))
-    deadline = time.monotonic() + 20
-    while st.read_source(source) == original:
-        assert time.monotonic() < deadline, "the run never wrote the mutant"
-        time.sleep(0.05)
+    _wait(lambda: st.read_source(source) != original)
     child.send_signal(signal.SIGTERM)
     assert child.wait(timeout=20) == 3
     assert st.read_source(source) == original
@@ -2043,6 +2315,24 @@ def test_sigterm_mid_mutant_restores_and_exits_3(tmp_path):
     assert data["in_flight"] == []
     entry = next(iter(data["mutants"].values()))
     assert entry["status"] == "pending" and entry["attempts"] == 1
+
+
+def test_sigkill_of_the_whole_cli_group_is_recovered_by_the_next_command(tmp_path):
+    project = _slow(tmp_path)
+    source = project.repo / "calc.cpp"
+    original = st.read_source(source)
+    child = subprocess.Popen(_cli(tmp_path, "slow", "run", "--budget", "600"), start_new_session=True)
+    _wait(lambda: st.read_source(source) != original and project.group_file.exists())
+    time.sleep(0.5)
+    sleeper = int(project.group_file.read_text())
+    os.killpg(child.pid, signal.SIGKILL)
+    child.wait(timeout=10)
+    assert st.read_source(source) != original
+    assert not _gone(sleeper, wait=0.5), "the test command should outlive the killed CLI"
+    result = subprocess.run(_cli(tmp_path, "slow", "restore"), capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    assert st.read_source(source) == original
+    assert _gone(sleeper)
 
 
 def test_a_second_command_on_the_same_build_dir_is_refused(tmp_path):
@@ -2073,7 +2363,7 @@ def test_report_writes_the_file(tmp_path):
 - [ ] **Step 2: Run them and watch them fail**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests/test_cli.py -q -p no:cacheprovider`
-Expected: 4 failures. The child exits 2 with `can't open file '.../mutate.py'`.
+Expected: 5 failures. The child exits 2 with `can't open file '.../mutate.py'`.
 
 - [ ] **Step 3: Write `tools/mutation/mutate.py`**
 
@@ -2087,7 +2377,7 @@ Commands, in order:
     plan                           mutants on the covered target lines
     run [--budget S]               apply, build, test, restore; resumable
     report [--out FILE]            survivors to triage, uncovered lines, kill matrix
-    restore                        put back a file a killed run left mutated, then rebuild
+    restore                        kill and put back what a killed run left, then rebuild
     try --path P --line N --op OP --tests T [T ...]   one mutant of the current source
 
 Exit codes: 0 done; 10 work left, run the same command again; 3 interrupted,
@@ -2132,8 +2422,10 @@ def _plan(project, args):
     for target in project.targets:
         mine = [m for m in data["mutants"].values() if m["path"] == target.path]
         print(f"{target.path}: {len(mine)} mutants, {len(data['uncovered'].get(target.path, []))} uncovered code lines")
-    failing = sorted(n for n, e in data["tests"].items() if e["status"] != "passed")
+    failing = sorted(f"{n} ({e.get('note') or e['status']})" for n, e in data["tests"].items() if e["status"] != "passed")
     print(f"baseline failures, left out of every mutant run: {failing or 'none'}")
+    for e in data["stale_equivalents"]:
+        print(f"warning: equivalent entry matches no mutant: {e['path']} {e['op']} {e['before'].strip()!r}")
     return 0
 
 
@@ -2144,7 +2436,7 @@ def _report(project, args):
 
 def _restore(project, args):
     data = st.load(project.state_path)
-    print("restored:", st.restore_leftovers(project.state_path, data) or "nothing")
+    print("restored:", covermap.recover(project, data) or "nothing")
     covermap.build_or_die(project)
     return 0
 
@@ -2215,13 +2507,13 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `58 passed` (54 + 4), exit code 0.
+Expected: `67 passed` (62 + 5), exit code 0. After the run, `pgrep -f "sleep 60"` prints nothing: every test that started a sleeper also killed it.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add tools/mutation/mutate.py tools/mutation/tests/test_cli.py
-git commit -m "feat(mutation): command line with a build-dir lock, signal-safe exit and resumable exit codes" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git commit -m "feat(mutation): command line with a build-dir lock, signal-safe exit, SIGKILL recovery and resumable exit codes" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
@@ -2235,7 +2527,7 @@ git commit -m "feat(mutation): command line with a build-dir lock, signal-safe e
 - Modify: `CLAUDE.md`, the one-time venv install line: append ` coverage` after `scipy`
 
 **Interfaces:**
-- Consumes: `config.load/target_lines/discover_tests`.
+- Consumes: `config.load/target_lines/discover_classes/discover_tests`, `covermap.counter_names`.
 - Produces:
   - projects `neoqcp` and `sciqlopplots` in `tools/mutation/phase1.toml`;
   - built coverage dirs `subprojects/NeoQCP/build-cov` (target `auto-tests`) and `build-cov` (full build);
@@ -2251,6 +2543,7 @@ from pathlib import Path
 import pytest
 
 import config
+import covermap
 
 CONFIG = Path(__file__).resolve().parents[1] / "phase1.toml"
 
@@ -2261,12 +2554,24 @@ def test_every_target_exists_and_has_lines(name):
     for target in project.targets:
         assert (project.repo / target.path).is_file(), target.path
         assert config.target_lines(project, target), target.path
+        for source in target.objects:
+            assert (project.repo / source).is_file(), source
 
 
-def test_neoqcp_discovers_the_qtest_classes():
-    names = config.discover_tests(config.load(CONFIG, "neoqcp"))
-    assert {"TestMultiGraph", "TestFillGeometry", "TestHistogramPlottable", "TestErrorBarGeometry", "TestPipeline"} <= set(names)
-    assert len(names) == len(set(names)) > 40
+def test_neoqcp_runs_one_qtest_function_at_a_time():
+    project = config.load(CONFIG, "neoqcp")
+    classes = config.discover_classes(project)
+    assert {"TestMultiGraph", "TestFillGeometry", "TestHistogramPlottable", "TestErrorBarGeometry", "TestPipeline"} <= set(classes)
+    assert len(classes) == len(set(classes)) > 40
+    assert project.raw["tests"]["functions_env"] == {"QCP_TEST_FUNCTION": "-functions"}
+    env = project.env(["TestFillGeometry::twoRowsMakeOneQuad"])
+    assert (env["QCP_TEST_CLASS"], env["QCP_TEST_FUNCTION"]) == ("TestFillGeometry", "twoRowsMakeOneQuad")
+
+
+def test_neoqcp_keeps_the_counters_of_its_targets_and_the_binner_includers():
+    names = covermap.counter_names(config.load(CONFIG, "neoqcp"))
+    assert {"multigraph-fill.cpp.gcda", "plottable-histogram.cpp.gcda", "test-histogram1d.cpp.gcda"} <= names
+    assert not any(n.endswith(".h.gcda") for n in names)
 
 
 def test_sciqlopplots_discovers_the_pytest_files_as_absolute_arguments():
@@ -2292,8 +2597,9 @@ Expected: FAIL, `FileNotFoundError` on `phase1.toml`.
 # Mutation testing, phase 1: the code feat/fills-histogram added (fills, error
 # bars, histogram, the histogram2d fixes, the pipeline fix).
 # Plan: docs/plans/2026-10-25-mutation-testing-phase1-plan.md
-# Strings are templates: {root} {repo} {build_dir} {scratch} {test} {env_NAME};
-# a list item "{tests}" becomes one item per test; write a literal brace as {{ or }}.
+# Strings are templates: {root} {repo} {build_dir} {scratch} {test} {test_class}
+# {test_function} {env_NAME}; a list item "{tests}" becomes one item per test;
+# write a literal brace as {{ or }}.
 # A survivor triaged as equivalent gets a [[project.equivalent]] entry under its
 # project's targets: path, op, before (the exact original line) and reason.
 root = "../.."
@@ -2306,16 +2612,17 @@ build_dir = "subprojects/NeoQCP/build-cov"
 require_env = ["DISPLAY"]
 env = { PATH = "{root}/.venv/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:{env_PATH}", PKG_CONFIG_PATH = "/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig" }
 build_cmd = ["{root}/.venv/bin/meson", "compile", "-C", "{build_dir}", "-j", "4", "auto-tests"]
-build_timeout = 400
+build_timeout = 300
 test_cwd = "{build_dir}"
-test_env = { QT_QPA_PLATFORM = "xcb", QCP_TEST_CLASS = "{test}" }
+test_env = { QT_QPA_PLATFORM = "xcb", QCP_TEST_CLASS = "{test_class}", QCP_TEST_FUNCTION = "{test_function}" }
 test_cmd = ["{build_dir}/tests/auto/auto-tests"]
 cover_test_cmd = ["{build_dir}/tests/auto/auto-tests"]
-cover_keep_gcda = '(multigraph-fill|multigraph-errorbars|histogram-geometry|plottable-histogram|plottable-histogram2d|plottable-multigraph|plottable-draw-utils|async-pipeline|test-histogram1d|test-histogram-plottable)\.cpp\.gcda$'
+prune_gcda = true
 cover_cmds = [["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"]]
 cover_reports = [{ kind = "gcovr", file = "{scratch}/gcovr.json", root = "{repo}" }]
 failure_parser = "qtest"
-tests = { regex_file = "subprojects/NeoQCP/tests/auto/autotest.cpp", pattern = 'QCPTEST\((\w+)\);' }
+# autotest.cpp appends QCP_TEST_FUNCTION to QtTest's argv, so "-functions" lists the class's test functions
+tests = { regex_file = "subprojects/NeoQCP/tests/auto/autotest.cpp", pattern = 'QCPTEST\((\w+)\);', functions_cmd = ["{build_dir}/tests/auto/auto-tests"], functions_env = { QCP_TEST_FUNCTION = "-functions" }, functions_pattern = '^(\w+)\(\)$' }
 
 [[project.target]]
 path = "src/plottables/multigraph-fill.cpp"
@@ -2331,6 +2638,7 @@ path = "src/plottables/plottable-histogram.cpp"
 
 [[project.target]]
 path = "src/datasource/histogram-binner-1d.h"
+objects = ["src/plottables/plottable-histogram.cpp", "tests/auto/test-histogram1d/test-histogram1d.cpp", "tests/auto/test-histogram1d/test-histogram-plottable.cpp"]
 
 [[project.target]]
 path = "src/plottables/plottable-multigraph.cpp"
@@ -2355,7 +2663,7 @@ base = "main"
 build_dir = "build-cov"
 env = { PATH = "{root}/.venv/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:{env_PATH}", PKG_CONFIG_PATH = "/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig", LLVM_INSTALL_DIR = "/usr" }
 build_cmd = ["{root}/.venv/bin/meson", "compile", "-C", "{build_dir}", "-j", "4", "SciQLopPlotsBindings"]
-build_timeout = 400
+build_timeout = 300
 test_cwd = "/tmp"
 test_env = { QT_QPA_PLATFORM = "offscreen", PYTHONPATH = "{build_dir}:{root}" }
 batch_tests = true
@@ -2363,7 +2671,7 @@ stop_on_first_kill = true
 max_tests = 25
 test_cmd = ["{root}/.venv/bin/python", "-m", "pytest", "{tests}", "-q", "-p", "no:cacheprovider", "-rfE", "-x"]
 cover_test_cmd = ["{root}/.venv/bin/python", "-m", "coverage", "run", "--data-file={scratch}/.coverage", "--include={build_dir}/SciQLopPlots/__init__.py", "-m", "pytest", "{tests}", "-q", "-p", "no:cacheprovider"]
-cover_keep_gcda = '(SciQLopHistogram|SciQLopHistogram2D|SciQLopMultiGraphBase|SciQLopGraphComponent|SciQLopGraphComponentDelegate)\.cpp\.gcda$'
+prune_gcda = true
 cover_cmds = [
   ["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"],
   ["{root}/.venv/bin/python", "-m", "coverage", "json", "--data-file={scratch}/.coverage", "-o", "{scratch}/coveragepy.json"],
@@ -2401,13 +2709,17 @@ deploy = "{build_dir}/SciQLopPlots/__init__.py"
 ```
 
 Why the two projects differ:
-- SciQLopPlots runs fail-fast (`-x`, `stop_on_first_kill`) and caps at the 25 fastest covering files (`max_tests`). Common lines are covered by most of the 200 test files, and a full run per mutant would not fit in a chunk.
-- NeoQCP runs every covering class, so its kill matrix is complete.
+- SciQLopPlots runs fail-fast (`-x`, `stop_on_first_kill`) in slices of the 25 fastest covering files (`max_tests`). Common lines are covered by most of the 200 test files, and one pass over all of them would not fit in a chunk. A survivor still runs every covering file, slice by slice. Its `killed_by` names the fastest killing file only, and the report says so.
+- NeoQCP runs every covering function, so its kill matrix is complete. Task 9 Step 1 has the stated fallback if that costs too much.
+
+Why the binner header lists `objects`: a header has no object of its own. Its template code is counted in the objects that include it, so those are the counters to keep.
+
+`build_timeout = 300` keeps one slow link from eating a whole 520 s chunk.
 
 - [ ] **Step 3: Run the config tests, then the whole tool suite**
 
 Run: `timeout 540 .venv/bin/python -m pytest tools/mutation/tests -q -p no:cacheprovider`
-Expected: `63 passed` (58 + 5), exit code 0.
+Expected: `73 passed` (67 + 6), exit code 0.
 
 - [ ] **Step 4: Ignore build-cov and install coverage.py**
 
@@ -2443,21 +2755,25 @@ timeout 570 meson compile -C build-cov -j 4 auto-tests; echo "exit=$?"
 
 `exit=124` means the time ran out: run it again, and ninja continues. If meson says the target name is ambiguous, use `tests/auto/auto-tests` here and in `phase1.toml`'s `build_cmd`.
 
-- [ ] **Step 6: Smoke-test NeoQCP's coverage build**
+- [ ] **Step 6: Smoke-test NeoQCP's coverage build, the function listing and the counter names**
 
 ```bash
 cd /home/jeandet/Documents/prog/SciQLopPlots/subprojects/NeoQCP/build-cov
-xvfb-run -a -s "-screen 0 1280x1024x24" timeout 300 env QT_QPA_PLATFORM=xcb QCP_TEST_CLASS=TestFillGeometry ./tests/auto/auto-tests; echo "exit=$?"
-find . -name '*multigraph-fill.cpp.gcda'
+xvfb-run -a -s "-screen 0 1280x1024x24" env QT_QPA_PLATFORM=xcb QCP_TEST_CLASS=TestFillGeometry QCP_TEST_FUNCTION=-functions timeout 60 ./tests/auto/auto-tests; echo "exit=$?"
+xvfb-run -a -s "-screen 0 1280x1024x24" env QT_QPA_PLATFORM=xcb QCP_TEST_CLASS=TestFillGeometry QCP_TEST_FUNCTION=twoRowsMakeOneQuad timeout 300 ./tests/auto/auto-tests; echo "exit=$?"
+find . -name '*.gcda' | grep -E 'multigraph-fill|test-histogram1d'
 ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'
 ```
 
 Expected:
-- `Totals: N passed, 0 failed`, `exit=0`;
-- one `.gcda` path whose file name ends in `multigraph-fill.cpp.gcda`, which matches `cover_keep_gcda`;
-- no orphan Xvfb.
+1. The listing prints one `name()` line per test function of `TestFillGeometry` (`twoRowsMakeOneQuad()`, `nanEdgeBreaksTheStrip()`, ...), then `exit=0`.
+2. The single-function run prints `PASS   : TestFillGeometry::twoRowsMakeOneQuad()`, then `exit=0`.
+3. `find` shows a `.gcda` whose name ends in `_multigraph-fill.cpp.gcda` or is exactly `multigraph-fill.cpp.gcda`. The test-object counter only appears after a histogram test has run, so its absence here is fine.
+4. No orphan Xvfb.
 
-If the `.gcda` names differ, fix `cover_keep_gcda` in `phase1.toml`.
+If the listing does not work (no `name()` lines, or a non-zero exit), stop and report. Do not fall back to class granularity on your own: the controller decides.
+
+If the `.gcda` names have another shape, `counter_names`/`prune_counters` must change (Task 3) before Task 8.
 
 - [ ] **Step 7: Configure and build SciQLopPlots' coverage dir**
 
@@ -2487,12 +2803,12 @@ If the name is ambiguous, use `SciQLopPlots/SciQLopPlotsBindings` here and in `p
 
 ```bash
 cd /tmp && QT_QPA_PLATFORM=offscreen PYTHONPATH=/home/jeandet/Documents/prog/SciQLopPlots/build-cov:/home/jeandet/Documents/prog/SciQLopPlots timeout 540 /home/jeandet/Documents/prog/SciQLopPlots/.venv/bin/python -m pytest /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_fills_errorbars.py /home/jeandet/Documents/prog/SciQLopPlots/tests/integration/test_histogram1d.py -q -p no:cacheprovider; echo "exit=$?"
-find /home/jeandet/Documents/prog/SciQLopPlots/build-cov -name 'SciQLopHistogram.cpp.gcda'
+find /home/jeandet/Documents/prog/SciQLopPlots/build-cov -name '*SciQLopHistogram.cpp.gcda'
 ```
 
 Expected:
-- all tests pass, `exit=0`;
-- one `.gcda` path, which matches `cover_keep_gcda`.
+- all tests pass, the summary line says `N passed`, and `exit=0`;
+- one `.gcda` path, named `SciQLopHistogram.cpp.gcda` or ending in `_SciQLopHistogram.cpp.gcda`.
 
 If the run imported the wrong build, `python -c "import SciQLopPlots; print(SciQLopPlots.__file__)"` with the same PYTHONPATH must print a path under `build-cov`.
 
@@ -2509,7 +2825,7 @@ git commit -m "feat(mutation): phase 1 targets (fills, error bars, histogram, pi
 ### Task 8: Coverage map, baseline and mutant plan for phase 1
 
 **Files:**
-- Modify: `tools/mutation/phase1.toml`, only if a step below finds a wrong regex or target name
+- Modify: `tools/mutation/phase1.toml`, only if a step below finds a wrong target or object name
 - Modify: `docs/plans/2026-10-22-mutation-testing-design.md`, the `Status:` line
 - Output (not committed): `$SCRATCH/mutation-phase1-neoqcp-coverage.md`, `$SCRATCH/mutation-phase1-sciqlopplots-coverage.md`
 
@@ -2528,20 +2844,26 @@ ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'
 git status --porcelain --untracked-files=no; git -C subprojects/NeoQCP status --porcelain --untracked-files=no
 ```
 
-There are about 45 classes, so expect two or three chunks.
+The first chunk lists the functions of all ~45 classes, then covers functions one by one. There are about 1070 functions at a few seconds each, so expect seven to ten chunks.
 
 - [ ] **Step 2: NeoQCP plan, and check it**
 
 ```bash
 xvfb-run -a .venv/bin/python tools/mutation/mutate.py --config tools/mutation/phase1.toml --project neoqcp plan
+ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'
 ```
 
 `plan` does not build, but `require_env` needs DISPLAY, hence `xvfb-run`. Check the output:
-- **Every target has mutants.** A target with 0 mutants and many uncovered lines means the counters were pruned away. Fix `cover_keep_gcda` (Task 7 Step 6 shows the real `.gcda` names), then `cover --reset` and redo Step 1.
-- **Baseline failures are `none`.** A failing class is a bug found in passing. Do not mutate around it:
-  1. stop and report it to the controller;
-  2. it gets its own reproducer and fix commit in NeoQCP;
-  3. then `cover --reset`.
+- **Every target has mutants.** A target with 0 mutants and many uncovered lines means its counters were pruned away. Check the real `.gcda` names against `covermap.counter_names` (Task 7 Step 6), fix the target's `objects` or the naming rule, then `cover --reset` and redo Step 1.
+- **Baseline failures.**
+  - `(ran no test)` on single functions is expected for a function that QSKIPs, for example one that needs a GPU feature xvfb lacks. Count them and name them in your report.
+  - `(ran no test)` on every function of a class means the class or function names are wrong. Stop and report.
+  - `(exit N)` or `(timed out)` is a bug found in passing. Do not mutate around it:
+    1. stop and report it to the controller;
+    2. it gets its own reproducer and fix commit in NeoQCP;
+    3. then `cover --reset`.
+  - `(report failed: ...)` means gcovr failed for that test. Report it with the gcovr error.
+- **Stale-equivalent warnings.** There are none at this stage, because `phase1.toml` has no entries yet.
 
 - [ ] **Step 3: SciQLopPlots coverage, in chunks, then the plan**
 
@@ -2559,7 +2881,7 @@ There are about 200 test files, so expect four to six chunks. Then:
 .venv/bin/python tools/mutation/mutate.py --config tools/mutation/phase1.toml --project sciqlopplots plan
 ```
 
-Make the same checks as in Step 2. Also check that `SciQLopPlots/__init__.py` has mutants: 0 there means coverage.py's paths did not match the deploy copy.
+Make the same checks as in Step 2. Also check that `SciQLopPlots/__init__.py` has mutants: 0 there means coverage.py's paths did not match the deploy copy, or `coverage json` failed (the `report failed` note says which).
 
 - [ ] **Step 4: Write the coverage-only reports**
 
@@ -2572,7 +2894,7 @@ Read both "Uncovered target lines" sections. They are the first finding of phase
 
 - [ ] **Step 5: Run the tool suite, then commit**
 
-Run the tool suite (Global Constraints): `63 passed`, exit 0. Then edit the design doc's `Status:` line. Append, filling in the real numbers: `Phase 1 tool done (tools/mutation/, plan docs/plans/2026-10-25-mutation-testing-phase1-plan.md); coverage mapped 2026-MM-DD: NeoQCP <M> mutants / <U> uncovered target lines, SciQLopPlots <M> / <U>.`
+Run the tool suite (Global Constraints): `73 passed`, exit 0. Then edit the design doc's `Status:` line. Append, filling in the real numbers: `Phase 1 tool done (tools/mutation/, plan docs/plans/2026-10-25-mutation-testing-phase1-plan.md); coverage mapped 2026-MM-DD per NeoQCP test function and per SciQLopPlots test file: NeoQCP <M> mutants / <U> uncovered target lines, SciQLopPlots <M> / <U>.`
 
 ```bash
 git add docs/plans/2026-10-22-mutation-testing-design.md
@@ -2586,14 +2908,25 @@ git commit -m "docs(mutation): phase 1 coverage mapped and mutants planned" -m "
 
 **Files:**
 - Modify: `docs/plans/2026-10-22-mutation-testing-design.md`, the `Status:` line
-- Modify: `tools/mutation/phase1.toml`, only for `build_timeout`/`max_tests` if a step below says so
+- Modify: `tools/mutation/phase1.toml`, only for the fallback in Step 1 or `build_timeout`
 - Output (not committed): `$SCRATCH/mutation-phase1-neoqcp.md`, `$SCRATCH/mutation-phase1-sciqlopplots.md`, and their `-kill-matrix.json` files
 
 **Interfaces:**
 - Consumes: the Task 8 state files.
 - Produces: decided mutants in both state files, the two reports, and the triage hand-off below.
 
-- [ ] **Step 1: NeoQCP mutants, in chunks**
+**Expected cost.** These are estimates. Step 1 replaces them with measured numbers after two chunks.
+
+| | per mutant | mutants per 520 s chunk | mutants (Task 8 count, about) | chunks | wall time |
+|---|---|---|---|---|---|
+| NeoQCP | build 30-60 s (one object + relink `auto-tests`) + about 1 s per covering function | 4-8 | 400-600 | 60-130 | 9-19 h |
+| SciQLopPlots | build 60-120 s (one object + relink the bindings module) + 30-60 s per 25-file slice | 2-4, fewer for survivors that need several slices | 300-450 | 90-200 | 13-28 h |
+
+The controller can stop after any chunk. A report on partial results is valid: pending mutants are counted, not hidden. If this is too slow, narrow the scope:
+1. drop the `diff`-scope targets whose changes are mostly thread hops (`SciQLopGraphComponent.cpp`, then `SciQLopMultiGraphBase.cpp`);
+2. run `plan`, which drops their mutants.
+
+- [ ] **Step 1: NeoQCP mutants, in chunks, with a cost check after two**
 
 Repeat this as its own foreground call until it prints `run: 0 left` and `exit=0`:
 
@@ -2604,16 +2937,21 @@ ps -eo pid,ppid,cmd | awk '/[X]vfb/ && $2==1'
 git status --porcelain --untracked-files=no; git -C subprojects/NeoQCP status --porcelain --untracked-files=no
 ```
 
-Expect several hundred mutants at roughly a minute each, so many chunks. The work may span sessions: the state file carries it over.
-
-After the first two chunks, read the state:
+After the first two chunks, measure:
 
 ```bash
-.venv/bin/python -c "import json; d=json.load(open('subprojects/NeoQCP/build-cov/mutation/state.json')); import collections; print(collections.Counter(m['status'] for m in d['mutants'].values()))"
+.venv/bin/python -c "import json, collections, statistics; d=json.load(open('subprojects/NeoQCP/build-cov/mutation/state.json')); ms=list(d['mutants'].values()); t=[m['seconds'] for m in ms if m.get('seconds')]; p=sum(m['status']=='pending' for m in ms); print(collections.Counter(m['status'] for m in ms)); print('mean s/mutant', statistics.mean(t), 'per chunk', 520/statistics.mean(t), 'hours left', p*statistics.mean(t)/3600)"
 ```
 
-- If `build_error` is more than about a third of the decided mutants, an operator is making junk. Report which `op` dominates before going on.
-- If a mutant reaches `interrupted`, one mutant takes longer than a chunk. Raise `build_timeout` or lower the class count, then report it.
+Then apply the first rule that holds:
+1. **`build_error` is more than about a third of the decided mutants.** An operator is making junk. Report which `op` dominates before going on.
+2. **The mean is above 120 s per mutant.** Apply the stated fallback:
+   - set `stop_on_first_kill = true` in the `neoqcp` project;
+   - continue. Survivors still run every covering function. `killed_by` then names the fastest killer only, and the report says so;
+   - say in your report that the fallback was applied, with the measured mean.
+3. **A mutant reaches `interrupted`.** One pass takes longer than a chunk. Report it with its `build_seconds` and number of tests.
+
+Put the measured mean, mutants per chunk and projected hours in your report to the controller.
 
 - [ ] **Step 2: NeoQCP report**
 
@@ -2630,7 +2968,7 @@ timeout -k 20 570 .venv/bin/python tools/mutation/mutate.py --config tools/mutat
 git status --porcelain --untracked-files=no
 ```
 
-Each SciQLopPlots mutant relinks the bindings module, so expect about two minutes per mutant. Then:
+After two chunks, run the measuring one-liner with `build-cov/mutation/state.json`, and report the measured mean, mutants per chunk and projected hours. Then:
 
 ```bash
 .venv/bin/python tools/mutation/mutate.py --config tools/mutation/phase1.toml --project sciqlopplots report --out "$SCRATCH/mutation-phase1-sciqlopplots.md"
@@ -2638,7 +2976,7 @@ Each SciQLopPlots mutant relinks the bindings module, so expect about two minute
 
 - [ ] **Step 4: Status line, tool suite, commit**
 
-Run the tool suite: `63 passed`, exit 0. Append to the design doc's `Status:` line: `Phase 1 run 2026-MM-DD: NeoQCP score <S>% (<K> killed, <V> survived), SciQLopPlots <S>% (<K>/<V>); reports in the session scratchpad; survivors handed off for triage.`
+Run the tool suite: `73 passed`, exit 0. Append to the design doc's `Status:` line: `Phase 1 run 2026-MM-DD: NeoQCP score <S>% (<K> killed, <V> survived), SciQLopPlots <S>% (<K>/<V>); reports in the session scratchpad; survivors handed off for triage.`
 
 ```bash
 git add docs/plans/2026-10-22-mutation-testing-design.md
@@ -2651,8 +2989,9 @@ git commit -m "docs(mutation): phase 1 results" -m "Co-Authored-By: Claude Opus 
 Report:
 - the two report paths;
 - the status counts and scores;
+- the measured time per mutant and whether the NeoQCP fallback was applied;
 - the number of uncovered line ranges;
-- the baseline failures;
+- the baseline failures, with their notes;
 - anything odd (build_error ratio, interrupted mutants, orphan Xvfb).
 
 Do not triage the survivors yourself.
@@ -2661,22 +3000,22 @@ Do not triage the survivors yourself.
 
 ## After Task 9: survivor triage (follow-ups, not part of this plan)
 
-Each survivor row in a report is one follow-up. The controller groups rows by function and dispatches one follow-up per group. Each follow-up fills the triage column with one of four outcomes:
+Each survivor row in a report is one follow-up. Every covering test already ran against it, so a survivor is never an artefact of the cap. The controller groups rows by function and dispatches one follow-up per group. Each follow-up fills the triage column with one of four outcomes:
 
 1. **Real bug.** Write a failing test in the owning repo's suite. For NeoQCP that is a QtTest function in `tests/auto/`; for SciQLopPlots it is a pytest test. Fix the code, then commit. NeoQCP commits go in NeoQCP. A SciQLopPlots change that needs a NeoQCP fix waits for the NeoQCP commit first.
 2. **Weak test.** Add or tighten a test so it kills the mutant. Check that it does, against the current source:
    ```bash
-   xvfb-run -a timeout -k 20 570 .venv/bin/python tools/mutation/mutate.py --config tools/mutation/phase1.toml --project neoqcp try --path <file> --line <n> --op <op> --tests <TestClass>
+   xvfb-run -a timeout -k 20 570 .venv/bin/python tools/mutation/mutate.py --config tools/mutation/phase1.toml --project neoqcp try --path <file> --line <n> --op <op> --tests <TestClass>::<function>
    ```
    For SciQLopPlots, use `--project sciqlopplots` and `--tests tests/integration/<file>.py`, without `xvfb-run`. Expected output: `killed: ...`. Then commit the test.
 3. **Dead or redundant code.** Remove it. Both repos' full suites are the guard.
-4. **Equivalent mutant.** Add a `[[project.equivalent]]` entry (path, op, the exact `before` line, reason) under the project's targets in `phase1.toml`, then commit.
+4. **Equivalent mutant.** Add a `[[project.equivalent]]` entry (path, op, the exact `before` line, reason) under the project's targets in `phase1.toml`, then commit. `plan` warns when a later fix makes an entry stale.
 
-Units in the kill-matrix lists ("killed none", "no kill of their own") are removal candidates, not removals. A follow-up removes a test only after checking that it covers nothing unique.
+Tests in the kill-matrix lists ("killed none", "no kill of their own") are removal candidates, not removals. A follow-up removes a test only after checking that it covers nothing unique. For SciQLopPlots these lists are hints only, because its runs stop at the first kill.
 
 After a batch of follow-ups, re-run the affected project in this order:
 1. `cover --reset`;
-2. `plan`, which re-makes the mutants of changed files and re-queues survivors a new test covers;
+2. `plan`, which re-makes the mutants of changed files, re-queues survivors a new test covers, and warns about stale equivalents;
 3. `run`;
 4. `report`.
 
