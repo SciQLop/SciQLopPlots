@@ -177,3 +177,28 @@ def test_the_clamps_apply_again_back_in_data(shown_host):
     line.set_coordinates(Coordinates.Data)
     line.set_position(50.0)
     assert line.position() == 5.0
+
+
+def test_the_clamps_and_their_getters(host, orientation):
+    line = make(host, orientation)
+    assert (line.min_value(), line.max_value()) == (None, None)
+    line.set_min_value(0.2)
+    line.set_max_value(0.8)
+    assert (line.min_value(), line.max_value()) == (0.2, 0.8)
+    line.set_position(5.0)
+    assert line.position() == 0.8
+    line.clear_min_value()
+    line.clear_max_value()
+    assert (line.min_value(), line.max_value()) == (None, None)
+
+
+def test_the_tool_tip_round_trips_and_signals_once(host, orientation):
+    line = make(host, orientation)
+    seen = record(line.tool_tip_changed)
+    line.set_tool_tip("tip")
+    line.set_tool_tip("tip")
+    assert (line.tool_tip(), seen) == ("tip", ["tip"])
+
+
+def test_on_tool_tip_has_a_signal(host):
+    assert make(host, "vertical").on.tool_tip.signal is not None

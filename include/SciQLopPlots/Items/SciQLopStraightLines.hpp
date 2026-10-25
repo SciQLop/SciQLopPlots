@@ -217,6 +217,10 @@ public:
     [[nodiscard]] Qt::PenStyle line_style() const;
     void set_line_style(Qt::PenStyle style);
 
+    //! The clamp bounds, std::nullopt (None) when unset. They are data values, applied by
+    //! set_position in Data mode only; a coordinates switch does not re-clamp.
+    [[nodiscard]] std::optional<double> min_value() const;
+    [[nodiscard]] std::optional<double> max_value() const;
     void set_min_value(double min);
     void clear_min_value();
     void set_max_value(double max);
@@ -229,6 +233,7 @@ signals:
     Q_SIGNAL void position_changed(double new_position);
     Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
+    Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
     Q_SIGNAL void delete_requested();
 };
 

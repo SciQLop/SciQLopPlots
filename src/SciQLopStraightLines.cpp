@@ -272,7 +272,13 @@ QString SciQLopStraightLine::tool_tip() const
 void SciQLopStraightLine::set_tool_tip(const QString& tool_tip)
 {
     SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
+    if (m_target->tool_tip() == tool_tip)
+        return;
+    // A part's slot may delete a panel line while its target writes.
+    const QPointer<SciQLopStraightLine> alive(this);
     m_target->set_tool_tip(tool_tip);
+    if (alive)
+        Q_EMIT tool_tip_changed(tool_tip);
 }
 
 double SciQLopStraightLine::line_width() const
@@ -295,6 +301,16 @@ void SciQLopStraightLine::set_line_style(Qt::PenStyle style)
 {
     SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
     m_target->set_line_style(style);
+}
+
+std::optional<double> SciQLopStraightLine::min_value() const
+{
+    return m_target->min_value();
+}
+
+std::optional<double> SciQLopStraightLine::max_value() const
+{
+    return m_target->max_value();
 }
 
 void SciQLopStraightLine::set_min_value(double min)
