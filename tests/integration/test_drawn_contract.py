@@ -244,10 +244,10 @@ ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLine
 
 ROWS += [
     Row("panel span", ("MultiPlotsVerticalSpan",), {
-        "MultiPlotsVerticalSpan": lambda h: h.panel.vertical_span(R(1.0, 2.0)),
+        "MultiPlotsVerticalSpan": lambda h: _old(MultiPlotsVerticalSpan, h.panel, R(1.0, 2.0)),
     }, ALL, frozenset({"visible", "selected", "color"})),
     Row("panel line", ("MultiPlotsVerticalLine",), {
-        "MultiPlotsVerticalLine": lambda h: h.panel.vertical_line(2.0),
+        "MultiPlotsVerticalLine": lambda h: _old(MultiPlotsVerticalLine, h.panel, 2.0),
     }, {"visible": OK, "selected": OK, "name": OK, "color": OK}, frozenset({"visible", "selected", "color"})),
     Row("span collection", ("MultiPlotsVSpanCollection",), {
         "MultiPlotsVSpanCollection": lambda h: MultiPlotsVSpanCollection(h.panel),

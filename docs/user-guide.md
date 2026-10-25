@@ -828,7 +828,7 @@ note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordina
 
 ![A span, a threshold line and a text label](images/overlays.png)
 
-- On a panel, `panel.vertical_span(range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Read and set its state as attributes: `span.selected = True`, `span.visible`, `span.color`, `span.read_only`, `span.id`.
+- On a panel, `panel.vertical_span(range, color, ...)` draws one span across every plot. That's handy for marking an event in time. Its state is read and set with methods: `span.set_selected(True)`, `span.visible()`, `span.color()`, `span.read_only()`, `span.id()`.
 - A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
 - The other factories are `plot.vertical_line(position)`, `plot.horizontal_span(range)`, `plot.rectangular_span(key_range, value_range)`, `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`.
 - The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
@@ -846,15 +846,15 @@ x = np.linspace(0, 10, 1000)
 panel.plot(x, np.sin(x), labels=["sin"])
 panel.plot(x, np.cos(x), labels=["cos"])
 
-cursor = panel.vertical_line(2.0, tool_tip="cursor")
+cursor = panel.vertical_line(2.0, read_only=False, tool_tip="cursor")
 cursor.position_changed.connect(lambda t: print("cursor at", t))
-cursor.position = 5.0          # moves it on every plot
-cursor.color = QColor("red")   # also line_width, visible, read_only, tooltip
+cursor.set_position(5.0)          # moves it on every plot
+cursor.set_color(QColor("red"))   # also set_line_width, set_visible, set_read_only, set_tool_tip
 ```
 
 ![A red cursor line across two plots](images/panel-cursor.png)
 
-Dragging the line on any plot moves it on all of them, and `position_changed` fires once per move. With `read_only=True` the user can't drag it.
+Dragging the line on any plot moves it on all of them, and `position_changed` fires once per move. Lines are read-only by default: `read_only=False` lets the user drag one.
 
 ## Interval timelines
 

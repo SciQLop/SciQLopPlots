@@ -3,9 +3,13 @@ import numpy as np
 import pytest
 import shiboken6
 from PySide6.QtCore import QPointF
-from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, SciQLopPlotRange as R,
-                          SciQLopNDProjectionPlot, SciQLopVerticalLine, SciQLopVerticalSpan)
+from SciQLopPlots import (SciQLopPlotRange as R, SciQLopNDProjectionPlot, SciQLopSpan,
+                          SciQLopStraightLine, SciQLopVerticalLine)
 from conftest import process_events
+
+
+def _parts(plot, cls=SciQLopSpan):
+    return [p for p in plot.findChildren(cls) if p.is_panel_part()]
 
 
 def _panel_with_plot(panel):
@@ -19,8 +23,8 @@ def test_panel_span_marks_its_per_plot_parts(panel):
     span = panel.vertical_span(R(1.0, 2.0))
     line = panel.vertical_line(1.5)
     process_events()
-    parts = plot.findChildren(SciQLopVerticalSpan) + plot.findChildren(SciQLopVerticalLine)
-    assert parts and all(p.property("_sciqlop_panel_part") for p in parts)
+    parts = _parts(plot) + _parts(plot, SciQLopStraightLine)
+    assert len(parts) == 2 and all(p.is_panel_part() for p in parts)
 
 
 from PySide6.QtCore import QRectF
@@ -114,7 +118,7 @@ def test_remove_rejects_a_panel_part(panel):
     plot = _panel_with_plot(panel)
     span = panel.vertical_span(R(1.0, 2.0))
     process_events()
-    part = plot.findChildren(SciQLopVerticalSpan)[0]
+    part = _parts(plot)[0]
     with pytest.raises(ValueError, match="panel"):
         plot.remove(part)
 
@@ -208,13 +212,13 @@ def test_panel_factories_return_panel_owned_objects(panel):
     panel.vertical_span(R(1.0, 2.0), tool_tip="s", id="a")
     panel.vertical_line(1.5)
     import gc; gc.collect(); process_events()
-    spans = panel.findChildren(MultiPlotsVerticalSpan)
-    lines = panel.findChildren(MultiPlotsVerticalLine)
+    spans = [s for s in panel.findChildren(SciQLopSpan) if not s.is_panel_part()]
+    lines = [l for l in panel.findChildren(SciQLopStraightLine) if not l.is_panel_part()]
     assert len(spans) == 1 and len(lines) == 1
     assert spans[0].parent() is panel and lines[0].parent() is panel
     assert shiboken6.isValid(spans[0]) and shiboken6.isValid(lines[0])
-    assert len(plot.findChildren(SciQLopVerticalSpan)) == 1
-    assert len(plot.findChildren(SciQLopVerticalLine)) == 1
+    assert len(_parts(plot)) == 1
+    assert len(_parts(plot, SciQLopStraightLine)) == 1
 
 
 def test_panel_remove_deletes_a_span_and_its_parts(panel):
@@ -223,7 +227,7 @@ def test_panel_remove_deletes_a_span_and_its_parts(panel):
     process_events()
     panel.remove(span)
     assert not shiboken6.isValid(span)
-    assert plot.findChildren(SciQLopVerticalSpan) == []
+    assert _parts(plot) == []
 
 
 def test_panel_remove_deletes_a_line(panel):
@@ -232,19 +236,19 @@ def test_panel_remove_deletes_a_line(panel):
     process_events()
     panel.remove(line)
     assert not shiboken6.isValid(line)
-    assert plot.findChildren(SciQLopVerticalLine) == []
+    assert _parts(plot, SciQLopStraightLine) == []
 
 
 def test_panel_span_removed_from_its_own_signal(panel):
     plot = _panel_with_plot(panel)
     span = panel.vertical_span(R(1.0, 2.0))
     process_events()
-    part = plot.findChildren(SciQLopVerticalSpan)[0]
+    part = _parts(plot)[0]
     part.range_changed.connect(lambda *_: panel.remove(span))
     part.set_range(R(3.0, 4.0))
     process_events()
     assert not shiboken6.isValid(span)
-    assert plot.findChildren(SciQLopVerticalSpan) == []
+    assert _parts(plot) == []
 
 
 def test_panel_remove_off_thread_lands_on_the_gui_thread(panel):
@@ -256,7 +260,7 @@ def test_panel_remove_off_thread_lands_on_the_gui_thread(panel):
     assert gone == []
     process_events()
     assert gone == [True]
-    assert plot.findChildren(SciQLopVerticalSpan) == []
+    assert _parts(plot) == []
 
 
 def test_panel_remove_removes_a_plot(panel):
@@ -297,7 +301,7 @@ def test_part_built_for_a_later_plot_is_refused(panel):
     late = SciQLopPlot()
     panel.add_plot(late)
     process_events()
-    part = late.findChildren(SciQLopVerticalSpan)[0]
+    part = _parts(late)[0]
     with pytest.raises(ValueError, match="panel"):
         late.remove(part)
 

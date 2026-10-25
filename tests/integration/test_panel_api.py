@@ -8,7 +8,7 @@ from SciQLopPlots import (
     SciQLopPlotRange, SciQLopGraphInterface, PlotType,
     MultiPlotsVerticalSpan, MultiPlotsVSpanCollection, SciQLopVerticalSpan,
 )
-from conftest import force_gc, process_events
+from conftest import force_gc, old, process_events
 
 
 class TestPanelPlotManagement:
@@ -142,14 +142,14 @@ class TestMultiPlotsVerticalSpan:
     def test_create(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(2.0, 5.0),
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(2.0, 5.0),
             QColor(100, 100, 200))
         assert span is not None
 
     def test_range(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(2.0, 5.0))
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(2.0, 5.0))
         r = span.range
         assert abs(r.start() - 2.0) < 1e-9
         assert abs(r.stop() - 5.0) < 1e-9
@@ -157,7 +157,7 @@ class TestMultiPlotsVerticalSpan:
     def test_set_range(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0))
         span.set_range(SciQLopPlotRange(3.0, 7.0))
         r = span.range
         assert abs(r.start() - 3.0) < 1e-9
@@ -165,7 +165,7 @@ class TestMultiPlotsVerticalSpan:
     def test_visibility(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0))
         assert span.visible
         span.set_visible(False)
         assert not span.visible
@@ -174,13 +174,13 @@ class TestMultiPlotsVerticalSpan:
         x, y = sample_data
         panel.line(x, y)
         color = QColor(255, 0, 0)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0), color)
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0), color)
         assert span.color.red() == 255
 
     def test_delete_no_crash(self, panel, sample_data):
         x, y = sample_data
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0))
         panel.remove(span)
         force_gc()
 
@@ -192,7 +192,7 @@ class TestMultiPlotsVerticalSpan:
         x, y = sample_data
         panel.line(x, y)
         panel.line(x, y)
-        span = panel.vertical_span(SciQLopPlotRange(0.0, 1.0))
+        span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(0.0, 1.0))
         victim = panel.plot_at(0)
         victim.deleteLater()
         qtbot.wait(100)  # deferred deletion + queued remove_plot

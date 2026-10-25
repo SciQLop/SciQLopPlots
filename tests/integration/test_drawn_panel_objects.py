@@ -4,8 +4,8 @@ import pytest
 from PySide6.QtGui import QColor
 
 from SciQLopPlots import (MultiPlotsVerticalLine, MultiPlotsVerticalSpan, MultiPlotsVSpanCollection,
-                          SciQLopPlotRange, SciQLopVerticalSpan)
-from conftest import force_gc, process_events, record
+                          SciQLopPlotRange, SciQLopSpan, SciQLopVerticalSpan)
+from conftest import force_gc, old, process_events, record
 
 X = np.linspace(0.0, 10.0, 50)
 
@@ -24,7 +24,7 @@ def test_the_catalogue_overlay_pattern_signals_once(panel):
 
 def test_panel_span_state_stays_attributes(panel):
     panel.plot(X, np.sin(X))
-    span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
+    span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(1.0, 2.0))
     seen = record(span.visible_changed)
     span.visible = False
     span.color = QColor("red")
@@ -33,7 +33,7 @@ def test_panel_span_state_stays_attributes(panel):
 
 def test_a_panel_line_colour_signals_once(panel):
     panel.plot(X, np.sin(X))
-    line = panel.vertical_line(2.0)
+    line = old(MultiPlotsVerticalLine, panel, 2.0)
     seen = record(line.color_changed)
     line.color = QColor("red")
     line.color = QColor("red")
@@ -41,21 +41,21 @@ def test_a_panel_line_colour_signals_once(panel):
 
 
 def _plot_spans(plot):
-    return plot.findChildren(SciQLopVerticalSpan)
+    return [s for s in plot.findChildren(SciQLopSpan) if s.is_panel_part()]
 
 
 def test_a_panel_span_reaches_a_later_plot_and_outlives_a_removed_one(panel):
     panel.plot(X, np.sin(X))
     span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
-    span.visible = False
+    span.set_visible(False)
     panel.plot(X, np.cos(X))
     process_events()
     later = panel.plots()[1]
     assert [s.visible() for s in _plot_spans(later)] == [False]
     panel.remove_plot(panel.plots()[0])
     force_gc()
-    span.visible = True
-    span.color = QColor("red")
+    span.set_visible(True)
+    span.set_color(QColor("red"))
     assert [(s.visible(), s.color()) for s in _plot_spans(later)] == [(True, QColor("red"))]
 
 
@@ -69,8 +69,8 @@ def _span_and_plot_span(panel):
     panel.plot(X, np.sin(X))
     panel.plot(X, np.cos(X))
     process_events()
-    span = panel.vertical_span(SciQLopPlotRange(1.0, 2.0))
-    return span, _plot_spans(panel.plots()[0])[0]
+    span = old(MultiPlotsVerticalSpan, panel, SciQLopPlotRange(1.0, 2.0))
+    return span, panel.plots()[0].findChildren(SciQLopVerticalSpan)[0]
 
 
 def _line_and_plot_line(panel):
@@ -78,7 +78,7 @@ def _line_and_plot_line(panel):
     panel.plot(X, np.sin(X))
     panel.plot(X, np.cos(X))
     process_events()
-    line = panel.vertical_line(2.0)
+    line = old(MultiPlotsVerticalLine, panel, 2.0)
     return line, panel.plots()[0].findChildren(SciQLopVerticalLine)[0]
 
 

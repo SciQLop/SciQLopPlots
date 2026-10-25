@@ -160,7 +160,7 @@ class TestTimeRanges:  # task 5, finding 3.5
         qtbot.addWidget(panel)
         panel.create_plot(-1)
         span = panel.vertical_span(SciQLopPlotRange(self.T0, self.T1))
-        assert repr(span.range).startswith("SciQLopPlotTimeRange")
+        assert repr(span.range()).startswith("SciQLopPlotTimeRange")
 
 
 class TestLeftovers:  # task 6, finding 3.10

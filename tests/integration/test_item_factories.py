@@ -294,3 +294,42 @@ def test_the_plot_shorthands_take_the_base_factory_parameters_and_defaults(
     assert set(own) == (set(base_params) - replaced) | added
     shared = (set(own) & set(base_params)) - SPAN_RANGES
     assert {k: own[k] for k in shared} == {k: base_params[k] for k in shared}
+
+
+PANEL_SHORTHANDS = {
+    "vertical_span": (lambda p: p.vertical_span(R(1.0, 2.0)), SciQLopSpan),
+    "horizontal_span": (lambda p: p.horizontal_span(R(1.0, 2.0)), SciQLopSpan),
+    "vertical_line": (lambda p: p.vertical_line(1.0), SciQLopStraightLine),
+    "horizontal_line": (lambda p: p.horizontal_line(0.5), SciQLopStraightLine),
+}
+
+
+@pytest.mark.parametrize("name", PANEL_SHORTHANDS)
+def test_panel_shorthands_return_the_plain_classes_at_panel_scope(panel, name):
+    make, cls = PANEL_SHORTHANDS[name]
+    item = make(panel)
+    assert type(item) is cls and item.scope() is panel
+
+
+def test_the_panel_defaults_are_the_plot_ones(panel):
+    span, line = panel.vertical_span(R(1.0, 2.0)), panel.vertical_line(1.0)
+    assert (span.color(), span.read_only()) == (QColor(100, 100, 100, 100), False)
+    assert (line.color(), line.read_only()) == (QColor(0, 0, 0), True)
+
+
+@pytest.mark.parametrize("base, shorthands", [
+    ("span", ("vertical_span", "horizontal_span")),
+    ("straight_line", ("vertical_line", "horizontal_line")),
+])
+def test_the_panel_shorthands_take_the_base_factory_defaults(base, shorthands):
+    cls = SciQLopPlotsBindings.SciQLopMultiPlotPanel
+    defaults = _parameters(getattr(cls, base))
+    for name in shorthands:
+        own = _parameters(getattr(cls, name))
+        shared = set(own) & set(defaults)
+        assert {"color", "read_only", "coordinates"} <= shared, name
+        assert {k: own[k] for k in shared} == {k: defaults[k] for k in shared}, name
+
+
+def test_panels_have_no_rectangular_span(panel):
+    assert not hasattr(panel, "rectangular_span")

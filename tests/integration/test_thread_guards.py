@@ -255,7 +255,7 @@ MULTI_LINE_CASES = [
 @pytest.mark.parametrize("prop,value", MULTI_LINE_CASES, ids=[f"set_{p}" for p, _ in MULTI_LINE_CASES])
 def test_multi_plot_line_setter_lands_on_gui_thread(panel, prop, value):
     panel.create_plot()
-    vline = panel.vertical_line(3.0)
+    vline = panel.vertical_line(3.0, read_only=False)
     _settle()
     before = _get(vline, prop)
     assert before != value

@@ -181,21 +181,38 @@ void check_removable_here(const SciQLopMultiPlotPanel* panel, const T* x)
 }
 } // namespace
 
-MultiPlotsVerticalSpan* SciQLopMultiPlotPanel::vertical_span(SciQLopPlotRange range, QColor color,
-                                                             bool read_only, bool visible,
-                                                             const QString& tool_tip,
-                                                             const QString& id)
+SciQLopSpan* SciQLopMultiPlotPanel::vertical_span(const SciQLopPlotRange& range, QColor color,
+                                                  bool read_only, bool visible,
+                                                  const QString& tool_tip,
+                                                  Coordinates coordinates, const QString& id)
 {
-    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::vertical_span");
-    return new MultiPlotsVerticalSpan(this, range, color, read_only, visible, tool_tip, id);
+    return span(range, std::nullopt, color, read_only, visible, tool_tip, coordinates, id);
 }
 
-MultiPlotsVerticalLine* SciQLopMultiPlotPanel::vertical_line(double position, QColor color,
-                                                             bool read_only, bool visible,
-                                                             const QString& tool_tip)
+SciQLopSpan* SciQLopMultiPlotPanel::horizontal_span(const SciQLopPlotRange& range, QColor color,
+                                                    bool read_only, bool visible,
+                                                    const QString& tool_tip,
+                                                    Coordinates coordinates, const QString& id)
 {
-    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::vertical_line");
-    return new MultiPlotsVerticalLine(this, position, color, read_only, visible, tool_tip);
+    return span(std::nullopt, range, color, read_only, visible, tool_tip, coordinates, id);
+}
+
+SciQLopStraightLine* SciQLopMultiPlotPanel::vertical_line(double position, QColor color,
+                                                          bool read_only, bool visible,
+                                                          const QString& tool_tip,
+                                                          Coordinates coordinates)
+{
+    return straight_line(position, Qt::Vertical, color, read_only, visible, tool_tip,
+                         coordinates);
+}
+
+SciQLopStraightLine* SciQLopMultiPlotPanel::horizontal_line(double position, QColor color,
+                                                            bool read_only, bool visible,
+                                                            const QString& tool_tip,
+                                                            Coordinates coordinates)
+{
+    return straight_line(position, Qt::Horizontal, color, read_only, visible, tool_tip,
+                         coordinates);
 }
 
 void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalSpan* span)

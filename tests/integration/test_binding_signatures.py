@@ -126,10 +126,14 @@ def test_default_deprecated_rectangular_span_color(plot):
     assert span.color() == _SPAN_GREY
 
 
-@pytest.mark.parametrize("make", [
-    lambda panel: panel.vertical_span(_RANGE),
-    lambda panel: panel.vertical_line(0.5),
-    lambda panel: MultiPlotsVSpanCollection(panel).create_span(_RANGE),
-], ids=["span", "line", "collection span"])
-def test_default_panel_item_color(panel, make):
-    assert make(panel).color == _LINE_GREY
+@pytest.mark.parametrize("make, expected", [
+    (lambda panel: panel.vertical_span(_RANGE).color(), _SPAN_GREY),
+    (lambda panel: panel.vertical_line(0.5).color(), QColor(0, 0, 0)),
+], ids=["span", "line"])
+def test_default_panel_item_color(panel, make, expected):
+    assert make(panel) == expected
+
+
+def test_default_collection_span_color(panel):
+    collection = MultiPlotsVSpanCollection(panel)
+    assert collection.create_span(_RANGE).color == _LINE_GREY

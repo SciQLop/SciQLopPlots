@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QWidget
 
 from SciQLopPlots import (Coordinates, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
                           SciQLopVerticalSpan, WaterfallOffsetMode)
-from conftest import process_events
+from conftest import old, process_events
 
 R = SciQLopPlotRange
 
@@ -141,7 +141,7 @@ def test_a_slot_deleting_a_panel_span_on_selection_does_not_crash_its_border_sel
     panel.plot(x, np.sin(x))
     panel.plot(x, np.cos(x))
     process_events()
-    span = panel.vertical_span(R(1.0, 2.0))
+    span = old(MultiPlotsVerticalSpan, panel, R(1.0, 2.0))
     plot_span = panel.plots()[0].findChildren(SciQLopVerticalSpan)[0]
     span.selection_changed.connect(lambda *_: shiboken6.delete(span))
     getattr(plot_span, f"select_{border}_border")(True)

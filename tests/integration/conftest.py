@@ -63,6 +63,12 @@ def process_events():
     QApplication.processEvents()
 
 
+def old(cls, *args, **kwargs):
+    """An old-name object, through its deprecated constructor: the factories no longer make one."""
+    with pytest.warns(DeprecationWarning):
+        return cls(*args, **kwargs)
+
+
 def force_gc():
     """Force garbage collection and process pending Qt events."""
     gc.collect()

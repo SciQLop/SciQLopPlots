@@ -261,14 +261,6 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
 
-    MultiPlotsVerticalSpan* vertical_span(SciQLopPlotRange range,
-                                          QColor color = QColor::fromRgb(100, 100, 100),
-                                          bool read_only = false, bool visible = true,
-                                          const QString& tool_tip = "", const QString& id = "");
-    MultiPlotsVerticalLine* vertical_line(double position,
-                                          QColor color = QColor::fromRgb(100, 100, 100),
-                                          bool read_only = false, bool visible = true,
-                                          const QString& tool_tip = "");
     void remove(MultiPlotsVerticalSpan* span);
     void remove(MultiPlotsVerticalLine* line);
     void remove(SciQLopPlotInterface* plot);
@@ -286,6 +278,29 @@ public:
                                        const QString& tool_tip = "",
                                        Coordinates coordinates = Coordinates::Data);
     void remove(SciQLopStraightLine* line);
+    //! span(key_range=range, ...) on every plot: the defaults are span()'s.
+    SciQLopSpan* vertical_span(const SciQLopPlotRange& range,
+                               QColor color = QColor::fromRgb(100, 100, 100, 100),
+                               bool read_only = false, bool visible = true,
+                               const QString& tool_tip = "",
+                               Coordinates coordinates = Coordinates::Data, const QString& id = "");
+    //! span(value_range=range, ...) on every plot: the defaults are span()'s.
+    SciQLopSpan* horizontal_span(const SciQLopPlotRange& range,
+                                 QColor color = QColor::fromRgb(100, 100, 100, 100),
+                                 bool read_only = false, bool visible = true,
+                                 const QString& tool_tip = "",
+                                 Coordinates coordinates = Coordinates::Data,
+                                 const QString& id = "");
+    //! straight_line(position, Qt::Vertical, ...) on every plot: the defaults are straight_line()'s.
+    SciQLopStraightLine* vertical_line(double position, QColor color = QColor::fromRgb(0, 0, 0),
+                                       bool read_only = true, bool visible = true,
+                                       const QString& tool_tip = "",
+                                       Coordinates coordinates = Coordinates::Data);
+    //! straight_line(position, Qt::Horizontal, ...) on every plot.
+    SciQLopStraightLine* horizontal_line(double position, QColor color = QColor::fromRgb(0, 0, 0),
+                                         bool read_only = true, bool visible = true,
+                                         const QString& tool_tip = "",
+                                         Coordinates coordinates = Coordinates::Data);
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;
