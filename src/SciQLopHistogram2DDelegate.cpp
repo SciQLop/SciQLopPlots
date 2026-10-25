@@ -75,15 +75,16 @@ SciQLopHistogram2DDelegate::SciQLopHistogram2DDelegate(SciQLopHistogram2D* objec
     m_layout->addRow(binningBox);
 
     auto* normCombo = new QComboBox(this);
-    normCombo->addItem("None", 0);            // QCPHistogram2D::nNone
-    normCombo->addItem("Per-column", 1);      // QCPHistogram2D::nColumn
-    normCombo->setCurrentIndex(normCombo->findData(object->normalization()));
+    normCombo->addItem("None", static_cast<int>(HistogramNormalization::Count));
+    normCombo->addItem("Per-column", static_cast<int>(HistogramNormalization::Density));
+    normCombo->setCurrentIndex(normCombo->findData(static_cast<int>(object->normalization())));
     fit_combo_to_content(normCombo);
     m_layout->addRow("Normalization", normCombo);
     connect(normCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [normCombo, object](int)
             {
-                object->set_normalization(normCombo->currentData().toInt());
+                object->set_normalization(
+                    static_cast<HistogramNormalization>(normCombo->currentData().toInt()));
             });
 
     // Reverse path

@@ -12,7 +12,7 @@ import os
 import numpy as np
 import pytest
 
-from SciQLopPlots import GraphType, tracing
+from SciQLopPlots import GraphType, HistogramNormalization, tracing
 
 
 @pytest.fixture
@@ -56,5 +56,5 @@ class TestHistogramBinValidation:
             hist.set_normalization(99)
 
     def test_valid_normalization_still_works(self, hist):
-        hist.set_normalization(0)
-        assert hist.normalization() == 0
+        hist.set_normalization(HistogramNormalization.Count)
+        assert hist.normalization() == HistogramNormalization.Count

@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QGroupBox, QSpinBox, QDoubleSpinBox,
 
 import numpy as np
 from SciQLopPlots import (
+    HistogramNormalization,
     SciQLopMultiPlotPanel, SciQLopPlot, PlotType, GraphType,
 )
 from SciQLopPlots.SciQLopPlotsBindings import DelegateRegistry
@@ -135,15 +136,15 @@ class TestHistogram2DDelegate(unittest.TestCase):
         self.assertEqual(self.hist.normalization(), 0)
 
     def test_normalization_model_to_widget(self):
-        self.hist.set_normalization(1)
+        self.hist.set_normalization(HistogramNormalization.Density)
         combo = self._norm_combo()
         self.assertEqual(combo.currentData(), 1)
 
     def test_normalization_idempotent_no_emit(self):
-        self.hist.set_normalization(1)  # set baseline
+        self.hist.set_normalization(HistogramNormalization.Density)  # set baseline
         emitted = []
         self.hist.normalization_changed.connect(lambda n: emitted.append(n))
-        self.hist.set_normalization(1)  # idempotent — must NOT emit
+        self.hist.set_normalization(HistogramNormalization.Density)  # idempotent — must NOT emit
         self.assertEqual(len(emitted), 0, "idempotent set should not emit")
 
     def test_min_bin_edge(self):

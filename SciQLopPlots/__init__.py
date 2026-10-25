@@ -750,6 +750,26 @@ SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 
 
+_HISTOGRAM2D_NORMALIZATION_INTS = {0: HistogramNormalization.Count, 1: HistogramNormalization.Density}
+
+
+def _enum_normalization(method):
+    @_wraps(method)
+    def wrapper(self, value):
+        if not isinstance(value, HistogramNormalization):
+            if value not in _HISTOGRAM2D_NORMALIZATION_INTS:
+                raise ValueError(f"normalization must be a HistogramNormalization, not {value!r}")
+            value = _HISTOGRAM2D_NORMALIZATION_INTS[value]
+            warnings.warn(f"set_normalization({int(value)}) is deprecated: use HistogramNormalization.{value.name}",
+                          DeprecationWarning, stacklevel=2)
+        return method(self, value)
+    return wrapper
+
+
+# A plain method, never a Qt slot (a wrapper cuts connections).
+SciQLopHistogram2D.set_normalization = _enum_normalization(SciQLopHistogram2D.set_normalization)
+
+
 
 
 # snake_case names for the camelCase ones (API review 2026-10-20, 1.5 and 1.6). The same attribute

@@ -1,12 +1,23 @@
 """API review 2.9: timeline state and histogram2d normalization are enums; the old values warn."""
 import pytest
+from PySide6.QtWidgets import QApplication
 
-from SciQLopPlots import TimelineEditMode, TimelineStack, TimelineStyle
+from SciQLopPlots import (HistogramNormalization, SciQLopPlot, TimelineEditMode, TimelineStack,
+                          TimelineStyle)
 
 
 @pytest.fixture
 def tl(ts_plot):
     return ts_plot.add_timeline()
+
+
+@pytest.fixture
+def hist(qtbot):
+    QApplication.instance() or QApplication([])
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    yield plot.add_histogram2d("h")
+    del plot
 
 
 def test_new_enums_are_int_enums():
@@ -64,3 +75,30 @@ def test_old_edit_mode_names_warn_and_map(tl):
 def test_unknown_values_raise(tl, prop, value):
     with pytest.raises(ValueError):
         setattr(tl, prop, value)
+
+
+def test_histogram2d_normalization_is_an_enum(hist):
+    assert hist.normalization() is HistogramNormalization.Count
+    hist.set_normalization(HistogramNormalization.Density)
+    assert hist.normalization() is HistogramNormalization.Density
+    assert hist.normalization() == 1
+
+
+@pytest.mark.parametrize("old, new", [(0, HistogramNormalization.Count), (1, HistogramNormalization.Density)])
+def test_histogram2d_old_ints_warn_and_map(hist, old, new):
+    with pytest.warns(DeprecationWarning, match=rf"set_normalization\({old}\) is deprecated: use HistogramNormalization\.{new.name}"):
+        hist.set_normalization(old)
+    assert hist.normalization() is new
+
+
+@pytest.mark.parametrize("value", [99, 2, HistogramNormalization.Probability])
+def test_histogram2d_unknown_normalization_raises(hist, value):
+    with pytest.raises((ValueError, RuntimeError)):
+        hist.set_normalization(value)
+
+
+def test_histogram2d_signal_still_carries_an_int(hist):
+    seen = []
+    hist.normalization_changed.connect(seen.append)
+    hist.set_normalization(HistogramNormalization.Density)
+    assert seen == [1]
