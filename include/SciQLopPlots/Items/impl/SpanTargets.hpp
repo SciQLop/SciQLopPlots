@@ -54,6 +54,8 @@ public:
     //! Applies \a range, and the span notifies once; nothing for the current range.
     virtual void set_range(SpanAxis axis, const SciQLopPlotRange& range) = 0;
     virtual SciQLopPlotRange pixel_range(SpanAxis axis) const = 0;
+    //! \a pixels (from the plot area) in the span's coordinates.
+    virtual SciQLopPlotRange to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const = 0;
     virtual Coordinates coordinates() const = 0;
     //! Re-expresses every bounded axis in \a coordinates, keeping the span in place. Silent: the
     //! span reports what changed.
@@ -93,6 +95,7 @@ public:
     SciQLopPlotRange range(SpanAxis axis) const override;
     void set_range(SpanAxis axis, const SciQLopPlotRange& range) override;
     SciQLopPlotRange pixel_range(SpanAxis axis) const override;
+    SciQLopPlotRange to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const override;
     Coordinates coordinates() const override;
     void set_coordinates(Coordinates coordinates) override;
     bool read_only() const override;
@@ -134,6 +137,7 @@ class PanelSpanTarget final : public SpanTarget
 {
     SciQLopSpan* m_span;
     SpanKind m_kind;
+    bool m_legacy_parts;
     SpanState m_state;
     PanelParts<SciQLopSpan> m_parts; // last: destroyed first, while the state still exists
 
@@ -146,11 +150,12 @@ class PanelSpanTarget final : public SpanTarget
 
 public:
     PanelSpanTarget(SciQLopSpan* span, SciQLopMultiPlotPanel* panel, SpanKind kind,
-                    SpanState state);
+                    SpanState state, bool legacy_parts);
 
     SciQLopPlotRange range(SpanAxis axis) const override;
     void set_range(SpanAxis axis, const SciQLopPlotRange& range) override;
     SciQLopPlotRange pixel_range(SpanAxis axis) const override;
+    SciQLopPlotRange to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const override;
     Coordinates coordinates() const override;
     void set_coordinates(Coordinates coordinates) override;
     bool read_only() const override;

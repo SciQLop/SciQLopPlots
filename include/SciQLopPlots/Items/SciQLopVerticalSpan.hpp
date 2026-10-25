@@ -21,185 +21,59 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/ThreadGuard.hpp"
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 
-#include "../MultiPlots/SciQLopMultiPlotObject.hpp"
-#include "SciQLopSpanBase.hpp"
-#include "SciQLopPlots/SciQLopPlotRange.hpp"
-#include "SciQLopPlots/helpers.hpp"
-#include <QBrush>
-#include <QColor>
-#include <QRgb>
-#include <qcustomplot.h>
+#include <QPointer>
 
-namespace impl
-{
-
-class VerticalSpan : public QCPItemVSpan, public impl::SpanBase
-{
-    Q_OBJECT
-    Coordinates m_coordinates = Coordinates::Data;
-
-public:
-    VerticalSpan(QCustomPlot* plot, SciQLopPlotRange horizontal_range,
-                 Coordinates coordinates = Coordinates::Data,
-                 bool do_not_replot = false, bool immediate_replot = false);
-
-    using SpanBase::set_visible;
-    using SpanBase::set_color;
-    using SpanBase::color;
-    using SpanBase::set_borders_color;
-    using SpanBase::borders_color;
-    using SpanBase::set_borders_tool_tip;
-    using SpanBase::replot;
-
-    void set_range(const SciQLopPlotRange horizontal_range);
-    [[nodiscard]] SciQLopPlotRange range() const noexcept;
-
-    [[nodiscard]] Coordinates coordinates() const noexcept { return m_coordinates; }
-    void set_coordinates(Coordinates coordinates);
-
-    /// Left edge of the plot area, the origin Coordinates::Pixels is measured from.
-    [[nodiscard]] double plot_area_left() const noexcept;
-    [[nodiscard]] SciQLopPlotRange pixel_range() const noexcept;
-    void set_pixel_range(const SciQLopPlotRange& px_range);
-
-    void select_lower_border(bool selected);
-    void select_upper_border(bool selected);
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void lower_border_selection_changed(bool);
-    Q_SIGNAL void upper_border_selection_changed(bool);
-    Q_SIGNAL void delete_requested();
-};
-
-} // namespace impl
-
-/*! \brief Vertical span that can be added to a plot
+/*!
+ * \brief The old name of a plot's vertical span: a SciQLopSpan bounding the key axis.
  *
+ * Built by its deprecated constructor and as the parts of MultiPlotsVerticalSpan; the factories
+ * return plain SciQLopSpans. It keeps the old API SciQLop may call: set_pixel_range and the
+ * border selection. Plan B removes it (docs/plans/2026-10-25-span-line-unification-design.md).
  */
-class SciQLopVerticalSpan : public SciQLopRangeItemInterface
+class SciQLopVerticalSpan : public SciQLopSpan
 {
     Q_OBJECT
-    QPointer<impl::VerticalSpan> _impl;
-    SciQLopSpanBase _base;
-
-    friend class MultiPlotsVerticalSpan;
-
-protected:
-    void _set_visible(bool visible) override { _base.set_visible(visible); }
-    bool _visible() const override { return _base.visible(); }
-    void _set_color(const QColor& color) override { _base.set_color(color); }
-    QColor _color() const override { return _base.color(); }
-    void _set_selected(bool selected) override { _base.set_selected(selected); }
-    bool _selected() const override { return _base.selected(); }
-
-    inline void select_lower_border(bool selected)
-    {
-        qptr_apply(_impl, [selected](auto& item) { item->select_lower_border(selected); });
-    }
-
-    inline void select_upper_border(bool selected)
-    {
-        qptr_apply(_impl, [selected](auto& item) { item->select_upper_border(selected); });
-    }
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void lower_border_selection_changed(bool);
-    Q_SIGNAL void upper_border_selection_changed(bool);
 
 public:
     SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
                         QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
                         bool visible = true, const QString& tool_tip = "",
-                        Coordinates coordinates = Coordinates::Data);
-
-    virtual ~SciQLopVerticalSpan() override = default;
-
-    inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
-
-    inline void set_range(const SciQLopPlotRange& horizontal_range) noexcept override
+                        Coordinates coordinates = Coordinates::Data)
+            : SciQLopSpan(plot, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
+                          read_only, visible, tool_tip, coordinates)
     {
-        SCIQLOP_ON_OWNER_THREAD(set_range(horizontal_range));
-        qptr_apply(_impl, [horizontal_range](auto& item) { item->set_range(horizontal_range); });
     }
 
-    [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
+    //! Old API: the range in pixels from the plot area's left edge (Plan B removes it).
+    void set_pixel_range(const SciQLopPlotRange& pixels)
     {
-        return qptr_apply_or(_impl, [](auto& item) { return item->range(); });
+        _set_pixel_range(impl::SpanAxis::Key, pixels);
     }
 
-    [[nodiscard]] inline Coordinates coordinates() const noexcept override
+    //! Old API, public and bound today; never fired by user input (NeoQCP does not call it).
+    //! Plan B removes it.
+    void select_lower_border(bool selected)
     {
-        return qptr_apply_or(
-            _impl, [](auto& item) { return item->coordinates(); }, Coordinates::Data);
+        const QPointer<SciQLopVerticalSpan> alive(this);
+        set_selected(selected);
+        if (alive)
+            Q_EMIT lower_border_selection_changed(selected);
     }
 
-    inline void set_coordinates(Coordinates coordinates) override
+    void select_upper_border(bool selected)
     {
-        SCIQLOP_ON_OWNER_THREAD(set_coordinates(coordinates));
-        qptr_apply(_impl, [coordinates](auto& item) { item->set_coordinates(coordinates); });
+        const QPointer<SciQLopVerticalSpan> alive(this);
+        set_selected(selected);
+        if (alive)
+            Q_EMIT upper_border_selection_changed(selected);
     }
-
-    [[nodiscard]] inline SciQLopPlotRange pixel_range() const noexcept
-    {
-        return qptr_apply_or(_impl, [](auto& item) { return item->pixel_range(); });
-    }
-
-    inline void set_pixel_range(const SciQLopPlotRange& px_range) noexcept
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_pixel_range(px_range));
-        qptr_apply(_impl, [px_range](auto& item) { item->set_pixel_range(px_range); });
-    }
-
-    inline void set_borders_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
-        _base.set_borders_color(color);
-    }
-    [[nodiscard]] inline QColor borders_color() const noexcept { return _base.borders_color(); }
-
-    inline void set_line_width(double width)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
-        _base.set_line_width(width);
-    }
-    [[nodiscard]] inline double line_width() const noexcept { return _base.line_width(); }
-
-    inline void set_line_style(Qt::PenStyle style)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
-        _base.set_line_style(style);
-    }
-    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
-
-    inline void set_read_only(bool read_only)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
-        _base.set_read_only(read_only);
-    }
-    [[nodiscard]] inline bool read_only() const noexcept { return _base.read_only(); }
-
-    inline void set_tool_tip(const QString& tool_tip) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        _base.set_tool_tip(tool_tip);
-    }
-    [[nodiscard]] inline QString tool_tip() const noexcept override { return _base.tool_tip(); }
-
-    inline void replot() override { _base.replot(); }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void delete_requested();
+    Q_SIGNAL void lower_border_selection_changed(bool);
+    Q_SIGNAL void upper_border_selection_changed(bool);
 };

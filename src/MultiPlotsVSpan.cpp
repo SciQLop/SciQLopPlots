@@ -21,97 +21,12 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 
-void MultiPlotsVerticalSpan::select_lower_border(bool selected)
-{
-    if (_lower_border_selected != selected)
-    {
-        _lower_border_selected = selected;
-        const QPointer<MultiPlotsVerticalSpan> self(this);
-        for_each_span([selected](SciQLopVerticalSpan* span) { span->select_lower_border(selected); });
-        if (self)
-            replotAll();
-    }
-}
-
-void MultiPlotsVerticalSpan::select_upper_border(bool selected)
-{
-    if (_upper_border_selected != selected)
-    {
-        _upper_border_selected = selected;
-        const QPointer<MultiPlotsVerticalSpan> self(this);
-        for_each_span([selected](SciQLopVerticalSpan* span) { span->select_upper_border(selected); });
-        if (self)
-            replotAll();
-    }
-}
-
-void MultiPlotsVerticalSpan::addObject(SciQLopPlotInterface* plot)
-{
-    if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
-    {
-        auto new_span
-            = new SciQLopVerticalSpan(scp, _horizontal_range, m_color, _read_only, _visible(), _tool_tip);
-        SciQLopPlots::mark_panel_part(new_span);
-        new_span->set_selected(m_selected);
-        QObject::connect(new_span, &SciQLopVerticalSpan::range_changed, this,
-                         &MultiPlotsVerticalSpan::set_range);
-        QObject::connect(new_span, &SciQLopVerticalSpan::selection_changed, this,
-                         &MultiPlotsVerticalSpan::set_selected);
-        QObject::connect(new_span, &SciQLopVerticalSpan::lower_border_selection_changed, this,
-                         &MultiPlotsVerticalSpan::select_lower_border);
-        QObject::connect(new_span, &SciQLopVerticalSpan::upper_border_selection_changed, this,
-                         &MultiPlotsVerticalSpan::select_upper_border);
-        QObject::connect(new_span, &SciQLopVerticalSpan::delete_requested, this,
-                         &MultiPlotsVerticalSpan::delete_requested);
-        _spans.append(new_span);
-    }
-}
-
-void MultiPlotsVerticalSpan::removeObject(SciQLopPlotInterface* plot)
-{
-    // Drop spans whose plot was destroyed directly (null QPointers) — they
-    // can never match a removeObject call, so purge them here.
-    _spans.removeIf([](const QPointer<SciQLopVerticalSpan>& span) { return span.isNull(); });
-    if (auto scp = dynamic_cast<SciQLopPlot*>(plot); scp)
-    {
-        for (int i = _spans.size() - 1; i >= 0; --i)
-        {
-            if (_spans[i] && _spans[i]->parentPlot() == scp->qcp_plot())
-            {
-                delete _spans[i];
-                _spans.removeAt(i);
-            }
-        }
-    }
-}
-
-void MultiPlotsVerticalSpan::_set_selected(bool selected)
-{
-    // Stored first: each plot's span echoes the selection back through set_selected.
-    m_selected = selected;
-    const QPointer<MultiPlotsVerticalSpan> self(this);
-    for_each_span([selected](SciQLopVerticalSpan* span) { span->set_selected(selected); });
-    if (self)
-        replotAll();
-}
-
-// Stored after forwarding, unlike selection (no echo here): a plot span that raises leaves the
-// panel span reading its old value, so a retry is not taken for a repeat.
-void MultiPlotsVerticalSpan::_set_color(const QColor& color)
-{
-    const QPointer<MultiPlotsVerticalSpan> self(this);
-    for_each_span([&color](SciQLopVerticalSpan* span) { span->set_color(color); });
-    if (self)
-        m_color = color;
-}
-
 void MultiPlotsVerticalSpan::_set_visible(bool visible)
 {
-    const QPointer<MultiPlotsVerticalSpan> self(this);
-    for_each_span([effective = visible && m_in_range](SciQLopVerticalSpan* span)
-                  { span->set_visible(effective); });
-    if (self)
-        m_visible = visible;
+    const QPointer<MultiPlotsVerticalSpan> alive(this);
+    SciQLopSpan::_set_visible(visible && m_in_range);
+    if (alive)
+        m_shown = visible;
 }
 
 void MultiPlotsVerticalSpan::set_in_range(bool in_range)
@@ -119,24 +34,10 @@ void MultiPlotsVerticalSpan::set_in_range(bool in_range)
     SCIQLOP_ON_OWNER_THREAD(set_in_range(in_range));
     m_in_range = in_range;
     const bool effective = _visible();
-    const QPointer<MultiPlotsVerticalSpan> self(this);
-    for_each_span([effective](SciQLopVerticalSpan* span) { span->set_visible(effective); });
-    if (self)
+    const QPointer<MultiPlotsVerticalSpan> alive(this);
+    SciQLopSpan::_set_visible(effective);
+    if (alive)
         _notify_visible(effective);
-}
-
-void MultiPlotsVerticalSpan::set_range(const SciQLopPlotRange horizontal_range)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_range(horizontal_range));
-    if (horizontal_range != _horizontal_range)
-    {
-        _horizontal_range = horizontal_range;
-        const QPointer<MultiPlotsVerticalSpan> self(this);
-        for_each_span([&horizontal_range](SciQLopVerticalSpan* span)
-                      { span->set_range(horizontal_range); });
-        if (self)
-            Q_EMIT range_changed(horizontal_range);
-    }
 }
 
 SciQLopMultiPlotPanel* MultiPlotsVSpanCollection::panel()

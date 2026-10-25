@@ -215,13 +215,6 @@ SciQLopStraightLine* SciQLopMultiPlotPanel::horizontal_line(double position, QCo
                          coordinates);
 }
 
-void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalSpan* span)
-{
-    check_removable_here(this, span);
-    SCIQLOP_ON_OWNER_THREAD_WITH(span, remove(span));
-    delete span;
-}
-
 void SciQLopMultiPlotPanel::remove(MultiPlotsVerticalLine* line)
 {
     check_removable_here(this, line);

@@ -83,15 +83,19 @@ protected:
     QColor _color() const override;
     void _set_color(const QColor& color) override;
 
+    //! The old SciQLopVerticalSpan's set_pixel_range: \a pixels from the plot area (Plan B removes it).
+    void _set_pixel_range(impl::SpanAxis axis, const SciQLopPlotRange& pixels);
+
 public:
     SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRange& key_range,
                 const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
                 bool visible, const QString& tool_tip, Coordinates coordinates,
                 const QString& id = "");
+    //! \a legacy_parts: parts are SciQLopVerticalSpans, for the old MultiPlotsVerticalSpan (Plan A).
     SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind, const SciQLopPlotRange& key_range,
                 const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
                 bool visible, const QString& tool_tip, Coordinates coordinates,
-                const QString& id = "");
+                const QString& id = "", bool legacy_parts = false);
     ~SciQLopSpan() override;
 
     [[nodiscard]] SpanKind kind() const noexcept;

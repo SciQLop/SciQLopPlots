@@ -21,142 +21,21 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/ThreadGuard.hpp"
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 
-#include "SciQLopSpanBase.hpp"
-#include "SciQLopPlots/SciQLopPlotRange.hpp"
-#include "SciQLopPlots/helpers.hpp"
-#include <QBrush>
-#include <QColor>
-#include <qcustomplot.h>
-
-class SciQLopPlot;
-
-namespace impl
-{
-
-class RectangularSpan : public QCPItemRSpan, public impl::SpanBase
+/*! The old name of a plot's rectangular span: a SciQLopSpan bounding both axes. Built by its
+    deprecated constructor; the factories return plain SciQLopSpans. Plan B removes it. */
+class SciQLopRectangularSpan : public SciQLopSpan
 {
     Q_OBJECT
-
-public:
-    RectangularSpan(QCustomPlot* plot, SciQLopPlotRange key_range, SciQLopPlotRange value_range,
-                    bool do_not_replot = false, bool immediate_replot = false);
-
-    using SpanBase::set_visible;
-    using SpanBase::set_color;
-    using SpanBase::color;
-    using SpanBase::set_borders_color;
-    using SpanBase::borders_color;
-    using SpanBase::set_borders_tool_tip;
-    using SpanBase::replot;
-
-    void set_key_range(const SciQLopPlotRange range);
-    [[nodiscard]] SciQLopPlotRange key_range() const noexcept;
-
-    void set_value_range(const SciQLopPlotRange range);
-    [[nodiscard]] SciQLopPlotRange value_range() const noexcept;
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void key_range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void value_range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void delete_requested();
-};
-
-} // namespace impl
-
-class SciQLopRectangularSpan : public SciQLopMovableItemInterface
-{
-    Q_OBJECT
-    QPointer<impl::RectangularSpan> _impl;
-    SciQLopSpanBase _base;
 
 public:
     SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRange key_range,
                            SciQLopPlotRange value_range,
                            QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                           bool visible = true, const QString& tool_tip = "");
-
-    virtual ~SciQLopRectangularSpan() override = default;
-
-    inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
-
-    inline void set_key_range(const SciQLopPlotRange& range) noexcept
+                           bool visible = true, const QString& tool_tip = "")
+            : SciQLopSpan(plot, SpanKind::Rectangular, key_range, value_range, color, read_only,
+                          visible, tool_tip, Coordinates::Data)
     {
-        SCIQLOP_ON_OWNER_THREAD(set_key_range(range));
-        qptr_apply(_impl, [range](auto& item) { item->set_key_range(range); });
     }
-
-    [[nodiscard]] inline SciQLopPlotRange key_range() const noexcept
-    {
-        return qptr_apply_or(_impl, [](auto& item) { return item->key_range(); });
-    }
-
-    inline void set_value_range(const SciQLopPlotRange& range) noexcept
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_value_range(range));
-        qptr_apply(_impl, [range](auto& item) { item->set_value_range(range); });
-    }
-
-    [[nodiscard]] inline SciQLopPlotRange value_range() const noexcept
-    {
-        return qptr_apply_or(_impl, [](auto& item) { return item->value_range(); });
-    }
-
-    inline void set_borders_color(const QColor& color)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
-        _base.set_borders_color(color);
-    }
-    [[nodiscard]] inline QColor borders_color() const noexcept { return _base.borders_color(); }
-
-    inline void set_line_width(double width)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
-        _base.set_line_width(width);
-    }
-    [[nodiscard]] inline double line_width() const noexcept { return _base.line_width(); }
-
-    inline void set_line_style(Qt::PenStyle style)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
-        _base.set_line_style(style);
-    }
-    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
-
-    inline void set_read_only(bool read_only)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
-        _base.set_read_only(read_only);
-    }
-    [[nodiscard]] inline bool read_only() const noexcept { return _base.read_only(); }
-
-    inline void set_tool_tip(const QString& tool_tip) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        _base.set_tool_tip(tool_tip);
-    }
-    [[nodiscard]] inline QString tool_tip() const noexcept override { return _base.tool_tip(); }
-
-    inline void replot() override { _base.replot(); }
-
-protected:
-    void _set_visible(bool visible) override { _base.set_visible(visible); }
-    bool _visible() const override { return _base.visible(); }
-    void _set_color(const QColor& color) override { _base.set_color(color); }
-    QColor _color() const override { return _base.color(); }
-    void _set_selected(bool selected) override { _base.set_selected(selected); }
-    bool _selected() const override { return _base.selected(); }
-
-public:
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void key_range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void value_range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void delete_requested();
 };

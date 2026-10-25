@@ -73,8 +73,6 @@ class TestSnakeCaseAliases:  # task 3, findings 1.5, 1.6
         (SciQLopMultiPlotPanel, "add_widget", "addWidget"),
         (SciQLopMultiPlotPanel, "remove_widget", "removeWidget"),
         (SciQLopMultiPlotPanel, "index_of", "indexOf"),
-        (SciQLopPlots.MultiPlotsVerticalSpan, "add_object", "addObject"),
-        (SciQLopPlots.MultiPlotsVerticalSpan, "remove_object", "removeObject"),
         (SciQLopPlots.MultiPlotsVerticalLine, "add_object", "addObject"),
         (SciQLopPlots.MultiPlotsVerticalLine, "remove_object", "removeObject"),
     ])

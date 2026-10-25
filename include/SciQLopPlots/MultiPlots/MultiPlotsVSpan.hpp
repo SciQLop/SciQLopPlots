@@ -31,46 +31,27 @@
 
 class MultiPlotsVSpanCollection;
 
-class MultiPlotsVerticalSpan : public SciQLopMultiPlotObject
+/*!
+ * \brief The old name of a panel-wide vertical span: a SciQLopSpan at panel scope whose parts are
+ * SciQLopVerticalSpans.
+ *
+ * Built by its deprecated constructor, MultiPlotsVSpanCollection::create_span and interactive
+ * creation (span_created); the factories return plain SciQLopSpans. It keeps the collection's
+ * range culling and show()/hide(); its Python properties are in bindings.xml. Plan B removes it.
+ */
+class MultiPlotsVerticalSpan : public SciQLopSpan
 {
     Q_OBJECT
     friend class MultiPlotsVSpanCollection;
-    QList<QPointer<SciQLopVerticalSpan>> _spans;
 
-    // Over a snapshot: a slot may delete this span, or a plot span that edits _spans.
-    template <typename F>
-    void for_each_span(F&& f)
-    {
-        const auto spans = _spans;
-        for (const auto& span : spans)
-            if (span)
-                f(span.data());
-    }
-    SciQLopPlotRange _horizontal_range;
-    bool m_selected = false;
-    bool _lower_border_selected = false;
-    bool _upper_border_selected = false;
-    bool m_visible = true;
+    bool m_shown = true; // the user's choice; the collection's culling hides on top of it
     bool m_in_range = true;
-    bool _read_only = false;
-    QColor m_color;
-    QString _tool_tip;
-    QString _id;
 
-    void select_lower_border(bool selected);
-    void select_upper_border(bool selected);
-
-    //! Out-of-range culling, kept apart from set_visible: a hidden span stays hidden in range.
+    //! Out-of-range culling, kept apart from set_visible: a span the user hid stays hidden in range.
     void set_in_range(bool in_range);
 
 protected:
-    virtual void addObject(SciQLopPlotInterface* plot) override;
-    virtual void removeObject(SciQLopPlotInterface* plot) override;
-    bool _selected() const override { return m_selected; }
-    void _set_selected(bool selected) override;
-    QColor _color() const override { return m_color; }
-    void _set_color(const QColor& color) override;
-    bool _visible() const override { return m_visible && m_in_range; }
+    bool _visible() const override { return m_shown && m_in_range; }
     void _set_visible(bool visible) override;
     // Needed by set_visible: a hide while culled reads as unchanged (the span is already hidden)
     // but must be remembered. It is class-wide because apply_change has no per-setter switch;
@@ -81,79 +62,15 @@ public:
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
                            QColor color = QColor::fromRgb(100, 100, 100), bool read_only = false,
                            bool visible = true, const QString tool_tip = "", QString id = "")
-            : SciQLopMultiPlotObject(SciQLopPlots::on_owner_thread(panel, "MultiPlotsVerticalSpan"))
+            : SciQLopSpan(panel, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
+                          read_only, visible, tool_tip, Coordinates::Data, id, true)
+            , m_shown(visible)
     {
-        _horizontal_range = horizontal_range;
-        m_color = color;
-        m_visible = visible;
-        _read_only = read_only;
-        _tool_tip = tool_tip;
-        if (id == "")
-        {
-            _id = QUuid::createUuid().toString();
-        }
-        else
-        {
-            _id = id;
-        }
-        updatePlotList(panel->plots());
     }
-
-    virtual ~MultiPlotsVerticalSpan() override
-    {
-        for (auto span : _spans)
-        {
-            if (span)
-            {
-                delete span.data();
-            }
-        }
-    }
-
-    [[nodiscard]] inline QString id() const { return _id; }
-
-    void set_range(const SciQLopPlotRange horizontal_range);
-
-    [[nodiscard]] inline SciQLopPlotRange range() const noexcept { return _horizontal_range; }
-
-    inline void set_tool_tip(const QString& tool_tip)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        if (_tool_tip != tool_tip)
-        {
-            const QPointer<MultiPlotsVerticalSpan> self(this);
-            for_each_span([&tool_tip](SciQLopVerticalSpan* span) { span->set_tool_tip(tool_tip); });
-            if (self)
-                _tool_tip = tool_tip;
-        }
-    }
-
-    [[nodiscard]] inline QString tool_tip() const noexcept { return _tool_tip; }
-
-    inline void set_read_only(bool read_only)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
-        if (_read_only != read_only)
-        {
-            const QPointer<MultiPlotsVerticalSpan> self(this);
-            for_each_span([&read_only](SciQLopVerticalSpan* span) { span->set_read_only(read_only); });
-            if (self)
-                _read_only = read_only;
-        }
-    }
-
-    [[nodiscard]] inline bool read_only() const noexcept { return _read_only; }
 
     inline void show() { set_visible(true); }
 
     inline void hide() { set_visible(false); }
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_time_range);
-    Q_SIGNAL void delete_requested();
 };
 
 class MultiPlotsVSpanCollection : public SciQLopMultiPlotObject

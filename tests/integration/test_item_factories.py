@@ -169,8 +169,7 @@ NO_PLOT_FACTORY = {
     "MultiPlotsVerticalSpan": "panel-only (panel.vertical_span)",
     "MultiPlotsVerticalLine": "panel-only (panel.vertical_line)",
     **dict.fromkeys(
-        ["SciQLopVerticalLine", "SciQLopHorizontalLine", "SciQLopVerticalSpan",
-         "SciQLopHorizontalSpan", "SciQLopRectangularSpan"],
+        ["SciQLopVerticalLine", "SciQLopHorizontalLine"],
         "old name (Plan A): only its deprecated constructor builds it"),
 }
 

@@ -228,24 +228,20 @@ ROWS += [
     Row("pixmap", ("SciQLopPixmapItem",), {
         "SciQLopPixmapItem": lambda h: h.plot.pixmap(QPixmap(4, 4), QRectF(1, 1, 2, 2)),
     }, {"visible": OK, "selected": OK, "name": OK, "color": RAISE}),
-    Row("span", ("SciQLopVerticalSpan", "SciQLopHorizontalSpan", "SciQLopRectangularSpan"), {
+    Row("span", ("SciQLopSpan",), {
+        "SciQLopSpan": lambda h: h.plot.span(key_range=R(1.0, 2.0)),
+        "SciQLopSpan[panel]": lambda h: h.panel.span(key_range=R(1.0, 2.0)),
         "SciQLopVerticalSpan": lambda h: _old(SciQLopVerticalSpan, h.plot, R(1.0, 2.0)),
         "SciQLopHorizontalSpan": lambda h: _old(SciQLopHorizontalSpan, h.plot, R(1.0, 2.0)),
         "SciQLopRectangularSpan": lambda h: _old(SciQLopRectangularSpan, h.plot, R(1.0, 2.0), R(1.0, 2.0)),
-    }, ALL),
-    Row("new span", ("SciQLopSpan",), {
-        "SciQLopSpan": lambda h: h.plot.span(key_range=R(1.0, 2.0)),
-        "SciQLopSpan[panel]": lambda h: h.panel.span(key_range=R(1.0, 2.0)),
-    }, ALL),
+        "MultiPlotsVerticalSpan": lambda h: _old(MultiPlotsVerticalSpan, h.panel, R(1.0, 2.0)),
+    }, ALL, builder_properties={"MultiPlotsVerticalSpan": frozenset({"visible", "selected", "color"})}),
 ]
 ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
              "SciQLopBoundingRectItemInterface", "SciQLopPolygonItemInterface", "SciQLopRangeItemInterface"}
 
 
 ROWS += [
-    Row("panel span", ("MultiPlotsVerticalSpan",), {
-        "MultiPlotsVerticalSpan": lambda h: _old(MultiPlotsVerticalSpan, h.panel, R(1.0, 2.0)),
-    }, ALL, frozenset({"visible", "selected", "color"})),
     Row("panel line", ("MultiPlotsVerticalLine",), {
         "MultiPlotsVerticalLine": lambda h: _old(MultiPlotsVerticalLine, h.panel, 2.0),
     }, {"visible": OK, "selected": OK, "name": OK, "color": OK}, frozenset({"visible", "selected", "color"})),

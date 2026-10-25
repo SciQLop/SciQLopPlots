@@ -19,6 +19,8 @@
 #pragma once
 #include "SciQLopPlots/Items/impl/SpanTargets.hpp"
 
+#include "SciQLopPlots/Items/SciQLopVerticalSpan.hpp"
+
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/constants.hpp"
 #include "SciQLopPlots/helpers.hpp"
@@ -212,6 +214,11 @@ SciQLopPlotRange PlotSpanTarget::pixel_range(SpanAxis axis) const
     return m_item ? pixels_of(edges_of(m_item.data(), axis)) : SciQLopPlotRange();
 }
 
+SciQLopPlotRange PlotSpanTarget::to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const
+{
+    return m_item ? from_pixels(edges_of(m_item.data(), axis), m_coordinates, pixels) : pixels;
+}
+
 Coordinates PlotSpanTarget::coordinates() const
 {
     return m_coordinates;
@@ -332,9 +339,10 @@ void PlotSpanTarget::set_selected(bool selected)
     m_base->replot();
 }
 PanelSpanTarget::PanelSpanTarget(SciQLopSpan* span, SciQLopMultiPlotPanel* panel, SpanKind kind,
-                                 SpanState state)
+                                 SpanState state, bool legacy_parts)
         : m_span { span }
         , m_kind { kind }
+        , m_legacy_parts { legacy_parts }
         , m_state { std::move(state) }
         , m_parts { span, [this](SciQLopPlot* plot) { return make_part(plot); } }
 {
@@ -343,9 +351,14 @@ PanelSpanTarget::PanelSpanTarget(SciQLopSpan* span, SciQLopMultiPlotPanel* panel
 
 SciQLopSpan* PanelSpanTarget::make_part(SciQLopPlot* plot)
 {
-    auto* part = new SciQLopSpan(plot, m_kind, m_state.key_range, m_state.value_range,
-                                 m_state.color, m_state.read_only, m_state.visible,
-                                 m_state.tool_tip, m_state.coordinates, m_span->id());
+    // The old panel class keeps old-class parts (Plan A): SciQLop finds them by that class.
+    auto* part = m_legacy_parts
+        ? static_cast<SciQLopSpan*>(new SciQLopVerticalSpan(plot, m_state.key_range, m_state.color,
+                                                            m_state.read_only, m_state.visible,
+                                                            m_state.tool_tip, m_state.coordinates))
+        : new SciQLopSpan(plot, m_kind, m_state.key_range, m_state.value_range, m_state.color,
+                          m_state.read_only, m_state.visible, m_state.tool_tip,
+                          m_state.coordinates, m_span->id());
     part->set_borders_color(m_state.borders_color);
     part->set_line_width(m_state.line_width);
     part->set_line_style(m_state.line_style);
@@ -420,6 +433,12 @@ SciQLopPlotRange PanelSpanTarget::pixel_range(SpanAxis axis) const
     if (!part)
         return SciQLopPlotRange();
     return part->m_target->pixel_range(axis);
+}
+
+SciQLopPlotRange PanelSpanTarget::to_range(SpanAxis axis, const SciQLopPlotRange& pixels) const
+{
+    auto* part = m_parts.first();
+    return part ? part->m_target->to_range(axis, pixels) : pixels;
 }
 
 Coordinates PanelSpanTarget::coordinates() const

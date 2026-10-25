@@ -78,7 +78,8 @@ SciQLopSpan::SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRang
 SciQLopSpan::SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind,
                          const SciQLopPlotRange& key_range, const SciQLopPlotRange& value_range,
                          const QColor& color, bool read_only, bool visible,
-                         const QString& tool_tip, Coordinates coordinates, const QString& id)
+                         const QString& tool_tip, Coordinates coordinates, const QString& id,
+                         bool legacy_parts)
         : SciQLopDrawnObject { impl::panel_host(panel, "SciQLopSpan") }
         , m_kind { kind }
         , m_id { id_or_uuid(id) }
@@ -91,7 +92,8 @@ SciQLopSpan::SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind,
                                 .tool_tip = tool_tip,
                                 .color = color,
                                 .borders_color = color.lighter(),
-                                .visible = visible }) }
+                                .visible = visible },
+              legacy_parts) }
 {
 }
 
@@ -222,6 +224,12 @@ void SciQLopSpan::set_coordinates(Coordinates coordinates)
 SciQLopPlotRange SciQLopSpan::pixel_range() const
 {
     return m_target->pixel_range(one_axis("pixel_range"));
+}
+
+void SciQLopSpan::_set_pixel_range(SpanAxis axis, const SciQLopPlotRange& pixels)
+{
+    SCIQLOP_ON_OWNER_THREAD(_set_pixel_range(axis, pixels));
+    m_target->set_range(axis, m_target->to_range(axis, pixels));
 }
 
 SciQLopPlotRange SciQLopSpan::pixel_key_range() const

@@ -261,7 +261,6 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
 
-    void remove(MultiPlotsVerticalSpan* span);
     void remove(MultiPlotsVerticalLine* line);
     void remove(SciQLopPlotInterface* plot);
     //! A span on every plot of the panel, plot.span's arguments and defaults.

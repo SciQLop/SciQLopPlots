@@ -660,9 +660,8 @@ _SNAKE_CASE_ALIASES = {
                             "selection_changed": "selectionChanged"},
     **{cls: {"add_object": "addObject", "remove_object": "removeObject", "replot_all": "replotAll",
              "update_plot_list": "updatePlotList"}
-       # The two subclasses override addObject/removeObject: each needs its own alias.
-       for cls in (SciQLopPlotsBindings.SciQLopMultiPlotObject, SciQLopPlotsBindings.MultiPlotsVerticalSpan,
-                   SciQLopPlotsBindings.MultiPlotsVerticalLine)},
+       # MultiPlotsVerticalLine overrides addObject/removeObject: it needs its own alias.
+       for cls in (SciQLopPlotsBindings.SciQLopMultiPlotObject, SciQLopPlotsBindings.MultiPlotsVerticalLine)},
 }
 for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
     for _new, _old in _aliases.items():

@@ -21,146 +21,52 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
-#include "SciQLopPlots/ThreadGuard.hpp"
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 
-#include "SciQLopSpanBase.hpp"
-#include "SciQLopPlots/SciQLopPlotRange.hpp"
-#include "SciQLopPlots/helpers.hpp"
-#include <QBrush>
-#include <QColor>
-#include <qcustomplot.h>
+#include <QPointer>
 
-class SciQLopPlot;
-
-namespace impl
-{
-
-class HorizontalSpan : public QCPItemHSpan, public impl::SpanBase
+/*!
+ * \brief The old name of a plot's horizontal span: a SciQLopSpan bounding the value axis.
+ *
+ * Built by its deprecated constructor; the factories return plain SciQLopSpans. It keeps the old
+ * API SciQLop may call: the border selection. Plan B removes it
+ * (docs/plans/2026-10-25-span-line-unification-design.md).
+ */
+class SciQLopHorizontalSpan : public SciQLopSpan
 {
     Q_OBJECT
-
-public:
-    HorizontalSpan(QCustomPlot* plot, SciQLopPlotRange vertical_range,
-                   bool do_not_replot = false, bool immediate_replot = false);
-
-    using SpanBase::set_visible;
-    using SpanBase::set_color;
-    using SpanBase::color;
-    using SpanBase::set_borders_color;
-    using SpanBase::borders_color;
-    using SpanBase::set_borders_tool_tip;
-    using SpanBase::replot;
-
-    void set_range(const SciQLopPlotRange vertical_range);
-    [[nodiscard]] SciQLopPlotRange range() const noexcept;
-
-    void select_lower_border(bool selected);
-    void select_upper_border(bool selected);
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void lower_border_selection_changed(bool);
-    Q_SIGNAL void upper_border_selection_changed(bool);
-    Q_SIGNAL void delete_requested();
-};
-
-} // namespace impl
-
-class SciQLopHorizontalSpan : public SciQLopRangeItemInterface
-{
-    Q_OBJECT
-    QPointer<impl::HorizontalSpan> _impl;
-    SciQLopSpanBase _base;
-
-protected:
-    void _set_visible(bool visible) override { _base.set_visible(visible); }
-    bool _visible() const override { return _base.visible(); }
-    void _set_color(const QColor& color) override { _base.set_color(color); }
-    QColor _color() const override { return _base.color(); }
-    void _set_selected(bool selected) override { _base.set_selected(selected); }
-    bool _selected() const override { return _base.selected(); }
-
-    inline void select_lower_border(bool selected)
-    {
-        qptr_apply(_impl, [selected](auto& item) { item->select_lower_border(selected); });
-    }
-
-    inline void select_upper_border(bool selected)
-    {
-        qptr_apply(_impl, [selected](auto& item) { item->select_upper_border(selected); });
-    }
-
-#ifdef BINDINGS_H
-#define Q_SIGNAL
-signals:
-#endif
-    Q_SIGNAL void lower_border_selection_changed(bool);
-    Q_SIGNAL void upper_border_selection_changed(bool);
 
 public:
     SciQLopHorizontalSpan(SciQLopPlot* plot, SciQLopPlotRange vertical_range,
                           QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                          bool visible = true, const QString& tool_tip = "");
-
-    virtual ~SciQLopHorizontalSpan() override = default;
-
-    inline QCustomPlot* parentPlot() const noexcept { return _base.parentPlot(); }
-
-    inline void set_range(const SciQLopPlotRange& vertical_range) noexcept override
+                          bool visible = true, const QString& tool_tip = "")
+            : SciQLopSpan(plot, SpanKind::Horizontal, SciQLopPlotRange(), vertical_range, color,
+                          read_only, visible, tool_tip, Coordinates::Data)
     {
-        SCIQLOP_ON_OWNER_THREAD(set_range(vertical_range));
-        qptr_apply(_impl, [vertical_range](auto& item) { item->set_range(vertical_range); });
     }
 
-    [[nodiscard]] inline SciQLopPlotRange range() const noexcept override
+    //! Old API, public and bound today; never fired by user input (NeoQCP does not call it).
+    //! Plan B removes it.
+    void select_lower_border(bool selected)
     {
-        return qptr_apply_or(_impl, [](auto& item) { return item->range(); });
+        const QPointer<SciQLopHorizontalSpan> alive(this);
+        set_selected(selected);
+        if (alive)
+            Q_EMIT lower_border_selection_changed(selected);
     }
 
-    inline void set_borders_color(const QColor& color)
+    void select_upper_border(bool selected)
     {
-        SCIQLOP_ON_OWNER_THREAD(set_borders_color(color));
-        _base.set_borders_color(color);
+        const QPointer<SciQLopHorizontalSpan> alive(this);
+        set_selected(selected);
+        if (alive)
+            Q_EMIT upper_border_selection_changed(selected);
     }
-    [[nodiscard]] inline QColor borders_color() const noexcept { return _base.borders_color(); }
-
-    inline void set_line_width(double width)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
-        _base.set_line_width(width);
-    }
-    [[nodiscard]] inline double line_width() const noexcept { return _base.line_width(); }
-
-    inline void set_line_style(Qt::PenStyle style)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
-        _base.set_line_style(style);
-    }
-    [[nodiscard]] inline Qt::PenStyle line_style() const noexcept { return _base.line_style(); }
-
-    inline void set_read_only(bool read_only)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
-        _base.set_read_only(read_only);
-    }
-    [[nodiscard]] inline bool read_only() const noexcept { return _base.read_only(); }
-
-    inline void set_tool_tip(const QString& tool_tip) noexcept override
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        _base.set_tool_tip(tool_tip);
-    }
-    [[nodiscard]] inline QString tool_tip() const noexcept override { return _base.tool_tip(); }
-
-    inline void replot() override { _base.replot(); }
 
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void range_changed(SciQLopPlotRange new_range);
-    Q_SIGNAL void delete_requested();
+    Q_SIGNAL void lower_border_selection_changed(bool);
+    Q_SIGNAL void upper_border_selection_changed(bool);
 };
