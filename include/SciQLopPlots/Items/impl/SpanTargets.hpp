@@ -20,6 +20,7 @@
 #pragma once
 
 #include "SciQLopPlots/Items/SciQLopSpan.hpp"
+#include "SciQLopPlots/Items/impl/PanelParts.hpp"
 #include "SciQLopPlots/Items/impl/SpanBase.hpp"
 
 #include <QPointer>
@@ -106,6 +107,64 @@ public:
     void set_line_style(Qt::PenStyle style) override;
     QColor color() const override;
     void set_color(const QColor& color) override;
+    bool visible() const override;
+    void set_visible(bool visible) override;
+    bool selected() const override;
+    void set_selected(bool selected) override;
+};
+
+//! Everything a panel span keeps and writes to its parts.
+struct SpanState
+{
+    SciQLopPlotRange key_range;
+    SciQLopPlotRange value_range;
+    Coordinates coordinates = Coordinates::Data;
+    bool read_only = false;
+    QString tool_tip;
+    QColor color;
+    QColor borders_color;
+    double line_width = 3.0;
+    Qt::PenStyle line_style = Qt::SolidLine;
+    bool visible = true;
+    bool selected = false;
+};
+
+//! A span on every SciQLopPlot of a panel: the state, and one plot-scope part per plot.
+class PanelSpanTarget final : public SpanTarget
+{
+    SciQLopSpan* m_span;
+    SpanKind m_kind;
+    SpanState m_state;
+    PanelParts<SciQLopSpan> m_parts; // last: destroyed first, while the state still exists
+
+    SciQLopSpan* make_part(SciQLopPlot* plot);
+    void follow(SciQLopSpan* part);
+    //! Stores \a range and writes it to every part; false when a slot deleted the span meanwhile.
+    bool store_range(SpanAxis axis, const SciQLopPlotRange& range);
+    template <typename T, typename Setter>
+    void write(T& field, const T& value, Setter setter);
+
+public:
+    PanelSpanTarget(SciQLopSpan* span, SciQLopMultiPlotPanel* panel, SpanKind kind,
+                    SpanState state);
+
+    SciQLopPlotRange range(SpanAxis axis) const override;
+    void set_range(SpanAxis axis, const SciQLopPlotRange& range) override;
+    SciQLopPlotRange pixel_range(SpanAxis axis) const override;
+    Coordinates coordinates() const override;
+    void set_coordinates(Coordinates coordinates) override;
+    bool read_only() const override;
+    void set_read_only(bool read_only) override;
+    QString tool_tip() const override;
+    void set_tool_tip(const QString& tool_tip) override;
+    QColor color() const override;
+    void set_color(const QColor& color) override;
+    QColor borders_color() const override;
+    void set_borders_color(const QColor& color) override;
+    double line_width() const override;
+    void set_line_width(double width) override;
+    Qt::PenStyle line_style() const override;
+    void set_line_style(Qt::PenStyle style) override;
     bool visible() const override;
     void set_visible(bool visible) override;
     bool selected() const override;

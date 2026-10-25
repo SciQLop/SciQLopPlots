@@ -28,6 +28,7 @@
 #include <QGridLayout>
 #include <QPair>
 #include <QPointer>
+#include <optional>
 #include <QScrollArea>
 #include <QUuid>
 #include <QWidget>
@@ -46,6 +47,7 @@ class QCPAbstractItem;
 class QCustomPlot;
 class MultiPlotsVerticalSpan;
 class MultiPlotsVerticalLine;
+class SciQLopSpan;
 
 class InspectorExtension;
 class InspectorExtensionHolder;
@@ -269,6 +271,13 @@ public:
     void remove(MultiPlotsVerticalSpan* span);
     void remove(MultiPlotsVerticalLine* line);
     void remove(SciQLopPlotInterface* plot);
+    //! A span on every plot of the panel, plot.span's arguments and defaults.
+    SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
+                      std::optional<SciQLopPlotRange> value_range = std::nullopt,
+                      QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
+                      bool visible = true, const QString& tool_tip = "",
+                      Coordinates coordinates = Coordinates::Data, const QString& id = "");
+    void remove(SciQLopSpan* span);
     SciQLopPlotInterface* plot_at(int index) const Q_DECL_OVERRIDE;
     QWidget* widget_at(const QPointF& pos) const Q_DECL_OVERRIDE;
     QList<QPointer<SciQLopPlotInterface>> plots() const Q_DECL_OVERRIDE;

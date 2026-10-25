@@ -24,6 +24,8 @@
 #include "SciQLopPlots/helpers.hpp"
 
 #include <QSignalBlocker>
+#include <utility>
+#include <vector>
 
 namespace impl
 {
@@ -328,5 +330,199 @@ void PlotSpanTarget::set_selected(bool selected)
         return;
     m_item->setSelected(selected);
     m_base->replot();
+}
+PanelSpanTarget::PanelSpanTarget(SciQLopSpan* span, SciQLopMultiPlotPanel* panel, SpanKind kind,
+                                 SpanState state)
+        : m_span { span }
+        , m_kind { kind }
+        , m_state { std::move(state) }
+        , m_parts { span, [this](SciQLopPlot* plot) { return make_part(plot); } }
+{
+    m_parts.follow(panel);
+}
+
+SciQLopSpan* PanelSpanTarget::make_part(SciQLopPlot* plot)
+{
+    auto* part = new SciQLopSpan(plot, m_kind, m_state.key_range, m_state.value_range,
+                                 m_state.color, m_state.read_only, m_state.visible,
+                                 m_state.tool_tip, m_state.coordinates, m_span->id());
+    part->set_borders_color(m_state.borders_color);
+    part->set_line_width(m_state.line_width);
+    part->set_line_style(m_state.line_style);
+    part->set_selected(m_state.selected);
+    follow(part);
+    return part;
+}
+
+// A part's own edits (a drag, a click, the Delete key) flow up; the span writes them back out to
+// every part, whose echoes writing() swallows.
+void PanelSpanTarget::follow(SciQLopSpan* part)
+{
+    QObject::connect(part, &SciQLopSpan::key_range_changed, m_span,
+                     [this](const SciQLopPlotRange& range)
+                     {
+                         if (!m_parts.writing())
+                             set_range(SpanAxis::Key, range);
+                     });
+    QObject::connect(part, &SciQLopSpan::value_range_changed, m_span,
+                     [this](const SciQLopPlotRange& range)
+                     {
+                         if (!m_parts.writing())
+                             set_range(SpanAxis::Value, range);
+                     });
+    QObject::connect(part, &SciQLopDrawnObject::selection_changed, m_span,
+                     [this](bool selected)
+                     {
+                         if (!m_parts.writing())
+                             m_span->set_selected(selected);
+                     });
+    QObject::connect(part, &SciQLopSpan::delete_requested, m_span, &SciQLopSpan::delete_requested);
+}
+
+bool PanelSpanTarget::store_range(SpanAxis axis, const SciQLopPlotRange& range)
+{
+    (axis == SpanAxis::Key ? m_state.key_range : m_state.value_range) = range;
+    return m_parts.write(
+        [axis, range](SciQLopSpan* part)
+        {
+            if (axis == SpanAxis::Key)
+                part->set_key_range(range);
+            else
+                part->set_value_range(range);
+        });
+}
+
+template <typename T, typename Setter>
+void PanelSpanTarget::write(T& field, const T& value, Setter setter)
+{
+    field = value;
+    (void)m_parts.write([value, setter](SciQLopSpan* part) { (part->*setter)(value); });
+}
+
+SciQLopPlotRange PanelSpanTarget::range(SpanAxis axis) const
+{
+    return axis == SpanAxis::Key ? m_state.key_range : m_state.value_range;
+}
+
+void PanelSpanTarget::set_range(SpanAxis axis, const SciQLopPlotRange& range)
+{
+    if (this->range(axis) == range)
+        return;
+    const SciQLopPlotRange stored = range; // \a range may live in a part a slot deletes
+    if (store_range(axis, stored))
+        m_span->notify_range(axis, stored);
+}
+
+// simplify: the first plot's pixels stand for the panel's; a per-plot answer needs a plot argument.
+SciQLopPlotRange PanelSpanTarget::pixel_range(SpanAxis axis) const
+{
+    auto* part = m_parts.first();
+    if (!part)
+        return SciQLopPlotRange();
+    return part->m_target->pixel_range(axis);
+}
+
+Coordinates PanelSpanTarget::coordinates() const
+{
+    return m_state.coordinates;
+}
+
+// simplify: each part converts on its own plot, then the first part's numbers become the
+// panel's and every part takes them, so plots of different sizes share one pixel range; with no
+// plot yet the numbers stay as they are. A range per plot would lift both limits.
+void PanelSpanTarget::set_coordinates(Coordinates coordinates)
+{
+    m_state.coordinates = coordinates;
+    if (!m_parts.write([coordinates](SciQLopSpan* part) { part->set_coordinates(coordinates); }))
+        return;
+    auto* first = m_parts.first();
+    if (!first)
+        return;
+    std::vector<std::pair<SpanAxis, SciQLopPlotRange>> converted;
+    for (const auto axis : bounded_axes(m_kind))
+        converted.emplace_back(axis, first->m_target->range(axis));
+    for (const auto& [axis, range] : converted)
+        if (!store_range(axis, range))
+            return;
+}
+
+bool PanelSpanTarget::read_only() const
+{
+    return m_state.read_only;
+}
+
+void PanelSpanTarget::set_read_only(bool read_only)
+{
+    write(m_state.read_only, read_only, &SciQLopSpan::set_read_only);
+}
+
+QString PanelSpanTarget::tool_tip() const
+{
+    return m_state.tool_tip;
+}
+
+void PanelSpanTarget::set_tool_tip(const QString& tool_tip)
+{
+    write(m_state.tool_tip, tool_tip, &SciQLopSpan::set_tool_tip);
+}
+
+QColor PanelSpanTarget::color() const
+{
+    return m_state.color;
+}
+
+void PanelSpanTarget::set_color(const QColor& color)
+{
+    write(m_state.color, color, &SciQLopDrawnObject::set_color);
+}
+
+QColor PanelSpanTarget::borders_color() const
+{
+    return m_state.borders_color;
+}
+
+void PanelSpanTarget::set_borders_color(const QColor& color)
+{
+    write(m_state.borders_color, color, &SciQLopSpan::set_borders_color);
+}
+
+double PanelSpanTarget::line_width() const
+{
+    return m_state.line_width;
+}
+
+void PanelSpanTarget::set_line_width(double width)
+{
+    write(m_state.line_width, width, &SciQLopSpan::set_line_width);
+}
+
+Qt::PenStyle PanelSpanTarget::line_style() const
+{
+    return m_state.line_style;
+}
+
+void PanelSpanTarget::set_line_style(Qt::PenStyle style)
+{
+    write(m_state.line_style, style, &SciQLopSpan::set_line_style);
+}
+
+bool PanelSpanTarget::visible() const
+{
+    return m_state.visible;
+}
+
+void PanelSpanTarget::set_visible(bool visible)
+{
+    write(m_state.visible, visible, &SciQLopDrawnObject::set_visible);
+}
+
+bool PanelSpanTarget::selected() const
+{
+    return m_state.selected;
+}
+
+void PanelSpanTarget::set_selected(bool selected)
+{
+    write(m_state.selected, selected, &SciQLopDrawnObject::set_selected);
 }
 } // namespace impl

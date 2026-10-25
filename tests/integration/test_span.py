@@ -9,7 +9,7 @@ from SciQLopPlots import (Coordinates, SciQLopHorizontalSpan, SciQLopPlot, SciQL
                           SciQLopRectangularSpan, SciQLopSpan, SciQLopVerticalSpan, SpanKind)
 from conftest import canvas_of, off_thread, plots_of, process_events, record, scoped_host
 
-SCOPES = ["plot"]
+SCOPES = ["plot", "panel"]
 KINDS = {
     "vertical": (SpanKind.Vertical, dict(key_range=R(2.0, 8.0))),
     "horizontal": (SpanKind.Horizontal, dict(value_range=R(-0.5, 0.5))),

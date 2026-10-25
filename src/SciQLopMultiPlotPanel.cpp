@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Items/SciQLopSpan.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
@@ -167,9 +168,16 @@ void check_removable_here(const SciQLopMultiPlotPanel* panel, const T* x)
 {
     if (x == nullptr)
         throw std::invalid_argument("remove: got None");
+    const std::string what = x->metaObject()->className();
+    if (SciQLopPlots::is_panel_part(x))
+        throw std::invalid_argument("remove: this " + what
+                                    + " is part of a panel-wide object; remove that object from "
+                                      "the panel (panel.remove)");
+    if (qobject_cast<const SciQLopPlotInterface*>(x->parent()))
+        throw std::invalid_argument("remove: this " + what
+                                    + " belongs to a plot; remove it with plot.remove");
     if (x->parent() != panel)
-        throw std::invalid_argument(std::string("remove: this ") + x->metaObject()->className()
-                                    + " belongs to another panel");
+        throw std::invalid_argument("remove: this " + what + " belongs to another panel");
 }
 } // namespace
 
@@ -211,6 +219,27 @@ void SciQLopMultiPlotPanel::remove(SciQLopPlotInterface* plot)
     if (!contains(plot))
         throw std::invalid_argument("remove: this plot is not in this panel");
     remove_plot(plot);
+}
+
+SciQLopSpan* SciQLopMultiPlotPanel::span(std::optional<SciQLopPlotRange> key_range,
+                                         std::optional<SciQLopPlotRange> value_range,
+                                         QColor color, bool read_only, bool visible,
+                                         const QString& tool_tip, Coordinates coordinates,
+                                         const QString& id)
+{
+    SciQLopPlots::require_owner_thread(this, "SciQLopMultiPlotPanel::span");
+    return new SciQLopSpan(this,
+                           SciQLopPlots::span_kind(key_range.has_value(), value_range.has_value()),
+                           key_range.value_or(SciQLopPlotRange()),
+                           value_range.value_or(SciQLopPlotRange()), color, read_only, visible,
+                           tool_tip, coordinates, id);
+}
+
+void SciQLopMultiPlotPanel::remove(SciQLopSpan* span)
+{
+    check_removable_here(this, span);
+    SCIQLOP_ON_OWNER_THREAD_WITH(span, remove(span));
+    delete span;
 }
 
 SciQLopPlotInterface* SciQLopMultiPlotPanel::plot_at(int index) const

@@ -24,6 +24,7 @@
 #include "SciQLopPlots/Items/SciQLopPlotItem.hpp"
 #include "SciQLopPlots/Items/SciQLopSpan.hpp"
 #include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
+#include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 #include "SciQLopPlots/SciQLopTheme.hpp"
 #include <QColor>
 #include <stdexcept>
@@ -106,6 +107,9 @@ void SciQLopPlotInterface::check_removable(const QObject* x) const
         throw std::invalid_argument("remove: this " + what
                                     + " is part of a panel-wide object; remove that object from "
                                       "the panel (panel.remove)");
+    if (qobject_cast<const SciQLopPlotPanelInterface*>(x->parent()))
+        throw std::invalid_argument("remove: this " + what
+                                    + " belongs to a panel; remove it with panel.remove");
     if (auto* owner = owning_plot(x); owner != this)
         throw std::invalid_argument(
             owner ? "remove: this " + what + " belongs to another plot" + owner_label(owner)

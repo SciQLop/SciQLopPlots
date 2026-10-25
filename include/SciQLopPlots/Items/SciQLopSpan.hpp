@@ -88,6 +88,10 @@ public:
                 const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
                 bool visible, const QString& tool_tip, Coordinates coordinates,
                 const QString& id = "");
+    SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind, const SciQLopPlotRange& key_range,
+                const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
+                bool visible, const QString& tool_tip, Coordinates coordinates,
+                const QString& id = "");
     ~SciQLopSpan() override;
 
     [[nodiscard]] SpanKind kind() const noexcept;

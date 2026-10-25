@@ -6,7 +6,7 @@ worker thread waits for the GUI thread; an unsupported one raises NotImplemented
 class. Every bound SciQLopDrawnObject subclass is in exactly one row, or listed as abstract.
 """
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pytest
@@ -55,6 +55,16 @@ class Row:
     builders: dict
     cells: dict
     properties: frozenset = frozenset()  # attributes read and written as Python properties
+    builder_properties: dict = field(default_factory=dict)  # per builder, over properties
+
+
+def _class_of(builder):
+    """'SciQLopSpan[panel]' builds a SciQLopSpan: one class may have a builder per scope."""
+    return builder.split("[")[0]
+
+
+def _properties(row, builder):
+    return row.builder_properties.get(builder, row.properties)
 
 
 ROWS: list = []
@@ -223,6 +233,7 @@ ROWS += [
     }, ALL),
     Row("new span", ("SciQLopSpan",), {
         "SciQLopSpan": lambda h: h.plot.span(key_range=R(1.0, 2.0)),
+        "SciQLopSpan[panel]": lambda h: h.panel.span(key_range=R(1.0, 2.0)),
     }, ALL),
 ]
 ABSTRACT |= {"SciQLopItemInterface", "SciQLopMovableItemInterface", "SciQLopLineItemInterface",
@@ -279,7 +290,7 @@ def test_every_drawn_class_is_in_exactly_one_row_or_abstract():
     problems += [f"{n}: in {k} rows" for n, k in reached.items() if k > 1]
     problems += [f"{n}: in a row but not drawn" for n in sorted(set(reached) - drawn)]
     problems += [f"{row.id}: builders {sorted(row.builders)} != {sorted(_closure(row) - set(NOT_BUILDABLE))}"
-                 for row in ROWS if set(row.builders) != _closure(row) - set(NOT_BUILDABLE)]
+                 for row in ROWS if {_class_of(b) for b in row.builders} != _closure(row) - set(NOT_BUILDABLE)]
     assert not problems, "\n".join(problems)
 
 
@@ -287,13 +298,13 @@ def _row(name):
     return next(row for row in ROWS if name in row.builders)
 
 
-def _get(obj, row, attr):
+def _get(obj, row, name, attr):
     value = getattr(obj, attr)
-    return value if attr in row.properties else value()
+    return value if attr in _properties(row, name) else value()
 
 
-def _set(obj, row, attr, value):
-    if attr in row.properties:
+def _set(obj, row, name, attr, value):
+    if attr in _properties(row, name):
         setattr(obj, attr, value)
     else:
         getattr(obj, "set_" + attr)(value)
@@ -321,11 +332,11 @@ def _cases(cell):
 def test_a_supported_attribute_round_trips_and_signals_once(hosts, name, attr):
     row = _row(name)
     obj = row.builders[name](hosts)
-    value = _changed(attr, _get(obj, row, attr))
+    value = _changed(attr, _get(obj, row, name, attr))
     seen = record(getattr(obj, SIGNALS[attr]))
-    _set(obj, row, attr, value)
-    assert _get(obj, row, attr) == value
-    _set(obj, row, attr, value)
+    _set(obj, row, name, attr, value)
+    assert _get(obj, row, name, attr) == value
+    _set(obj, row, name, attr, value)
     assert seen == [value]
 
 
@@ -333,13 +344,13 @@ def test_a_supported_attribute_round_trips_and_signals_once(hosts, name, attr):
 def test_a_set_from_a_worker_thread_waits_for_the_gui_thread(hosts, qtbot, name, attr):
     row = _row(name)
     obj = row.builders[name](hosts)
-    before = _get(obj, row, attr)
+    before = _get(obj, row, name, attr)
     value = _changed(attr, before)
     seen = record(getattr(obj, SIGNALS[attr]))
-    off_thread(lambda: _set(obj, row, attr, value))
-    assert (_get(obj, row, attr), seen) == (before, [])
+    off_thread(lambda: _set(obj, row, name, attr, value))
+    assert (_get(obj, row, name, attr), seen) == (before, [])
     qtbot.waitUntil(lambda: seen == [value], timeout=2000)
-    assert _get(obj, row, attr) == value
+    assert _get(obj, row, name, attr) == value
 
 
 @pytest.mark.parametrize("name, attr", _cases(RAISE))

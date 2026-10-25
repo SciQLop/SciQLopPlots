@@ -75,6 +75,26 @@ SciQLopSpan::SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRang
     m_target->set_tool_tip(tool_tip);
 }
 
+SciQLopSpan::SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind,
+                         const SciQLopPlotRange& key_range, const SciQLopPlotRange& value_range,
+                         const QColor& color, bool read_only, bool visible,
+                         const QString& tool_tip, Coordinates coordinates, const QString& id)
+        : SciQLopDrawnObject { impl::panel_host(panel, "SciQLopSpan") }
+        , m_kind { kind }
+        , m_id { id_or_uuid(id) }
+        , m_target { std::make_unique<impl::PanelSpanTarget>(
+              this, panel, kind,
+              impl::SpanState { .key_range = key_range.sorted(),
+                                .value_range = value_range.sorted(),
+                                .coordinates = coordinates,
+                                .read_only = read_only,
+                                .tool_tip = tool_tip,
+                                .color = color,
+                                .borders_color = color.lighter(),
+                                .visible = visible }) }
+{
+}
+
 SciQLopSpan::~SciQLopSpan() = default;
 
 bool SciQLopSpan::bounds(SpanAxis axis) const noexcept
