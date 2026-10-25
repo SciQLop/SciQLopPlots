@@ -1796,6 +1796,29 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <inject-code class="native" position="beginning">
+// Upstream shiboken defect: shiboken6.delete() of a wrapper created from C++ (no wrapper class)
+// leaves it in its parent's children list with a null cptr, and the parent's teardown then
+// dereferences it. panel.plot() hands out such wrappers: C++ adds the plot, which calls the
+// patched add_plot and parents the plot's wrapper to the panel. Unlinking the wrapper as the
+// plot dies is what a wrapper class's destructor does for Python-built plots.
+static void unlink_wrapper_when_destroyed(QObject* plot)
+{
+    if (plot->property("_sqp_unlinks_wrapper").isValid())
+        return;
+    plot->setProperty("_sqp_unlinks_wrapper", true);
+    QObject::connect(plot, &amp;QObject::destroyed, plot,
+                     [plot](QObject*)
+                     {
+                         if (!Py_IsInitialized())
+                             return;
+                         Shiboken::GilState gil;
+                         if (auto* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(plot))
+                             Shiboken::Object::removeParent(wrapper, false, false);
+                     },
+                     Qt::DirectConnection);
+}
+        </inject-code>
         <modify-function signature="vertical_span(SciQLopPlotRange,QColor,bool,bool,const QString&amp;,const QString&amp;)">
             <modify-argument index="return"><define-ownership class="target" owner="c++"/></modify-argument>
             <inject-code class="target" position="beginning">
@@ -1936,11 +1959,19 @@
           <modify-argument index="1">
             <parent index="this" action="add"/>
           </modify-argument>
+          <inject-code class="target" position="end">
+            if (!PyErr_Occurred())
+                unlink_wrapper_when_destroyed(%1);
+          </inject-code>
         </modify-function>
         <modify-function signature="insert_plot(int, SciQLopPlotInterface*)">
           <modify-argument index="2">
             <parent index="this" action="add"/>
           </modify-argument>
+          <inject-code class="target" position="end">
+            if (!PyErr_Occurred())
+                unlink_wrapper_when_destroyed(%2);
+          </inject-code>
         </modify-function>
         <modify-function signature="addWidget(QWidget*)">
           <modify-argument index="1">
