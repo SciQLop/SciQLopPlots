@@ -29,7 +29,30 @@
 #include "SciQLopPlots/enums.hpp"
 #include "SciQLopPlots/helpers.hpp"
 #include <cmath>
+#include <memory>
 #include <optional>
+
+//! \a pos inside the optional bounds. NaN goes to the lower bound, else the upper, else 0.
+inline double clamp_line_position(double pos, std::optional<double> min, std::optional<double> max)
+{
+    if (std::isnan(pos))
+    {
+        if (min)
+            return *min;
+        if (max)
+            return *max;
+        return 0.0;
+    }
+    // Inverted bounds (min > max): max wins, because hitting the upper limit is the more common
+    // UI intent; the unconditional ladder below would silently violate max.
+    if (min && max && *min > *max)
+        return *max;
+    if (min && pos < *min)
+        return *min;
+    if (max && pos > *max)
+        return *max;
+    return pos;
+}
 
 class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public impl::SciQlopItemWithToolTip
 {
@@ -42,32 +65,9 @@ class StraightLine : public impl::SciQLopPlotItem<QCPItemStraightLine>, public i
 
     std::optional<double> dragged_position(const QPointF& mouse) const;
 
-    inline double _clamp(double pos) const
-    {
-        if (std::isnan(pos))
-        {
-            if (m_min_value)
-                return *m_min_value;
-            if (m_max_value)
-                return *m_max_value;
-            return 0.0;
-        }
-        // If both bounds are set but inverted (min > max), the user-most-recent
-        // setter wins by clamping to the tighter bound: max takes precedence
-        // because hitting the upper limit is the more common UI intent.
-        if (m_min_value && m_max_value && *m_min_value > *m_max_value)
-        {
-            // Inverted bounds — fall back to the upper bound to keep callers
-            // safe instead of silently violating max as the unconditional
-            // ladder would.
-            return *m_max_value;
-        }
-        if (m_min_value && pos < *m_min_value)
-            return *m_min_value;
-        if (m_max_value && pos > *m_max_value)
-            return *m_max_value;
-        return pos;
-    }
+    inline double _clamp(double pos) const { return clamp_line_position(pos, m_min_value, m_max_value); }
+
+    void place(double pos);
 
 public:
 
@@ -114,6 +114,10 @@ public:
     virtual void move(double dx, double dy) override;
     void set_position(double pos);
     [[nodiscard]] double position() const;
+    [[nodiscard]] Coordinates coordinates() const noexcept { return m_coordinates; }
+    //! Re-derives the position in \a coordinates so the line stays where it is on screen. Silent:
+    //! no moved(), the caller reports the change. The min/max clamps keep their numbers.
+    void set_coordinates(Coordinates coordinates);
 
     inline void set_min_value(double min) { m_min_value = min; }
     inline void clear_min_value() { m_min_value.reset(); }
@@ -148,160 +152,84 @@ signals:
     Q_SIGNAL void moved(double new_position);
 };
 
+namespace impl
+{
+class LineTarget;
+class PlotLineTarget;
+class PanelLineTarget;
+}
+
+/*! A straight line across a plot, or across every plot of a panel: vertical (at a key) or
+    horizontal (at a value), fixed when it is made. The factories make it read-only by default. */
 class SciQLopStraightLine : public SciQLopDrawnObject
 {
     Q_OBJECT
+    friend class impl::PlotLineTarget;
+    friend class impl::PanelLineTarget;
 
-    QPointer<StraightLine> m_line;
+    Qt::Orientation m_orientation;
+    std::unique_ptr<impl::LineTarget> m_target;
+
+protected:
+    void _set_visible(bool visible) override;
+    bool _visible() const override;
+    void _set_selected(bool selected) override;
+    bool _selected() const override;
+    void _set_color(const QColor& color) override;
+    QColor _color() const override;
 
 public:
-    virtual ~SciQLopStraightLine() { qcp_item_remove(m_line); }
-
     /*!
-     * \brief SciQLopStraightLine
-     * \param plot The plot to which the item will be added
-     * \param position The position of the line
-     * \param movable If the line can be moved by the user
-     * \param coordinates The coordinates system in which the position is defined (Pixels or Data)
-     * \param orientation The orientation of the line (Vertical or Horizontal)
+     * \param plot The plot the line is drawn on
+     * \param position Its key (vertical line) or value (horizontal line)
+     * \param movable If the user can drag it: the inverse of read_only
+     * \param coordinates Data, or Pixels from the plot area's top-left
+     * \param orientation Vertical or Horizontal
      */
     SciQLopStraightLine(SciQLopPlot* plot, const double position, const bool movable = false,
                         Coordinates coordinates = Coordinates::Data,
-                        Qt::Orientation orientation = Qt::Orientation::Vertical)
-            : SciQLopDrawnObject { SciQLopPlots::item_plot(plot, "SciQLopStraightLine") }
-    {
-        m_line = new StraightLine(plot->qcp_plot(), position, movable, coordinates, orientation);
-        connect(m_line, &StraightLine::moved, this, &SciQLopStraightLine::position_changed);
-        connect(m_line, &QCPAbstractItem::selectionChanged, this,
-                &SciQLopStraightLine::_notify_selected, Qt::UniqueConnection);
-    }
+                        Qt::Orientation orientation = Qt::Orientation::Vertical);
+    ~SciQLopStraightLine() override;
+
+    [[nodiscard]] Qt::Orientation orientation() const noexcept;
+    //! The plot or the panel the line belongs to.
+    [[nodiscard]] QObject* scope() const;
+    //! True for the per-plot parts of a panel-scope line.
+    [[nodiscard]] bool is_panel_part() const;
 
     void set_position(double pos);
+    [[nodiscard]] double position() const;
+    [[nodiscard]] Coordinates coordinates() const;
+    //! Re-derives the position in \a coordinates: the line stays where it is on screen. The
+    //! min/max clamps keep their numbers.
+    void set_coordinates(Coordinates coordinates);
 
-    [[nodiscard]] inline double position() const
-    {
-        if (!m_line.isNull())
-            return m_line->position();
-        return std::numeric_limits<double>::quiet_NaN();
-    }
+    [[nodiscard]] bool read_only() const;
+    void set_read_only(bool read_only);
+    //! The inverse of read_only (deprecated in Python).
+    [[nodiscard]] bool movable() const;
+    void set_movable(bool movable);
 
-    inline void set_line_width(double width)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
-        if (!m_line.isNull())
-            this->m_line->set_line_width(width);
-    }
+    [[nodiscard]] QString tool_tip() const;
+    void set_tool_tip(const QString& tool_tip);
+    [[nodiscard]] double line_width() const;
+    void set_line_width(double width);
+    [[nodiscard]] Qt::PenStyle line_style() const;
+    void set_line_style(Qt::PenStyle style);
 
-    [[nodiscard]] inline double line_width() const
-    {
-        if (!m_line.isNull())
-            return this->m_line->line_width();
-        return std::numeric_limits<double>::quiet_NaN();
-    }
+    void set_min_value(double min);
+    void clear_min_value();
+    void set_max_value(double max);
+    void clear_max_value();
 
-    inline void set_line_style(Qt::PenStyle style)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_line_style(style));
-        if (!m_line.isNull())
-            this->m_line->set_line_style(style);
-    }
-
-    [[nodiscard]] inline Qt::PenStyle line_style() const
-    {
-        if (!m_line.isNull())
-            return this->m_line->line_style();
-        return Qt::SolidLine;
-    }
-
-    inline void set_movable(bool movable)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_movable(movable));
-        if (!m_line.isNull())
-            m_line->setMovable(movable);
-    }
-
-    [[nodiscard]] inline bool movable() const
-    {
-        return !m_line.isNull() && m_line->movable();
-    }
-
-    inline void set_tool_tip(const QString& tool_tip)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        if (!m_line.isNull())
-            m_line->setToolTip(tool_tip);
-    }
-
-    [[nodiscard]] inline QString tool_tip() const
-    {
-        if (!m_line.isNull())
-            return m_line->tooltip();
-        return {};
-    }
-
-    inline void set_min_value(double min)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_min_value(min));
-        if (!m_line.isNull())
-            m_line->set_min_value(min);
-    }
-
-    inline void clear_min_value()
-    {
-        SCIQLOP_ON_OWNER_THREAD(clear_min_value());
-        if (!m_line.isNull())
-            m_line->clear_min_value();
-    }
-
-    inline void set_max_value(double max)
-    {
-        SCIQLOP_ON_OWNER_THREAD(set_max_value(max));
-        if (!m_line.isNull())
-            m_line->set_max_value(max);
-    }
-
-    inline void clear_max_value()
-    {
-        SCIQLOP_ON_OWNER_THREAD(clear_max_value());
-        if (!m_line.isNull())
-            m_line->clear_max_value();
-    }
-
-protected:
-    void _set_visible(bool visible) override
-    {
-        if (m_line.isNull())
-            return;
-        m_line->setVisible(visible);
-        m_line->replot();
-    }
-
-    bool _visible() const override { return !m_line.isNull() && m_line->visible(); }
-
-    void _set_selected(bool selected) override
-    {
-        if (m_line.isNull())
-            return;
-        m_line->setSelected(selected);
-        m_line->replot();
-    }
-
-    bool _selected() const override { return !m_line.isNull() && m_line->selected(); }
-
-    void _set_color(const QColor& color) override
-    {
-        if (!m_line.isNull())
-            m_line->set_color(color);
-    }
-
-    QColor _color() const override { return m_line.isNull() ? QColor() : m_line->color(); }
-
-public:
 #ifdef BINDINGS_H
 #define Q_SIGNAL
 signals:
 #endif
     Q_SIGNAL void position_changed(double new_position);
+    Q_SIGNAL void coordinates_changed(Coordinates coordinates);
+    Q_SIGNAL void read_only_changed(bool read_only);
+    Q_SIGNAL void delete_requested();
 };
 
 class SciQLopVerticalLine : public SciQLopStraightLine

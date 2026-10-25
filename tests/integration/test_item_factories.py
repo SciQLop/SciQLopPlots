@@ -3,7 +3,7 @@ import gc
 
 import pytest
 import shiboken6
-from PySide6.QtCore import QObject, QPointF, QRectF, SIGNAL
+from PySide6.QtCore import QObject, QPointF, QRectF, SIGNAL, Qt
 from PySide6.QtGui import QBrush, QColor, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -86,6 +86,7 @@ FACTORIES = {
     "ellipse_colors": (lambda p: p.ellipse(QRectF(0, 0, 4, 4), QColor("red"), 2.0, QColor("blue")),
                        SciQLopEllipseItem),
     "curved_line": (lambda p: p.curved_line(QPointF(0, 0), QPointF(5, 5)), SciQLopCurvedLineItem),
+    "straight_line": (lambda p: p.straight_line(1.0, Qt.Orientation.Vertical), SciQLopStraightLine),
     "vertical_line": (lambda p: p.vertical_line(1.0), SciQLopVerticalLine),
     "horizontal_line": (lambda p: p.horizontal_line(1.0), SciQLopHorizontalLine),
     "vertical_span": (lambda p: p.vertical_span(R(1.0, 2.0)), SciQLopVerticalSpan),
@@ -163,7 +164,6 @@ def _all_subclasses(cls):
 
 
 NO_PLOT_FACTORY = {
-    "SciQLopStraightLine": "deprecated-only: vertical_line / horizontal_line cover it",
     "MultiPlotsVerticalSpan": "panel-only (panel.vertical_span)",
     "MultiPlotsVerticalLine": "panel-only (panel.vertical_line)",
 }
@@ -179,8 +179,7 @@ def test_every_item_class_has_a_factory():
 
 
 DEPRECATED = {
-    **{k: (v, f"use plot.{k}") for k, v in CONSTRUCTORS.items() if k != "straight_line"},
-    "straight_line": (CONSTRUCTORS["straight_line"], "use plot.vertical_line"),
+    **{k: (v, f"use plot.{k}") for k, v in CONSTRUCTORS.items()},
 }
 
 

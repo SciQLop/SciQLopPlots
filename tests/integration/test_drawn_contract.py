@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPixmap
 
 import SciQLopPlots
@@ -206,17 +206,12 @@ ALL = {"visible": OK, "selected": OK, "name": OK, "color": OK}
 R = SciQLopPlotRange
 
 
-def _straight_line(plot):
-    with pytest.warns(DeprecationWarning):
-        return SciQLopStraightLine(plot, 1.0)
-
-
 ROWS += [
     Row("text and lines", ("SciQLopTextItem", "SciQLopCurvedLineItem", "SciQLopStraightLine",
                            "SciQLopVerticalLine", "SciQLopHorizontalLine"), {
         "SciQLopTextItem": lambda h: h.plot.text("t", QPointF(10, 10)),
         "SciQLopCurvedLineItem": lambda h: h.plot.curved_line(QPointF(0, 0), QPointF(5, 5)),
-        "SciQLopStraightLine": lambda h: _straight_line(h.plot),
+        "SciQLopStraightLine": lambda h: h.plot.straight_line(1.0, Qt.Orientation.Vertical),
         "SciQLopVerticalLine": lambda h: h.plot.vertical_line(1.0),
         "SciQLopHorizontalLine": lambda h: h.plot.horizontal_line(0.5),
     }, ALL),

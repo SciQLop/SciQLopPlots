@@ -570,6 +570,16 @@ public:
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
+    //! A straight line at \a position: vertical (at a key) or horizontal (at a value).
+    //! Read-only unless read_only=False.
+    inline virtual SciQLopStraightLine* straight_line(double position, Qt::Orientation orientation,
+                                                      QColor color = QColor::fromRgb(0, 0, 0),
+                                                      bool read_only = true, bool visible = true,
+                                                      const QString& tool_tip = "",
+                                                      Coordinates coordinates = Coordinates::Data)
+    {
+        throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
+    }
 
     //! One legend row for \a members, a SciQLopPlotGroup owned by this plot. Raises ValueError
     //! for a member of another plot.

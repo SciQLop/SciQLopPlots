@@ -377,7 +377,7 @@ _ITEM_FACTORIES = {
     SciQLopPlotsBindings.SciQLopPixmapItem: ("plot.pixmap", True),
     SciQLopPlotsBindings.SciQLopEllipseItem: ("plot.ellipse", True),
     SciQLopPlotsBindings.SciQLopCurvedLineItem: ("plot.curved_line", True),
-    SciQLopPlotsBindings.SciQLopStraightLine: ("plot.vertical_line(...) or plot.horizontal_line", True),
+    SciQLopPlotsBindings.SciQLopStraightLine: ("plot.straight_line", True),
     SciQLopPlotsBindings.SciQLopVerticalLine: ("plot.vertical_line", True),
     SciQLopPlotsBindings.SciQLopHorizontalLine: ("plot.horizontal_line", True),
     SciQLopPlotsBindings.SciQLopVerticalSpan: ("plot.vertical_span", True),

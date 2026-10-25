@@ -1631,6 +1631,17 @@ SciQLopSpan* SciQLopPlot::span(std::optional<SciQLopPlotRange> key_range,
                            tool_tip, coordinates, id);
 }
 
+SciQLopStraightLine* SciQLopPlot::straight_line(double position, Qt::Orientation orientation,
+                                                QColor color, bool read_only, bool visible,
+                                                const QString& tool_tip, Coordinates coordinates)
+{
+    auto* line = new SciQLopStraightLine(this, position, !read_only, coordinates, orientation);
+    line->set_color(color);
+    line->set_visible(visible);
+    line->set_tool_tip(tool_tip);
+    return line;
+}
+
 SciQLopPlottableInterface* SciQLopPlot::plottable(int index)
 {
     return m_impl->sqp_plottable(index);

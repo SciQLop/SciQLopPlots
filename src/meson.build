@@ -186,6 +186,7 @@ sciqlopplots_sources = files(
     'SciQLopCurveResampler.cpp',
     'SciQLopCrosshair.cpp',
     'SciQLopStraightLines.cpp',
+    'LineTargets.cpp',
     'DataProducer.cpp',
     'Model.cpp',
     'Node.cpp',

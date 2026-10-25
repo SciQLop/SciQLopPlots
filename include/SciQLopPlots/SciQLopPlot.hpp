@@ -565,6 +565,11 @@ public:
                       bool visible = true, const QString& tool_tip = "",
                       Coordinates coordinates = Coordinates::Data,
                       const QString& id = "") override;
+    SciQLopStraightLine* straight_line(double position, Qt::Orientation orientation,
+                                       QColor color = QColor::fromRgb(0, 0, 0),
+                                       bool read_only = true, bool visible = true,
+                                       const QString& tool_tip = "",
+                                       Coordinates coordinates = Coordinates::Data) override;
 
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;
     virtual SciQLopPlottableInterface* plottable(const QString& name) override;
