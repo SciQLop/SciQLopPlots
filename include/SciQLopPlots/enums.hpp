@@ -259,6 +259,32 @@ enum class OverlayPosition
 };
 Q_DECLARE_METATYPE(OverlayPosition);
 
+enum class TimelineStyle
+{
+    Wave,
+    Bars
+};
+Q_DECLARE_METATYPE(TimelineStyle);
+
+//! How overlapping intervals of one lane are laid out. Off, not None: None is a Python keyword.
+enum class TimelineStack
+{
+    Off,
+    Time,
+    Category
+};
+Q_DECLARE_METATYPE(TimelineStack);
+
+enum class TimelineEditMode
+{
+    Move,
+    Resize,
+    ChangeLane,
+    Create,
+    Delete
+};
+Q_DECLARE_METATYPE(TimelineEditMode);
+
 //! Not an API: sets the kind shiboken gives the global enums above, see bindings.xml.
 namespace SciQLopEnumKindAnchor
 {

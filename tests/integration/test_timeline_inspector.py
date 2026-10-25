@@ -2,7 +2,7 @@
 from PySide6.QtCore import QModelIndex
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox
 
-from SciQLopPlots import DelegateRegistry, PlotsModel
+from SciQLopPlots import DelegateRegistry, PlotsModel, TimelineEditMode, TimelineStack, TimelineStyle
 from conftest import process_events
 
 
@@ -57,7 +57,7 @@ def test_delegate_sets_the_style(panel, qtbot):
     combo = _named(delegate, QComboBox, "style")
     assert combo.currentText() == "wave"
     combo.setCurrentText("bars")
-    assert tl.style == "bars"
+    assert tl.style is TimelineStyle.Bars
 
 
 def test_delegate_sets_the_lane_height(panel, qtbot):
@@ -75,7 +75,7 @@ def test_delegate_sets_editing(panel, qtbot):
     _named(delegate, QCheckBox, "editable").setChecked(True)
     assert tl.editable
     _named(delegate, QCheckBox, "edit_mode_delete").setChecked(True)
-    assert "delete" in tl.edit_modes
+    assert TimelineEditMode.Delete in tl.edit_modes
 
 
 def test_delegate_sets_the_snap(panel, qtbot):
@@ -97,9 +97,9 @@ def test_delegate_sets_stacking_and_forbid(panel, qtbot):
     combo = _named(delegate, QComboBox, "stack")
     assert combo.currentText() == "none"
     combo.setCurrentText("category")
-    assert tl.stack == "category"
+    assert tl.stack is TimelineStack.Category
     combo.setCurrentText("none")
-    assert tl.stack is None
+    assert tl.stack is TimelineStack.Off
     _named(delegate, QCheckBox, "forbid_overlap").setChecked(True)
     assert tl.forbid_overlap is True
 

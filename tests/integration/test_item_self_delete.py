@@ -7,7 +7,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 
-from SciQLopPlots import (Coordinates, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
+from SciQLopPlots import (Coordinates, TimelineStack, MultiPlotsVerticalSpan, SciQLopHorizontalSpan, SciQLopPlotRange, SciQLopRectangularSpan,
                           SciQLopVerticalSpan, WaterfallOffsetMode)
 from conftest import old, process_events
 
@@ -29,7 +29,7 @@ def _timeline_selecting_7(ts_plot):
 
 def _category_timeline(ts_plot):
     tl = ts_plot.add_timeline()
-    tl.stack = "category"
+    tl.stack = TimelineStack.Category
     tl.set_intervals([10, 20, 60], [40, 50, 90], lane=["A", "A", "B"], category=["x", "y", "x"],
                      ids=[7, 8, 9])
     process_events()
@@ -60,7 +60,7 @@ CASES = {
     "timeline_new_lane": (lambda _, ts: _category_timeline(ts), "lanes_changed",
                           lambda t: t.set_intervals([10], [40], lane=["C"], ids=[7])),
     "timeline_unstack": (lambda _, ts: _category_timeline(ts), "lanes_changed",
-                         lambda t: setattr(t, "stack", None)),
+                         lambda t: setattr(t, "stack", TimelineStack.Off)),
 }
 
 
@@ -75,12 +75,12 @@ def test_a_slot_deleting_an_item_from_its_own_signal_does_not_crash(plot, ts_plo
 
 
 @pytest.mark.parametrize("nested", [
-    lambda tl: setattr(tl, "stack", None),
+    lambda tl: setattr(tl, "stack", TimelineStack.Off),
     lambda tl: tl.set_category_order(["y", "x"]),
 ], ids=["set_stack", "set_category_order"])
 def test_a_slot_deleting_the_timeline_after_a_nested_repack_does_not_crash(ts_plot, nested):
     tl = _category_timeline(ts_plot)
-    tl.stack = "time"
+    tl.stack = TimelineStack.Time
     tl.select_ids([7])
     tl.selected_intervals_changed.connect(lambda *_: nested(tl))
     tl.lanes_changed.connect(lambda: shiboken6.delete(tl))

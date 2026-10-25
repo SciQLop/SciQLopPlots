@@ -8,7 +8,7 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
-from SciQLopPlots import SciQLopPlotRange
+from SciQLopPlots import SciQLopPlotRange, TimelineEditMode, TimelineStack
 from conftest import process_events
 
 
@@ -42,7 +42,7 @@ def _drag(canvas, a, b):
 
 def test_move_reports_id_times_and_lane_name(editable):
     plot, tl = editable
-    tl.edit_modes = {"move", "change_lane"}
+    tl.edit_modes = {TimelineEditMode.Move, TimelineEditMode.ChangeLane}
     seen = []
     tl.intervals_changed.connect(seen.append)
     _drag(_canvas(plot), _at(tl, 25, "A"), _at(tl, 35, "B"))
@@ -54,7 +54,7 @@ def test_move_reports_id_times_and_lane_name(editable):
 
 def test_create_reports_lane_name(editable):
     plot, tl = editable
-    tl.edit_modes = {"create"}
+    tl.edit_modes = {TimelineEditMode.Create}
     seen = []
     tl.interval_created.connect(lambda *a: seen.append(a))
     _drag(_canvas(plot), _at(tl, 45, "A"), _at(tl, 55, "A"))
@@ -66,8 +66,8 @@ def test_create_in_a_category_row_reports_the_category(editable):
     plot, tl = editable
     tl.set_intervals([10, 60], [40, 90], lane=["A", "A"], category=["LM", "BASE"], ids=[7, 8])
     tl.category_order = ["BASE", "LM"]
-    tl.stack = "category"
-    tl.edit_modes = {"create"}
+    tl.stack = TimelineStack.Category
+    tl.edit_modes = {TimelineEditMode.Create}
     process_events()
     seen, plain = [], []
     tl.interval_created_in.connect(lambda *a: seen.append(a))
@@ -77,7 +77,7 @@ def test_create_in_a_category_row_reports_the_category(editable):
     _drag(_canvas(plot), _at(tl, 45, "A") + base_row, _at(tl, 55, "A") + base_row)
     assert seen and seen[0][2:] == ("A", "BASE")
     assert plain and plain[0][2] == "A"   # the released 3-argument signal still fires
-    tl.stack = None
+    tl.stack = TimelineStack.Off
     process_events()
     _drag(_canvas(plot), _at(tl, 45, "A"), _at(tl, 55, "A"))
     assert seen[-1][3] == ""                # no category rows: no category
@@ -85,7 +85,7 @@ def test_create_in_a_category_row_reports_the_category(editable):
 
 def test_delete_key_requests_ids(editable):
     plot, tl = editable
-    tl.edit_modes = {"delete"}
+    tl.edit_modes = {TimelineEditMode.Delete}
     tl.select_ids([8])
     seen = []
     tl.delete_requested.connect(seen.append)
@@ -104,8 +104,8 @@ def test_not_editable_reports_nothing(editable):
 
 def test_edit_modes_round_trip_and_reject_unknown(editable):
     _, tl = editable
-    tl.edit_modes = {"move", "resize", "change_lane", "create", "delete"}
-    assert tl.edit_modes == {"move", "resize", "change_lane", "create", "delete"}
+    tl.edit_modes = set(TimelineEditMode)
+    assert tl.edit_modes == set(TimelineEditMode)
     with pytest.raises(ValueError, match="teleport"):
         tl.edit_modes = {"teleport"}
 

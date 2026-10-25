@@ -655,17 +655,39 @@ SciQLopTimeline.set_intervals = _set_intervals
 # --- SciQLopTimeline `lanes` and editing API (`editable`, `edit_modes`, `snap_to`):
 # properties over the C++ getters/setters captured below before being
 # replaced.
-_EDIT_MODES = {"move", "resize", "change_lane", "create", "delete"}
 _edit_modes_get = SciQLopTimeline.edit_modes
 _editable_get = SciQLopTimeline.editable
 _lanes_get = SciQLopTimeline.lanes
 
 
+# Timeline state is a member of an enum; the C++ side still takes these names. Each table maps
+# member -> C++ name; `aliases` are further old values that still work, deprecated.
+_STYLE_NAMES = {TimelineStyle.Wave: "wave", TimelineStyle.Bars: "bars"}
+_STACK_NAMES = {TimelineStack.Off: "", TimelineStack.Time: "time", TimelineStack.Category: "category"}
+_EDIT_MODE_NAMES = {TimelineEditMode.Move: "move", TimelineEditMode.Resize: "resize",
+                    TimelineEditMode.ChangeLane: "change_lane", TimelineEditMode.Create: "create",
+                    TimelineEditMode.Delete: "delete"}
+
+
+def _member_of(enum, names, prop, value, aliases={}):
+    if isinstance(value, enum):
+        return value
+    legacy = {name: member for member, name in names.items() if name} | aliases
+    if value not in legacy:
+        raise ValueError(f"{prop} must be a {enum.__name__}, not {value!r}")
+    member = legacy[value]
+    warnings.warn(f"{prop}={value!r} is deprecated: use {enum.__name__}.{member.name}",
+                  DeprecationWarning, stacklevel=3)
+    return member
+
+
+def _member_named(names, name):
+    return {n: m for m, n in names.items()}[name]
+
+
 def _set_edit_modes(self, modes):
-    unknown = set(modes) - _EDIT_MODES
-    if unknown:
-        raise ValueError(f"unknown edit modes: {sorted(unknown)}; expected {sorted(_EDIT_MODES)}")
-    self.set_edit_modes(sorted(modes))
+    members = {_member_of(TimelineEditMode, _EDIT_MODE_NAMES, "edit_modes", m) for m in modes}
+    self.set_edit_modes(sorted(_EDIT_MODE_NAMES[m] for m in members))
 
 
 def _get_snap_to(self):
@@ -691,37 +713,35 @@ def _set_snap_to(self, value):
                          "a non-empty list of times, or None")
 
 
-SciQLopTimeline.edit_modes = property(lambda self: set(_edit_modes_get(self)), _set_edit_modes)
+SciQLopTimeline.edit_modes = property(
+    lambda self: {_member_named(_EDIT_MODE_NAMES, n) for n in _edit_modes_get(self)},
+    _set_edit_modes)
 SciQLopTimeline.editable = property(_editable_get, SciQLopTimeline.set_editable)
 SciQLopTimeline.snap_to = property(_get_snap_to, _set_snap_to)
 SciQLopTimeline.lanes = property(_lanes_get, SciQLopTimeline.set_lanes)
 
 
-_TIMELINE_STYLES = ("wave", "bars")
 _style_get = SciQLopTimeline.style
-
-
-def _set_style(self, name):
-    if name not in _TIMELINE_STYLES:
-        raise ValueError(f"style must be one of {_TIMELINE_STYLES}, not {name!r}")
-    self.set_style(name)
-
-
-SciQLopTimeline.style = property(_style_get, _set_style)
-
-_STACK_MODES = (None, "time", "category")
 _stack_get = SciQLopTimeline.stack
+
+
+def _set_style(self, value):
+    self.set_style(_STYLE_NAMES[_member_of(TimelineStyle, _STYLE_NAMES, "style", value)])
+
+
+def _set_stack(self, value):
+    member = _member_of(TimelineStack, _STACK_NAMES, "stack", value, aliases={None: TimelineStack.Off})
+    self.set_stack(_STACK_NAMES[member])
+
+
+SciQLopTimeline.style = property(lambda self: _member_named(_STYLE_NAMES, _style_get(self)),
+                                 _set_style)
+SciQLopTimeline.stack = property(lambda self: _member_named(_STACK_NAMES, _stack_get(self)),
+                                 _set_stack)
 _forbid_overlap_get = SciQLopTimeline.forbid_overlap
 _category_order_get = SciQLopTimeline.category_order
 
 
-def _set_stack(self, mode):
-    if mode not in _STACK_MODES:
-        raise ValueError(f"stack must be one of {_STACK_MODES}, not {mode!r}")
-    self.set_stack(mode or "")
-
-
-SciQLopTimeline.stack = property(lambda self: _stack_get(self) or None, _set_stack)
 SciQLopTimeline.forbid_overlap = property(lambda self: bool(_forbid_overlap_get(self)),
                                           lambda self, v: self.set_forbid_overlap(bool(v)))
 SciQLopTimeline.category_order = property(lambda self: list(_category_order_get(self)),

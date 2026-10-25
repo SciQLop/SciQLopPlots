@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from PySide6.QtGui import QColor
 
-from SciQLopPlots import SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline
+from SciQLopPlots import (SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline, TimelineStack,
+                          TimelineStyle)
 from conftest import process_events
 
 
@@ -32,12 +33,12 @@ def test_new_lanes_notify_once_per_set_intervals(ts_plot):
 
 
 @pytest.mark.parametrize("nested", [
-    lambda tl: setattr(tl, "stack", None),
+    lambda tl: setattr(tl, "stack", TimelineStack.Off),
     lambda tl: tl.set_category_order(["y", "x"]),
 ], ids=["set_stack", "set_category_order"])
 def test_lanes_changed_comes_after_a_nested_repack_returned(ts_plot, nested):
     tl = _strip(ts_plot)
-    tl.stack = "time"
+    tl.stack = TimelineStack.Time
     tl.set_intervals([10, 20], [40, 50], lane=["A", "A"], category=["x", "y"], ids=[7, 8])
     tl.select_ids([7])
     events = []
@@ -320,20 +321,20 @@ def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
 # --- Issue #126: wave-view style.
 
 def test_timeline_defaults_to_the_wave_style(ts_plot):
-    assert _strip(ts_plot).style == "wave"
+    assert _strip(ts_plot).style is TimelineStyle.Wave
 
 
 def test_timeline_style_round_trips(ts_plot):
     tl = _strip(ts_plot)
     assert isinstance(type(tl).style, property)  # else assigning only sets a Python attribute
-    tl.style = "bars"
-    assert tl.style == "bars"
-    tl.style = "wave"
-    assert tl.style == "wave"
+    tl.style = TimelineStyle.Bars
+    assert tl.style is TimelineStyle.Bars
+    tl.style = TimelineStyle.Wave
+    assert tl.style is TimelineStyle.Wave
 
 
 def test_unknown_timeline_style_raises(ts_plot):
-    with pytest.raises(ValueError, match="wave"):
+    with pytest.raises(ValueError, match="TimelineStyle"):
         _strip(ts_plot).style = "gantt"
 
 
@@ -418,11 +419,11 @@ def test_stack_and_forbid_round_trip_and_reject_unknown(ts_plot):
     tl = _strip(ts_plot)
     for name in ("stack", "forbid_overlap", "category_order"):
         assert isinstance(getattr(type(tl), name), property), name
-    assert tl.stack is None and tl.forbid_overlap is False and tl.category_order == []
-    for mode in ("time", "category", None):
+    assert tl.stack is TimelineStack.Off and tl.forbid_overlap is False and tl.category_order == []
+    for mode in (TimelineStack.Time, TimelineStack.Category, TimelineStack.Off):
         tl.stack = mode
-        assert tl.stack == mode
-    with pytest.raises(ValueError, match="category"):
+        assert tl.stack is mode
+    with pytest.raises(ValueError, match="TimelineStack"):
         tl.stack = "merge"
     tl.forbid_overlap = True
     assert tl.forbid_overlap is True
@@ -438,7 +439,7 @@ def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
     panel.show()
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     flat = plot.minimumHeight()
-    tl.stack = "time"
+    tl.stack = TimelineStack.Time
     qtbot.waitUntil(lambda: plot.minimumHeight() == flat + 2 * tl.lane_height(), timeout=2000)
     # Names sit in the middle of their lane's rows: MPPE spans rows 0..3, MGF row 3..4.
     assert plot.y_axis().tick_labels() == {1.5: "MPPE", 3.5: "MGF"}
@@ -452,7 +453,7 @@ def test_category_stack_gives_each_mode_a_row(panel, qtbot):
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     flat = plot.minimumHeight()
     tl.category_order = ["BASE", "HKM", "LM"]   # HKM is not used: ignored
-    tl.stack = "category"
+    tl.stack = TimelineStack.Category
     qtbot.waitUntil(lambda: plot.minimumHeight() == flat + tl.lane_height(), timeout=2000)
 
 

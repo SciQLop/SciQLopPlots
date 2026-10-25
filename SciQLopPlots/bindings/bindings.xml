@@ -172,6 +172,9 @@
     <enum-type name="OverlayLevel" python-type="IntEnum"/>
     <enum-type name="OverlaySizeMode" python-type="IntEnum"/>
     <enum-type name="OverlayPosition" python-type="IntEnum"/>
+    <enum-type name="TimelineStyle" python-type="IntEnum"/>
+    <enum-type name="TimelineStack" python-type="IntEnum"/>
+    <enum-type name="TimelineEditMode" python-type="IntEnum"/>
     <!-- libshiboken ignores python-type for global enums: it gives them the kind of
          whichever class enum was created last in the process (a function-static in
          sbkenum.cpp createEnumForPython), usually one of PySide's Flags, created when a
