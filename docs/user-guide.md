@@ -806,9 +806,9 @@ panel.set_legend_visible(False)                 # every plot's legend, later one
 
 ```python
 import numpy as np
-from PySide6.QtCore import QPointF
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor
-from SciQLopPlots import SciQLopPlot, SciQLopPlotRange, Coordinates
+from SciQLopPlots import SciQLopPlot, SciQLopMultiPlotPanel, SciQLopPlotRange, Coordinates
 
 plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
@@ -821,6 +821,15 @@ span.range_changed.connect(lambda r: print("span now", r.start(), r.stop()))
 
 # A threshold line at y = 0.5
 threshold = plot.horizontal_line(0.5)
+same_line = plot.straight_line(0.5, Qt.Orientation.Horizontal)
+
+# A box bounded on both axes
+box = plot.span(key_range=SciQLopPlotRange(2.0, 4.0), value_range=SciQLopPlotRange(-0.5, 0.5))
+
+# One span across every plot of a panel
+panel = SciQLopMultiPlotPanel()
+panel.plot(x, np.sin(x), labels=["sin"])
+panel_span = panel.span(key_range=SciQLopPlotRange(2.0, 4.0))
 
 # A text label placed in data coordinates
 note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordinates.Data)
@@ -1432,9 +1441,9 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **Spans and lines.** The factories return two classes, `SciQLopSpan` and `SciQLopStraightLine`, for every kind of span and line and on plots and panels alike. Their accessors are methods.
 - The old classes stay for code that uses them: `SciQLopVerticalSpan`, `SciQLopHorizontalSpan`, `SciQLopRectangularSpan`, `MultiPlotsVerticalSpan`, `SciQLopVerticalLine`, `SciQLopHorizontalLine` and `MultiPlotsVerticalLine`. Their constructors were already deprecated and still warn. `MultiPlotsVSpanCollection.create_span` and interactive span creation (`span_created`) still build them, with their old defaults.
-- On the old panel classes the state is still read and written as attributes: `span.range`, `span.selected = True`, `line.position = 3.0`. On what the factories return, the same names are methods: `span.range()`, `span.set_selected(True)`, `line.set_position(3.0)`. So a pipeline written against an old panel object (`span.on.range`) does not carry over to a new one until its calls move to the methods.
+- On the old panel classes the state is still read and written as attributes: `span.range`, `span.selected = True`, `line.position = 3.0`. On what the factories return, the same names are methods: `span.range()`, `span.set_selected(True)`, `line.set_position(3.0)`.
 - Deprecated calls, each with a warning: `plot.rectangular_span(k, v)` (use `plot.span(key_range=k, value_range=v)`), `movable=` on the line factories (use `read_only=`, which means the opposite), and `line.movable()` / `line.set_movable()` (use `read_only()` and `set_read_only()`). `SciQLopStraightLine(plot, ...)` warns too: use `plot.straight_line(...)`.
-- The plot line factories take the colour second and `read_only` third. A bool in second place raises `TypeError` instead of becoming a colour.
+- The plot line factories take the colour second and `read_only` third. On the plot factories a bool in second place raises `TypeError` instead of becoming a colour. On the panel factories a bool still becomes a colour.
 - The factory defaults are the same on plots and panels: spans are grey with alpha 100 and editable, lines are black and read-only. `panel.vertical_line` used to give a grey, draggable line: pass `color=QColor(100, 100, 100), read_only=False` to keep that.
 
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.
