@@ -355,6 +355,8 @@ A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `p
 
 ![A 2-D density histogram](images/histogram2d.png)
 
+`hist.set_normalization(HistogramNormalization.Density)` divides each column by its total; `Count` (the default) shows raw counts. `Probability` is not defined for a 2-D histogram. The old `set_normalization(1)` still works but is deprecated.
+
 ### Histograms
 
 `plot.histogram(values)` counts values into bins and draws the counts. The x axis holds the values. The y axis holds the counts.
@@ -908,14 +910,15 @@ panel.set_time_axis_range(0, 12000)
 
 - `panel.add_timeline()` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed. `lane_height` (22 px by default) is a minimum: make the plot taller and the lanes grow with it. `panel.organize_plots()` gives timeline plots their natural height and shares the rest.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
-- Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = "bars"` switches to plain bars.
+- Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = TimelineStyle.Bars` switches to plain bars (`TimelineStyle.Wave` is the default).
 - `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back. The legend lists the categories in use, each with its colour.
 - Overlapping intervals in one lane:
-  - `tl.stack = None` (the default) draws them over each other.
-  - `tl.stack = "time"` puts each in the first free sub-row; good for overlapping events.
-  - `tl.stack = "category"` gives each category its own fixed sub-row, named at its start, so an instrument's modes keep their rows from one orbit to the next. `tl.category_order = ["BASE", "HKM", "LM"]` sets the row order; categories left out follow, first seen first.
+  - `tl.stack = TimelineStack.Off` (the default) draws them over each other.
+  - `tl.stack = TimelineStack.Time` puts each in the first free sub-row; good for overlapping events.
+  - `tl.stack = TimelineStack.Category` gives each category its own fixed sub-row, named at its start, so an instrument's modes keep their rows from one orbit to the next. `tl.category_order = ["BASE", "HKM", "LM"]` sets the row order; categories left out follow, first seen first.
   - Each sub-row is a full `lane_height`, so a lane with 4 modes is 4 rows tall. For about 70 rows on a 1080 px screen, use `lane_height=14`; below about 12 px, labels no longer fit in their bars.
-  - `tl.forbid_overlap = True` makes edits stop at the neighbouring block in the same row, so they never overlap: the same lane, or the same lane and category with `stack="category"`. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
+  - `tl.forbid_overlap = True` makes edits stop at the neighbouring block in the same row, so they never overlap: the same lane, or the same lane and category with `TimelineStack.Category`. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
+- `style`, `stack` and `edit_modes` take members of `TimelineStyle`, `TimelineStack` and `TimelineEditMode`, and read back as members: `tl.stack` is `TimelineStack.Off`, not `None`, and `tl.edit_modes` is a set of `TimelineEditMode`. The old strings (and `None` for `stack`) still work but are deprecated, and a comparison like `tl.style == "wave"` is now false.
 - Timelines show up in the inspector, as "timeline" or their name (`tl.set_name(...)`). Their properties panel sets the style, stacking, forbidden overlaps, lane height, editing and snapping.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
@@ -941,7 +944,7 @@ Make a timeline editable to build or adjust a plan by hand, and write edits back
 
 ```python
 import numpy as np
-from SciQLopPlots import SciQLopTimeSeriesPlot
+from SciQLopPlots import SciQLopTimeSeriesPlot, TimelineEditMode
 
 plot = SciQLopTimeSeriesPlot()
 tl = plot.add_timeline()
@@ -951,7 +954,7 @@ plan = {"start": np.array([0.0, 3600.0]), "stop": np.array([1800.0, 7200.0]),
 tl.set_intervals(**plan)
 
 tl.editable = True
-tl.edit_modes = {"move", "resize", "change_lane"}
+tl.edit_modes = {TimelineEditMode.Move, TimelineEditMode.Resize, TimelineEditMode.ChangeLane}
 tl.snap_to = 60   # snap drags to the nearest minute; also "edges", a list of times, or None
 
 def apply_edits(edits):
@@ -964,10 +967,10 @@ def apply_edits(edits):
 tl.intervals_changed.connect(apply_edits)
 ```
 
-- `tl.editable = True` turns on mouse editing. `edit_modes` picks which gestures are allowed (default `{"move", "resize"}`); add `"change_lane"` to let a drag move an interval to another lane, `"create"` to draw new ones on empty lane space, `"delete"` to wire the Delete key to `delete_requested`.
+- `tl.editable = True` turns on mouse editing. `edit_modes` picks which gestures are allowed (default `{TimelineEditMode.Move, TimelineEditMode.Resize}`); add `ChangeLane` to let a drag move an interval to another lane, `Create` to draw new ones on empty lane space, `Delete` to wire the Delete key to `delete_requested`.
 - Drag a block's end to resize it. A block too narrow to grab is resized from just outside its ends; pressing inside it moves it. Instant events (start == stop) only move.
 - Shift+drag on empty lane space makes a rubber-band selection; Ctrl-click toggles one interval; arrow keys nudge the selection; Escape cancels a drag in progress.
-- `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` fires with `(start, stop, lane_name)` when an interval is drawn on empty lane space, and `tl.interval_created_in` with `(start, stop, lane_name, category)`: the category of the row it was drawn in with `stack="category"`, else `""`; `tl.delete_requested` fires with the list of selected ids when Delete or Backspace is pressed. Neither changes the data: add or drop the intervals in your arrays and call `set_intervals` again.
+- `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` fires with `(start, stop, lane_name)` when an interval is drawn on empty lane space, and `tl.interval_created_in` with `(start, stop, lane_name, category)`: the category of the row it was drawn in with `TimelineStack.Category`, else `""`; `tl.delete_requested` fires with the list of selected ids when Delete or Backspace is pressed. Neither changes the data: add or drop the intervals in your arrays and call `set_intervals` again.
 - `tl.snap_to = [t1, t2, ...]` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events.
 - `tl.hovered` fires with the hovered interval's id (or `-1` when the mouse leaves it), and `tl.interval(id)` gives its details as a dict: `id`, `start`, `stop`, `duration`, `lane`, `category` and `label` (`None` for an unknown id); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
 - `tl.interval_at(x, y)` gives the id of the interval under a widget pixel, or `None`. The plot's crosshair tooltip lists the hovered interval: lane, label (category), start → stop; `plot.crosshair_text()` returns that tooltip's text.

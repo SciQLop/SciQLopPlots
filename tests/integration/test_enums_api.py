@@ -102,3 +102,11 @@ def test_histogram2d_signal_still_carries_an_int(hist):
     hist.normalization_changed.connect(seen.append)
     hist.set_normalization(HistogramNormalization.Density)
     assert seen == [1]
+
+
+def test_pyproject_filter_turns_the_new_messages_into_errors(tl, hist):
+    """Pins the filterwarnings entry in pyproject.toml: no pytest.warns wrapper here."""
+    with pytest.raises(DeprecationWarning, match=r"is deprecated: use TimelineStyle\.Bars"):
+        tl.style = "bars"
+    with pytest.raises(DeprecationWarning, match=r"use HistogramNormalization\.Density"):
+        hist.set_normalization(1)
