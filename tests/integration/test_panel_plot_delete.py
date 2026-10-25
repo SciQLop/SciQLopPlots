@@ -12,7 +12,7 @@ SCRIPT = """
 import numpy as np, shiboken6
 from PySide6.QtWidgets import QApplication
 app = QApplication([])
-from SciQLopPlots import SciQLopMultiPlotPanel, PlotType
+from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlotInterface, PlotType
 x = np.linspace(0.0, 10.0, 200)
 panel = SciQLopMultiPlotPanel()
 result = {factory}
@@ -30,6 +30,8 @@ FACTORIES = {
     "timeseries": "panel.plot(x, x, plot_type=PlotType.TimeSeries)",
     "colormap": "panel.plot(x, np.arange(8.0), np.random.rand(200, 8))",
     "inserted": "(panel.plot(x, x), panel.plot(x, x, index=0))[1]",
+    "plots_list": "(panel.plot(x, x), (panel.plots()[0].data(),))[1]",
+    "find_children": "(panel.plot(x, x), (panel.findChildren(SciQLopPlotInterface)[0],))[1]",
     "histogram": "panel.histogram(x)",
     "projection": "panel.plot(x, np.column_stack([np.sin(x), np.cos(x), x]), plot_type=PlotType.Projections)",
 }
@@ -55,3 +57,28 @@ def test_python_built_plot_baseline_still_fine():
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
                           env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
     assert done.returncode == 0, done.stderr[-500:]
+
+
+MOVED = """
+import numpy as np, shiboken6
+from PySide6.QtWidgets import QApplication
+app = QApplication([])
+from SciQLopPlots import SciQLopMultiPlotPanel
+x = np.linspace(0.0, 10.0, 200)
+a, b = SciQLopMultiPlotPanel(), SciQLopMultiPlotPanel()
+plot, _ = a.plot(x, x)
+a.remove(plot)
+b.add_plot(plot)
+shiboken6.delete(plot)
+del plot
+app.processEvents()
+del a, b
+print("teardown ok")
+"""
+
+
+def test_a_plot_moved_between_panels_then_deleted_does_not_crash():
+    done = subprocess.run([sys.executable, "-c", MOVED], capture_output=True, text=True, timeout=120,
+                          env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
+    assert done.returncode == 0, (done.returncode, done.stderr[-500:])
+    assert "teardown ok" in done.stdout

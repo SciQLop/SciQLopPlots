@@ -1810,6 +1810,7 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
     QObject::connect(plot, &amp;QObject::destroyed, plot,
                      [plot](QObject*)
                      {
+                         // Py_IsFinalizing is outside the 3.11 limited API the wheels target.
                          if (!Py_IsInitialized())
                              return;
                          Shiboken::GilState gil;
