@@ -55,3 +55,11 @@ def test_every_listed_python_function_contributes_lines():
     for name in target.functions:
         single = dataclasses.replace(target, functions=(name,))
         assert config.target_lines(project, single), name
+
+
+def test_coveragepy_reports_resolve_against_the_repo_root_and_only_no_data_falls_back():
+    project = config.load(CONFIG, "sciqlopplots")
+    spec = next(s for s in project.raw["cover_reports"] if s["kind"] == "coveragepy")
+    assert spec["root"] == "{root}"
+    command = next(c for c in project.raw["cover_cmds"] if c[0] == "sh")[-1]
+    assert "No data to report" in command and "exit 1" in command
