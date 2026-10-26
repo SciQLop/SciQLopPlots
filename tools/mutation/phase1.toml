@@ -17,6 +17,7 @@ require_env = ["DISPLAY"]
 env = { PATH = "{root}/.venv/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:{env_PATH}", PKG_CONFIG_PATH = "/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig" }
 build_cmd = ["{root}/.venv/bin/meson", "compile", "-C", "{build_dir}", "-j", "4", "auto-tests"]
 build_timeout = 540
+max_tests = 25
 test_cwd = "{build_dir}"
 test_env = { QT_QPA_PLATFORM = "xcb", QCP_TEST_CLASS = "{test_class}", QCP_TEST_FUNCTION = "{test_function}" }
 test_cmd = ["{build_dir}/tests/auto/auto-tests"]
