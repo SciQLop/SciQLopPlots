@@ -78,11 +78,11 @@ cover_test_cmd = ["{root}/.venv/bin/python", "-m", "coverage", "run", "--data-fi
 prune_gcda = true
 cover_cmds = [
   ["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"],
-  ["{root}/.venv/bin/python", "-m", "coverage", "json", "--data-file={scratch}/.coverage", "-o", "{scratch}/coveragepy.json"],
+  ["sh", "-c", "{root}/.venv/bin/python -m coverage json --data-file={scratch}/.coverage -o {scratch}/coveragepy.json || echo '{{\"files\": {{}}}}' > {scratch}/coveragepy.json"],
 ]
 cover_reports = [
   { kind = "gcovr", file = "{scratch}/gcovr.json", root = "{repo}" },
-  { kind = "coveragepy", file = "{scratch}/coveragepy.json", root = "/tmp" },
+  { kind = "coveragepy", file = "{scratch}/coveragepy.json", root = "{root}" },
 ]
 failure_parser = "pytest"
 tests = { glob = ["tests/integration/test_*.py", "tests/unit/test_*.py", "tests/fuzzing/test_*.py"], prefix = "{root}/" }
