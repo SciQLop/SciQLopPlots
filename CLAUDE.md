@@ -23,7 +23,7 @@ cd /var/home/jeandet/Documents/prog/SciQLopPlots
 uv venv .venv --python 3.13
 VIRTUAL_ENV=$(pwd)/.venv uv pip install \
   pyside6==6.11.2 shiboken6==6.11.2 shiboken6-generator==6.11.2 \
-  numpy meson==1.10.2 ninja meson-python pytest pytest-qt scipy
+  numpy meson==1.10.2 ninja meson-python pytest pytest-qt scipy coverage
 
 # Every build: Qt MUST be on PATH (6.11.2 includes `qsb`)
 VENV=$(pwd)/.venv

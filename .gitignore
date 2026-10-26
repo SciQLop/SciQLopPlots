@@ -21,3 +21,4 @@ subprojects/**/*
 .serena/
 aqtinstall.log
 .claude/*.lock
+build-cov

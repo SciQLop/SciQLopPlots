@@ -1,0 +1,112 @@
+# Mutation testing, phase 1: the code feat/fills-histogram added (fills, error
+# bars, histogram, the histogram2d fixes, the pipeline fix).
+# Plan: docs/plans/2026-10-25-mutation-testing-phase1-plan.md
+# Strings are templates: {root} {repo} {build_dir} {scratch} {test} {test_class}
+# {test_function} {env_NAME}; a list item "{tests}" becomes one item per test;
+# write a literal brace as {{ or }}.
+# A survivor triaged as equivalent gets a [[project.equivalent]] entry under its
+# project's targets: path, op, before (the exact original line) and reason.
+root = "../.."
+
+[[project]]
+name = "neoqcp"
+repo = "subprojects/NeoQCP"
+base = "main"
+build_dir = "subprojects/NeoQCP/build-cov"
+require_env = ["DISPLAY"]
+env = { PATH = "{root}/.venv/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:{env_PATH}", PKG_CONFIG_PATH = "/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig" }
+build_cmd = ["{root}/.venv/bin/meson", "compile", "-C", "{build_dir}", "-j", "4", "auto-tests"]
+build_timeout = 300
+test_cwd = "{build_dir}"
+test_env = { QT_QPA_PLATFORM = "xcb", QCP_TEST_CLASS = "{test_class}", QCP_TEST_FUNCTION = "{test_function}" }
+test_cmd = ["{build_dir}/tests/auto/auto-tests"]
+cover_test_cmd = ["{build_dir}/tests/auto/auto-tests"]
+prune_gcda = true
+cover_cmds = [["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"]]
+cover_reports = [{ kind = "gcovr", file = "{scratch}/gcovr.json", root = "{repo}" }]
+failure_parser = "qtest"
+# autotest.cpp appends QCP_TEST_FUNCTION to QtTest's argv, so "-functions" lists the class's test functions
+tests = { regex_file = "subprojects/NeoQCP/tests/auto/autotest.cpp", pattern = 'QCPTEST\((\w+)\);', functions_cmd = ["{build_dir}/tests/auto/auto-tests"], functions_env = { QCP_TEST_FUNCTION = "-functions" }, functions_pattern = '^(\w+)\(\)$' }
+
+[[project.target]]
+path = "src/plottables/multigraph-fill.cpp"
+
+[[project.target]]
+path = "src/plottables/multigraph-errorbars.cpp"
+
+[[project.target]]
+path = "src/plottables/histogram-geometry.cpp"
+
+[[project.target]]
+path = "src/plottables/plottable-histogram.cpp"
+
+[[project.target]]
+path = "src/datasource/histogram-binner-1d.h"
+objects = ["src/plottables/plottable-histogram.cpp", "tests/auto/test-histogram1d/test-histogram1d.cpp", "tests/auto/test-histogram1d/test-histogram-plottable.cpp"]
+
+[[project.target]]
+path = "src/plottables/plottable-multigraph.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/plottables/plottable-histogram2d.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/plottables/plottable-draw-utils.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/datasource/async-pipeline.cpp"
+scope = "diff"
+
+[[project]]
+name = "sciqlopplots"
+repo = "."
+base = "main"
+build_dir = "build-cov"
+env = { PATH = "{root}/.venv/bin:/home/jeandet/Qt/6.11.2/gcc_64/bin:{env_PATH}", PKG_CONFIG_PATH = "/home/jeandet/Qt/6.11.2/gcc_64/lib/pkgconfig", LLVM_INSTALL_DIR = "/usr" }
+build_cmd = ["{root}/.venv/bin/meson", "compile", "-C", "{build_dir}", "-j", "4", "SciQLopPlotsBindings.abi3.so"]
+build_timeout = 300
+test_cwd = "/tmp"
+test_env = { QT_QPA_PLATFORM = "offscreen", PYTHONPATH = "{build_dir}:{root}" }
+batch_tests = true
+stop_on_first_kill = true
+max_tests = 25
+test_cmd = ["{root}/.venv/bin/python", "-m", "pytest", "{tests}", "-q", "-p", "no:cacheprovider", "-rfE", "-x"]
+cover_test_cmd = ["{root}/.venv/bin/python", "-m", "coverage", "run", "--data-file={scratch}/.coverage", "--include={build_dir}/SciQLopPlots/__init__.py", "-m", "pytest", "{tests}", "-q", "-p", "no:cacheprovider"]
+prune_gcda = true
+cover_cmds = [
+  ["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"],
+  ["{root}/.venv/bin/python", "-m", "coverage", "json", "--data-file={scratch}/.coverage", "-o", "{scratch}/coveragepy.json"],
+]
+cover_reports = [
+  { kind = "gcovr", file = "{scratch}/gcovr.json", root = "{repo}" },
+  { kind = "coveragepy", file = "{scratch}/coveragepy.json", root = "/tmp" },
+]
+failure_parser = "pytest"
+tests = { glob = ["tests/integration/test_*.py", "tests/unit/test_*.py", "tests/fuzzing/test_*.py"], prefix = "{root}/" }
+
+[[project.target]]
+path = "src/SciQLopHistogram.cpp"
+
+[[project.target]]
+path = "src/SciQLopHistogram2D.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/SciQLopMultiGraphBase.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/SciQLopGraphComponent.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "src/SciQLopGraphComponentDelegate.cpp"
+scope = "diff"
+
+[[project.target]]
+path = "SciQLopPlots/__init__.py"
+functions = ["_error_bounds", "_band_batch", "_error_batch", "_band", "_error_bars", "_configure_histogram", "_histogram_calling"]
+deploy = "{build_dir}/SciQLopPlots/__init__.py"
