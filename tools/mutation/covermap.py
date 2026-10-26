@@ -48,7 +48,17 @@ def source_shas(project):
     return {t.path: st.sha(project.repo / t.path) for t in project.targets}
 
 
+def _same_file(a, b):
+    return Path(a).is_file() and st.sha(a) == st.sha(b)
+
+
+def _stale_deploys(project):
+    return [t.path for t in project.targets if t.deploy and not _same_file(project.deploy_path(t), project.repo / t.path)]
+
+
 def build_or_die(project):
+    if _stale_deploys(project):
+        raise SystemExit(f"deployed copy is stale: rebuild {' '.join(project.expand(project.raw['build_cmd']))}")
     result = project.build()
     if result.code != 0:
         raise SystemExit(f"build failed on the unmutated sources:\n{result.output[-3000:]}")

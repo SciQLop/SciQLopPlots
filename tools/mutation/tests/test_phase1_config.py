@@ -1,3 +1,4 @@
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -45,4 +46,12 @@ def test_the_python_target_is_the_band_error_bar_and_histogram_helpers():
     project = config.load(CONFIG, "sciqlopplots")
     target = next(t for t in project.targets if t.path.endswith(".py"))
     assert target.deploy == str(project.build_dir / "SciQLopPlots" / "__init__.py")
-    assert 0 < len(config.target_lines(project, target)) < 200
+    assert 75 < len(config.target_lines(project, target)) < 200
+
+
+def test_every_listed_python_function_contributes_lines():
+    project = config.load(CONFIG, "sciqlopplots")
+    target = next(t for t in project.targets if t.path.endswith(".py"))
+    for name in target.functions:
+        single = dataclasses.replace(target, functions=(name,))
+        assert config.target_lines(project, single), name

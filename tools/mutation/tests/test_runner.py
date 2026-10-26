@@ -265,3 +265,14 @@ def test_run_before_plan_names_plan(tmp_path):
     project = _setup(tmp_path, "calc")
     with pytest.raises(SystemExit, match="plan"):
         runner.run(project, budget=600)
+
+
+def test_a_stale_deploy_copy_stops_every_build(tmp_path, monkeypatch):
+    monkeypatch.setenv("PYTHON", sys.executable)
+    project = _setup(tmp_path, "py")
+    project.build_dir.mkdir(parents=True)
+    (project.build_dir / "limits.py").write_text("old = 1\n")
+    with pytest.raises(SystemExit, match="deployed copy is stale: rebuild .*true"):
+        covermap.cover(project, budget=600)
+    with pytest.raises(SystemExit, match="deployed copy is stale"):
+        covermap.build_or_die(project)
