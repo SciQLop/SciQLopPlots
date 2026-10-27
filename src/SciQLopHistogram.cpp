@@ -23,7 +23,6 @@
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
 #include "SciQLopPlots/Python/Validation.hpp"
-#include "SciQLopPlots/constants.hpp"
 #include "SciQLopPlots/qcp_enums.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include <datasource/row-major-multi-datasource.h>
@@ -116,12 +115,10 @@ SciQLopHistogram::SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
     if (bins <= 0)
         throw std::invalid_argument("histogram bins must be positive");
     _hist = new QCPHistogram(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
-    _hist->setLayer(Constants::LayersNames::Main);
     _hist->setBins(bins);
     // Not set_name(): an auto-named instance must not count as user-named.
     this->setObjectName(name);
     _hist->setName(name);
-    connect(_hist, &QCPHistogram::destroyed, this, &SciQLopHistogram::_hist_got_destroyed);
     connect(_hist, &QCPAbstractPlottable::busyChanged, this,
             &SciQLopPlottableInterface::busy_changed);
     connect(_hist, &QCPHistogram::edgesChanged, this, &SciQLopHistogram::_on_edges_changed);
@@ -152,11 +149,6 @@ QCPPlottableLegendItem* SciQLopHistogram::_legend_item() const
 {
     auto* plot = _plot();
     return plot && _hist ? plot->legend->itemWithPlottable(_hist) : nullptr;
-}
-
-void SciQLopHistogram::_hist_got_destroyed()
-{
-    _hist = nullptr;
 }
 
 void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
@@ -246,7 +238,6 @@ void SciQLopHistogram::_on_histogram_ready()
     _had_result = result != nullptr;
     if (!result)
         return;
-    _apply_default_style(result->heights.size());
     if (first || edges_moved)
         Q_EMIT request_rescale();
 }

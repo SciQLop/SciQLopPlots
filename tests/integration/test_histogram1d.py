@@ -5,6 +5,7 @@ import pytest
 from SciQLopPlots import (GraphType, HistogramNormalization, HistogramStyle, SciQLopHistogram,
                           SciQLopMultiPlotPanel, SciQLopNDProjectionPlot, SciQLopPlot,
                           SciQLopTimeSeriesPlot)
+from conftest import record
 
 
 class TestHistogramClass:
@@ -30,6 +31,12 @@ class TestHistogramClass:
         h = plot.histogram(np.array([1, 1, 2, 3], dtype=np.int32))
         qtbot.waitUntil(lambda: len(h.bin_heights()) == 1, timeout=5000)
         assert sum(h.bin_heights()[0]) == 4
+
+
+def _emissions(signal):
+    seen = []
+    signal.connect(lambda *args: seen.append(args))
+    return seen
 
 
 def _wait_result(qtbot, h):
@@ -65,12 +72,18 @@ class TestHistogramBehaviour:
         assert h.style() == HistogramStyle.Bars
 
     def test_column_major_columns_are_binned_apart(self, qtbot, plot):
-        h = plot.histogram(np.arange(10.0))
+        h = plot.histogram(np.linspace(0.0, 5.0, 10), bins=5)
         y = np.asfortranarray(np.column_stack([np.zeros(10), np.ones(10) * 5.0]))
         h.set_data(np.arange(10.0), y)
         qtbot.waitUntil(lambda: len(h.bin_heights()) == 2, timeout=5000)
-        assert [sum(c) for c in h.bin_heights()] == [10, 10]
-        assert h.bin_heights()[0][0] == 10
+        assert h.bin_heights() == [[10, 0, 0, 0, 0], [0, 0, 0, 0, 10]]
+
+    def test_row_major_columns_are_binned_apart(self, qtbot, plot):
+        h = plot.histogram(np.linspace(0.0, 5.0, 10), bins=5)
+        y = np.ascontiguousarray(np.column_stack([np.zeros(10), np.ones(10) * 5.0]))
+        h.set_data(np.arange(10.0), y)
+        qtbot.waitUntil(lambda: len(h.bin_heights()) == 2, timeout=5000)
+        assert h.bin_heights() == [[10, 0, 0, 0, 0], [0, 0, 0, 0, 10]]
 
     def test_binned_bars(self, plot):
         h = plot.histogram(np.arange(10.0))
@@ -82,6 +95,37 @@ class TestHistogramBehaviour:
         h = plot.histogram(np.arange(10.0))
         with pytest.raises(ValueError):
             h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([3.0, 4.0, 5.0]))
+
+    def test_binned_three_dimensional_heights_raise(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        with pytest.raises(ValueError):
+            h.set_binned(np.array([0.0, 1.0, 2.0]), np.zeros((2, 2, 2)))
+
+    def test_binned_row_major_columns(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([[3.0, 4.0], [1.0, 2.0]]))
+        assert h.bin_heights() == [[3.0, 1.0], [4.0, 2.0]]
+
+    def test_binned_column_major_columns(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_binned(np.array([0.0, 1.0, 2.0]),
+                     np.asfortranarray(np.array([[3.0, 4.0], [1.0, 2.0]])))
+        assert h.bin_heights() == [[3.0, 1.0], [4.0, 2.0]]
+
+    def test_binned_columns_default_to_step_at_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([[3.0, 4.0], [1.0, 2.0]]))
+        assert h.style() == HistogramStyle.Step
+
+    def test_several_columns_default_to_step_at_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_data(np.arange(10.0), np.random.default_rng(0).normal(size=(10, 2)))
+        assert h.style() == HistogramStyle.Step
+
+    def test_several_value_columns_default_to_step_at_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_values(np.random.default_rng(0).normal(size=(10, 2)))
+        assert h.style() == HistogramStyle.Step
 
     def test_probability_sums_to_one(self, qtbot, plot):
         h = plot.histogram(np.arange(100.0), bins=8)
@@ -285,3 +329,139 @@ class TestHistogramHosts:
             p.histogram(np.arange(10.0))
         with pytest.raises(NotImplementedError):
             p.bars(np.array([0.0, 1.0]), np.array([1.0]))
+
+
+class TestHistogramBins:
+    def test_creating_with_no_bins_raises(self, plot):
+        with pytest.raises(ValueError):
+            plot.histogram(np.arange(10.0), bins=0)
+
+    def test_creating_with_one_bin(self, plot):
+        assert plot.histogram(np.arange(10.0), bins=1).bins() == 1
+
+    def test_one_bin_can_be_set(self, plot):
+        h = plot.histogram(np.arange(10.0), bins=4)
+        h.set_bins(1)
+        assert h.bins() == 1
+
+
+class TestHistogramRange:
+    def test_an_empty_range_raises(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        with pytest.raises(ValueError):
+            h.set_bin_range(5.0, 5.0)
+
+    def test_log_bins_accept_a_range_below_one(self, qtbot, plot):
+        h = plot.histogram(np.arange(1.0, 100.0), log_bins=True)
+        h.set_bin_range(0.5, 10.0)
+        qtbot.waitUntil(lambda: h.bin_edges()[:1] == [0.5], timeout=5000)
+
+
+class TestHistogramSignals:
+    def test_set_data_signals_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        changes = _emissions(h.data_changed)
+        h.set_data(np.arange(10.0), np.arange(10.0))
+        assert len(changes) == 1
+
+    def test_set_data_keeps_its_arrays(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        x, y = np.arange(10.0), np.arange(10.0) * 2.0
+        h.set_data(x, y)
+        assert [list(a) for a in h.data()] == [list(x), list(y)]
+
+    def test_set_values_signals_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        changes = _emissions(h.data_changed)
+        h.set_values(np.arange(5.0))
+        assert len(changes) == 1
+
+    def test_set_values_keeps_its_array(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_values(np.arange(5.0))
+        assert [list(a) for a in h.data()] == [list(np.arange(5.0))]
+
+    def test_set_binned_signals_once(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        changes = _emissions(h.data_changed)
+        h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([3.0, 4.0]))
+        assert len(changes) == 1
+
+    def test_set_binned_keeps_its_arrays(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([3.0, 4.0]))
+        assert [list(a) for a in h.data()] == [[0.0, 1.0, 2.0], [3.0, 4.0]]
+
+    def test_an_invalid_set_data_changes_nothing(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        changes = _emissions(h.data_changed)
+        h.set_data(np.arange(3.0), None)
+        assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
+
+    def test_an_invalid_set_values_changes_nothing(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        changes = _emissions(h.data_changed)
+        h.set_values(None)
+        assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
+
+    def test_only_the_first_result_asks_for_a_rescale(self, qtbot, plot):
+        h = plot.histogram(np.arange(100.0), bins=4)
+        rescales = _emissions(h.request_rescale)
+        _wait_result(qtbot, h)
+        qtbot.waitUntil(lambda: len(rescales) > 0, timeout=5000)
+        before = len(rescales)
+        h.set_normalization(HistogramNormalization.Probability)
+        qtbot.waitUntil(lambda: abs(sum(h.bin_heights()[0]) - 1.0) < 1e-9, timeout=5000)
+        assert len(rescales) == before
+
+
+class TestHistogramLayer:
+    def test_a_histogram_is_on_the_main_layer(self, plot):
+        assert plot.histogram(np.arange(10.0)).layer() == "main"
+
+
+class TestHistogramName:
+    def test_renaming_renames_the_legend_row(self, plot):
+        h = plot.histogram(np.arange(10.0), name="before")
+        h.set_name("after")
+        assert h.name == "after" and plot.legend().row_labels() == ["after"]
+
+    def test_a_given_name_is_the_users(self, plot):
+        h = plot.histogram(np.arange(10.0))
+        assert h.has_user_name() is False
+        h.set_name("mine")
+        assert h.has_user_name() is True
+
+
+def _legend_row_image(qtbot, tmp_path, plot):
+    from PySide6.QtGui import QImage
+    plot.resize(600, 400)
+    plot.show()
+    qtbot.waitExposed(plot)
+    plot.replot(True)
+    rect = plot.legend().row_rect(0)
+    assert rect.isValid(), "no legend row to compare"
+    path = str(tmp_path / "legend.png")
+    plot.save(path, plot.width(), plot.height())
+    return QImage(path).copy(rect)
+
+
+class TestHistogramSelection:
+    def test_selecting_selects_its_legend_row(self, qtbot, tmp_path, plot):
+        h = plot.histogram(np.arange(10.0), name="counts")
+        plain = _legend_row_image(qtbot, tmp_path, plot)
+        h.set_selected(True)
+        assert _legend_row_image(qtbot, tmp_path, plot) != plain
+
+    def test_deselecting_deselects_its_legend_row(self, qtbot, tmp_path, plot):
+        h = plot.histogram(np.arange(10.0), name="counts")
+        plain = _legend_row_image(qtbot, tmp_path, plot)
+        h.set_selected(True)
+        h.set_selected(False)
+        assert _legend_row_image(qtbot, tmp_path, plot) == plain
+
+    def test_selecting_without_a_legend_row(self, plot):
+        h = plot.histogram(np.arange(10.0), name="counts")
+        h.set_in_legend(False)
+        h.set_selected(True)
+        assert h.selected

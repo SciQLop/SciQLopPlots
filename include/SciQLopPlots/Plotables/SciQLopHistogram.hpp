@@ -46,7 +46,6 @@ class SciQLopHistogram : public SciQLopGraphInterface
 
     QCustomPlot* _plot() const;
     QCPPlottableLegendItem* _legend_item() const;
-    void _hist_got_destroyed();
     void _bin(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y);
     void _apply_default_style(std::size_t columns);
     void _on_edges_changed();

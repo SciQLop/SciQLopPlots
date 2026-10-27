@@ -3,6 +3,7 @@ does not drag a histogram's value x axis; re-binning follows set_x_axis/set_y_ax
 import numpy as np
 
 from SciQLopPlots import AxisType, SciQLopMultiPlotPanel
+from conftest import record
 
 
 def _recording_scatter(fetched):
@@ -77,6 +78,35 @@ class TestRebinOnTheNewAxis:
         plot.x_axis().set_log(True)
         qtbot.wait(200)
         assert not _log_spaced(h.bin_edges())
+
+    def test_histogram_rebins_at_once_when_its_own_axis_turns_log(self, qtbot, plot):
+        h = plot.histogram(np.geomspace(1.0, 1000.0, 500), bins=10)
+        qtbot.waitUntil(lambda: len(h.bin_edges()) == 11, timeout=5000)
+        qtbot.wait(100)
+        busy = record(h.busy_changed)
+        h.set_log_bins(True)
+        assert busy == [True]
+
+    def test_histogram_rebins_at_once_when_its_new_x_axis_turns_log(self, qtbot, plot):
+        h = plot.histogram(np.geomspace(1.0, 1000.0, 500), bins=10)
+        qtbot.waitUntil(lambda: len(h.bin_edges()) == 11, timeout=5000)
+        h.set_x_axis(plot.x2_axis())
+        qtbot.wait(100)
+        busy = record(h.busy_changed)
+        plot.x2_axis().set_log(True)
+        assert busy == [True]
+
+    def test_histogram_keeps_its_edges_when_its_old_x_axis_turns_log(self, qtbot, plot):
+        h = plot.histogram(np.linspace(1.0, 100.0, 500), bins=10)
+        qtbot.waitUntil(lambda: len(h.bin_edges()) == 11, timeout=5000)
+        h.set_values(np.linspace(40.0, 60.0, 500))
+        qtbot.wait(200)
+        h.set_x_axis(plot.x2_axis())
+        qtbot.wait(100)
+        busy = record(h.busy_changed)
+        plot.x_axis().set_log(True)
+        qtbot.wait(200)
+        assert busy == []
 
     def test_histogram2d_rebins_when_its_new_axes_turn_log(self, qtbot, plot):
         h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))
