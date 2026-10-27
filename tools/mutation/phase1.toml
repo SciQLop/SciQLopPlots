@@ -257,3 +257,33 @@ scope = "diff"
 path = "SciQLopPlots/__init__.py"
 functions = ["_as_columns", "_wrapped_callback", "_line_data", "_hide_columns", "_as_values", "_error_bounds", "_band_batch", "_error_batch", "_band", "_error_bars", "_configure_histogram", "_histogram_calling"]
 deploy = "{build_dir}/SciQLopPlots/__init__.py"
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "delete_statement"
+before = "    std::iota(data->keys.begin(), data->keys.end(), 0.0);"
+reason = "The 1-D binning and every getter read the result, never the keys, and all-zero keys are as sorted as 0..n-1."
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "delete_statement"
+before = "    _hist = nullptr;"
+reason = "The QPointer clears itself when removePlottable deletes the histogram on the next line."
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "and_to_or"
+before = "    if (plot && plot->hasPlottable(hist))"
+reason = "_hist is still set only while the plot lives (the plot deletes its plottables first), so plot is never null here."
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "and_to_or"
+before = "    return plot && _hist ? plot->legend->itemWithPlottable(_hist) : nullptr;"
+reason = "itemWithPlottable(nullptr) finds nothing, and a live _hist implies a live plot, so both forms return the same item."
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "int_plus_one"
+before = "    return _hist ? _hist->bins() : 0;"
+reason = "_hist is null only while the plot is being destroyed, when no Python call can reach bins()."
