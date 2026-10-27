@@ -754,31 +754,66 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
                 }
             });
     }
-    connect(
-        plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed), this,
-        [this]()
-        {
-            if (this->m_auto_scale)
-                this->_rescale_axes_once_data_shown();
-        },
-        Qt::QueuedConnection);
+    _fit_on(plottable, QOverload<>::of(&SciQLopGraphInterface::data_changed),
+            [this]() { return m_auto_scale; });
     _rescale_on_request(plottable, false);
 }
 
 void SciQLopPlot::_rescale_on_request(SciQLopPlottableInterface* plottable,
                                       bool also_on_auto_scale)
 {
+    _fit_on(plottable, &SciQLopPlottableInterface::request_rescale,
+            [this, also_on_auto_scale]()
+            { return m_fit_first_data || (also_on_auto_scale && m_auto_scale); });
+}
+
+template <typename Sender, typename Signal, typename Wanted>
+void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted)
+{
+    auto key_ranges_at_request = std::make_shared<QList<SciQLopPlotRange>>();
+    connect(sender, signal, this, [this, key_ranges_at_request]()
+            { *key_ranges_at_request = _key_ranges(); }, Qt::DirectConnection);
     connect(
-        plottable, &SciQLopPlottableInterface::request_rescale, this,
-        [this, also_on_auto_scale]()
+        sender, signal, this,
+        [this, key_ranges_at_request, wanted]()
         {
-            if (this->m_fit_first_data || (also_on_auto_scale && this->m_auto_scale))
-                this->_rescale_axes_once_data_shown();
+            if (wanted())
+                _rescale_axes_once_data_shown(*key_ranges_at_request);
         },
         Qt::QueuedConnection);
 }
 
-void SciQLopPlot::_rescale_axes_once_data_shown()
+QList<SciQLopPlotRange> SciQLopPlot::_key_ranges() const
+{
+    return { x_axis()->range(), x2_axis()->range() };
+}
+
+// Only the key axes: a caller's key range drives what gets fetched, and graphs change their
+// own value axes as data lands (a colour map's auto_scale_y), which is no caller's choice.
+// simplify: a value axis still fits what is visible, so a first fit whose batch the caller
+// moved fully off view fits nothing and is used up. Re-arm the requester's first-data fit
+// (SciQLopPlottableInterface::check_first_data) if that ever matters.
+void SciQLopPlot::_rescale_axes_left_alone_since(
+    const QList<SciQLopPlotRange>& key_ranges_at_request)
+{
+    const QList<SciQLopPlotAxisInterface*> keys { x_axis(), x2_axis() };
+    QList<SciQLopPlotAxisInterface*> axes;
+    for (auto* axis : axes_to_rescale())
+    {
+        const auto key = keys.indexOf(axis);
+        if (key < 0 || key >= key_ranges_at_request.size()
+            || axis->range() == key_ranges_at_request[key])
+            axes.append(axis);
+    }
+    // The no-argument overload when nothing moved: a subclass (or a Python one) may override it.
+    if (axes.size() == axes_to_rescale().size())
+        rescale_axes();
+    else
+        rescale_axes(axes);
+}
+
+void SciQLopPlot::_rescale_axes_once_data_shown(
+    const QList<SciQLopPlotRange>& key_ranges_at_request)
 {
     const auto data_pending = [impl = static_cast<QCustomPlot*>(m_impl)]()
     {
@@ -789,20 +824,20 @@ void SciQLopPlot::_rescale_axes_once_data_shown()
     };
     if (!data_pending())
     {
-        rescale_axes();
+        _rescale_axes_left_alone_since(key_ranges_at_request);
         return;
     }
     if (std::exchange(m_rescale_waiting_for_data, true))
         return;
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = connect(m_impl, &QCustomPlot::afterReplot, this,
-                    [this, conn, data_pending]()
+                    [this, conn, data_pending, key_ranges_at_request]()
                     {
                         if (data_pending())
                             return;
                         QObject::disconnect(*conn);
                         m_rescale_waiting_for_data = false;
-                        rescale_axes();
+                        _rescale_axes_left_alone_since(key_ranges_at_request);
                     });
 }
 
@@ -1432,28 +1467,18 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
         // cmap object emitted from the same set_data() call, so Qt delivers
         // them in emission order and the flag is always set before it's read.
         auto skip_first_batch_data_changed_rescale = std::make_shared<bool>(false);
-        connect(
-            cmap, &SciQLopGraphInterface::request_rescale, this,
-            [this, skip_first_batch_data_changed_rescale]()
-            {
-                *skip_first_batch_data_changed_rescale = true;
-                if (this->m_fit_first_data)
-                    this->_rescale_axes_once_data_shown();
-            },
-            Qt::QueuedConnection);
-        connect(
-            cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed), this,
-            [this, skip_first_batch_data_changed_rescale]()
-            {
-                if (*skip_first_batch_data_changed_rescale)
+        _fit_on(cmap, &SciQLopGraphInterface::request_rescale,
+                [this, skip_first_batch_data_changed_rescale]()
                 {
-                    *skip_first_batch_data_changed_rescale = false;
-                    return;
-                }
-                if (this->m_auto_scale)
-                    this->_rescale_axes_once_data_shown();
-            },
-            Qt::QueuedConnection);
+                    *skip_first_batch_data_changed_rescale = true;
+                    return m_fit_first_data;
+                });
+        _fit_on(cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed),
+                [this, skip_first_batch_data_changed_rescale]()
+                {
+                    return !std::exchange(*skip_first_batch_data_changed_rescale, false)
+                        && m_auto_scale;
+                });
     }
 }
 

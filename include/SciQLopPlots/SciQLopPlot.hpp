@@ -287,10 +287,17 @@ protected:
     //! auto-scale honours the request as well as fit_first_data.
     void _rescale_on_request(SciQLopPlottableInterface* plottable, bool also_on_auto_scale);
     void _configure_histogram(SciQLopHistogram* hist, const QVariantMap& metadata);
+    //! When `signal` announces a batch and `wanted()` agrees, fits the axes once the batch is
+    //! shown. The key ranges are read as the batch arrives: the fit runs later and must not
+    //! undo a view the caller set in between.
+    template <typename Sender, typename Signal, typename Wanted>
+    void _fit_on(Sender* sender, Signal signal, Wanted wanted);
+    QList<SciQLopPlotRange> _key_ranges() const;
     //! rescale_axes() once every graph shows its latest batch: NeoQCP stages new data
     //! on a rendered graph and swaps it in later, and a rescale before that fits the
     //! data being replaced.
-    void _rescale_axes_once_data_shown();
+    void _rescale_axes_once_data_shown(const QList<SciQLopPlotRange>& key_ranges_at_request);
+    void _rescale_axes_left_alone_since(const QList<SciQLopPlotRange>& key_ranges_at_request);
     bool m_rescale_waiting_for_data = false;
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
