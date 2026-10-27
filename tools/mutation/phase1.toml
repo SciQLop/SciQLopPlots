@@ -89,13 +89,13 @@ reason = "On a tie the same value is assigned again."
 path = "src/plottables/plottable-histogram.cpp"
 op = "delete_statement"
 before = "    mResetQueued = true;"
-reason = "The flag only avoids queueing duplicate lambdas; resetForTheStaleScale is idempotent per scale."
+reason = "The flag only avoids posting duplicate no-op lambdas: performance only."
 
 [[project.equivalent]]
 path = "src/plottables/plottable-histogram.cpp"
 op = "true_to_false"
 before = "    mResetQueued = true;"
-reason = "The flag only avoids queueing duplicate lambdas; resetForTheStaleScale is idempotent per scale."
+reason = "The flag only avoids posting duplicate no-op lambdas: performance only."
 
 [[project.equivalent]]
 path = "src/plottables/plottable-histogram.cpp"
