@@ -81,6 +81,29 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::_adopt(SciQLopGraphInterface* gr
     return graph;
 }
 
+bool SciQLopNDProjectionPane::_same_scale() const noexcept
+{
+    const auto* projection = qobject_cast<const SciQLopNDProjectionPlot*>(parentWidget());
+    return projection && projection->axis_linking() == ProjectionAxisLinking::SameScale;
+}
+
+bool SciQLopNDProjectionPane::_fits_axes_one_by_one() const noexcept
+{
+    return !_same_scale();
+}
+
+QList<SciQLopPlotAxisInterface*> SciQLopNDProjectionPane::_caller_axes() const
+{
+    if (!_same_scale())
+        return { x_axis(), x2_axis() };
+    const auto* projection = qobject_cast<const SciQLopNDProjectionPlot*>(parentWidget());
+    QList<SciQLopPlotAxisInterface*> axes;
+    for (int i = 0; i < projection->subplot_count(); ++i)
+        if (auto* pane = projection->subplot(i))
+            axes << pane->x_axis() << pane->y_axis();
+    return axes;
+}
+
 void SciQLopNDProjectionPane::rescale_axes(const QList<SciQLopPlotAxisInterface*>& axes) noexcept
 {
     auto* projection = qobject_cast<SciQLopNDProjectionPlot*>(parentWidget());

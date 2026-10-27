@@ -762,58 +762,68 @@ void SciQLopPlot::_configure_plotable(SciQLopGraphInterface* plottable, const QS
 void SciQLopPlot::_rescale_on_request(SciQLopPlottableInterface* plottable,
                                       bool also_on_auto_scale)
 {
-    _fit_on(plottable, &SciQLopPlottableInterface::request_rescale,
-            [this, also_on_auto_scale]()
-            { return m_fit_first_data || (also_on_auto_scale && m_auto_scale); });
+    _fit_on(
+        plottable, &SciQLopPlottableInterface::request_rescale,
+        [this, also_on_auto_scale]()
+        { return m_fit_first_data || (also_on_auto_scale && m_auto_scale); },
+        true);
 }
 
 template <typename Sender, typename Signal, typename Wanted>
-void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted)
+void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool first_fit)
 {
-    auto key_ranges_at_request = std::make_shared<QList<SciQLopPlotRange>>();
-    connect(sender, signal, this, [this, key_ranges_at_request]()
-            { *key_ranges_at_request = _key_ranges(); }, Qt::DirectConnection);
+    // Read the caller's ranges at the emission, then queue the fit with them: each batch keeps
+    // its own reading.
     connect(
         sender, signal, this,
-        [this, key_ranges_at_request, wanted]()
+        [this, sender = QPointer(sender), wanted, first_fit]()
         {
-            if (wanted())
-                _rescale_axes_once_data_shown(*key_ranges_at_request);
+            QMetaObject::invokeMethod(
+                this,
+                [this, sender, wanted, first_fit, at_request = _caller_ranges()]()
+                {
+                    if (!wanted())
+                        return;
+                    if (first_fit)
+                        m_first_fit_requesters << QPointer<SciQLopPlottableInterface>(sender.data());
+                    _rescale_axes_once_data_shown(at_request);
+                },
+                Qt::QueuedConnection);
         },
-        Qt::QueuedConnection);
+        Qt::DirectConnection);
 }
 
-QList<SciQLopPlotRange> SciQLopPlot::_key_ranges() const
+SciQLopPlot::CallerRanges SciQLopPlot::_caller_ranges() const
 {
-    return { x_axis()->range(), x2_axis()->range() };
+    CallerRanges ranges;
+    for (auto* axis : _caller_axes())
+        ranges.append({ axis, axis->range() });
+    return ranges;
 }
 
-// Only the key axes: a caller's key range drives what gets fetched, and graphs change their
-// own value axes as data lands (a colour map's auto_scale_y), which is no caller's choice.
-// simplify: a value axis still fits what is visible, so a first fit whose batch the caller
-// moved fully off view fits nothing and is used up. Re-arm the requester's first-data fit
-// (SciQLopPlottableInterface::check_first_data) if that ever matters.
-void SciQLopPlot::_rescale_axes_left_alone_since(
-    const QList<SciQLopPlotRange>& key_ranges_at_request)
+void SciQLopPlot::_fit_axes_left_alone_since(const CallerRanges& at_request)
 {
-    const QList<SciQLopPlotAxisInterface*> keys { x_axis(), x2_axis() };
-    QList<SciQLopPlotAxisInterface*> axes;
-    for (auto* axis : axes_to_rescale())
-    {
-        const auto key = keys.indexOf(axis);
-        if (key < 0 || key >= key_ranges_at_request.size()
-            || axis->range() == key_ranges_at_request[key])
-            axes.append(axis);
-    }
+    QList<SciQLopPlotAxisInterface*> moved;
+    for (const auto& [axis, range] : at_request)
+        if (axis && axis->range() != range)
+            moved.append(axis.data());
     // The no-argument overload when nothing moved: a subclass (or a Python one) may override it.
-    if (axes.size() == axes_to_rescale().size())
+    if (moved.isEmpty())
         rescale_axes();
-    else
+    else if (_fits_axes_one_by_one())
+    {
+        auto axes = axes_to_rescale();
+        axes.removeIf([&moved](auto* axis) { return moved.contains(axis); });
         rescale_axes(axes);
+    }
+    // Value axes fit what is visible: a graph whose batch the caller moved off view got
+    // nothing fitted, and its next batch in view asks again.
+    for (const auto& graph : std::exchange(m_first_fit_requesters, {}))
+        if (graph)
+            graph->_first_fit_ran();
 }
 
-void SciQLopPlot::_rescale_axes_once_data_shown(
-    const QList<SciQLopPlotRange>& key_ranges_at_request)
+void SciQLopPlot::_rescale_axes_once_data_shown(const CallerRanges& at_request)
 {
     const auto data_pending = [impl = static_cast<QCustomPlot*>(m_impl)]()
     {
@@ -824,20 +834,20 @@ void SciQLopPlot::_rescale_axes_once_data_shown(
     };
     if (!data_pending())
     {
-        _rescale_axes_left_alone_since(key_ranges_at_request);
+        _fit_axes_left_alone_since(at_request);
         return;
     }
     if (std::exchange(m_rescale_waiting_for_data, true))
         return;
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = connect(m_impl, &QCustomPlot::afterReplot, this,
-                    [this, conn, data_pending, key_ranges_at_request]()
+                    [this, conn, data_pending, at_request]()
                     {
                         if (data_pending())
                             return;
                         QObject::disconnect(*conn);
                         m_rescale_waiting_for_data = false;
-                        _rescale_axes_left_alone_since(key_ranges_at_request);
+                        _fit_axes_left_alone_since(at_request);
                     });
 }
 
@@ -1467,12 +1477,14 @@ void SciQLopPlot::_configure_color_map(SciQLopColorMapInterface* cmap, bool y_lo
         // cmap object emitted from the same set_data() call, so Qt delivers
         // them in emission order and the flag is always set before it's read.
         auto skip_first_batch_data_changed_rescale = std::make_shared<bool>(false);
-        _fit_on(cmap, &SciQLopGraphInterface::request_rescale,
-                [this, skip_first_batch_data_changed_rescale]()
-                {
-                    *skip_first_batch_data_changed_rescale = true;
-                    return m_fit_first_data;
-                });
+        _fit_on(
+            cmap, &SciQLopGraphInterface::request_rescale,
+            [this, skip_first_batch_data_changed_rescale]()
+            {
+                *skip_first_batch_data_changed_rescale = true;
+                return m_fit_first_data;
+            },
+            true);
         _fit_on(cmap, QOverload<>::of(&SciQLopColorMapInterface::data_changed),
                 [this, skip_first_batch_data_changed_rescale]()
                 {

@@ -41,6 +41,12 @@ public:
     //! With SameScale, a pane can't fit alone: the projection fits all its panes together.
     void rescale_axes(const QList<SciQLopPlotAxisInterface*>& axes) noexcept override;
     void fit_own_axes() noexcept { SciQLopPlot::rescale_axes({ x_axis(), y_axis() }); }
+
+private:
+    //! With SameScale, every axis of every pane: a caller's move on one re-spans them all.
+    QList<SciQLopPlotAxisInterface*> _caller_axes() const override;
+    bool _fits_axes_one_by_one() const noexcept override;
+    bool _same_scale() const noexcept;
 };
 
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface, public SciQLopExportable

@@ -222,6 +222,18 @@ signals:
     void check_first_data(std::size_t n);
     bool data_off_view() const;
 
+private:
+    friend class SciQLopPlot;
+    //! The plot ran the first-data fit this graph asked for. With its batch moved off view the
+    //! fit had nothing of it to fit: the next batch in view asks again.
+    void _first_fit_ran()
+    {
+        if (data_off_view())
+            _got_first_data = false;
+    }
+
+protected:
+
     Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<SciQLopPyBuffer>, m_data, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };
 
