@@ -778,15 +778,14 @@ void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool fir
         sender, signal, this,
         [this, sender = QPointer(sender), wanted, first_fit]()
         {
+            PendingFit fit { _caller_ranges(), _fits_done(),
+                             first_fit ? sender.data() : nullptr };
             QMetaObject::invokeMethod(
                 this,
-                [this, sender, wanted, first_fit, at_request = _caller_ranges()]()
+                [this, wanted, fit = std::move(fit)]()
                 {
-                    if (!wanted())
-                        return;
-                    if (first_fit)
-                        m_first_fit_requesters << QPointer<SciQLopPlottableInterface>(sender.data());
-                    _rescale_axes_once_data_shown(at_request);
+                    if (wanted())
+                        _fit_once_data_shown(fit);
                 },
                 Qt::QueuedConnection);
         },
@@ -801,10 +800,12 @@ SciQLopPlot::CallerRanges SciQLopPlot::_caller_ranges() const
     return ranges;
 }
 
-void SciQLopPlot::_fit_axes_left_alone_since(const CallerRanges& at_request)
+bool SciQLopPlot::_fit_axes_left_alone(const PendingFit& fit)
 {
+    if (_fits_done() != fit.fits_done)
+        return true;
     QList<SciQLopPlotAxisInterface*> moved;
-    for (const auto& [axis, range] : at_request)
+    for (const auto& [axis, range] : fit.caller_ranges)
         if (axis && axis->range() != range)
             moved.append(axis.data());
     // The no-argument overload when nothing moved: a subclass (or a Python one) may override it.
@@ -816,14 +817,20 @@ void SciQLopPlot::_fit_axes_left_alone_since(const CallerRanges& at_request)
         axes.removeIf([&moved](auto* axis) { return moved.contains(axis); });
         rescale_axes(axes);
     }
-    // Value axes fit what is visible: a graph whose batch the caller moved off view got
-    // nothing fitted, and its next batch in view asks again.
-    for (const auto& graph : std::exchange(m_first_fit_requesters, {}))
-        if (graph)
-            graph->_first_fit_ran();
+    else
+        return false;
+    ++m_fits_done;
+    return true;
 }
 
-void SciQLopPlot::_rescale_axes_once_data_shown(const CallerRanges& at_request)
+void SciQLopPlot::_fit(const PendingFit& fit)
+{
+    const bool fitted = _fit_axes_left_alone(fit);
+    if (fit.first_fit_of)
+        fit.first_fit_of->_first_fit_ran(fitted);
+}
+
+void SciQLopPlot::_fit_once_data_shown(PendingFit fit)
 {
     const auto data_pending = [impl = static_cast<QCustomPlot*>(m_impl)]()
     {
@@ -834,20 +841,23 @@ void SciQLopPlot::_rescale_axes_once_data_shown(const CallerRanges& at_request)
     };
     if (!data_pending())
     {
-        _fit_axes_left_alone_since(at_request);
+        _fit(fit);
         return;
     }
-    if (std::exchange(m_rescale_waiting_for_data, true))
+    m_fits_waiting_for_data.append(std::move(fit));
+    if (m_fits_waiting_for_data.size() > 1)
         return;
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = connect(m_impl, &QCustomPlot::afterReplot, this,
-                    [this, conn, data_pending, at_request]()
+                    [this, conn, data_pending]()
                     {
                         if (data_pending())
                             return;
                         QObject::disconnect(*conn);
-                        m_rescale_waiting_for_data = false;
-                        _fit_axes_left_alone_since(at_request);
+                        // The first one fits; the others were announced before it, so it
+                        // serves them, and each graph's first fit is settled on its own.
+                        for (const auto& waiting : std::exchange(m_fits_waiting_for_data, {}))
+                            _fit(waiting);
                     });
 }
 

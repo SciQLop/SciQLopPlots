@@ -46,6 +46,8 @@ private:
     //! With SameScale, every axis of every pane: a caller's move on one re-spans them all.
     QList<SciQLopPlotAxisInterface*> _caller_axes() const override;
     bool _fits_axes_one_by_one() const noexcept override;
+    //! With SameScale, the projection's: one pane's fit fits every pane.
+    quint64 _fits_done() const noexcept override;
     bool _same_scale() const noexcept;
 };
 
@@ -267,4 +269,8 @@ public:
                   int quality = -1) override;
     bool save_bmp(const QString& filename, int width = 0, int height = 0,
                   double scale = 1.0) override;
+
+private:
+    friend class SciQLopNDProjectionPane;
+    quint64 m_fits_done = 0;
 };

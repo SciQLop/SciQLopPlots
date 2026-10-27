@@ -92,6 +92,13 @@ bool SciQLopNDProjectionPane::_fits_axes_one_by_one() const noexcept
     return !_same_scale();
 }
 
+quint64 SciQLopNDProjectionPane::_fits_done() const noexcept
+{
+    if (!_same_scale())
+        return SciQLopPlot::_fits_done();
+    return qobject_cast<const SciQLopNDProjectionPlot*>(parentWidget())->m_fits_done;
+}
+
 QList<SciQLopPlotAxisInterface*> SciQLopNDProjectionPane::_caller_axes() const
 {
     if (!_same_scale())
@@ -250,6 +257,7 @@ void SciQLopNDProjectionPlot::set_linked_axes(bool linked) noexcept
 
 void SciQLopNDProjectionPlot::rescale_axes() noexcept
 {
+    ++m_fits_done;
     {
         // Each pane's fit would otherwise squeeze the axes fitted before it to its own span.
         QScopedValueRollback guard(m_equalizing_spans, true);

@@ -91,6 +91,8 @@ def test_a_batch_moved_off_view_leaves_the_first_fit_to_the_next_one(qtbot, plot
     move, moved = _move_once(plot.x_axis(), (20, 30))
     g.data_changed.connect(move)
     plot.x_axis().set_range(0, 10)
+    # The real check: only a fit of the caller's batch can fit y. A refit of x would land on
+    # (20, 30) as well, so the x check cannot tell it from x being left alone.
     qtbot.waitUntil(lambda: _covers(plot.y_axis(), 5.0), timeout=3000)
     assert _range(plot.x_axis()) == (20, 30)
 
@@ -101,12 +103,13 @@ def test_colour_map_first_fit_keeps_a_moved_x(qtbot, plot, held):
             held.wait(5)
         return np.linspace(start, stop, 10), np.arange(4.0), np.full((10, 4), 5.0)
 
+    plot.z_axis().set_range(0, 1)
     cmap = plot.colormap(series)
     move, moved = _move_once(plot.x_axis(), (5, 15))
     cmap.data_changed.connect(move)
     plot.x_axis().set_range(0, 10)
-    qtbot.waitUntil(lambda: bool(moved), timeout=3000)
-    _drain()
+    qtbot.waitUntil(lambda: _covers(plot.z_axis(), 5.0), timeout=3000)  # the fit ran
+    assert moved
     assert _range(plot.x_axis()) == (5, 15)
 
 
@@ -130,19 +133,72 @@ def test_colour_map_auto_scale_keeps_a_moved_x(qtbot, plot, held):
     assert _range(plot.x_axis()) == (25, 35)
 
 
-def test_same_scale_projection_keeps_a_moved_x(qtbot):
-    """A pane of a SameScale projection fits only with all the others: with a key axis
-    moved, it must fit nothing rather than everything."""
+def _same_scale_projection(qtbot):
     proj = SciQLopNDProjectionPlot(2)
     qtbot.addWidget(proj)
     proj.set_axis_linking(ProjectionAxisLinking.SameScale)
-    pane = proj.subplot(0)
     t = np.linspace(0, 1, 100)
-    g = proj.parametric_curve([np.cos(6 * t), np.sin(6 * t)] * 2)
-    panes_with_data = []
-    move, moved = _move_once(pane.x_axis(), (5, 15), when=lambda: len(panes_with_data) == 2)
-    g.data_changed.connect(lambda: panes_with_data.append(True))
-    g.data_changed.connect(move)  # after every pane's batch: a move inside the batch is older
+    data = [np.cos(6 * t), np.sin(6 * t)] * 2
+    return proj, proj.parametric_curve(data), data
+
+
+def _after_every_pane_batch(proj, slot):
+    """Calls `slot` once every pane's curve announced its batch: a move made between two
+    panes' batches is older than the later one, so it is not the case under test."""
+    curves = [proj.subplot(i).plottables()[0] for i in range(proj.subplot_count())]
+    landed = set()
+
+    def on_batch(i):
+        landed.add(i)
+        if len(landed) == len(curves):
+            slot()
+    for i, curve in enumerate(curves):
+        curve.data_changed.connect(lambda *_, i=i: on_batch(i))
+
+
+def _fitted(pane):
+    return all(_covers(axis, v) for axis in (pane.x_axis(), pane.y_axis()) for v in (-0.9, 0.9))
+
+
+def test_same_scale_projection_keeps_a_moved_x(qtbot):
+    """A pane of a SameScale projection fits only with all the others: with an axis
+    moved, it must fit nothing rather than everything."""
+    proj, g, _ = _same_scale_projection(qtbot)
+    pane = proj.subplot(0)
+    move, moved = _move_once(pane.x_axis(), (5, 15))
+    _after_every_pane_batch(proj, move)
     qtbot.waitUntil(lambda: bool(moved), timeout=3000)
     _drain()
     assert _range(pane.x_axis()) == (5, 15)
+
+
+@pytest.mark.parametrize("axis", ["x_axis", "y_axis"])
+def test_same_scale_pane_that_skipped_its_fit_fits_the_next_batch(qtbot, axis):
+    """The move keeps the batch in view, yet the pane fitted nothing: the first fit must
+    not be used up. A value axis (y) moving counts too: the projection re-spans every axis."""
+    proj, g, data = _same_scale_projection(qtbot)
+    pane = proj.subplot(0)
+    move, moved = _move_once(getattr(pane, axis)(), (-0.2, 0.2))
+    _after_every_pane_batch(proj, move)
+    qtbot.waitUntil(lambda: bool(moved), timeout=3000)
+    _drain()
+    assert not _fitted(pane)
+    g.set_data(data)
+    qtbot.waitUntil(lambda: _fitted(pane), timeout=3000)
+
+
+def test_same_scale_panes_fitted_together_do_not_fit_again(qtbot):
+    """The first pane's fit fits every pane and moves the others' axes. That is no caller
+    move: their own fits are served by it, and a later batch must not refit a caller's zoom."""
+    proj, g, data = _same_scale_projection(qtbot)
+    pane = proj.subplot(0)
+    qtbot.waitUntil(lambda: _fitted(pane), timeout=3000)
+    _drain()
+    pane.x_axis().set_range(-0.2, 0.2)
+    zoomed = _range(pane.x_axis())
+    landed = []
+    _after_every_pane_batch(proj, lambda: landed.append(True))
+    g.set_data(data)
+    qtbot.waitUntil(lambda: bool(landed), timeout=3000)
+    _drain()
+    assert _range(pane.x_axis()) == zoomed

@@ -287,7 +287,6 @@ protected:
     //! auto-scale honours the request as well as fit_first_data.
     void _rescale_on_request(SciQLopPlottableInterface* plottable, bool also_on_auto_scale);
     void _configure_histogram(SciQLopHistogram* hist, const QVariantMap& metadata);
-    bool m_rescale_waiting_for_data = false;
 
     virtual QList<SciQLopPlotAxisInterface*> selected_axes() const noexcept override
     {
@@ -625,8 +624,17 @@ private:
     Q_SLOT void _move_graphs_to_right_axis();
     int m_timeline_natural_height = 0;
 
+    friend class SciQLopNDProjectionPane;
     //! The axes the caller steers, with their ranges when a batch announced a fit.
     using CallerRanges = QList<std::pair<QPointer<SciQLopPlotAxisInterface>, SciQLopPlotRange>>;
+    //! A fit a batch asked for, as things stood when it was announced.
+    struct PendingFit
+    {
+        CallerRanges caller_ranges;
+        quint64 fits_done = 0;
+        //! The graph whose first-data fit this is, if it is one.
+        QPointer<SciQLopPlottableInterface> first_fit_of;
+    };
     //! When `signal` announces a batch and `wanted()` agrees, fits the axes once the batch is
     //! shown. The caller's ranges are read as the batch arrives: the fit runs later and must
     //! not undo a view the caller set in between. `first_fit` marks the first-data request.
@@ -635,8 +643,11 @@ private:
     CallerRanges _caller_ranges() const;
     //! Fits once every graph shows its latest batch: NeoQCP stages new data on a rendered
     //! graph and swaps it in later, and a rescale before that fits the data being replaced.
-    void _rescale_axes_once_data_shown(const CallerRanges& at_request);
-    void _fit_axes_left_alone_since(const CallerRanges& at_request);
+    void _fit_once_data_shown(PendingFit fit);
+    void _fit(const PendingFit& fit);
+    //! Fits the axes the caller left alone. True when the batch got fitted, by this fit or by
+    //! one run since its announcement (which saw it too).
+    bool _fit_axes_left_alone(const PendingFit& fit);
     //! The axes a fit must leave alone once the caller moved them: the key axes. A caller's
     //! key range drives what gets fetched, while graphs move their own value axes as data
     //! lands (a colour map's auto_scale_y), which is no caller's choice.
@@ -647,9 +658,10 @@ private:
     //! False when the axes only fit together: a fit that must leave a moved axis alone then
     //! fits none.
     virtual bool _fits_axes_one_by_one() const noexcept { return true; }
-    //! Graphs whose first-data fit is queued or waiting: the fit hands it back to the ones
-    //! whose batch the caller moved off view.
-    QList<QPointer<SciQLopPlottableInterface>> m_first_fit_requesters;
+    //! How many fits ran: a fit whose count moved since its batch's announcement is served.
+    virtual quint64 _fits_done() const noexcept { return m_fits_done; }
+    quint64 m_fits_done = 0;
+    QList<PendingFit> m_fits_waiting_for_data;
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)

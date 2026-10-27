@@ -35,7 +35,6 @@
     <rejection class="*" field-name="m_pipeline"/>
     <rejection class="*" field-name="m_plots"/>
     <rejection class="*" field-name="m_range"/>
-    <rejection class="*" field-name="m_rescale_waiting_for_data"/>
     <rejection class="*" field-name="m_same_scale_connections"/>
     <rejection class="*" field-name="m_selected"/>
     <rejection class="*" field-name="m_shared_legend"/>

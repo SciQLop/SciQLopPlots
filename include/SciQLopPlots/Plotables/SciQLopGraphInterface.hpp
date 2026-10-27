@@ -224,11 +224,13 @@ signals:
 
 private:
     friend class SciQLopPlot;
-    //! The plot ran the first-data fit this graph asked for. With its batch moved off view the
-    //! fit had nothing of it to fit: the next batch in view asks again.
-    void _first_fit_ran()
+    //! The plot ran the first-data fit this graph asked for. When it fitted nothing (a pane
+    //! that only fits with the others, after a caller's move), or the caller moved the batch
+    //! off view so nothing of it got fitted, the next batch in view asks again. So a caller who
+    //! pans away leaves the one-shot armed: the first pan back into the data re-fits.
+    void _first_fit_ran(bool fitted)
     {
-        if (data_off_view())
+        if (!fitted || data_off_view())
             _got_first_data = false;
     }
 
