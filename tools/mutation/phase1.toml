@@ -127,6 +127,66 @@ op = "delete_statement"
 before = "    painter->setBrush(Qt::NoBrush);"
 reason = "drawPolyline never fills, so the brush is irrelevant."
 
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "lt_to_le"
+before = "        return e.spec.owner < ownerCount && e.spec.brush.style() == Qt::NoBrush;"
+reason = "A spurious invalidation only costs one redraw."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "and_to_or"
+before = "        return e.spec.owner < ownerCount && e.spec.brush.style() == Qt::NoBrush;"
+reason = "A spurious invalidation only costs one redraw."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "int_plus_one"
+before = "    indices.resize(coloured ? nc : 0);"
+reason = "The indices are read only while coloured, and an empty entry fails the size check."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "delete_statement"
+before = "    rows.reserve(std::max(0, end - begin));"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "int_plus_one"
+before = "    rows.reserve(std::max(0, end - begin));"
+reason = "reserve size only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "minus_to_plus"
+before = "    rows.reserve(std::max(0, end - begin));"
+reason = "reserve size only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "delete_statement"
+before = "    bars.reserve(std::max(0, end - begin));"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "int_plus_one"
+before = "    bars.reserve(std::max(0, end - begin));"
+reason = "reserve size only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "minus_to_plus"
+before = "    bars.reserve(std::max(0, end - begin));"
+reason = "reserve size only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "delete_statement"
+before = "    rows.reserve(bars.size());"
+reason = "reserve only changes allocation, not the result."
+
 [[project]]
 name = "sciqlopplots"
 repo = "."
