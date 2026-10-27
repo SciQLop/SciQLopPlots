@@ -631,7 +631,7 @@ private:
     struct PendingFit
     {
         CallerRanges caller_ranges;
-        quint64 fits_done = 0;
+        quint64 fit_count = 0;
         //! The graph whose first-data fit this is, if it is one.
         QPointer<SciQLopPlottableInterface> first_fit_of;
     };
@@ -658,9 +658,10 @@ private:
     //! False when the axes only fit together: a fit that must leave a moved axis alone then
     //! fits none.
     virtual bool _fits_axes_one_by_one() const noexcept { return true; }
-    //! How many fits ran: a fit whose count moved since its batch's announcement is served.
-    virtual quint64 _fits_done() const noexcept { return m_fits_done; }
-    quint64 m_fits_done = 0;
+    //! How many fits `_fit` ran (not rescales: a user's rescale may fit a batch NeoQCP has not
+    //! swapped in yet). A fit whose count moved since its batch's announcement is served.
+    virtual quint64& _fit_count() noexcept { return m_fit_count; }
+    quint64 m_fit_count = 0;
     QList<PendingFit> m_fits_waiting_for_data;
 };
 

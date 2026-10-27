@@ -47,7 +47,7 @@ private:
     QList<SciQLopPlotAxisInterface*> _caller_axes() const override;
     bool _fits_axes_one_by_one() const noexcept override;
     //! With SameScale, the projection's: one pane's fit fits every pane.
-    quint64 _fits_done() const noexcept override;
+    quint64& _fit_count() noexcept override;
     bool _same_scale() const noexcept;
 };
 
@@ -272,5 +272,6 @@ public:
 
 private:
     friend class SciQLopNDProjectionPane;
-    quint64 m_fits_done = 0;
+    //! The SameScale panes' fit count, shared since one pane's fit fits them all.
+    quint64 m_fit_count = 0;
 };

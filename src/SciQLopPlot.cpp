@@ -778,7 +778,7 @@ void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool fir
         sender, signal, this,
         [this, sender = QPointer(sender), wanted, first_fit]()
         {
-            PendingFit fit { _caller_ranges(), _fits_done(),
+            PendingFit fit { _caller_ranges(), _fit_count(),
                              first_fit ? sender.data() : nullptr };
             QMetaObject::invokeMethod(
                 this,
@@ -802,7 +802,7 @@ SciQLopPlot::CallerRanges SciQLopPlot::_caller_ranges() const
 
 bool SciQLopPlot::_fit_axes_left_alone(const PendingFit& fit)
 {
-    if (_fits_done() != fit.fits_done)
+    if (_fit_count() != fit.fit_count)
         return true;
     QList<SciQLopPlotAxisInterface*> moved;
     for (const auto& [axis, range] : fit.caller_ranges)
@@ -819,7 +819,7 @@ bool SciQLopPlot::_fit_axes_left_alone(const PendingFit& fit)
     }
     else
         return false;
-    ++m_fits_done;
+    ++_fit_count();
     return true;
 }
 
@@ -844,6 +844,11 @@ void SciQLopPlot::_fit_once_data_shown(PendingFit fit)
         _fit(fit);
         return;
     }
+    // One entry per requester (the auto-scale ones share none): the first fit to run serves
+    // every later one, and a streaming plot that never paints would grow the list forever.
+    if (std::ranges::any_of(m_fits_waiting_for_data, [&fit](const PendingFit& waiting)
+                            { return waiting.first_fit_of == fit.first_fit_of; }))
+        return;
     m_fits_waiting_for_data.append(std::move(fit));
     if (m_fits_waiting_for_data.size() > 1)
         return;
