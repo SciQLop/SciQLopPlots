@@ -61,6 +61,24 @@ scope = "diff"
 path = "src/datasource/async-pipeline.cpp"
 scope = "diff"
 
+[[project.equivalent]]
+path = "src/plottables/histogram-geometry.cpp"
+op = "delete_statement"
+before = "    bars.reserve(heights.size());"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/histogram-geometry.cpp"
+op = "delete_statement"
+before = "    rows.reserve(2 * bars.size());"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/histogram-geometry.cpp"
+op = "int_plus_one"
+before = "    rows.reserve(2 * bars.size());"
+reason = "reserve size only changes allocation, not the result."
+
 [[project]]
 name = "sciqlopplots"
 repo = "."
