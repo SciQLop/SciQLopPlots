@@ -634,6 +634,8 @@ private:
         quint64 fit_count = 0;
         //! The graph whose first-data fit this is, if it is one.
         QPointer<SciQLopPlottableInterface> first_fit_of;
+        //! How many times the fits were re-armed before this one was announced.
+        quint64 rearms = 0;
     };
     //! When `signal` announces a batch and `wanted()` agrees, fits the axes once the batch is
     //! shown. The caller's ranges are read as the batch arrives: the fit runs later and must
@@ -663,6 +665,11 @@ private:
     virtual quint64& _fit_count() noexcept { return m_fit_count; }
     quint64 m_fit_count = 0;
     QList<PendingFit> m_fits_waiting_for_data;
+    //! What the caller axes and the fit count are changes with a projection's linking: a fit
+    //! announced before the change is settled against the ranges and count read at the change.
+    void _rearm_pending_fits();
+    PendingFit _rearmed(const PendingFit& fit) const;
+    PendingFit m_rearm;
 };
 
 inline QList<SciQLopPlot*> only_sciqlopplots(const QList<SciQLopPlotInterface*>& plots)

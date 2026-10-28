@@ -779,7 +779,7 @@ void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool fir
         [this, sender = QPointer(sender), wanted, first_fit]()
         {
             PendingFit fit { _caller_ranges(), _fit_count(),
-                             first_fit ? sender.data() : nullptr };
+                             first_fit ? sender.data() : nullptr, m_rearm.rearms };
             QMetaObject::invokeMethod(
                 this,
                 [this, wanted, fit = std::move(fit)]()
@@ -823,9 +823,21 @@ bool SciQLopPlot::_fit_axes_left_alone(const PendingFit& fit)
     return true;
 }
 
+void SciQLopPlot::_rearm_pending_fits()
+{
+    m_rearm = { _caller_ranges(), _fit_count(), nullptr, m_rearm.rearms + 1 };
+}
+
+SciQLopPlot::PendingFit SciQLopPlot::_rearmed(const PendingFit& fit) const
+{
+    if (fit.rearms == m_rearm.rearms)
+        return fit;
+    return { m_rearm.caller_ranges, m_rearm.fit_count, fit.first_fit_of, m_rearm.rearms };
+}
+
 void SciQLopPlot::_fit(const PendingFit& fit)
 {
-    const bool fitted = _fit_axes_left_alone(fit);
+    const bool fitted = _fit_axes_left_alone(_rearmed(fit));
     if (fit.first_fit_of)
         fit.first_fit_of->_first_fit_ran(fitted);
 }

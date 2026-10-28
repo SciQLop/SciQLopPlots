@@ -49,6 +49,8 @@ private:
     //! With SameScale, the projection's: one pane's fit fits every pane.
     quint64& _fit_count() noexcept override;
     bool _same_scale() const noexcept;
+    friend class SciQLopNDProjectionPlot;
+    void _linking_changed() { _rearm_pending_fits(); }
 };
 
 class SciQLopNDProjectionPlot : public SciQLopPlotInterface, public SciQLopExportable

@@ -246,6 +246,8 @@ void SciQLopNDProjectionPlot::set_axis_linking(ProjectionAxisLinking linking) no
         _link_axes(linked_axes());
     if (linking == ProjectionAxisLinking::SameScale)
         _set_same_scale(true);
+    for (auto* plot : m_plots)
+        static_cast<SciQLopNDProjectionPane*>(plot)->_linking_changed();
     Q_EMIT axis_linking_changed(linking);
 }
 

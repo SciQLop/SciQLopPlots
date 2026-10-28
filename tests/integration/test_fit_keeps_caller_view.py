@@ -142,10 +142,10 @@ def _same_scale_projection(qtbot):
     return proj, proj.parametric_curve(data), data
 
 
-def _after_every_pane_batch(proj, slot):
+def _after_every_pane_batch(proj, slot, graph=0):
     """Calls `slot` once every pane's curve announced its batch: a move made between two
     panes' batches is older than the later one, so it is not the case under test."""
-    curves = [proj.subplot(i).plottables()[0] for i in range(proj.subplot_count())]
+    curves = [proj.subplot(i).plottables()[graph] for i in range(proj.subplot_count())]
     landed = set()
 
     def on_batch(i):
@@ -202,3 +202,27 @@ def test_same_scale_panes_fitted_together_do_not_fit_again(qtbot):
     qtbot.waitUntil(lambda: bool(landed), timeout=3000)
     _drain()
     assert _range(pane.x_axis()) == zoomed
+
+
+@pytest.mark.parametrize("announced, run", [
+    (ProjectionAxisLinking.Independent, ProjectionAxisLinking.SameScale),
+    (ProjectionAxisLinking.SameScale, ProjectionAxisLinking.Independent),
+])
+def test_a_first_fit_survives_a_linking_change_before_it_runs(qtbot, announced, run):
+    """A pane counts its own fits, a SameScale projection counts its panes' fits together.
+    A first fit announced under one linking and run under the other must still fit."""
+    proj, _, _ = _same_scale_projection(qtbot)
+    qtbot.waitUntil(lambda: _fitted(proj.subplot(0)), timeout=3000)
+    _drain()
+    proj.set_axis_linking(announced)
+    t = np.linspace(0, 1, 100)
+    proj.parametric_curve([10 + np.cos(6 * t), 10 + np.sin(6 * t)] * 2)
+    toggled = []
+    _after_every_pane_batch(proj, lambda: toggled or (toggled.append(True),
+                                                      proj.set_axis_linking(run)), graph=1)
+    qtbot.waitUntil(lambda: bool(toggled), timeout=3000)
+    _drain()
+    for i in range(proj.subplot_count()):
+        pane = proj.subplot(i)
+        assert all(_covers(axis, v) for axis in (pane.x_axis(), pane.y_axis())
+                   for v in (9.1, 10.9)), (i, _range(pane.x_axis()), _range(pane.y_axis()))
