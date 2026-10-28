@@ -29,11 +29,6 @@
 #include <plottables/plottable-colormap.h>
 #include <vector>
 
-void SciQLopHistogram2D::_hist_got_destroyed()
-{
-    _hist = nullptr;
-}
-
 SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                        SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                        const QString& name, int x_bins, int y_bins,
@@ -43,7 +38,6 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
     _hist = new QCPHistogram2D(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _hist->setLayer(Constants::LayersNames::ColorMap);
     _hist->setBins(x_bins, y_bins);
-    connect(_hist, &QCPHistogram2D::destroyed, this, &SciQLopHistogram2D::_hist_got_destroyed);
     connect(_hist, &QCPAbstractPlottable::busyChanged,
             this, &SciQLopPlottableInterface::busy_changed);
     SciQLopHistogram2D::set_gradient(ColorGradient::Jet);

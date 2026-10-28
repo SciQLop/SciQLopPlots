@@ -48,7 +48,6 @@ class SciQLopHistogram2D : public SciQLopColorMapBase
 
     Q_OBJECT
 
-    void _hist_got_destroyed();
     void _rebin_on_log_of(SciQLopPlotAxis* axis, QMetaObject::Connection& connection,
                           void (SciQLopHistogram2D::*log_changed)(bool));
     void _rebin_for_new_axis(bool was_log, bool is_log,
