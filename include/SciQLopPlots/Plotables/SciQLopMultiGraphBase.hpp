@@ -35,7 +35,6 @@ class SciQLopMultiGraphBase : public SQPQCPAbstractPlottableWrapper
 protected:
     QCPMultiGraph* _multiGraph = nullptr;
     SciQLopPyBuffer _x, _y;
-    std::shared_ptr<void> _dataHolder;
     QStringList _pendingLabels;
     SciQLopPlotAxis* _keyAxis = nullptr;
     SciQLopPlotAxis* _valueAxis = nullptr;

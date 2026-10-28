@@ -63,8 +63,6 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
     // new data arrives and replaces _x/_y.
     struct Buffers { SciQLopPyBuffer x, y; };
     auto guard = std::make_shared<Buffers>(Buffers{x, y});
-    // Before setDataSource: its busy signal may reach a slot that deletes this graph.
-    _dataHolder = guard;
 
     dispatch_dtype(y.format_code(), [&](auto tag) {
         using V = typename decltype(tag)::type;
@@ -106,8 +104,7 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
 void SciQLopMultiGraphBase::apply_preset(int column)
 {
     const auto it = _column_presets.find(column);
-    if (it == _column_presets.end() || column < 0
-        || column >= static_cast<int>(plottable_count()))
+    if (it == _column_presets.end() || column >= static_cast<int>(plottable_count()))
         return;
     const auto& preset = it->second;
     if (preset.line_style)
