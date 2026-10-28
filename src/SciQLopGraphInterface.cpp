@@ -84,9 +84,11 @@ void SciQLopPlottableInterface::_connect_legend_selection()
 
 void SciQLopGraphInterface::_legend_items_recreated()
 {
-    for (auto* component : components())
-        if (auto* c = qobject_cast<SciQLopGraphComponent*>(component))
-            c->connect_legend_selection();
+    const auto all = components();
+    if (all.isEmpty())
+        return SciQLopPlottableInterface::_legend_items_recreated();
+    for (auto* component : all)
+        component->connect_legend_selection();
 }
 
 SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)

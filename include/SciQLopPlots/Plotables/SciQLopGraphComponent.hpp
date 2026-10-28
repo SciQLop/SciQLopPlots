@@ -111,16 +111,14 @@ private Q_SLOTS:
                                    QMouseEvent* event);
 
 private:
-    friend class SciQLopGraphInterface;
     bool m_selected = false;
-
-    void connect_legend_selection();
 
     void _select_in_plottable(bool selected);
     void _select_in_legend(bool selected);
     void _apply_pen(const QPen& pen);
 
 protected:
+    void connect_legend_selection() override;
     bool _visible() const override;
     void _set_visible(bool visible) override;
     bool _selected() const override { return m_selected; }
