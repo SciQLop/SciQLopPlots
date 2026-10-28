@@ -247,6 +247,24 @@ op = "gt_to_ge"
 before = "    const bool positive = range.upper > 0;"
 reason = "Only the degenerate log range (0, 0) has upper == 0, and there both branches give the same edges; callers use this path only on log axes."
 
+[[project.equivalent]]
+path = "src/datasource/histogram-binner-1d.h"
+op = "int_plus_one"
+before = "    for (int i = 0; i <= bins; ++i)"
+reason = "Edge 0 is overwritten with range.lower right after the loop."
+
+[[project.equivalent]]
+path = "src/datasource/histogram-binner-1d.h"
+op = "le_to_lt"
+before = "    for (int i = 0; i <= bins; ++i)"
+reason = "The last edge is overwritten with range.upper right after the loop."
+
+[[project.equivalent]]
+path = "src/datasource/async-pipeline.cpp"
+op = "gt_to_ge"
+before = "        if (!mJobRunning && latest > mDisplayedGeneration)"
+reason = "The displayed generation never exceeds the latest one, so on equality the assignment changes nothing."
+
 [[project]]
 name = "sciqlopplots"
 repo = "."
