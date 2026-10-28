@@ -189,6 +189,12 @@ reason = "reserve only changes allocation, not the result."
 
 [[project.equivalent]]
 path = "src/plottables/multigraph-fill.cpp"
+op = "ge_to_gt"
+before = "    if (d0 * d1 >= 0)"
+reason = "For d0 * d1 == 0 the crossing branch adds only a degenerate triangle, which paints nothing."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
 op = "delete_statement"
 before = "    poly.reserve(static_cast<qsizetype>(run.size() * 2));"
 reason = "reserve only changes allocation, not the result."
@@ -227,7 +233,7 @@ reason = "The first span never breaks (guarded by !spans.empty()) and pendingBre
 path = "src/plottables/multigraph-fill.cpp"
 op = "gt_to_ge"
 before = "    const bool positive = range.upper > 0;"
-reason = "A log axis sanitizes its range, so upper is never exactly 0."
+reason = "Only the degenerate log range (0, 0) has upper == 0, and there both branches give the same edges; callers use this path only on log axes."
 
 [[project]]
 name = "sciqlopplots"
