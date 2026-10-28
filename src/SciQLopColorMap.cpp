@@ -53,11 +53,7 @@ SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
 
     install_rescale_provider();
 
-    if (auto legend_item = _legend_item(); legend_item)
-    {
-        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-                &SciQLopColorMap::set_selected);
-    }
+    _connect_legend_selection();
 }
 
 SciQLopColorMap::~SciQLopColorMap()

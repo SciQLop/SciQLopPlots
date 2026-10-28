@@ -124,9 +124,7 @@ SciQLopHistogram::SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
     connect(_hist, &QCPHistogram::edgesChanged, this, &SciQLopHistogram::_on_edges_changed);
     connect(_hist, &QCPHistogram::histogramReady, this, &SciQLopHistogram::_on_histogram_ready);
     _reset_edges_on_log_of_key_axis();
-    if (auto* legend_item = _legend_item())
-        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-                &SciQLopHistogram::set_selected);
+    _connect_legend_selection();
 }
 
 SciQLopHistogram::~SciQLopHistogram()

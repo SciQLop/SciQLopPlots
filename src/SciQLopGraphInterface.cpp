@@ -68,7 +68,25 @@ void SciQLopPlottableInterface::set_in_legend(bool in_legend)
     m_in_legend = in_legend;
     for (auto* p : qcp_plottables_of(this))
         p->setWantsLegend(in_legend);
+    if (in_legend)
+        _legend_items_recreated();
     Q_EMIT replot();
+}
+
+void SciQLopPlottableInterface::_connect_legend_selection()
+{
+    for (auto* p : qcp_plottables_of(this))
+        if (auto* plot = p->parentPlot(); plot && plot->legend)
+            if (auto* item = plot->legend->itemWithPlottable(p))
+                connect(item, &QCPAbstractLegendItem::selectionChanged, this,
+                        &SciQLopDrawnObject::set_selected, Qt::UniqueConnection);
+}
+
+void SciQLopGraphInterface::_legend_items_recreated()
+{
+    for (auto* component : components())
+        if (auto* c = qobject_cast<SciQLopGraphComponent*>(component))
+            c->connect_legend_selection();
 }
 
 SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)

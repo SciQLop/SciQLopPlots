@@ -118,6 +118,8 @@ protected:
     void _set_visible(bool visible) override;
     bool _selected() const override { return m_selected; }
     void _set_selected(bool selected) override;
+    // A histogram is its own single component: the legend item selects the wrapper itself.
+    void _legend_items_recreated() override { _connect_legend_selection(); }
 };
 
 class SciQLopHistogramFunction : public SciQLopHistogram, public SciQLopFunctionGraph

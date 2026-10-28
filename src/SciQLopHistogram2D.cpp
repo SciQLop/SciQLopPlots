@@ -58,11 +58,7 @@ SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAx
 
     install_rescale_provider();
 
-    if (auto legend_item = _legend_item(); legend_item)
-    {
-        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-                &SciQLopHistogram2D::set_selected);
-    }
+    _connect_legend_selection();
 }
 
 // The bin scale follows the axis scale. SciQLopPlotAxis::set_log blocks the

@@ -32,11 +32,6 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
     if (m_plottable)
     {
         this->setObjectName(m_plottable->name());
-        if (auto legend_item = _legend_item(); legend_item)
-        {
-            connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
-                    &SciQLopGraphComponent::set_selected);
-        }
         if (auto graph = qobject_cast<QCPGraph*>(m_plottable); graph)
         {
             // Disable adaptive sampling because it does not play well with SciQLopPlots resamplers
@@ -44,6 +39,7 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPAbstractPlottable* plottable, QO
         }
         connect(plottable, QOverload<bool>::of(&QCPAbstractPlottable::selectionChanged), this,
                 &SciQLopGraphComponent::set_selected);
+        connect_legend_selection();
     }
     _connect_legend_visibility();
 }
@@ -63,14 +59,26 @@ SciQLopGraphComponent::SciQLopGraphComponent(QCPMultiGraph* multiGraph, int comp
                 if (m_selected != componentSelected)
                     set_selected(componentSelected);
             });
-    if (auto* gi = _group_legend_item(); gi)
-    {
-        connect(gi, &QCPGroupLegendItem::componentClicked, this,
-                [this](int clickedComponent) {
-                    set_selected(clickedComponent == m_componentIndex);
-                });
-    }
+    connect_legend_selection();
     _connect_legend_visibility();
+}
+
+void SciQLopGraphComponent::connect_legend_selection()
+{
+    if (m_componentIndex >= 0)
+    {
+        if (auto* gi = _group_legend_item())
+            connect(gi, &QCPGroupLegendItem::componentClicked, this,
+                    &SciQLopGraphComponent::_on_group_component_clicked, Qt::UniqueConnection);
+    }
+    else if (auto* legend_item = _legend_item())
+        connect(legend_item, &QCPAbstractLegendItem::selectionChanged, this,
+                &SciQLopGraphComponent::set_selected, Qt::UniqueConnection);
+}
+
+void SciQLopGraphComponent::_on_group_component_clicked(int clickedComponent)
+{
+    set_selected(clickedComponent == m_componentIndex);
 }
 
 // The hook, not set_selected: a component going away is no selection change to its graph,

@@ -66,6 +66,11 @@ protected:
     bool m_warned_dropped_colour = false;
     bool m_in_legend = true;
 
+    //! Wires the legend items of qcp_plottables_of(this) to set_selected.
+    void _connect_legend_selection();
+    //! set_in_legend re-creates the legend items, and their connections with them.
+    virtual void _legend_items_recreated() { _connect_legend_selection(); }
+
 public:
     Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
@@ -287,6 +292,10 @@ public:
         return QList<SciQLopGraphComponentInterface*>();
     }
 
+protected:
+    void _legend_items_recreated() override;
+
+public:
 #ifndef BINDINGS_H
     // Appends finite y-values whose x falls in visible_key_range to `out`.
     // Multi-component graphs append every component. Default no-op — concrete

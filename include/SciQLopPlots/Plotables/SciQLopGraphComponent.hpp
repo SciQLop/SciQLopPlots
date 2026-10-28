@@ -106,11 +106,15 @@ class SciQLopGraphComponent : public SciQLopGraphComponentInterface
     void _apply_legend_visibility_style(bool visible);
 
 private Q_SLOTS:
+    void _on_group_component_clicked(int clickedComponent);
     void _on_legend_double_clicked(QCPLegend* legend, QCPAbstractLegendItem* item,
                                    QMouseEvent* event);
 
 private:
+    friend class SciQLopGraphInterface;
     bool m_selected = false;
+
+    void connect_legend_selection();
 
     void _select_in_plottable(bool selected);
     void _select_in_legend(bool selected);
