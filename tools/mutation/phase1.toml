@@ -282,7 +282,7 @@ test_cmd = ["{root}/.venv/bin/python", "-m", "pytest", "{tests}", "-q", "-p", "n
 cover_test_cmd = ["{root}/.venv/bin/python", "-m", "coverage", "run", "--data-file={scratch}/.coverage", "--include={build_dir}/SciQLopPlots/__init__.py", "-m", "pytest", "{tests}", "-q", "-p", "no:cacheprovider"]
 prune_gcda = true
 cover_cmds = [
-  ["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4"],
+  ["gcovr", "--root", "{repo}", "--object-directory", "{build_dir}", "--filter", "{repo}/src/", "--json", "{scratch}/gcovr.json", "-j", "4", "{build_dir}"],
   ["sh", "-c", "out=$({root}/.venv/bin/python -m coverage json --data-file={scratch}/.coverage -o {scratch}/coveragepy.json 2>&1) || {{ echo \"$out\" | grep -q 'No data to report' && echo '{{\"files\": {{}}}}' > {scratch}/coveragepy.json || {{ echo \"$out\" >&2; exit 1; }}; }}"],
 ]
 cover_reports = [
