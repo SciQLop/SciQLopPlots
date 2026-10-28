@@ -328,6 +328,37 @@ class TestFactories:
         with pytest.raises(TypeError):
             plot.band(X, X)
 
+    def test_a_single_array_is_rejected(self, plot):
+        with pytest.raises(TypeError, match="expected a callback or"):
+            plot.band(X)
+
+    def test_a_callback_mixed_with_arrays_is_rejected(self, plot):
+        with pytest.raises(TypeError):
+            plot.band(lambda a, b: None, X, X)
+
+    def test_band_labels_default_and_follow_name(self, plot):
+        assert [c.name() for c in plot.band(X, X - 1, X + 1).components()] == ["band", "upper"]
+        assert [c.name() for c in plot.band(X, X - 1, X + 1, name="b").components()] == ["b", "upper"]
+
+    def test_error_bars_labels_default_and_follow_name(self, plot):
+        assert [c.name() for c in plot.error_bars(X, X, 0.5).components()] == ["y", "lower", "upper"]
+        g = plot.error_bars(X, X, 0.5, name="e")
+        assert g.name == "e"
+        assert [c.name() for c in g.components()] == ["e", "lower", "upper"]
+
+    def test_band_draws_no_line_on_either_column(self, plot):
+        styles = {c.line_style() for c in plot.band(X, X - 1, X + 1).components()}
+        assert styles == {GraphLineStyle.NoLine}
+
+    def test_error_bars_draw_no_line_and_mark_the_value_column(self, plot):
+        components = plot.error_bars(X, X, 0.5).components()
+        assert {c.line_style() for c in components} == {GraphLineStyle.NoLine}
+        assert components[0].marker_shape() == GraphMarkerShape.Circle
+
+    def test_error_bars_keep_only_the_value_column_in_the_legend(self, plot):
+        g = plot.error_bars(X, X, 0.5)
+        assert [g.column_in_legend(c) for c in range(3)] == [True, False, False]
+
 
 GAP = (20, 30)
 
@@ -400,6 +431,13 @@ class TestEmptyFetchWindow:
             rows = _tinted_rows(_render(plot, tmp_path))
             return bool(rows) and max(rows) - min(rows) > 0.5 * plot.height()
         qtbot.waitUntil(stems_are_drawn, timeout=5000)
+
+
+@pytest.mark.parametrize("empty", [None, ()])
+def test_wrapped_callback_passes_an_empty_batch_through_untouched(empty):
+    import SciQLopPlots
+    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: empty, SciQLopPlots._band_batch)
+    assert wrapped(0.0, 1.0) is empty
 
 
 @pytest.mark.parametrize("to_batch", ["_band_batch", "_error_batch"])

@@ -14,6 +14,9 @@ class TestHistogramClass:
         with pytest.raises(ValueError):
             h.set_bins(0)
 
+    def test_the_default_is_64_bins(self, plot):
+        assert plot.histogram(np.arange(100.0)).bins() == 64
+
     def test_bad_range_raises(self, plot):
         h = plot.histogram(np.arange(10.0))
         with pytest.raises(ValueError):
