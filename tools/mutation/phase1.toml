@@ -292,4 +292,4 @@ reason = "_hist is null only while the plot is being destroyed, when no Python c
 path = "src/SciQLopMultiGraphBase.cpp"
 op = "lt_to_le"
 before = "    for (int i = first; i < last; ++i)"
-reason = "last is the component count, and apply_preset already ignores a column at or past the component count."
+reason = "The extra pass calls apply_preset(last): ignored past the component count, and idempotent if a re-entrant sync already applied it."
