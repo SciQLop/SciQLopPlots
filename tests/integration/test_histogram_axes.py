@@ -118,6 +118,40 @@ class TestRebinOnTheNewAxis:
             plot.y2_axis().set_log(True)
         assert h.x_bins_log() and h.y_bins_log()
 
+    def _settled_histogram2d(self, qtbot, plot):
+        h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))
+        qtbot.wait(200)
+        return h
+
+    def test_histogram2d_rebins_when_its_own_y_axis_turns_log(self, qtbot, plot):
+        h = self._settled_histogram2d(qtbot, plot)
+        with qtbot.waitSignal(h.y_bins_log_changed, timeout=1000):
+            plot.y_axis().set_log(True)
+        assert h.y_bins_log()
+
+    def test_histogram2d_rebins_at_once_when_its_own_axis_turns_log(self, qtbot, plot):
+        h = self._settled_histogram2d(qtbot, plot)
+        busy = record(h.busy_changed)
+        plot.x_axis().set_log(True)
+        assert busy == [True]
+
+    def test_histogram2d_rebins_when_it_moves_to_an_axis_already_log(self, qtbot, plot):
+        h = self._settled_histogram2d(qtbot, plot)
+        plot.x2_axis().set_log(True)
+        plot.y2_axis().set_log(True)
+        with qtbot.waitSignal(h.x_bins_log_changed, timeout=1000):
+            h.set_x_axis(plot.x2_axis())
+        with qtbot.waitSignal(h.y_bins_log_changed, timeout=1000):
+            h.set_y_axis(plot.y2_axis())
+        assert h.x_bins_log() and h.y_bins_log()
+
+    def test_histogram2d_set_data_signals_once(self, qtbot, plot):
+        h = self._settled_histogram2d(qtbot, plot)
+        changes = []
+        h.data_changed[()].connect(lambda: changes.append(1))
+        h.set_data(np.arange(10.0), np.arange(10.0))
+        assert len(changes) == 1
+
     def test_histogram2d_ignores_its_old_axes(self, qtbot, plot):
         h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))
         h.set_x_axis(plot.x2_axis())
@@ -177,3 +211,43 @@ class TestLateAxisSynchronization:
         assert not p1.x_axis().visible()
         p1.set_axis_synchronized(AxisType.XAxis, False)
         assert p1.x_axis().visible() and p2.x_axis().visible()
+
+    def test_opting_back_in_follows_the_plot_again(self, panel):
+        p1, p2 = self._two_plots(panel)
+        p2.set_axis_synchronized(AxisType.XAxis, False)
+        p2.set_axis_synchronized(AxisType.XAxis, True)
+        p2.x_axis().set_range(50.0, 60.0)
+        assert (p1.x_axis().range().start(), p1.x_axis().range().stop()) == (50.0, 60.0)
+
+    def test_opting_back_in_catches_up_with_the_shared_range(self, panel):
+        p1, p2 = self._two_plots(panel)
+        p2.set_axis_synchronized(AxisType.XAxis, False)
+        p1.x_axis().set_range(30.0, 40.0)
+        p2.set_axis_synchronized(AxisType.XAxis, True)
+        assert (p2.x_axis().range().start(), p2.x_axis().range().stop()) == (30.0, 40.0)
+
+    def test_opting_back_in_hides_the_x_axis_of_a_plot_that_is_not_last(self, panel):
+        p1, p2 = self._two_plots(panel)
+        p1.set_axis_synchronized(AxisType.XAxis, False)
+        p1.set_axis_synchronized(AxisType.XAxis, True)
+        assert not p1.x_axis().visible() and p2.x_axis().visible()
+
+    def test_a_removed_plot_no_longer_drags_the_panel(self, panel):
+        p1, p2 = self._two_plots(panel)
+        panel.remove_plot(p2)
+        p2.x_axis().set_range(10.0, 20.0)
+        assert p1.x_axis().range().start() != 10.0
+
+    def test_a_removed_plot_ignores_the_panel_when_it_changes_its_opt_out(self, panel):
+        p1, p2 = self._two_plots(panel)
+        panel.remove_plot(p2)
+        p1.x_axis().set_range(30.0, 40.0)
+        p2.set_axis_synchronized(AxisType.XAxis, False)
+        p2.set_axis_synchronized(AxisType.XAxis, True)
+        assert p2.x_axis().range().start() != 30.0
+
+    def test_a_projection_can_opt_out_of_the_shared_x(self, panel):
+        panel.plot(np.arange(10.0), np.arange(10.0))
+        projection, _ = panel.projection([np.arange(10.0)] * 4)
+        projection.set_axis_synchronized(AxisType.XAxis, False)
+        assert not projection.axis_synchronized(AxisType.XAxis)
