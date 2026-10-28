@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 from PySide6.QtGui import QColor, QImage
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QWidget
 
 from SciQLopPlots import DelegateRegistry, GraphLineStyle, GraphMarkerShape, SciQLopPlot
 
@@ -185,9 +185,36 @@ class TestInspectorFillRow:
         g.set_fill_to_value(0, 0.0)
         assert not row.isHidden()
 
+    def _filled_delegate(self, qtbot, plot):
+        g = plot.line(X, np.sin(X))
+        comp = g.components()[0]
+        comp.set_fill_to_value(0.0)
+        delegate = DelegateRegistry.instance().create_delegate(comp, None)
+        qtbot.addWidget(delegate)
+        return g, comp, delegate
+
+    def test_row_has_no_margins(self, qtbot, plot):
+        _g, _, delegate = self._filled_delegate(qtbot, plot)
+        row = _fill_color_row(delegate)
+        margins = row.layout().contentsMargins()
+        assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
+
+    def test_row_is_laid_out_in_the_delegate(self, qtbot, plot):
+        _g, _, delegate = self._filled_delegate(qtbot, plot)
+        delegate.show()
+        qtbot.waitExposed(delegate)
+        assert _fill_color_row(delegate).y() > 0
+
+    def test_row_picker_follows_the_fill_colour(self, qtbot, plot):
+        _g, comp, delegate = self._filled_delegate(qtbot, plot)
+        comp.set_fill_color(QColor(10, 20, 30))
+        row = _fill_color_row(delegate)
+        picker = next(w for w in row.findChildren(QWidget)
+                      if w.metaObject().className() == "ColorDelegate")
+        assert picker.property("color") == QColor(10, 20, 30)
+
     def test_picking_a_colour_after_the_fill_went_away_is_harmless(self, qtbot, plot):
         from PySide6.QtCore import Q_ARG, QMetaObject
-        from PySide6.QtWidgets import QWidget
         g = plot.line(X, np.sin(X))
         comp = g.components()[0]
         comp.set_fill_to_value(0.0)

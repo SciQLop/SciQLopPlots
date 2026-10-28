@@ -1,12 +1,13 @@
 """Integration tests for SciQLopHistogram2D wrapper."""
 import numpy as np
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QComboBox
 
 from SciQLopPlots import (
     SciQLopPlot,
     SciQLopHistogram2D,
     SciQLopMultiPlotPanel,
+    DelegateRegistry,
     GraphType,
     Histogram2DNormalization,
 )
@@ -105,6 +106,26 @@ class TestHistogram2DProperties:
     def test_name(self, plot):
         hist = plot.add_histogram2d("my_hist")
         assert hist.name == "my_hist"
+
+
+class TestHistogram2DNormalizationCombo:
+    def _delegate_and_combo(self, hist, qtbot):
+        delegate = DelegateRegistry.instance().create_delegate(hist, None)
+        qtbot.addWidget(delegate)
+        combos = [c for c in delegate.findChildren(QComboBox)
+                  if c.itemText(0) == "None"]
+        assert len(combos) == 1
+        return delegate, combos[0]
+
+    def test_offers_none_and_per_column(self, plot, qtbot):
+        _delegate, combo = self._delegate_and_combo(plot.add_histogram2d("test"), qtbot)
+        assert [combo.itemText(i) for i in range(combo.count())] == ["None", "Per-column"]
+
+    def test_starts_on_the_current_normalization(self, plot, qtbot):
+        hist = plot.add_histogram2d("test")
+        hist.set_normalization(Histogram2DNormalization.PerColumn)
+        _delegate, combo = self._delegate_and_combo(hist, qtbot)
+        assert combo.currentText() == "Per-column"
 
 
 class TestHistogram2DVisibility:
