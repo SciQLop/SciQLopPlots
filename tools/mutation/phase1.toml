@@ -98,6 +98,18 @@ before = "    mResetQueued = true;"
 reason = "The flag only avoids posting duplicate no-op lambdas: performance only."
 
 [[project.equivalent]]
+path = "src/plottables/plottable-histogram2d.cpp"
+op = "delete_statement"
+before = "    mRebinQueued = true;"
+reason = "The flag only avoids posting duplicate lambdas, and each re-bins only while the scales are stale: performance only."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-histogram2d.cpp"
+op = "true_to_false"
+before = "    mRebinQueued = true;"
+reason = "The flag only avoids posting duplicate lambdas, and each re-bins only while the scales are stale: performance only."
+
+[[project.equivalent]]
 path = "src/plottables/plottable-histogram.cpp"
 op = "delete_statement"
 before = "    PROFILE_HERE_N(\"QCPHistogram::draw\");"
