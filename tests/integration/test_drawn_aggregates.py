@@ -1,7 +1,7 @@
 """Rule 2: an aggregate reads its parts and signals only when that reading flips."""
 import numpy as np
 import pytest
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QImage
 from SciQLopPlots import ColorGradient
 
 from conftest import process_events, record
@@ -167,6 +167,33 @@ def test_deleting_the_only_selected_component_is_silent_like_a_shrinking_set_dat
     assert (len(graph.components()), seen) == (1, [])
     graph.components()[0].set_selected(True)
     assert seen == [True]
+
+
+def _render(plot, tmp_path, name):
+    plot.resize(600, 400)
+    path = str(tmp_path / f"{name}.png")
+    plot.save(path, 600, 400)
+    return QImage(path)
+
+
+def _drawn_after_deleting_the_second_component(qtbot, tmp_path, deselect_first):
+    import shiboken6
+    from SciQLopPlots import SciQLopPlot
+    plot = SciQLopPlot()
+    qtbot.addWidget(plot)
+    _, (_, b) = _two(plot)
+    b.set_selected(True)
+    if deselect_first:
+        b.set_selected(False)
+    shiboken6.delete(b)
+    process_events()
+    return _render(plot, tmp_path, f"deselected_{deselect_first}")
+
+
+def test_a_deleted_selected_component_leaves_no_selection_drawn(qtbot, tmp_path):
+    kept = _drawn_after_deleting_the_second_component(qtbot, tmp_path, deselect_first=False)
+    reference = _drawn_after_deleting_the_second_component(qtbot, tmp_path, deselect_first=True)
+    assert kept == reference
 
 
 def test_a_graph_whose_last_selected_component_is_deleted_is_not_selected(plot):

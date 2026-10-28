@@ -458,6 +458,23 @@ def test_component_error_bars_land_on_gui_thread(plot):
     assert appliers == [threading.get_ident()] * 2
 
 
+@pytest.mark.parametrize("gone", [1, 2])
+def test_queued_error_bars_are_dropped_silently_when_a_bound_is_deleted(plot, gone):
+    import shiboken6
+    from PySide6.QtCore import qInstallMessageHandler
+    components = _three_components(plot)
+    a, bounds = components[0], components[1:]
+    _in_thread(lambda: a.set_error_bars(*bounds))
+    shiboken6.delete(components[gone])
+    warnings = []
+    qInstallMessageHandler(lambda mode, ctx, message: warnings.append(message))
+    try:
+        _settle()
+    finally:
+        qInstallMessageHandler(None)
+    assert warnings == []
+
+
 _QUEUED_THROW_SCRIPT = """
 import threading
 import numpy as np

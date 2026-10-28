@@ -100,8 +100,6 @@ SciQLopGraphComponent::~SciQLopGraphComponent()
             (void)plot->removePlottable(m_plottable.data());
         }
     }
-    if (m_selected)
-        _set_selected(false);
 }
 
 // Signals last: a color_changed or replot slot may delete this component or its graph.

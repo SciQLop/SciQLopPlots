@@ -222,6 +222,30 @@ class TestComponentDecorations:
         with pytest.raises(ValueError):
             a.set_fill_between(b)
 
+    def test_a_partner_outside_a_line_graph_raises_value_error(self, plot):
+        from SciQLopPlots import GraphType
+        curve = lambda: plot.plot(X, np.sin(X), graph_type=GraphType.ParametricCurve).components()[0]
+        line = plot.line(X, np.sin(X)).components()[0]
+        with pytest.raises(ValueError):
+            line.set_fill_between(curve())
+        with pytest.raises(ValueError):
+            line.set_error_bars(curve(), curve())
+
+    def test_a_zero_cap_width_is_accepted_on_a_component(self, plot):
+        v, lo, hi = plot.line(X, np.column_stack([X, X - 1, X + 1])).components()
+        v.set_error_bars(lo, hi, 0.0)
+
+    def test_clearing_a_components_error_bars_removes_the_stems(self, plot, tmp_path):
+        g = plot.line(X, np.column_stack([np.full_like(X, 5.0), np.full_like(X, 3.0),
+                                          np.full_like(X, 7.0)]), colors=["red", "blue", "blue"])
+        plot.x_axis().set_range(0, 10)
+        plot.y_axis().set_range(0, 10)
+        v, lo, hi = g.components()
+        v.set_error_bars(lo, hi)
+        with_bars = _render(plot, tmp_path, "with")
+        v.clear_error_bars()
+        assert _render(plot, tmp_path, "without") != with_bars
+
     def test_curve_components_raise_not_implemented(self, plot):
         from SciQLopPlots import GraphType
         c = plot.plot(X, np.sin(X), graph_type=GraphType.ParametricCurve).components()[0]

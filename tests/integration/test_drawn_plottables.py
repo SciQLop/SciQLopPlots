@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QImage, QPen
 
 from SciQLopPlots import SciQLopPlot, SciQLopPlotRange
 from conftest import off_thread, process_events, record
@@ -103,3 +103,45 @@ def test_a_colour_map_colour_points_to_the_gradient(plot, sample_colormap_data):
 def test_a_timeline_colour_points_to_category_colours(ts_plot):
     with pytest.raises(NotImplementedError, match="use category_color.*set_category_colors"):
         ts_plot.add_timeline().color()
+
+
+def test_a_components_colour_also_colours_its_markers(plot):
+    component = plot.plot(X, np.sin(X), labels=["a"]).components()[0]
+    component.set_color(QColor("red"))
+    assert component.marker_pen().color() == QColor("red")
+
+
+def test_a_components_colour_recolours_a_marker_pen_it_already_has(plot):
+    component = plot.plot(X, np.sin(X), labels=["a"]).components()[0]
+    component.set_marker_pen(QPen(QColor("blue")))
+    component.set_color(QColor("red"))
+    assert component.marker_pen().color() == QColor("red")
+
+
+def _curve(plot):
+    return plot.parametric_curve(X, np.sin(X), name="curve")
+
+
+def _legend_row_image(qtbot, plot, tmp_path, name):
+    plot.resize(600, 400)
+    plot.show()
+    qtbot.waitExposed(plot)
+    plot.replot(True)
+    path = str(tmp_path / f"{name}.png")
+    plot.save(path, 600, 400)
+    return QImage(path).copy(plot.legend().row_rect(0))
+
+
+def test_selecting_a_curve_component_selects_its_legend_row(qtbot, plot, tmp_path):
+    component = _curve(plot).components()[0]
+    before = _legend_row_image(qtbot, plot, tmp_path, "before")
+    component.set_selected(True)
+    assert _legend_row_image(qtbot, plot, tmp_path, "after") != before
+
+
+def test_selecting_a_curve_component_missing_from_the_legend_is_harmless(plot):
+    curve = _curve(plot)
+    curve.set_in_legend(False)
+    component = curve.components()[0]
+    component.set_selected(True)
+    assert component.selected()

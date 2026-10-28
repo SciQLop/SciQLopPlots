@@ -353,3 +353,15 @@ path = "src/SciQLopMultiGraphBase.cpp"
 op = "lt_to_le"
 before = "    for (int i = first; i < last; ++i)"
 reason = "The extra pass calls apply_preset(last): ignored past the component count, and idempotent if a re-entrant sync already applied it."
+
+[[project.equivalent]]
+path = "src/SciQLopGraphComponent.cpp"
+op = "int_plus_one"
+before = "                                      selected ? QCPDataSelection(QCPDataRange(0, mg->dataCount()))"
+reason = "A multigraph component only reads whether its selection is empty, never which samples it holds."
+
+[[project.equivalent]]
+path = "src/SciQLopGraphComponent.cpp"
+op = "lt_to_le"
+before = "    for (int i = 0; i < graph.componentCount(); ++i)"
+reason = "componentSelection(componentCount()) is out of range and returns an empty selection, which the loop skips."
