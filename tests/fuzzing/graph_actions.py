@@ -63,8 +63,10 @@ def colormap_or_refusal(plot, add):
     verify=lambda panel, model: True,
 )
 def set_graph_data(panel, model, plot_index):
+    from SciQLopPlots import SciQLopTimeline
     plot = panel.plot_at(plot_index)
-    plottables = plot.plottables()
+    # A timeline strip is a plottable but not a graph: it takes intervals, not (x, y).
+    plottables = [p for p in plot.plottables() if not isinstance(p, SciQLopTimeline)]
     if plottables:
         x = np.linspace(0, 10, 200, dtype=np.float64)
         y = np.sin(x + np.random.uniform(0, 2 * np.pi)).astype(np.float64)
