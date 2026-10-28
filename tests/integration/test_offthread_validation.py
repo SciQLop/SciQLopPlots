@@ -13,7 +13,8 @@ import pytest
 from PySide6.QtCore import qInstallMessageHandler
 from PySide6.QtGui import QColor
 
-from SciQLopPlots import SciQLopPlot, SciQLopTimeSeriesPlot
+from SciQLopPlots import (GraphLineStyle, GraphMarkerShape, SciQLopPlot,
+                          SciQLopTimeSeriesPlot)
 
 X = np.linspace(0.0, 10.0, 50)
 THREE = np.column_stack([np.sin(X), np.sin(X) - 1, np.sin(X) + 1])
@@ -78,6 +79,15 @@ CASES = {
     "column fill to value negative": (_graph, lambda g: g.set_fill_to_value(-1, 0.0)),
     "column fill colour negative": (_graph, lambda g: g.set_fill_color(-1, QColor("red"))),
     "column error bars same bound twice": (_graph, lambda g: g.set_error_bars(0, 1, 1)),
+    "column error bars on its own upper bound": (_graph, lambda g: g.set_error_bars(0, 1, 0)),
+    "column error bars on its own lower bound": (_graph, lambda g: g.set_error_bars(0, 0, 2)),
+    "column error bars negative cap": (_graph, lambda g: g.set_error_bars(0, 1, 2, -1.0)),
+    "column clear fill negative": (_graph, lambda g: g.clear_fill(-1)),
+    "column clear error bars negative": (_graph, lambda g: g.clear_error_bars(-1)),
+    "column line style negative": (_graph, lambda g: g.set_column_line_style(-1, GraphLineStyle.NoLine)),
+    "column marker shape negative": (
+        _graph, lambda g: g.set_column_marker_shape(-1, GraphMarkerShape.Circle)),
+    "column in legend negative": (_graph, lambda g: g.set_column_in_legend(-1, False)),
     "component fill against itself": (_components, lambda cs: cs[0].set_fill_between(cs[0])),
     "component error bars same bound twice": (
         _components, lambda cs: cs[0].set_error_bars(cs[1], cs[1])),

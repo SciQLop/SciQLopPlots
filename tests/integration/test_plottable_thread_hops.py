@@ -151,3 +151,18 @@ def test_graph_error_bars_land_on_gui_thread(plot):
     off_thread(lambda: graph.clear_error_bars(0))
     process_events()
     assert appliers == [threading.get_ident()] * 2
+
+
+@pytest.mark.parametrize("call", [
+    lambda g: g.set_column_line_style(0, GraphLineStyle.NoLine),
+    lambda g: g.set_column_marker_shape(0, GraphMarkerShape.Circle),
+], ids=["line_style", "marker_shape"])
+def test_a_column_preset_asks_for_its_replot_on_the_gui_thread(plot, call):
+    graph = _lines(plot)
+    process_events()
+    replots = []
+    graph.replot.connect(lambda: replots.append(1), Qt.DirectConnection)
+    off_thread(lambda: call(graph))
+    assert replots == [], "replot requested on the calling thread"
+    process_events()
+    assert replots != []

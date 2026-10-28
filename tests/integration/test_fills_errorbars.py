@@ -111,6 +111,47 @@ class TestColumnDecorations:
         with pytest.raises(ValueError):
             v.set_error_bars(lo, hi, -1.0)
 
+    def test_a_zero_cap_width_is_accepted(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        g.set_error_bars(0, 1, 2, 0.0)
+
+    def test_clearing_error_bars_removes_the_stems(self, plot, tmp_path):
+        g = plot.line(X, np.column_stack([np.full_like(X, 5.0), np.full_like(X, 3.0),
+                                          np.full_like(X, 7.0)]), colors=["red", "blue", "blue"])
+        plot.x_axis().set_range(0, 10)
+        plot.y_axis().set_range(0, 10)
+        g.set_error_bars(0, 1, 2)
+        with_bars = _render(plot, tmp_path, "with")
+        g.clear_error_bars(0)
+        assert _render(plot, tmp_path, "without") != with_bars
+
+    def test_a_hidden_component_is_out_of_the_legend_row(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]), labels=["a", "b", "c"])
+        g.set_column_in_legend(2, False)
+        assert plot.legend().row_labels() == ["a … b"]  # the row spans the shown components
+
+    def test_error_bar_bounds_are_out_of_the_legend_without_a_preset(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        g.set_error_bars(1, 0, 2)
+        assert [g.column_in_legend(c) for c in (0, 1, 2)] == [False, True, False]
+
+    @pytest.mark.parametrize("column", [-1, 3, 99])
+    def test_a_column_the_graph_lacks_is_in_the_legend(self, plot, column):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        assert g.column_in_legend(column) is True
+
+    def test_a_legend_preset_for_a_column_not_yet_there_is_remembered(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        g.set_column_in_legend(5, False)
+        assert g.column_in_legend(5) is False
+
+    def test_new_data_with_the_same_columns_does_not_change_the_component_list(self, plot):
+        g = plot.line(X, np.column_stack([X, X - 1, X + 1]))
+        changes = []
+        g.component_list_changed.connect(lambda: changes.append(1))
+        g.set_data(X, np.column_stack([X, X - 1, X + 1]))
+        assert changes == []
+
     def test_column_presets_request_a_replot(self, qtbot, plot):
         g = plot.line(X, np.column_stack([X, X]))
         with qtbot.waitSignal(g.replot, timeout=1000):
