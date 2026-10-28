@@ -120,7 +120,13 @@ def _is_list_of_arrays(value):
     return isinstance(value, list) and len(value) > 0 and all(np.ndim(v) >= 1 for v in value)
 
 
+def reject_callback_with_arrays(args):
+    if len(args) > 1 and any(callable(a) for a in args):
+        raise TypeError("expected a callback or arrays, not a callback mixed with arrays")
+
+
 def shape_of(args):
+    reject_callback_with_arrays(args)
     if len(args) == 1 and callable(args[0]):
         return "callback", None
     if len(args) == 1 and _is_list_of_arrays(args[0]):

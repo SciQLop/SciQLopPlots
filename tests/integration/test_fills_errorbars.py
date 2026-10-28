@@ -332,9 +332,23 @@ class TestFactories:
         with pytest.raises(TypeError, match="expected a callback or"):
             plot.band(X)
 
-    def test_a_callback_mixed_with_arrays_is_rejected(self, plot):
-        with pytest.raises(TypeError):
-            plot.band(lambda a, b: None, X, X)
+    @pytest.mark.parametrize("factory", ["band", "error_bars"])
+    def test_a_callback_mixed_with_arrays_is_rejected(self, plot, factory):
+        with pytest.raises(TypeError, match="not a callback mixed with arrays"):
+            getattr(plot, factory)(lambda a, b: None, X, X)
+
+    def test_plot_rejects_a_callback_mixed_with_arrays(self, plot):
+        with pytest.raises(TypeError, match="not a callback mixed with arrays"):
+            plot.plot(lambda a, b: None, X)
+
+    def test_band_accepts_scalar_bounds(self, plot):
+        scalar = plot.band(X, 0.0, 1.0)
+        explicit = plot.band(X, np.zeros_like(X), np.ones_like(X))
+        np.testing.assert_array_equal(np.asarray(scalar.data()[1]), np.asarray(explicit.data()[1]))
+
+    def test_band_rejects_bounds_of_another_length(self, plot):
+        with pytest.raises(ValueError, match="scalar or an array"):
+            plot.band(X, np.zeros(3), 1.0)
 
     def test_band_labels_default_and_follow_name(self, plot):
         assert [c.name() for c in plot.band(X, X - 1, X + 1).components()] == ["band", "upper"]
@@ -431,6 +445,13 @@ class TestEmptyFetchWindow:
             rows = _tinted_rows(_render(plot, tmp_path))
             return bool(rows) and max(rows) - min(rows) > 0.5 * plot.height()
         qtbot.waitUntil(stems_are_drawn, timeout=5000)
+
+
+def test_wrapped_callback_rejects_an_empty_dict_too():
+    import SciQLopPlots
+    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: {}, SciQLopPlots._band_batch)
+    with pytest.raises(TypeError, match="not the"):
+        wrapped(0.0, 1.0)
 
 
 @pytest.mark.parametrize("empty", [None, ()])

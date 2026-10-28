@@ -175,22 +175,24 @@ def _as_columns(*columns):
     return np.column_stack([np.asarray(c, dtype=np.float64) for c in columns])
 
 
+def _as_bound(reference, bound):
+    import numpy as np
+    bound = np.asarray(bound, dtype=np.float64)
+    if bound.ndim != 0 and bound.shape != np.shape(reference):
+        raise ValueError(f"expected a scalar or an array of x's length ({len(reference)}), got shape {bound.shape}")
+    return np.broadcast_to(bound, np.shape(reference))
+
+
 def _error_bounds(y, err_minus, err_plus=None):
     import numpy as np
     y = np.asarray(y, dtype=np.float64)
-
-    def as_error(e):
-        e = np.asarray(e, dtype=np.float64)
-        if e.ndim != 0 and e.shape != y.shape:
-            raise ValueError(f"errors must be a scalar or have y's length ({len(y)}), got shape {e.shape}")
-        return e
-    em = as_error(err_minus)
-    ep = em if err_plus is None else as_error(err_plus)
+    em = _as_bound(y, err_minus)
+    ep = em if err_plus is None else _as_bound(y, err_plus)
     return y - em, y + ep
 
 
 def _band_batch(x, lower, upper):
-    return x, _as_columns(lower, upper)
+    return x, _as_columns(_as_bound(x, lower), _as_bound(x, upper))
 
 
 def _error_batch(x, y, *errors):
@@ -200,15 +202,16 @@ def _error_batch(x, y, *errors):
 def _wrapped_callback(callback, to_batch):
     def wrapped(start, stop):
         batch = callback(start, stop)
-        if batch is None or len(batch) == 0:
-            return batch
         if isinstance(batch, dict):
             raise TypeError("band()/error_bars() callbacks return arrays, not the {'data', 'color'} form")
+        if batch is None or len(batch) == 0:
+            return batch
         return to_batch(*batch)
     return wrapped
 
 
 def _line_data(args, to_batch, arity):
+    _dispatch.reject_callback_with_arrays(args)
     if len(args) == 1 and callable(args[0]):
         return (_wrapped_callback(args[0], to_batch),)
     if len(args) in arity:
