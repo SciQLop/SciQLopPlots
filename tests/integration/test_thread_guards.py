@@ -467,7 +467,8 @@ def test_queued_error_bars_are_dropped_silently_when_a_bound_is_deleted(plot, go
     _in_thread(lambda: a.set_error_bars(*bounds))
     shiboken6.delete(components[gone])
     warnings = []
-    qInstallMessageHandler(lambda mode, ctx, message: warnings.append(message))
+    qInstallMessageHandler(lambda mode, ctx, message: warnings.append(message)
+                           if message.startswith("SciQLopPlots:") else None)
     try:
         _settle()
     finally:

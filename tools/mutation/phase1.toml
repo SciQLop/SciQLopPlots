@@ -358,7 +358,7 @@ reason = "The extra pass calls apply_preset(last): ignored past the component co
 path = "src/SciQLopGraphComponent.cpp"
 op = "int_plus_one"
 before = "                                      selected ? QCPDataSelection(QCPDataRange(0, mg->dataCount()))"
-reason = "A multigraph component only reads whether its selection is empty, never which samples it holds."
+reason = "Every consumer of a component selection only tests isEmpty(); the copied ranges are never read."
 
 [[project.equivalent]]
 path = "src/SciQLopGraphComponent.cpp"
