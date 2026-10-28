@@ -41,9 +41,12 @@ class SciQLopGraphComponentInterface : public SciQLopDrawnObject
 protected:
     std::unique_ptr<InspectorExtensionHolder> m_extension_holder;
 
+private:
     friend class SciQLopGraphInterface;
     //! Re-wires the legend item selection, after set_in_legend re-created the item.
+    //! A no-op here: every concrete component must override it, or the legend-toggle fix is lost.
     virtual void connect_legend_selection() { }
+
 
 public:
     SciQLopGraphComponentInterface(QObject* parent = nullptr)

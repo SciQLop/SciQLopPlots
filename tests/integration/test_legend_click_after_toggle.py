@@ -63,6 +63,7 @@ def _click_legend_row(qtbot, plot, component):
     assert rect.isValid()
     if component is None:
         return _click_at(plot, rect.center())
+    # A multigraph is one legend group item, so row_rect cannot address its component rows.
     header_height = rect.height()
     _click_at(plot, rect.center())  # a group header click expands the component rows
     plot.replot(True)

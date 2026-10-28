@@ -58,6 +58,7 @@ class TestInternalsHidden:  # task 2, findings 3.3, 3.4
         (SciQLopPlots.SciQLopMultiGraphBase, "clear_graphs"),
         (SciQLopPlots.SciQLopPlottableInterface, "check_first_data"),
         (SciQLopPlots.SciQLopPlottableInterface, "data_off_view"),
+        (SciQLopPlots.SciQLopGraphComponentInterface, "connect_legend_selection"),
     ])
     def test_plumbing_methods_are_not_reachable(self, cls, method):
         assert not hasattr(cls, method)
