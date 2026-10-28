@@ -35,7 +35,7 @@
 
 namespace {
 
-// The binning ignores keys, but a multi source needs sorted ones: 0..rows-1.
+// The binning ignores keys, but a multi source needs them sorted.
 struct BinnedBuffers
 {
     SciQLopPyBuffer x, y;
@@ -131,6 +131,8 @@ SciQLopHistogram::~SciQLopHistogram()
 {
     if (!_hist)
         return;
+    // A live _hist implies a live plot: ~QCustomPlot deletes its plottables before its QObject
+    // children (this wrapper), so the plot checks below and in _legend_item are belt and braces.
     auto* plot = _plot();
     auto* hist = _hist.data();
     _hist = nullptr;

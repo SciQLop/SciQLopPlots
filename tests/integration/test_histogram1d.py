@@ -360,7 +360,7 @@ class TestHistogramRange:
 class TestHistogramSignals:
     def test_set_data_signals_once(self, plot):
         h = plot.histogram(np.arange(10.0))
-        changes = _emissions(h.data_changed)
+        changes = _emissions(h.data_changed[()])
         h.set_data(np.arange(10.0), np.arange(10.0))
         assert len(changes) == 1
 
@@ -372,7 +372,7 @@ class TestHistogramSignals:
 
     def test_set_values_signals_once(self, plot):
         h = plot.histogram(np.arange(10.0))
-        changes = _emissions(h.data_changed)
+        changes = _emissions(h.data_changed[()])
         h.set_values(np.arange(5.0))
         assert len(changes) == 1
 
@@ -383,7 +383,7 @@ class TestHistogramSignals:
 
     def test_set_binned_signals_once(self, plot):
         h = plot.histogram(np.arange(10.0))
-        changes = _emissions(h.data_changed)
+        changes = _emissions(h.data_changed[()])
         h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([3.0, 4.0]))
         assert len(changes) == 1
 
@@ -394,13 +394,13 @@ class TestHistogramSignals:
 
     def test_an_invalid_set_data_changes_nothing(self, plot):
         h = plot.histogram(np.arange(10.0))
-        changes = _emissions(h.data_changed)
+        changes = _emissions(h.data_changed[()])
         h.set_data(np.arange(3.0), None)
         assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
 
     def test_an_invalid_set_values_changes_nothing(self, plot):
         h = plot.histogram(np.arange(10.0))
-        changes = _emissions(h.data_changed)
+        changes = _emissions(h.data_changed[()])
         h.set_values(None)
         assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
 
