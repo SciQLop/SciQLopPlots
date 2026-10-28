@@ -34,6 +34,12 @@ def _at(tl, key, lane):
     return QPoint(round(p.x()), round(p.y()))
 
 
+def _hover(canvas, p):
+    pos = QPointF(p)
+    QApplication.sendEvent(canvas, QMouseEvent(QEvent.MouseMove, pos, canvas.mapToGlobal(pos),
+                                               Qt.NoButton, Qt.NoButton, Qt.NoModifier))
+
+
 def _drag(canvas, a, b):
     QTest.mousePress(canvas, Qt.LeftButton, Qt.NoModifier, a)
     QTest.mouseMove(canvas, b)
@@ -138,9 +144,9 @@ def test_cursor_shows_resize_over_an_edge(editable, qtbot):
     plot, tl = editable
     canvas = _canvas(plot)
     edge = _at(tl, 40, "A") - QPoint(2, 0)
-    QTest.mouseMove(canvas, edge)
+    _hover(canvas, edge)
     qtbot.wait(40)  # hover updates are throttled to 60 Hz
-    QTest.mouseMove(canvas, edge + QPoint(0, 1))
+    _hover(canvas, edge + QPoint(0, 1))
     qtbot.waitUntil(lambda: canvas.cursor().shape() == Qt.SizeHorCursor, timeout=2000)
 
 
@@ -160,12 +166,6 @@ def test_interval_at_finds_the_block_under_a_pixel(editable):
     assert tl.interval_at(p.x(), p.y()) == 8
     p = tl.pixel_of(50, "A")
     assert tl.interval_at(p.x(), p.y()) is None
-
-
-def _hover(canvas, p):
-    pos = QPointF(p)
-    QApplication.sendEvent(canvas, QMouseEvent(QEvent.MouseMove, pos, canvas.mapToGlobal(pos),
-                                               Qt.NoButton, Qt.NoButton, Qt.NoModifier))
 
 
 def test_crosshair_tooltip_describes_the_hovered_interval(editable):

@@ -200,6 +200,7 @@ class TestInspectorFillRow:
         assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (0, 0, 0, 0)
 
     def test_row_is_laid_out_in_the_delegate(self, qtbot, plot):
+        # Checks the layout, not visibility: show() leaks window-system state; the isHidden() tests cover visibility.
         _g, _, delegate = self._filled_delegate(qtbot, plot)
         row = _fill_color_row(delegate)
         assert delegate.layout().indexOf(row) >= 0

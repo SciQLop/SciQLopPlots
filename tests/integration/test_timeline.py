@@ -202,9 +202,10 @@ def test_line_graph_on_a_timeline_plot_uses_the_right_axis(panel):
     assert list(plot.y_axis().tick_labels().values()) == ["MSA", "MPPE", "MGF"]
 
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QWidget
 
 
 def _canvas(plot):
@@ -221,6 +222,12 @@ def _two_bar_strip(ts_plot, qtbot):
     return tl
 
 
+def _hover(canvas, p):
+    pos = QPointF(p)
+    QApplication.sendEvent(canvas, QMouseEvent(QEvent.MouseMove, pos, canvas.mapToGlobal(pos),
+                                               Qt.NoButton, Qt.NoButton, Qt.NoModifier))
+
+
 def _at(tl, key, lane):
     p = tl.pixel_of(key, lane)
     return QPoint(round(p.x()), round(p.y()))
@@ -230,9 +237,9 @@ def test_hover_reports_the_user_id(ts_plot, qtbot):
     tl = _two_bar_strip(ts_plot, qtbot)
     seen = []
     tl.hovered.connect(seen.append)
-    QTest.mouseMove(_canvas(ts_plot), _at(tl, 25, "A"))
+    _hover(_canvas(ts_plot), _at(tl, 25, "A"))
     qtbot.waitUntil(lambda: bool(seen) and seen[-1] == 7, timeout=2000)
-    QTest.mouseMove(_canvas(ts_plot), _at(tl, 50, "A"))
+    _hover(_canvas(ts_plot), _at(tl, 50, "A"))
     qtbot.waitUntil(lambda: seen[-1] == -1, timeout=2000)
 
 
@@ -240,10 +247,10 @@ def test_hidden_timeline_reports_no_hover(ts_plot, qtbot):
     tl = _two_bar_strip(ts_plot, qtbot)
     seen = []
     tl.hovered.connect(seen.append)
-    QTest.mouseMove(_canvas(ts_plot), _at(tl, 25, "A"))
+    _hover(_canvas(ts_plot), _at(tl, 25, "A"))
     qtbot.waitUntil(lambda: bool(seen) and seen[-1] == 7, timeout=2000)
     tl.set_visible(False)
-    QTest.mouseMove(_canvas(ts_plot), _at(tl, 26, "A"))
+    _hover(_canvas(ts_plot), _at(tl, 26, "A"))
     qtbot.waitUntil(lambda: seen[-1] == -1, timeout=2000)
 
 
