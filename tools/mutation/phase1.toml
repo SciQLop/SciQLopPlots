@@ -263,7 +263,7 @@ reason = "The last edge is overwritten with range.upper right after the loop."
 path = "src/datasource/async-pipeline.cpp"
 op = "gt_to_ge"
 before = "        if (!mJobRunning && latest > mDisplayedGeneration)"
-reason = "The displayed generation never exceeds the latest one, so on equality the assignment changes nothing."
+reason = "The idle catch-up assignment: on equality it assigns the value already there. The other > in deliverResult applies the result and is not equivalent."
 
 [[project]]
 name = "sciqlopplots"
