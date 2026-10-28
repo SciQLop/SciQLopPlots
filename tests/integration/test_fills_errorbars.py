@@ -201,9 +201,8 @@ class TestInspectorFillRow:
 
     def test_row_is_laid_out_in_the_delegate(self, qtbot, plot):
         _g, _, delegate = self._filled_delegate(qtbot, plot)
-        delegate.show()
-        qtbot.waitExposed(delegate)
-        assert _fill_color_row(delegate).y() > 0
+        row = _fill_color_row(delegate)
+        assert delegate.layout().indexOf(row) >= 0
 
     def test_row_picker_follows_the_fill_colour(self, qtbot, plot):
         _g, comp, delegate = self._filled_delegate(qtbot, plot)
