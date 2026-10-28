@@ -187,6 +187,48 @@ op = "delete_statement"
 before = "    rows.reserve(bars.size());"
 reason = "reserve only changes allocation, not the result."
 
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "delete_statement"
+before = "    poly.reserve(static_cast<qsizetype>(run.size() * 2));"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "int_plus_one"
+before = "    poly.reserve(static_cast<qsizetype>(run.size() * 2));"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "delete_statement"
+before = "    out.reserve(rows.size() * 2);"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "int_plus_one"
+before = "    out.reserve(rows.size() * 2);"
+reason = "reserve only changes allocation, not the result."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "int_plus_one"
+before = "    long long currentBin = 0;"
+reason = "The first row always starts a span (spans is empty) and sets currentBin before it is read."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "false_to_true"
+before = "    bool pendingBreak = false;"
+reason = "The first span never breaks (guarded by !spans.empty()) and pendingBreak is reset after the first finite row."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "gt_to_ge"
+before = "    const bool positive = range.upper > 0;"
+reason = "A log axis sanitizes its range, so upper is never exactly 0."
+
 [[project]]
 name = "sciqlopplots"
 repo = "."
