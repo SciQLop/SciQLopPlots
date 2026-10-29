@@ -174,6 +174,8 @@ void SciQLopPlotAxis::set_number_format(const QString& format, int precision)
     SCIQLOP_ON_OWNER_THREAD(set_number_format(format, precision));
     if (m_axis.isNull() || (number_format() == format && number_precision() == precision))
         return;
+    if (number_format() != "f")
+        m_number_style = m_axis->numberFormat().mid(1);
     m_axis->setNumberFormat(format + qcp_number_style(format));
     m_axis->setNumberPrecision(precision);
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
@@ -189,7 +191,7 @@ QString SciQLopPlotAxis::number_format() const noexcept
 // Keeps the axis' style flags, which QCP only allows on "g" and "e".
 QString SciQLopPlotAxis::qcp_number_style(const QString& format) const
 {
-    return format == "f" ? QString() : m_axis->numberFormat().mid(1);
+    return format == "f" ? QString() : m_number_style;
 }
 
 int SciQLopPlotAxis::number_precision() const noexcept

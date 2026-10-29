@@ -54,3 +54,13 @@ def test_e_keeps_the_axis_powers_of_ten_style(plot):
     plot.colormap(x, x, np.outer(x, x) * 1e6)
     plot.z_axis().set_number_format("e", 1)
     assert plot.z_axis().number_format() == "e" and b"e+0" not in _svg(plot)
+
+
+def test_the_powers_of_ten_style_survives_a_round_trip_through_f(plot):
+    import numpy as np
+    x = np.linspace(0.0, 1.0, 10)
+    plot.resize(600, 300)
+    plot.colormap(x, x, np.outer(x, x) * 1e6)
+    plot.z_axis().set_number_format("f", 1)
+    plot.z_axis().set_number_format("e", 1)
+    assert b"e+0" not in _svg(plot)

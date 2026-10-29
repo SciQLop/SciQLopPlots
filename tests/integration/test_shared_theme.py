@@ -46,3 +46,12 @@ def test_theme_changed_signals(qtbot):
     plot.set_theme(theme)
     plot.set_theme(theme)
     assert seen == [theme]
+
+
+def test_a_dying_panel_does_not_signal_its_adopted_theme_going():
+    panel = SciQLopMultiPlotPanel()
+    panel.set_theme(SciQLopTheme.dark())
+    seen = record(panel.theme_changed)
+    shiboken6.delete(panel)
+    process_events()
+    assert seen == []

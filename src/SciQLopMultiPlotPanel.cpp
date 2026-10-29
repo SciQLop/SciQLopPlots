@@ -120,7 +120,10 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
 
 SciQLopMultiPlotPanel::~SciQLopMultiPlotPanel()
 {
-
+    // An adopted theme is a child, deleted after this destructor: its destroyed() must not
+    // reach this half-destroyed panel.
+    for (const auto& connection : m_theme_connections)
+        disconnect(connection);
 }
 
 void SciQLopMultiPlotPanel::replot(bool immediate)

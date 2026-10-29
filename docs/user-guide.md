@@ -724,7 +724,7 @@ plot.set_z_gradient(ColorGradient.Cividis)             # gradient for colour-cod
 
 Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma and Turbo (perceptually uniform, colour-blind friendly), Coolwarm (diverging), plus the classic Jet, Hot, Cold, Grayscale, Spectrum, Thermal, Polar, Hues, Candy, Ion, Night and Geography.
 
-A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`.
+A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`. One theme can style several plots and panels: it stays with the object given as its parent (a theme made without one belongs to the first plot or panel it is set on), and `theme_changed` tells when it changes or goes. Projections and widget plots do not take themes.
 
 ### Visible, selected, name and colour
 

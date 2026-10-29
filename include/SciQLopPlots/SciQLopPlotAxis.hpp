@@ -324,6 +324,8 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     Q_OBJECT
     QPointer<QCPAxis> m_axis;
     QString m_date_format = QStringLiteral("yyyy/MM/dd \nhh:mm:ss.zzz");
+    //! QCP's style flags ("bd": powers drawn as ×10ⁿ), kept across "f", which takes none.
+    QString m_number_style;
     SciQLopPlotRange m_last_valid_range;
     bool m_suppress_range_signals = false;
     double m_autoscale_percentile_low = 0.;
