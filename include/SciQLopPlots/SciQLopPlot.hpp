@@ -543,11 +543,11 @@ public:
 
 
     //! Item factories: see SciQLopPlotInterface.
-    SciQLopTextItem* text(const QString& text, const QPointF& position, bool movable = false, Coordinates coordinates = Coordinates::Pixels) override;
-    SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels) override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopTextItem* text(const QString& text, const QPointF& position, bool read_only = true, Coordinates coordinates = Coordinates::Pixels) override;
+    SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool read_only = true, Coordinates coordinates = Coordinates::Pixels) override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
     SciQLopCurvedLineItem* curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator = LineTermination::NoneTermination, LineTermination stop_terminator = LineTermination::Arrow, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
     SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
                       std::optional<SciQLopPlotRange> value_range = std::nullopt,

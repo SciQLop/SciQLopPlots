@@ -175,8 +175,8 @@ class TestLatexElsewhere:
 
         def item_bands(text, tag):
             plot = _quiet_plot(qtbot)
-            item = plot.text(text, QPointF(5.0, 0.0), False,
-                             Coordinates.Data)
+            item = plot.text(text, QPointF(5.0, 0.0),
+                             coordinates=Coordinates.Data)
             process_events()
             bands = _bands_in(_render(plot, tmp_path, tag), 100, 300)
             plot.remove(item)
@@ -190,8 +190,8 @@ class TestLatexElsewhere:
         from SciQLopPlots import Coordinates
 
         plot = _quiet_plot(qtbot)
-        item = plot.text("hello", QPointF(5.0, 0.0), False,
-                         Coordinates.Data)
+        item = plot.text("hello", QPointF(5.0, 0.0),
+                         coordinates=Coordinates.Data)
         process_events()
         assert _bands_in(_render(plot, tmp_path, "item_plain"), 100, 300) == 1
         plot.remove(item)

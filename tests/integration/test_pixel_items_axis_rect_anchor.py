@@ -84,14 +84,14 @@ def _add_probe(plot):
 
 
 def _text(plot, x):
-    item = plot.text("MMMM", QPointF(x, 60.0), False, Coordinates.Pixels)
+    item = plot.text("MMMM", QPointF(x, 60.0), coordinates=Coordinates.Pixels)
     item.set_font_size(18)
     item.set_color(SUBJECT)
     return item
 
 
 def _ellipse(plot, x):
-    return plot.ellipse(QRectF(x, 60.0, 40, 40), SUBJECT, 1.0, SUBJECT, False, Coordinates.Pixels)
+    return plot.ellipse(QRectF(x, 60.0, 40, 40), SUBJECT, 1.0, SUBJECT, coordinates=Coordinates.Pixels)
 
 
 def _curved_line(plot, x):
@@ -106,7 +106,7 @@ def _curved_line(plot, x):
 def _pixmap(plot, x):
     pixmap = QPixmap(40, 40)
     pixmap.fill(SUBJECT)
-    return plot.pixmap(pixmap, QRectF(x, 60.0, 40, 40), False, Coordinates.Pixels)
+    return plot.pixmap(pixmap, QRectF(x, 60.0, 40, 40), coordinates=Coordinates.Pixels)
 
 
 def _straight_line(plot, x):

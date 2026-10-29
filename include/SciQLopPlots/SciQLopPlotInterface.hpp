@@ -507,27 +507,27 @@ public:
 
     //! Item factories: the item belongs to this plot (QObject child, C++-owned in Python) until
     //! remove() or the plot's death.
-    inline virtual SciQLopTextItem* text(const QString& text, const QPointF& position, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+    inline virtual SciQLopTextItem* text(const QString& text, const QPointF& position, bool read_only = true, Coordinates coordinates = Coordinates::Pixels)
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
-    inline virtual SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels)
+    inline virtual SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool read_only = true, Coordinates coordinates = Coordinates::Pixels)
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
-    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
-    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }
 
-    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
+    inline virtual SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool read_only = true, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
     {
         throw sqp::unsupported_call(unsupported_message(Q_FUNC_INFO, typeid(*this).name()));
     }

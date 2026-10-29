@@ -175,7 +175,7 @@ class TestPixmapItemGeometry:  # found by SciQLop's suite once stubs raised (fin
         from PySide6.QtGui import QPixmap
         from SciQLopPlots import Coordinates
         image = QPixmap(4, 4)
-        return plot.pixmap(image, QRectF(1.0, 2.0, 3.0, 4.0), False, Coordinates.Data)
+        return plot.pixmap(image, QRectF(1.0, 2.0, 3.0, 4.0), coordinates=Coordinates.Data)
 
     def test_position_is_the_top_left_corner(self, plot):
         item = self._pixmap(plot)
@@ -188,5 +188,5 @@ class TestPixmapItemGeometry:  # found by SciQLop's suite once stubs raised (fin
         r = item.bounding_rectangle()
         assert (r.x(), r.y(), r.width(), r.height()) == (10.0, 20.0, 3.0, 4.0)
 
-    def test_set_movable(self, plot):
-        self._pixmap(plot).set_movable(True)
+    def test_set_read_only(self, plot):
+        self._pixmap(plot).set_read_only(False)

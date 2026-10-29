@@ -241,6 +241,25 @@ public:
     {
         set_position(QPointF { x, y });
     }
+
+    //! The inverse of movable(), named like spans and lines.
+    [[nodiscard]] inline bool read_only() const noexcept { return !movable(); }
+
+    //! Not noexcept: off the owner thread it queues itself, which allocates.
+    inline void set_read_only(bool read_only)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_read_only(read_only));
+        if (read_only == this->read_only())
+            return;
+        set_movable(!read_only);
+        Q_EMIT read_only_changed(read_only);
+    }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void read_only_changed(bool read_only);
 };
 
 class SciQLopLineItemInterface : public SciQLopItemInterface

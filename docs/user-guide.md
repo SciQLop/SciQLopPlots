@@ -846,7 +846,7 @@ panel.plot(x, np.sin(x), labels=["sin"])
 panel_span = panel.span(key_range=SciQLopPlotRange(2.0, 4.0))
 
 # A text label placed in data coordinates
-note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordinates.Data)
+note = plot.text("peak", QPointF(1.57, 1.0), coordinates=Coordinates.Data)
 ```
 
 ![A span, a threshold line and a text label](images/overlays.png)
@@ -861,7 +861,7 @@ note = plot.text("peak", QPointF(1.57, 1.0), movable=False, coordinates=Coordina
 - A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
 - The other factories are `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`. `plot.rectangular_span(key_range, value_range)` still works but is deprecated: use `plot.span(key_range=..., value_range=...)`.
 - The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for a panel-wide span or line (that one goes through `panel.remove`), for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line and its parts now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
-- Text, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work, and so does `set_movable` on text, ellipse and pixmap.
+- Text, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work. Text, ellipse and pixmap items are read-only (not draggable) unless made with `read_only=False` or switched with `set_read_only(False)`, like spans and lines.
 
 `panel.vertical_line(position)` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
@@ -1458,7 +1458,7 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 **Spans and lines.** The factories return two classes, `SciQLopSpan` and `SciQLopStraightLine`, for every kind of span and line and on plots and panels alike. Their accessors are methods.
 - The old classes stay for code that uses them: `SciQLopVerticalSpan`, `SciQLopHorizontalSpan`, `SciQLopRectangularSpan`, `MultiPlotsVerticalSpan`, `SciQLopVerticalLine`, `SciQLopHorizontalLine` and `MultiPlotsVerticalLine`. Their constructors were already deprecated and still warn. `MultiPlotsVSpanCollection.create_span` and interactive span creation (`span_created`) still build them, with their old defaults.
 - On the old panel classes the state is still read and written as attributes: `span.range`, `span.selected = True`, `line.position = 3.0`. On what the factories return, the same names are methods: `span.range()`, `span.set_selected(True)`, `line.set_position(3.0)`.
-- Deprecated calls, each with a warning: `plot.rectangular_span(k, v)` (use `plot.span(key_range=k, value_range=v)`), `movable=` on the line factories (use `read_only=`, which means the opposite), and `movable()` / `set_movable()` on the old line classes (`SciQLopStraightLine`, `SciQLopVerticalLine`, `SciQLopHorizontalLine`; use `read_only()` and `set_read_only()`). `SciQLopStraightLine(plot, ...)` warns too: use `plot.straight_line(...)`.
+- Deprecated calls, each with a warning: `plot.rectangular_span(k, v)` (use `plot.span(key_range=k, value_range=v)`), `movable=` on the line factories (use `read_only=`, which means the opposite), and `movable()` / `set_movable()` on the old line classes (`SciQLopStraightLine`, `SciQLopVerticalLine`, `SciQLopHorizontalLine`) and on text, ellipse and pixmap items (use `read_only()` and `set_read_only()`). The text, pixmap and ellipse factories take `read_only=` (default True) where `movable` (default False) was: `movable=` warns, a positional bool raises `TypeError` rather than silently mean the opposite. `SciQLopStraightLine(plot, ...)` warns too: use `plot.straight_line(...)`.
 - A `SciQLopStraightLine` built by the deprecated constructor now has `position()` as a method; the old property stays on `SciQLopVerticalLine` and `SciQLopHorizontalLine`.
 - The plot line factories take the colour second and `read_only` third. A bool in the colour slot raises `TypeError` instead of becoming a colour, on plot and panel factories alike.
 - The factory defaults are the same on plots and panels: spans are grey with alpha 100 and editable, lines are black and read-only. `panel.vertical_line` used to give a grey, draggable line: pass `color=QColor(100, 100, 100), read_only=False` to keep that.

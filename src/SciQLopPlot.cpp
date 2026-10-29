@@ -1639,29 +1639,29 @@ void SciQLopPlot::toggle_selected_objects_visibility() noexcept
     replot();
 }
 
-SciQLopTextItem* SciQLopPlot::text(const QString& text, const QPointF& position, bool movable, Coordinates coordinates)
+SciQLopTextItem* SciQLopPlot::text(const QString& text, const QPointF& position, bool read_only, Coordinates coordinates)
 {
-    return new SciQLopTextItem(this, text, position, movable, coordinates);
+    return new SciQLopTextItem(this, text, position, !read_only, coordinates);
 }
 
-SciQLopPixmapItem* SciQLopPlot::pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable, Coordinates coordinates)
+SciQLopPixmapItem* SciQLopPlot::pixmap(const QPixmap& pixmap, const QRectF& rect, bool read_only, Coordinates coordinates)
 {
-    return new SciQLopPixmapItem(this, pixmap, rect, movable, coordinates);
+    return new SciQLopPixmapItem(this, pixmap, rect, !read_only, coordinates);
 }
 
-SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, bool movable, Coordinates coordinates, const QString& tool_tip)
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, bool read_only, Coordinates coordinates, const QString& tool_tip)
 {
-    return new SciQLopEllipseItem(this, rect, movable, coordinates, tool_tip);
+    return new SciQLopEllipseItem(this, rect, !read_only, coordinates, tool_tip);
 }
 
-SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable, Coordinates coordinates, const QString& tool_tip)
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool read_only, Coordinates coordinates, const QString& tool_tip)
 {
-    return new SciQLopEllipseItem(this, rect, pen, brush, movable, coordinates, tool_tip);
+    return new SciQLopEllipseItem(this, rect, pen, brush, !read_only, coordinates, tool_tip);
 }
 
-SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable, Coordinates coordinates, const QString& tool_tip)
+SciQLopEllipseItem* SciQLopPlot::ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool read_only, Coordinates coordinates, const QString& tool_tip)
 {
-    return new SciQLopEllipseItem(this, rect, line_color, line_width, fill_color, movable, coordinates, tool_tip);
+    return new SciQLopEllipseItem(this, rect, line_color, line_width, fill_color, !read_only, coordinates, tool_tip);
 }
 
 SciQLopCurvedLineItem* SciQLopPlot::curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator, LineTermination stop_terminator, Coordinates coordinates, const QString& tool_tip)

@@ -29,15 +29,6 @@ def test_a_curved_line_reads_the_tooltip_hover_shows_and_round_trips(plot):
     assert line.tooltip() == "hello"
 
 
-@pytest.mark.parametrize("kind", ["text", "ellipse", "pixmap"])
-def test_movable_round_trips(plot, kind):
-    item = MAKERS[kind](plot)
-    item.set_movable(True)
-    assert item.movable()
-    item.set_movable(False)
-    assert not item.movable()
-
-
 def test_selecting_a_text_item_signals_once_though_neoqcp_signals_too(plot):
     text = MAKERS["text"](plot)
     seen = record(text.selection_changed)

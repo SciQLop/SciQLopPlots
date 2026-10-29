@@ -511,6 +511,37 @@ _DEPRECATED_CALLS = {
 for (_cls, _name), _message in _DEPRECATED_CALLS.items():
     setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
 
+# Review 1.10: text, pixmap and ellipse items say read_only, like spans and lines.
+for _cls in (SciQLopPlotsBindings.SciQLopMovableItemInterface, SciQLopPlotsBindings.SciQLopBoundingRectItemInterface,
+             SciQLopPlotsBindings.SciQLopPolygonItemInterface, SciQLopPlotsBindings.SciQLopTextItem,
+             SciQLopPlotsBindings.SciQLopPixmapItem, SciQLopPlotsBindings.SciQLopEllipseItem):
+    for _name, _message in (("movable", "movable() is deprecated: use item.read_only()"),
+                            ("set_movable", "set_movable(...) is deprecated: use item.set_read_only(...)")):
+        if _name in vars(_cls):
+            setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
+    register_hidden(_cls, "movable")
+
+
+# Their factories took movable (default False) where read_only (default True) now sits: a positional
+# bool would silently flip, so it raises.
+def _item_factory(name, method):
+    message = f"movable=... is deprecated: use plot.{name}(..., read_only=...)"
+
+    @_wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if any(isinstance(a, bool) for a in args):
+            raise TypeError(f"{name}(): pass read_only=... by keyword (it replaced movable, its inverse)")
+        if "movable" in kwargs:
+            _warn_deprecated(message)
+            kwargs["read_only"] = not kwargs.pop("movable")
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+for _cls in (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot):
+    for _name in ("text", "pixmap", "ellipse"):
+        setattr(_cls, _name, _item_factory(_name, vars(_cls)[_name]))
+
 # Review 1.7 / 1.16 / 2.8: (class, old name) -> (new name, receiver). The new name is the native
 # attribute under a second name; the old one warns.
 _RENAMED_CALLS = {
@@ -582,10 +613,7 @@ for _cls in _bound_classes():
 
 
 def _parameter_names(method):
-    try:
-        signatures = inspect.signature(method)
-    except (TypeError, ValueError):
-        signatures = get_signature(method)
+    signatures = getattr(method, "__signature__", None) or get_signature(method)
     signatures = signatures if isinstance(signatures, list) else [signatures]
     return {name for sig in signatures if isinstance(sig, inspect.Signature) for name in sig.parameters}
 
