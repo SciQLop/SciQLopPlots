@@ -118,6 +118,17 @@ class TestRebinOnTheNewAxis:
             plot.y2_axis().set_log(True)
         assert h.x_bins_log() and h.y_bins_log()
 
+    def test_histogram2d_rebins_when_moved_onto_an_axis_that_is_already_log(self, qtbot, plot):
+        plot.x2_axis().set_log(True)
+        h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))
+        qtbot.wait(200)
+        busy = []
+        h.busy_changed.connect(busy.append)
+        with qtbot.waitSignal(h.x_bins_log_changed, timeout=1000):
+            h.set_x_axis(plot.x2_axis())
+        qtbot.waitUntil(lambda: busy[-1:] == [False], timeout=2000)
+        assert h.x_bins_log() and True in busy
+
     def _settled_histogram2d(self, qtbot, plot):
         h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))
         qtbot.wait(200)
