@@ -36,6 +36,8 @@ public:
         return x_axis();
     }
 
+    [[nodiscard]] inline SciQLopPlotRange time_range() const { return x_axis()->range(); }
+
     Q_SLOT inline virtual void set_time_range(const SciQLopPlotRange& range)
     {
         this->x_axis()->set_range(range);

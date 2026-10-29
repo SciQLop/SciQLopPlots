@@ -950,6 +950,11 @@ SciQLopHistogram2D.set_normalization = _enum_normalization(SciQLopHistogram2D.se
 # snake_case names for the camelCase ones (API review 2026-10-20, 1.5 and 1.6). The same attribute
 # under a second name, never a wrapper: a Python wrapper on a Qt slot breaks its connections.
 # The camelCase names stay, deprecated.
+# Review 1.12: one spelling for the time range on time-series plots and panels.
+SciQLopTimeSeriesPlot.time_range_changed = SciQLopTimeSeriesPlot.time_axis_range_changed
+SciQLopMultiPlotPanel.time_range = SciQLopMultiPlotPanel.time_axis_range
+SciQLopMultiPlotPanel.set_time_range = SciQLopMultiPlotPanel.set_time_axis_range
+
 _SNAKE_CASE_ALIASES = {
     SciQLopMultiPlotPanel: {"set_selected": "setSelected", "add_widget": "addWidget",
                             "remove_widget": "removeWidget", "index_of": "indexOf",
