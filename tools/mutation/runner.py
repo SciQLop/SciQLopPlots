@@ -186,6 +186,8 @@ def try_mutant(project, path, line, op, tests):
     data = st.load(project.state_path)
     covermap.recover(project, data)
     covermap.build_or_die(project)
+    if failing := _run_tests(project, list(tests), {})[0]:
+        raise SystemExit(f"try: these tests fail without the mutant: {', '.join(failing)}")
     text = st.read_source(project.repo / path)
     found = [m for m in ops.mutants_for_line(path, line, text.splitlines()[line - 1]) if m.op == op]
     if not found:

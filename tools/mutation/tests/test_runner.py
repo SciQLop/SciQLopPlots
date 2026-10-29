@@ -240,6 +240,12 @@ def test_try_refuses_an_empty_test_list(calc):
         runner.try_mutant(calc, "calc.cpp", 5, "ge_to_gt", [])
 
 
+def test_try_refuses_tests_that_fail_without_the_mutant(calc):
+    calc.raw["test_cmd"] = ["false"]
+    with pytest.raises(SystemExit, match="fail without the mutant"):
+        runner.try_mutant(calc, "calc.cpp", 5, "ge_to_gt", ["edge"])
+    assert st.read_source(calc.repo / "calc.cpp") == st.read_source(FIXTURE / "calc.cpp")
+
 
 def test_a_test_that_ran_nothing_is_fatal_not_a_kill(calc):
     calc.raw["test_cmd"] = ["true"]
