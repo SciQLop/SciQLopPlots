@@ -1,9 +1,10 @@
 """A legend-row click still selects its plottable after set_in_legend(False) then (True)."""
 import numpy as np
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QWidget
 
 from conftest import process_events
 from SciQLopPlots import GraphType
@@ -57,6 +58,18 @@ def _click_at(plot, point):
     process_events()
 
 
+def _double_click_at(plot, point):
+    # The event order of a real double-click. QTest.mouseDClick adds a second press, which
+    # deselects the component row before the double-click event arrives.
+    canvas = _canvas(plot)
+    for kind in (QEvent.MouseButtonPress, QEvent.MouseButtonRelease, QEvent.MouseButtonDblClick,
+                 QEvent.MouseButtonRelease):
+        buttons = Qt.NoButton if kind == QEvent.MouseButtonRelease else Qt.LeftButton
+        QApplication.sendEvent(canvas, QMouseEvent(kind, QPointF(point), QPointF(canvas.mapToGlobal(point)),
+                                                   Qt.LeftButton, buttons, Qt.NoModifier))
+    process_events()
+
+
 def _show(qtbot, plot):
     plot.resize(600, 400)
     plot.show()
@@ -89,3 +102,13 @@ def test_legend_click_selects_after_a_legend_toggle(qtbot, plot, make, component
     assert not selected()
     _click_legend_row(qtbot, plot, component)
     assert selected()
+
+
+def test_double_click_on_a_component_row_hides_only_that_component(qtbot, plot):
+    graph, _ = _multi_line(plot)
+    _show(qtbot, plot)
+    rect = plot.legend().row_rect(0)
+    _click_at(plot, rect.center())  # a group header click expands the component rows
+    plot.replot(True)
+    _double_click_at(plot, QPoint(rect.center().x(), rect.top() + rect.height() * 2.5))
+    assert [c.visible() for c in graph.components()] == [True, False]
