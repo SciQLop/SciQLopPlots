@@ -1,6 +1,6 @@
 # Mutation testing for SciQLopPlots and NeoQCP
 
-Status: backlog (2026-10-22), the last step before V1. Design only, not approved for implementation. Do it after the API review (docs/api-review-2026-10-20.md) is finished. Phase 1 tool done (tools/mutation/, plan docs/plans/2026-10-25-mutation-testing-phase1-plan.md); coverage mapped 2026-10-26 per NeoQCP test function and per SciQLopPlots test file: NeoQCP 701 mutants / 53 uncovered target lines, SciQLopPlots 501 / 60. Phase 1 run 2026-10-26: NeoQCP score 73.1% (502 killed, 185 survived, 14 build errors), SciQLopPlots score 75.4% (361 killed, 118 survived, 22 build errors); reports in <build-cov>/mutation/report.md; survivors in triage.
+Status: phase 1 done 2026-10-29 (results in docs/api-review-2026-10-20.md, last section). Was: backlog (2026-10-22), the last step before V1. Design only, not approved for implementation. Do it after the API review (docs/api-review-2026-10-20.md) is finished. Phase 1 tool done (tools/mutation/, plan docs/plans/2026-10-25-mutation-testing-phase1-plan.md); coverage mapped 2026-10-26 per NeoQCP test function and per SciQLopPlots test file: NeoQCP 701 mutants / 53 uncovered target lines, SciQLopPlots 501 / 60. Phase 1 run 2026-10-26: NeoQCP score 73.1% (502 killed, 185 survived, 14 build errors), SciQLopPlots score 75.4% (361 killed, 118 survived, 22 build errors); reports in <build-cov>/mutation/report.md; survivors in triage.
 
 ## Why
 

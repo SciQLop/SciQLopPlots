@@ -180,3 +180,16 @@ Item 5.6, Plan A, done (spec docs/plans/2026-10-25-span-line-unification-design.
 Item 5.7 done: one time conversion, `SciQLopPlots.to_epoch_seconds(value)` (float, datetime64 in any unit, datetime with naive meaning UTC, date, ISO string, QDateTime; NaT, unparsable strings and unknown types raise), used by every time entry point: ranges (and any range argument now takes a `(start, stop)` pair), scalar positions (line factories, `set_position`, crosshair key, projection time marker), and data arrays and callback results (datetime64 and object arrays of dates, copied once, NaT a gap). Fixed on the way: `datetime64[ns]` positions silently 1e9 too large, `"2024-13-45"` reading as 1970-01-01, `"2024-01-01T"` accepted as midnight. Break: an unparsable date string raises ValueError instead of RuntimeError. Not converted, and documented: the old line classes' `position` property setters and deprecated constructors, pandas Series (call `.to_numpy()`); a QDateTime without a zone keeps Qt's local-time meaning.
 
 Item 2.9 done: timeline `style`, `stack` and `edit_modes` take and return `TimelineStyle`, `TimelineStack` (`Off`, `Time`, `Category`) and a set of `TimelineEditMode`; the old strings (and None for stack) still work with a DeprecationWarning. The C++ timeline API stays string-based, so the inspector and wasm are unchanged. The 2-D histogram's normalization is its own `Histogram2DNormalization` (`Count`, `PerColumn`), since per-column is not the 1-D density; the old ints 0 and 1 warn, and `normalization_changed` stays an int for one release. Break: `tl.style == "wave"`, `tl.stack is None` and `str(tl.style)` change. The suite's warning filter now matches every `is deprecated: use <Name>.` message.
+## After the review: mutation testing, phase 1
+
+Done 2026-10-29 (design docs/plans/2026-10-22-mutation-testing-design.md, tool `tools/mutation/`). It covered the code added by `feat/fills-histogram` in both repositories: fills, error bars, histograms, the async pipeline and the SciQLopPlots wrappers.
+
+- First run: scores 73% (NeoQCP) and 75% (SciQLopPlots). Every survivor was triaged.
+- Re-run after the fixes: 95.2% (NeoQCP, 33 survivors) and 96.9% (SciQLopPlots, 15 survivors). All 48 triaged again; what is left is recorded as equivalent in `tools/mutation/phase1.toml`.
+- Real bugs found and fixed, each with a reproducer:
+  - a legend row stopped answering clicks after `set_in_legend(False)` then `True`;
+  - NeoQCP plottables kept listening to their first axes after `setKeyAxis` / `setValueAxis`, so a 2-D histogram did not re-bin on a log switch of its new axis;
+  - the async pipeline could drop a result, or report not busy too early, when data changed off the GUI thread (two rounds: result/busy-edge races, then a generation bump outside the lock);
+  - a late first-data fit snapped back an x range the caller had just moved, cancelling its fetch;
+  - toggling a projection's axis linking while its first fit was pending could skip that fit.
+- Caveat: the overnight SciQLopPlots run reported 9 survivors that a lone re-run killed. The cause is not found; a future run's survivors are re-run before triage.
