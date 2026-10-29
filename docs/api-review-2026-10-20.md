@@ -233,3 +233,4 @@ Deprecated (warn, still work):
 - 1.17, 1.18: documented. A colour map's gradient and log scales are its plot's axes' state (last call wins), pinned by a test; `scatter()` is a line graph with no line and a marker.
 - 2.5: the curve's two colourings stay (by a value through `set_color_values` / `set_color_data`, by time through `set_time_values` and a two-colour gradient) and read back: `time_values()`, `color_values()`, `time_color_gradient()`.
 - 2.12: `auto_scale_y` / `set_auto_scale_y` / `auto_scale_y_changed` moved to the colour-map base, so 2-D histograms fit their y axis to the y samples too (and the inspector shows the toggle for them); the signal now fires only on a change.
+- 2.10: `interval_created` and `interval_created_in` both stay (a Qt signal cannot be overloaded for Python without breaking `connect`); the guide names `interval_created_in` as the one to use.
