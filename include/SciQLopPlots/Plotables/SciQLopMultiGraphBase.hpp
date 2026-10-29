@@ -44,10 +44,16 @@ protected:
         std::optional<GraphLineStyle> line_style;
         std::optional<GraphMarkerShape> marker;
         std::optional<bool> in_legend;
+        std::optional<qreal> line_width;
+        std::optional<qreal> marker_size;
     };
     std::map<int, ColumnPreset> _column_presets;
+    //! Graph-wide styles, applied before each column's own preset.
+    ColumnPreset _graph_preset;
 
+    void apply_style(int column, const ColumnPreset& preset);
     void apply_preset(int column);
+    void apply_presets_to_all();
     void apply_presets_to_new_components(int first, int last);
 
     virtual QCPMultiGraph* create_multi_graph(QCPAxis* keyAxis, QCPAxis* valueAxis) = 0;
@@ -122,6 +128,15 @@ public:
     void set_column_in_legend(int column, bool in_legend);
     //! The preset if one was set, else the component's flag, else true.
     bool column_in_legend(int column) const;
+
+    //! Graph-wide styles: every component now and every one created later. A column preset or
+    //! a component setter called afterwards still wins for its component.
+    void set_line_width(qreal width);
+    qreal line_width() const;
+    void set_marker_shape(GraphMarkerShape shape);
+    GraphMarkerShape marker_shape() const;
+    void set_marker_size(qreal size);
+    qreal marker_size() const;
 
 #ifndef BINDINGS_H
     void collect_visible_values(const SciQLopPlotRange& visible_key_range,

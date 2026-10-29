@@ -101,18 +101,71 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
     });
 }
 
-void SciQLopMultiGraphBase::apply_preset(int column)
+void SciQLopMultiGraphBase::apply_style(int column, const ColumnPreset& preset)
 {
-    const auto it = _column_presets.find(column);
-    if (it == _column_presets.end() || column >= static_cast<int>(plottable_count()))
-        return;
-    const auto& preset = it->second;
+    auto* c = component(column);
     if (preset.line_style)
-        component(column)->set_line_style(*preset.line_style);
+        c->set_line_style(*preset.line_style);
     if (preset.marker)
-        component(column)->set_marker_shape(*preset.marker);
+        c->set_marker_shape(*preset.marker);
+    if (preset.line_width)
+        c->set_line_width(*preset.line_width);
+    if (preset.marker_size)
+        c->set_marker_size(*preset.marker_size);
     if (preset.in_legend)
         _multiGraph->setComponentInLegend(column, *preset.in_legend);
+}
+
+void SciQLopMultiGraphBase::apply_preset(int column)
+{
+    if (column >= static_cast<int>(plottable_count()))
+        return;
+    apply_style(column, _graph_preset);
+    if (const auto it = _column_presets.find(column); it != _column_presets.end())
+        apply_style(column, it->second);
+}
+
+void SciQLopMultiGraphBase::apply_presets_to_all()
+{
+    apply_presets_to_new_components(0, static_cast<int>(plottable_count()));
+    Q_EMIT replot();
+}
+
+void SciQLopMultiGraphBase::set_line_width(qreal width)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
+    _graph_preset.line_width = width;
+    apply_presets_to_all();
+}
+
+qreal SciQLopMultiGraphBase::line_width() const
+{
+    return _graph_preset.line_width.value_or(plottable_count() ? component(0)->line_width() : 1.0);
+}
+
+void SciQLopMultiGraphBase::set_marker_shape(GraphMarkerShape shape)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_marker_shape(shape));
+    _graph_preset.marker = shape;
+    apply_presets_to_all();
+}
+
+GraphMarkerShape SciQLopMultiGraphBase::marker_shape() const
+{
+    return _graph_preset.marker.value_or(plottable_count() ? component(0)->marker_shape()
+                                                           : GraphMarkerShape::NoMarker);
+}
+
+void SciQLopMultiGraphBase::set_marker_size(qreal size)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_marker_size(size));
+    _graph_preset.marker_size = size;
+    apply_presets_to_all();
+}
+
+qreal SciQLopMultiGraphBase::marker_size() const
+{
+    return _graph_preset.marker_size.value_or(plottable_count() ? component(0)->marker_size() : 0.0);
 }
 
 void SciQLopMultiGraphBase::apply_presets_to_new_components(int first, int last)
