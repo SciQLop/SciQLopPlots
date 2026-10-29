@@ -117,6 +117,13 @@ public:
     void set_time_color_gradient(const QColor& start, const QColor& end);
     //! Preset gradient for the scalar colouring, without touching the colour values.
     void set_color_gradient(::ColorGradient gradient);
+    //! The gradient given to this curve, Jet when none was.
+    ::ColorGradient color_gradient() const noexcept
+    {
+        return _gradient_preset.value_or(::ColorGradient::Jet);
+    }
+    //! Turns the colouring off and keeps the gradient for the next set_color_data.
+    void clear_color_data();
 
     /*!
      * \brief set_data_and_color A batch that carries its colour axis: \a data is [x, y],

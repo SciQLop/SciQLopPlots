@@ -299,3 +299,8 @@ SciQLopRemoteGraph::SciQLopRemoteGraph(SciQLopPlottableInterface* as_graph, int 
     m_connections << QObject::connect(m_pipeline, &RemoteDataPipeline::new_data_nd,
                                       this->as_graph, clear_busy);
 }
+
+bool SciQLopGraphInterface::has_color_data() const
+{
+    return has_color_values();
+}

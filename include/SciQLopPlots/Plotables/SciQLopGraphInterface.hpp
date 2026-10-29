@@ -247,6 +247,9 @@ public:
     SciQLopGraphInterface(const QString& prefix = "Graph",QVariantMap metaData={}, QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() Q_DECL_OVERRIDE = default;
 
+    //! Whether set_color_data (or a coloured batch) currently colours this graph.
+    [[nodiscard]] bool has_color_data() const;
+
     virtual void set_labels(const QStringList& labels) { WARN_ABSTRACT_METHOD; }
 
     virtual void set_colors(const QList<QColor>& colors) { WARN_ABSTRACT_METHOD; }

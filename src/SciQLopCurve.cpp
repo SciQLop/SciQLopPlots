@@ -494,3 +494,8 @@ SciQLopCurveRemote::SciQLopCurveRemote(QCustomPlot* parent, SciQLopPlotAxis* key
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
+
+void SciQLopCurve::clear_color_data()
+{
+    set_color_data(SciQLopPyBuffer {}, color_gradient());
+}

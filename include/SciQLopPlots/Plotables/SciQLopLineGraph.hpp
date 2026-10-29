@@ -88,6 +88,9 @@ public:
      */
     void set_color_gradient(::ColorGradient gradient);
 
+    //! Turns the colouring off and keeps the gradient for the next set_color_data.
+    void clear_color_data();
+
     //! The colour values last set (set_color_data or a coloured batch), None when uncoloured.
     SciQLopPyBuffer color_data() const noexcept { return _color_values ? _color_buffer : SciQLopPyBuffer {}; }
     //! The gradient given to this graph, Jet when none was. On a plot, plot.z_gradient() is

@@ -259,3 +259,8 @@ SciQLopLineGraphRemote::SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotA
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
 }
+
+void SciQLopLineGraph::clear_color_data()
+{
+    set_color_data(SciQLopPyBuffer {}, color_gradient());
+}
