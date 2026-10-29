@@ -385,3 +385,15 @@ path = "src/SciQLopGraphComponent.cpp"
 op = "lt_to_le"
 before = "    for (int i = 0; i < graph.componentCount(); ++i)"
 reason = "componentSelection(componentCount()) is out of range and returns an empty selection, which the loop skips."
+
+[[project.equivalent]]
+path = "src/SciQLopGraphInterface.cpp"
+op = "and_to_or"
+before = "        if (auto* plot = p->parentPlot(); plot && plot->legend)"
+reason = "A plottable is built on its plot's axes and every QCustomPlot owns a legend, so both operands are always true here."
+
+[[project.equivalent]]
+path = "src/SciQLopHistogram.cpp"
+op = "and_to_or"
+before = "    return _hist && _hist->layer() ? _hist->layer()->name() : QString();"
+reason = "_hist is null only while the plot is being destroyed, and a live plottable always sits on a layer, so both forms agree."
