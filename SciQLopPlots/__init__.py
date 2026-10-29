@@ -399,7 +399,7 @@ _ITEM_FACTORIES = {
     SciQLopPlotsBindings.SciQLopHorizontalLine: ("plot.horizontal_line", True),
     SciQLopPlotsBindings.SciQLopVerticalSpan: ("plot.vertical_span", True),
     SciQLopPlotsBindings.SciQLopHorizontalSpan: ("plot.horizontal_span", True),
-    SciQLopPlotsBindings.SciQLopRectangularSpan: ("plot.rectangular_span", True),
+    SciQLopPlotsBindings.SciQLopRectangularSpan: ("plot.span", True),
     SciQLopPlotsBindings.MultiPlotsVerticalSpan: ("panel.vertical_span", False),
     SciQLopPlotsBindings.MultiPlotsVerticalLine: ("panel.vertical_line", False),
 }
@@ -583,6 +583,8 @@ def _scalar_seconds(value):
     for kinds, convert in _SCALAR_SECONDS:
         if isinstance(value, kinds):
             return convert(value)
+    if hasattr(type(value), "__float__"):  # Decimal, Fraction: time arguments always took these
+        return float(value)
     raise TypeError(f"expected a number or a date, not {value!r}")
 
 
@@ -709,7 +711,9 @@ def _member_named(names, name):
 
 
 def _set_edit_modes(self, modes):
-    members = {_member_of(TimelineEditMode, _EDIT_MODE_NAMES, "edit_modes", m) for m in modes}
+    members = set()
+    for m in modes:  # a loop, not a comprehension: on 3.11 that has its own frame (stacklevel)
+        members.add(_member_of(TimelineEditMode, _EDIT_MODE_NAMES, "edit_modes", m))
     self.set_edit_modes(sorted(_EDIT_MODE_NAMES[m] for m in members))
 
 
@@ -849,7 +853,7 @@ def _public_names():
     bound = {n for n in dir(SciQLopPlotsBindings)
              if not n.startswith("_") and not isinstance(getattr(SciQLopPlotsBindings, n), types.ModuleType)}
     # The SciQLopSingleLineGraph* aliases stay importable by name, but are no longer advertised.
-    own = {"tracing", "WidgetPlot",
+    own = {"tracing", "WidgetPlot", "to_epoch_seconds",
            "Pipeline", "PartialPipeline", "Event", "register_property", "OnDescriptor"}
     return sorted(bound | own)
 

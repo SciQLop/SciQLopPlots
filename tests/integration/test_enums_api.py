@@ -122,3 +122,9 @@ def test_pyproject_filter_turns_the_new_messages_into_errors(tl, hist):
         tl.style = "bars"
     with pytest.raises(DeprecationWarning, match=r"use Histogram2DNormalization\.PerColumn"):
         hist.set_normalization(1)
+
+
+def test_a_deprecated_edit_mode_warns_at_the_callers_line(tl):
+    with pytest.warns(DeprecationWarning) as record:
+        tl.edit_modes = {"move"}
+    assert record[0].filename == __file__

@@ -94,3 +94,15 @@ def test_qdatetime_keeps_qts_meaning_while_a_naive_datetime_is_utc():
     assert to_epoch_seconds(local) == float(local.toSecsSinceEpoch())
     assert to_epoch_seconds(QDateTime(QDate(2030, 1, 1), QTime(0, 0), QTimeZone.UTC)) == T
     assert to_epoch_seconds(datetime(2030, 1, 1)) == T
+
+
+@pytest.mark.parametrize("number", [__import__("decimal").Decimal("1.5"), __import__("fractions").Fraction(3, 2)],
+                         ids=["Decimal", "Fraction"])
+def test_any_number_python_can_turn_into_a_float_is_accepted(number):
+    # Time arguments took anything with __float__ before they went through this conversion.
+    assert to_epoch_seconds(number) == 1.5
+
+
+def test_the_conversion_is_in_the_star_import():
+    import SciQLopPlots
+    assert "to_epoch_seconds" in SciQLopPlots.__all__

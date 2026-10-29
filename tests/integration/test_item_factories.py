@@ -185,6 +185,8 @@ def test_every_item_class_has_a_factory():
 
 DEPRECATED = {
     **{k: (v, f"use plot.{k}") for k, v in CONSTRUCTORS.items()},
+    # plot.rectangular_span is deprecated itself: the hint skips it.
+    "rectangular_span": (CONSTRUCTORS["rectangular_span"], r"use plot\.span\("),
 }
 
 
