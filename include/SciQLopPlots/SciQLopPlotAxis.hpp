@@ -242,8 +242,8 @@ public:
 
     inline virtual void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
 
-    //! Tick labels as numbers: \a format "g" (shortest), "f" (fixed) or "e" (exponent), with
-    //! \a precision digits. Text labels set by hand and time axes ignore it.
+    //! Tick labels as numbers: \a format "g" (shortest), "f" (fixed) or "e" (exponent, drawn as
+    //! ×10ⁿ), with \a precision digits. Text labels set by hand and time axes ignore it.
     //! \throws std::invalid_argument for another format or a negative precision.
     inline virtual void set_number_format(const QString& format, int precision)
     {
@@ -335,8 +335,10 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
 
 protected:
 #ifndef BINDINGS_H
-    //! The ticker to install: the fixed text labels if any, else log or linear.
+    //! The ticker to install: dates on a time axis, else the fixed text labels if any, else
+    //! log or linear.
     QSharedPointer<QCPAxisTicker> make_ticker(bool log) const;
+    QString qcp_number_style(const QString& format) const;
 #endif
 
 public:

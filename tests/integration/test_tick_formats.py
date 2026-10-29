@@ -36,12 +36,21 @@ def test_number_format_round_trips_signals_and_draws(plot):
     plot.y_axis().set_range(0.0, 1000.0)
     seen = []
     plot.y_axis().number_format_changed.connect(lambda fmt, precision: seen.append((fmt, precision)))
-    plot.y_axis().set_number_format("e", 1)
-    assert (plot.y_axis().number_format(), plot.y_axis().number_precision(), seen) == ("e", 1, [("e", 1)])
-    assert b"e+02" in _svg(plot)
+    plot.y_axis().set_number_format("f", 2)
+    assert (plot.y_axis().number_format(), plot.y_axis().number_precision(), seen) == ("f", 2, [("f", 2)])
+    assert b"200.00" in _svg(plot)
 
 
 @pytest.mark.parametrize("fmt, precision", [("x", 2), ("gb", 2), ("f", -1)])
 def test_a_bad_number_format_raises(plot, fmt, precision):
     with pytest.raises(ValueError):
         plot.y_axis().set_number_format(fmt, precision)
+
+
+def test_e_keeps_the_axis_powers_of_ten_style(plot):
+    import numpy as np
+    x = np.linspace(0.0, 1.0, 10)
+    plot.resize(600, 300)
+    plot.colormap(x, x, np.outer(x, x) * 1e6)
+    plot.z_axis().set_number_format("e", 1)
+    assert plot.z_axis().number_format() == "e" and b"e+0" not in _svg(plot)

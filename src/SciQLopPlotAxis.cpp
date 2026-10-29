@@ -174,15 +174,22 @@ void SciQLopPlotAxis::set_number_format(const QString& format, int precision)
     SCIQLOP_ON_OWNER_THREAD(set_number_format(format, precision));
     if (m_axis.isNull() || (number_format() == format && number_precision() == precision))
         return;
-    m_axis->setNumberFormat(format);
+    m_axis->setNumberFormat(format + qcp_number_style(format));
     m_axis->setNumberPrecision(precision);
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
     Q_EMIT number_format_changed(format, precision);
 }
 
+// QCP's number format is the letter plus style flags ("gb": powers as ×10ⁿ, the colour scale's).
 QString SciQLopPlotAxis::number_format() const noexcept
 {
     return m_axis.isNull() ? QStringLiteral("g") : m_axis->numberFormat().left(1);
+}
+
+// Keeps the axis' style flags, which QCP only allows on "g" and "e".
+QString SciQLopPlotAxis::qcp_number_style(const QString& format) const
+{
+    return format == "f" ? QString() : m_axis->numberFormat().mid(1);
 }
 
 int SciQLopPlotAxis::number_precision() const noexcept
