@@ -782,6 +782,8 @@ other.visible_changed.connect(graph.set_visible)   # setters stay, for connect
 
 - It covers `name`, `visible` and `selected` on everything drawn, `name` and `selected` on plots and
   panels, and Qt's own properties (`objectName`, `windowTitle`, ...). Everything else stays a method.
+- Qt-style `setXxx` setters disappear under the switch (PySide removes them), for example the
+  panel's `setSelected`: use the snake_case ones (`set_selected`), which stay.
 - The switch only changes the module that turns it on. The library and your other modules keep
   seeing methods.
 - Without the switch, `graph.name = "B"` does not rename the graph: it sets a plain Python attribute

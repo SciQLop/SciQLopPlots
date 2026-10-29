@@ -7,9 +7,10 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL, QtPrintSupport, QtSvg
 @contextlib.contextmanager
 def _no_pyside_features_while_importing():
     """PySide picks a feature set (true_property, snake_case) from the calling frame's module. The
-    bindings' init runs in importlib's frames, which then reuse the user's true_property once a
-    QApplication exists: its setup reads our method signatures before they are registered and
-    aborts Python ("failed to create a new feature set"). Pin importlib's frames to none meanwhile."""
+    bindings' init runs in importlib's frames, which reuse the user's true_property once a
+    QApplication exists. Building that set during our init (likely from the lazy PySide class
+    loading in bindings.xml) asks for our method signatures before they are registered and aborts
+    Python ("failed to create a new feature set"). Pinning importlib's frames to none avoids it."""
     table = getattr(sys.modules.get("__feature__"), "pyside_feature_dict", None)
     if table is None:
         yield
