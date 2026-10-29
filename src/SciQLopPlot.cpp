@@ -1364,10 +1364,13 @@ QString SciQLopPlot::crosshair_text() const
 
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
 {
+    const bool changed = theme != m_theme;
     if (m_theme)
         disconnect(m_theme, nullptr, this, nullptr);
 
     m_theme = theme;
+    if (theme && !theme->parent())
+        theme->setParent(this);
 
     if (theme && theme->qcp_theme())
     {
@@ -1383,6 +1386,7 @@ void SciQLopPlot::set_theme(SciQLopTheme* theme)
         connect(theme, &QObject::destroyed, this, [this]() {
             m_impl->setTheme(nullptr);
             apply_selection_style();
+            Q_EMIT theme_changed(nullptr);
         });
     }
     else
@@ -1391,6 +1395,8 @@ void SciQLopPlot::set_theme(SciQLopTheme* theme)
     }
 
     apply_selection_style();
+    if (changed)
+        Q_EMIT theme_changed(theme);
 }
 
 void SciQLopPlot::deselect_all()

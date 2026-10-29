@@ -1068,6 +1068,12 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <!-- See SciQLopMultiPlotPanel.set_theme. -->
+        <modify-function signature="set_theme(SciQLopTheme*)">
+            <modify-argument index="1">
+                <define-ownership class="target" owner="c++"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="show_crosshair_at_key(double)">
             <modify-argument index="1">
                 <replace-type modified-type="PyObject"/>
@@ -2054,9 +2060,11 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
             <parent index="this" action="add"/>
           </modify-argument>
         </modify-function>
+        <!-- C++ owns the theme: its QObject parent if it has one (so it can be shared), else
+             the panel adopts it. A Python parent would move it to the last panel given it. -->
         <modify-function signature="set_theme(SciQLopTheme*)">
             <modify-argument index="1">
-                <parent index="this" action="add"/>
+                <define-ownership class="target" owner="c++"/>
             </modify-argument>
         </modify-function>
         <modify-function signature="add_inspector_extension(InspectorExtension*)">

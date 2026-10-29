@@ -439,6 +439,7 @@ public:
 signals:
 #endif
     Q_SIGNAL void span_created(MultiPlotsVerticalSpan* span);
+    Q_SIGNAL void theme_changed(SciQLopTheme* theme);
     Q_SIGNAL void span_creation_canceled();
     Q_SIGNAL void panel_added(SciQLopPlotPanelInterface* panel);
     Q_SIGNAL void panel_inserted(SciQLopPlotPanelInterface* panel, int at);

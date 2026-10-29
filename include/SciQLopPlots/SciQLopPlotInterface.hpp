@@ -741,6 +741,7 @@ signals:
     Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void selection_changed(bool selected);
     Q_SIGNAL void name_changed(const QString& name);
+    Q_SIGNAL void theme_changed(SciQLopTheme* theme);
     Q_SIGNAL void auto_scale_changed(bool auto_scale);
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();

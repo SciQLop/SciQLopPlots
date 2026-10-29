@@ -915,11 +915,14 @@ void SciQLopMultiPlotPanel::set_legend_visible(bool visible)
 
 void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 {
+    const bool changed = theme != m_theme;
     for (const auto& connection : m_theme_connections)
         disconnect(connection);
     m_theme_connections.clear();
 
     m_theme = theme;
+    if (theme && !theme->parent())
+        theme->setParent(this);
 
     for (auto& p : plots())
     {
@@ -948,7 +951,11 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
                     m_theme && sub_panel)
                     sub_panel->set_theme(m_theme);
             });
+        m_theme_connections << connect(theme, &QObject::destroyed, this,
+                                       [this]() { Q_EMIT theme_changed(nullptr); });
     }
+    if (changed)
+        Q_EMIT theme_changed(theme);
 }
 
 void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
