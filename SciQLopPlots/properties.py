@@ -60,6 +60,12 @@ def _is_getter(obj, name):
         return False
 
 
+def _python_property_setter(obj, name):
+    """A Python property with a setter wraps `set_x` (enum conversion, deprecations): write through it."""
+    prop = inspect.getattr_static(type(obj), name, None)
+    return isinstance(prop, property) and prop.fset is not None
+
+
 def _convention_spec(obj, name):
     """`x` observable and/or writable through `x_changed` and/or `set_x`; the getter is required."""
     signal, setter = f"{name}_changed", f"set_{name}"
@@ -69,6 +75,7 @@ def _convention_spec(obj, name):
         "signal_name": signal if hasattr(obj, signal) else None,
         "getter_name": name,
         "setter_name": setter if hasattr(obj, setter) else None,
+        "assign": _python_property_setter(obj, name),
         "property_type": "data" if name == "data" else "value",
         "signal_args": None,
         "splat": False,
@@ -88,7 +95,7 @@ def _lookup_property_spec(obj, property_name):
 class ObservableProperty:
     """A reference to a specific observable property on a specific QObject instance."""
     __slots__ = ("_qobject_ref", "property_name", "property_type",
-                 "_signal_name", "_getter_name", "_setter_name", "_signal_args", "_splat")
+                 "_signal_name", "_getter_name", "_setter_name", "_signal_args", "_splat", "_assign")
 
     def __init__(self, qobject, property_name, spec):
         self._qobject_ref = weakref.ref(qobject) if hasattr(qobject, '__weakref__') else lambda: qobject
@@ -99,6 +106,7 @@ class ObservableProperty:
         self._setter_name = spec["setter_name"]
         self._signal_args = spec.get("signal_args")
         self._splat = spec.get("splat", False)
+        self._assign = spec.get("assign", False)
 
     @property
     def qobject(self):
@@ -127,6 +135,9 @@ class ObservableProperty:
     def value(self, val):
         if self._setter_name is None:
             raise AttributeError(f"Property '{self.property_name}' is not writable")
+        if self._assign:
+            setattr(self.qobject, self._getter_name, val)
+            return
         setter = getattr(self.qobject, self._setter_name)
         if self._splat and isinstance(val, (list, tuple)):
             setter(*val)

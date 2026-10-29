@@ -794,6 +794,19 @@ def _enum_normalization(method):
     return wrapper
 
 
+_set_normalization_member = SciQLopHistogram2D.set_normalization
+
+
+# normalization_changed still carries an int: a pipeline's own value must not warn as deprecated.
+@_wraps(_set_normalization_member)
+def _set_normalization_from_signal(self, value):
+    return _set_normalization_member(self, _HISTOGRAM2D_NORMALIZATION_INTS.get(value, value))
+
+
+SciQLopHistogram2D._set_normalization_from_signal = _set_normalization_from_signal
+register_property(SciQLopHistogram2D, "normalization", signal_name="normalization_changed",
+                  getter_name="normalization", setter_name="_set_normalization_from_signal",
+                  property_type="value")
 # A plain method, never a Qt slot (a wrapper cuts connections).
 SciQLopHistogram2D.set_normalization = _enum_normalization(SciQLopHistogram2D.set_normalization)
 

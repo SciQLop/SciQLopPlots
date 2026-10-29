@@ -205,3 +205,26 @@ def test_name_without_getter_is_not_exposed(line_graph):
     assert not hasattr(line_graph, "selection")
     with pytest.raises(AttributeError):
         line_graph.on.selection
+
+
+def test_on_writes_a_timeline_enum_through_its_python_property(qtbot):
+    ts = sp.SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    tl = ts.add_timeline()
+    tl.on.style.value = sp.TimelineStyle.Bars
+    tl.on.stack.value = sp.TimelineStack.Time
+    tl.on.edit_modes.value = {sp.TimelineEditMode.Move}
+    assert (tl.style, tl.stack, tl.edit_modes) == (sp.TimelineStyle.Bars, sp.TimelineStack.Time,
+                                                   {sp.TimelineEditMode.Move})
+
+
+def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
+    import warnings
+    source = plot.add_histogram2d("a", 4, 4)
+    target = plot.add_histogram2d("b", 4, 4)
+    pipeline = source.on.normalization >> target.on.normalization
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        source.set_normalization(sp.Histogram2DNormalization.PerColumn)
+    assert target.normalization() == sp.Histogram2DNormalization.PerColumn
+    del pipeline
