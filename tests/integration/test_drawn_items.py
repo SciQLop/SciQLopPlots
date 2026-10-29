@@ -18,15 +18,15 @@ MAKERS = {
 @pytest.mark.parametrize("kind", ["text", "pixmap"])
 def test_a_tooltip_round_trips(plot, kind):
     item = MAKERS[kind](plot)
-    item.set_tool_tip("hello")
-    assert item.tool_tip() == "hello"
+    item.set_tooltip("hello")
+    assert item.tooltip() == "hello"
 
 
 def test_a_curved_line_reads_the_tooltip_hover_shows_and_round_trips(plot):
-    line = plot.curved_line(QPointF(0, 0), QPointF(5, 5), tool_tip="ctor")
-    assert line.tool_tip() == "ctor"
-    line.set_tool_tip("hello")
-    assert line.tool_tip() == "hello"
+    line = plot.curved_line(QPointF(0, 0), QPointF(5, 5), tooltip="ctor")
+    assert line.tooltip() == "ctor"
+    line.set_tooltip("hello")
+    assert line.tooltip() == "hello"
 
 
 @pytest.mark.parametrize("kind", ["text", "ellipse", "pixmap"])

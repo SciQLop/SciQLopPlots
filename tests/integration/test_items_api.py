@@ -60,10 +60,10 @@ class TestVerticalSpan:
 
     def test_tool_tip(self, plot):
         span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0),
-            tool_tip="hello")
-        assert span.tool_tip() == "hello"
-        span.set_tool_tip("world")
-        assert span.tool_tip() == "world"
+            tooltip="hello")
+        assert span.tooltip() == "hello"
+        span.set_tooltip("world")
+        assert span.tooltip() == "world"
 
     def test_delete_span_no_crash(self, plot):
         span = plot.vertical_span(SciQLopPlotRange(0.0, 1.0))

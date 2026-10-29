@@ -61,9 +61,9 @@ protected:
 public:
     MultiPlotsVerticalSpan(SciQLopMultiPlotPanel* panel, SciQLopPlotRange horizontal_range,
                            QColor color = QColor::fromRgb(100, 100, 100), bool read_only = false,
-                           bool visible = true, const QString tool_tip = "", QString id = "")
+                           bool visible = true, const QString tooltip = "", QString id = "")
             : SciQLopSpan(panel, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
-                          read_only, visible, tool_tip, Coordinates::Data, id, true)
+                          read_only, visible, tooltip, Coordinates::Data, id, true)
             , m_shown(visible)
     {
     }
@@ -95,7 +95,7 @@ public:
 
     QPointer<MultiPlotsVerticalSpan>
     create_span(SciQLopPlotRange horizontal_range, QColor color = QColor::fromRgb(100, 100, 100),
-                 bool read_only = false, const QString tool_tip = "", const QString id = "");
+                 bool read_only = false, const QString tooltip = "", const QString id = "");
 
     void delete_span(QPointer<MultiPlotsVerticalSpan> vspan);
     void delete_span(const QString& id);

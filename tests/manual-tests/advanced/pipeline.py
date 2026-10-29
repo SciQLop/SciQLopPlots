@@ -60,7 +60,7 @@ plot1, graph1 = panel.plot(make_data, labels=["signal"])
 span = plot1.vertical_span(
     SciQLopPlotRange(2.0, 4.0),
     QColor(100, 100, 200, 80), read_only=False,
-    visible=True, tool_tip="Drag me!"
+    visible=True, tooltip="Drag me!"
 )
 
 # Pipeline: update span tooltip when it moves

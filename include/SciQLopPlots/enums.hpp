@@ -73,7 +73,9 @@ enum class AxisType
     TimeAxis,
     XAxis,
     YAxis,
-    ZAxis
+    ZAxis,
+    XAxis2,
+    YAxis2
 };
 Q_DECLARE_METATYPE(AxisType);
 

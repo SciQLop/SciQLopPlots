@@ -216,3 +216,5 @@ Deprecated (warn, still work):
 - 1.16: `plot.enable_cursor` is `plot.set_crosshair_enabled`.
 - 2.8: `colormap.auto_contour_level_count()` is `colormap.auto_contour_levels()`.
 - 1.5: products model `add_node`, node `set_name` / `name_changed` (snake_case twins, no warning on the old names).
+- 1.10: one word, tooltip: `tooltip()` / `set_tooltip()` / `tooltip_changed` and the `tooltip=` keyword of every factory. `tool_tip()` / `set_tool_tip()` / `tool_tip=` warn; `tool_tip_changed` stays as a silent second name (a signal cannot warn). The old Plan A classes (`MultiPlotsVerticalSpan`, `MultiPlotsVerticalLine`, `SciQLopVerticalSpan`, ...) keep their constructor's `tool_tip=` and their properties until Plan B removes them.
+- 2.11: `AxisType.XAxis2` / `YAxis2`; `plot.axis(type)` returns the secondary axes.

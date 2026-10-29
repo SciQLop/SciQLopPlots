@@ -830,7 +830,7 @@ plot.plot(x, np.sin(x), labels=["sin"])
 
 # A shaded x interval the user can drag and resize
 span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 100, 220, 80),
-                          read_only=False, visible=True, tool_tip="event")
+                          read_only=False, visible=True, tooltip="event")
 span.range_changed.connect(lambda r: print("span now", r.start(), r.stop()))
 
 # A threshold line at y = 0.5
@@ -875,7 +875,7 @@ x = np.linspace(0, 10, 1000)
 panel.plot(x, np.sin(x), labels=["sin"])
 panel.plot(x, np.cos(x), labels=["cos"])
 
-cursor = panel.vertical_line(2.0, read_only=False, tool_tip="cursor")
+cursor = panel.vertical_line(2.0, read_only=False, tooltip="cursor")
 cursor.position_changed.connect(lambda t: print("cursor at", t))
 cursor.set_position(5.0)          # moves it on every plot
 cursor.set_color(QColor("red"))   # also set_line_width, set_visible, set_read_only, set_tool_tip
@@ -988,7 +988,7 @@ plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
 span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
-                          read_only=False, visible=True, tool_tip="")
+                          read_only=False, visible=True, tooltip="")
 
 def describe(event):
     r = event.value

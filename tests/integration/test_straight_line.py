@@ -46,7 +46,7 @@ def test_the_factory_returns_the_plain_class(host, orientation):
 
 def test_the_defaults(host, orientation):
     line = make(host, orientation)
-    assert (line.color(), line.read_only(), line.visible(), line.selected(), line.tool_tip()) == \
+    assert (line.color(), line.read_only(), line.visible(), line.selected(), line.tooltip()) == \
         (QColor(0, 0, 0), True, True, False, "")
     assert line.coordinates() == Coordinates.Data
     assert (line.scope(), line.is_panel_part()) == (host, False)
@@ -54,8 +54,8 @@ def test_the_defaults(host, orientation):
 
 def test_the_factory_arguments(host, orientation):
     line = make(host, orientation, color=QColor("red"), read_only=False, visible=False,
-                tool_tip="tip")
-    assert (line.color(), line.read_only(), line.visible(), line.tool_tip()) == \
+                tooltip="tip")
+    assert (line.color(), line.read_only(), line.visible(), line.tooltip()) == \
         (QColor("red"), False, False, "tip")
 
 
@@ -192,16 +192,16 @@ def test_the_clamps_and_their_getters(host, orientation):
     assert (line.min_value(), line.max_value()) == (None, None)
 
 
-def test_the_tool_tip_round_trips_and_signals_once(host, orientation):
+def test_the_tooltip_round_trips_and_signals_once(host, orientation):
     line = make(host, orientation)
-    seen = record(line.tool_tip_changed)
-    line.set_tool_tip("tip")
-    line.set_tool_tip("tip")
-    assert (line.tool_tip(), seen) == ("tip", ["tip"])
+    seen = record(line.tooltip_changed)
+    line.set_tooltip("tip")
+    line.set_tooltip("tip")
+    assert (line.tooltip(), seen) == ("tip", ["tip"])
 
 
-def test_on_tool_tip_has_a_signal(host):
-    assert make(host, "vertical").on.tool_tip.signal is not None
+def test_on_tooltip_has_a_signal(host):
+    assert make(host, "vertical").on.tooltip.signal is not None
 
 
 def _panel(qtbot, n=2):
@@ -310,7 +310,7 @@ def test_plot_remove_refuses_a_part_and_the_panel_line(qtbot):
 
 def _state_of(part):
     return (part.position(), part.orientation(), part.coordinates(), part.read_only(),
-            part.tool_tip(), part.color(), part.line_width(), part.line_style(), part.visible(),
+            part.tooltip(), part.color(), part.line_width(), part.line_style(), part.visible(),
             part.selected(), part.min_value(), part.max_value())
 
 
@@ -318,7 +318,7 @@ def test_a_part_built_later_carries_the_lines_state_and_a_removed_plot_takes_its
     """Guard: pins make_part's transfer, passes before the test was written."""
     panel = _panel(qtbot)
     line = panel.straight_line(3.0, Qt.Orientation.Horizontal, color=QColor("red"),
-                               read_only=False, tool_tip="tip")
+                               read_only=False, tooltip="tip")
     line.set_min_value(2.0)
     line.set_max_value(4.0)
     line.set_line_width(3.0)
@@ -343,7 +343,7 @@ def test_on_tooltip_is_observable(host, orientation):
     line = make(host, orientation)
     seen = []
     pipeline = line.on.tooltip >> (lambda event: seen.append(event.value))
-    line.set_tool_tip("tip")
+    line.set_tooltip("tip")
     assert seen == ["tip"]
     pipeline.disconnect()
 

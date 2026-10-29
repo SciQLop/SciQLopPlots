@@ -545,20 +545,20 @@ public:
     //! Item factories: see SciQLopPlotInterface.
     SciQLopTextItem* text(const QString& text, const QPointF& position, bool movable = false, Coordinates coordinates = Coordinates::Pixels) override;
     SciQLopPixmapItem* pixmap(const QPixmap& pixmap, const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels) override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
-    SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
-    SciQLopCurvedLineItem* curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator = LineTermination::NoneTermination, LineTermination stop_terminator = LineTermination::Arrow, Coordinates coordinates = Coordinates::Pixels, const QString& tool_tip = "") override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, const QPen& pen, const QBrush& brush, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopEllipseItem* ellipse(const QRectF& rect, const QColor& line_color, qreal line_width, const QColor& fill_color, bool movable = false, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
+    SciQLopCurvedLineItem* curved_line(const QPointF& start, const QPointF& stop, LineTermination start_terminator = LineTermination::NoneTermination, LineTermination stop_terminator = LineTermination::Arrow, Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "") override;
     SciQLopSpan* span(std::optional<SciQLopPlotRange> key_range = std::nullopt,
                       std::optional<SciQLopPlotRange> value_range = std::nullopt,
                       QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                      bool visible = true, const QString& tool_tip = "",
+                      bool visible = true, const QString& tooltip = "",
                       Coordinates coordinates = Coordinates::Data,
                       const QString& id = "") override;
     SciQLopStraightLine* straight_line(double position, Qt::Orientation orientation,
                                        QColor color = QColor::fromRgb(0, 0, 0),
                                        bool read_only = true, bool visible = true,
-                                       const QString& tool_tip = "",
+                                       const QString& tooltip = "",
                                        Coordinates coordinates = Coordinates::Data) override;
 
     virtual SciQLopPlottableInterface* plottable(int index = -1) override;

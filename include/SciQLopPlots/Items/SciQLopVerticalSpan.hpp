@@ -39,10 +39,10 @@ class SciQLopVerticalSpan : public SciQLopSpan
 public:
     SciQLopVerticalSpan(SciQLopPlot* plot, SciQLopPlotRange horizontal_range,
                         QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                        bool visible = true, const QString& tool_tip = "",
+                        bool visible = true, const QString& tooltip = "",
                         Coordinates coordinates = Coordinates::Data)
             : SciQLopSpan(plot, SpanKind::Vertical, horizontal_range, SciQLopPlotRange(), color,
-                          read_only, visible, tool_tip, coordinates)
+                          read_only, visible, tooltip, coordinates)
     {
     }
 

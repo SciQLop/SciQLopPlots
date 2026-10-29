@@ -34,9 +34,9 @@ class MultiPlotsVerticalLine : public SciQLopStraightLine
 public:
     MultiPlotsVerticalLine(SciQLopMultiPlotPanel* panel, double position,
                            QColor color = QColor::fromRgb(100, 100, 100), bool read_only = false,
-                           bool visible = true, const QString tool_tip = "")
+                           bool visible = true, const QString tooltip = "")
             : SciQLopStraightLine(panel, position, Qt::Orientation::Vertical, color, read_only,
-                                  visible, tool_tip, Coordinates::Data, true)
+                                  visible, tooltip, Coordinates::Data, true)
     {
     }
 };

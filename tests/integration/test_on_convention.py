@@ -146,13 +146,13 @@ def old_span(plot):
 
 def test_exception_tooltip_has_a_signal(span):
     span.on.tooltip.value = "tip"
-    assert span.on.tooltip.value == span.tool_tip() == "tip"
+    assert span.on.tooltip.value == span.tooltip() == "tip"
     assert span.on.tooltip.signal is not None
 
 
 def test_exception_tooltip_has_a_signal_on_the_old_span(old_span):
     old_span.on.tooltip.value = "tip"
-    assert old_span.on.tooltip.value == old_span.tool_tip() == "tip"
+    assert old_span.on.tooltip.value == old_span.tooltip() == "tip"
     assert old_span.on.tooltip.signal is not None
 
 
@@ -185,7 +185,7 @@ def test_convention_resolves_like_the_old_registration(request, fixture, name, s
 def test_tooltip_pipeline_fires_once_on_the_old_span(old_span):
     seen = []
     pipeline = old_span.on.tooltip >> (lambda event: seen.append(event.value))
-    old_span.set_tool_tip("tip")
+    old_span.set_tooltip("tip")
     assert seen == ["tip"]
     pipeline.disconnect()
 

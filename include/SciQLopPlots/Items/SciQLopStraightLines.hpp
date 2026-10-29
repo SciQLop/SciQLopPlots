@@ -195,7 +195,7 @@ public:
     //! \a legacy_parts: parts are SciQLopVerticalLines, for the old MultiPlotsVerticalLine (Plan A).
     SciQLopStraightLine(SciQLopMultiPlotPanel* panel, double position, Qt::Orientation orientation,
                         const QColor& color, bool read_only, bool visible,
-                        const QString& tool_tip, Coordinates coordinates, bool legacy_parts = false);
+                        const QString& tooltip, Coordinates coordinates, bool legacy_parts = false);
     ~SciQLopStraightLine() override;
 
     [[nodiscard]] Qt::Orientation orientation() const noexcept;
@@ -218,7 +218,7 @@ public:
     void set_movable(bool movable);
 
     [[nodiscard]] QString tool_tip() const;
-    void set_tool_tip(const QString& tool_tip);
+    void set_tool_tip(const QString& tooltip);
     [[nodiscard]] double line_width() const;
     void set_line_width(double width);
     [[nodiscard]] Qt::PenStyle line_style() const;
@@ -240,7 +240,7 @@ signals:
     Q_SIGNAL void position_changed(double new_position);
     Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
-    Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
+    Q_SIGNAL void tool_tip_changed(const QString& tooltip);
     Q_SIGNAL void delete_requested();
 };
 

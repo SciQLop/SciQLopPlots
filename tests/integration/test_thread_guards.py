@@ -71,7 +71,7 @@ _SPAN_SETTERS = [
     ("line_style", Qt.PenStyle.DashLine),
     ("selected", True),
     ("read_only", True),
-    ("tool_tip", "off-thread"),
+    ("tooltip", "off-thread"),
     ("visible", False),
 ]
 
@@ -115,7 +115,7 @@ CASES = (
         ("ellipse", "line_style", Qt.PenStyle.DashLine),
         ("ellipse", "pen", QPen(RED)),
         ("ellipse", "brush", QBrush(RED)),
-        ("ellipse", "tool_tip", "off-thread"),
+        ("ellipse", "tooltip", "off-thread"),
         ("text", "visible", False),
         ("text", "position", QPointF(1.5, 1.5)),
         ("text", "text", "changed"),
@@ -139,7 +139,7 @@ CASES = (
         ("vline", "line_style", Qt.PenStyle.DashLine),
         ("vline", "visible", False),
         ("vline", "read_only", False),
-        ("vline", "tool_tip", "off-thread"),
+        ("vline", "tooltip", "off-thread"),
         ("hline", "position", 4.5),
     ]
 )
@@ -225,7 +225,7 @@ MULTI_SPAN_CASES = [
     ("color", RED),
     ("selected", True),
     ("read_only", True),
-    ("tool_tip", "off-thread"),
+    ("tooltip", "off-thread"),
     ("visible", False),
 ]
 
@@ -247,7 +247,7 @@ MULTI_LINE_CASES = [
     ("color", RED),
     ("line_width", 7.0),
     ("read_only", True),
-    ("tool_tip", "off-thread"),
+    ("tooltip", "off-thread"),
     ("visible", False),
 ]
 

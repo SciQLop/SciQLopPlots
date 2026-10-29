@@ -43,7 +43,7 @@ panel.vertical_span(
     x_range / 10,
     QColor(100, 100, 200, 80),
     read_only=False, visible=True,
-    tool_tip="Drag across all plots",
+    tooltip="Drag across all plots",
 )
 
 panel.show()

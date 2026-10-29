@@ -319,12 +319,6 @@ _ON_EXCEPTIONS = (
     (SciQLopPlotsBindings.SciQLopWaterfallGraph, "spacing", dict(
         signal_name="uniform_spacing_changed", getter_name="uniform_spacing",
         setter_name="set_uniform_spacing", property_type="value")),
-    (SciQLopPlotsBindings.SciQLopSpan, "tooltip", dict(
-        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
-        property_type="value")),
-    (SciQLopPlotsBindings.SciQLopStraightLine, "tooltip", dict(
-        signal_name="tool_tip_changed", getter_name="tool_tip", setter_name="set_tool_tip",
-        property_type="value")),
 )
 
 for _cls, _name, _spec in _ON_EXCEPTIONS:
@@ -366,9 +360,18 @@ for _cls in (
 #     of the plot and panel factories.
 import enum
 import functools
+import inspect
 import warnings
 
 from shibokensupport.signature import get_signature
+
+
+def _warn_deprecated(message):
+    """Warn at the first frame outside this package: wrappers stack, a fixed stacklevel drifts."""
+    frame, level = sys._getframe(1), 2
+    while frame is not None and frame.f_code.co_filename == __file__:
+        frame, level = frame.f_back, level + 1
+    warnings.warn(message, DeprecationWarning, stacklevel=level)
 
 _PTR_HANDLE_TYPES = (
     SciQLopPlotsBindings.SciQLopPlotInterfacePtr,
@@ -416,7 +419,7 @@ def _deprecated_constructor(cls, factory, needs_plot):
     @functools.wraps(init)
     def wrapper(self, plot=None, *args, **kwargs):
         if type(self) is cls:  # the guard silences the warning entirely for a Python subclass of an item class
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            _warn_deprecated(message)
         if needs_plot and plot is None:
             raise ValueError(f"{type(self).__name__}: plot cannot be None")
         return init(self, plot, *args, **kwargs)
@@ -477,7 +480,7 @@ def _line_shorthand(name, method):
     @_wraps(method)
     def wrapper(self, position, *args, **kwargs):
         if "movable" in kwargs:
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            _warn_deprecated(message)
             kwargs["read_only"] = not kwargs.pop("movable")
         return method(self, position, *args, **kwargs)
     return wrapper
@@ -491,7 +494,7 @@ for _name in ("vertical_line", "horizontal_line"):
 def _deprecated_call(message, method):
     @_wraps(method)
     def wrapper(self, *args, **kwargs):
-        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        _warn_deprecated(message)
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -531,8 +534,7 @@ def _deprecated_waterfall_callback(method):
     @_wraps(method)
     def wrapper(self, *args, **kwargs):
         if args and callable(args[0]):
-            warnings.warn("add_waterfall(callback, ...) is deprecated: use plot.waterfall(callback, ...)",
-                          DeprecationWarning, stacklevel=2)
+            _warn_deprecated("add_waterfall(callback, ...) is deprecated: use plot.waterfall(callback, ...)")
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -549,7 +551,7 @@ def _deprecated_saver(name, method, receiver):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
-        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        _warn_deprecated(message)
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -559,6 +561,60 @@ for _receiver, _classes in _SAVE_OWNERS.items():
         for _name in _FORMAT_SAVERS:
             if _name in vars(_cls):
                 setattr(_cls, _name, _deprecated_saver(_name, vars(_cls)[_name], _receiver))
+
+
+# Review 1.10: one word, tooltip. tooltip / set_tooltip / tooltip_changed are the native attributes
+# under a second name; the old methods warn, the old signal cannot (a wrapped signal dies on GC).
+def _bound_classes():
+    return [c for _, c in inspect.getmembers(SciQLopPlotsBindings, inspect.isclass)]
+
+
+for _cls in _bound_classes():
+    _own = vars(_cls)
+    for _old, _new in (("tool_tip", "tooltip"), ("set_tool_tip", "set_tooltip")):
+        if _old in _own:
+            _native = _own[_old]
+            setattr(_cls, _new, _native)
+            setattr(_cls, _old, _deprecated_call(f"{_old}(...) is deprecated: use item.{_new}(...)", _native))
+            register_hidden(_cls, _old)
+    if "tool_tip_changed" in _own:
+        _cls.tooltip_changed = _own["tool_tip_changed"]
+
+
+def _parameter_names(method):
+    try:
+        signatures = inspect.signature(method)
+    except (TypeError, ValueError):
+        signatures = get_signature(method)
+    signatures = signatures if isinstance(signatures, list) else [signatures]
+    return {name for sig in signatures if isinstance(sig, inspect.Signature) for name in sig.parameters}
+
+
+def _slot_names(cls):
+    meta = cls.staticMetaObject
+    return {bytes(meta.method(i).name()).decode() for i in range(meta.methodCount())
+            if meta.method(i).methodType() == QtCore.QMetaMethod.MethodType.Slot}
+
+
+def _old_tooltip_keyword(name, receiver, method):
+    message = f"tool_tip=... is deprecated: use {receiver}.{name}(..., tooltip=...)"
+
+    @_wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if "tool_tip" in kwargs:
+            _warn_deprecated(message)
+            kwargs["tooltip"] = kwargs.pop("tool_tip")
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+for _cls in _bound_classes():
+    _receiver = "panel" if issubclass(_cls, SciQLopPlotsBindings.SciQLopPlotPanelInterface) else "plot"
+    _slots = _slot_names(_cls) if hasattr(_cls, "staticMetaObject") else set()
+    for _name, _method in list(vars(_cls).items()):
+        if (not _name.startswith("_") and callable(_method) and _name not in _slots
+                and "tooltip" in _parameter_names(_method)):
+            setattr(_cls, _name, _old_tooltip_keyword(_name, _receiver, _method))
 
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains", "remove"):
     setattr(SciQLopMultiPlotPanel, _method,
@@ -732,8 +788,7 @@ def _member_of(enum, names, prop, value, aliases={}):
     except (KeyError, TypeError):
         raise ValueError(f"{prop} must be a {enum.__name__} ({', '.join(m.name for m in enum)}), "
                          f"not {value!r}") from None
-    warnings.warn(f"{prop}={value!r} is deprecated: use {enum.__name__}.{member.name}",
-                  DeprecationWarning, stacklevel=3)
+    _warn_deprecated(f"{prop}={value!r} is deprecated: use {enum.__name__}.{member.name}")
     return member
 
 
@@ -823,8 +878,7 @@ def _enum_normalization(method):
                                  f"Histogram2DNormalization.PerColumn, not {value!r}")
             given = f"{type(value).__name__}.{value.name}" if isinstance(value, enum.Enum) else int(value)
             value = _HISTOGRAM2D_NORMALIZATION_INTS[value]
-            warnings.warn(f"set_normalization({given}) is deprecated: use Histogram2DNormalization.{value.name}",
-                          DeprecationWarning, stacklevel=2)
+            _warn_deprecated(f"set_normalization({given}) is deprecated: use Histogram2DNormalization.{value.name}")
         return method(self, value)
     return wrapper
 

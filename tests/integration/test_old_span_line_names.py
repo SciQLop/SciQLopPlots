@@ -155,7 +155,7 @@ def test_the_old_panel_line_lost_its_plumbing():
 def test_the_old_spans_keep_on_tooltip_and_selection_changed(plot, cls):
     span = _old(OLD_PLOT_SPANS[cls][0], plot)
     span.on.tooltip.value = "tip"
-    assert span.tool_tip() == "tip"
+    assert span.tooltip() == "tip"
     assert cls.selectionChanged is cls.selection_changed
 
 
@@ -165,4 +165,4 @@ def test_the_old_panel_objects_keep_on_tooltip(panel):
     line = _old(lambda p: MultiPlotsVerticalLine(p, 2.0), panel)
     for item in (span, line):
         item.on.tooltip.value = "tip"
-        assert item.tool_tip() == "tip"
+        assert item.tooltip == "tip"  # the old classes keep their properties until Plan B

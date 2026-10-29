@@ -171,7 +171,7 @@ def create_spans_tab():
             color,
             read_only=(i == 0),
             visible=True,
-            tool_tip=f"Span {i+1}" + (" (read-only)" if i == 0 else " (drag me!)"),
+            tooltip=f"Span {i+1}" + (" (read-only)" if i == 0 else " (drag me!)"),
         )
         if i > 0:
             span.on.range >> (
@@ -289,7 +289,7 @@ def create_stacked_tab():
         x_range / 10,
         QColor(100, 100, 200, 80),
         read_only=False, visible=True,
-        tool_tip="Drag across all plots",
+        tooltip="Drag across all plots",
     )
 
     btn.toggled.connect(panel.set_span_creation_enabled)
@@ -308,7 +308,7 @@ def create_pipeline_tab():
     plot1.vertical_span(
         SciQLopPlotRange(2.0, 4.0),
         QColor(100, 100, 200, 80), read_only=False,
-        visible=True, tool_tip="Drag me!",
+        visible=True, tooltip="Drag me!",
     )
 
     x_init = np.linspace(0, 10, 512)

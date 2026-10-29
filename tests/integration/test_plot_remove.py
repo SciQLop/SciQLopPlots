@@ -227,7 +227,7 @@ def test_pane_item_dies_with_the_projection_plot():
 
 def test_panel_factories_return_panel_owned_objects(panel):
     plot = _panel_with_plot(panel)
-    panel.vertical_span(R(1.0, 2.0), tool_tip="s", id="a")
+    panel.vertical_span(R(1.0, 2.0), tooltip="s", id="a")
     panel.vertical_line(1.5)
     import gc; gc.collect(); process_events()
     spans = [s for s in panel.findChildren(SciQLopSpan) if not s.is_panel_part()]

@@ -68,15 +68,15 @@ def test_the_class_has_no_python_constructor(plot, panel):
 def test_the_defaults(host, kind):
     span = make(host, kind)
     assert span.color() == GREY
-    assert (span.read_only(), span.visible(), span.selected(), span.tool_tip()) == (False, True, False, "")
+    assert (span.read_only(), span.visible(), span.selected(), span.tooltip()) == (False, True, False, "")
     assert span.coordinates() == Coordinates.Data
     assert span.id() and span.id() != make(host, kind).id()
 
 
 def test_the_factory_arguments(host, kind):
-    span = make(host, kind, color=QColor("red"), read_only=True, visible=False, tool_tip="tip",
+    span = make(host, kind, color=QColor("red"), read_only=True, visible=False, tooltip="tip",
                 id="event-1")
-    assert (span.color(), span.read_only(), span.visible(), span.tool_tip(), span.id()) == \
+    assert (span.color(), span.read_only(), span.visible(), span.tooltip(), span.id()) == \
         (QColor("red"), True, False, "tip", "event-1")
 
 
@@ -162,7 +162,7 @@ def test_a_rectangular_span_never_emits_range_changed(host):
     assert (ranges, keys, values) == ([], [R(0.2, 0.4)], [R(0.1, 0.3)])
 
 
-SIGNALLED = {"read_only": (True, "read_only_changed"), "tool_tip": ("tip", "tool_tip_changed")}
+SIGNALLED = {"read_only": (True, "read_only_changed"), "tooltip": ("tip", "tooltip_changed")}
 
 
 @pytest.mark.parametrize("name", SIGNALLED)
@@ -218,7 +218,7 @@ def test_an_unbounded_axis_set_off_thread_raises_in_the_caller(host):
     assert "value axis" in str(out.get("error", ""))
 
 
-@pytest.mark.parametrize("name", ["read_only", "tool_tip", "range", "key_range", "value_range"])
+@pytest.mark.parametrize("name", ["read_only", "tooltip", "range", "key_range", "value_range"])
 def test_on_resolves_with_a_signal(host, name):
     assert getattr(make(host, "vertical").on, name).signal is not None
 
@@ -392,7 +392,7 @@ def test_on_tooltip_is_observable(host, kind):
     span = make(host, kind)
     seen = []
     pipeline = span.on.tooltip >> (lambda event: seen.append(event.value))
-    span.set_tool_tip("tip")
+    span.set_tooltip("tip")
     assert seen == ["tip"]
     pipeline.disconnect()
 

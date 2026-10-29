@@ -53,7 +53,7 @@ for i, color in enumerate(colors):
         color,
         read_only=(i == 0),
         visible=True,
-        tool_tip=f"Span {i+1}" + (" (read-only)" if i == 0 else " (drag me!)"),
+        tooltip=f"Span {i+1}" + (" (read-only)" if i == 0 else " (drag me!)"),
     )
     if i > 0:
         span.on.range >> range_to_tooltip >> span.on.tooltip

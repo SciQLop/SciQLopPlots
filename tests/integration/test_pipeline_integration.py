@@ -59,7 +59,7 @@ class TestSpanPipeline:
         pipeline = span.on.range >> format_range >> span.on.tooltip
         span.set_range(SciQLopPlotRange(3.0, 7.0))
         process_events()
-        assert span.tool_tip() == "3.0-7.0"
+        assert span.tooltip() == "3.0-7.0"
 
 
 class TestTerminalSink:

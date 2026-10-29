@@ -88,12 +88,12 @@ protected:
 public:
     SciQLopSpan(SciQLopPlot* plot, SpanKind kind, const SciQLopPlotRange& key_range,
                 const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
-                bool visible, const QString& tool_tip, Coordinates coordinates,
+                bool visible, const QString& tooltip, Coordinates coordinates,
                 const QString& id = "");
     //! \a legacy_parts: parts are SciQLopVerticalSpans, for the old MultiPlotsVerticalSpan (Plan A).
     SciQLopSpan(SciQLopMultiPlotPanel* panel, SpanKind kind, const SciQLopPlotRange& key_range,
                 const SciQLopPlotRange& value_range, const QColor& color, bool read_only,
-                bool visible, const QString& tool_tip, Coordinates coordinates,
+                bool visible, const QString& tooltip, Coordinates coordinates,
                 const QString& id = "", bool legacy_parts = false);
     ~SciQLopSpan() override;
 
@@ -125,7 +125,7 @@ public:
     [[nodiscard]] bool read_only() const;
     void set_read_only(bool read_only);
     [[nodiscard]] QString tool_tip() const;
-    void set_tool_tip(const QString& tool_tip);
+    void set_tool_tip(const QString& tooltip);
 
     //! The border pen: colour, width and style.
     [[nodiscard]] QColor borders_color() const;
@@ -144,6 +144,6 @@ signals:
     Q_SIGNAL void value_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void coordinates_changed(Coordinates coordinates);
     Q_SIGNAL void read_only_changed(bool read_only);
-    Q_SIGNAL void tool_tip_changed(const QString& tool_tip);
+    Q_SIGNAL void tool_tip_changed(const QString& tooltip);
     Q_SIGNAL void delete_requested();
 };

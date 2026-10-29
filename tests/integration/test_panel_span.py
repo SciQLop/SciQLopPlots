@@ -65,13 +65,13 @@ def test_parts_built_later_carry_the_current_state(qtbot):
     span = panel.span(key_range=R(2.0, 8.0), color=QColor("red"))
     span.set_key_range(R(3.0, 4.0))
     span.set_read_only(True)
-    span.set_tool_tip("tip")
+    span.set_tooltip("tip")
     span.set_visible(False)
     span.set_line_width(5.0)
     panel.plot(X, np.sin(X))
     process_events()
     [part] = _parts(panel, span)
-    assert (part.key_range(), part.color(), part.read_only(), part.tool_tip(), part.visible(),
+    assert (part.key_range(), part.color(), part.read_only(), part.tooltip(), part.visible(),
             part.line_width()) == (R(3.0, 4.0), QColor("red"), True, "tip", False, 5.0)
 
 

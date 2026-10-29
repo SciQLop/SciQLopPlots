@@ -69,12 +69,12 @@ class TestMultiPlotsVerticalLine:
         vline.set_color(QColor(255, 0, 0))
         vline.set_line_width(3.0)
         vline.set_visible(False)
-        vline.set_tool_tip("cursor")
+        vline.set_tooltip("cursor")
         for line in _lines(panel):
             assert line.color().red() == 255
             assert line.line_width() == 3.0
             assert not line.visible()
-            assert line.tool_tip() == "cursor"
+            assert line.tooltip() == "cursor"
 
     def test_new_plot_inherits_the_style(self, panel, sample_data):
         x, y = sample_data
@@ -88,7 +88,7 @@ class TestMultiPlotsVerticalLine:
         assert late.line_width() == 2.0
         assert late.read_only()
         assert not late.visible()
-        assert late.tool_tip() == "cursor"
+        assert late.tooltip() == "cursor"
 
     def test_delete_removes_lines(self, panel, sample_data):
         _two_plot_panel(panel, sample_data)
@@ -109,7 +109,7 @@ class TestMultiPlotsVerticalLine:
         vline.set_line_width(2.0)
         vline.set_visible(False)
         vline.set_read_only(True)
-        vline.set_tool_tip("x")
+        vline.set_tooltip("x")
         assert all(line.position == 5.0 for line in _lines(panel))
 
     def test_python_properties_reach_every_line(self, panel, sample_data):
@@ -125,7 +125,7 @@ class TestMultiPlotsVerticalLine:
             assert line.line_width() == 3.0
             assert not line.visible()
             assert line.read_only()
-            assert line.tool_tip() == "cursor"
+            assert line.tooltip() == "cursor"
 
     def test_moving_any_line_moves_all(self, panel, sample_data):
         _two_plot_panel(panel, sample_data)

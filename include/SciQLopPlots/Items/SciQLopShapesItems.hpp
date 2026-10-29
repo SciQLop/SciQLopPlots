@@ -368,10 +368,10 @@ public:
         return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
     }
 
-    inline void set_tool_tip(const QString& tool_tip) noexcept override
+    inline void set_tool_tip(const QString& tooltip) noexcept override
     {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tool_tip));
-        qptr_apply(m_item, [tool_tip](auto&& item) { item->setToolTip(tool_tip); });
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tooltip));
+        qptr_apply(m_item, [tooltip](auto&& item) { item->setToolTip(tooltip); });
     }
 
     [[nodiscard]] inline QPointF start_position() const noexcept

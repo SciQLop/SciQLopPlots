@@ -43,7 +43,7 @@ def make_panel(parent):
         x_range / 10,
         QColor(100, 100, 100, 100),
         read_only=False, visible=True,
-        tool_tip="Vertical Span",
+        tooltip="Vertical Span",
     )
     panel.setAttribute(Qt.WA_DeleteOnClose)
     return panel

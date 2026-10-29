@@ -33,9 +33,9 @@ public:
     SciQLopRectangularSpan(SciQLopPlot* plot, SciQLopPlotRange key_range,
                            SciQLopPlotRange value_range,
                            QColor color = QColor::fromRgb(100, 100, 100, 100), bool read_only = false,
-                           bool visible = true, const QString& tool_tip = "")
+                           bool visible = true, const QString& tooltip = "")
             : SciQLopSpan(plot, SpanKind::Rectangular, key_range, value_range, color, read_only,
-                          visible, tool_tip, Coordinates::Data)
+                          visible, tooltip, Coordinates::Data)
     {
     }
 };

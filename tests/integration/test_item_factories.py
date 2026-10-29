@@ -137,8 +137,8 @@ def test_factory_off_thread_raises(plot):
 
 def test_factory_keeps_constructor_argument_names(plot):
     span = plot.vertical_span(R(1.0, 2.0), color=QColor("red"), read_only=True,
-                              visible=False, tool_tip="tip", coordinates=Coordinates.Data)
-    assert span.tool_tip() == "tip"
+                              visible=False, tooltip="tip", coordinates=Coordinates.Data)
+    assert span.tooltip() == "tip"
     line = plot.curved_line(QPointF(0, 0), QPointF(1, 1), start_terminator=LineTermination.Arrow,
                             stop_terminator=LineTermination.NoneTermination)
     assert line is not None
