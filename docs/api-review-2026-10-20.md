@@ -208,7 +208,7 @@ Done 2026-10-29 (design docs/plans/2026-10-22-mutation-testing-design.md, tool `
 
 Breaks, deliberate:
 
-- 5.9: `name` is a method on every class: plottables, plots and panels lost the `name` property. `x.name` is now `x.name()`, `x.name = s` is `x.set_name(s)`. Plots and panels gained `set_name` and `name_changed`. No deprecation path: a value and a method cannot share a name.
+- 5.9: `name` is a method on every class: plottables, plots and panels lost the `name` property. `x.name` is now `x.name()`, `x.name = s` is `x.set_name(s)`. Plots and panels gained `set_name` and `name_changed`. No deprecation path: a value and a method cannot share a name. The break is silent where `x.name` is only tested or compared (`if plot.name:`, `plot.name == "x"`): a bound method is truthy and equals no string, so callers must grep every `.name` use. Plots and panels follow `objectNameChanged`, so `setObjectName` signals `name_changed` too; on plottables only `set_name` does.
 
 Deprecated (warn, still work):
 

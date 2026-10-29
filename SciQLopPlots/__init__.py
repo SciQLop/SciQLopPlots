@@ -12,6 +12,7 @@ import math
 import traceback
 import warnings
 
+import os
 import sys
 
 sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
@@ -366,10 +367,13 @@ import warnings
 from shibokensupport.signature import get_signature
 
 
+_PACKAGE_DIR = os.path.dirname(__file__)
+
+
 def _warn_deprecated(message):
     """Warn at the first frame outside this package: wrappers stack, a fixed stacklevel drifts."""
     frame, level = sys._getframe(1), 2
-    while frame is not None and frame.f_code.co_filename == __file__:
+    while frame is not None and os.path.dirname(frame.f_code.co_filename) == _PACKAGE_DIR:
         frame, level = frame.f_back, level + 1
     warnings.warn(message, DeprecationWarning, stacklevel=level)
 
@@ -511,14 +515,23 @@ _DEPRECATED_CALLS = {
 for (_cls, _name), _message in _DEPRECATED_CALLS.items():
     setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
 
-# Review 1.10: text, pixmap and ellipse items say read_only, like spans and lines.
+# Review 1.10: text, pixmap and ellipse items say read_only, like spans and lines. The old setter
+# goes through set_read_only, so read_only_changed still fires.
+def _set_movable_through_read_only(method):
+    @_wraps(method)
+    def wrapper(self, movable):
+        _warn_deprecated("set_movable(...) is deprecated: use item.set_read_only(...)")
+        self.set_read_only(not movable)
+    return wrapper
+
+
 for _cls in (SciQLopPlotsBindings.SciQLopMovableItemInterface, SciQLopPlotsBindings.SciQLopBoundingRectItemInterface,
              SciQLopPlotsBindings.SciQLopPolygonItemInterface, SciQLopPlotsBindings.SciQLopTextItem,
              SciQLopPlotsBindings.SciQLopPixmapItem, SciQLopPlotsBindings.SciQLopEllipseItem):
-    for _name, _message in (("movable", "movable() is deprecated: use item.read_only()"),
-                            ("set_movable", "set_movable(...) is deprecated: use item.set_read_only(...)")):
-        if _name in vars(_cls):
-            setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
+    if "movable" in vars(_cls):
+        _cls.movable = _deprecated_call("movable() is deprecated: use item.read_only()", vars(_cls)["movable"])
+    if "set_movable" in vars(_cls):
+        _cls.set_movable = _set_movable_through_read_only(vars(_cls)["set_movable"])
     register_hidden(_cls, "movable")
 
 
@@ -624,6 +637,9 @@ def _slot_names(cls):
             if meta.method(i).methodType() == QtCore.QMetaMethod.MethodType.Slot}
 
 
+_TOOLTIP_ACCESSORS = {"tooltip", "set_tooltip", "tool_tip", "set_tool_tip"}
+
+
 def _old_tooltip_keyword(name, receiver, method):
     message = f"tool_tip=... is deprecated: use {receiver}.{name}(..., tooltip=...)"
 
@@ -640,7 +656,8 @@ for _cls in _bound_classes():
     _receiver = "panel" if issubclass(_cls, SciQLopPlotsBindings.SciQLopPlotPanelInterface) else "plot"
     _slots = _slot_names(_cls) if hasattr(_cls, "staticMetaObject") else set()
     for _name, _method in list(vars(_cls).items()):
-        if (not _name.startswith("_") and callable(_method) and _name not in _slots
+        if (not _name.startswith("_") and callable(_method) and not inspect.isclass(_method)
+                and _name not in _slots and _name not in _TOOLTIP_ACCESSORS
                 and "tooltip" in _parameter_names(_method)):
             setattr(_cls, _name, _old_tooltip_keyword(_name, _receiver, _method))
 

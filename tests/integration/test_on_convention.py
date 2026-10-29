@@ -228,3 +228,10 @@ def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
         source.set_normalization(sp.Histogram2DNormalization.PerColumn)
     assert target.normalization() == sp.Histogram2DNormalization.PerColumn
     del pipeline
+
+
+def test_a_deprecated_value_through_on_warns_at_the_caller(ts_plot):
+    timeline = ts_plot.add_timeline()
+    with pytest.warns(DeprecationWarning, match="is deprecated") as seen:
+        timeline.on.style.value = "wave"
+    assert seen[0].filename == __file__

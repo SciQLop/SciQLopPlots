@@ -78,3 +78,16 @@ def test_the_movable_keyword_warns_and_maps_the_inverse(plot, kind):
 def test_a_positional_bool_is_refused_not_flipped(plot, kind):
     with pytest.raises(TypeError, match="read_only="):
         FACTORIES[kind](plot, True)
+
+
+def test_the_deprecated_setter_still_signals(plot):
+    item = FACTORIES["text"](plot)
+    seen = record(item.read_only_changed)
+    with pytest.warns(DeprecationWarning):
+        item.set_movable(True)
+    assert seen == [False]
+
+
+def test_the_new_tooltip_setter_is_the_native_attribute():
+    from SciQLopPlots import SciQLopSpan
+    assert not hasattr(SciQLopSpan.set_tooltip, "__wrapped__")
