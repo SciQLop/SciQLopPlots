@@ -34,6 +34,7 @@ class PlaceHolderManager;
 class SciQLopPlotPanelInterface : public QScrollArea, public SciQLopPlotCollectionInterface
 {
     Q_OBJECT
+    Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed FINAL)
 
 public:
     SciQLopPlotPanelInterface(QWidget* parent = nullptr) : QScrollArea { parent }

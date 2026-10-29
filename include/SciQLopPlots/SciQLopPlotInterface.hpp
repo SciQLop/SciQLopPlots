@@ -134,6 +134,7 @@ protected:
 
 public:
     Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed FINAL)
+    Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed FINAL)
 
     SciQLopPlotInterface(QWidget* parent = nullptr, const QString& name = "")
             : QFrame(parent), m_uuid(QUuid::createUuid())

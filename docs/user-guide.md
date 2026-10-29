@@ -761,6 +761,32 @@ except NotImplementedError as error:
 - C++ subclasses: override the protected hooks (`_visible`, `_set_visible`, ...), not the
   accessors, and without `noexcept`.
 
+### Python properties instead of methods
+
+The API is methods, like Qt's: `graph.name()`, `graph.set_name("B")`. PySide has a per-module switch
+that turns Qt properties into Python properties, ours included:
+
+```py
+import PySide6
+from __feature__ import true_property   # right after the PySide6 import; this module only
+
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+graph = plot.plot(x, y)
+graph.name = "B"              # was graph.set_name("B")
+graph.visible = False         # was graph.set_visible(False)
+print(plot.name, plot.objectName, graph.selected)
+other.visible_changed.connect(graph.set_visible)   # setters stay, for connect
+```
+
+- It covers `name`, `visible` and `selected` on everything drawn, `name` and `selected` on plots and
+  panels, and Qt's own properties (`objectName`, `windowTitle`, ...). Everything else stays a method.
+- The switch only changes the module that turns it on. The library and your other modules keep
+  seeing methods.
+- Without the switch, `graph.name = "B"` does not rename the graph: it sets a plain Python attribute
+  that C++ never sees.
+
 ## Legends
 
 Every graph gets a legend row. Two calls keep a busy legend short.

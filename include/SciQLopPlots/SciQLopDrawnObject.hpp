@@ -34,6 +34,10 @@
 class SciQLopDrawnObject : public QObject
 {
     Q_OBJECT
+    // Python properties under PySide's `from __feature__ import true_property`; methods otherwise.
+    Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed)
+    Q_PROPERTY(bool visible READ visible WRITE set_visible NOTIFY visible_changed)
+    Q_PROPERTY(bool selected READ selected WRITE set_selected NOTIFY selection_changed)
 
     std::optional<bool> m_last_visible;
     std::optional<bool> m_last_selected;
