@@ -43,6 +43,7 @@ import traceback
 import warnings
 
 import os
+import tempfile
 
 sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
 
@@ -613,6 +614,20 @@ def _deprecated_waterfall_callback(method):
 
 
 SciQLopPlot.add_waterfall = _deprecated_waterfall_callback(vars(SciQLopPlot)["add_waterfall"])
+
+def _to_bytes(self, format="png", width=0, height=0, scale=1.0, quality=-1):
+    """The image save() writes (pdf, svg, png, jpg or bmp), as bytes, without a file of yours."""
+    # simplify: goes through a temporary file, so it is exactly save()'s output for plots, panels
+    # and projections; render to a QBuffer instead if export speed ever matters.
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, "export")
+        self.save(path, width, height, scale, quality, format)
+        with open(path, "rb") as exported:
+            return exported.read()
+
+
+for _cls in (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlotsBindings.SciQLopPlotPanelInterface):
+    _cls.to_bytes = _to_bytes
 
 _FORMAT_SAVERS = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
 _SAVE_OWNERS = {"plot": (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot, SciQLopNDProjectionPlot),

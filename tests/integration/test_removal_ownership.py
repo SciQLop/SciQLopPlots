@@ -59,6 +59,7 @@ HIDDEN_WRAPPERS = {
     "SciQLopTimeSeriesPlot.plot", "SciQLopNDProjectionPlot.plot",
     "SciQLopMultiPlotPanel.plot", "SciQLopMultiPlotPanel.band", "SciQLopMultiPlotPanel.error_bars",
     "SciQLopTimeline.set_intervals", "SciQLopTimeline.interval", "SciQLopTimeline.interval_at",
+    "SciQLopPlotInterface.to_bytes", "SciQLopPlotPanelInterface.to_bytes",
 }
 
 
