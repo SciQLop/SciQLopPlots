@@ -116,6 +116,34 @@ void SciQLopPlotInterface::check_removable(const QObject* x) const
                   : "remove: this " + what + " does not belong to any plot");
 }
 
+namespace
+{
+template <typename T>
+QList<QPointer<QObject>> owned_removables(const SciQLopPlotInterface* plot)
+{
+    QList<QPointer<QObject>> found;
+    for (auto* x : plot->findChildren<T*>())
+        if (!SciQLopPlots::is_panel_part(x) && owning_plot(x) == plot)
+            found.append(x);
+    return found;
+}
+}
+
+void SciQLopPlotInterface::clear()
+{
+    SCIQLOP_ON_OWNER_THREAD(clear());
+    QList<QPointer<QObject>> doomed;
+    for (auto* plottable : plottables())
+        doomed.append(plottable);
+    doomed += owned_removables<SciQLopPlotGroup>(this);
+    doomed += owned_removables<SciQLopItemInterface>(this);
+    doomed += owned_removables<SciQLopStraightLine>(this);
+    doomed += owned_removables<SciQLopSpan>(this);
+    // Deleting one may take another with it (a group's members, a span's parts): QPointer skips those.
+    for (const auto& x : doomed)
+        delete x.data();
+}
+
 // Checked before queuing: off-thread, a throw from the queued call would escape the event loop.
 void SciQLopPlotInterface::remove(SciQLopPlottableInterface* plottable)
 {

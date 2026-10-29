@@ -628,6 +628,9 @@ public:
     void remove(SciQLopItemInterface* item);
     void remove(SciQLopStraightLine* line);
     void remove(SciQLopSpan* span);
+    //! Removes everything remove() takes: plottables, groups, items, lines and spans. Axes,
+    //! the legend and parts of panel-wide objects stay.
+    void clear();
 
     inline bool selected() const noexcept { return m_selected; }
 
