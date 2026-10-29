@@ -248,6 +248,36 @@ before = "    const bool positive = range.upper > 0;"
 reason = "Only the degenerate log range (0, 0) has upper == 0, and there both branches give the same edges; callers use this path only on log axes."
 
 [[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "delete_statement"
+before = "    Q_ASSERT(binWidthPx > 0);"
+reason = "A precondition check: the only caller (QCPMultiGraph::binnedWhenDense) passes 0.25, so the assert never fires."
+
+[[project.equivalent]]
+path = "src/plottables/multigraph-fill.cpp"
+op = "gt_to_ge"
+before = "    Q_ASSERT(binWidthPx > 0);"
+reason = "Differs only for a zero bin width, which the only caller (binnedWhenDense, 0.25) never passes."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "delete_statement"
+before = "    Q_ASSERT(gaps.size() == std::max(0, end - begin)); // gapsBefore() holds one entry per row"
+reason = "An invariant check: every gapsBefore() returns end - begin entries, so the assert never fires."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "int_plus_one"
+before = "    Q_ASSERT(gaps.size() == std::max(0, end - begin)); // gapsBefore() holds one entry per row"
+reason = "Differs only for an empty row window; draw() returns before drawFills when the view is empty, and the cache window contains the view."
+
+[[project.equivalent]]
+path = "src/plottables/plottable-multigraph.cpp"
+op = "delete_statement"
+before = "    Q_ASSERT(gaps.size() == int(bars.size())); // gapsBefore() holds one entry per row"
+reason = "An invariant check: every gapsBefore() returns end - begin entries, one per error bar row, so the assert never fires."
+
+[[project.equivalent]]
 path = "src/datasource/histogram-binner-1d.h"
 op = "int_plus_one"
 before = "    for (int i = 0; i <= bins; ++i)"
