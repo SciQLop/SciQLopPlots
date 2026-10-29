@@ -1,5 +1,34 @@
+import contextlib
+import sys
+
 from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL, QtPrintSupport, QtSvg
-from . import SciQLopPlotsBindings
+
+
+@contextlib.contextmanager
+def _no_pyside_features_while_importing():
+    """PySide picks a feature set (true_property, snake_case) from the calling frame's module. The
+    bindings' init runs in importlib's frames, which then reuse the user's true_property once a
+    QApplication exists: its setup reads our method signatures before they are registered and
+    aborts Python ("failed to create a new feature set"). Pin importlib's frames to none meanwhile."""
+    table = getattr(sys.modules.get("__feature__"), "pyside_feature_dict", None)
+    if table is None:
+        yield
+        return
+    frames = ("importlib._bootstrap", "importlib._bootstrap_external")
+    saved = {name: table.get(name) for name in frames}
+    table.update(dict.fromkeys(frames, 0))
+    try:
+        yield
+    finally:
+        for name, value in saved.items():
+            if value is None:
+                table.pop(name, None)
+            else:
+                table[name] = value
+
+
+with _no_pyside_features_while_importing():
+    from . import SciQLopPlotsBindings  # noqa: E402
 from .SciQLopPlotsBindings import (GraphType, SciQLopPlot, SciQLopTimeSeriesPlot, SciQLopMultiPlotPanel,
                                     SciQLopGraphInterface, AxisType, SciQLopPlotRange, SciQLopNDProjectionPlot)
 from .SciQLopPlotsBindings import *
@@ -13,7 +42,6 @@ import traceback
 import warnings
 
 import os
-import sys
 
 sys.modules["SciQLopPlotsBindings"] = SciQLopPlotsBindings
 
