@@ -162,6 +162,14 @@ void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
             },
             Qt::SingleShotConnection);
     }
+    if (_dataHolder && _dataHolder->source)
+    {
+        bool found = false;
+        const auto yRange = _dataHolder->source->valueRange(found);
+        _auto_scale_y_to(yRange, found);
+    }
+    if (!self)
+        return;
 
     Q_EMIT data_changed(x, y);
     if (self)

@@ -37,7 +37,6 @@
 class SciQLopColorMap : public SciQLopColorMapBase
 {
     QPointer<QCPColorMap2> _cmap;
-    bool _auto_scale_y = false;
 
     struct DataSourceWithBuffers {
         SciQLopPyBuffer x, y, z;
@@ -65,9 +64,6 @@ public:
     virtual QList<SciQLopPyBuffer> data() const noexcept override;
 
     inline QCPColorMap2* colorMap() const { return _cmap; }
-
-    void set_auto_scale_y(bool auto_scale_y);
-    inline bool auto_scale_y() const { return _auto_scale_y; }
 
     SciQLopPlotRange z_percentile_range(const SciQLopPlotRange& x_range,
                                         const SciQLopPlotRange& y_range, double low,
@@ -174,7 +170,6 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
-    Q_SIGNAL void auto_scale_y_changed(bool);
     Q_SIGNAL void contour_levels_changed();
     Q_SIGNAL void contour_pen_changed(const QPen& pen);
     Q_SIGNAL void contour_labels_enabled_changed(bool enabled);

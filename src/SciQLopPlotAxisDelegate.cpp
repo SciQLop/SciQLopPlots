@@ -59,18 +59,6 @@ SciQLopColorMapBase* _colormap_for_axis(QObject* axis)
     return nullptr;
 }
 
-SciQLopColorMap* _colormap_concrete_for_axis(QObject* axis)
-{
-    if (auto* plot = _owning_plot(axis))
-    {
-        for (auto* p : plot->plottables())
-        {
-            if (auto* cm = qobject_cast<SciQLopColorMap*>(p))
-                return cm;
-        }
-    }
-    return nullptr;
-}
 } // namespace
 
 
@@ -357,13 +345,12 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
         }
     }
 
-    // Auto scale Y for colormaps: when this delegate is on the y2 axis of a
-    // plot whose colormap drives the y range, expose the toggle here. Only
-    // SciQLopColorMap (not Histogram2D) carries this knob.
+    // Auto scale Y for colour maps and 2-D histograms: when this delegate is on the y2 axis of
+    // a plot whose colour map drives the y range, expose the toggle here.
     if (auto* plot = _owning_plot(m_object);
         plot && plot->y2_axis() == m_object)
     {
-        if (auto* cm = _colormap_concrete_for_axis(m_object))
+        if (auto* cm = _colormap_for_axis(m_object))
         {
             auto* check = new BooleanDelegate(cm->auto_scale_y(), this);
             check->setObjectName("auto_scale_y");
@@ -371,10 +358,10 @@ SciQLopPlotAxisDelegate::SciQLopPlotAxisDelegate(SciQLopPlotAxisInterface* objec
             connect(check, &BooleanDelegate::value_changed, this,
                     [this](bool v)
                     {
-                        if (auto* c = _colormap_concrete_for_axis(m_object))
+                        if (auto* c = _colormap_for_axis(m_object))
                             c->set_auto_scale_y(v);
                     });
-            connect(cm, &SciQLopColorMap::auto_scale_y_changed, check,
+            connect(cm, &SciQLopColorMapBase::auto_scale_y_changed, check,
                     &BooleanDelegate::set_value);
         }
     }

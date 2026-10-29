@@ -42,6 +42,10 @@ protected:
     double _autoscale_percentile_low = 0.;
     double _autoscale_percentile_high = 100.;
     QMetaObject::Connection _y_log_forward;
+    bool _auto_scale_y = false;
+
+    //! With auto_scale_y, fits the y axis to \a range (the data's y extent) when found.
+    void _auto_scale_y_to(const QCPRange& range, bool found);
 
     //! The gradient and log flags live on the axes: their signals become this map's.
     void _forward_axis_signals();
@@ -161,6 +165,10 @@ public:
         return _colorScaleAxis ? _colorScaleAxis->log() : false;
     }
 
+    //! Fit the y axis to the data's y extent on every set_data.
+    void set_auto_scale_y(bool auto_scale_y);
+    inline bool auto_scale_y() const { return _auto_scale_y; }
+
     void set_autoscale_percentile_low(double percentile) noexcept;
     inline double autoscale_percentile_low() const noexcept { return _autoscale_percentile_low; }
     void set_autoscale_percentile_high(double percentile) noexcept;
@@ -185,6 +193,7 @@ public:
 #define Q_SIGNAL
 signals:
 #endif
+    Q_SIGNAL void auto_scale_y_changed(bool auto_scale_y);
     Q_SIGNAL void autoscale_percentile_low_changed(double percentile);
     Q_SIGNAL void autoscale_percentile_high_changed(double percentile);
 

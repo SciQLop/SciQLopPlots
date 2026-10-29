@@ -176,3 +176,21 @@ void SciQLopColorMapBase::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
     });
     _forward_axis_signals();
 }
+
+void SciQLopColorMapBase::set_auto_scale_y(bool auto_scale_y)
+{
+    if (auto_scale_y == _auto_scale_y)
+        return;
+    _auto_scale_y = auto_scale_y;
+    Q_EMIT auto_scale_y_changed(auto_scale_y);
+}
+
+void SciQLopColorMapBase::_auto_scale_y_to(const QCPRange& range, bool found)
+{
+    // Route through set_range (not QCPAxis::setRange directly) so clamp_range and
+    // m_last_valid_range stay consistent: with a max/min range-size limit configured, a direct
+    // setRange makes the rangeChanged handler see clamped != requested and revert to the old
+    // range, so auto-scale-y silently does nothing.
+    if (_auto_scale_y && _valueAxis && found && range.lower != range.upper)
+        _valueAxis->set_range(SciQLopPlotRange(range.lower, range.upper));
+}
