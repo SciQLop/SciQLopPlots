@@ -31,7 +31,6 @@
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 
 #include <QColor>
-#include <QObjectBindableProperty>
 #include <QList>
 #include <QObject>
 #include <QPointer>
@@ -72,7 +71,7 @@ protected:
     virtual void _legend_items_recreated() { _connect_legend_selection(); }
 
 public:
-    Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed BINDABLE bindable_data)
+    Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
     SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr);
@@ -135,15 +134,7 @@ public:
                                  + " does not support per-point colour data");
     }
 
-    virtual QList<SciQLopPyBuffer> data() const noexcept
-    {
-        return m_data;
-    }
-
-    virtual QBindable<QList<SciQLopPyBuffer>> bindable_data() const noexcept
-    {
-        return QBindable<QList<SciQLopPyBuffer>>(&m_data);
-    }
+    virtual QList<SciQLopPyBuffer> data() const noexcept { return {}; }
 
     virtual bool busy() const noexcept { return false; }
     virtual void set_busy(bool busy) noexcept { Q_UNUSED(busy); }
@@ -240,10 +231,6 @@ private:
         if (!fitted || data_off_view())
             _got_first_data = false;
     }
-
-protected:
-
-    Q_OBJECT_BINDABLE_PROPERTY(SciQLopPlottableInterface, QList<SciQLopPyBuffer>, m_data, QOverload<const QList<SciQLopPyBuffer>&>::of(&SciQLopPlottableInterface::data_changed))
 };
 
 #ifndef BINDINGS_H
