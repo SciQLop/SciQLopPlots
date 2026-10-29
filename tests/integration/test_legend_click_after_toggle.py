@@ -27,6 +27,7 @@ def _line(plot):
 
 
 def _curve(plot):
+    # Only the no-toggle case checks the component constructor's connection: a toggle reconnects it.
     c = plot.plot(X, X, name="curve", graph_type=GraphType.ParametricCurve)
     return c, lambda: c.components()[0].selected()
 
