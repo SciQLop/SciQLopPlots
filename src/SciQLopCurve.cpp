@@ -325,9 +325,32 @@ void SciQLopCurve::set_color_values(const QVector<double>& values)
             tc->set_color_values(values);
 }
 
+namespace
+{
+SciQLopTimeColoredCurve* first_time_colored(const QList<QPointer<SciQLopGraphComponent>>& components)
+{
+    return components.isEmpty() ? nullptr
+                                : dynamic_cast<SciQLopTimeColoredCurve*>(components.first()->plottable());
+}
+}
+
+QVector<double> SciQLopCurve::time_values() const
+{
+    auto* tc = first_time_colored(m_components);
+    return tc ? tc->time_values() : QVector<double> {};
+}
+
+QVector<double> SciQLopCurve::color_values() const
+{
+    auto* tc = first_time_colored(m_components);
+    return tc ? tc->color_values() : QVector<double> {};
+}
+
 void SciQLopCurve::set_time_color_gradient(const QColor& start, const QColor& end)
 {
     SCIQLOP_ON_OWNER_THREAD(set_time_color_gradient(start, end));
+    m_time_color_start = start;
+    m_time_color_end = end;
     for (auto comp : m_components)
         if (auto* tc = dynamic_cast<SciQLopTimeColoredCurve*>(comp->plottable()))
             tc->set_gradient_colors(start, end);

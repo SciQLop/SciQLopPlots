@@ -47,6 +47,8 @@ class SciQLopCurve : public SQPQCPAbstractPlottableWrapper
     Q_OBJECT
     //! Only a gradient given explicitly: without one, the plot's gradient wins.
     std::optional<::ColorGradient> _gradient_preset;
+    QColor m_time_color_start { 0, 0, 255 };
+    QColor m_time_color_end { 255, 0, 0 };
 
 protected:
     // True while the resampler owes us a setGraphData emission. SciQLopCurveFunction
@@ -115,6 +117,11 @@ public:
     void set_time_values(const QVector<double>& times);
     void set_color_values(const QVector<double>& values);
     void set_time_color_gradient(const QColor& start, const QColor& end);
+    //! The first line's values (every line gets the same); empty when none were set.
+    QVector<double> time_values() const;
+    QVector<double> color_values() const;
+    //! [start, end] of the time colouring.
+    QList<QColor> time_color_gradient() const { return { m_time_color_start, m_time_color_end }; }
     //! Preset gradient for the scalar colouring, without touching the colour values.
     void set_color_gradient(::ColorGradient gradient);
     //! The gradient given to this curve, Jet when none was.

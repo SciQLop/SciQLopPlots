@@ -64,6 +64,8 @@ public:
 
     void set_time_values(const QVector<double>& times);
     void set_color_values(const QVector<double>& values);
+    const QVector<double>& time_values() const noexcept { return m_time_values; }
+    const QVector<double>& color_values() const noexcept { return m_color_values; }
     std::optional<QPointF> position_at_time(double t) const;
 
     /*! \brief Tint from \a start to \a end through a two-stop gradient. */
