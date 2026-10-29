@@ -6,6 +6,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QWidget
 
 from conftest import process_events
+from SciQLopPlots import GraphType
 
 X = np.arange(20.0)
 
@@ -23,6 +24,11 @@ def _histogram(plot):
 def _line(plot):
     g = plot.plot(X, X, name="line")
     return g, lambda: g.components()[0].selected()
+
+
+def _curve(plot):
+    c = plot.plot(X, X, name="curve", graph_type=GraphType.ParametricCurve)
+    return c, lambda: c.components()[0].selected()
 
 
 def _multi_line(plot):
@@ -70,7 +76,8 @@ def _click_legend_row(qtbot, plot, component):
     _click_at(plot, QPoint(rect.center().x(), rect.top() + header_height * (component + 1.5)))
 
 
-@pytest.mark.parametrize("make,component", [(_histogram, None), (_line, None), (_multi_line, 1),
+@pytest.mark.parametrize("make,component", [(_histogram, None), (_line, None), (_curve, None),
+                                      (_multi_line, 1),
                                       (_colormap, None), (_histogram2d, None)])
 @pytest.mark.parametrize("toggle", [False, True])
 def test_legend_click_selects_after_a_legend_toggle(qtbot, plot, make, component, toggle):
