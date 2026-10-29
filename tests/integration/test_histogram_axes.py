@@ -127,7 +127,7 @@ class TestRebinOnTheNewAxis:
         with qtbot.waitSignal(h.x_bins_log_changed, timeout=1000):
             h.set_x_axis(plot.x2_axis())
         qtbot.waitUntil(lambda: busy[-1:] == [False], timeout=2000)
-        assert h.x_bins_log() and True in busy
+        assert h.x_bins_log() and busy == [True, False]
 
     def _settled_histogram2d(self, qtbot, plot):
         h = plot.histogram2d(np.geomspace(1.0, 1000.0, 500), np.geomspace(1.0, 1000.0, 500))

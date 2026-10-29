@@ -77,17 +77,20 @@ def _show(qtbot, plot):
     plot.replot(True)
 
 
+def _expanded_component_row(plot, rect, component):
+    # A multigraph is one legend group item, so row_rect cannot address its component rows.
+    _click_at(plot, rect.center())  # a group header click expands the component rows
+    plot.replot(True)
+    return QPoint(rect.center().x(), rect.top() + rect.height() * (component + 1.5))
+
+
 def _click_legend_row(qtbot, plot, component):
     _show(qtbot, plot)
     rect = plot.legend().row_rect(0)
     assert rect.isValid()
     if component is None:
         return _click_at(plot, rect.center())
-    # A multigraph is one legend group item, so row_rect cannot address its component rows.
-    header_height = rect.height()
-    _click_at(plot, rect.center())  # a group header click expands the component rows
-    plot.replot(True)
-    _click_at(plot, QPoint(rect.center().x(), rect.top() + header_height * (component + 1.5)))
+    _click_at(plot, _expanded_component_row(plot, rect, component))
 
 
 @pytest.mark.parametrize("make,component", [(_histogram, None), (_line, None), (_curve, None),
@@ -107,8 +110,5 @@ def test_legend_click_selects_after_a_legend_toggle(qtbot, plot, make, component
 def test_double_click_on_a_component_row_hides_only_that_component(qtbot, plot):
     graph, _ = _multi_line(plot)
     _show(qtbot, plot)
-    rect = plot.legend().row_rect(0)
-    _click_at(plot, rect.center())  # a group header click expands the component rows
-    plot.replot(True)
-    _double_click_at(plot, QPoint(rect.center().x(), rect.top() + rect.height() * 2.5))
+    _double_click_at(plot, _expanded_component_row(plot, plot.legend().row_rect(0), 1))
     assert [c.visible() for c in graph.components()] == [True, False]

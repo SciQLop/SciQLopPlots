@@ -390,10 +390,10 @@ reason = "componentSelection(componentCount()) is out of range and returns an em
 path = "src/SciQLopGraphInterface.cpp"
 op = "and_to_or"
 before = "        if (auto* plot = p->parentPlot(); plot && plot->legend)"
-reason = "A plottable is built on its plot's axes and every QCustomPlot owns a legend, so both operands are always true here."
+reason = "A plottable is built on its plot's axes, and nothing in this tree nulls QCustomPlot::legend, so both operands are always true here."
 
 [[project.equivalent]]
 path = "src/SciQLopHistogram.cpp"
 op = "and_to_or"
 before = "    return _hist && _hist->layer() ? _hist->layer()->name() : QString();"
-reason = "_hist is null only while the plot is being destroyed, and a live plottable always sits on a layer, so both forms agree."
+reason = "_hist is null only while the plot is being destroyed, and nothing in this tree takes a live histogram off its layer, so both forms agree."
