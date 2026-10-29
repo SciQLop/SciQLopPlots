@@ -79,6 +79,8 @@ class TestSaveRaises:  # task 13, finding 3.9
         assert plot.save(str(tmp_path / "ok.png"), 200, 100) is True
 
 
+# These callbacks raise on purpose; the errors go through sys.excepthook, which pytest-qt checks.
+@pytest.mark.qt_no_exception_capture
 class TestDataCallbackErrors:  # task 9, finding 3.2
     @staticmethod
     def _fetch(qtbot, graph, start=0.0, stop=1.0):
@@ -95,6 +97,34 @@ class TestDataCallbackErrors:  # task 9, finding 3.2
         qtbot.waitUntil(lambda: bool(failures), timeout=5000)
         assert "instrument offline" in failures[0]
         assert "ValueError" in failures[0]
+
+    def test_a_raising_callback_reaches_sys_excepthook(self, qtbot, plot, monkeypatch):
+        # Applications (SciQLop) log callback errors through their own excepthook.
+        import sys
+        seen = []
+        monkeypatch.setattr(sys, "excepthook", lambda kind, value, tb: seen.append(value))
+
+        def broken(start, stop):
+            raise ValueError("instrument offline")
+        graph = plot.plot(broken)
+        self._fetch(qtbot, graph)
+        qtbot.waitUntil(lambda: bool(seen), timeout=5000)
+        assert "instrument offline" in str(seen[0])
+
+    def test_a_raising_transform_reaches_sys_excepthook(self, qtbot, plot, monkeypatch):
+        # call(x, y) is the path of a graph observing another graph's data.
+        import sys
+        seen = []
+        monkeypatch.setattr(sys, "excepthook", lambda kind, value, tb: seen.append(value))
+
+        def transform(x, y):
+            if not np.isscalar(x):
+                raise ValueError("bad transform")
+            return np.linspace(x, y, 4), np.zeros(4)
+        graph = plot.line(transform)
+        graph.call(X, X)
+        qtbot.waitUntil(lambda: bool(seen), timeout=5000)
+        assert "bad transform" in str(seen[0])
 
     def test_bad_data_is_reported(self, qtbot, plot):
         graph = plot.plot(lambda start, stop: (np.arange(10.), np.arange(3.)))

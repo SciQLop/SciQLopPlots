@@ -132,7 +132,7 @@ rules holds in some classes and not in others.
 | --- | --- |
 | 7 Unsupported calls | Raise `NotImplementedError` from Python (shiboken's `storeErrorOrPrint`, safe in `noexcept` stubs); from C++ they print. Stubs that were hooks or honest defaults became plain defaults (behaviour hooks, a plottable's axes, the dummy axis's selection). The pixmap item got the geometry it lacked. |
 | 8 Arity vs `graph_type` | `DeprecationWarning` instead of an error: SciQLop's XY panels pass `ParametricCurve` with three arrays. An error at 1.0. |
-| 9 Data-callback errors | `graph.fetch_failed(message)`; a failed range is not recorded as loaded. |
+| 9 Data-callback errors | `graph.fetch_failed(message)`; a failed range is not recorded as loaded. The error still goes through `sys.excepthook`, as before. |
 | 10 Projection axes | Rejected: `x_axis()` returning None means "not on the panel's x axis", and the panel's x sync relies on it. |
 | 11 `name` | Deferred to 1.0, done with SciQLop: `name()` methods everywhere was chosen, but SciQLop reads `impl.name` as a property on panels. |
 | 12 Item factories | Moved to phase 4, with `plot.remove(x)` and one ownership model. |

@@ -77,9 +77,8 @@ struct PyAutoScopedGIL
     ~PyAutoScopedGIL() { PyGILState_Release(gstate); }
 };
 
-// The traceback of the Python error being raised, as text; the error is cleared. Also written to
-// sys.stderr, but not through sys.excepthook: test runners and IDEs turn that into a failure of
-// whatever happens to run, while the graph reports the error itself (fetch_failed).
+// The traceback of the Python error being raised, as text, for fetch_failed. The error is then
+// printed through sys.excepthook, where applications log their errors, and cleared.
 static std::string take_python_error()
 {
     PyObject *type = nullptr, *value = nullptr, *tb = nullptr;
@@ -107,13 +106,8 @@ static std::string take_python_error()
         Py_DECREF(traceback);
     }
     PyErr_Clear();
-    if (auto* stderr_file = PySys_GetObject("stderr"))
-        if (auto* written = PyObject_CallMethod(stderr_file, "write", "s", text.c_str()))
-            Py_DECREF(written);
-    PyErr_Clear();
-    Py_XDECREF(type);
-    Py_XDECREF(value);
-    Py_XDECREF(tb);
+    PyErr_Restore(type, value, tb);
+    PyErr_Print();
     return text;
 }
 
