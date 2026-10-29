@@ -180,6 +180,16 @@ Item 5.6, Plan A, done (spec docs/plans/2026-10-25-span-line-unification-design.
 Item 5.7 done: one time conversion, `SciQLopPlots.to_epoch_seconds(value)` (float, datetime64 in any unit, datetime with naive meaning UTC, date, ISO string, QDateTime; NaT, unparsable strings and unknown types raise), used by every time entry point: ranges (and any range argument now takes a `(start, stop)` pair), scalar positions (line factories, `set_position`, crosshair key, projection time marker), and data arrays and callback results (datetime64 and object arrays of dates, copied once, NaT a gap). Fixed on the way: `datetime64[ns]` positions silently 1e9 too large, `"2024-13-45"` reading as 1970-01-01, `"2024-01-01T"` accepted as midnight. Break: an unparsable date string raises ValueError instead of RuntimeError. Not converted, and documented: the old line classes' `position` property setters and deprecated constructors, pandas Series (call `.to_numpy()`); a QDateTime without a zone keeps Qt's local-time meaning.
 
 Item 2.9 done: timeline `style`, `stack` and `edit_modes` take and return `TimelineStyle`, `TimelineStack` (`Off`, `Time`, `Category`) and a set of `TimelineEditMode`; the old strings (and None for stack) still work with a DeprecationWarning. The C++ timeline API stays string-based, so the inspector and wasm are unchanged. The 2-D histogram's normalization is its own `Histogram2DNormalization` (`Count`, `PerColumn`), since per-column is not the 1-D density; the old ints 0 and 1 warn, and `normalization_changed` stays an int for one release. Break: `tl.style == "wave"`, `tl.stack is None` and `str(tl.style)` change. The suite's warning filter now matches every `is deprecated: use <Name>.` message.
+Breaks found by the final review (2026-10-29), deliberate but not listed above:
+
+- A 2-D histogram fed by a callback or a remote source follows the time axis, not x. On a plain plot nothing sets that axis, so it fetches nothing; in a panel, its plot no longer follows the panel's x.
+- A time-series plot's `histogram()` and `bars()` refuse with a warning and return None: bins over time land off screen. `panel.histogram()` builds a plain plot for them.
+- A projection plot's `line(callable)` and `scatter(callable)` raise `NotImplementedError`; `plot(callable)` still makes a projection curve.
+- The old span and line classes now derive from `SciQLopSpan` and `SciQLopStraightLine`: `isinstance` against `SciQLopRangeItemInterface`, `SciQLopItemInterface` or `SciQLopMultiPlotObject` is False for them.
+- A span drag keeps the edge under the pointer in pixels: if the axis moves during the drag, the edge does not keep its data offset.
+- `tl.edit_modes` is a set of `TimelineEditMode`: `"move" in tl.edit_modes` is False.
+- `graph_type` takes a `GraphType`; a plain int is refused.
+
 ## After the review: mutation testing, phase 1
 
 Done 2026-10-29 (design docs/plans/2026-10-22-mutation-testing-design.md, tool `tools/mutation/`). It covered the code added by `feat/fills-histogram` in both repositories: fills, error bars, histograms, the async pipeline and the SciQLopPlots wrappers.
