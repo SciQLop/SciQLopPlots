@@ -24,6 +24,7 @@ Rules for every change:
 | 1.16 | `enable_cursor()` and `set_crosshair_enabled()` | `set_crosshair_enabled` is the one; `enable_cursor` warns. `show_crosshair_at_key` while disabled: documented no-op (it shows what is enabled). |
 | 2.8 | `set_auto_contour_levels(n)` / `auto_contour_level_count()` | getter `auto_contour_levels()`; the old getter warns. |
 | 2.11 | `AxisType` has no x2 / y2 | add `XAxis2`, `YAxis2`; `plot.axis(type)` returns them. |
+| 5.9 | `name` is a property on 22 binding classes (plottables, plots, panels), a method elsewhere | `name()` / `set_name()` / `name_changed` everywhere: the 24 `<property name="name">` lines go; plots and panels get the C++ trio (`name_changed` follows `objectNameChanged`). A hard break (a value and a method cannot share the name, so no warning): `x.name` reads become `x.name()`, `x.name = s` becomes `x.set_name(s)`. Listed as a deliberate break. |
 
 ### Batch 2: small features
 
@@ -62,6 +63,5 @@ Rules for every change:
 - 1.8 `panel.plot()` returns `(plot, graph)`: by design. A call that creates a container returns
   the container and its content, like matplotlib's `fig, ax = plt.subplots()`; `plot.plot()` creates
   no plot, so it returns the graph only. The guide says so.
-- 5.9 `name` as a method everywhere: deferred to 1.0 with SciQLop (it reads `impl.name` as a property).
 - 5.10 one plot-container interface: a hierarchy refactor; its user-visible part (2.2 projection axes) was rejected on purpose. Its own design if wanted.
 - 4.10 state save/restore, polar plots: features, each their own design.

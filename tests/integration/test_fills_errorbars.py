@@ -311,7 +311,7 @@ class TestFactories:
 
     def test_band_is_one_legend_row(self, plot):
         g = plot.band(X, X - 1, X + 1, name="b")
-        assert g.name == "b"
+        assert g.name() == "b"
         assert g.column_in_legend(0) and not g.column_in_legend(1)
 
     def test_band_callback_passes_empty_batches_through(self, qtbot, plot):
@@ -384,7 +384,7 @@ class TestFactories:
     def test_error_bars_labels_default_and_follow_name(self, plot):
         assert [c.name() for c in plot.error_bars(X, X, 0.5).components()] == ["y", "lower", "upper"]
         g = plot.error_bars(X, X, 0.5, name="e")
-        assert g.name == "e"
+        assert g.name() == "e"
         assert [c.name() for c in g.components()] == ["e", "lower", "upper"]
 
     def test_band_draws_no_line_on_either_column(self, plot):

@@ -36,8 +36,15 @@ class SciQLopPlotPanelInterface : public QScrollArea, public SciQLopPlotCollecti
     Q_OBJECT
 
 public:
-    SciQLopPlotPanelInterface(QWidget* parent = nullptr):QScrollArea{parent}{}
+    SciQLopPlotPanelInterface(QWidget* parent = nullptr) : QScrollArea { parent }
+    {
+        connect(this, &QObject::objectNameChanged, this,
+                &SciQLopPlotPanelInterface::name_changed);
+    }
     virtual ~SciQLopPlotPanelInterface() {}
+
+    inline QString name() const { return objectName(); }
+    inline void set_name(const QString& name) { setObjectName(name); }
 
     void request_delete()
     {
@@ -124,4 +131,5 @@ public:
     Q_SIGNAL void selectionChanged(bool selected);
     Q_SIGNAL void time_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void delete_me();
+    Q_SIGNAL void name_changed(const QString& name);
 };

@@ -203,3 +203,9 @@ Done 2026-10-29 (design docs/plans/2026-10-22-mutation-testing-design.md, tool `
   - a late first-data fit snapped back an x range the caller had just moved, cancelling its fetch;
   - toggling a projection's axis linking while its first fit was pending could skip that fit.
 - Caveat: the overnight SciQLopPlots run reported 9 survivors that a lone re-run killed. The cause is not found; a future run's survivors are re-run before triage.
+
+## Leftover items (design docs/plans/2026-10-29-api-review-leftovers-design.md)
+
+Breaks, deliberate:
+
+- 5.9: `name` is a method on every class: plottables, plots and panels lost the `name` property. `x.name` is now `x.name()`, `x.name = s` is `x.set_name(s)`. Plots and panels gained `set_name` and `name_changed`. No deprecation path: a value and a method cannot share a name.

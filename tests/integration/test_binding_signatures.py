@@ -99,11 +99,11 @@ def _graph(result):
 @pytest.mark.parametrize("label,make,expected", _DEFAULT_NAMES, ids=[d[0] for d in _DEFAULT_NAMES])
 def test_default_graph_names(request, host_name, label, make, expected):
     host = request.getfixturevalue(host_name)
-    assert _graph(make(host)).name == expected
+    assert _graph(make(host)).name() == expected
 
 
 def test_time_series_colormap_default_name(ts_plot):
-    assert _graph(ts_plot.colormap(X, X, Z)).name == "ColorMap"
+    assert _graph(ts_plot.colormap(X, X, Z)).name() == "ColorMap"
 
 
 _RANGE = SciQLopPlotRange(0.0, 1.0)

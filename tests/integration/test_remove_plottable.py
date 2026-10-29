@@ -68,7 +68,7 @@ class TestRemovePlottableByName:
         p = SciQLopPlot()
         qtbot.addWidget(p)
         g = p.line(x, y)
-        g.name = "my_graph"
+        g.set_name("my_graph")
         assert len(p.plottables()) == 1
 
         with pytest.warns(DeprecationWarning):

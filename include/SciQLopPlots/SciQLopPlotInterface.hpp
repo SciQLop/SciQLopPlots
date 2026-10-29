@@ -144,9 +144,13 @@ public:
             setObjectName(name);
         else
             setObjectName(UniqueNamesFactory::unique_name("Plot"));
+        connect(this, &QObject::objectNameChanged, this, &SciQLopPlotInterface::name_changed);
     }
 
     virtual ~SciQLopPlotInterface() = default;
+
+    inline QString name() const { return objectName(); }
+    inline void set_name(const QString& name) { setObjectName(name); }
 
     inline QUuid uuid() const noexcept
     {
@@ -728,6 +732,7 @@ signals:
     Q_SIGNAL void y2_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void time_axis_range_changed(SciQLopPlotRange range);
     Q_SIGNAL void selection_changed(bool selected);
+    Q_SIGNAL void name_changed(const QString& name);
     Q_SIGNAL void auto_scale_changed(bool auto_scale);
     Q_SIGNAL void graph_list_changed();
     Q_SIGNAL void resized();

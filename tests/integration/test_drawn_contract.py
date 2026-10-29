@@ -182,7 +182,7 @@ ROWS += [
         "SciQLopNDProjectionCurves": lambda h: _with_components(h, h.nd.plot([X, X, np.sin(X), np.cos(X)])),
         "SciQLopNDProjectionCurvesFunction": lambda h: _with_components(
             h, h.nd.plot(lambda a, b: [X, X, np.sin(X), np.cos(X)], graph_type=GraphType.ParametricCurve)),
-    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    }, PLOTTABLE_CELLS),
     Row("colour map", ("SciQLopColorMap", "SciQLopHistogram2D"), {
         "SciQLopColorMap": lambda h: h.plot.colormap(X, Y, Z),
         "SciQLopColorMapFunction": lambda h: h.plot.plot(lambda a, b: [X, Y, Z], graph_type=GraphType.ColorMap),
@@ -191,13 +191,13 @@ ROWS += [
         "SciQLopHistogram2DFunction": lambda h: h.plot.plot(lambda a, b: [X, np.sin(X)],
                                                             graph_type=GraphType.Histogram2D),
         "SciQLopHistogram2DRemote": lambda h: h.plot.add_remote_histogram2d("h"),
-    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    }, PLOTTABLE_CELLS),
     Row("histogram", ("SciQLopHistogram",), {
         "SciQLopHistogram": lambda h: h.plot.histogram(np.sin(X)),
         "SciQLopHistogramFunction": lambda h: _shown(h, h.plot.histogram(lambda a, b: [np.sin(X)])),
-    }, PLOTTABLE_CELLS, frozenset({"name"})),
+    }, PLOTTABLE_CELLS),
     Row("timeline", ("SciQLopTimeline",), {"SciQLopTimeline": _timeline},
-        PLOTTABLE_CELLS, frozenset({"name"})),
+        PLOTTABLE_CELLS),
 ]
 ABSTRACT |= {"SciQLopPlottableInterface", "SciQLopGraphInterface", "SQPQCPAbstractPlottableWrapper",
              "SciQLopMultiGraphBase", "SciQLopColorMapInterface", "SciQLopColorMapBase"}

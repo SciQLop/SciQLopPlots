@@ -172,7 +172,7 @@ class TestHistogramBehaviour:
 class TestFactories:
     def test_plot_dispatch_one_argument(self, qtbot, plot):
         h = plot.plot(np.arange(10.0), graph_type=GraphType.Histogram, name="h", bins=5)
-        assert isinstance(h, SciQLopHistogram) and h.bins() == 5 and h.name == "h"
+        assert isinstance(h, SciQLopHistogram) and h.bins() == 5 and h.name() == "h"
 
     def test_two_arguments_are_refused(self, plot):
         with pytest.raises(TypeError):
@@ -427,7 +427,7 @@ class TestHistogramName:
     def test_renaming_renames_the_legend_row(self, plot):
         h = plot.histogram(np.arange(10.0), name="before")
         h.set_name("after")
-        assert h.name == "after" and plot.legend().row_labels() == ["after"]
+        assert h.name() == "after" and plot.legend().row_labels() == ["after"]
 
     def test_a_given_name_is_the_users(self, plot):
         h = plot.histogram(np.arange(10.0))

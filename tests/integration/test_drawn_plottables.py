@@ -26,11 +26,11 @@ def test_hiding_a_timeline_signals_once(ts_plot):
     assert (timeline.visible(), seen) == (False, [False])
 
 
-def test_the_name_property_goes_through_set_name(qtbot, plot):
+def test_set_name_reaches_late_components(qtbot, plot):
     """m_user_named is set: a callback graph's late components then take the name."""
     plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
     graph = plot.plot(lambda start, stop: [X, np.sin(X)])
-    graph.name = "speed"
+    graph.set_name("speed")
     qtbot.waitUntil(lambda: len(graph.components()) == 1, timeout=3000)
     assert graph.components()[0].name() == "speed"
 
@@ -38,9 +38,9 @@ def test_the_name_property_goes_through_set_name(qtbot, plot):
 def test_renaming_a_plottable_signals_once(plot):  # guard
     graph = plot.plot(X, np.sin(X), labels=["a"])
     seen = record(graph.name_changed)
-    graph.name = "trace"
     graph.set_name("trace")
-    assert (graph.name, seen) == ("trace", ["trace"])
+    graph.set_name("trace")
+    assert (graph.name(), seen) == ("trace", ["trace"])
 
 
 def test_a_graph_colour_points_to_colors(plot):

@@ -742,7 +742,7 @@ note.set_visible(False)                         # visible / set_visible / visibl
 note.set_selected(True)                         # selected / set_selected / selection_changed
 note.set_name("marker")                         # name / set_name / name_changed
 note.set_color(graph.component(0).color())      # color / set_color / color_changed
-graph.name = "sine"                             # a plottable's name is a property
+graph.set_name("sine")                          # plots, panels and plottables too
 try:
     graph.color()                               # a graph has one colour per line
 except NotImplementedError as error:

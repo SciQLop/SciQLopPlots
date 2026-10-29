@@ -260,7 +260,7 @@ def test_a_slot_deleting_the_projection_mid_rename_does_not_crash(qtbot):
     import shiboken6
     _nd, projection = _three_pane_projection(qtbot)
     projection.components()[0].name_changed.connect(lambda _: shiboken6.delete(projection))
-    projection.name = "renamed"  # the base emitted name_changed on a dead self after _named
+    projection.set_name("renamed")  # the base emitted name_changed on a dead self after _named
     process_events()
     assert not shiboken6.isValid(projection)
 

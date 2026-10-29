@@ -68,7 +68,7 @@ def test_set_data_with_wrong_buffer_count_raises(panel):
 
 def test_name_on_a_projection_names_the_graph(panel):
     _, graph = panel.plot(t, np.column_stack([X, Y, Z]), name="orbit", **PROJECTION)
-    assert graph.name == "orbit"
+    assert graph.name() == "orbit"
 
 
 def test_four_arrays_plot_like_one_list(panel):

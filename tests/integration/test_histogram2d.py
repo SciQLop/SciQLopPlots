@@ -105,7 +105,7 @@ class TestHistogram2DProperties:
 
     def test_name(self, plot):
         hist = plot.add_histogram2d("my_hist")
-        assert hist.name == "my_hist"
+        assert hist.name() == "my_hist"
 
 
 class TestHistogram2DNormalizationCombo:
