@@ -135,6 +135,22 @@ void SciQLopPlotAxis::set_log(bool log) noexcept
     }
 }
 
+void SciQLopPlotAxis::set_reversed(bool reversed) noexcept
+{
+    SCIQLOP_ON_OWNER_THREAD(set_reversed(reversed));
+    if (!m_axis.isNull() && m_axis->rangeReversed() != reversed)
+    {
+        m_axis->setRangeReversed(reversed);
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+        Q_EMIT reversed_changed(reversed);
+    }
+}
+
+bool SciQLopPlotAxis::reversed() const noexcept
+{
+    return !m_axis.isNull() && m_axis->rangeReversed();
+}
+
 void SciQLopPlotAxis::set_label(const QString& label) noexcept
 {
     SCIQLOP_ON_OWNER_THREAD(set_label(label));

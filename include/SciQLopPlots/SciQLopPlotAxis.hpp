@@ -91,6 +91,9 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
+    //! Draws the axis from high to low; range() stays the ordered interval.
+    inline virtual void set_reversed(bool reversed) noexcept { WARN_ABSTRACT_METHOD; }
+
     inline virtual void set_label(const QString& label) noexcept
     {
         Q_UNUSED(label);
@@ -162,6 +165,12 @@ public:
     }
 
     inline virtual bool log() const noexcept
+    {
+        WARN_ABSTRACT_METHOD;
+        return false;
+    }
+
+    inline virtual bool reversed() const noexcept
     {
         WARN_ABSTRACT_METHOD;
         return false;
@@ -260,6 +269,7 @@ signals:
     Q_SIGNAL void visible_changed(bool visible);
     Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
+    Q_SIGNAL void reversed_changed(bool reversed);
     Q_SIGNAL void label_changed(const QString& label);
     Q_SIGNAL void label_font_changed(const QFont& font);
     Q_SIGNAL void label_color_changed(const QColor& color);
@@ -331,6 +341,7 @@ public:
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
     void set_log(bool log) noexcept override;
+    void set_reversed(bool reversed) noexcept override;
     void set_label(const QString& label) noexcept override;
     void set_tick_labels_visible(bool visible) noexcept override;
     void set_label_font(const QFont& font) noexcept override;
@@ -343,6 +354,7 @@ public:
     SciQLopPlotRange range() const noexcept override;
     bool visible() const noexcept override;
     bool log() const noexcept override;
+    bool reversed() const noexcept override;
     QString label() const noexcept override;
     bool tick_labels_visible() const noexcept override;
     QFont label_font() const noexcept override;
