@@ -74,7 +74,7 @@ def test_axes_showing_the_same_dimension_move_together(proj):
 
 def test_reference_curve_follows_the_pairs(proj, qtbot):
     proj.set_dimension_pairs(MAGNETOSPHERIC)
-    proj.add_reference_curve(DIMS)
+    proj.reference_curve(DIMS)
     # The curves get their data from their resampler threads, some events later.
     qtbot.waitUntil(lambda: [_pane_dims(proj, i) for i in range(3)] == [[0, 1], [0, 2], [1, 2]],
                     timeout=2000)

@@ -209,3 +209,10 @@ Done 2026-10-29 (design docs/plans/2026-10-22-mutation-testing-design.md, tool `
 Breaks, deliberate:
 
 - 5.9: `name` is a method on every class: plottables, plots and panels lost the `name` property. `x.name` is now `x.name()`, `x.name = s` is `x.set_name(s)`. Plots and panels gained `set_name` and `name_changed`. No deprecation path: a value and a method cannot share a name.
+
+Deprecated (warn, still work):
+
+- 1.7: projection `add_reference_curve` / `add_model_curve` are `reference_curve` / `model_curve`; `add_waterfall(callback, ...)` is `waterfall(callback, ...)`. The rule: `x(data or callback)` builds from data, `add_x(...)` makes an empty plottable fed later, so `add_timeline` and the empty `add_waterfall` / `add_histogram2d` keep their names.
+- 1.16: `plot.enable_cursor` is `plot.set_crosshair_enabled`.
+- 2.8: `colormap.auto_contour_level_count()` is `colormap.auto_contour_levels()`.
+- 1.5: products model `add_node`, node `set_name` / `name_changed` (snake_case twins, no warning on the old names).

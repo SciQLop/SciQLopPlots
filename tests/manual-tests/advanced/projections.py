@@ -90,7 +90,7 @@ class MMS(SciQLopMultiPlotPanel):
         bs_x = r_bs * np.cos(theta)
         bs_y = r_bs * np.sin(theta)
         bs_z = np.zeros_like(theta)
-        proj.add_reference_curve([bs_x, bs_y, bs_z], label="Bow Shock", color=QColor("green"))
+        proj.reference_curve([bs_x, bs_y, bs_z], label="Bow Shock", color=QColor("green"))
 
         self.set_time_axis_range(
             datetime(2019, 2, 17, 12, 33, 0, 0, timezone.utc),

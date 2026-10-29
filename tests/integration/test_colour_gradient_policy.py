@@ -91,6 +91,6 @@ class TestProjection:
             return {"data": [t, np.cos(a), np.sin(a), 0.5 * np.cos(a)],
                     "color": np.linspace(1.0, 4.0, N)}
 
-        proj.add_model_curve(trajectory, "traj")
+        proj.model_curve(trajectory, "traj")
         qtbot.waitUntil(lambda: proj.z_axis().visible(), timeout=5000)
         assert proj.z_gradient() == ColorGradient.Hot

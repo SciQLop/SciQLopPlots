@@ -168,7 +168,7 @@ class TestProjection:
             return {"data": [t, np.cos(a), np.sin(a), 0.5 * np.cos(a)],
                     "color": np.linspace(1.0, 4.0, N)}
 
-        graph = proj.add_model_curve(trajectory, "traj")
+        graph = proj.model_curve(trajectory, "traj")
         _wait_idle(qtbot, graph)
         qtbot.waitUntil(lambda: proj.z_axis().visible(), timeout=5000)
         assert _range(proj.z_axis()) == (pytest.approx(1.0), pytest.approx(4.0))

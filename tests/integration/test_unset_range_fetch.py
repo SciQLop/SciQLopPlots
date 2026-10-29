@@ -22,7 +22,7 @@ def test_standalone_projection_never_fetches_nan(qtbot):
     qtbot.addWidget(proj)
     calls = []
     proj.plot(_recording(calls, 4), labels=["a", "b", "c"], graph_type=GraphType.ParametricCurve)
-    proj.add_model_curve(_recording(calls, 4), label="model")
+    proj.model_curve(_recording(calls, 4), label="model")
     qtbot.wait(400)
     assert _nan_calls(calls) == []
 

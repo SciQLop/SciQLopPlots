@@ -116,7 +116,7 @@ class TestReferenceLayers:
         y = np.sin(theta)
         z = np.zeros_like(theta)
 
-        ref = proj.add_reference_curve([x, y, z], label="Unit circle")
+        ref = proj.reference_curve([x, y, z], label="Unit circle")
         process_events()
         assert ref is not None
 
@@ -130,7 +130,7 @@ class TestReferenceLayers:
         y = 5.0 * np.sin(theta)
         z = np.zeros_like(theta)
 
-        ref = proj.add_reference_curve([x, y, z], label="Orbit")
+        ref = proj.reference_curve([x, y, z], label="Orbit")
         process_events()
 
         proj.time_axis().set_range(SciQLopPlotRange(100.0, 200.0))
@@ -146,7 +146,7 @@ class TestReferenceLayers:
             x = r * np.cos(theta)
             y = r * np.sin(theta)
             z = np.zeros_like(theta)
-            ref = proj.add_reference_curve([x, y, z], label=f"r={r}")
+            ref = proj.reference_curve([x, y, z], label=f"r={r}")
             assert ref is not None
         process_events()
 
@@ -158,7 +158,7 @@ class TestReferenceLayers:
         x = np.cos(theta)
         y = np.sin(theta)
 
-        ref = proj.add_reference_curve([x, y], label="Circle")
+        ref = proj.reference_curve([x, y], label="Circle")
         process_events()
         assert ref is not None
 
@@ -224,7 +224,7 @@ class TestTimeColorEncoding:
         proj = SciQLopNDProjectionPlot(3)
         qtbot.addWidget(proj)
         t = np.linspace(0, 10, 200, dtype=np.float64)
-        ref = proj.add_reference_curve([t, np.cos(t), np.sin(t), t * 0.1], label="orbit")
+        ref = proj.reference_curve([t, np.cos(t), np.sin(t), t * 0.1], label="orbit")
         qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
         process_events()  # the resampled data reaches the curve on a queued signal
         proj.set_time_color_enabled(True)
@@ -321,7 +321,7 @@ class TestTimeColoredReferenceCurve:
         qtbot.addWidget(proj)
         t, x, y, z = self._orbit(self.N)
 
-        ref = proj.add_reference_curve([t, x, y, z], label="orbit")
+        ref = proj.reference_curve([t, x, y, z], label="orbit")
         process_events()
         assert ref is not None
 
@@ -329,15 +329,15 @@ class TestTimeColoredReferenceCurve:
         proj = SciQLopNDProjectionPlot(3)
         qtbot.addWidget(proj)
         t, x, y, z = self._orbit(self.N)
-        assert proj.add_reference_curve([x, y]) is None
-        assert proj.add_reference_curve([t, x, y, z, x]) is None
+        assert proj.reference_curve([x, y]) is None
+        assert proj.reference_curve([t, x, y, z, x]) is None
 
     def test_time_is_not_plotted_as_a_dimension(self, qtbot):
         proj = SciQLopNDProjectionPlot(3)
         qtbot.addWidget(proj)
         t, x, y, z = self._orbit(self.N)
 
-        ref = proj.add_reference_curve([t, x, y, z], label="orbit")
+        ref = proj.reference_curve([t, x, y, z], label="orbit")
         assert ref is not None
         qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
         process_events()
@@ -375,7 +375,7 @@ class TestTimeColoredReferenceCurve:
         plain, tinted = SciQLopNDProjectionPlot(3), SciQLopNDProjectionPlot(3)
         for p in (plain, tinted):
             qtbot.addWidget(p)
-            ref = p.add_reference_curve([t, x, y, z], label="orbit")
+            ref = p.reference_curve([t, x, y, z], label="orbit")
             assert ref is not None
             qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
             process_events()  # the resampled data reaches the curve on a queued signal

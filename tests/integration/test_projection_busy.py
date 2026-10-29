@@ -28,7 +28,7 @@ def _spans_trajectory(proj):
 def test_reference_curve_is_busy_until_panes_have_data(qtbot):
     proj = SciQLopNDProjectionPlot(3)
     qtbot.addWidget(proj)
-    ref = proj.add_reference_curve(list(_orbit()), label="orbit")
+    ref = proj.reference_curve(list(_orbit()), label="orbit")
     assert ref.busy(), "panes are still resampling"
     qtbot.waitUntil(lambda: not ref.busy(), timeout=5000)
     assert _spans_trajectory(proj)
@@ -37,7 +37,7 @@ def test_reference_curve_is_busy_until_panes_have_data(qtbot):
 def test_reference_curve_signals_when_it_is_done(qtbot):
     proj = SciQLopNDProjectionPlot(3)
     qtbot.addWidget(proj)
-    ref = proj.add_reference_curve(list(_orbit()), label="orbit")
+    ref = proj.reference_curve(list(_orbit()), label="orbit")
     with qtbot.waitSignal(ref.busy_changed, timeout=5000,
                           check_params_cb=lambda busy: not busy):
         pass
@@ -52,7 +52,7 @@ def test_model_curve_is_busy_while_fetching(qtbot):
     def model(start, stop):
         return [t, x, y, z]
 
-    g = proj.add_model_curve(model, label="model")
+    g = proj.model_curve(model, label="model")
     g.set_busy(True)
     assert g.busy(), "a fetch in flight makes the projection busy"
     g.set_busy(False)

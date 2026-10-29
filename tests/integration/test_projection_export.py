@@ -16,7 +16,7 @@ def projection(qtbot):
     proj = SciQLopNDProjectionPlot(3)
     qtbot.addWidget(proj)
     proj.resize(900, 300)
-    curve = proj.add_reference_curve([np.cos(phase), np.sin(phase), 0.3 * np.sin(2 * phase)],
+    curve = proj.reference_curve([np.cos(phase), np.sin(phase), 0.3 * np.sin(2 * phase)],
                                      label="orbit")
     qtbot.waitUntil(lambda: not curve.busy(), timeout=5000)
     process_events()

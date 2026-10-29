@@ -215,7 +215,7 @@ class TestColorMapDelegate(unittest.TestCase):
     def test_contour_level_count_widget_to_model(self):
         spin = self._contours_box().findChildren(QSpinBox)[0]
         spin.setValue(7)
-        self.assertEqual(self.cmap.auto_contour_level_count(), 7)
+        self.assertEqual(self.cmap.auto_contour_levels(), 7)
 
     def test_contour_level_count_model_to_widget(self):
         self.cmap.set_auto_contour_levels(12)

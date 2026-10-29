@@ -43,7 +43,7 @@ proj.set_linked_crosshairs(True)
 
 # Reference circle at r=10 in the XY plane
 theta = np.linspace(0, 2 * np.pi, 200, dtype=np.float64)
-proj.add_reference_curve(
+proj.reference_curve(
     [10 * np.cos(theta), 10 * np.sin(theta), np.zeros_like(theta)],
     label="r=10",
     color=QColor(100, 100, 100),

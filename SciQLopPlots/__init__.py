@@ -508,6 +508,37 @@ _DEPRECATED_CALLS = {
 for (_cls, _name), _message in _DEPRECATED_CALLS.items():
     setattr(_cls, _name, _deprecated_call(_message, vars(_cls)[_name]))
 
+# Review 1.7 / 1.16 / 2.8: (class, old name) -> (new name, receiver). The new name is the native
+# attribute under a second name; the old one warns.
+_RENAMED_CALLS = {
+    (SciQLopPlotsBindings.SciQLopNDProjectionPlot, "add_reference_curve"): ("reference_curve", "projection"),
+    (SciQLopPlotsBindings.SciQLopNDProjectionPlot, "add_model_curve"): ("model_curve", "projection"),
+    (SciQLopPlotsBindings.SciQLopColorMap, "auto_contour_level_count"): ("auto_contour_levels", "colormap"),
+}
+for (_cls, _old), (_new, _receiver) in _RENAMED_CALLS.items():
+    _native = vars(_cls)[_old]
+    setattr(_cls, _new, _native)
+    setattr(_cls, _old, _deprecated_call(f"{_old}(...) is deprecated: use {_receiver}.{_new}(...)", _native))
+
+SciQLopPlot.enable_cursor = _deprecated_call(
+    "enable_cursor(...) is deprecated: use plot.set_crosshair_enabled(...)", vars(SciQLopPlot)["enable_cursor"])
+
+
+
+# x(data or callback) builds from data, add_x(...) makes an empty one fed later: add_waterfall's
+# callback form duplicates waterfall(callback). Its empty form stays.
+def _deprecated_waterfall_callback(method):
+    @_wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if args and callable(args[0]):
+            warnings.warn("add_waterfall(callback, ...) is deprecated: use plot.waterfall(callback, ...)",
+                          DeprecationWarning, stacklevel=2)
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+SciQLopPlot.add_waterfall = _deprecated_waterfall_callback(vars(SciQLopPlot)["add_waterfall"])
+
 _FORMAT_SAVERS = ("save_pdf", "save_svg", "save_png", "save_jpg", "save_bmp")
 _SAVE_OWNERS = {"plot": (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot, SciQLopNDProjectionPlot),
                 "panel": (SciQLopPlotsBindings.SciQLopPlotPanelInterface, SciQLopMultiPlotPanel)}
@@ -828,6 +859,8 @@ _SNAKE_CASE_ALIASES = {
                                                   "remove_object": "removeObject",
                                                   "replot_all": "replotAll",
                                                   "update_plot_list": "updatePlotList"},
+    SciQLopPlotsBindings.PlotsModel: {"add_node": "addNode"},
+    SciQLopPlotsBindings.PlotsModelNode: {"set_name": "setName", "name_changed": "nameChanged"},
 }
 for _cls, _aliases in _SNAKE_CASE_ALIASES.items():
     for _new, _old in _aliases.items():

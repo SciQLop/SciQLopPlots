@@ -77,7 +77,7 @@ def test_four_arrays_plot_like_one_list(panel):
 
 
 def test_set_name_renames_every_pane_legend(proj):
-    graph = proj.add_reference_curve([t, X, Y, Z])
+    graph = proj.reference_curve([t, X, Y, Z])
     graph.set_name("orbit")
     assert [c.name() for c in graph.components()] == ["orbit"] * 3
 
@@ -91,7 +91,7 @@ def red_pixels(plot, tmp_path):
 
 
 def test_marker_set_before_the_data_lands_shows_once_it_does(proj, qtbot, tmp_path):
-    graph = proj.add_reference_curve([t, X, Y, Z])
+    graph = proj.reference_curve([t, X, Y, Z])
     proj.set_time_marker(5.0)
     qtbot.waitUntil(lambda: not graph.busy())
     qtbot.wait(50)
@@ -99,7 +99,7 @@ def test_marker_set_before_the_data_lands_shows_once_it_does(proj, qtbot, tmp_pa
 
 
 def test_marker_follows_the_axes(proj, qtbot, tmp_path):
-    graph = proj.add_reference_curve([t, X, Y, Z])
+    graph = proj.reference_curve([t, X, Y, Z])
     qtbot.waitUntil(lambda: not graph.busy())
     proj.set_time_marker(5.0)
     qtbot.wait(50)
@@ -112,7 +112,7 @@ def test_marker_follows_the_axes(proj, qtbot, tmp_path):
 
 
 def test_removing_a_projection_removes_its_curve_from_every_pane(proj):
-    graph = proj.add_reference_curve([t, X, Y, Z])
+    graph = proj.reference_curve([t, X, Y, Z])
     proj.remove(graph)
     assert pane_plottables(proj) == [0, 0, 0]
     assert proj.plottables() == []

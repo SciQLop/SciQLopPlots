@@ -356,7 +356,7 @@ def create_projection_tab():
     proj.set_equal_aspect_ratio(True)
     proj.set_linked_axes(True)
 
-    proj.add_model_curve(boundary_model, label="boundary", color=QColor(0, 180, 0))
+    proj.model_curve(boundary_model, label="boundary", color=QColor(0, 180, 0))
 
     ts_plot.cursor_time_changed.connect(proj.set_time_marker)
     ts_plot.time_axis_range_changed.connect(proj.time_axis().set_range)

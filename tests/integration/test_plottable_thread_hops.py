@@ -100,7 +100,7 @@ CASES = {
     "colormap.set_contour_levels": (_colormap, lambda o: o.set_contour_levels([0.5]),
                                     lambda o: list(o.contour_levels()), [0.5]),
     "colormap.set_auto_contour_levels": (_colormap, lambda o: o.set_auto_contour_levels(4),
-                                         lambda o: o.auto_contour_level_count(), 4),
+                                         lambda o: o.auto_contour_levels(), 4),
     "colormap.set_contour_pen": (_colormap, lambda o: o.set_contour_pen(QPen(RED)),
                                  lambda o: o.contour_pen().color(), RED),
     "colormap.set_contour_color": (_colormap, lambda o: o.set_contour_color(RED),

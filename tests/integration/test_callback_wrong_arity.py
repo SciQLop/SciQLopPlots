@@ -40,7 +40,7 @@ def test_two_pane_projection_takes_time_and_two_dimensions(qtbot):
     proj = SciQLopNDProjectionPlot(2)
     qtbot.addWidget(proj)
     t = np.linspace(0.0, 10.0, 200)
-    g = proj.add_model_curve(lambda start, stop: [t, np.cos(t), np.sin(t)], label="model")
+    g = proj.model_curve(lambda start, stop: [t, np.cos(t), np.sin(t)], label="model")
     failures = []
     g.fetch_failed.connect(failures.append)
     _fetch(g)
@@ -53,7 +53,7 @@ def test_one_pane_projection_reports_its_batches(qtbot):
     proj = SciQLopNDProjectionPlot(1)
     qtbot.addWidget(proj)
     t = np.linspace(0.0, 10.0, 200)
-    g = proj.add_model_curve(lambda start, stop: [t, np.cos(t)], label="model")
+    g = proj.model_curve(lambda start, stop: [t, np.cos(t)], label="model")
     with qtbot.waitSignal(g.fetch_failed, timeout=5000) as blocker:
         _fetch(g)
     assert "at least 2 panes" in blocker.args[0]
@@ -64,5 +64,5 @@ def test_one_pane_reference_curve_raises_and_builds_nothing(qtbot):
     qtbot.addWidget(proj)
     t = np.linspace(0.0, 10.0, 200)
     with pytest.raises(ValueError, match="at least 2 panes"):
-        proj.add_reference_curve([t, np.cos(t)], label="ref")
+        proj.reference_curve([t, np.cos(t)], label="ref")
     assert proj.plottables() == []

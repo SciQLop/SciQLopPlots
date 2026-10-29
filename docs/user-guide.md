@@ -1034,7 +1034,7 @@ phase = np.linspace(0, 4 * np.pi, t.size)
 x, y, z = np.cos(phase), np.sin(phase), 0.3 * np.sin(2 * phase)
 
 proj = SciQLopNDProjectionPlot(3)
-orbit = proj.add_reference_curve([t, x, y, z], label="orbit")   # [time, dims...]
+orbit = proj.reference_curve([t, x, y, z], label="orbit")   # [time, dims...]
 proj.set_axis_labels(["X", "Y", "Z"])
 ```
 
@@ -1042,7 +1042,7 @@ proj.set_axis_labels(["X", "Y", "Z"])
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
 
-A projection needs at least 2 panes. On a 1-pane projection, `add_reference_curve` raises `ValueError`. A model or callback curve reports each batch through its `fetch_failed` signal instead.
+A projection needs at least 2 panes. On a 1-pane projection, `reference_curve` raises `ValueError`. A model or callback curve reports each batch through its `fetch_failed` signal instead.
 
 `proj.set_dimension_pairs([(0, 1), (0, 2), (1, 2)])` picks the dimensions each pane shows, as (x, y) indices: here X-Y, X-Z, Y-Z, the usual magnetospheric layout. Call it before adding curves.
 
