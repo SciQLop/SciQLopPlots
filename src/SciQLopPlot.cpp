@@ -1844,3 +1844,27 @@ void SciQLopPlot::update_curve_color_scale()
 {
     m_curve_scale->update();
 }
+
+QList<SciQLopPlotAxisInterface*> SciQLopPlot::axes() const
+{
+    QList<SciQLopPlotAxisInterface*> found;
+    for (auto* axis : { x_axis(), y_axis(), x2_axis(), y2_axis(), z_axis() })
+        if (axis)
+            found.append(axis);
+    return found;
+}
+
+SciQLopPlotRange SciQLopPlot::data_range() const
+{
+    double lower = std::numeric_limits<double>::infinity();
+    double upper = -lower;
+    for (auto* plottable : plottables())
+        if (const auto range = plottable->data_range(); range.is_valid())
+        {
+            lower = std::min(lower, range.start());
+            upper = std::max(upper, range.stop());
+        }
+    if (lower > upper)
+        return {};
+    return SciQLopPlotRange(lower, upper, x_axis() && x_axis()->is_time_axis());
+}

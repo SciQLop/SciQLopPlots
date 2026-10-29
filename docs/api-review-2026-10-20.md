@@ -224,3 +224,7 @@ Deprecated (warn, still work):
 - 3.11: `axis.set_reversed(bool)` / `reversed()` / `reversed_changed` draw an axis from high to low; `range()` stays the ordered interval.
 - 4.6: `plot.clear()` removes every plottable, group, item, line and span the plot owns (what `plot.remove` takes); axes, the legend and parts of panel-wide objects stay.
 - 4.7: `to_bytes(format="png", width=0, height=0, scale=1.0, quality=-1)` on plots, panels and projections returns exactly what `save()` writes.
+- 4.8: `axis.set_number_format("g" | "f" | "e", precision)` / `number_format()` / `number_precision()` / `number_format_changed`; on a time axis `set_date_format(qt_format)` / `date_format()` / `date_format_changed` (UTC). Fixed on the way: a time axis switched to log and back lost its date labels for good; a time axis now refuses log with a warning, like text labels.
+- 4.9: line graphs and waterfalls take `set_line_width` / `set_marker_shape` / `set_marker_size` for every component, now and when created later; a column preset or a later component setter wins.
+- 4.10: `plot.axes()` and `plot.data_range()` (union of the plottables' key ranges). `AxisScale` not added: with Linear and Log only it repeats `set_log`; add it with a third scale.
+- 1.13: the per-point style setters already took arrays, lists and tuples (now pinned by a test). The data setters keep refusing plain lists: a list of arrays means a projection, so a list fallback would make overloads depend on the list's content.

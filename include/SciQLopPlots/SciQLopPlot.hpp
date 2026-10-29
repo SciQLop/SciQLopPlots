@@ -565,6 +565,11 @@ public:
     virtual SciQLopPlottableInterface* plottable(const QString& name) override;
     virtual QList<SciQLopPlottableInterface*> plottables() const noexcept override;
 
+    //! x, y, x2, y2 and the colour scale's z axis.
+    QList<SciQLopPlotAxisInterface*> axes() const;
+    //! The union of the plottables' key ranges; invalid while none holds data.
+    SciQLopPlotRange data_range() const;
+
     inline virtual QList<QColor> color_palette() const noexcept override { return m_color_palette; }
 
     inline virtual void set_color_palette(const QList<QColor>& palette) noexcept override
