@@ -618,7 +618,7 @@ panel.set_time_axis_range(start, start + 6 * 3600)   # every plot follows
 
 ![Two time series plots stacked in a panel](images/panel.png)
 
-- On a panel, **`plot()` returns `(plot, graph)`**: the new plot and the graph in it.
+- On a panel, **`plot()` returns `(plot, graph)`**: the new plot and the graph in it, like matplotlib's `fig, ax = plt.subplots()`. On a plot, `plot()` creates no plot, so it returns the graph only.
 - **`synchronize_time=True`** links the time axes of time series plots. **`synchronize_x=True`** links plain x axes instead.
 - `panel.plot_at(i)`, `panel.plots()` and `panel.plot_count()` give access to the plots.
 

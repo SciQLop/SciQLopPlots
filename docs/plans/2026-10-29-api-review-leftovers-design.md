@@ -59,7 +59,9 @@ Rules for every change:
 
 ### Not done, and why
 
-- 1.8 `panel.plot()` returns `(plot, graph)`: the panel creates a plot as well, and SciQLop unpacks the pair everywhere. Changing it breaks every caller for symmetry only.
+- 1.8 `panel.plot()` returns `(plot, graph)`: by design. A call that creates a container returns
+  the container and its content, like matplotlib's `fig, ax = plt.subplots()`; `plot.plot()` creates
+  no plot, so it returns the graph only. The guide says so.
 - 5.9 `name` as a method everywhere: deferred to 1.0 with SciQLop (it reads `impl.name` as a property).
 - 5.10 one plot-container interface: a hierarchy refactor; its user-visible part (2.2 projection axes) was rejected on purpose. Its own design if wanted.
 - 4.10 state save/restore, polar plots: features, each their own design.
