@@ -54,9 +54,9 @@ void SciQLopMultiGraphBase::build_data_source(const SciQLopPyBuffer& x, const Sc
     const int n = static_cast<int>(x.flat_size());
 
     if (n > 0)
-        m_data_range = SciQLopPlotRange(keys[0], keys[n - 1]);
+        set_data_range(SciQLopPlotRange(keys[0], keys[n - 1]));
     else
-        m_data_range = SciQLopPlotRange();
+        set_data_range(SciQLopPlotRange());
 
     // Build the data source with a dataGuard that co-owns the PyBuffers,
     // preventing use-after-free when the async pipeline thread reads while

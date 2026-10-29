@@ -91,7 +91,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     if (nx_sz == 0 || nz_sz == 0)
     {
         _dataHolder.reset();
-        m_data_range = SciQLopPlotRange();
+        set_data_range(SciQLopPlotRange());
         // NeoQCP's busy signal and data_changed may reach a slot deleting this colour map.
         const QPointer self(this);
         _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
@@ -150,7 +150,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);
 
-    m_data_range = SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]);
+    set_data_range(SciQLopPlotRange(x_ptr[0], x_ptr[nx - 1]));
     // busy_changed, request_rescale and range slots may delete this colour map.
     const QPointer self(this);
 

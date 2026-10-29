@@ -225,6 +225,8 @@ signals:
     }
 
     void check_first_data(std::size_t n);
+    //! The GUI thread reads it (data_off_view): set from a worker, it lands there in call order.
+    void set_data_range(const SciQLopPlotRange& range);
     bool data_off_view() const;
 
 private:

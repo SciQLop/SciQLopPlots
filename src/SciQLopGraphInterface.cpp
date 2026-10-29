@@ -108,6 +108,16 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
     }
 }
 
+void SciQLopPlottableInterface::set_data_range(const SciQLopPlotRange& range)
+{
+    if (QThread::currentThread() != thread())
+    {
+        QMetaObject::invokeMethod(this, [this, range] { m_data_range = range; }, Qt::QueuedConnection);
+        return;
+    }
+    m_data_range = range;
+}
+
 void SciQLopPlottableInterface::check_first_data(std::size_t n)
 {
     // The view is read on the GUI thread: a batch set from a worker is checked on arrival there.
