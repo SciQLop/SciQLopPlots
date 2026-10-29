@@ -76,3 +76,23 @@ def test_an_ellipse_whose_neoqcp_item_is_gone_has_no_colour(qtbot):
     plot.deleteLater()
     _flush_deferred_delete()
     assert seen == [False]
+
+
+def test_a_constructed_item_whose_neoqcp_item_is_gone_ignores_every_set(qtbot):  # Review Focus 3
+    plot = SciQLopPlot()
+    with pytest.warns(DeprecationWarning):
+        text = SciQLopTextItem(plot, "t", QPointF(10, 10))
+    qcp = next(w for w in plot.findChildren(QWidget) if w.inherits("QCustomPlot"))
+    seen = [record(text.selection_changed), record(text.visible_changed), record(text.color_changed)]
+    read = []
+
+    def set_everything(*_):  # the item is still alive here, its NeoQCP item is not
+        text.set_selected(True)
+        text.set_visible(True)
+        text.set_color(QColor("red"))
+        read.append((text.selected(), text.visible(), text.color().isValid()))
+
+    qcp.destroyed.connect(set_everything)
+    plot.deleteLater()
+    _flush_deferred_delete()
+    assert (read, seen) == ([(False, False, False)], [[], [], []])

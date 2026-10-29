@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlot
-from conftest import process_events
+from conftest import process_events, record
 
 X = np.linspace(0, 10, 50)
 
@@ -288,6 +288,19 @@ class TestDoubleClick:
         self._double_click_row(qtbot, plot, 0)
         assert all(g.visible() for g in lines)
         assert group.visible()
+
+    def test_double_click_on_a_projection_row_hides_every_pane(self, qtbot, proj):
+        curves = pane_curves(proj, "Shue")
+        proj.group("Shue 1998", curves)
+        proj.resize(900, 400)
+        proj.show()
+        qtbot.waitExposed(proj)
+        pane = next(proj.subplot(i) for i in range(proj.subplot_count())
+                    if proj.subplot(i).legend().is_visible())
+        seen = [record(c.visible_changed) for c in curves]
+        self._double_click_row(qtbot, pane, 0)
+        assert not any(c.visible() for c in curves)
+        assert seen == [[False]] * len(curves)
 
     def test_a_row_rect_is_empty_past_the_last_row(self, plot, lines):
         assert not plot.legend().row_rect(len(lines)).isValid()

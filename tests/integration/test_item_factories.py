@@ -169,7 +169,8 @@ NO_PLOT_FACTORY = {
     "MultiPlotsVerticalSpan": "panel-only (panel.vertical_span)",
     "MultiPlotsVerticalLine": "panel-only (panel.vertical_line)",
     **dict.fromkeys(
-        ["SciQLopVerticalLine", "SciQLopHorizontalLine"],
+        ["SciQLopVerticalLine", "SciQLopHorizontalLine",
+         "SciQLopVerticalSpan", "SciQLopHorizontalSpan", "SciQLopRectangularSpan"],
         "old name (Plan A): only its deprecated constructor builds it"),
 }
 
@@ -177,7 +178,8 @@ NO_PLOT_FACTORY = {
 def test_every_item_class_has_a_factory():
     covered = {cls.__name__ for _, cls in FACTORIES.values()}
     items = {c.__name__ for c in _all_subclasses(SciQLopItemInterface)} | \
-            {c.__name__ for c in _all_subclasses(SciQLopStraightLine)} | {"SciQLopStraightLine"}
+            {c.__name__ for c in _all_subclasses(SciQLopStraightLine)} | {"SciQLopStraightLine"} | \
+            {c.__name__ for c in _all_subclasses(SciQLopSpan)} | {"SciQLopSpan"}
     abstract = {n for n in items if n.endswith("Interface")}
     missing = items - covered - abstract - set(NO_PLOT_FACTORY)
     assert not missing, f"item classes with no plot factory: {sorted(missing)}"

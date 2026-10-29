@@ -27,8 +27,12 @@ def test_panel_span_marks_its_per_plot_parts(panel):
     assert len(parts) == 2 and all(p.is_panel_part() for p in parts)
 
 
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPixmap
 from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlot, SciQLopTextItem
+from SciQLopPlots import (SciQLopCurvedLineItem, SciQLopEllipseItem, SciQLopHorizontalLine,
+                          SciQLopHorizontalSpan, SciQLopPixmapItem, SciQLopRectangularSpan,
+                          SciQLopVerticalSpan)
 from conftest import collect, off_thread, on_destroyed
 
 
@@ -41,12 +45,26 @@ def _constructed(cls, *args):
 
 ITEM_MAKERS = {
     "text": lambda p: p.text("t", QPointF(10, 10)),
+    "pixmap": lambda p: p.pixmap(QPixmap(4, 4), QRectF(0, 0, 4, 4)),
     "ellipse": lambda p: p.ellipse(QRectF(0, 0, 4, 4)),
+    "curved_line": lambda p: p.curved_line(QPointF(0, 0), QPointF(5, 5)),
+    "straight_line": lambda p: p.straight_line(1.0, Qt.Orientation.Vertical),
     "vertical_line": lambda p: p.vertical_line(1.0),
+    "horizontal_line": lambda p: p.horizontal_line(1.0),
     "vertical_span": lambda p: p.vertical_span(R(1.0, 2.0)),
+    "horizontal_span": lambda p: p.horizontal_span(R(1.0, 2.0)),
     "rectangular_span": lambda p: p.span(key_range=R(1.0, 2.0), value_range=R(1.0, 2.0)),
     "ctor_text": _constructed(SciQLopTextItem, "t", QPointF(1, 1)),
+    # a QPixmap cannot be built at import time: there is no QApplication yet
+    "ctor_pixmap": lambda p: _constructed(SciQLopPixmapItem, QPixmap(4, 4), QRectF(0, 0, 4, 4))(p),
+    "ctor_ellipse": _constructed(SciQLopEllipseItem, QRectF(0, 0, 4, 4)),
+    "ctor_curved_line": _constructed(SciQLopCurvedLineItem, QPointF(0, 0), QPointF(5, 5)),
+    "ctor_straight_line": _constructed(SciQLopStraightLine, 1.0),
     "ctor_line": _constructed(SciQLopVerticalLine, 1.0),
+    "ctor_horizontal_line": _constructed(SciQLopHorizontalLine, 1.0),
+    "ctor_vertical_span": _constructed(SciQLopVerticalSpan, R(1.0, 2.0)),
+    "ctor_horizontal_span": _constructed(SciQLopHorizontalSpan, R(1.0, 2.0)),
+    "ctor_rectangular_span": _constructed(SciQLopRectangularSpan, R(1.0, 2.0), R(1.0, 2.0)),
 }
 
 
