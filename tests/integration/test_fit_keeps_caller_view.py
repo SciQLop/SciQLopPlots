@@ -226,3 +226,13 @@ def test_a_first_fit_survives_a_linking_change_before_it_runs(qtbot, announced, 
         pane = proj.subplot(i)
         assert all(_covers(axis, v) for axis in (pane.x_axis(), pane.y_axis())
                    for v in (9.1, 10.9)), (i, _range(pane.x_axis()), _range(pane.y_axis()))
+
+
+def test_set_data_from_a_worker_fits_with_ranges_read_on_the_gui_thread(qtbot, plot):
+    # The axes belong to the GUI thread: the fit's snapshot of them must not be taken on the worker.
+    plot.set_auto_scale(True)
+    graph = plot.plot(np.empty(0), np.empty(0))  # the worker's batch is the first data
+    worker = threading.Thread(target=graph.set_data, args=(np.linspace(1000, 2000, 10), np.zeros(10)))
+    worker.start()
+    worker.join()
+    qtbot.waitUntil(lambda: _covers(plot.x_axis(), 1500), timeout=5000)

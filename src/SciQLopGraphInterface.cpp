@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include <QThread>
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
@@ -109,6 +110,12 @@ void SciQLopPlottableInterface::set_range(const SciQLopPlotRange& range)
 
 void SciQLopPlottableInterface::check_first_data(std::size_t n)
 {
+    // The view is read on the GUI thread: a batch set from a worker is checked on arrival there.
+    if (QThread::currentThread() != thread())
+    {
+        QMetaObject::invokeMethod(this, [this, n] { check_first_data(n); }, Qt::QueuedConnection);
+        return;
+    }
     // The first-data rescale fits what is visible, so a batch outside the view (a
     // stale fetch landing after a pan) must not use it up.
     if (!_got_first_data && n > 0 && !data_off_view())
@@ -120,6 +127,7 @@ void SciQLopPlottableInterface::check_first_data(std::size_t n)
 
 bool SciQLopPlottableInterface::data_off_view() const
 {
+    Q_ASSERT(QThread::currentThread() == thread()); // the axes belong to the GUI thread
     if (m_data_range.is_null())
         return false;
     const auto* axis = x_axis();
