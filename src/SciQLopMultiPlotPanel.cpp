@@ -61,17 +61,19 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
             &SciQLopMultiPlotPanel::plot_list_changed);
     connect(_container, &SciQLopPlotContainer::plot_added, this,
             &SciQLopMultiPlotPanel::plot_added);
+    // Only a hidden panel legend is imposed: a plot keeps a legend its owner hid.
     connect(_container, &SciQLopPlotContainer::plot_added, this,
             [this](SciQLopPlotInterface* plot)
             {
-                if (auto* legend = plot ? plot->legend() : nullptr)
-                    legend->set_visible(m_legend_visible);
+                if (auto* legend = plot ? plot->legend() : nullptr; legend && !m_legend_visible)
+                    legend->set_visible(false);
             });
     connect(this, &SciQLopMultiPlotPanel::panel_added, this,
             [this](SciQLopPlotPanelInterface* panel)
             {
-                if (auto* sub_panel = qobject_cast<SciQLopMultiPlotPanel*>(panel))
-                    sub_panel->set_legend_visible(m_legend_visible);
+                if (auto* sub_panel = qobject_cast<SciQLopMultiPlotPanel*>(panel);
+                    sub_panel && !m_legend_visible)
+                    sub_panel->set_legend_visible(false);
             });
     connect(_container, &SciQLopPlotContainer::plot_removed, this,
             &SciQLopMultiPlotPanel::plot_removed);

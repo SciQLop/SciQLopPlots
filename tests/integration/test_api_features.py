@@ -73,6 +73,17 @@ class TestPanelLegend:  # task 15, finding 4.5
         assert first.legend().is_visible() and later.legend().is_visible()
 
 
+def test_adding_a_plot_keeps_the_legend_its_owner_hid(qtbot):
+    # Only a panel that hides its legends imposes it on a plot added later.
+    from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    plot = SciQLopPlot()
+    plot.legend().set_visible(False)
+    panel.add_plot(plot)
+    assert not plot.legend().is_visible()
+
+
 def _top_band(plot, tmp_path, name):
     """The top 40 pixel rows of a 600x400 export, as bytes: where a title draws."""
     from PySide6.QtGui import QImage
