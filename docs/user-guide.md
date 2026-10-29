@@ -270,6 +270,8 @@ plot.plot(x, np.sin(x) + rng.normal(0, 0.1, 500), graph_type=GraphType.Scatter, 
 
 ![Noisy samples drawn as markers](images/scatter.png)
 
+A scatter is a line graph with no lines and a marker: `plot.scatter(x, y)` makes the same `SciQLopLineGraph` as `plot.line(x, y, marker=...)` with its line style set to none, so every line-graph method applies.
+
 ### Colour maps (spectrograms)
 
 ```python
@@ -293,6 +295,8 @@ plot.set_title("Electron flux")
 `z` has one row per `x` value and one column per `y` value. `y` may also have `z`'s shape, when the y channels change over time (a varying energy table, for example).
 
 On a log colour scale, pixels that cover several samples are averaged in log space. So zoomed-out spectrograms look like the zoomed-in ones.
+
+A colour map's gradient and log scales are not its own copies: they are the state of the plot's axes. `cmap.set_gradient(g)` is `plot.set_z_gradient(g)`, `cmap.set_z_log_scale(b)` is `plot.z_axis().set_log(b)` and `cmap.set_y_log_scale(b)` is `cmap.y_axis().set_log(b)` (the plot's `y2_axis()`, on the right). Whichever is called last wins, and two colour maps on one plot share the gradient.
 
 ### Parametric curves
 
