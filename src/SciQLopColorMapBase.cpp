@@ -35,10 +35,31 @@ SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAx
     , _colorScaleAxis{colorScaleAxis}
 {
     _connect_legend_visibility();
+    _forward_axis_signals();
+    if (_colorScaleAxis)
+    {
+        connect(_colorScaleAxis, &SciQLopPlotAxis::log_changed, this,
+                &SciQLopColorMapInterface::z_log_scale_changed);
+        connect(_colorScaleAxis, &SciQLopPlotColorScaleAxis::color_gradient_changed, this,
+                &SciQLopColorMapInterface::gradient_changed);
+    }
+}
+
+void SciQLopColorMapBase::_forward_axis_signals()
+{
+    disconnect(_y_log_forward);
+    if (_valueAxis)
+        _y_log_forward = connect(_valueAxis, &SciQLopPlotAxis::log_changed, this,
+                                 &SciQLopColorMapInterface::y_log_scale_changed);
 }
 
 SciQLopColorMapBase::~SciQLopColorMapBase()
 {
+    // Our QCP children die after this class: their teardown changes the shared colour scale,
+    // whose signals must not reach this half-destroyed map.
+    disconnect(_y_log_forward);
+    if (_colorScaleAxis)
+        disconnect(_colorScaleAxis, nullptr, this, nullptr);
     // Unhook the rescale provider so the color-scale axis won't call back into
     // our (half-destroyed) z_rescale_range -- but only if we're still the
     // plottable that owns the shared slot. A colormap and a histogram2d (or
@@ -96,14 +117,22 @@ void SciQLopColorMapBase::set_autoscale_percentile_low(double percentile) noexce
 {
     if (std::isnan(percentile))
         return;
-    _autoscale_percentile_low = std::clamp(percentile, 0., 100.);
+    const double clamped = std::clamp(percentile, 0., 100.);
+    if (clamped == _autoscale_percentile_low)
+        return;
+    _autoscale_percentile_low = clamped;
+    Q_EMIT autoscale_percentile_low_changed(clamped);
 }
 
 void SciQLopColorMapBase::set_autoscale_percentile_high(double percentile) noexcept
 {
     if (std::isnan(percentile))
         return;
-    _autoscale_percentile_high = std::clamp(percentile, 0., 100.);
+    const double clamped = std::clamp(percentile, 0., 100.);
+    if (clamped == _autoscale_percentile_high)
+        return;
+    _autoscale_percentile_high = clamped;
+    Q_EMIT autoscale_percentile_high_changed(clamped);
 }
 
 std::optional<SciQLopPlotRange> SciQLopColorMapBase::z_rescale_range() const noexcept
@@ -145,4 +174,5 @@ void SciQLopColorMapBase::set_y_axis(SciQLopPlotAxisInterface* axis) noexcept
     apply_axis(_valueAxis, axis, [this](auto* a) {
         if (auto* p = plottable(); p) p->setValueAxis(a);
     });
+    _forward_axis_signals();
 }

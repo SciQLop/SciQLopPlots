@@ -228,3 +228,4 @@ Deprecated (warn, still work):
 - 4.9: line graphs and waterfalls take `set_line_width` / `set_marker_shape` / `set_marker_size` for every component, now and when created later; a column preset or a later component setter wins.
 - 4.10: `plot.axes()` and `plot.data_range()` (union of the plottables' key ranges). `AxisScale` not added: with Linear and Log only it repeats `set_log`; add it with a third scale.
 - 1.13: the per-point style setters already took arrays, lists and tuples (now pinned by a test). The data setters keep refusing plain lists: a list of arrays means a projection, so a list fallback would make overloads depend on the list's content.
+- 2.6: colour maps and 2-D histograms signal `gradient_changed`, `y_log_scale_changed`, `z_log_scale_changed` (forwarded from their axes, following a new y axis) and `autoscale_percentile_low_changed` / `autoscale_percentile_high_changed`; `.on` picks them up.

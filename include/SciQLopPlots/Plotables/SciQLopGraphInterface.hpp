@@ -358,6 +358,14 @@ public:
         return false;
     }
 
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void gradient_changed(ColorGradient gradient);
+    Q_SIGNAL void y_log_scale_changed(bool log);
+    Q_SIGNAL void z_log_scale_changed(bool log);
+
 protected:
     // A colour map's colours come from its gradient.
     QColor _color() const override

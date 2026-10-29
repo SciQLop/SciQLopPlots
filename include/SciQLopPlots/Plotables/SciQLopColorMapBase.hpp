@@ -41,6 +41,10 @@ protected:
     QPointer<SciQLopPlotColorScaleAxis> _colorScaleAxis;
     double _autoscale_percentile_low = 0.;
     double _autoscale_percentile_high = 100.;
+    QMetaObject::Connection _y_log_forward;
+
+    //! The gradient and log flags live on the axes: their signals become this map's.
+    void _forward_axis_signals();
 
     inline QCustomPlot* _plot() const { return qobject_cast<QCustomPlot*>(this->parent()); }
 
@@ -176,6 +180,13 @@ public:
         Q_UNUSED(high);
         return SciQLopPlotRange();
     }
+
+#ifdef BINDINGS_H
+#define Q_SIGNAL
+signals:
+#endif
+    Q_SIGNAL void autoscale_percentile_low_changed(double percentile);
+    Q_SIGNAL void autoscale_percentile_high_changed(double percentile);
 
 protected:
 #ifndef BINDINGS_H
