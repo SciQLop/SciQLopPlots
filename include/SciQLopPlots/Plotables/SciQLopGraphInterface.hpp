@@ -491,7 +491,8 @@ public:
 
     virtual void observe(QObject* observable);
 
-    inline virtual void observe(QObject* observable, const char* signal) { }
+    //! Never implemented: observe(observable) picks the signal from the observable's type.
+    inline virtual void observe(QObject* observable, const char* signal) WARN_ABSTRACT_METHOD;
 
     inline virtual void observe(QObject* observable, const QString& signal)
     {

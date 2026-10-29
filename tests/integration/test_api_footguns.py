@@ -153,6 +153,12 @@ class TestDataCallbackErrors:  # task 9, finding 3.2
 
 
 class TestUnsupportedCallsRaise:  # task 7, findings 1.14, 2.7
+    def test_observe_by_signal_name_raises(self, plot):
+        # It never connected anything: observe(obj) is the supported form.
+        graph = plot.line(lambda start, stop: (np.linspace(start, stop, 4), np.zeros(4)))
+        with pytest.raises(NotImplementedError, match="observe"):
+            graph.observe(plot.x_axis(), "range_changed")
+
     def test_set_data_on_a_timeline_raises(self, plot):
         timeline = plot.add_timeline(0)
         with pytest.raises(NotImplementedError, match="set_data"):
