@@ -240,7 +240,20 @@ public:
 
     inline bool is_time_axis() const noexcept { return _is_time_axis; }
 
-    inline void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
+    inline virtual void set_is_time_axis(bool is_time_axis) noexcept { _is_time_axis = is_time_axis; }
+
+    //! Tick labels as numbers: \a format "g" (shortest), "f" (fixed) or "e" (exponent), with
+    //! \a precision digits. Text labels set by hand and time axes ignore it.
+    //! \throws std::invalid_argument for another format or a negative precision.
+    inline virtual void set_number_format(const QString& format, int precision)
+    {
+        WARN_ABSTRACT_METHOD;
+    }
+    inline virtual QString number_format() const noexcept { return QStringLiteral("g"); }
+    inline virtual int number_precision() const noexcept { return 6; }
+    //! Time axes only: a QDateTime format (e.g. "yyyy-MM-dd hh:mm"), in UTC.
+    inline virtual void set_date_format(const QString& format) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual QString date_format() const noexcept { return {}; }
 
     void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
     void decouple_range_from(SciQLopPlotAxisInterface* other) noexcept;
@@ -270,6 +283,8 @@ signals:
     Q_SIGNAL void tick_labels_visible_changed(bool visible);
     Q_SIGNAL void log_changed(bool log);
     Q_SIGNAL void reversed_changed(bool reversed);
+    Q_SIGNAL void number_format_changed(const QString& format, int precision);
+    Q_SIGNAL void date_format_changed(const QString& format);
     Q_SIGNAL void label_changed(const QString& label);
     Q_SIGNAL void label_font_changed(const QFont& font);
     Q_SIGNAL void label_color_changed(const QColor& color);
@@ -308,6 +323,7 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
 {
     Q_OBJECT
     QPointer<QCPAxis> m_axis;
+    QString m_date_format = QStringLiteral("yyyy/MM/dd \nhh:mm:ss.zzz");
     SciQLopPlotRange m_last_valid_range;
     bool m_suppress_range_signals = false;
     double m_autoscale_percentile_low = 0.;
@@ -342,6 +358,12 @@ public:
     void set_visible(bool visible) noexcept override;
     void set_log(bool log) noexcept override;
     void set_reversed(bool reversed) noexcept override;
+    void set_is_time_axis(bool is_time_axis) noexcept override;
+    void set_number_format(const QString& format, int precision) override;
+    QString number_format() const noexcept override;
+    int number_precision() const noexcept override;
+    void set_date_format(const QString& format) noexcept override;
+    QString date_format() const noexcept override { return m_date_format; }
     void set_label(const QString& label) noexcept override;
     void set_tick_labels_visible(bool visible) noexcept override;
     void set_label_font(const QFont& font) noexcept override;

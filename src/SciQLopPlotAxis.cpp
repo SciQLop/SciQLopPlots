@@ -121,6 +121,11 @@ void SciQLopPlotAxis::set_visible(bool visible) noexcept
 void SciQLopPlotAxis::set_log(bool log) noexcept
 {
     SCIQLOP_ON_OWNER_THREAD(set_log(log));
+    if (is_time_axis())
+    {
+        qWarning() << "A time axis can't be logarithmic";
+        return;
+    }
     if (!m_axis.isNull() && (m_axis->scaleType() == QCPAxis::stLogarithmic) != log)
     {
         {
@@ -149,6 +154,59 @@ void SciQLopPlotAxis::set_reversed(bool reversed) noexcept
 bool SciQLopPlotAxis::reversed() const noexcept
 {
     return !m_axis.isNull() && m_axis->rangeReversed();
+}
+
+void SciQLopPlotAxis::set_is_time_axis(bool is_time_axis) noexcept
+{
+    SciQLopPlotAxisInterface::set_is_time_axis(is_time_axis);
+    if (!m_axis.isNull())
+        m_axis->setTicker(make_ticker(log()));
+}
+
+// Checked on the caller's thread: off-thread, a throw from the queued call would escape the loop.
+void SciQLopPlotAxis::set_number_format(const QString& format, int precision)
+{
+    if (!QStringList { "g", "f", "e" }.contains(format))
+        throw std::invalid_argument("set_number_format: format must be \"g\", \"f\" or \"e\", got \""
+                                    + format.toStdString() + "\"");
+    if (precision < 0)
+        throw std::invalid_argument("set_number_format: precision must be >= 0");
+    SCIQLOP_ON_OWNER_THREAD(set_number_format(format, precision));
+    if (m_axis.isNull() || (number_format() == format && number_precision() == precision))
+        return;
+    m_axis->setNumberFormat(format);
+    m_axis->setNumberPrecision(precision);
+    m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    Q_EMIT number_format_changed(format, precision);
+}
+
+QString SciQLopPlotAxis::number_format() const noexcept
+{
+    return m_axis.isNull() ? QStringLiteral("g") : m_axis->numberFormat().left(1);
+}
+
+int SciQLopPlotAxis::number_precision() const noexcept
+{
+    return m_axis.isNull() ? 6 : m_axis->numberPrecision();
+}
+
+void SciQLopPlotAxis::set_date_format(const QString& format) noexcept
+{
+    SCIQLOP_ON_OWNER_THREAD(set_date_format(format));
+    if (!is_time_axis())
+    {
+        qWarning() << "set_date_format: not a time axis";
+        return;
+    }
+    if (format == m_date_format)
+        return;
+    m_date_format = format;
+    if (!m_axis.isNull())
+    {
+        m_axis->setTicker(make_ticker(log()));
+        m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
+    }
+    Q_EMIT date_format_changed(format);
 }
 
 void SciQLopPlotAxis::set_label(const QString& label) noexcept
@@ -546,6 +604,13 @@ void SciQLopPlotAxis::set_tick_labels(const QMap<double, QString>& labels) noexc
 
 QSharedPointer<QCPAxisTicker> SciQLopPlotAxis::make_ticker(bool log) const
 {
+    if (is_time_axis())
+    {
+        auto ticker = QSharedPointer<QCPAxisTickerDateTime>::create();
+        ticker->setDateTimeFormat(m_date_format);
+        ticker->setDateTimeSpec(Qt::UTC);
+        return ticker;
+    }
     if (!m_tick_labels.isEmpty())
     {
         auto ticker = QSharedPointer<QCPAxisTickerText>::create();

@@ -1017,6 +1017,11 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotAxisInterface" parent-management="yes">
+        <modify-function signature="set_number_format(const QString&amp;,int)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
         <modify-function signature="SciQLopPlotAxisInterface(QObject*,const QString&amp;)">
             <modify-argument index="this">
                 <parent index="1" action="add"/>
@@ -1048,7 +1053,13 @@
             </modify-argument>
         </modify-function>
     </object-type>
-    <object-type name="SciQLopPlotAxis" parent-management="yes"/>
+    <object-type name="SciQLopPlotAxis" parent-management="yes">
+        <modify-function signature="set_number_format(const QString&amp;,int)">
+            <inject-code class="target" position="beginning">
+                <insert-template name="void_raises_valueerror"/>
+            </inject-code>
+        </modify-function>
+    </object-type>
 
     <!-- No constructor markup: its constructor takes an unbound QCPOverlay*. Add <parent> markup if that type becomes bound. -->
     <object-type name="SciQLopOverlay" parent-management="yes"/>
