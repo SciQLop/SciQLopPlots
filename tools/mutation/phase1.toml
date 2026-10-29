@@ -295,6 +295,12 @@ op = "gt_to_ge"
 before = "        if (!mJobRunning && latest > mDisplayedGeneration)"
 reason = "The idle catch-up assignment: on equality it assigns the value already there. The other > in deliverResult applies the result and is not equivalent."
 
+[[project.equivalent]]
+path = "src/datasource/async-pipeline.cpp"
+op = "le_to_lt"
+before = "    if (generation <= mDisplayedGeneration)"
+reason = "Every generation is bumped under the lock that starts its job or settles it idle, so a landing result never equals the displayed generation (a viewport replay after supersedeEarlierJobs is excluded by its contract)."
+
 [[project]]
 name = "sciqlopplots"
 repo = "."
