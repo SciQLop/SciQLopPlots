@@ -65,6 +65,12 @@ def test_three_argument_constructor_takes_dates():
     assert (r.start(), r.stop()) == (START, STOP) and r._is_time_range
 
 
+@pytest.mark.parametrize("start, stop", [(1.0, 2.0), (np.datetime64("2030-01-01"), np.datetime64("2030-01-02"))])
+@pytest.mark.parametrize("flag", [True, False])
+def test_the_time_flag_by_keyword_wins(start, stop, flag):
+    assert SciQLopPlotRange(start, stop, is_time_range=flag)._is_time_range is flag
+
+
 @pytest.mark.parametrize("start, stop", INPUTS.values(), ids=INPUTS.keys())
 def test_axis_set_range(qtbot, start, stop):
     plot = SciQLopTimeSeriesPlot()

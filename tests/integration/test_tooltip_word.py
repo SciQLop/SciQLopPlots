@@ -1,11 +1,15 @@
 """API review 1.10: one word, tooltip: tooltip() / set_tooltip() / tooltip_changed / tooltip=."""
+import inspect
 import warnings
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtCore import QMetaMethod, QPointF, QRectF
 from PySide6.QtGui import QPixmap
+from shibokensupport.signature import get_signature
 
+import SciQLopPlots
+import SciQLopPlots.SciQLopPlotsBindings as bindings
 from SciQLopPlots import SciQLopPlotRange
 from conftest import record
 
@@ -85,3 +89,30 @@ def test_factories_still_take_tool_tip_with_a_warning_at_the_caller(plot, panel,
     with pytest.warns(DeprecationWarning, match=rf"use {receiver}\.\w+\(\.\.\., tooltip=") as seen:
         item = FACTORIES[factory](Hosts(plot, panel), {"tool_tip": "old"})
     assert item.tooltip() == "old" and seen[0].filename == __file__
+
+
+def _parameter_names(method):
+    signatures = getattr(method, "__signature__", None) or get_signature(method)
+    signatures = signatures if isinstance(signatures, list) else [signatures]
+    return {name for sig in signatures if isinstance(sig, inspect.Signature) for name in sig.parameters}
+
+
+def _slot_names(cls):
+    meta = cls.staticMetaObject
+    return {bytes(meta.method(i).name()).decode() for i in range(meta.methodCount())
+            if meta.method(i).methodType() == QMetaMethod.MethodType.Slot}
+
+
+def _methods_taking_a_tooltip():
+    accessors = {"tooltip", "set_tooltip", "tool_tip", "set_tool_tip"}
+    for _, cls in inspect.getmembers(bindings, inspect.isclass):
+        slots = _slot_names(cls) if hasattr(cls, "staticMetaObject") else set()
+        for name, method in vars(cls).items():
+            if (not name.startswith("_") and callable(method) and not inspect.isclass(method)
+                    and name not in slots | accessors and "tooltip" in _parameter_names(method)):
+                yield cls, name
+
+
+def test_every_method_taking_a_tooltip_takes_tool_tip_too():
+    listed = {(cls, name) for cls, names in SciQLopPlots._TOOLTIP_KEYWORD_METHODS.items() for name in names}
+    assert set(_methods_taking_a_tooltip()) == listed

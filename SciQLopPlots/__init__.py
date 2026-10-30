@@ -669,21 +669,6 @@ for _cls in _bound_classes():
         _cls.tooltip_changed = _own["tool_tip_changed"]
 
 
-def _parameter_names(method):
-    signatures = getattr(method, "__signature__", None) or get_signature(method)
-    signatures = signatures if isinstance(signatures, list) else [signatures]
-    return {name for sig in signatures if isinstance(sig, inspect.Signature) for name in sig.parameters}
-
-
-def _slot_names(cls):
-    meta = cls.staticMetaObject
-    return {bytes(meta.method(i).name()).decode() for i in range(meta.methodCount())
-            if meta.method(i).methodType() == QtCore.QMetaMethod.MethodType.Slot}
-
-
-_TOOLTIP_ACCESSORS = {"tooltip", "set_tooltip", "tool_tip", "set_tool_tip"}
-
-
 def _old_tooltip_keyword(name, receiver, method):
     message = f"tool_tip=... is deprecated: use {receiver}.{name}(..., tooltip=...)"
 
@@ -696,14 +681,20 @@ def _old_tooltip_keyword(name, receiver, method):
     return wrapper
 
 
-for _cls in _bound_classes():
+# Every method with a tooltip parameter, slots excepted (a wrapped slot dies on GC). Listed rather
+# than found at import: reading every signature doubled the import time. A test keeps it complete.
+_TOOLTIP_KEYWORD_METHODS = {
+    SciQLopPlotsBindings.SciQLopPlotInterface: ("curved_line", "ellipse", "horizontal_line", "horizontal_span",
+                                                "rectangular_span", "span", "straight_line", "vertical_line",
+                                                "vertical_span"),
+    SciQLopPlot: ("curved_line", "ellipse", "span", "straight_line"),
+    SciQLopMultiPlotPanel: ("horizontal_line", "horizontal_span", "span", "straight_line", "vertical_line",
+                            "vertical_span"),
+}
+for _cls, _names in _TOOLTIP_KEYWORD_METHODS.items():
     _receiver = "panel" if issubclass(_cls, SciQLopPlotsBindings.SciQLopPlotPanelInterface) else "plot"
-    _slots = _slot_names(_cls) if hasattr(_cls, "staticMetaObject") else set()
-    for _name, _method in list(vars(_cls).items()):
-        if (not _name.startswith("_") and callable(_method) and not inspect.isclass(_method)
-                and _name not in _slots and _name not in _TOOLTIP_ACCESSORS
-                and "tooltip" in _parameter_names(_method)):
-            setattr(_cls, _name, _old_tooltip_keyword(_name, _receiver, _method))
+    for _name in _names:
+        setattr(_cls, _name, _old_tooltip_keyword(_name, _receiver, vars(_cls)[_name]))
 
 for _method in ("add_plot", "remove_plot", "insert_plot", "move_plot", "index", "contains", "remove"):
     setattr(SciQLopMultiPlotPanel, _method,
@@ -805,11 +796,11 @@ def _is_time_input(value):
 def _accept_dates_in_range(init):
     @functools.wraps(init)
     def wrapper(self, *args, **kwargs):
-        if len(args) in (2, 3):
-            start, stop = (to_epoch_seconds(a) for a in args[:2])
-            is_time = any(_is_time_input(a) for a in args[:2])
-            return init(self, start, stop, *(args[2:] or (is_time,)), **kwargs)
-        return init(self, *args, **kwargs)
+        if len(args) not in (2, 3) or all(type(a) in (float, int) for a in args[:2]):
+            return init(self, *args, **kwargs)
+        if len(args) == 2:
+            kwargs.setdefault("is_time_range", any(_is_time_input(a) for a in args))
+        return init(self, *(to_epoch_seconds(a) for a in args[:2]), *args[2:], **kwargs)
     return wrapper
 
 
