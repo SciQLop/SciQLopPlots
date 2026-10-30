@@ -23,6 +23,7 @@ This guide goes from a first plot to live data, multi-plot panels, overlays and 
 - [Export](#export)
 - [Performance tips](#performance-tips)
 - [Troubleshooting](#troubleshooting)
+- [Changes in 0.53](#changes-in-053)
 
 ## Install
 
@@ -378,6 +379,8 @@ A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `p
 
 `hist.set_normalization(Histogram2DNormalization.PerColumn)` divides each column by its total, so every column adds up to 1; `Count` (the default) shows raw counts. The old `set_normalization(1)` still works but is deprecated.
 
+Like colour maps, a 2-D histogram takes `set_auto_scale_y(True)`, which fits the y axis to the bins that hold counts, and contour lines with their labels (see [Colour maps](#colour-maps-spectrograms)).
+
 ### Histograms
 
 `plot.histogram(values)` counts values into bins and draws the counts. The x axis holds the values. The y axis holds the counts.
@@ -452,12 +455,12 @@ def signal(start, stop):
 
 line_plot, line = panel.plot(signal)
 hist_plot, hist = panel.histogram(signal, bins=40)
-panel.set_time_axis_range(0.0, 100.0)
+panel.set_time_range(0.0, 100.0)
 ```
 
 The histogram counts the values inside the panel's time range. The panel's x axis is the time. The histogram's own x axis is the value, so the panel does not drag it along.
 
-A panel that holds only histograms has no line plot to set the time. Call `panel.set_time_axis_range(start, stop)` yourself.
+A panel that holds only histograms has no line plot to set the time. Call `panel.set_time_range(start, stop)` yourself.
 
 A histogram on a standalone plot fetches nothing at first. Set the time with `plot.time_axis().set_range(start, stop)` to start it.
 
@@ -558,7 +561,7 @@ graph.set_color_data(np.cos(x), ColorGradient.Plasma)   # one value per x sample
 
 ![A sine coloured by cosine, with its colour scale](images/color-data.png)
 
-The plot shows a colour scale for it. Pass an empty array to go back to a plain line.
+The plot shows a colour scale for it. `graph.clear_color_data()` (or an empty array) goes back to a plain line, and `graph.has_color_data()` tells whether the graph is coloured.
 
 A data function can send the colour values with each batch:
 
@@ -604,7 +607,7 @@ Every time argument accepts the same kinds of value, and all of them mean UTC:
 - an ISO 8601 string such as `"2025-04-12T06:00:00+02:00"`;
 - `QDateTime`.
 
-That covers ranges (`SciQLopPlotRange(start, stop)`, `axis.set_range`, `set_time_range`, `panel.set_time_axis_range`), the position of a line, the crosshair key and the time marker. A `(start, stop)` tuple of any of them stands for a range wherever a `SciQLopPlotRange` is expected, for example `plot.span(key_range=("2025-04-12", "2025-04-13"))`.
+That covers ranges (`SciQLopPlotRange(start, stop)`, `axis.set_range`, `set_time_range` on time-series plots and panels), the position of a line, the crosshair key and the time marker. A `(start, stop)` tuple of any of them stands for a range wherever a `SciQLopPlotRange` is expected, for example `plot.span(key_range=("2025-04-12", "2025-04-13"))`.
 
 Data takes them too: `x` may be a `datetime64` array, or an object array of `datetime`, `date` or ISO strings, and so may what a data callback returns. A `NaT` in data becomes a gap. A `NaT` or an unparsable string as a range or a position raises `ValueError`.
 
@@ -634,7 +637,7 @@ b_plot, b_graph = panel.plot(magnetic_field, labels=["Bx", "By", "Bz"], plot_typ
 n_plot, n_graph = panel.plot(density, labels=["N"], plot_type=PlotType.TimeSeries)
 
 start = datetime(2025, 4, 12, tzinfo=timezone.utc).timestamp()
-panel.set_time_axis_range(start, start + 6 * 3600)   # every plot follows
+panel.set_time_range(start, start + 6 * 3600)   # every plot follows
 ```
 
 ![Two time series plots stacked in a panel](images/panel.png)
@@ -642,6 +645,7 @@ panel.set_time_axis_range(start, start + 6 * 3600)   # every plot follows
 - On a panel, **`plot()` returns `(plot, graph)`**: the new plot and the graph in it, like matplotlib's `fig, ax = plt.subplots()`. On a plot, `plot()` creates no plot, so it returns the graph only.
 - **`synchronize_time=True`** links the time axes of time series plots. **`synchronize_x=True`** links plain x axes instead.
 - `panel.plot_at(i)`, `panel.plots()` and `panel.plot_count()` give access to the plots.
+- `panel.set_time_range(start, stop)` and `panel.time_range()` drive and read the shared time, like on a time-series plot. `set_time_axis_range` and `time_axis_range` are the same methods under their older names.
 
 To add a graph to an existing plot of the panel, call `plot()` on that plot instead of on the panel.
 
@@ -658,7 +662,7 @@ t = 1.7e9 + np.linspace(0, 3600, 10_000)
 bx = np.sin(t / 300)
 
 panel = SciQLopMultiPlotPanel(synchronize_x=False, synchronize_time=True)
-panel.set_time_axis_range(t[0], t[-1])                 # before plotting: plots fit what is in view
+panel.set_time_range(t[0], t[-1])                 # before plotting: plots fit what is in view
 panel.plot(t, bx, labels=["Bx"], plot_type=PlotType.TimeSeries)
 
 label = QLabel()
@@ -718,6 +722,28 @@ print(r.start(), r.stop(), r.size())
 - Rescaling leaves a 5% margin on each side of a value axis, so ticks at the data's ends (0/1 flags, enum levels) keep their labels. `axis.set_autoscale_margin(0.1)` changes it at runtime (0 to 0.5; in decades on a log axis), and so does the axis's inspector panel. Time axes, key axes and axes holding a colormap or histogram are never padded.
 - `axis.set_min_range_size(s)` / `set_max_range_size(s)` limit how far a user can zoom.
 
+```python
+import numpy as np
+from SciQLopPlots import AxisType, SciQLopPlot, SciQLopTimeSeriesPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+plot.plot(x, 1e6 * np.sin(x), labels=["signal"])
+plot.y_axis().set_reversed(True)          # drawn from high to low; range() stays ordered
+plot.y_axis().set_number_format("e", 2)   # "g" (shortest), "f" (fixed) or "e" (×10ⁿ), 2 digits
+assert plot.axis(AxisType.YAxis2) is plot.y2_axis()
+print([a.label() for a in plot.axes()])   # x, y, x2, y2 and the colour scale's z
+print(plot.data_range().start(), plot.data_range().stop())   # the data's key range
+
+ts = SciQLopTimeSeriesPlot()
+ts.time_axis().set_date_format("yyyy-MM-dd hh:mm")   # a QDateTime format, in UTC
+```
+
+- `axis.set_reversed(True)` draws an axis from high to low, for depth or pressure; `range()` still reads `start < stop`.
+- `axis.set_number_format(format, precision)` picks how numeric ticks read; time axes take `set_date_format(...)` instead. Labels set by hand ignore both.
+- `plot.axes()` lists every axis, `plot.axis(AxisType.XAxis2)` (or `YAxis2`) reaches the top and right ones by type, and `plot.data_range()` is the union of the plottables' key ranges, invalid while none holds data.
+- `plot.set_crosshair_enabled(True)` shows a crosshair that follows the mouse, with a tooltip of the values under it; `crosshair_enabled_changed` tells when it is turned on or off. `enable_cursor(...)` still works but is deprecated.
+
 ## Colours, names and themes
 
 ```python
@@ -741,7 +767,7 @@ plot.set_z_gradient(ColorGradient.Cividis)             # gradient for colour-cod
 
 Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma and Turbo (perceptually uniform, colour-blind friendly), Coolwarm (diverging), plus the classic Jet, Hot, Cold, Grayscale, Spectrum, Thermal, Polar, Hues, Candy, Ion, Night and Geography.
 
-A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`. One theme can style several plots and panels: it stays with the object given as its parent (a theme made without one belongs to the first plot or panel it is set on), and `theme_changed` tells when it changes or goes. Projections and widget plots do not take themes.
+A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`. One theme can style several plots and panels. A theme made without a parent lives as long as one of them uses it. A theme you give a parent stays with that parent: when it goes, so does the theme, and `theme_changed` tells every plot and panel that used it. Projections and widget plots do not take themes.
 
 ### Visible, selected, name and colour
 
@@ -905,11 +931,11 @@ note = plot.text("peak", QPointF(1.57, 1.0), coordinates=Coordinates.Data)
 - `coordinates=Coordinates.Pixels` keeps a span or a line in place on screen, measured from the plot area's top-left corner. `set_coordinates()` switches later and leaves the object where it is. `span.pixel_range()` (`pixel_key_range()`, `pixel_value_range()`) reads a span's position in pixels in either mode.
 - On a panel, the same factories draw one span or line across every plot, including plots added later: `panel.span(...)`, `panel.vertical_span(...)`, `panel.straight_line(...)`, `panel.vertical_line(...)` and the horizontal ones, with the same arguments. That's handy for marking an event in time. A drag, a click or the Delete key on one plot reaches all of them, and the panel object signals once. A bool in the colour slot raises `TypeError`. Panels have no `rectangular_span`: use `panel.span(key_range=..., value_range=...)`.
 - A panel span or line in `Coordinates.Pixels` takes its pixel numbers from the first plot. That is a known simplification: the plots are not asked to agree.
-- Every span and line has `selected()`, `visible()`, `color()`, `tool_tip()` and `read_only()`, with their `set_` methods and `_changed` signals (`selection_changed` for `selected`), and `delete_requested`, which fires when the user presses Delete on it. Nothing is deleted for you: connect `delete_requested` to `plot.remove(span)` or `panel.remove(span)` if that is what you want.
+- Every span and line has `selected()`, `visible()`, `color()`, `tooltip()` and `read_only()`, with their `set_` methods and `_changed` signals (`selection_changed` for `selected`), and `delete_requested`, which fires when the user presses Delete on it. Nothing is deleted for you: connect `delete_requested` to `plot.remove(span)` or `panel.remove(span)` if that is what you want.
 - A span also has `borders_color()`, `line_width()` and `line_style()`, with `set_` methods: they style the border, while `color()` is the fill. `span.pixel_value_range()` raises `ValueError` on a span that doesn't bound the value axis (and `pixel_key_range()` on one that doesn't bound the key axis); `pixel_range()` raises on a rectangular span.
-- A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
+- A span created through a `MultiPlotsVSpanCollection` is hidden while its range is outside the panel's time range, so `span.visible()` reads `False` until the range comes back. A span you hid yourself stays hidden when it returns.
 - The other factories are `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`. `plot.rectangular_span(key_range, value_range)` still works but is deprecated: use `plot.span(key_range=..., value_range=...)`.
-- The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for a panel-wide span or line (that one goes through `panel.remove`), for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line and its parts now. `panel.remove(plot)` deletes the plot later, like `remove_plot`.
+- The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for a panel-wide span or line (that one goes through `panel.remove`), for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line and its parts now. `panel.remove(plot)` deletes the plot later, like `remove_plot`. `plot.clear()` removes everything `remove` takes, at once: graphs, groups, items, lines and spans. Axes, the legend and the parts of panel-wide objects stay.
 - Text, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work. Text, ellipse and pixmap items are read-only (not draggable) unless made with `read_only=False` or switched with `set_read_only(False)`, like spans and lines.
 
 `panel.vertical_line(position)` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
@@ -927,7 +953,7 @@ panel.plot(x, np.cos(x), labels=["cos"])
 cursor = panel.vertical_line(2.0, read_only=False, tooltip="cursor")
 cursor.position_changed.connect(lambda t: print("cursor at", t))
 cursor.set_position(5.0)          # moves it on every plot
-cursor.set_color(QColor("red"))   # also set_line_width, set_visible, set_read_only, set_tool_tip
+cursor.set_color(QColor("red"))   # also set_line_width, set_visible, set_read_only, set_tooltip
 ```
 
 ![A red cursor line across two plots](images/panel-cursor.png)
@@ -952,22 +978,23 @@ tl.set_intervals(start, stop, lane=["MSA", "MGF", "MSA"],
                  category=["LM", "survey", "burst"],
                  label=["low mass", "survey mode", "burst mode"])
 tl.set_category_colors({"LM": QColor("#f59e0b"), "survey": QColor("#3b82f6")})
-panel.set_time_axis_range(0, 12000)
+panel.set_time_range(0, 12000)
 ```
 
 ![An interval timeline with two lanes](images/timeline.png)
 
 - `panel.add_timeline()` returns `(plot, timeline)`: a time-series plot sized to its lanes, and the timeline plottable to feed. `lane_height` (22 px by default) is a minimum: make the plot taller and the lanes grow with it. `panel.organize_plots()` gives timeline plots their natural height and shares the rest.
 - `set_intervals(start, stop, lane=..., category=..., label=..., ids=...)` takes epoch seconds or `datetime64` arrays; a missing `stop` defaults to `start`. Lane and category names are kept in first-seen order.
-- Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.style = TimelineStyle.Bars` switches to plain bars (`TimelineStyle.Wave` is the default).
-- `tl.lanes` reads the displayed lanes; `tl.lanes = [...]` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back. The legend lists the categories in use, each with its colour.
+- Timelines are drawn like a logic analyzer's wave view: bus-shaped bars with angled ends, an idle line through each lane, and every other lane shaded. Labels are centred in the visible part of each bar and shortened with "…" when they don't fit. `tl.set_style(TimelineStyle.Bars)` switches to plain bars (`TimelineStyle.Wave` is the default).
+- `tl.lanes()` reads the displayed lanes; `tl.set_lanes([...])` reorders them or hides the ones left out. `tl.rename_lane(old, new)` renames one; `tl.count()` gives the number of intervals. Category colours are shared by every timeline: `tl.category_color("LM")` reads one back. The legend lists the categories in use, each with its colour.
 - Overlapping intervals in one lane:
-  - `tl.stack = TimelineStack.Off` (the default) draws them over each other.
-  - `tl.stack = TimelineStack.Time` puts each in the first free sub-row; good for overlapping events.
-  - `tl.stack = TimelineStack.Category` gives each category its own fixed sub-row, named at its start, so an instrument's modes keep their rows from one orbit to the next. `tl.category_order = ["BASE", "HKM", "LM"]` sets the row order; categories left out follow, first seen first.
+  - `tl.set_stack(TimelineStack.Off)` (the default) draws them over each other.
+  - `tl.set_stack(TimelineStack.Time)` puts each in the first free sub-row; good for overlapping events.
+  - `tl.set_stack(TimelineStack.Category)` gives each category its own fixed sub-row, named at its start, so an instrument's modes keep their rows from one orbit to the next. `tl.set_category_order(["BASE", "HKM", "LM"])` sets the row order; categories left out follow, first seen first.
   - Each sub-row is a full `lane_height`, so a lane with 4 modes is 4 rows tall. For about 70 rows on a 1080 px screen, use `lane_height=14`; below about 12 px, labels no longer fit in their bars.
-  - `tl.forbid_overlap = True` makes edits stop at the neighbouring block in the same row, so they never overlap: the same lane, or the same lane and category with `TimelineStack.Category`. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
-- `style`, `stack` and `edit_modes` take members of `TimelineStyle`, `TimelineStack` and `TimelineEditMode`, and read back as members: `tl.stack` is `TimelineStack.Off`, not `None`, and `tl.edit_modes` is a set of `TimelineEditMode`. The old strings (and `None` for `stack`) still work but are deprecated, and a comparison like `tl.style == "wave"` is now false.
+  - `tl.set_forbid_overlap(True)` makes edits stop at the neighbouring block in the same row, so they never overlap: the same lane, or the same lane and category with `TimelineStack.Category`. A move of several selected blocks is limited by the tightest one, and a block moves to another lane only if it fits where it is dropped.
+- Style, stacking and edit modes are members of `TimelineStyle`, `TimelineStack` and `TimelineEditMode`: `tl.stack()` is `TimelineStack.Off`, not `None`, and `tl.edit_modes()` is a list of `TimelineEditMode`, in enum order. Each setting has its signal (`style_changed`, `stack_changed`, `category_order_changed`, `forbid_overlap_changed`, `editable_changed`, `edit_modes_changed`, `lanes_changed`), so `.on` pipelines work with them. With `from __feature__ import true_property` they are Python properties too (`tl.style = TimelineStyle.Bars`).
+- Until 0.53 these were Python properties. Without `true_property`, an old assignment like `tl.style = ...` still sets the value, with a deprecation warning, and old strings like `"wave"` still work there, deprecated too. Reading `tl.style` without calling it now gives the method, so `tl.style == TimelineStyle.Bars` is always false: write `tl.style()`.
 - Timelines show up in the inspector, as "timeline" or their name (`tl.set_name(...)`). Their properties panel sets the style, stacking, forbidden overlaps, lane height, editing and snapping.
 
 A timeline also works as a strip on a regular plot, stacked next to the data:
@@ -1002,9 +1029,9 @@ plan = {"start": np.array([0.0, 3600.0]), "stop": np.array([1800.0, 7200.0]),
         "lane": ["A", "B"], "ids": np.array([1, 2])}
 tl.set_intervals(**plan)
 
-tl.editable = True
-tl.edit_modes = {TimelineEditMode.Move, TimelineEditMode.Resize, TimelineEditMode.ChangeLane}
-tl.snap_to = 60   # snap drags to the nearest minute; also "edges", a list of times, or None
+tl.set_editable(True)
+tl.set_edit_modes([TimelineEditMode.Move, TimelineEditMode.Resize, TimelineEditMode.ChangeLane])
+tl.set_snap_to(60)   # snap drags to the nearest minute; also "edges", a list of times, or None
 
 def apply_edits(edits):
     by_id = {i: (new_start, new_stop, new_lane) for i, new_start, new_stop, new_lane in edits}
@@ -1016,11 +1043,11 @@ def apply_edits(edits):
 tl.intervals_changed.connect(apply_edits)
 ```
 
-- `tl.editable = True` turns on mouse editing. `edit_modes` picks which gestures are allowed (default `{TimelineEditMode.Move, TimelineEditMode.Resize}`); add `ChangeLane` to let a drag move an interval to another lane, `Create` to draw new ones on empty lane space, `Delete` to wire the Delete key to `delete_requested`.
+- `tl.set_editable(True)` turns on mouse editing. `set_edit_modes([...])` picks which gestures are allowed (default `[TimelineEditMode.Move, TimelineEditMode.Resize]`); add `ChangeLane` to let a drag move an interval to another lane, `Create` to draw new ones on empty lane space, `Delete` to wire the Delete key to `delete_requested`.
 - Drag a block's end to resize it. A block too narrow to grab is resized from just outside its ends; pressing inside it moves it. Instant events (start == stop) only move.
 - Shift+drag on empty lane space makes a rubber-band selection; Ctrl-click toggles one interval; arrow keys nudge the selection; Escape cancels a drag in progress.
 - `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` fires with `(start, stop, lane_name)` when an interval is drawn on empty lane space, and `tl.interval_created_in` with `(start, stop, lane_name, category)`: the category of the row it was drawn in with `TimelineStack.Category`, else `""` (prefer it in new code: it says everything `interval_created` says, which stays for existing slots; one signal cannot take both forms in Python); `tl.delete_requested` fires with the list of selected ids when Delete or Backspace is pressed. Neither changes the data: add or drop the intervals in your arrays and call `set_intervals` again.
-- `tl.snap_to = [t1, t2, ...]` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events.
+- `tl.set_snap_to([t1, t2, ...])` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events.
 - `tl.hovered` fires with the hovered interval's id (or `-1` when the mouse leaves it), and `tl.interval(id)` gives its details as a dict: `id`, `start`, `stop`, `duration`, `lane`, `category` and `label` (`None` for an unknown id); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
 - `tl.interval_at(x, y)` gives the id of the interval under a widget pixel, or `None`. The plot's crosshair tooltip lists the hovered interval: lane, label (category), start → stop; `plot.crosshair_text()` returns that tooltip's text.
 
@@ -1068,7 +1095,6 @@ A few names do not follow the convention and are kept by hand:
 - `range` on axes: `set_range(start, stop)` takes two arguments.
 - `selected`: the signal is `selection_changed`.
 - `spacing` on waterfalls: the accessors are `uniform_spacing`.
-- `tooltip` on spans and lines: the accessors are `tool_tip`, and the signal is `tool_tip_changed`.
 
 ## N-D projections
 
@@ -1433,6 +1459,8 @@ The format follows the extension: pdf, svg, png, jpg (or jpeg) and bmp. `format=
 instead, in any case (`"PNG"`, `".jpeg"`). Panels export all their plots together: `panel.save("panel.pdf")`.
 A save that fails raises `OSError` (a missing folder, say), an unknown format or extension `ValueError`.
 
+`plot.to_bytes("png", 800, 500)` returns the same image as bytes, without a file of yours, for a notebook, a web page or an e-mail. It takes the format first, then `save`'s width, height, scale and quality, on plots and panels alike.
+
 ## Threads
 
 Plots live on the GUI thread. You can still call them from another thread:
@@ -1500,9 +1528,9 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 
 **`TypeError` about `plot_type`, or `ValueError` on a panel.** `plot_type` is for panels only. On a panel, a list of arrays always makes a projection, so leave `plot_type` out or pass `PlotType.Projections`.
 
-**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on `MultiPlotsVSpanCollection` `add_object`, `remove_object`. `LineTermination.SPikeArrow` is `SpikeArrow`.
+**A camelCase name works but isn't documented.** It has a snake_case twin, and the camelCase one is deprecated: on panels `set_selected`, `add_widget`, `remove_widget`, `index_of` and the `selection_changed` signal; on spans `selection_changed`; on `MultiPlotsVSpanCollection` `add_object`, `remove_object`. `addWidget`, `removeWidget`, `indexOf` and the legend's `is_visible` warn. The others cannot: `setSelected` and the signals are Qt connection targets, and a Python wrapper would cut those connections. `LineTermination.SPikeArrow` is `SpikeArrow`.
 
-**Deprecated calls.** The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable(graph)` and `remove_group(group)` forward to `plot.remove(...)` and warn. The index and name forms of `remove_plottable` have no `remove` equivalent and stay as they are. To remove by index or name, write `plot.remove(plot.plottable(i))` or `plot.remove(plot.plottable("name"))`. A missing index or name gives `None`, and `plot.remove(None)` raises `ValueError`, while the old call did nothing. `save_pdf`, `save_svg`, `save_png`, `save_jpg` and `save_bmp` work but warn: use `save(path, ...)`, which picks the format from the extension, or `save(path, format="png")`.
+**Deprecated calls.** The item constructors (`SciQLopTextItem(plot, ...)`, `SciQLopVerticalSpan(plot, ...)`, `MultiPlotsVerticalSpan(panel, ...)` and the rest) work but warn: use `plot.text(...)`, `plot.vertical_span(...)`, `panel.vertical_span(...)` and the other factories. `remove_plottable(graph)` and `remove_group(group)` forward to `plot.remove(...)` and warn. The index and name forms of `remove_plottable` warn too: to remove by index or name, write `plot.remove(plot.plottable(i))` or `plot.remove(plot.plottable("name"))`. A missing index or name gives `None`, and `plot.remove(None)` raises `ValueError`, while the old call did nothing. `save_pdf`, `save_svg`, `save_png`, `save_jpg` and `save_bmp` work but warn: use `save(path, ...)`, which picks the format from the extension, or `save(path, format="png")`.
 
 **Spans and lines.** The factories return two classes, `SciQLopSpan` and `SciQLopStraightLine`, for every kind of span and line and on plots and panels alike. Their accessors are methods.
 - The old classes stay for code that uses them: `SciQLopVerticalSpan`, `SciQLopHorizontalSpan`, `SciQLopRectangularSpan`, `MultiPlotsVerticalSpan`, `SciQLopVerticalLine`, `SciQLopHorizontalLine` and `MultiPlotsVerticalLine`. Their constructors were already deprecated and still warn. `MultiPlotsVSpanCollection.create_span` and interactive span creation (`span_created`) still build them, with their old defaults.
@@ -1513,3 +1541,14 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 - The factory defaults are the same on plots and panels: spans are grey with alpha 100 and editable, lines are black and read-only. `panel.vertical_line` used to give a grey, draggable line: pass `color=QColor(100, 100, 100), read_only=False` to keep that.
 
 **Something else.** Open an issue at https://github.com/SciQLop/SciQLopPlots/issues with a small script that shows it.
+
+## Changes in 0.53
+
+0.53 cleans up the API. Most old names still work and warn with `DeprecationWarning` ("... is deprecated: use ..."): run your code with `python -W error::DeprecationWarning` to find them. [Troubleshooting](#troubleshooting) lists them. These changes break code without a warning:
+
+- **`name` is a method** on graphs, plots and panels: `x.name()` and `x.set_name(s)`. Code that only tests or compares it, like `if plot.name:` or `plot.name == "x"`, now always sees a bound method: grep every `.name`.
+- **Timeline state is methods**, like the rest of the API: `tl.style()`, `tl.set_style(TimelineStyle.Bars)`, and the same for `stack`, `edit_modes`, `editable`, `lanes`, `forbid_overlap`, `category_order` and `snap_to`. An old assignment (`tl.style = ...`) still works and warns, but reading `tl.style` without calling it gives the method, so `tl.style == TimelineStyle.Bars` is always false. `edit_modes()` is a list, not a set, and `set_style` / `set_stack` take only the enum members: a string raises `TypeError`.
+- **The text, pixmap and ellipse factories** take `read_only=` where `movable=` was: a positional bool raises `TypeError`, since it would mean the opposite.
+- **The old span and line classes**: `SciQLopHorizontalSpan` and `SciQLopRectangularSpan` take `tooltip=`, not `tool_tip=`, and `MultiPlotsVerticalSpan` / `MultiPlotsVerticalLine` take their panel as the first positional argument, not `panel=`. Better, use the factories (`plot.vertical_span(...)`, `panel.vertical_line(...)`).
+- **Overriding in a Python subclass**: a subclass of a plot or a panel can still override `span`, `straight_line`, `text`, `pixmap`, `ellipse`, `curved_line`, `histogram` or the `save_*` methods for its own callers, but the library's C++ code no longer calls these overrides, for example when `vertical_span` builds its span. The same holds for `tooltip` and `movable` on items.
+

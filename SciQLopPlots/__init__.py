@@ -796,7 +796,7 @@ def _is_time_input(value):
 def _accept_dates_in_range(init):
     @functools.wraps(init)
     def wrapper(self, *args, **kwargs):
-        if len(args) not in (2, 3) or all(type(a) in (float, int) for a in args[:2]):
+        if len(args) not in (2, 3) or all(isinstance(a, (float, int)) for a in args[:2]):
             return init(self, *args, **kwargs)
         if len(args) == 2:
             kwargs.setdefault("is_time_range", any(_is_time_input(a) for a in args))
@@ -842,16 +842,8 @@ def _set_intervals(self, start, stop=None, lane=None, category=None, label=None,
 SciQLopTimeline.set_intervals = _set_intervals
 
 
-# --- SciQLopTimeline `lanes` and editing API (`editable`, `edit_modes`, `snap_to`):
-# properties over the C++ getters/setters captured below before being
-# replaced.
-_edit_modes_get = SciQLopTimeline.edit_modes
-_editable_get = SciQLopTimeline.editable
-_lanes_get = SciQLopTimeline.lanes
-
-
-# Timeline state is a member of an enum; the C++ side still takes these names. Each table maps
-# member -> C++ name; `aliases` are further old values that still work, deprecated.
+# Timeline state is a member of an enum. Each table maps member -> its pre-0.53 string name, still
+# accepted with a warning; `aliases` are further old values.
 _STYLE_NAMES = {TimelineStyle.Wave: "wave", TimelineStyle.Bars: "bars"}
 _STACK_NAMES = {TimelineStack.Off: "", TimelineStack.Time: "time", TimelineStack.Category: "category"}
 _EDIT_MODE_NAMES = {TimelineEditMode.Move: "move", TimelineEditMode.Resize: "resize",
@@ -872,18 +864,15 @@ def _member_of(enum, names, prop, value, aliases={}):
     return member
 
 
-def _member_named(names, name):
-    return {n: m for m, n in names.items()}[name]
-
-
-def _set_edit_modes(self, modes):
+def _edit_mode_list(modes):
     members = set()
     for m in modes:  # a loop, not a comprehension: on 3.11 that has its own frame (stacklevel)
         members.add(_member_of(TimelineEditMode, _EDIT_MODE_NAMES, "edit_modes", m))
-    self.set_edit_modes(sorted(_EDIT_MODE_NAMES[m] for m in members))
+    return sorted(members)
 
 
-def _get_snap_to(self):
+def _snap_to(self):
+    """What dragged edges snap to: "edges", a step in seconds, a list of times, or None."""
     mode = self.snap_mode()
     if mode == "times":
         return list(self.snap_times())
@@ -891,6 +880,8 @@ def _get_snap_to(self):
 
 
 def _set_snap_to(self, value):
+    """Snap dragged edges to "edges", a positive step in seconds, a non-empty list of times
+    (any time input), or None for no snapping."""
     if isinstance(value, (list, tuple, np.ndarray)):
         if len(value) == 0:
             raise ValueError("snap_to times must not be empty")
@@ -906,39 +897,43 @@ def _set_snap_to(self, value):
                          "a non-empty list of times, or None")
 
 
-SciQLopTimeline.edit_modes = property(
-    lambda self: {_member_named(_EDIT_MODE_NAMES, n) for n in _edit_modes_get(self)},
-    _set_edit_modes)
-SciQLopTimeline.editable = property(_editable_get, SciQLopTimeline.set_editable)
-SciQLopTimeline.snap_to = property(_get_snap_to, _set_snap_to)
-SciQLopTimeline.lanes = property(_lanes_get, SciQLopTimeline.set_lanes)
+SciQLopTimeline.snap_to = _snap_to
+SciQLopTimeline.set_snap_to = _set_snap_to
+
+# Until 0.53 these were Python properties; now they are methods, and Python properties only under
+# PySide's true_property. `tl.style = ...` would otherwise silently hide the method: it calls the
+# setter instead, with a warning. Each entry converts the values the old property took.
+_TIMELINE_OLD_PROPERTIES = {
+    "style": lambda v: _member_of(TimelineStyle, _STYLE_NAMES, "style", v),
+    "stack": lambda v: _member_of(TimelineStack, _STACK_NAMES, "stack", v, aliases={None: TimelineStack.Off}),
+    "edit_modes": _edit_mode_list,
+    "editable": bool,
+    "lanes": list,
+    "forbid_overlap": bool,
+    "category_order": list,
+    "snap_to": lambda v: v,
+}
+import __feature__  # noqa: E402  (installed by PySide6)
+
+_TRUE_PROPERTY = 1 << __feature__._really_all_feature_names.index("true_property")
 
 
-_style_get = SciQLopTimeline.style
-_stack_get = SciQLopTimeline.stack
+def _uses_true_property(frame):
+    flags = __feature__.pyside_feature_dict.get(frame.f_globals.get("__name__"), 0)
+    return flags > 0 and bool(flags & _TRUE_PROPERTY)
 
 
-def _set_style(self, value):
-    self.set_style(_STYLE_NAMES[_member_of(TimelineStyle, _STYLE_NAMES, "style", value)])
+def _timeline_setattr(self, name, value):
+    convert = _TIMELINE_OLD_PROPERTIES.get(name)
+    if convert is None:
+        return object.__setattr__(self, name, value)
+    value = convert(value)  # first: an old string's own warning names the member to use
+    if name == "snap_to" or not _uses_true_property(sys._getframe(1)):
+        _warn_deprecated(f"tl.{name} = ... is deprecated: use tl.set_{name}(...)")
+    getattr(self, f"set_{name}")(value)
 
 
-def _set_stack(self, value):
-    member = _member_of(TimelineStack, _STACK_NAMES, "stack", value, aliases={None: TimelineStack.Off})
-    self.set_stack(_STACK_NAMES[member])
-
-
-SciQLopTimeline.style = property(lambda self: _member_named(_STYLE_NAMES, _style_get(self)),
-                                 _set_style)
-SciQLopTimeline.stack = property(lambda self: _member_named(_STACK_NAMES, _stack_get(self)),
-                                 _set_stack)
-_forbid_overlap_get = SciQLopTimeline.forbid_overlap
-_category_order_get = SciQLopTimeline.category_order
-
-
-SciQLopTimeline.forbid_overlap = property(lambda self: bool(_forbid_overlap_get(self)),
-                                          lambda self, v: self.set_forbid_overlap(bool(v)))
-SciQLopTimeline.category_order = property(lambda self: list(_category_order_get(self)),
-                                          lambda self, names: self.set_category_order(list(names)))
+SciQLopTimeline.__setattr__ = _timeline_setattr
 SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 
@@ -1017,6 +1012,23 @@ for _cls, _aliases in _DEPRECATED_ALIASES.items():
     for _alias, _native in _aliases.items():
         setattr(_cls, _alias, getattr(_cls, _native))
 
+# Plain methods (no slot, no Q_PROPERTY, no virtual): the old names can warn.
+_DEPRECATED_CAMEL_CASE = {
+    (SciQLopMultiPlotPanel, "addWidget"): "panel.add_widget",
+    (SciQLopMultiPlotPanel, "removeWidget"): "panel.remove_widget",
+    (SciQLopMultiPlotPanel, "indexOf"): "panel.index_of",
+    (SciQLopPlotsBindings.SciQLopPlotLegendInterface, "is_visible"): "legend.visible",
+}
+for (_cls, _old), _new in _DEPRECATED_CAMEL_CASE.items():
+    setattr(_cls, _old, _deprecated_call(f"{_old}(...) is deprecated: use {_new}(...)", getattr(_cls, _old)))
+
+# Review 1.4: one spelling, metadata, like the metadata= keyword and the products tree.
+for _old, _new in (("meta_data", "metadata"), ("set_meta_data", "set_metadata")):
+    setattr(SciQLopPlotsBindings.SciQLopGraphInterface, _old,
+            _deprecated_call(f"{_old}(...) is deprecated: use graph.{_new}(...)",
+                             getattr(SciQLopPlotsBindings.SciQLopGraphInterface, _new)))
+register_hidden(SciQLopPlotsBindings.SciQLopGraphInterface, "meta_data")
+
 
 def _public_names():
     # `from .SciQLopPlotsBindings import *` and this module's own imports (numpy, datetime, the Qt
@@ -1027,7 +1039,9 @@ def _public_names():
     # The SciQLopSingleLineGraph* aliases stay importable by name, but are no longer advertised.
     own = {"tracing", "WidgetPlot", "to_epoch_seconds",
            "Pipeline", "PartialPipeline", "Event", "register_property", "OnDescriptor"}
-    return sorted(bound | own)
+    # Plumbing that methods return or derive from, never named by user code (review 3.4).
+    plumbing = {"SQPQCPAbstractPlottableWrapper", "SciQLopPlotInterfacePtr", "MultiPlotsVerticalSpanPtr"}
+    return sorted((bound | own) - plumbing)
 
 
 __all__ = _public_names()

@@ -207,15 +207,19 @@ def test_name_without_getter_is_not_exposed(line_graph):
         line_graph.on.selection
 
 
-def test_on_writes_a_timeline_enum_through_its_python_property(qtbot):
+def test_timeline_state_drives_a_pipeline(qtbot):
     ts = sp.SciQLopTimeSeriesPlot()
     qtbot.addWidget(ts)
-    tl = ts.add_timeline()
-    tl.on.style.value = sp.TimelineStyle.Bars
-    tl.on.stack.value = sp.TimelineStack.Time
-    tl.on.edit_modes.value = {sp.TimelineEditMode.Move}
-    assert (tl.style, tl.stack, tl.edit_modes) == (sp.TimelineStyle.Bars, sp.TimelineStack.Time,
-                                                   {sp.TimelineEditMode.Move})
+    source, target = ts.add_timeline(), ts.add_timeline()
+    pipelines = [source.on.style >> target.on.style, source.on.stack >> target.on.stack,
+                 source.on.edit_modes >> target.on.edit_modes, source.on.editable >> target.on.editable]
+    source.set_style(sp.TimelineStyle.Bars)
+    source.set_stack(sp.TimelineStack.Time)
+    source.set_edit_modes([sp.TimelineEditMode.Create])
+    source.set_editable(True)
+    assert (target.style(), target.stack(), target.edit_modes(), target.editable()) == (
+        sp.TimelineStyle.Bars, sp.TimelineStack.Time, [sp.TimelineEditMode.Create], True)
+    del pipelines
 
 
 def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
@@ -229,9 +233,3 @@ def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
     assert target.normalization() == sp.Histogram2DNormalization.PerColumn
     del pipeline
 
-
-def test_a_deprecated_value_through_on_warns_at_the_caller(ts_plot):
-    timeline = ts_plot.add_timeline()
-    with pytest.warns(DeprecationWarning, match="is deprecated") as seen:
-        timeline.on.style.value = "wave"
-    assert seen[0].filename == __file__

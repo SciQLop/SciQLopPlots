@@ -148,7 +148,7 @@ BUILDERS = {
 
 COMPONENT_OWNERS = {"line_component", "line_component_decorated", "curve_component", "waterfall_component", "nd_component"}
 
-SKIP = {"moveToThread", "add_inspector_extension", "remove_inspector_extension", "set_meta_data"}
+SKIP = {"moveToThread", "add_inspector_extension", "remove_inspector_extension", "set_metadata"}
 PREFIXES = ("set_", "clear_", "select_", "add_", "push_", "remove_", "reset_", "update_", "move")
 
 

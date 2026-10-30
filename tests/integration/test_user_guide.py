@@ -1,4 +1,4 @@
-"""Every Python snippet of docs/user-guide.md runs against the installed library.
+"""Every Python snippet of docs/user-guide.md and README.md runs against the installed library.
 
 Snippets are standalone scripts: each one runs in a fresh namespace. The test
 already has a QApplication and must not block, so a snippet's
@@ -11,14 +11,17 @@ import re
 import pytest
 from conftest import process_events
 from PySide6.QtWidgets import QWidget
-from SciQLopPlots import SciQLopGraphInterface
+from SciQLopPlots import SciQLopGraphInterface, SciQLopPlot
 
 GUIDE = pathlib.Path(__file__).resolve().parents[2] / "docs" / "user-guide.md"
-SNIPPETS = re.findall(r"```python\n(.*?)```", GUIDE.read_text(), flags=re.S)
+README = GUIDE.parents[1] / "README.md"
+SNIPPETS = [code for doc in (GUIDE, README)
+            for code in re.findall(r"```python\n(.*?)```", doc.read_text(), flags=re.S)]
 
 
 def _runnable_in_tests(code):
     return (code.replace("QApplication(sys.argv)", "QApplication.instance()")
+                .replace("QApplication([])", "QApplication.instance()")
                 .replace("app.exec()", "None"))
 
 
@@ -46,6 +49,8 @@ def test_snippet_runs(code, qtbot, tmp_path, monkeypatch):
     # Data functions run on a worker thread with the namespace as their globals:
     # let them finish before it is cleared below.
     graphs = [v for v in namespace.values() if isinstance(v, SciQLopGraphInterface)]
+    graphs += [g for v in namespace.values() if isinstance(v, SciQLopPlot) for g in v.plottables()
+               if isinstance(g, SciQLopGraphInterface)]
     qtbot.waitUntil(lambda: not any(g.busy() for g in graphs), timeout=5000)
     for widget in [v for v in namespace.values() if isinstance(v, QWidget)]:
         widget.close()

@@ -23,6 +23,11 @@ class TestStarImport:  # task 1, finding 3.4
     def test_does_not_leak_imports(self, leak):
         assert leak not in self._star()
 
+    @pytest.mark.parametrize("plumbing", ["SQPQCPAbstractPlottableWrapper", "SciQLopPlotInterfacePtr",
+                                          "MultiPlotsVerticalSpanPtr"])
+    def test_does_not_advertise_plumbing(self, plumbing):
+        assert plumbing not in self._star() and hasattr(SciQLopPlots, plumbing)
+
     @pytest.mark.parametrize("name", ["SciQLopPlot", "SciQLopMultiPlotPanel", "SciQLopPlotRange",
                                       "GraphType", "WidgetPlot", "Pipeline", "Event", "tracing",
                                       "SciQLopPlotGroup", "SciQLopNDProjectionPlot"])
@@ -69,14 +74,23 @@ class TestInternalsHidden:  # task 2, findings 3.3, 3.4
 
 
 class TestSnakeCaseAliases:  # task 3, findings 1.5, 1.6
-    @pytest.mark.parametrize("cls, new, old", [
-        (SciQLopMultiPlotPanel, "set_selected", "setSelected"),
-        (SciQLopMultiPlotPanel, "add_widget", "addWidget"),
-        (SciQLopMultiPlotPanel, "remove_widget", "removeWidget"),
-        (SciQLopMultiPlotPanel, "index_of", "indexOf"),
+    def test_set_selected_has_both_names(self):  # a Q_PROPERTY writer: a wrapper would hide it
+        assert SciQLopMultiPlotPanel.set_selected is SciQLopMultiPlotPanel.setSelected
+
+    @pytest.mark.parametrize("old, new, call", [
+        ("addWidget", "add_widget", lambda panel, w: panel.addWidget(w)),
+        ("removeWidget", "remove_widget", lambda panel, w: panel.removeWidget(w)),
+        ("indexOf", "index_of", lambda panel, w: panel.indexOf(w)),
+        ("is_visible", "legend.visible", lambda panel, w: w.legend().is_visible()),
     ])
-    def test_methods_have_both_names(self, cls, new, old):
-        assert getattr(cls, new) is getattr(cls, old)
+    def test_old_camel_case_names_warn_and_work(self, qtbot, old, new, call):
+        panel = SciQLopMultiPlotPanel()
+        qtbot.addWidget(panel)
+        plot = SciQLopPlot()
+        panel.add_widget(plot)
+        with pytest.warns(DeprecationWarning, match=rf"{old}\(\.\.\.\) is deprecated: use .*{new.split('.')[-1]}") as seen:
+            call(panel, plot)
+        assert seen[0].filename == __file__
 
     def test_panel_set_selected_works(self, qtbot):
         panel = SciQLopMultiPlotPanel()
@@ -109,7 +123,7 @@ class TestSnakeCaseAliases:  # task 3, findings 1.5, 1.6
 class TestMetadataKeyword:  # task 4, finding 1.4
     def test_metadata_is_accepted(self, plot):
         graph = plot.line(X, X, metadata={"source": "mag"})
-        assert graph.meta_data()["source"] == "mag"
+        assert graph.metadata()["source"] == "mag"
 
     def test_metaData_is_gone_and_the_error_says_why(self, plot):
         # Renamed outright: a Python shim would hide shiboken's signature listing on every bad
@@ -119,13 +133,22 @@ class TestMetadataKeyword:  # task 4, finding 1.4
 
     def test_metadata_through_plot(self, plot):
         graph = plot.plot(X, X, metadata={"source": "mag"})
-        assert graph.meta_data()["source"] == "mag"
+        assert graph.metadata()["source"] == "mag"
+
+    def test_the_meta_data_spelling_warns_and_works(self, plot):
+        graph = plot.line(X, X)
+        with pytest.warns(DeprecationWarning, match=r"set_meta_data\(\.\.\.\) is deprecated: use graph\.set_metadata"):
+            graph.set_meta_data({"source": "mag"})
+        with pytest.warns(DeprecationWarning, match=r"meta_data\(\.\.\.\) is deprecated: use graph\.metadata"):
+            assert graph.meta_data()["source"] == "mag"
+        with pytest.raises(AttributeError):
+            graph.on.meta_data
 
     def test_metadata_on_a_panel(self, qtbot):
         panel = SciQLopMultiPlotPanel()
         qtbot.addWidget(panel)
         _, graph = panel.line(X, X, metadata={"source": "mag"})
-        assert graph.meta_data()["source"] == "mag"
+        assert graph.metadata()["source"] == "mag"
 
 
 class TestTimeRanges:  # task 5, finding 3.5

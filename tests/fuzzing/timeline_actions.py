@@ -27,4 +27,4 @@ def add_timeline_strip(panel, model, plot_index, n, lanes, editable):
     tl = plot.add_timeline()
     tl.set_intervals(start, start + rng.uniform(0, 1e4, n),
                      lane=rng.integers(0, lanes, n), category=rng.integers(0, 3, n))
-    tl.editable = editable
+    tl.set_editable(editable)

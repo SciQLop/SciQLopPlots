@@ -19,6 +19,7 @@
 #pragma once
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
+#include "SciQLopPlots/enums.hpp"
 #include <QColor>
 #include <QMap>
 #include <QPointer>
@@ -31,6 +32,16 @@ class QMouseEvent;
 class SciQLopTimeline : public SciQLopPlottableInterface
 {
     Q_OBJECT
+    Q_PROPERTY(QStringList lanes READ lanes WRITE set_lanes NOTIFY lanes_changed)
+    Q_PROPERTY(TimelineStyle style READ style WRITE set_style NOTIFY style_changed)
+    Q_PROPERTY(TimelineStack stack READ stack WRITE set_stack NOTIFY stack_changed)
+    Q_PROPERTY(QStringList category_order READ category_order WRITE set_category_order NOTIFY
+                   category_order_changed)
+    Q_PROPERTY(bool forbid_overlap READ forbid_overlap WRITE set_forbid_overlap NOTIFY
+                   forbid_overlap_changed)
+    Q_PROPERTY(bool editable READ editable WRITE set_editable NOTIFY editable_changed)
+    Q_PROPERTY(QList<TimelineEditMode> edit_modes READ edit_modes WRITE set_edit_modes NOTIFY
+                   edit_modes_changed)
     QPointer<QCPIntervals> _intervals;
     QPointer<QCPLaneLayout> _layout;
     SciQLopPlotAxis* _y_axis;
@@ -82,8 +93,9 @@ public:
 
     bool editable() const;
     void set_editable(bool editable);
-    QStringList edit_modes() const;
-    void set_edit_modes(const QStringList& names);
+    //! In enum order.
+    QList<TimelineEditMode> edit_modes() const;
+    void set_edit_modes(const QList<TimelineEditMode>& modes);
     void set_snap_edges();
     void set_snap_step(double seconds);
     void clear_snap();
@@ -92,13 +104,13 @@ public:
     QList<double> snap_times() const;
     QString snap_mode() const;
     double snap_step() const;
-    //! "wave" (logic-analyzer look, the default) or "bars"; other names are ignored.
-    QString style() const;
-    void set_style(const QString& name);
-    //! Sub-rows for overlaps: "" (none), "time" (first free sub-row) or "category" (one fixed
-    //! sub-row per category); other names are ignored.
-    QString stack() const;
-    void set_stack(const QString& mode);
+    //! Wave (logic-analyzer look, the default) or Bars.
+    TimelineStyle style() const;
+    void set_style(TimelineStyle style);
+    //! Sub-rows for overlaps: Off, Time (first free sub-row) or Category (one fixed sub-row per
+    //! category).
+    TimelineStack stack() const;
+    void set_stack(TimelineStack stack);
     //! Category names stacked first, in this order; the others follow, first seen first.
     QStringList category_order() const { return _category_order; }
     void set_category_order(const QStringList& names);
@@ -116,6 +128,12 @@ public:
 signals:
 #endif
     Q_SIGNAL void lanes_changed();
+    Q_SIGNAL void style_changed(TimelineStyle style);
+    Q_SIGNAL void stack_changed(TimelineStack stack);
+    Q_SIGNAL void category_order_changed(const QStringList& names);
+    Q_SIGNAL void forbid_overlap_changed(bool forbid);
+    Q_SIGNAL void editable_changed(bool editable);
+    Q_SIGNAL void edit_modes_changed(const QList<TimelineEditMode>& modes);
     Q_SIGNAL void hovered(qint64 id);
     Q_SIGNAL void selected_intervals_changed(QList<qint64> ids);
     Q_SIGNAL void intervals_changed(const QVariantList& edits);

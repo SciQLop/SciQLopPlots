@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from PySide6.QtGui import QColor
 
-from SciQLopPlots import (SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline, TimelineStack,
-                          TimelineStyle)
+from SciQLopPlots import (SciQLopPlotRange, SciQLopTimeSeriesPlot, SciQLopTimeline, TimelineEditMode,
+                          TimelineStack, TimelineStyle)
 from conftest import process_events
 
 
@@ -21,7 +21,7 @@ def test_set_intervals_counts_and_lanes_in_first_seen_order(ts_plot):
     tl.set_intervals([0, 10, 20], [5, 15, 25], lane=["MSA", "MGF", "MSA"])
     process_events()
     assert tl.count() == 3
-    assert tl.lanes == ["MSA", "MGF"]
+    assert tl.lanes() == ["MSA", "MGF"]
 
 
 def test_new_lanes_notify_once_per_set_intervals(ts_plot):
@@ -33,12 +33,12 @@ def test_new_lanes_notify_once_per_set_intervals(ts_plot):
 
 
 @pytest.mark.parametrize("nested", [
-    lambda tl: setattr(tl, "stack", TimelineStack.Off),
+    lambda tl: tl.set_stack(TimelineStack.Off),
     lambda tl: tl.set_category_order(["y", "x"]),
 ], ids=["set_stack", "set_category_order"])
 def test_lanes_changed_comes_after_a_nested_repack_returned(ts_plot, nested):
     tl = _strip(ts_plot)
-    tl.stack = TimelineStack.Time
+    tl.set_stack(TimelineStack.Time)
     tl.set_intervals([10, 20], [40, 50], lane=["A", "A"], category=["x", "y"], ids=[7, 8])
     tl.select_ids([7])
     events = []
@@ -84,8 +84,8 @@ def test_two_timelines_on_one_plot_share_lanes_by_name(ts_plot):
     plan.set_intervals([0], [1], lane=["MSA"])
     catalog.set_intervals([0], [1], lane=["events"])
     catalog.set_intervals([0], [1], lane=["MSA"])
-    assert plan.lanes == ["MSA", "events"]
-    assert catalog.lanes == plan.lanes
+    assert plan.lanes() == ["MSA", "events"]
+    assert catalog.lanes() == plan.lanes()
 
 
 def test_category_colour_is_the_same_everywhere(qtbot):
@@ -105,18 +105,18 @@ def test_lanes_setter_reorders_hides_and_rename(ts_plot):
     tl = _strip(ts_plot)
     tl.set_intervals([0, 0], [1, 1], lane=["A", "B"])
     tl.set_lanes(["B"])
-    assert tl.lanes == ["B"]
+    assert tl.lanes() == ["B"]
     assert tl.rename_lane("B", "Bee")
-    assert tl.lanes == ["Bee"]
+    assert tl.lanes() == ["Bee"]
 
 
 def test_assigning_lanes_hides_the_missing_ones(ts_plot):
     tl = _strip(ts_plot)
     tl.set_intervals([0, 0], [1, 1], lane=["A", "B"])
-    tl.lanes = ["B"]
+    tl.set_lanes(["B"])
     assert "lanes" not in vars(tl)
-    assert tl.lanes == ["B"]
-    assert ts_plot.add_timeline().lanes == ["B"]
+    assert tl.lanes() == ["B"]
+    assert ts_plot.add_timeline().lanes() == ["B"]
 
 
 def test_a_timeline_is_made_by_its_plot_not_constructed_from_python(ts_plot):
@@ -328,21 +328,20 @@ def test_lane_names_sit_on_their_bars(staircase, tmp_path, height):
 # --- Issue #126: wave-view style.
 
 def test_timeline_defaults_to_the_wave_style(ts_plot):
-    assert _strip(ts_plot).style is TimelineStyle.Wave
+    assert _strip(ts_plot).style() is TimelineStyle.Wave
 
 
 def test_timeline_style_round_trips(ts_plot):
     tl = _strip(ts_plot)
-    assert isinstance(type(tl).style, property)  # else assigning only sets a Python attribute
-    tl.style = TimelineStyle.Bars
-    assert tl.style is TimelineStyle.Bars
-    tl.style = TimelineStyle.Wave
-    assert tl.style is TimelineStyle.Wave
+    tl.set_style(TimelineStyle.Bars)
+    assert tl.style() is TimelineStyle.Bars
+    tl.set_style(TimelineStyle.Wave)
+    assert tl.style() is TimelineStyle.Wave
 
 
 def test_unknown_timeline_style_raises(ts_plot):
-    with pytest.raises(ValueError, match="TimelineStyle"):
-        _strip(ts_plot).style = "gantt"
+    with pytest.raises(TypeError):
+        _strip(ts_plot).set_style("gantt")
 
 
 # --- Readable default lane height; lanes grow with a taller timeline plot.
@@ -424,18 +423,16 @@ def test_timeline_above_a_shown_plot_gets_its_natural_height(panel, qtbot, qtlog
 
 def test_stack_and_forbid_round_trip_and_reject_unknown(ts_plot):
     tl = _strip(ts_plot)
-    for name in ("stack", "forbid_overlap", "category_order"):
-        assert isinstance(getattr(type(tl), name), property), name
-    assert tl.stack is TimelineStack.Off and tl.forbid_overlap is False and tl.category_order == []
+    assert tl.stack() is TimelineStack.Off and tl.forbid_overlap() is False and tl.category_order() == []
     for mode in (TimelineStack.Time, TimelineStack.Category, TimelineStack.Off):
-        tl.stack = mode
-        assert tl.stack is mode
-    with pytest.raises(ValueError, match="TimelineStack"):
-        tl.stack = "merge"
-    tl.forbid_overlap = True
-    assert tl.forbid_overlap is True
-    tl.category_order = ["LM", "BASE"]
-    assert tl.category_order == ["LM", "BASE"]
+        tl.set_stack(mode)
+        assert tl.stack() is mode
+    with pytest.raises(TypeError):
+        tl.set_stack("merge")
+    tl.set_forbid_overlap(True)
+    assert tl.forbid_overlap() is True
+    tl.set_category_order(["LM", "BASE"])
+    assert tl.category_order() == ["LM", "BASE"]
 
 
 def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
@@ -446,7 +443,7 @@ def test_stacked_overlaps_make_their_lane_taller(panel, qtbot):
     panel.show()
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     flat = plot.minimumHeight()
-    tl.stack = TimelineStack.Time
+    tl.set_stack(TimelineStack.Time)
     qtbot.waitUntil(lambda: plot.minimumHeight() == flat + 2 * tl.lane_height(), timeout=2000)
     # Names sit in the middle of their lane's rows: MPPE spans rows 0..3, MGF row 3..4.
     assert plot.y_axis().tick_labels() == {1.5: "MPPE", 3.5: "MGF"}
@@ -459,8 +456,8 @@ def test_category_stack_gives_each_mode_a_row(panel, qtbot):
     panel.show()
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     flat = plot.minimumHeight()
-    tl.category_order = ["BASE", "HKM", "LM"]   # HKM is not used: ignored
-    tl.stack = TimelineStack.Category
+    tl.set_category_order(["BASE", "HKM", "LM"])  # HKM is not used: ignored
+    tl.set_stack(TimelineStack.Category)
     qtbot.waitUntil(lambda: plot.minimumHeight() == flat + tl.lane_height(), timeout=2000)
 
 
@@ -488,3 +485,35 @@ def test_closing_a_panel_with_a_stacked_timeline_does_not_crash(qtbot):
     qtbot.waitUntil(lambda: plot.minimumHeight() > 0, timeout=2000)
     panel.deleteLater()
     qtbot.wait(50)
+
+
+# --- API review 2.9 / 5.9: methods, signals, and the old property assignments.
+
+TIMELINE_STATE = {
+    "style": (TimelineStyle.Bars, TimelineStyle.Bars),
+    "stack": (TimelineStack.Time, TimelineStack.Time),
+    "editable": (True, True),
+    "forbid_overlap": (True, True),
+    "category_order": (["LM"], ["LM"]),
+    "edit_modes": ([TimelineEditMode.Create], [TimelineEditMode.Create]),
+}
+
+
+@pytest.mark.parametrize("name", TIMELINE_STATE)
+def test_each_state_change_signals_once(ts_plot, name):
+    tl = _strip(ts_plot)
+    value, expected = TIMELINE_STATE[name]
+    seen = []
+    getattr(tl, f"{name}_changed").connect(seen.append)
+    getattr(tl, f"set_{name}")(value)
+    getattr(tl, f"set_{name}")(value)
+    assert (getattr(tl, name)(), seen) == (expected, [expected])
+
+
+@pytest.mark.parametrize("name", [*TIMELINE_STATE, "lanes", "snap_to"])
+def test_an_old_property_assignment_warns_at_the_caller_and_sets(ts_plot, name):
+    tl = _strip(ts_plot)
+    value, expected = {**TIMELINE_STATE, "lanes": ([], []), "snap_to": (60, 60)}[name]
+    with pytest.warns(DeprecationWarning, match=rf"tl\.{name} = \.\.\. is deprecated: use tl\.set_{name}") as seen:
+        setattr(tl, name, value)
+    assert getattr(tl, name)() == expected and seen[0].filename == __file__

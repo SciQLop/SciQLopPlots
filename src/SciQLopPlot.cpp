@@ -1092,7 +1092,7 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
 // asks for it on the first result and whenever the edges move.
 void SciQLopPlot::_configure_histogram(SciQLopHistogram* hist, const QVariantMap& metadata)
 {
-    hist->set_meta_data(metadata);
+    hist->set_metadata(metadata);
     _rescale_on_request(hist, true);
 }
 
@@ -1470,7 +1470,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
                                                  bool z_log_scale, QVariantMap metaData)
 {
     auto cm = the_only_color_map(m_impl->add_color_map(name, y_log_scale, z_log_scale));
-    cm->set_meta_data(metaData);
+    cm->set_metadata(metaData);
     try
     {
         cm->set_data(std::move(x), std::move(y), std::move(z));
@@ -1601,7 +1601,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
     plotable = the_only_color_map(
         m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale));
     {
-        plotable->set_meta_data(metaData);
+        plotable->set_metadata(metaData);
         _configure_color_map(plotable, y_log_scale, z_log_scale);
         _connect_callable_sync(plotable, sync_with);
     }
@@ -1616,7 +1616,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
     auto* hist = m_impl->add_histogram2d(name, x_bins, y_bins, x_bins_log, y_bins_log);
     if (hist)
     {
-        hist->set_meta_data(metaData);
+        hist->set_metadata(metaData);
         _configure_color_map(hist, y_bins_log, false);
         hist->set_data(x, y);
     }
@@ -1632,7 +1632,7 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
                                          x_bins_log, y_bins_log);
     if (hist)
     {
-        hist->set_meta_data(metaData);
+        hist->set_metadata(metaData);
         _configure_color_map(hist, y_bins_log, false);
         start_on(hist, sync_with ? sync_with : time_axis());
     }

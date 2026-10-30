@@ -322,7 +322,7 @@ class TestPlainWidgetExport:
         label = QLabel("EXPORT_ME")
         label.setStyleSheet("background:#ff0000;")
         label.setAlignment(Qt.AlignCenter)
-        panel.addWidget(label)
+        panel.add_widget(label)
         panel.show()
         qtbot.waitExposed(panel)
         qtbot.wait(200)

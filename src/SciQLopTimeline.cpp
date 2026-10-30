@@ -28,10 +28,19 @@
 
 namespace {
 
-const std::pair<const char*, QCPIntervals::EditMode> edit_mode_names[] = {
-    { "move", QCPIntervals::emMove },     { "resize", QCPIntervals::emResize },
-    { "change_lane", QCPIntervals::emChangeLane }, { "create", QCPIntervals::emCreate },
-    { "delete", QCPIntervals::emDelete },
+// In TimelineEditMode order.
+const std::pair<TimelineEditMode, QCPIntervals::EditMode> kEditModes[] = {
+    { TimelineEditMode::Move, QCPIntervals::emMove },
+    { TimelineEditMode::Resize, QCPIntervals::emResize },
+    { TimelineEditMode::ChangeLane, QCPIntervals::emChangeLane },
+    { TimelineEditMode::Create, QCPIntervals::emCreate },
+    { TimelineEditMode::Delete, QCPIntervals::emDelete },
+};
+
+const std::pair<TimelineStack, QCPIntervals::StackMode> kStackModes[] = {
+    { TimelineStack::Off, QCPIntervals::skNone },
+    { TimelineStack::Time, QCPIntervals::skTime },
+    { TimelineStack::Category, QCPIntervals::skCategory },
 };
 
 std::vector<double> doubles(const SciQLopPyBuffer& b)
@@ -330,31 +339,32 @@ bool SciQLopTimeline::editable() const { return _intervals && _intervals->editab
 void SciQLopTimeline::set_editable(bool editable)
 {
     SCIQLOP_ON_OWNER_THREAD(set_editable(editable));
+    if (editable == this->editable())
+        return;
     _intervals->setEditable(editable);
+    emit editable_changed(editable);
 }
 
-QStringList SciQLopTimeline::edit_modes() const
+QList<TimelineEditMode> SciQLopTimeline::edit_modes() const
 {
-    QStringList names;
-    for (const auto& [name, mode] : edit_mode_names)
-        if (_intervals->editModes() & mode)
-            names.append(name);
-    return names;
+    QList<TimelineEditMode> modes;
+    for (const auto& [mode, flag] : kEditModes)
+        if (_intervals->editModes() & flag)
+            modes.append(mode);
+    return modes;
 }
 
-void SciQLopTimeline::set_edit_modes(const QStringList& names)
+void SciQLopTimeline::set_edit_modes(const QList<TimelineEditMode>& modes)
 {
-    QCPIntervals::EditModes modes;
-    for (const auto& name : names)
-    {
-        const auto it = std::ranges::find_if(edit_mode_names,
-                                             [&](const auto& m) { return name == m.first; });
-        if (it == std::end(edit_mode_names))
-            throw std::invalid_argument("unknown edit mode: " + name.toStdString());
-        modes |= it->second;
-    }
-    SCIQLOP_ON_OWNER_THREAD(set_edit_modes(names));
-    _intervals->setEditModes(modes);
+    SCIQLOP_ON_OWNER_THREAD(set_edit_modes(modes));
+    QCPIntervals::EditModes flags;
+    for (const auto& [mode, flag] : kEditModes)
+        if (modes.contains(mode))
+            flags |= flag;
+    if (flags == _intervals->editModes())
+        return;
+    _intervals->setEditModes(flags);
+    emit edit_modes_changed(edit_modes());
 }
 
 void SciQLopTimeline::set_snap_edges()
@@ -404,40 +414,36 @@ QList<double> SciQLopTimeline::snap_times() const
     return QList<double>(times.cbegin(), times.cend());
 }
 
-namespace
+TimelineStack SciQLopTimeline::stack() const
 {
-const std::array<std::pair<const char*, QCPIntervals::StackMode>, 3> kStackModes { {
-    { "", QCPIntervals::skNone },
-    { "time", QCPIntervals::skTime },
-    { "category", QCPIntervals::skCategory },
-} };
-}
-
-QString SciQLopTimeline::stack() const
-{
-    for (const auto& [name, mode] : kStackModes)
+    for (const auto& [stack, mode] : kStackModes)
         if (mode == _intervals->stackMode())
-            return name;
-    return {};
+            return stack;
+    return TimelineStack::Off;
 }
 
-void SciQLopTimeline::set_stack(const QString& mode)
+void SciQLopTimeline::set_stack(TimelineStack stack)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_stack(mode));
-    for (const auto& [name, value] : kStackModes)
-        if (mode == name)
-        {
-            if (_survives([&] { _intervals->setStackMode(value); }))
-                emit replot();
-        }
+    SCIQLOP_ON_OWNER_THREAD(set_stack(stack));
+    if (stack == this->stack())
+        return;
+    const auto it = std::ranges::find_if(kStackModes, [stack](const auto& m) { return m.first == stack; });
+    if (!_survives([&] { _intervals->setStackMode(it->second); }))
+        return;
+    emit stack_changed(stack);
+    emit replot();
 }
 
 void SciQLopTimeline::set_category_order(const QStringList& names)
 {
     SCIQLOP_ON_OWNER_THREAD(set_category_order(names));
+    if (names == _category_order)
+        return;
     _category_order = names;
-    if (_apply_category_order())
-        emit replot();
+    if (!_apply_category_order())
+        return;
+    emit category_order_changed(names);
+    emit replot();
 }
 
 //! Names to palette indices; a name no data has used yet has no index and is skipped until then.
@@ -456,19 +462,23 @@ bool SciQLopTimeline::forbid_overlap() const { return _intervals->forbidOverlap(
 void SciQLopTimeline::set_forbid_overlap(bool forbid)
 {
     SCIQLOP_ON_OWNER_THREAD(set_forbid_overlap(forbid));
-    _intervals->setForbidOverlap(forbid);
-}
-
-QString SciQLopTimeline::style() const
-{
-    return _intervals->style() == QCPIntervals::stWave ? "wave" : "bars";
-}
-
-void SciQLopTimeline::set_style(const QString& name)
-{
-    SCIQLOP_ON_OWNER_THREAD(set_style(name));
-    if (name != "wave" && name != "bars")
+    if (forbid == forbid_overlap())
         return;
-    _intervals->setStyle(name == "wave" ? QCPIntervals::stWave : QCPIntervals::stBars);
+    _intervals->setForbidOverlap(forbid);
+    emit forbid_overlap_changed(forbid);
+}
+
+TimelineStyle SciQLopTimeline::style() const
+{
+    return _intervals->style() == QCPIntervals::stWave ? TimelineStyle::Wave : TimelineStyle::Bars;
+}
+
+void SciQLopTimeline::set_style(TimelineStyle style)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_style(style));
+    if (style == this->style())
+        return;
+    _intervals->setStyle(style == TimelineStyle::Wave ? QCPIntervals::stWave : QCPIntervals::stBars);
+    emit style_changed(style);
     emit replot();
 }

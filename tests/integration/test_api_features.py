@@ -67,10 +67,10 @@ class TestPanelLegend:  # task 15, finding 4.5
         panel.set_legend_visible(False)
         later = panel.create_plot(-1)
         assert not panel.legend_visible()
-        assert not first.legend().is_visible()
-        assert not later.legend().is_visible()
+        assert not first.legend().visible()
+        assert not later.legend().visible()
         panel.set_legend_visible(True)
-        assert first.legend().is_visible() and later.legend().is_visible()
+        assert first.legend().visible() and later.legend().visible()
 
 
 def test_adding_a_plot_keeps_the_legend_its_owner_hid(qtbot):
@@ -81,7 +81,7 @@ def test_adding_a_plot_keeps_the_legend_its_owner_hid(qtbot):
     plot = SciQLopPlot()
     plot.legend().set_visible(False)
     panel.add_plot(plot)
-    assert not plot.legend().is_visible()
+    assert not plot.legend().visible()
 
 
 def _top_band(plot, tmp_path, name):

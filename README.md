@@ -86,7 +86,7 @@ plot = SciQLopPlot()
 x = np.linspace(0, 10, 1000)
 plot.plot(x, np.sin(x), labels=["sin"])
 span = plot.vertical_span(SciQLopPlotRange(2.0, 4.0), QColor(100, 200, 100, 80),
-                          read_only=False, visible=True, tool_tip="")
+                          read_only=False, visible=True, tooltip="")
 
 def describe(event):
     return f"{event.value.start():.2f} .. {event.value.stop():.2f}"
@@ -113,11 +113,12 @@ A built-in tracer writes Chrome trace JSON, to open in [Perfetto](https://ui.per
 costs about 1 ns when off. Your own Python zones show next to the library's:
 
 ```python
+import numpy as np
 from SciQLopPlots import tracing
 
 with tracing.session("/tmp/sciqlop.json"):
     with tracing.zone("my.fetch", cat="data"):
-        data = fetch()           # your code here
+        data = np.random.default_rng().normal(size=1_000_000)   # your code here
 ```
 
 `SCIQLOP_TRACE=/tmp/sciqlop.json python my_script.py` turns it on for a whole run. The

@@ -216,7 +216,7 @@ Deprecated (warn, still work):
 - 1.16: `plot.enable_cursor` is `plot.set_crosshair_enabled`.
 - 2.8: `colormap.auto_contour_level_count()` is `colormap.auto_contour_levels()`.
 - 1.5: products model `add_node`, node `set_name` / `name_changed` (snake_case twins, no warning on the old names).
-- 1.10: one word, tooltip: `tooltip()` / `set_tooltip()` / `tooltip_changed` and the `tooltip=` keyword of every factory. `tool_tip()` / `set_tool_tip()` / `tool_tip=` warn; `tool_tip_changed` stays as a silent second name (a signal cannot warn). The old Plan A classes (`MultiPlotsVerticalSpan`, `MultiPlotsVerticalLine`, `SciQLopVerticalSpan`, ...) keep their constructor's `tool_tip=` and their properties until Plan B removes them.
+- 1.10: one word, tooltip: `tooltip()` / `set_tooltip()` / `tooltip_changed` and the `tooltip=` keyword of every factory. `tool_tip()` / `set_tool_tip()` / `tool_tip=` warn; `tool_tip_changed` stays as a silent second name (a signal cannot warn). The old Plan A classes (`MultiPlotsVerticalSpan`, `MultiPlotsVerticalLine`, `SciQLopVerticalSpan`, ...) keep their properties until Plan B removes them; `SciQLopHorizontalSpan` and `SciQLopRectangularSpan` take `tooltip=` only (ruled 10-30: no shim for an old keyword, SciQLop migrates).
 - 2.11: `AxisType.XAxis2` / `YAxis2`; `plot.axis(type)` returns the secondary axes.
 - 1.10: text, pixmap and ellipse items have `read_only()` / `set_read_only()` / `read_only_changed` like spans and lines; `movable()` / `set_movable()` on them warn. Their factories take `read_only=` (default True, the old default) where `movable=` (default False) was: `movable=` warns and maps the inverse; a positional bool raises `TypeError` (break, deliberate: it would silently mean the opposite). Curved lines are never draggable and have neither.
 - 3.8: line graphs and curves have `clear_color_data()` (keeps the gradient for the next `set_color_data`) and `has_color_data()`; curves gain `color_gradient()`. Named after `set_color_data` / `color_data`, not the design's `..._values` (the curve's `set_color_values` is the separate time colouring).
@@ -237,3 +237,28 @@ Deprecated (warn, still work):
 - 2.4: contour labels draw (NeoQCP d105d6d): each level written along its line, spaced (120 px within a level, 30 px from any label), kept upright, with a halo since the GPU line cannot be cut under the text. Guide section added.
 - 2.4 follow-up (2026-10-30, design `docs/plans/2026-10-30-histogram-contours-design.md`): on screen the labels were hidden under the GPU colour-map image (only exports showed them); they now go in an overlay drawn over it. Export lines and labels were misplaced on a log value axis, and a reversed axis mirrored the exported image a second time; contours now use the image's own coordinates.
 - 2.12 (rest): 2-D histograms have contours. The contour code is one NeoQCP piece shared by colour maps and histograms, and the Python API moved to the colour-map base class. With column normalization the lines follow the column fractions; the colour range still ignores empty columns.
+
+
+## Whole-branch review, 10-30
+
+Six reviewers read the two weeks of work against this document. Target reached, with the edges below closed in this pass. No per-frame slowdown (35 NeoQCP benchmarks, draw, pan, zoom, export, `plot()`, `set_data`: all within noise of the base).
+
+Fixed:
+
+- Python wrappers over C++ virtuals acted as user overrides for objects built from Python: text, pixmap and ellipse items built with their constructor recursed forever in `set_movable` / `set_read_only`. Every wrapped virtual is `access="final"` in `bindings.xml`; `test_python_wrappers_over_virtuals.py` scans the generated wrappers. Break: the library's C++ no longer calls a Python subclass's override of those methods (the panel's `add_plot` family stays overridable: its wrapper only unwraps pointer handles).
+- `SciQLopPlotRange(a, b, is_time_range=...)` passed the flag twice.
+- A parentless theme shared by two plots died with the first; it is now handed to another user.
+- Import time 144 → 100 ms (base 72): the `tool_tip=` shims come from a list, not from reading 1279 signatures.
+- 2.9 finished: the timeline's state is methods with `Q_PROPERTY` and `_changed` signals (`style`, `stack`, `edit_modes`, `editable`, `lanes`, `forbid_overlap`, `category_order`; `snap_to()` / `set_snap_to()` in Python). The C++ setters take the enums. Old assignments warn and still set; under `true_property` they are properties.
+- 1.4 finished: `metadata()` / `set_metadata()`; `meta_data` spellings warn.
+- 3.4: the pointer and wrapper plumbing types are no longer in `__all__`.
+- Old camelCase names that are plain methods warn (`addWidget`, `removeWidget`, `indexOf`, the legend's `is_visible`). `setSelected` and the signals cannot: they are connect targets.
+- Docs: the guide covers the leftover features, uses one spelling for the panel time range, and ends with "Changes in 0.53"; the README snippets run in `test_user_guide.py`.
+
+Rulings:
+
+- 1.19 (thread contract): setters hop to the owner thread; getters read across threads as before. Not done: a getter on another thread would need a blocking hop, and a deadlock risk is worse than a stale read. Revisit with a concrete race.
+- 5.9, second half (`editable` vs `read_only`): the timeline's `editable` is a mouse-editing switch for the whole plottable, not an item's read-only flag. Two words for two concepts.
+- `add_object` / `remove_object` / `replot_all` on `MultiPlotsVSpanCollection` stay until Plan B removes the class.
+- Known, minor, left: a possible race if a plot is destroyed while a worker's `data_changed` reaches it (tiny window); the contour label overlay is rebuilt on every zoom frame while labels are on.
+

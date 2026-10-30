@@ -84,13 +84,13 @@ class TestVisibility:
 class TestSharedLegend:
     def test_every_pane_keeps_its_legend_by_default(self, proj, graph):
         assert proj.shared_legend() is False
-        assert all(proj.subplot(i).legend().is_visible() for i in range(3))
+        assert all(proj.subplot(i).legend().visible() for i in range(3))
 
     def test_a_shared_legend_shows_on_the_first_pane_only(self, proj, graph):
         proj.set_shared_legend(True)
-        assert [proj.subplot(i).legend().is_visible() for i in range(3)] == [True, False, False]
+        assert [proj.subplot(i).legend().visible() for i in range(3)] == [True, False, False]
 
     def test_switching_it_off_restores_every_legend(self, proj, graph):
         proj.set_shared_legend(True)
         proj.set_shared_legend(False)
-        assert all(proj.subplot(i).legend().is_visible() for i in range(3))
+        assert all(proj.subplot(i).legend().visible() for i in range(3))

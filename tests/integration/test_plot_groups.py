@@ -45,7 +45,7 @@ def shown_rows(proj):
     rows = []
     for i in range(proj.subplot_count()):
         legend = proj.subplot(i).legend()
-        if legend.is_visible():
+        if legend.visible():
             rows += legend.row_labels()
     return rows
 
@@ -296,7 +296,7 @@ class TestDoubleClick:
         proj.show()
         qtbot.waitExposed(proj)
         pane = next(proj.subplot(i) for i in range(proj.subplot_count())
-                    if proj.subplot(i).legend().is_visible())
+                    if proj.subplot(i).legend().visible())
         seen = [record(c.visible_changed) for c in curves]
         self._double_click_row(qtbot, pane, 0)
         assert not any(c.visible() for c in curves)

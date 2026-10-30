@@ -24,7 +24,7 @@ def editable(ts_plot, qtbot):
     tl = ts_plot.add_timeline()
     tl.set_intervals([10, 60], [40, 90], lane=["A", "B"], ids=[7, 8])
     ts_plot.x_axis().set_range(SciQLopPlotRange(0, 100))
-    tl.editable = True
+    tl.set_editable(True)
     process_events()
     return ts_plot, tl
 
@@ -48,7 +48,7 @@ def _drag(canvas, a, b):
 
 def test_move_reports_id_times_and_lane_name(editable):
     plot, tl = editable
-    tl.edit_modes = {TimelineEditMode.Move, TimelineEditMode.ChangeLane}
+    tl.set_edit_modes([TimelineEditMode.Move, TimelineEditMode.ChangeLane])
     seen = []
     tl.intervals_changed.connect(seen.append)
     _drag(_canvas(plot), _at(tl, 25, "A"), _at(tl, 35, "B"))
@@ -60,7 +60,7 @@ def test_move_reports_id_times_and_lane_name(editable):
 
 def test_create_reports_lane_name(editable):
     plot, tl = editable
-    tl.edit_modes = {TimelineEditMode.Create}
+    tl.set_edit_modes([TimelineEditMode.Create])
     seen = []
     tl.interval_created.connect(lambda *a: seen.append(a))
     _drag(_canvas(plot), _at(tl, 45, "A"), _at(tl, 55, "A"))
@@ -71,9 +71,9 @@ def test_create_in_a_category_row_reports_the_category(editable):
     """With stack="category", a block drawn in the BASE row is a BASE window."""
     plot, tl = editable
     tl.set_intervals([10, 60], [40, 90], lane=["A", "A"], category=["LM", "BASE"], ids=[7, 8])
-    tl.category_order = ["BASE", "LM"]
-    tl.stack = TimelineStack.Category
-    tl.edit_modes = {TimelineEditMode.Create}
+    tl.set_category_order(["BASE", "LM"])
+    tl.set_stack(TimelineStack.Category)
+    tl.set_edit_modes([TimelineEditMode.Create])
     process_events()
     seen, plain = [], []
     tl.interval_created_in.connect(lambda *a: seen.append(a))
@@ -83,7 +83,7 @@ def test_create_in_a_category_row_reports_the_category(editable):
     _drag(_canvas(plot), _at(tl, 45, "A") + base_row, _at(tl, 55, "A") + base_row)
     assert seen and seen[0][2:] == ("A", "BASE")
     assert plain and plain[0][2] == "A"   # the released 3-argument signal still fires
-    tl.stack = TimelineStack.Off
+    tl.set_stack(TimelineStack.Off)
     process_events()
     _drag(_canvas(plot), _at(tl, 45, "A"), _at(tl, 55, "A"))
     assert seen[-1][3] == ""                # no category rows: no category
@@ -91,7 +91,7 @@ def test_create_in_a_category_row_reports_the_category(editable):
 
 def test_delete_key_requests_ids(editable):
     plot, tl = editable
-    tl.edit_modes = {TimelineEditMode.Delete}
+    tl.set_edit_modes([TimelineEditMode.Delete])
     tl.select_ids([8])
     seen = []
     tl.delete_requested.connect(seen.append)
@@ -101,7 +101,7 @@ def test_delete_key_requests_ids(editable):
 
 def test_not_editable_reports_nothing(editable):
     plot, tl = editable
-    tl.editable = False
+    tl.set_editable(False)
     seen = []
     tl.intervals_changed.connect(seen.append)
     _drag(_canvas(plot), _at(tl, 25, "A"), _at(tl, 35, "A"))
@@ -110,34 +110,34 @@ def test_not_editable_reports_nothing(editable):
 
 def test_edit_modes_round_trip_and_reject_unknown(editable):
     _, tl = editable
-    tl.edit_modes = set(TimelineEditMode)
-    assert tl.edit_modes == set(TimelineEditMode)
-    with pytest.raises(ValueError, match="teleport"):
-        tl.edit_modes = {"teleport"}
+    tl.set_edit_modes(list(reversed(TimelineEditMode)))
+    assert tl.edit_modes() == list(TimelineEditMode)
+    with pytest.raises(TypeError):
+        tl.set_edit_modes(["teleport"])
 
 
 def test_snap_to_round_trips(editable):
     _, tl = editable
-    assert tl.snap_to is None
-    tl.snap_to = "edges"
-    assert tl.snap_to == "edges"
-    tl.snap_to = 60
-    assert tl.snap_to == 60
-    tl.snap_to = None
-    assert tl.snap_to is None
+    assert tl.snap_to() is None
+    tl.set_snap_to("edges")
+    assert tl.snap_to() == "edges"
+    tl.set_snap_to(60)
+    assert tl.snap_to() == 60
+    tl.set_snap_to(None)
+    assert tl.snap_to() is None
     with pytest.raises(ValueError):
-        tl.snap_to = "sometimes"
+        tl.set_snap_to("sometimes")
 
 
 def test_snap_to_external_times(editable):
     """#125: snap to orbit events (periapsis, boundary crossings, ...)."""
     _, tl = editable
-    tl.snap_to = [62.0, 5.0]
-    assert tl.snap_to == [5.0, 62.0]
-    tl.snap_to = np.array(["1970-01-01T00:01:00", "1970-01-01T00:00:30"], dtype="datetime64[ns]")
-    assert tl.snap_to == [30.0, 60.0]
+    tl.set_snap_to([62.0, 5.0])
+    assert tl.snap_to() == [5.0, 62.0]
+    tl.set_snap_to(np.array(["1970-01-01T00:01:00", "1970-01-01T00:00:30"], dtype="datetime64[ns]"))
+    assert tl.snap_to() == [30.0, 60.0]
     with pytest.raises(ValueError):
-        tl.snap_to = []
+        tl.set_snap_to([])
 
 
 def test_cursor_shows_resize_over_an_edge(editable, qtbot):
@@ -155,7 +155,7 @@ def test_set_editable_from_a_worker_is_queued(editable, qtbot):
     t = threading.Thread(target=lambda: tl.set_editable(False))
     t.start()
     t.join()
-    qtbot.waitUntil(lambda: not tl.editable, timeout=2000)
+    qtbot.waitUntil(lambda: not tl.editable(), timeout=2000)
 
 
 def test_interval_at_finds_the_block_under_a_pixel(editable):

@@ -98,9 +98,9 @@ public:
     virtual void set_in_legend(bool in_legend);
     bool in_legend() const noexcept { return m_in_legend; }
 
-    inline QVariantMap& meta_data(){return this->m_metaData;}
-    inline const QVariantMap& meta_data() const {return this->m_metaData;}
-    inline void set_meta_data(const QVariantMap& metaData) { this->m_metaData = metaData; }
+    inline QVariantMap& metadata(){return this->m_metaData;}
+    inline const QVariantMap& metadata() const {return this->m_metaData;}
+    inline void set_metadata(const QVariantMap& metadata) { this->m_metaData = metadata; }
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) { WARN_ABSTRACT_METHOD; };
 

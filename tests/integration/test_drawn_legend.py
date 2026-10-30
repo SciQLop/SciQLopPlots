@@ -1,4 +1,5 @@
 """The legend under SciQLopDrawnObject; its old names are aliases."""
+import pytest
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QGroupBox
 
@@ -6,11 +7,12 @@ from SciQLopPlots import DelegateRegistry
 from conftest import process_events, record
 
 
-def test_the_old_names_are_aliases(plot):
+def test_the_old_names_still_work(plot):
     legend = plot.legend()
     assert type(legend).staticMetaObject.indexOfSignal("visibility_changed(bool)") == -1
     legend.set_visible(False)
-    assert legend.is_visible() is legend.visible() is False
+    with pytest.warns(DeprecationWarning, match=r"is_visible\(\.\.\.\) is deprecated: use legend\.visible"):
+        assert legend.is_visible() is legend.visible() is False
 
 
 def test_the_old_signal_name_is_the_same_signal(plot):
@@ -38,12 +40,13 @@ def test_the_panel_wide_switch_signals_each_legend(panel):
 
 
 def test_sciqlop_legend_visible_property_pattern(plot):
-    """SciQLop's legend_visible: `legend().is_visible()` and `legend().set_visible(bool(v))`."""
+    """SciQLop's legend_visible: `legend().is_visible()` (deprecated) and `legend().set_visible(bool(v))`."""
     seen = record(plot.legend().visibility_changed)
     plot.legend().set_visible(bool(0))
-    assert plot.legend().is_visible() is False
+    with pytest.warns(DeprecationWarning):
+        assert plot.legend().is_visible() is False
     plot.legend().set_visible(bool(1))
-    assert (plot.legend().is_visible(), seen) == (True, [False, True])
+    assert (plot.legend().visible(), seen) == (True, [False, True])
 
 
 def test_the_inspector_legend_checkbox_follows(qtbot, plot):

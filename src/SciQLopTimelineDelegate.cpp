@@ -27,7 +27,9 @@
 
 namespace
 {
-// Python names of the edit modes, as SciQLopTimeline::edit_modes() reports them.
+// Labels in enum order: a combo index or a box position is the enum value.
+const QStringList kStyles { "wave", "bars" };
+const QStringList kStacks { "none", "time", "category" };
 const QStringList kEditModes { "move", "resize", "change_lane", "create", "delete" };
 }
 
@@ -45,15 +47,15 @@ void SciQLopTimelineDelegate::add_style_row(SciQLopTimeline* tl)
 {
     auto* style = new QComboBox;
     style->setObjectName("style");
-    style->addItems({ "wave", "bars" });
-    style->setCurrentText(tl->style());
+    style->addItems(kStyles);
+    style->setCurrentIndex(static_cast<int>(tl->style()));
     fit_combo_to_content(style);
     m_layout->addRow("Style", style);
-    connect(style, &QComboBox::currentTextChanged, this,
-            [this](const QString& name)
+    connect(style, &QComboBox::currentIndexChanged, this,
+            [this](int index)
             {
                 if (auto* t = timeline())
-                    t->set_style(name);
+                    t->set_style(static_cast<TimelineStyle>(index));
             });
 }
 
@@ -61,15 +63,15 @@ void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
 {
     auto* stack = new QComboBox;
     stack->setObjectName("stack");
-    stack->addItems({ "none", "time", "category" });
-    stack->setCurrentText(tl->stack().isEmpty() ? "none" : tl->stack());
+    stack->addItems(kStacks);
+    stack->setCurrentIndex(static_cast<int>(tl->stack()));
     fit_combo_to_content(stack);
     m_layout->addRow("Stack overlaps", stack);
-    connect(stack, &QComboBox::currentTextChanged, this,
-            [this](const QString& mode)
+    connect(stack, &QComboBox::currentIndexChanged, this,
+            [this](int index)
             {
                 if (auto* t = timeline())
-                    t->set_stack(mode == "none" ? QString() : mode);
+                    t->set_stack(static_cast<TimelineStack>(index));
             });
 
     auto* forbid = new QCheckBox("Forbid overlaps");
@@ -113,20 +115,21 @@ void SciQLopTimelineDelegate::add_editing_rows(SciQLopTimeline* tl)
                     t->set_editable(on);
             });
 
-    const QStringList enabled = tl->edit_modes();
-    for (const QString& mode : kEditModes)
+    const auto enabled = tl->edit_modes();
+    for (int i = 0; i < kEditModes.size(); ++i)
     {
-        auto* box = new QCheckBox(QString(mode).replace('_', ' '));
-        box->setObjectName("edit_mode_" + mode);
+        const auto mode = static_cast<TimelineEditMode>(i);
+        auto* box = new QCheckBox(QString(kEditModes[i]).replace('_', ' '));
+        box->setObjectName("edit_mode_" + kEditModes[i]);
         box->setChecked(enabled.contains(mode));
-        m_layout->addRow(mode == kEditModes.first() ? "Edit modes" : "", box);
+        m_layout->addRow(i == 0 ? "Edit modes" : "", box);
         connect(box, &QCheckBox::toggled, this,
                 [this, mode](bool on)
                 {
                     auto* t = timeline();
                     if (!t)
                         return;
-                    QStringList modes = t->edit_modes();
+                    auto modes = t->edit_modes();
                     modes.removeAll(mode);
                     if (on)
                         modes.append(mode);

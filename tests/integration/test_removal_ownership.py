@@ -59,6 +59,7 @@ HIDDEN_WRAPPERS = {
     "SciQLopTimeSeriesPlot.plot", "SciQLopNDProjectionPlot.plot",
     "SciQLopMultiPlotPanel.plot", "SciQLopMultiPlotPanel.band", "SciQLopMultiPlotPanel.error_bars",
     "SciQLopTimeline.set_intervals", "SciQLopTimeline.interval", "SciQLopTimeline.interval_at",
+    "SciQLopTimeline.snap_to", "SciQLopTimeline.set_snap_to", "SciQLopTimeline.__setattr__",
     "SciQLopPlotInterface.to_bytes", "SciQLopPlotPanelInterface.to_bytes",
 }
 
@@ -86,7 +87,7 @@ def test_a_broken_walk_fails_the_positive_control(monkeypatch):
         test_the_walk_sees_the_bindings()
 
 
-@pytest.mark.parametrize("remove", ["remove_plot", "removeWidget"])  # remove_widget is the same function (snake alias)
+@pytest.mark.parametrize("remove", ["remove_plot", "remove_widget"])
 def test_a_removal_deletes_a_plot_built_with_the_panel_as_parent(qtbot, panel, remove):
     plot = SciQLopPlot(panel)
     panel.add_plot(plot)

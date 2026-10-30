@@ -137,9 +137,9 @@ def shape_of(args):
 def _warn_if_three_arrays_with(graph_type):
     # SciQLop's XY panels pass ParametricCurve with three arrays: a warning until 1.0, not an error.
     if graph_type not in (None, GraphType.ColorMap):
-        warnings.warn(f"3 arrays (x, y, z) make a colour map, not a {graph_type.name}: "
-                      "drop graph_type or pass GraphType.ColorMap", DeprecationWarning,
-                      stacklevel=5)
+        warnings.warn(f"graph_type={graph_type.name} with 3 arrays (x, y, z) is deprecated: use "
+                      "GraphType.ColorMap or drop graph_type (3 arrays make a colour map)",
+                      DeprecationWarning, stacklevel=5)
 
 
 def _is_panel(host_cls):

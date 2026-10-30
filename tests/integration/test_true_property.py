@@ -69,3 +69,20 @@ def test_the_library_still_works_under_the_switch(panel):
     graph.on.name >> plot.on.name
     graph.name = "piped"
     assert plot.name == "piped"
+
+
+def test_timeline_state_is_a_property_without_warnings(qtbot):
+    import warnings
+    from SciQLopPlots import SciQLopTimeSeriesPlot, TimelineEditMode, TimelineStack, TimelineStyle
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    tl = ts.add_timeline()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        tl.style = TimelineStyle.Bars
+        tl.stack = TimelineStack.Category
+        tl.edit_modes = [TimelineEditMode.Create]
+        tl.editable = True
+        tl.name = "plan"
+    assert (tl.style, tl.stack, tl.edit_modes, tl.editable, tl.name) == (
+        TimelineStyle.Bars, TimelineStack.Category, [TimelineEditMode.Create], True, "plan")
