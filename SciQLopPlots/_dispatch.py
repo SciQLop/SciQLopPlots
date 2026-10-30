@@ -102,6 +102,11 @@ KINDS = {
         SciQLopHistogram),
 }
 
+# A None value means "not given" for any keyword some call accepts; an unknown name still raises.
+_KNOWN_KEYWORDS = COMMON | _NAME | frozenset().union(
+    *(k.native | frozenset().union(*k.host_keywords.values()) for k in KINDS.values()),
+    *(s.options | s.post for k in KINDS.values() for s in k.shapes))
+
 
 class PlotArgumentsError(TypeError, ValueError):
     """TypeError per the table's rules; also a ValueError, which plot() raised before it."""
@@ -147,7 +152,7 @@ def _is_panel(host_cls):
 
 
 def _reject_plot_type_off_panels(host_cls, kwargs):
-    if "plot_type" in kwargs and not _is_panel(host_cls):
+    if kwargs.get("plot_type") is not None and not _is_panel(host_cls):
         raise TypeError(f"plot_type kwarg is panel-only: {host_cls.__name__} is a single plot")
 
 
@@ -239,7 +244,7 @@ def _foreign_keyword_message(stray, name, shape, accepted, graph_type):
 
 def _check_keywords(name, kind, shape, host_cls, graph_type, kwargs):
     allowed = COMMON | kind.keywords_on(host_cls) | shape.options | shape.post | {"name"}
-    stray = sorted(set(kwargs) - allowed)
+    stray = sorted(k for k in set(kwargs) - allowed if kwargs[k] is not None or k not in _KNOWN_KEYWORDS)
     if stray:
         raise TypeError(_foreign_keyword_message(stray, name, shape, allowed, graph_type))
 

@@ -66,7 +66,18 @@ def _python_property_setter(obj, name):
     return isinstance(prop, property) and prop.fset is not None
 
 
+# {(class, name): spec or None}: reading a shiboken method's signature costs tens of microseconds.
+_convention_cache = {}
+
+
 def _convention_spec(obj, name):
+    key = (type(obj), name)
+    if key not in _convention_cache:
+        _convention_cache[key] = _read_convention(obj, name)
+    return _convention_cache[key]
+
+
+def _read_convention(obj, name):
     """`x` observable and/or writable through `x_changed` and/or `set_x`; the getter is required."""
     signal, setter = f"{name}_changed", f"set_{name}"
     if not _is_getter(obj, name) or not (hasattr(obj, signal) or hasattr(obj, setter)):

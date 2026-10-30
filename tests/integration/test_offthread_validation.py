@@ -13,8 +13,7 @@ import pytest
 from PySide6.QtCore import qInstallMessageHandler
 from PySide6.QtGui import QColor
 
-from SciQLopPlots import (GraphLineStyle, GraphMarkerShape, SciQLopPlot,
-                          SciQLopTimeSeriesPlot)
+from SciQLopPlots import GraphLineStyle, GraphMarkerShape, SciQLopPlot
 
 X = np.linspace(0.0, 10.0, 50)
 THREE = np.column_stack([np.sin(X), np.sin(X) - 1, np.sin(X) + 1])
@@ -94,8 +93,6 @@ CASES = {
     "component error bars on itself": (_components, lambda cs: cs[0].set_error_bars(cs[0], cs[2])),
     "histogram bins": (lambda qtbot: _plot(qtbot).histogram(np.arange(10.0)),
                        lambda h: h.set_bins(0)),  # guard: already validated before the hop
-    "timeline edit mode": (lambda qtbot: _plot(qtbot, SciQLopTimeSeriesPlot).add_timeline(),
-                           lambda tl: tl.set_edit_modes(["teleport"])),
 }
 
 

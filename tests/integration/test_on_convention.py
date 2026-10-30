@@ -233,3 +233,13 @@ def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
     assert target.normalization() == sp.Histogram2DNormalization.PerColumn
     del pipeline
 
+
+
+def test_the_convention_is_read_once_per_class(line_graph, monkeypatch):
+    """Reading a shiboken method's signature costs ~45 us: `.on.name` paid it on every access."""
+    calls = []
+    real = SciQLopPlots.properties.inspect.signature
+    monkeypatch.setattr(SciQLopPlots.properties.inspect, "signature", lambda f: calls.append(f) or real(f))
+    for _ in range(3):
+        line_graph.on.name
+    assert len(calls) <= 1

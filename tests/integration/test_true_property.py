@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QPointF
 
-from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot, SciQLopPlotRange
+from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot, SciQLopPlotRange, SciQLopTimeSeriesPlot
 from conftest import record
 
 X = np.linspace(0.0, 10.0, 20)
@@ -86,3 +86,13 @@ def test_timeline_state_is_a_property_without_warnings(qtbot):
         tl.name = "plan"
     assert (tl.style, tl.stack, tl.edit_modes, tl.editable, tl.name) == (
         TimelineStyle.Bars, TimelineStack.Category, [TimelineEditMode.Create], True, "plan")
+
+
+def test_a_guarded_class_still_sets_its_other_properties(qtbot):
+    """The old-property guard runs in the library's module, where true_property is off: an
+    assignment it passed on, like `tl.visible = False`, stored a plain attribute instead."""
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    tl = ts.add_timeline()
+    tl.visible = False
+    assert tl.visible is False and "visible" not in vars(tl)

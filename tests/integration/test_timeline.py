@@ -1,5 +1,6 @@
 """Issue #123: interval timeline."""
 import threading
+import warnings
 
 import numpy as np
 import pytest
@@ -517,3 +518,23 @@ def test_an_old_property_assignment_warns_at_the_caller_and_sets(ts_plot, name):
     with pytest.warns(DeprecationWarning, match=rf"tl\.{name} = \.\.\. is deprecated: use tl\.set_{name}") as seen:
         setattr(tl, name, value)
     assert getattr(tl, name)() == expected and seen[0].filename == __file__
+
+
+@pytest.mark.parametrize("name, value", [("editable", "no"), ("forbid_overlap", "no"),
+                                         ("lanes", ("A", "B")), ("category_order", ("L", "M"))])
+def test_an_old_property_assignment_takes_what_the_setter_takes(ts_plot, name, value):
+    """The guard used to coerce with bool() and list(): `tl.editable = "no"` turned the timeline
+    editable, where the old property raised like the setter does."""
+    by_setter, by_assignment = _strip(ts_plot), _strip(ts_plot)
+    outcomes = []
+    for apply in (lambda: getattr(by_setter, f"set_{name}")(value),
+                  lambda: setattr(by_assignment, name, value)):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            try:
+                apply()
+                outcomes.append(None)
+            except Exception as e:
+                outcomes.append(type(e))
+    assert outcomes[0] is outcomes[1]
+    assert getattr(by_setter, name)() == getattr(by_assignment, name)()

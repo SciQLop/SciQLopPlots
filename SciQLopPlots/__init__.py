@@ -176,8 +176,8 @@ def _apply_post(name, shape, host, result, post):
 
 
 def plot(self, *args, graph_type=None, **kwargs):
-    kwargs = {k: v for k, v in kwargs.items() if v is not None}
     name, kind, shape = _dispatch.resolve(type(self), args, graph_type, kwargs)
+    kwargs = {k: v for k, v in kwargs.items() if v is not None}
     post = _pop_post(name, shape, kwargs)
     label = kwargs.pop("name", None) if "name" not in kind.keywords_on(type(self)) else None
     for consumed in kind.consumed:
@@ -900,40 +900,64 @@ def _set_snap_to(self, value):
 SciQLopTimeline.snap_to = _snap_to
 SciQLopTimeline.set_snap_to = _set_snap_to
 
-# Until 0.53 these were Python properties; now they are methods, and Python properties only under
-# PySide's true_property. `tl.style = ...` would otherwise silently hide the method: it calls the
-# setter instead, with a warning. Each entry converts the values the old property took.
-_TIMELINE_OLD_PROPERTIES = {
-    "style": lambda v: _member_of(TimelineStyle, _STYLE_NAMES, "style", v),
-    "stack": lambda v: _member_of(TimelineStack, _STACK_NAMES, "stack", v, aliases={None: TimelineStack.Off}),
-    "edit_modes": _edit_mode_list,
-    "editable": bool,
-    "lanes": list,
-    "forbid_overlap": bool,
-    "category_order": list,
-    "snap_to": lambda v: v,
-}
 import __feature__  # noqa: E402  (installed by PySide6)
-
-_TRUE_PROPERTY = 1 << __feature__._really_all_feature_names.index("true_property")
+from . import _true_property_setattr  # noqa: E402
 
 
 def _uses_true_property(frame):
     flags = __feature__.pyside_feature_dict.get(frame.f_globals.get("__name__"), 0)
-    return flags > 0 and bool(flags & _TRUE_PROPERTY)
+    return flags > 0 and bool(flags & __feature__.true_property)
 
 
-def _timeline_setattr(self, name, value):
-    convert = _TIMELINE_OLD_PROPERTIES.get(name)
-    if convert is None:
-        return object.__setattr__(self, name, value)
-    value = convert(value)  # first: an old string's own warning names the member to use
-    if name == "snap_to" or not _uses_true_property(sys._getframe(1)):
-        _warn_deprecated(f"tl.{name} = ... is deprecated: use tl.set_{name}(...)")
-    getattr(self, f"set_{name}")(value)
+def _defined_by_the_library(cls, name):
+    """False when a user subclass defines `name` itself: its own attribute, not ours."""
+    owner = next((c for c in cls.__mro__ if name in vars(c)), None)
+    return owner is not None and owner.__module__.startswith("SciQLopPlots")
 
 
-SciQLopTimeline.__setattr__ = _timeline_setattr
+def _guard_old_properties(cls, who, converters):
+    """Until 0.53 these names were Python properties; now they are methods, and Python properties
+    only under PySide's true_property. `x.name = ...` would otherwise silently hide the method: it
+    calls the setter instead, with a warning unless the caller uses true_property and the name is a
+    Q_PROPERTY. Each converter turns what the old property took into what the setter takes."""
+    inherited = cls.__setattr__
+
+    def __setattr__(self, name, value):
+        true_property = _uses_true_property(sys._getframe(1))
+        convert = converters.get(name)
+        if convert is None or not _defined_by_the_library(type(self), name):
+            return (_true_property_setattr.assign if true_property else _assign)(inherited, self, name, value)
+        value = convert(value)  # first: an old string's own warning names the member to use
+        if cls.staticMetaObject.indexOfProperty(name) < 0 or not true_property:
+            _warn_deprecated(f"{who}.{name} = ... is deprecated: use {who}.set_{name}(...)")
+        getattr(self, f"set_{name}")(value)
+
+    cls.__setattr__ = __setattr__
+
+
+def _assign(setattr_, obj, name, value):
+    setattr_(obj, name, value)
+
+
+def _as_is(value):
+    return value
+
+
+_TIMELINE_OLD_PROPERTIES = {
+    "name": _as_is,
+    "style": lambda v: _member_of(TimelineStyle, _STYLE_NAMES, "style", v),
+    "stack": lambda v: _member_of(TimelineStack, _STACK_NAMES, "stack", v, aliases={None: TimelineStack.Off}),
+    "edit_modes": _edit_mode_list,
+    **dict.fromkeys(("editable", "lanes", "forbid_overlap", "category_order", "snap_to"), _as_is),
+}
+
+# Every bound class has its own __setattr__ slot: guarding a base does not reach its subclasses.
+for _cls in vars(SciQLopPlotsBindings).values():
+    if _cls is SciQLopTimeline:
+        _guard_old_properties(_cls, "tl", _TIMELINE_OLD_PROPERTIES)
+    elif isinstance(_cls, type) and issubclass(_cls, (SciQLopDrawnObject, SciQLopPlotInterface,
+                                                      SciQLopPlotPanelInterface)):
+        _guard_old_properties(_cls, "x", {"name": _as_is})
 SciQLopTimeline.interval = lambda self, id: self.interval_info(int(id)) or None
 SciQLopTimeline.interval_at = lambda self, x, y: None if (i := self._interval_at(x, y)) < 0 else i
 

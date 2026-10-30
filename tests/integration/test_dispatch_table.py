@@ -119,6 +119,16 @@ def test_nones_are_dropped(qtbot, plot):
     plot.plot(X, X, labels=None, colors=None, name=None)
 
 
+def test_a_misspelled_keyword_raises_even_when_none(qtbot, plot):
+    """Nones were dropped before the keywords were checked: `lables=None` passed silently."""
+    with pytest.raises(TypeError, match="lables"):
+        plot.plot(X, X, lables=None)
+
+
+def test_plot_type_none_on_a_plot_means_not_given(qtbot, plot):
+    plot.plot(X, X, plot_type=None)
+
+
 def test_four_array_curve_still_works(qtbot, plot):
     g = plot.plot(X, X, ["a"], ["#f00"], graph_type=GraphType.ParametricCurve)
     assert g.components()[0].name() == "a"

@@ -59,7 +59,7 @@ HIDDEN_WRAPPERS = {
     "SciQLopTimeSeriesPlot.plot", "SciQLopNDProjectionPlot.plot",
     "SciQLopMultiPlotPanel.plot", "SciQLopMultiPlotPanel.band", "SciQLopMultiPlotPanel.error_bars",
     "SciQLopTimeline.set_intervals", "SciQLopTimeline.interval", "SciQLopTimeline.interval_at",
-    "SciQLopTimeline.snap_to", "SciQLopTimeline.set_snap_to", "SciQLopTimeline.__setattr__",
+    "SciQLopTimeline.snap_to", "SciQLopTimeline.set_snap_to",
     "SciQLopPlotInterface.to_bytes", "SciQLopPlotPanelInterface.to_bytes",
 }
 
@@ -73,7 +73,8 @@ def test_the_walk_sees_the_bindings():
     parents = [n for n, sigs in seen.items() if any("parent" in s.parameters for s in sigs)]
     assert len(seen) > 1000 and len(parents) > 20
     assert "SciQLopMultiPlotPanel.remove_plot" in seen and "SciQLopMultiPlotPanel.add_plot" in seen
-    assert hidden == HIDDEN_WRAPPERS
+    # __setattr__: the old-property guard on every plot, panel and drawn object (test_old_name_assignment).
+    assert {n for n in hidden if not n.endswith(".__setattr__")} == HIDDEN_WRAPPERS
 
 
 def test_every_removal_that_keeps_the_widget_is_listed():
