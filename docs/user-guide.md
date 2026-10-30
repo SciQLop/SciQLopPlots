@@ -296,6 +296,21 @@ plot.set_title("Electron flux")
 
 On a log colour scale, pixels that cover several samples are averaged in log space. So zoomed-out spectrograms look like the zoomed-in ones.
 
+Contour lines go over a colour map, at given levels or a number of automatic ones, and can carry their level:
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x, y = np.linspace(-3, 3, 200), np.linspace(-2, 2, 150)
+cmap = plot.colormap(x, y, np.exp(-(x[:, None] ** 2 + y[None, :] ** 2)))
+cmap.set_contour_levels([0.2, 0.4, 0.6, 0.8])   # or cmap.set_auto_contour_levels(5)
+cmap.set_contour_color(QColor("white"))
+cmap.set_contour_labels_enabled(True)
+```
+
 A colour map's gradient and log scales are not its own copies: they are the state of the plot's axes. `cmap.set_gradient(g)` is `plot.set_z_gradient(g)`, `cmap.set_z_log_scale(b)` is `plot.z_axis().set_log(b)` and `cmap.set_y_log_scale(b)` is `cmap.y_axis().set_log(b)` (the plot's `y2_axis()`, on the right). Whichever is called last wins, and two colour maps on one plot share the gradient.
 
 ### Parametric curves

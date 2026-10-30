@@ -149,8 +149,7 @@ public:
         return _cmap ? _cmap->contourPen().widthF() : 1.0;
     }
 
-    // NOTE: no renderer currently draws contour labels, so toggling this has
-    // no visible effect (known limitation, not yet implemented).
+    //! Writes each contour's level along its line, spaced, in the contour colour.
     inline void set_contour_labels_enabled(bool enabled)
     {
         SCIQLOP_ON_OWNER_THREAD(set_contour_labels_enabled(enabled));
