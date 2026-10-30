@@ -71,6 +71,8 @@ _convention_cache = {}
 
 
 def _convention_spec(obj, name):
+    if name in getattr(obj, "__dict__", ()):  # this instance's own answer, not its class's
+        return _read_convention(obj, name)
     key = (type(obj), name)
     if key not in _convention_cache:
         _convention_cache[key] = _read_convention(obj, name)

@@ -243,3 +243,13 @@ def test_the_convention_is_read_once_per_class(line_graph, monkeypatch):
     for _ in range(3):
         line_graph.on.name
     assert len(calls) <= 1
+
+
+def test_an_instance_attribute_does_not_decide_for_its_class(plot, sample_data):
+    """The convention cache is per class: an attribute set on one instance must not leak into it."""
+    x, y = sample_data
+    first, second = plot.plot(x, y), plot.plot(x, y)
+    vars(first)["visible"] = lambda flag: flag  # takes an argument: not a getter on this instance
+    with pytest.raises(AttributeError):
+        first.on.visible
+    assert second.on.visible.value is second.visible()

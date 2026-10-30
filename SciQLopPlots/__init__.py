@@ -912,7 +912,7 @@ def _uses_true_property(frame):
 def _defined_by_the_library(cls, name):
     """False when a user subclass defines `name` itself: its own attribute, not ours."""
     owner = next((c for c in cls.__mro__ if name in vars(c)), None)
-    return owner is not None and owner.__module__.startswith("SciQLopPlots")
+    return owner is not None and owner.__module__ == "SciQLopPlotsBindings"  # a bound class, not a subclass
 
 
 def _guard_old_properties(cls, who, converters):
@@ -923,12 +923,12 @@ def _guard_old_properties(cls, who, converters):
     inherited = cls.__setattr__
 
     def __setattr__(self, name, value):
-        true_property = _uses_true_property(sys._getframe(1))
         convert = converters.get(name)
         if convert is None or not _defined_by_the_library(type(self), name):
-            return (_true_property_setattr.assign if true_property else _assign)(inherited, self, name, value)
+            assign = _true_property_setattr.assign if _uses_true_property(sys._getframe(1)) else _assign
+            return assign(inherited, self, name, value)
         value = convert(value)  # first: an old string's own warning names the member to use
-        if cls.staticMetaObject.indexOfProperty(name) < 0 or not true_property:
+        if cls.staticMetaObject.indexOfProperty(name) < 0 or not _uses_true_property(sys._getframe(1)):
             _warn_deprecated(f"{who}.{name} = ... is deprecated: use {who}.set_{name}(...)")
         getattr(self, f"set_{name}")(value)
 
