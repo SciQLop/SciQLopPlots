@@ -542,6 +542,8 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopPlotInterface" parent-management="yes">
+        <!-- See SciQLopMovableItemInterface. -->
+        <modify-function signature="^(span|straight_line|text|pixmap|ellipse|curved_line|histogram|enable_cursor|save_[a-z]+)\(.*$" access="final"/>
         <modify-function signature="SciQLopPlotInterface(QWidget*,const QString&amp;)">
             <modify-argument index="this">
                 <parent index="1" action="add"/>
@@ -1068,6 +1070,8 @@
     <object-type name="SciQLopTheme" parent-management="yes"/>
 
     <object-type name="SciQLopPlot" parent-management="yes">
+        <!-- Redeclared here: see SciQLopMovableItemInterface. -->
+        <modify-function signature="^(histogram|save_[a-z]+)\(.*$" access="final"/>
         <!-- See SciQLopMultiPlotPanel.set_theme. -->
         <modify-function signature="set_theme(SciQLopTheme*)">
             <modify-argument index="1">
@@ -1144,6 +1148,8 @@
     </object-type>
     <object-type name="SciQLopNDProjectionPane" parent-management="yes"/>
     <object-type name="SciQLopNDProjectionPlot" parent-management="yes">
+        <!-- Redeclared here: see SciQLopMovableItemInterface. -->
+        <modify-function signature="^save_[a-z]+\(.*$" access="final"/>
         <modify-function signature="set_time_marker(double)">
             <modify-argument index="1">
                 <replace-type modified-type="PyObject"/>
@@ -1370,8 +1376,15 @@
     <object-type name="SciQLopWaterfallGraphRemote" parent-management="yes">
     </object-type>
 
-    <object-type name="SciQLopItemInterface" parent-management="yes"/>
-    <object-type name="SciQLopMovableItemInterface" parent-management="yes"/>
+    <object-type name="SciQLopItemInterface" parent-management="yes">
+        <!-- See SciQLopMovableItemInterface. -->
+        <modify-function signature="^(set_)?tool_tip\(.*$" access="final"/>
+    </object-type>
+    <object-type name="SciQLopMovableItemInterface" parent-management="yes">
+        <!-- final: Python cannot override these, so the Python wrappers __init__.py puts on them are
+             never called back by C++ (a wrapper over a virtual is a Python override otherwise). -->
+        <modify-function signature="^(set_)?movable\(.*$" access="final"/>
+    </object-type>
     <object-type name="SciQLopLineItemInterface" parent-management="yes"/>
     <object-type name="SciQLopBoundingRectItemInterface" parent-management="yes"/>
     <object-type name="SciQLopPolygonItemInterface" parent-management="yes"/>
@@ -1448,6 +1461,8 @@
     <object-type name="SciQLopCurvedLineItem" parent-management="yes"/>
 
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
+        <!-- Redeclared here: see SciQLopMovableItemInterface. -->
+        <modify-function signature="^histogram\(.*$" access="final"/>
         <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap,GraphMarkerShape,QString)">
             <inject-code class="target" position="beginning">
                 <insert-template name="returning_raises_python_errors"><replace from="$TYPE" to="std::pair&lt;SciQLopPlotInterface*,SciQLopGraphInterface*&gt;"/></insert-template>
@@ -1818,6 +1833,8 @@
     </object-type>
 
     <object-type name="SciQLopPlotPanelInterface" parent-management="yes">
+        <!-- See SciQLopMovableItemInterface. -->
+        <modify-function signature="^save_[a-z]+\(.*$" access="final"/>
         <modify-function signature="SciQLopPlotPanelInterface(QWidget*)">
             <modify-argument index="this">
                 <parent index="1" action="add"/>
@@ -1854,6 +1871,8 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <!-- Redeclared here: see SciQLopMovableItemInterface. -->
+        <modify-function signature="^(histogram|save_[a-z]+)\(.*$" access="final"/>
         <inject-code class="native" position="beginning">
 // Upstream shiboken defect: shiboken6.delete() of a wrapper created from C++ (no wrapper class)
 // leaves it in its parent's children list with a null cptr, and the parent's teardown then
