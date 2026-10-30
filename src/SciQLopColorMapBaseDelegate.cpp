@@ -99,6 +99,7 @@ void SciQLopColorMapBaseDelegate::add_contours_box(SciQLopColorMapBase* object)
     connect(object, &SciQLopColorMapBase::contour_pen_changed, this,
             [colorWidget, widthSpin](const QPen& pen)
             {
+                QSignalBlocker c(colorWidget);
                 colorWidget->setColor(pen.color());
                 QSignalBlocker b(widthSpin);
                 widthSpin->setValue(pen.widthF());
