@@ -124,6 +124,8 @@ SciQLopMultiPlotPanel::~SciQLopMultiPlotPanel()
     // reach this half-destroyed panel.
     for (const auto& connection : m_theme_connections)
         disconnect(connection);
+    if (m_theme)
+        m_theme->detach(this);
 }
 
 void SciQLopMultiPlotPanel::replot(bool immediate)
@@ -919,13 +921,15 @@ void SciQLopMultiPlotPanel::set_legend_visible(bool visible)
 void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 {
     const bool changed = theme != m_theme;
+    if (m_theme && changed)
+        m_theme->detach(this);
     for (const auto& connection : m_theme_connections)
         disconnect(connection);
     m_theme_connections.clear();
 
     m_theme = theme;
-    if (theme && !theme->parent())
-        theme->setParent(this);
+    if (theme)
+        theme->attach(this);
 
     for (auto& p : plots())
     {

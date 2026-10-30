@@ -15,8 +15,15 @@ class SciQLopTheme : public QObject
     explicit SciQLopTheme(QCPTheme* theme, QObject* parent = nullptr);
 
     friend class SciQLopPlot;
+    friend class SciQLopMultiPlotPanel;
 
     QCPTheme* qcp_theme() const { return m_theme; }
+
+    //! The plots and panels it styles. A parentless theme is adopted by its first user and handed
+    //! to another one when that user goes, so it lives as long as something shows it.
+    QList<QPointer<QObject>> m_users;
+    void attach(QObject* user);
+    void detach(QObject* user);
 
 public:
     virtual ~SciQLopTheme() override = default;

@@ -1012,6 +1012,7 @@ SciQLopPlot::~SciQLopPlot()
         disconnect(m_theme, nullptr, this, nullptr);
         if (m_theme->qcp_theme())
             disconnect(m_theme->qcp_theme(), nullptr, this, nullptr);
+        m_theme->detach(this);
     }
     // Deleting a timeline changes the lane layout; reacting to it here would report a natural
     // height to a container that may itself be mid-destruction.
@@ -1365,12 +1366,14 @@ QString SciQLopPlot::crosshair_text() const
 void SciQLopPlot::set_theme(SciQLopTheme* theme)
 {
     const bool changed = theme != m_theme;
+    if (m_theme && changed)
+        m_theme->detach(this);
     if (m_theme)
         disconnect(m_theme, nullptr, this, nullptr);
 
     m_theme = theme;
-    if (theme && !theme->parent())
-        theme->setParent(this);
+    if (theme)
+        theme->attach(this);
 
     if (theme && theme->qcp_theme())
     {

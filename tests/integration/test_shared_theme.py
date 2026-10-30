@@ -1,4 +1,5 @@
 """API review 3.7 / 2.6: one theme can style several plots and panels; plots signal theme changes."""
+import pytest
 import shiboken6
 
 from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot, SciQLopTheme
@@ -55,3 +56,15 @@ def test_a_dying_panel_does_not_signal_its_adopted_theme_going():
     shiboken6.delete(panel)
     process_events()
     assert seen == []
+
+
+@pytest.mark.parametrize("cls", [SciQLopPlot, SciQLopMultiPlotPanel])
+def test_a_shared_theme_outlives_the_one_that_adopted_it(qtbot, cls):
+    first, second = cls(), cls()
+    qtbot.addWidget(second)
+    theme = SciQLopTheme.dark()
+    first.set_theme(theme)
+    second.set_theme(theme)
+    shiboken6.delete(first)
+    process_events()
+    assert shiboken6.isValid(theme) and second.theme() is theme

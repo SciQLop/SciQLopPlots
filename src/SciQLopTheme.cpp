@@ -10,6 +10,22 @@ SciQLopTheme::SciQLopTheme(QCPTheme* theme, QObject* parent)
     }
 }
 
+void SciQLopTheme::attach(QObject* user)
+{
+    if (!m_users.contains(user))
+        m_users.append(user);
+    if (!parent())
+        setParent(user);
+}
+
+void SciQLopTheme::detach(QObject* user)
+{
+    m_users.removeAll(user);
+    m_users.removeAll(nullptr);
+    if (parent() == user && !m_users.isEmpty())
+        setParent(m_users.first());
+}
+
 SciQLopTheme* SciQLopTheme::light(QObject* parent)
 {
     return new SciQLopTheme(QCPTheme::light(), parent);
