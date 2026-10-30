@@ -428,6 +428,8 @@ void SciQLopTimeline::set_stack(TimelineStack stack)
     if (stack == this->stack())
         return;
     const auto it = std::ranges::find_if(kStackModes, [stack](const auto& m) { return m.first == stack; });
+    if (it == std::end(kStackModes))
+        return;
     if (!_survives([&] { _intervals->setStackMode(it->second); }))
         return;
     emit stack_changed(stack);

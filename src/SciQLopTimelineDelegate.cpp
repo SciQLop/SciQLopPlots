@@ -23,6 +23,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QSignalBlocker>
 #include <QSpinBox>
 
 namespace
@@ -57,6 +58,12 @@ void SciQLopTimelineDelegate::add_style_row(SciQLopTimeline* tl)
                 if (auto* t = timeline())
                     t->set_style(static_cast<TimelineStyle>(index));
             });
+    connect(tl, &SciQLopTimeline::style_changed, style,
+            [style](TimelineStyle s)
+            {
+                QSignalBlocker b(style);
+                style->setCurrentIndex(static_cast<int>(s));
+            });
 }
 
 void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
@@ -73,6 +80,12 @@ void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
                 if (auto* t = timeline())
                     t->set_stack(static_cast<TimelineStack>(index));
             });
+    connect(tl, &SciQLopTimeline::stack_changed, stack,
+            [stack](TimelineStack s)
+            {
+                QSignalBlocker b(stack);
+                stack->setCurrentIndex(static_cast<int>(s));
+            });
 
     auto* forbid = new QCheckBox("Forbid overlaps");
     forbid->setObjectName("forbid_overlap");
@@ -83,6 +96,12 @@ void SciQLopTimelineDelegate::add_stacking_rows(SciQLopTimeline* tl)
             {
                 if (auto* t = timeline())
                     t->set_forbid_overlap(on);
+            });
+    connect(tl, &SciQLopTimeline::forbid_overlap_changed, forbid,
+            [forbid](bool on)
+            {
+                QSignalBlocker b(forbid);
+                forbid->setChecked(on);
             });
 }
 
@@ -114,6 +133,12 @@ void SciQLopTimelineDelegate::add_editing_rows(SciQLopTimeline* tl)
                 if (auto* t = timeline())
                     t->set_editable(on);
             });
+    connect(tl, &SciQLopTimeline::editable_changed, editable,
+            [editable](bool on)
+            {
+                QSignalBlocker b(editable);
+                editable->setChecked(on);
+            });
 
     const auto enabled = tl->edit_modes();
     for (int i = 0; i < kEditModes.size(); ++i)
@@ -134,6 +159,12 @@ void SciQLopTimelineDelegate::add_editing_rows(SciQLopTimeline* tl)
                     if (on)
                         modes.append(mode);
                     t->set_edit_modes(modes);
+                });
+        connect(tl, &SciQLopTimeline::edit_modes_changed, box,
+                [box, mode](const QList<TimelineEditMode>& modes)
+                {
+                    QSignalBlocker b(box);
+                    box->setChecked(modes.contains(mode));
                 });
     }
 }

@@ -774,13 +774,10 @@ template <typename Sender, typename Signal, typename Wanted>
 void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool first_fit)
 {
     // Read the caller's ranges at the emission, then queue the fit with them: each batch keeps
-    // its own reading. The axes belong to the GUI thread: a batch set from a worker is read on
-    // arrival there instead.
-    connect(
-        sender, signal, this,
-        [this, sender = QPointer(sender), wanted, first_fit]()
-        {
-            const auto read_then_queue_fit = [this, sender, wanted, first_fit]()
+    // its own reading. The axes belong to the GUI thread: the automatic connection reads a batch
+    // set from a worker on arrival there instead, and drops it if the plot died meanwhile.
+    connect(sender, signal, this,
+            [this, sender = QPointer(sender), wanted, first_fit]()
             {
                 PendingFit fit { _caller_ranges(), _fit_count(),
                                  first_fit ? sender.data() : nullptr, m_rearm.rearms };
@@ -792,13 +789,7 @@ void SciQLopPlot::_fit_on(Sender* sender, Signal signal, Wanted wanted, bool fir
                             _fit_once_data_shown(fit);
                     },
                     Qt::QueuedConnection);
-            };
-            if (QThread::currentThread() == thread())
-                read_then_queue_fit();
-            else
-                QMetaObject::invokeMethod(this, read_then_queue_fit, Qt::QueuedConnection);
-        },
-        Qt::DirectConnection);
+            });
 }
 
 SciQLopPlot::CallerRanges SciQLopPlot::_caller_ranges() const

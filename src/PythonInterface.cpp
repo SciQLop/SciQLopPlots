@@ -891,6 +891,11 @@ SciQLopPyBuffer buffer_from_py(PyObject* value)
 
 double epoch_seconds_from_py(PyObject* value)
 {
+    if (PyFloat_Check(value) || PyLong_Check(value))
+    {
+        const double seconds = PyFloat_AsDouble(value);
+        return (seconds == -1.0 && PyErr_Occurred()) ? std::nan("") : seconds;
+    }
     PyObject* function = _to_epoch_seconds_function();
     PyObject* seconds = function ? PyObject_CallFunctionObjArgs(function, value, nullptr) : nullptr;
     const double result = seconds ? PyFloat_AsDouble(seconds) : -1.0;

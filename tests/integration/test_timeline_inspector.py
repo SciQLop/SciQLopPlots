@@ -122,3 +122,22 @@ def test_delegate_combos_show_their_value_as_tooltip(panel, qtbot):
     assert combo.toolTip() == "none"
     combo.setCurrentText("category")
     assert combo.toolTip() == "category"
+
+
+def test_delegate_follows_changes_made_elsewhere(panel, qtbot):
+    """The inspector only pushed: after a script changed the timeline, the boxes showed the old
+    state, and the next click on another edit-mode box sent that old state back."""
+    _, tl = _timeline(panel)
+    delegate = _delegate(tl, qtbot)
+    tl.set_style(TimelineStyle.Bars)
+    tl.set_stack(TimelineStack.Category)
+    tl.set_editable(True)
+    tl.set_forbid_overlap(True)
+    tl.set_edit_modes([TimelineEditMode.Create])
+    assert _named(delegate, QComboBox, "style").currentText() == "bars"
+    assert _named(delegate, QComboBox, "stack").currentText() == "category"
+    assert _named(delegate, QCheckBox, "editable").isChecked()
+    assert _named(delegate, QCheckBox, "forbid_overlap").isChecked()
+    boxes = {m: _named(delegate, QCheckBox, f"edit_mode_{m}").isChecked()
+             for m in ("move", "resize", "change_lane", "create", "delete")}
+    assert boxes == {"move": False, "resize": False, "change_lane": False, "create": True, "delete": False}
