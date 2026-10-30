@@ -311,6 +311,8 @@ cmap.set_contour_color(QColor("white"))
 cmap.set_contour_labels_enabled(True)
 ```
 
+2-D histograms take the same calls. With column normalization, their lines follow the column fractions the image shows.
+
 A colour map's gradient and log scales are not its own copies: they are the state of the plot's axes. `cmap.set_gradient(g)` is `plot.set_z_gradient(g)`, `cmap.set_z_log_scale(b)` is `plot.z_axis().set_log(b)` and `cmap.set_y_log_scale(b)` is `cmap.y_axis().set_log(b)` (the plot's `y2_axis()`, on the right). Whichever is called last wins, and two colour maps on one plot share the gradient.
 
 ### Parametric curves

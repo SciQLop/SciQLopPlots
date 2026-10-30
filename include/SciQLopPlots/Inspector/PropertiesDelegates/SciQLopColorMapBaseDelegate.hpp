@@ -28,6 +28,8 @@ class SciQLopColorMapBaseDelegate : public PropertyDelegateBase
 {
     Q_OBJECT
 
+    void add_contours_box(SciQLopColorMapBase* object);
+
 protected:
     SciQLopColorMapBase* color_map_base() const;
 

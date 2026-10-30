@@ -169,6 +169,20 @@ public:
     void set_auto_scale_y(bool auto_scale_y);
     inline bool auto_scale_y() const { return _auto_scale_y; }
 
+    void set_contour_levels(const QVector<double>& levels);
+    QVector<double> contour_levels() const;
+    void set_auto_contour_levels(int count);
+    int auto_contour_level_count() const;
+    void set_contour_pen(const QPen& pen);
+    QPen contour_pen() const;
+    void set_contour_color(const QColor& color);
+    QColor contour_color() const;
+    void set_contour_width(double width);
+    double contour_width() const;
+    //! Writes each contour's level along its line, spaced, in the contour colour.
+    void set_contour_labels_enabled(bool enabled);
+    bool contour_labels_enabled() const;
+
     void set_autoscale_percentile_low(double percentile) noexcept;
     inline double autoscale_percentile_low() const noexcept { return _autoscale_percentile_low; }
     void set_autoscale_percentile_high(double percentile) noexcept;
@@ -194,6 +208,9 @@ public:
 signals:
 #endif
     Q_SIGNAL void auto_scale_y_changed(bool auto_scale_y);
+    Q_SIGNAL void contour_levels_changed();
+    Q_SIGNAL void contour_pen_changed(const QPen& pen);
+    Q_SIGNAL void contour_labels_enabled_changed(bool enabled);
     Q_SIGNAL void autoscale_percentile_low_changed(double percentile);
     Q_SIGNAL void autoscale_percentile_high_changed(double percentile);
 

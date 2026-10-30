@@ -590,7 +590,7 @@ for _cls in (SciQLopPlotsBindings.SciQLopPlotInterface, SciQLopPlot):
 _RENAMED_CALLS = {
     (SciQLopPlotsBindings.SciQLopNDProjectionPlot, "add_reference_curve"): ("reference_curve", "projection"),
     (SciQLopPlotsBindings.SciQLopNDProjectionPlot, "add_model_curve"): ("model_curve", "projection"),
-    (SciQLopPlotsBindings.SciQLopColorMap, "auto_contour_level_count"): ("auto_contour_levels", "colormap"),
+    (SciQLopPlotsBindings.SciQLopColorMapBase, "auto_contour_level_count"): ("auto_contour_levels", "colormap"),
 }
 for (_cls, _old), (_new, _receiver) in _RENAMED_CALLS.items():
     _native = vars(_cls)[_old]

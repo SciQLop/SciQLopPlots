@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <QMouseEvent>
 #include <layoutelements/layoutelement-legend.h>
 #include <algorithm>
@@ -193,4 +194,101 @@ void SciQLopColorMapBase::_auto_scale_y_to(const QCPRange& range, bool found)
     // range, so auto-scale-y silently does nothing.
     if (_auto_scale_y && _valueAxis && found && range.lower != range.upper)
         _valueAxis->set_range(SciQLopPlotRange(range.lower, range.upper));
+}
+
+namespace
+{
+//! The NeoQCP plottables with contours share the contour API, not a base class.
+template <typename F>
+bool with_contours(QCPAbstractPlottable* p, F&& f)
+{
+    if (auto* map = qobject_cast<QCPColorMap2*>(p))
+        f(map);
+    else if (auto* hist = qobject_cast<QCPHistogram2D*>(p))
+        f(hist);
+    else
+        return false;
+    return true;
+}
+
+template <typename T, typename F>
+T read_contours(QCPAbstractPlottable* p, T fallback, F&& f)
+{
+    with_contours(p, [&](auto* c) { fallback = f(c); });
+    return fallback;
+}
+}
+
+void SciQLopColorMapBase::set_contour_levels(const QVector<double>& levels)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_contour_levels(levels));
+    if (with_contours(plottable(), [&](auto* c) { c->setContourLevels(levels); }))
+        Q_EMIT contour_levels_changed();
+}
+
+QVector<double> SciQLopColorMapBase::contour_levels() const
+{
+    return read_contours(plottable(), QVector<double> {}, [](auto* c) { return c->contourLevels(); });
+}
+
+void SciQLopColorMapBase::set_auto_contour_levels(int count)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_auto_contour_levels(count));
+    if (with_contours(plottable(), [&](auto* c) { c->setAutoContourLevels(count); }))
+        Q_EMIT contour_levels_changed();
+}
+
+int SciQLopColorMapBase::auto_contour_level_count() const
+{
+    return read_contours(plottable(), 0, [](auto* c) { return c->autoContourLevelCount(); });
+}
+
+void SciQLopColorMapBase::set_contour_pen(const QPen& pen)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_contour_pen(pen));
+    if (with_contours(plottable(), [&](auto* c) { c->setContourPen(pen); }))
+        Q_EMIT contour_pen_changed(pen);
+}
+
+QPen SciQLopColorMapBase::contour_pen() const
+{
+    return read_contours(plottable(), QPen(), [](auto* c) { return c->contourPen(); });
+}
+
+void SciQLopColorMapBase::set_contour_color(const QColor& color)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_contour_color(color));
+    auto pen = contour_pen();
+    pen.setColor(color);
+    set_contour_pen(pen);
+}
+
+QColor SciQLopColorMapBase::contour_color() const
+{
+    return read_contours(plottable(), QColor(), [](auto* c) { return c->contourPen().color(); });
+}
+
+void SciQLopColorMapBase::set_contour_width(double width)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_contour_width(width));
+    auto pen = contour_pen();
+    pen.setWidthF(width);
+    set_contour_pen(pen);
+}
+
+double SciQLopColorMapBase::contour_width() const
+{
+    return read_contours(plottable(), 1.0, [](auto* c) { return c->contourPen().widthF(); });
+}
+
+void SciQLopColorMapBase::set_contour_labels_enabled(bool enabled)
+{
+    SCIQLOP_ON_OWNER_THREAD(set_contour_labels_enabled(enabled));
+    if (with_contours(plottable(), [&](auto* c) { c->setContourLabelEnabled(enabled); }))
+        Q_EMIT contour_labels_enabled_changed(enabled);
+}
+
+bool SciQLopColorMapBase::contour_labels_enabled() const
+{
+    return read_contours(plottable(), false, [](auto* c) { return c->contourLabelEnabled(); });
 }
