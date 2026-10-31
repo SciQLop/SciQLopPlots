@@ -100,6 +100,11 @@ sources = moc_files + sciqlopplots_sources
 
 cpp_args = []
 
+# A unity chunk of these sources holds more sections than MSVC's default object format allows (C1128).
+if meson.get_compiler('cpp').get_argument_syntax() == 'msvc'
+    cpp_args += ['/bigobj']
+endif
+
 if get_option('trace_refcount') == true
     cpp_args += ['-D_TRACE_REF_COUNT']
 endif
