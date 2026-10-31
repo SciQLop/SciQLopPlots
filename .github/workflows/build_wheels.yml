@@ -7,8 +7,8 @@ on:
   pull_request:
 
 env:
-  PYSIDE_VERSION: 6.11.2
-  QT_VERSION: 6.11.2
+  PYSIDE_VERSION: 6.12.0
+  QT_VERSION: 6.12.0
   #PIP_EXTRA_INDEX_URL: "https://download.qt.io/official_releases/QtForPython/"
 
 jobs:
@@ -136,7 +136,7 @@ jobs:
           # aqt runs on Python 3.14: it tries zipfile before py7zr, and older zipfile.is_zipfile()
           # takes some Qt .7z archives for zips (6.11.2 qttools on linux_arm64), then fails to open them.
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-            auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.11 --exclude libshiboken6.abi3.so.6.11 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.11 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
+            auditwheel repair -w {dest_dir} --exclude libpyside6.abi3.so.6.12 --exclude libshiboken6.abi3.so.6.12 --exclude libQt6Core.so.6 --exclude libQt6Widgets.so.6 --exclude libQt6Gui.so.6 --exclude libpyside6qml.abi3.so.6.12 --exclude libGLX.so.0 --exclude libOpenGL.so.0 --exclude libxcb.so.1 --only-plat --plat ${{ matrix.platform }} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_MACOS:
           # Windows has no default repair command, so the wheel was never repaired and
           # the MSVC runtime was never bundled -> "DLL load failed" on machines without the

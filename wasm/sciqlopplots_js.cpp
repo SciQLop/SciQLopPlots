@@ -432,7 +432,7 @@ public:
         if (m_resending || (event->type() != QEvent::DragEnter && event->type() != QEvent::DragMove))
             return false;
         auto* drag = static_cast<QDragMoveEvent*>(event);
-        const auto at = window_point(static_cast<QWindow*>(watched), drag->position()).toPoint();
+        const auto at = window_point(static_cast<QWindow*>(watched), drag->position());
         std::unique_ptr<QDragMoveEvent> fixed;
         if (event->type() == QEvent::DragEnter)
             fixed = std::make_unique<QDragEnterEvent>(at, drag->possibleActions(), drag->mimeData(),

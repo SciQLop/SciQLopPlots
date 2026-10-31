@@ -78,9 +78,10 @@ def make_link_flags(libs_paths):
 
 
 if shiboken.__file__ and shiboken_generator.__file__ and PySide.__file__:
-    PySide_inc = first_existing_path([f'{PySide_mod_path}{os.path.sep}include',f'/usr/include/PySide{pyside_ver}'])
+    # 6.12 moved the headers one level down, into include/PySide6 and include/shiboken6.
+    PySide_inc = first_existing_path([f'{PySide_mod_path}{os.path.sep}include{os.path.sep}PySide{pyside_ver}',f'{PySide_mod_path}{os.path.sep}include',f'/usr/include/PySide{pyside_ver}'])
     PySide_typesys = first_existing_path([f'{PySide_mod_path}{os.path.sep}typesystems','/usr/share/PySide{pyside_ver}/typesystems'])
-    shiboken_includes = first_existing_path([f'{shiboken_mod_path}{os.path.sep}include',f'{shiboken_generator_mod_path}{os.path.sep}include',f'/usr/include/shiboken{pyside_ver}'])
+    shiboken_includes = first_existing_path([f'{shiboken_mod_path}{os.path.sep}include{os.path.sep}shiboken{pyside_ver}',f'{shiboken_mod_path}{os.path.sep}include',f'{shiboken_generator_mod_path}{os.path.sep}include',f'/usr/include/shiboken{pyside_ver}'])
     
     if args.typesystem:
         print(PySide_typesys)

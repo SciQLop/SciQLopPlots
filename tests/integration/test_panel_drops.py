@@ -31,8 +31,7 @@ def _panel_with_two_plots(panel):
 
 def _send(panel, kind, pos, mime):
     args = (Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
-    event = {"enter": lambda: QDragEnterEvent(pos, *args), "move": lambda: QDragMoveEvent(pos, *args),
-             "drop": lambda: QDropEvent(pos.toPointF(), *args)}[kind]()
+    event = {"enter": QDragEnterEvent, "move": QDragMoveEvent, "drop": QDropEvent}[kind](pos.toPointF(), *args)
     QApplication.sendEvent(panel.viewport(), event)
     process_events()
     return event

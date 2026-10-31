@@ -127,16 +127,16 @@ decorators, counters, and [Tracy](https://github.com/wolfpld/tracy) when built w
 
 ## Building from source
 
-You need Qt 6.11, a C++20 compiler, libclang (for Shiboken) and, in a virtual environment,
+You need Qt 6.12, a C++20 compiler, libclang (for Shiboken) and, in a virtual environment,
 the exact PySide6 version the package pins:
 
 ```bash
-pip install pyside6==6.11.2 shiboken6==6.11.2 shiboken6-generator==6.11.2 \
+pip install pyside6==6.12.0 shiboken6==6.12.0 shiboken6-generator==6.12.0 \
     numpy meson meson-python ninja
 
 # Qt's tools must be on PATH
-export PATH=/path/to/Qt/6.11.2/gcc_64/bin:$PATH
-export PKG_CONFIG_PATH=/path/to/Qt/6.11.2/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH
+export PATH=/path/to/Qt/6.12.0/gcc_64/bin:$PATH
+export PKG_CONFIG_PATH=/path/to/Qt/6.12.0/gcc_64/lib/pkgconfig:$PKG_CONFIG_PATH
 
 # debugoptimized, not debug: without optimisations the resampling is slow
 meson setup build --buildtype=debugoptimized
