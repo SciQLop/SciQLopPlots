@@ -54,7 +54,9 @@ def _format(sig, what):
 
 
 def shiboken_signature(app, what, name, obj, options, signature, return_annotation):
-    """Compiled methods hide their signatures from inspect; shiboken keeps them, overloads included."""
+    """Compiled methods hide their signatures from inspect; shiboken keeps them, overloads included.
+    A Python wrapper on a compiled method (deprecations, argument checks) shows the method's overloads."""
+    obj = inspect.unwrap(obj)
     if what not in ("method", "class") or inspect.isfunction(obj):
         return None
     from shibokensupport.signature import get_signature

@@ -464,10 +464,13 @@ for _item_cls, (_factory, _needs_plot) in _ITEM_FACTORIES.items():
     _item_cls.__init__ = _deprecated_constructor(_item_cls, _factory, _needs_plot)
 
 def _wraps(method):
-    """functools.wraps, plus the C++ signature: inspect cannot see through a shiboken method."""
+    """functools.wraps, plus the C++ signature: inspect cannot see through a shiboken method.
+    Overloads have no single signature, and inspect only takes one: those stay hidden, like on the C++ method."""
     def decorate(wrapper):
         functools.wraps(method)(wrapper)
-        wrapper.__signature__ = getattr(method, "__signature__", None) or get_signature(method)
+        signature = getattr(method, "__signature__", None) or get_signature(method)
+        if isinstance(signature, inspect.Signature):
+            wrapper.__signature__ = signature
         return wrapper
     return decorate
 

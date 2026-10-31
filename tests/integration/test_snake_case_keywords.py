@@ -13,10 +13,7 @@ def _camel_case_keywords():
         if not isinstance(cls, type):
             continue
         for name, member in vars(cls).items():
-            try:
-                signatures = get_signature(inspect.unwrap(member))  # through deprecation wrappers
-            except Exception:
-                continue
+            signatures = get_signature(inspect.unwrap(member))  # through deprecation wrappers
             for signature in signatures if isinstance(signatures, list) else [signatures] if signatures else []:
                 for parameter in signature.parameters:
                     if re.fullmatch(r"[a-z]+[A-Z]\w*", parameter):

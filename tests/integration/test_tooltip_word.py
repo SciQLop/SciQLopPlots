@@ -92,7 +92,7 @@ def test_factories_still_take_tool_tip_with_a_warning_at_the_caller(plot, panel,
 
 
 def _parameter_names(method):
-    signatures = getattr(method, "__signature__", None) or get_signature(method)
+    signatures = get_signature(inspect.unwrap(method))  # through the deprecation wrappers
     signatures = signatures if isinstance(signatures, list) else [signatures]
     return {name for sig in signatures if isinstance(sig, inspect.Signature) for name in sig.parameters}
 
