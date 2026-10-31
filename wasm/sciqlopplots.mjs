@@ -47,6 +47,16 @@ function columnsOf(values) {
   return { data: interleave(values), shape: [values[0].length, values.length] };
 }
 
+// A number for every point, or an array of one value per point.
+function asBound(bound, length, what) {
+  if (typeof bound === 'number') return new Float64Array(length).fill(bound);
+  if (bound.length !== length)
+    throw new Error(`SciQLopPlots: ${what} needs a number or ${length} values, got ${bound.length}`);
+  return asTypedArray(bound);
+}
+
+const isOptions = (x) => x !== undefined && typeof x === 'object' && !Array.isArray(x) && !ArrayBuffer.isView(x);
+
 class Handle {
   constructor(lib, id) {
     this.lib = lib;
@@ -115,6 +125,35 @@ export class ColorMap extends Handle {
   }
 }
 
+// Counts of values in bins, drawn as bars (one column) or step outlines (several). Its row's
+// x axis holds the values, so panning the time does not move it: give it the values in view.
+export class Histogram extends Handle {
+  constructor(lib, id, plot) {
+    super(lib, id);
+    this.plot = plot;   // the Plot of its row
+  }
+
+  // values: one column, or an array of columns. The edges only widen as values change, unless
+  // the histogram has a range.
+  setValues(values) {
+    this.withBuffers([columnsOf(values)], (v) => this.lib.m.setHistogramValues(this.id, v));
+  }
+
+  setVisible(visible) {
+    this.lib.m.setVisible(this.id, visible);
+  }
+
+  // What is drawn, once the first values are binned (empty before): bins + 1 edges, and one
+  // array of heights per column.
+  get binEdges() {
+    return this.lib.m.binEdges(this.id);
+  }
+
+  get binHeights() {
+    return this.lib.m.binHeights(this.id);
+  }
+}
+
 export class Plot extends Handle {
   // options: labels, colors (CSS colours), name.
   line(t, values, options = {}) {
@@ -125,6 +164,25 @@ export class Plot extends Handle {
   scatter(t, values, options = {}) {
     return new Graph(this.lib, this.withBuffers([columnsOf(t), columnsOf(values)],
       (x, y) => this.lib.m.scatter(this.id, x, y, options)));
+  }
+
+  // The area between lower and upper (numbers or arrays), filled. options: name, color (CSS).
+  band(t, lower, upper, options = {}) {
+    const columns = [asBound(lower, t.length, 'lower'), asBound(upper, t.length, 'upper')];
+    return new Graph(this.lib, this.withBuffers([columnsOf(t), columnsOf(columns)],
+      (x, y) => this.lib.m.band(this.id, x, y, options)));
+  }
+
+  // Markers at y with bars from y - errLow to y + errHigh (errHigh defaults to errLow); errors
+  // are numbers or arrays. options: name, color (CSS), capWidth (pixels, default 6).
+  errorBars(t, y, errLow, ...rest) {
+    const errHigh = rest.length && !isOptions(rest[0]) ? rest.shift() : errLow;
+    const options = rest[0] ?? {};
+    const values = asBound(y, t.length, 'y');
+    const low = asBound(errLow, t.length, 'errLow'), high = asBound(errHigh, t.length, 'errHigh');
+    const columns = [values, values.map((v, i) => v - low[i]), values.map((v, i) => v + high[i])];
+    return new Graph(this.lib, this.withBuffers([columnsOf(t), columnsOf(columns)],
+      (x, yb) => this.lib.m.errorBars(this.id, x, yb, options)));
   }
 
   // options: name, yLog, zLog, gradient ('Jet', 'Viridis', 'Plasma', ...).
@@ -324,6 +382,14 @@ export class Panel extends Handle {
   // fits its y axis to the data inside it.
   addPlot() {
     return new Plot(this.lib, this.lib.m.addPlot(this.id));
+  }
+
+  // A row counting values into bins. options: name, bins (default 64), range ([lower, upper]:
+  // fixed edges, values outside are not counted), logBins, normalization ('count', 'density',
+  // 'probability'), style ('bars', 'step'), color (CSS).
+  histogram(values, options = {}) {
+    const ids = this.withBuffers([columnsOf(values)], (v) => this.lib.m.histogram(this.id, v, options));
+    return new Histogram(this.lib, ids.histogram, new Plot(this.lib, ids.plot));
   }
 
   // A row showing element, e.g. a chart from another library, laid over the row and resized

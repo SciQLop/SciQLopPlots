@@ -13,7 +13,7 @@
   <pre id="status">running</pre>
   <div id="a" class="panel"></div><div id="b" class="panel"></div><div id="c" class="panel"></div>
   <script type="module">
-    import { load, Graph, ColorMap, Span, Projection } from '../sciqlopplots.mjs';
+    import { load, Graph, ColorMap, Span, Projection, Plot, Histogram } from '../sciqlopplots.mjs';
 
     const results = [];
     const check = async (name, fn) => {
@@ -62,6 +62,38 @@
       assert(map instanceof ColorMap, 'a ColorMap');
     });
     await check('setData', () => { graph.setData(t, [cos, sin]); map.setData(t, channels, z); });
+    await check('band: filled between two bounds, arrays or numbers', () => {
+      const p = a.addPlot();
+      const band = p.band(t, sin.map((v) => v - 0.3), sin.map((v) => v + 0.3), { name: 'sin ± 0.3', color: 'steelblue' });
+      assert(band instanceof Graph, 'a Graph');
+      p.band(t, -0.5, 0.5);
+      throws(() => p.band(t, sin.subarray(1), 0.5), 'a bound of the wrong length');
+    });
+    await check('errorBars: symmetric or asymmetric errors', () => {
+      const p = a.addPlot();
+      assert(p.errorBars(t, sin, 0.1, { name: 'sin', capWidth: 4 }) instanceof Graph, 'a Graph');
+      p.errorBars(t, cos, 0.1, cos.map(() => 0.3), { color: 'red' });
+      throws(() => p.errorBars(t, sin, cos.subarray(1)), 'an error of the wrong length');
+    });
+    await check('histogram: a row of the panel that counts values', async () => {
+      const hist = b.histogram(sin, { bins: 20, name: 'sin values' });
+      assert(hist instanceof Histogram && hist.plot instanceof Plot, 'a Histogram and its Plot');
+      const total = () => hist.binHeights[0]?.reduce((s, h) => s + h, 0);
+      assert(await until(() => total() === n), `counted ${total()} of ${n}`);
+      assert(hist.binEdges.length === 21, `${hist.binEdges.length} edges`);
+      hist.setValues(sin.subarray(0, 100));
+      assert(await until(() => total() === 100), `counted ${total()} of 100 after setValues`);
+    });
+    await check('histogram options: range, log bins, normalization, style', async () => {
+      const hist = b.histogram(channels, { bins: 10, range: [10, 1000], logBins: true, normalization: 'probability', style: 'step' });
+      assert(await until(() => hist.binEdges.length === 11), 'not binned');
+      const edges = hist.binEdges;
+      assert(near(edges[0], 10) && near(edges[10], 1000) && near(edges[5], 100), `edges ${edges}`);
+      assert(hist.binHeights[0].every((h) => h <= 1), `probabilities ${hist.binHeights[0]}`);
+      throws(() => b.histogram(sin, { normalization: 'nope' }), 'an unknown normalization');
+      throws(() => b.histogram(sin, { style: 'nope' }), 'an unknown style');
+      throws(() => b.histogram(sin, { bins: 0 }), 'zero bins');
+    });
     await check('gap threshold: option, setter, 0 turns it off', () => {
       const p = b.addPlot();
       const line = p.line(t, sin), off = p.line(t, cos, { gapThreshold: 0 }), dots = p.scatter(t, sin, { gapThreshold: 4 });
