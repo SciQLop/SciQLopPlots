@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bands, error bars and histograms · SciQLopPlots</title>
+  <script src="../coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a href="../index.html">← SciQLopPlots gallery</a><h1>Bands, error bars and histograms</h1><p class="lead">A running mean inside its ±1σ band, sparse measurements with error bars, and a histogram of the values in view: pan or zoom and it counts again.</p></header>
+  <main>
+    <div id="plots" class="plots" data-thumbnail></div>
+    <script type="text/plain" id="example">
+      import { load } from '../sciqlopplots.mjs';
+
+      const spz = await load();
+      const n = 50_000, t0 = Date.UTC(2020, 0, 1) / 1000;
+      const t = Float64Array.from({ length: n }, (_, i) => t0 + i * 2);
+      // Two populations: the field jumps between a quiet and a disturbed level.
+      const level = (i) => (Math.sin(i / 4000) > 0.3 ? 12 : 4);
+      const noise = () => (Math.random() + Math.random() + Math.random() - 1.5) * 2;
+      const b = t.map((_, i) => level(i) + Math.sin(i / 300) + noise());
+
+      // A running mean and standard deviation over 200 samples.
+      const w = 200, mean = new Float64Array(n), sigma = new Float64Array(n);
+      let s = 0, s2 = 0;
+      for (let i = 0; i < n; i++) {
+        s += b[i]; s2 += b[i] ** 2;
+        if (i >= w) { s -= b[i - w]; s2 -= b[i - w] ** 2; }
+        const k = Math.min(i + 1, w);
+        mean[i] = s / k;
+        sigma[i] = Math.sqrt(Math.max(s2 / k - mean[i] ** 2, 0));
+      }
+
+      const panel = spz.panel(document.querySelector('#plots'), { timeRange: [t[0], t[n - 1]] });
+      const field = panel.addPlot();
+      field.band(t, mean.map((m, i) => m - sigma[i]), mean.map((m, i) => m + sigma[i]),
+                 { name: 'mean ± σ', color: 'rgba(31, 119, 180, 0.3)' });
+      field.line(t, mean, { labels: ['mean'], colors: ['#1f77b4'] });
+      field.setAxis('y', { label: '|B| [nT]' });
+
+      // A measurement every hour, with a larger error above than below. Bars need room (three
+      // cap widths apart): zoomed out on a narrow screen, they merge into a band.
+      const every = 1800, tm = t.filter((_, i) => i % every === 0);
+      const measured = tm.map((_, k) => mean[k * every] + noise() / 2);
+      const samples = panel.addPlot();
+      samples.errorBars(tm, measured, 0.6, measured.map(() => 1.2), { name: 'measured', color: '#d62728' });
+      samples.setAxis('y', { label: '|B| [nT]' });
+
+      // The values inside the time range: t is sorted, so two binary searches find them.
+      const firstAfter = (x) => {
+        let lo = 0, hi = n;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (t[mid] < x) lo = mid + 1; else hi = mid; }
+        return lo;
+      };
+      const inView = (start, stop) => b.subarray(firstAfter(start), firstAfter(stop));
+      const hist = panel.histogram(b, { bins: 44, range: [-2, 20], name: '|B| in view', color: '#2ca02c' });
+      hist.plot.setAxis('x', { label: '|B| [nT]' });
+      panel.on('timeRangeChanged', (start, stop) => hist.setValues(inView(start, stop)));
+    </script>
+  </main>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>
