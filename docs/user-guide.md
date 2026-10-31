@@ -733,10 +733,11 @@ overlap = morning.intersection_with(SciQLopPlotRange("2025-04-12T03:00:00", "202
 both = morning.union_with(overlap)
 print(overlap.start(), overlap.size())        # epoch seconds, and 3 hours in seconds
 print(morning.start_date())                   # a QDateTime, in UTC
+print(morning.datetime_start())               # 2025-04-12 00:00:00+00:00, a UTC-aware datetime
 print(SciQLopPlotRange(5, 5).is_empty(), SciQLopPlotRange().is_null(), morning.is_valid())
 ```
 
-`is_null()` means unset (NaN ends), `is_empty()` means zero length, and `is_valid()` means neither.
+`is_null()` means unset (NaN ends), `is_empty()` means zero length, and `is_valid()` means neither. Dates read back from a range are in UTC, like everything else: `datetime_start()` and `datetime_stop()` give aware `datetime` objects, and `start_date()` / `stop_date()` UTC `QDateTime`s.
 
 ## Several plots in a panel
 
@@ -1382,6 +1383,31 @@ The function receives an event whose `.value` is the new value, and returns what
 
 Without a setter the property can only be observed. Without a signal it can be read and written, but it cannot start a pipeline: `>>` raises `ValueError`. A name with no getter is not exposed. A name the class does not support raises when used, for example `color` on a multi-column graph or `selected` on the legend. Deprecated method aliases are hidden: `line.on.movable` raises `AttributeError`, use `line.on.read_only`.
 
+A function runs where the signal fires, usually the GUI thread, so a slow one freezes the window. `.threaded()` runs it on a worker thread of its own:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot, dsp
+
+plot = SciQLopPlot()
+x = np.linspace(0, 100, 200_000)
+raw = plot.plot(x, np.sin(x) + np.random.default_rng(0).normal(0, 0.3, x.size), labels=["raw"])
+smooth = plot.plot(x, np.zeros_like(x), labels=["smoothed"])
+
+def smoothed(event):
+    t, y = (np.asarray(a) for a in event.value)
+    return dsp.rolling_mean(t, y, 101)
+
+link = (raw.on.data >> smoothed >> smooth.on.data).threaded()
+```
+
+- The value is read where the signal fires. The function and the target's setter then run on the worker. The library's setters are safe there: they move to the GUI thread, or, for data, run where they are called by design ([Threads](#threads)). So any `.on` target of a plot, axis, graph or item works. A property you add yourself with `register_property` must be safe to set from another thread.
+- While the worker is busy, only the latest value waits. Older ones are skipped, like the fetches of a data function. A run already started finishes.
+- `link.disconnect()` stops the link, and a result still being computed is dropped.
+- Nothing is threaded unless you ask: a link that ends in `data` runs where the signal fires too.
+
+`register_property(cls, name, signal_name, getter_name, setter_name, property_type)` adds a property to `.on` for a class of your own, such as a Python subclass, when it does not follow the naming convention.
+
 On spans, `span.on.range` resolves on every span and raises `ValueError` when used on one that bounds both axes. `span.on.key_range` and `span.on.value_range` read `None` on an axis the span does not bound, and raise when written there.
 
 A few names do not follow the convention and are kept by hand:
@@ -1980,6 +2006,8 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 - **Time values go through one conversion**: date strings must be ISO 8601, so `"2020-01-01 10:00:00 UTC"` now raises `ValueError` (drop the zone name, or write `+00:00`). An array of `dtype=object` must hold dates: an object array of numbers, as a mixed pandas column gives, raises `TypeError` (convert it with `.astype(float)`).
 - **Timeline state is methods**, like the rest of the API: `tl.style()`, `tl.set_style(TimelineStyle.Bars)`, and the same for `stack`, `edit_modes`, `editable`, `lanes`, `forbid_overlap`, `category_order` and `snap_to`. An old assignment (`tl.style = ...`) still works and warns, but reading `tl.style` without calling it gives the method, so `tl.style == TimelineStyle.Bars` is always false. `edit_modes()` is a list, not a set, and `set_style` / `set_stack` take only the enum members: a string raises `TypeError`.
 - **PySide6 6.12.0**: the wheel requires exactly PySide6 and shiboken6 6.12.0, the version PySide6-QtAds 5.1.1.1 requires. An environment that pins 6.11 cannot install it.
+- **`SciQLopPlotRange.datetime_start()` and `datetime_stop()` return UTC-aware datetimes.** They used to return naive datetimes in the machine's local time, which shifted a range by the UTC offset when fed back in. Compared with a naive datetime, `==` is now always false and `<` raises `TypeError`: compare with aware ones, such as `datetime(..., tzinfo=timezone.utc)`.
+- **Keywords are all snake_case**: `add_remote_line_graph(..., metadata=...)` and the other `add_remote_*` take `metadata=`, not `metaData=`, like `plot()`.
 - **A string where a SciQLopPlots method takes a list of strings is one item**: `set_lanes("MSA")` makes one lane and `plot(x, y, labels="Bx")` one label. Both used to split the string into letters.
 - **The text, pixmap and ellipse factories** take `read_only=` where `movable=` was: a positional bool raises `TypeError`, since it would mean the opposite.
 - **The old span and line classes**: `SciQLopHorizontalSpan` and `SciQLopRectangularSpan` take `tooltip=`, not `tool_tip=`, and `MultiPlotsVerticalSpan` / `MultiPlotsVerticalLine` take their panel as the first positional argument, not `panel=`. Better, use the factories (`plot.vertical_span(...)`, `panel.vertical_line(...)`).
