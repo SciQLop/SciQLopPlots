@@ -187,6 +187,31 @@
         static PyObject *enumKindAnchorModule = PyModule_New("SciQLopPlotsBindings_enum_kind_anchor");
         init_SciQLopPlotsBindingsSciQLopEnumKindAnchor(enumKindAnchorModule);
     </inject-code>
+    <!-- A str is a sequence of one-letter strs, so PySide's string-list converter turns
+         set_lanes("MSA") into "M", "S", "A". This module gets its own copy of QtCore's
+         converter table, whose string-list entry takes a str as one item; the generated
+         code reads the table at call time, and PySide's own table is left as it is. -->
+    <inject-code class="target" position="end">
+        static SbkConverter *pysideStringList = SbkPySide6_QtCoreTypeConverters[SBK_QStringList_IDX];
+        static SbkConverter *qtCoreConverters[SBK_QtCore_CONVERTERS_IDX_COUNT];
+        std::copy_n(SbkPySide6_QtCoreTypeConverters, SBK_QtCore_CONVERTERS_IDX_COUNT, qtCoreConverters);
+        SbkConverter *stringList = Shiboken::Conversions::createConverter(
+            &amp;PyList_Type, [](const void *cppIn) {
+                return Shiboken::Conversions::copyToPython(pysideStringList, cppIn);
+            });
+        static constexpr PythonToCppFunc strAsOneItem = [](PyObject *pyIn, void *cppOut) {
+            Shiboken::AutoDecRef oneItem(Py_BuildValue("[O]", pyIn));
+            Shiboken::Conversions::pythonToCppCopy(pysideStringList, oneItem, cppOut);
+        };
+        Shiboken::Conversions::addPythonToCppValueConversion(
+            stringList, strAsOneItem, [](PyObject *pyIn) -> PythonToCppFunc {
+                return PyUnicode_Check(pyIn)
+                    ? strAsOneItem
+                    : Shiboken::Conversions::isPythonToCppConvertible(pysideStringList, pyIn);
+            });
+        qtCoreConverters[SBK_QStringList_IDX] = stringList;
+        SbkPySide6_QtCoreTypeConverters = qtCoreConverters;
+    </inject-code>
 
     <smart-pointer-type name="QPointer" type="handle" getter="data" null-check-method="isNull" instantiations="SciQLopPlotInterface=SciQLopPlotInterfacePtr,MultiPlotsVerticalSpan=MultiPlotsVerticalSpanPtr"/>
     <!-- std::optional<T> as T or None (span/line unification plan, spike ledger: branch O). -->
