@@ -400,8 +400,8 @@ public:
     std::vector<SciQLopPyBuffer> get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z);
 };
 
-//! datetime.datetime.fromtimestamp(timestamp): a new reference, or nullptr with a
-//! Python error set. The GIL must be held.
+//! datetime.datetime.fromtimestamp(timestamp, datetime.UTC): aware, like every time here.
+//! A new reference, or nullptr with a Python error set. The GIL must be held.
 PyObject* datetime_from_timestamp(double timestamp);
 
 //! Seconds since 1970-01-01 UTC for a number or a date, through SciQLopPlots.to_epoch_seconds.

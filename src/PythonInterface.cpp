@@ -910,11 +910,13 @@ PyObject* datetime_from_timestamp(double timestamp)
     if (!datetime_module)
         return nullptr;
     PyObject* datetime_type = PyObject_GetAttrString(datetime_module, "datetime");
+    PyObject* utc = PyObject_GetAttrString(datetime_module, "UTC");
     Py_DECREF(datetime_module);
-    if (!datetime_type)
-        return nullptr;
-    PyObject* result = PyObject_CallMethod(datetime_type, "fromtimestamp", "d", timestamp);
-    Py_DECREF(datetime_type);
+    PyObject* result = datetime_type && utc
+        ? PyObject_CallMethod(datetime_type, "fromtimestamp", "dO", timestamp, utc)
+        : nullptr;
+    Py_XDECREF(datetime_type);
+    Py_XDECREF(utc);
     return result;
 }
 

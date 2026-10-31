@@ -128,11 +128,17 @@ class TestP1_3_DatetimeRefLeak:
         # Allow small variance but not 1000+ leaked refs
         assert after - before < 50
 
-    def test_datetime_values_are_local_datetimes(self):
+    def test_datetime_values_are_utc_datetimes(self):
         import datetime
         r = SciQLopPlotRange(1000000.5, 2000000.25)
-        assert r.datetime_start() == datetime.datetime.fromtimestamp(1000000.5)
-        assert r.datetime_stop() == datetime.datetime.fromtimestamp(2000000.25)
+        utc = datetime.timezone.utc
+        assert r.datetime_start() == datetime.datetime.fromtimestamp(1000000.5, utc)
+        assert r.datetime_stop() == datetime.datetime.fromtimestamp(2000000.25, utc)
+        assert r.datetime_start().utcoffset() == datetime.timedelta(0)
+
+    def test_datetimes_round_trip(self):
+        r = SciQLopPlotRange("2025-04-12T00:00:00", "2025-04-12T06:00:00")
+        assert SciQLopPlotRange(r.datetime_start(), r.datetime_stop()) == r
 
     def test_datetime_stop_no_leak(self):
         r = SciQLopPlotRange(1000000.0, 2000000.0)
