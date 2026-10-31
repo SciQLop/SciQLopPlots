@@ -1,3 +1,6 @@
+import threading
+import time
+
 import pytest
 from properties import ObservableProperty, OnNamespace, register_property, _property_registry
 from pipeline import Pipeline, PartialPipeline, build_pipeline_step, _detect_call_style
@@ -198,20 +201,74 @@ def test_detect_call_style_none():
     assert _detect_call_style(lambda: 42) == "none"
 
 
-# --- Auto-threaded for data targets ---
+# --- threaded(): the transform runs on a worker thread ---
 
-def test_data_pipeline_auto_threaded():
+def _wait_for(condition, timeout=5.0):
+    deadline = time.monotonic() + timeout
+    while not condition():
+        assert time.monotonic() < deadline, "timed out"
+        time.sleep(0.005)
+
+
+def test_a_pipeline_runs_in_the_emitting_thread_by_default():
+    src, tgt = FakeQObject(), FakeQObject()
+    threads = []
+    OnNamespace(src).data >> (lambda e: threads.append(threading.current_thread()) or e.value) \
+        >> OnNamespace(tgt).data
+    src.data_changed.emit([1, 2])
+    assert threads == [threading.current_thread()] and tgt._data == [1, 2]
+
+
+def test_threaded_runs_the_transform_on_a_worker_thread():
+    src, tgt = FakeQObject(), FakeQObject()
+    threads = []
+    pipe = (OnNamespace(src).data >> (lambda e: threads.append(threading.current_thread()) or e.value)
+            >> OnNamespace(tgt).data).threaded()
+    src.data_changed.emit([1, 2])
+    _wait_for(lambda: tgt._data == [1, 2])
+    assert threads and threads[0] is not threading.current_thread()
+    pipe.disconnect()
+
+
+def test_threaded_keeps_only_the_latest_value_while_busy():
+    src, tgt = FakeQObject(), FakeQObject()
+    gate, seen = threading.Event(), []
+
+    def slow(event):
+        seen.append(event.value)
+        gate.wait(5)
+        return event.value
+
+    pipe = (OnNamespace(src).range >> slow >> OnNamespace(tgt).range).threaded()
+    src.range_changed.emit(1)
+    _wait_for(lambda: seen == [1])
+    src.range_changed.emit(2)
+    src.range_changed.emit(3)
+    gate.set()
+    _wait_for(lambda: tgt._range_val == 3)
+    assert seen == [1, 3]
+    pipe.disconnect()
+
+
+def test_a_threaded_sink_runs_on_a_worker_thread():
     src = FakeQObject()
-    tgt = FakeQObject()
-    pipe = OnNamespace(src).data >> (lambda event: event.value) >> OnNamespace(tgt).data
-    assert pipe._auto_threaded
+    threads = []
+    sink = (OnNamespace(src).range >> (lambda e: threads.append(threading.current_thread()))).threaded()
+    src.range_changed.emit(1)
+    _wait_for(lambda: threads)
+    assert threads[0] is not threading.current_thread()
+    sink.disconnect()
 
 
-def test_range_pipeline_not_auto_threaded():
-    src = FakeQObject()
-    tgt = FakeQObject()
-    pipe = OnNamespace(src).range >> OnNamespace(tgt).range
-    assert not pipe._auto_threaded
+def test_a_disconnected_threaded_pipeline_delivers_nothing():
+    src, tgt = FakeQObject(), FakeQObject()
+    gate = threading.Event()
+    pipe = (OnNamespace(src).range >> (lambda e: gate.wait(5) and e.value) >> OnNamespace(tgt).range).threaded()
+    src.range_changed.emit(7)
+    pipe.disconnect()
+    gate.set()
+    time.sleep(0.1)
+    assert tgt._range_val == 0.0
 
 
 # --- No-args signal fetches value from getter ---
@@ -251,3 +308,16 @@ def test_cannot_observe_write_only():
     tgt = FakeQObject()
     with pytest.raises(ValueError, match="no signal"):
         OnNamespace(src).tooltip >> OnNamespace(tgt).tooltip
+
+
+def test_a_dropped_threaded_pipeline_is_freed_and_the_link_keeps_working():
+    import gc
+    import weakref
+    src, tgt = FakeQObject(), FakeQObject()
+    pipe = (OnNamespace(src).range >> (lambda e: e.value * 2) >> OnNamespace(tgt).range).threaded()
+    dropped = weakref.ref(pipe)
+    del pipe
+    gc.collect()
+    assert dropped() is None
+    src.range_changed.emit(21)
+    _wait_for(lambda: tgt._range_val == 42)

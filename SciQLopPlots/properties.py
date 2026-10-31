@@ -25,8 +25,8 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
         signal_name: Qt signal attribute name (e.g. "range_changed"), or None for write-only.
         getter_name: Method name to get current value (e.g. "range"), or None.
         setter_name: Method name to set value (e.g. "set_range"), or None for read-only.
-        property_type: Only "data" has behaviour: the pipeline's threaded() carries it.
-            Any other label is informational.
+        property_type: An informational label ("data", "range", ...). Nothing threads a
+            pipeline by its type: ask for it with threaded().
         signal_args: Tuple of types to select a specific signal overload, or None for default.
         splat: True when the setter is multi-argument (set_data(x, y), set_range(start, stop))
             and an assigned list/tuple must be unpacked. False for setters taking the sequence

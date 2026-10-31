@@ -98,3 +98,24 @@ class TestPipelineDisconnect:
         process_events()
         got = ax2.range()
         assert abs(got.start() - 0.0) < 1e-9
+
+
+class TestThreadedPipeline:
+
+    def test_a_threaded_data_pipeline_transforms_off_the_gui_thread(self, qtbot, plot):
+        import threading
+        x = np.linspace(0, 10, 1000)
+        source = plot.line(x, np.sin(x))
+        target = plot.line(x, np.zeros_like(x))
+        threads = []
+
+        def doubled(event):
+            threads.append(threading.current_thread())
+            sx, sy = event.value
+            return np.asarray(sx), 2 * np.asarray(sy)
+
+        pipe = (source.on.data >> doubled >> target.on.data).threaded()
+        source.set_data(x, np.cos(x))
+        qtbot.waitUntil(lambda: np.allclose(np.asarray(target.data()[1]), 2 * np.cos(x)), timeout=3000)
+        assert threads[-1] is not threading.main_thread()
+        pipe.disconnect()
