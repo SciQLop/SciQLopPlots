@@ -4,5 +4,5 @@ a plain attribute."""
 from __feature__ import true_property  # noqa: F401
 
 
-def assign(setattr_, obj, name, value):
-    setattr_(obj, name, value)
+def assign(parent, name, value):
+    parent.__setattr__(name, value)

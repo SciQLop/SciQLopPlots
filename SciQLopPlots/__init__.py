@@ -922,14 +922,14 @@ def _guard_old_properties(cls, who, converters):
     """Until 0.53 these names were Python properties; now they are methods, and Python properties
     only under PySide's true_property. `x.name = ...` would otherwise silently hide the method: it
     calls the setter instead, with a warning unless the caller uses true_property and the name is a
-    Q_PROPERTY. Each converter turns what the old property took into what the setter takes."""
-    inherited = cls.__setattr__
-
+    Q_PROPERTY. Each converter turns what the old property took into what the setter takes.
+    It assigns through super(), not the class's own C slot: Python <= 3.12 refuses a C __setattr__
+    called once a Python one replaced it (typeobject.c, hackcheck)."""
     def __setattr__(self, name, value):
         convert = converters.get(name)
         if convert is None or not _defined_by_the_library(type(self), name):
             assign = _true_property_setattr.assign if _uses_true_property(sys._getframe(1)) else _assign
-            return assign(inherited, self, name, value)
+            return assign(super(cls, self), name, value)
         value = convert(value)  # first: an old string's own warning names the member to use
         if cls.staticMetaObject.indexOfProperty(name) < 0 or not _uses_true_property(sys._getframe(1)):
             _warn_deprecated(f"{who}.{name} = ... is deprecated: use {who}.set_{name}(...)")
@@ -938,8 +938,8 @@ def _guard_old_properties(cls, who, converters):
     cls.__setattr__ = __setattr__
 
 
-def _assign(setattr_, obj, name, value):
-    setattr_(obj, name, value)
+def _assign(parent, name, value):
+    parent.__setattr__(name, value)
 
 
 def _as_is(value):

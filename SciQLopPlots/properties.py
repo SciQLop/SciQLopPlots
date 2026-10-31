@@ -45,19 +45,29 @@ def register_property(cls, property_name, signal_name, getter_name, setter_name,
 
 
 def _is_getter(obj, name):
-    """An attribute, or a method callable without arguments.
-
-    Overloaded shiboken methods have no signature (ValueError): skipped.
-    """
+    """An attribute, or a method callable without arguments. Overloaded methods are skipped."""
     if not hasattr(obj, name):
         return False
     attr = getattr(obj, name)
     if not callable(attr):
         return True
-    try:
-        return not inspect.signature(attr).parameters
-    except (ValueError, TypeError):
-        return False
+    target = inspect.unwrap(attr)
+    if inspect.isfunction(target) or inspect.ismethod(target):
+        try:
+            return not inspect.signature(attr).parameters
+        except (ValueError, TypeError):
+            return False
+    return _compiled_takes_no_arguments(inspect.unwrap(inspect.getattr_static(obj, name, target)))
+
+
+def _compiled_takes_no_arguments(method):
+    """inspect reads no compiled signature before Python 3.13, and only a placeholder after:
+    shiboken keeps the real one, with self, on the class's method (a Q_PROPERTY getter bound to
+    an object has none)."""
+    from shibokensupport.signature import get_signature
+
+    signature = get_signature(method)
+    return isinstance(signature, inspect.Signature) and list(signature.parameters) in ([], ["self"])
 
 
 def _python_property_setter(obj, name):
