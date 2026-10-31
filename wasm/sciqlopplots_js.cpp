@@ -480,6 +480,10 @@ void remove_object(int id)
     }
     else if (auto* panel = dynamic_cast<SciQLopMultiPlotPanel*>(object))
     {
+        // Its plots go first, while the panel is whole. Deleted inside the panel's destructor,
+        // they let the browser's event loop run (likely a wait on their worker threads), and the
+        // calls they had queued for the panel reached a half-destroyed one: a trap.
+        panel->clear();
         // Plots it removed or cleared are deleted later, and their GPU widgets free resources
         // of the panel's QRhi: delete them while it still exists.
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
