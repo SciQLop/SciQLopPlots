@@ -25,6 +25,8 @@
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
+#include <QCoreApplication>
+
 SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent, Qt::Orientation orientation)
         : QSplitter(orientation, parent)
 {
@@ -39,7 +41,14 @@ SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent, Qt::Orientation orie
     setProperty("empty", true);
 }
 
-SciQLopPlotContainer::~SciQLopPlotContainer() { }
+SciQLopPlotContainer::~SciQLopPlotContainer()
+{
+    // Deleting a plot can run the event loop (the browser does, waiting for its worker threads):
+    // the calls the plots queued for this container must not reach it half-destroyed.
+    for (const auto& plot : plots())
+        disconnect(plot, nullptr, this, nullptr);
+    QCoreApplication::removePostedEvents(this, QEvent::MetaCall);
+}
 
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
