@@ -62,7 +62,7 @@ class SciQLopTimeline : public SciQLopPlottableInterface
 
 public:
     SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQLopPlotAxis* yAxis,
-                    QVariantMap metaData = {});
+                    QVariantMap metadata = {});
     ~SciQLopTimeline() override;
 
     void set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer stop,

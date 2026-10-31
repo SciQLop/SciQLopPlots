@@ -107,8 +107,8 @@ void check_binned(const SciQLopPyBuffer& edges, const SciQLopPyBuffer& heights)
 
 SciQLopHistogram::SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                    SciQLopPlotAxis* yAxis, const QString& name, int bins,
-                                   QVariantMap metaData)
-    : SciQLopGraphInterface("Histogram", std::move(metaData), parent)
+                                   QVariantMap metadata)
+    : SciQLopGraphInterface("Histogram", std::move(metadata), parent)
     , _keyAxis { xAxis }
     , _valueAxis { yAxis }
 {
@@ -447,8 +447,8 @@ SciQLopHistogramFunction::SciQLopHistogramFunction(QCustomPlot* parent, SciQLopP
 
 SciQLopHistogramRemote::SciQLopHistogramRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                                SciQLopPlotAxis* yAxis, const QString& name,
-                                               int bins, QVariantMap metaData)
-    : SciQLopHistogram { parent, xAxis, yAxis, name, bins, std::move(metaData) }
+                                               int bins, QVariantMap metadata)
+    : SciQLopHistogram { parent, xAxis, yAxis, name, bins, std::move(metadata) }
     , SciQLopRemoteGraph(this, 2)
 {
     // Same as SciQLopHistogramFunction: xAxis holds values, not the fetch window.

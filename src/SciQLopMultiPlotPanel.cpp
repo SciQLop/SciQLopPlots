@@ -518,17 +518,17 @@ void SciQLopMultiPlotPanel::set_color_palette(const QList<QColor>& palette) noex
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels,
                                  QList<QColor> colors, PlotType plot_type, GraphType graph_type,
-                                 GraphMarkerShape marker, int index, QVariantMap metaData)
+                                 GraphMarkerShape marker, int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, x, y, labels,
-                                                             colors, marker, metaData);
+                                                             colors, marker, metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(index, graph_type, x, y,
-                                                                       labels, colors, marker, metaData);
+                                                                       labels, colors, marker, metadata);
             break;
         case ::PlotType::Projections:
             throw std::invalid_argument(
@@ -541,17 +541,17 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
                                  QString name, bool y_log_scale, bool z_log_scale,
-                                 PlotType plot_type, int index, QVariantMap metaData)
+                                 PlotType plot_type, int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopColorMapInterface>(index, GraphType::ColorMap, x, y, z,
-                                                                name, y_log_scale, z_log_scale,metaData);
+                                                                name, y_log_scale, z_log_scale,metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale,metaData);
+                index, GraphType::ColorMap, x, y, z, name, y_log_scale, z_log_scale,metadata);
             break;
         case ::PlotType::Projections:
             throw std::invalid_argument("projections can't hold a colour map");
@@ -562,11 +562,11 @@ SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
 SciQLopMultiPlotPanel::plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels,
-                                 QList<QColor> colors, GraphMarkerShape marker, int index, QVariantMap metaData)
+                                 QList<QColor> colors, GraphMarkerShape marker, int index, QVariantMap metadata)
 {
     // Built before it joins the panel, so data the curve rejects leaves no empty plot behind.
     auto plot = std::make_unique<SciQLopNDProjectionPlot>();
-    auto* graph = plot->parametric_curve(values, labels, colors, marker, metaData);
+    auto* graph = plot->parametric_curve(values, labels, colors, marker, metadata);
     if (index == -1)
         add_plot(plot.get());
     else
@@ -576,23 +576,23 @@ SciQLopMultiPlotPanel::plot_impl(const QList<SciQLopPyBuffer>& values, QStringLi
 
 QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot_impl(
     GetDataPyCallable callable, QStringList labels, QList<QColor> colors, GraphType graph_type,
-    GraphMarkerShape marker, PlotType plot_type, QObject* sync_with, int index, QVariantMap metaData)
+    GraphMarkerShape marker, PlotType plot_type, QObject* sync_with, int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopGraphInterface>(index, graph_type, callable, labels,
-                                                             colors, marker, sync_with, metaData);
+                                                             colors, marker, sync_with, metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopGraphInterface>(
-                index, graph_type, callable, labels, colors, marker, sync_with, metaData);
+                index, graph_type, callable, labels, colors, marker, sync_with, metadata);
             break;
         case ::PlotType::Projections:
             // A projection plot draws every callback as its parametric curve, whatever graph_type says.
             return _plot<SciQLopNDProjectionPlot, SciQLopGraphInterface>(
                 index, GraphType::ParametricCurve, callable, labels, colors, marker, sync_with,
-                metaData);
+                metadata);
         default:
             throw std::invalid_argument("unknown plot type");
     }
@@ -601,17 +601,17 @@ QPair<SciQLopPlotInterface*, SciQLopGraphInterface*> SciQLopMultiPlotPanel::plot
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool y_log_scale,
                                  bool z_log_scale, PlotType plot_type, QObject* sync_with,
-                                 int index, QVariantMap metaData)
+                                 int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot<SciQLopPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot<SciQLopTimeSeriesPlot, SciQLopColorMapInterface>(
-                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metaData);
+                index, GraphType::ColorMap, callable, name, y_log_scale, z_log_scale, sync_with, metadata);
             break;
         case ::PlotType::Projections:
             throw std::invalid_argument("projections can't hold a colour map");
@@ -623,17 +623,17 @@ SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, bool 
 QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int x_bins,
                                  int y_bins, bool x_bins_log, bool y_bins_log,
-                                 PlotType plot_type, int index, QVariantMap metaData)
+                                 PlotType plot_type, int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot_histogram2d<SciQLopPlot>(
-                index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metaData);
+                index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot_histogram2d<SciQLopTimeSeriesPlot>(
-                index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metaData);
+                index, x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, metadata);
             break;
         case ::PlotType::Projections:
             throw std::invalid_argument("projections can't hold a 2D histogram");
@@ -646,19 +646,19 @@ QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
 SciQLopMultiPlotPanel::plot_impl(GetDataPyCallable callable, QString name, int x_bins,
                                  int y_bins, bool x_bins_log, bool y_bins_log,
                                  PlotType plot_type, QObject* sync_with,
-                                 int index, QVariantMap metaData)
+                                 int index, QVariantMap metadata)
 {
     switch (plot_type)
     {
         case ::PlotType::BasicXY:
             return _plot_histogram2d<SciQLopPlot>(
                 index, std::move(callable), name, x_bins, y_bins, x_bins_log, y_bins_log,
-                sync_with, metaData);
+                sync_with, metadata);
             break;
         case ::PlotType::TimeSeries:
             return _plot_histogram2d<SciQLopTimeSeriesPlot>(
                 index, std::move(callable), name, x_bins, y_bins, x_bins_log, y_bins_log,
-                sync_with, metaData);
+                sync_with, metadata);
             break;
         case ::PlotType::Projections:
             throw std::invalid_argument("projections can't hold a 2D histogram");

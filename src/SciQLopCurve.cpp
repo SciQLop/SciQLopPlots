@@ -102,8 +102,8 @@ void SciQLopCurve::create_resampler(const QStringList& labels)
 }
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                           SciQLopPlotAxis* valueAxis, const QStringList& labels, QVariantMap metaData)
-        : SQPQCPAbstractPlottableWrapper("Curve",metaData, parent)
+                           SciQLopPlotAxis* valueAxis, const QStringList& labels, QVariantMap metadata)
+        : SQPQCPAbstractPlottableWrapper("Curve",metadata, parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
@@ -112,8 +112,8 @@ SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
 }
 
 SciQLopCurve::SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                           SciQLopPlotAxis* valueAxis, QVariantMap metaData)
-        : SQPQCPAbstractPlottableWrapper("Curve", metaData, parent)
+                           SciQLopPlotAxis* valueAxis, QVariantMap metadata)
+        : SQPQCPAbstractPlottableWrapper("Curve", metadata, parent)
         , _keyAxis { keyAxis }
         , _valueAxis { valueAxis }
 {
@@ -491,8 +491,8 @@ QVariant SciQLopCurve::position_at_time(double t) const
 
 SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                            SciQLopPlotAxis* value_axis,
-                                           GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metaData)
-        : SciQLopCurve { parent, key_axis, value_axis, labels,metaData }
+                                           GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metadata)
+        : SciQLopCurve { parent, key_axis, value_axis, labels,metadata }
         , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
     // Curve manages busy via its own resampler (_setCurveData clears it), so
@@ -511,8 +511,8 @@ SciQLopCurveFunction::SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis*
 
 SciQLopCurveRemote::SciQLopCurveRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                        SciQLopPlotAxis* value_axis,
-                                       const QStringList& labels, QVariantMap metaData)
-    : SciQLopCurve{parent, key_axis, value_axis, labels, std::move(metaData)}
+                                       const QStringList& labels, QVariantMap metadata)
+    : SciQLopCurve{parent, key_axis, value_axis, labels, std::move(metadata)}
     , SciQLopRemoteGraph(this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

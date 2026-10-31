@@ -29,8 +29,8 @@
 
 SciQLopColorMapBase::SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                                          SciQLopPlotColorScaleAxis* colorScaleAxis,
-                                         QVariantMap metaData, QObject* parent)
-    : SciQLopColorMapInterface(std::move(metaData), parent)
+                                         QVariantMap metadata, QObject* parent)
+    : SciQLopColorMapInterface(std::move(metadata), parent)
     , _keyAxis{keyAxis}
     , _valueAxis{valueAxis}
     , _colorScaleAxis{colorScaleAxis}

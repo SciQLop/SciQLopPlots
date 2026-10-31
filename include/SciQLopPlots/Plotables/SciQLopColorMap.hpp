@@ -57,7 +57,7 @@ protected:
 public:
     explicit SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,
                              SciQLopPlotColorScaleAxis* zAxis, const QString& name,
-                             QVariantMap metaData = {});
+                             QVariantMap metadata = {});
     virtual ~SciQLopColorMap() override;
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z) override;
@@ -91,7 +91,7 @@ class SciQLopColorMapRemote : public SciQLopColorMap, public SciQLopRemoteGraph
 public:
     explicit SciQLopColorMapRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                    SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
-                                   const QString& name, QVariantMap metaData = {});
+                                   const QString& name, QVariantMap metadata = {});
     ~SciQLopColorMapRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

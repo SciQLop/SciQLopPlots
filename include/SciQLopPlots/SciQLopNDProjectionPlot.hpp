@@ -96,13 +96,13 @@ protected:
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
               ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
-              QObject* sync_with = nullptr,QVariantMap metaData={}) override;
+              QObject* sync_with = nullptr,QVariantMap metadata={}) override;
 
     virtual SciQLopGraphInterface*
     plot_impl(const QList<SciQLopPyBuffer>& data, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::GraphType graph_type = GraphType::ParametricCurve,
-              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,QVariantMap metaData={}) override;
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,QVariantMap metadata={}) override;
 
 
 public:

@@ -42,7 +42,7 @@ public:
 
     virtual ~PlotDragNDropCallback() = default;
 
-    inline virtual void call(SciQLopPlotInterface* plot, const QMimeData* mimeData) { }
+    inline virtual void call(SciQLopPlotInterface* plot, const QMimeData* mime_data) { }
 
     inline bool create_placeholder() const { return _create_placeholder; }
 };

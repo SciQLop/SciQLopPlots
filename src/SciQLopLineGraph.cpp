@@ -33,8 +33,8 @@
 
 SciQLopLineGraph::SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                    SciQLopPlotAxis* value_axis, const QStringList& labels,
-                                   QVariantMap metaData)
-    : SciQLopMultiGraphBase("Line", parent, key_axis, value_axis, labels, metaData)
+                                   QVariantMap metadata)
+    : SciQLopMultiGraphBase("Line", parent, key_axis, value_axis, labels, metadata)
 {
     create_graphs(labels);
 }
@@ -243,8 +243,8 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
                                                    SciQLopPlotAxis* value_axis,
                                                    GetDataPyCallable&& callable,
                                                    const QStringList& labels,
-                                                   QVariantMap metaData)
-    : SciQLopLineGraph{parent, key_axis, value_axis, labels, metaData}
+                                                   QVariantMap metadata)
+    : SciQLopLineGraph{parent, key_axis, value_axis, labels, metadata}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
@@ -253,8 +253,8 @@ SciQLopLineGraphFunction::SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopP
 SciQLopLineGraphRemote::SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                                SciQLopPlotAxis* value_axis,
                                                const QStringList& labels,
-                                               QVariantMap metaData)
-    : SciQLopLineGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
+                                               QVariantMap metadata)
+    : SciQLopLineGraph{parent, key_axis, value_axis, labels, std::move(metadata)}
     , SciQLopRemoteGraph(this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

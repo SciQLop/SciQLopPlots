@@ -87,10 +87,10 @@ protected:
 
 public:
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
-                          const QStringList& labels, QVariantMap metaData={});
+                          const QStringList& labels, QVariantMap metadata={});
 
     explicit SciQLopCurve(QCustomPlot* parent, SciQLopPlotAxis* keyAxis,
-                          SciQLopPlotAxis* valueAxis, QVariantMap metaData={});
+                          SciQLopPlotAxis* valueAxis, QVariantMap metadata={});
 
     virtual ~SciQLopCurve() override;
 
@@ -188,7 +188,7 @@ class SciQLopCurveFunction : public SciQLopCurve, public SciQLopFunctionGraph
 public:
     explicit SciQLopCurveFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                   SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
-                                  const QStringList& labels,QVariantMap metaData={});
+                                  const QStringList& labels,QVariantMap metadata={});
 
     virtual ~SciQLopCurveFunction() override = default;
 
@@ -202,7 +202,7 @@ public:
     explicit SciQLopCurveRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                 SciQLopPlotAxis* value_axis,
                                 const QStringList& labels = QStringList(),
-                                QVariantMap metaData = {});
+                                QVariantMap metadata = {});
     ~SciQLopCurveRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

@@ -63,7 +63,7 @@ public:
     explicit SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                 SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                 const QString& name, int x_bins = 100, int y_bins = 100,
-                                QVariantMap metaData = {});
+                                QVariantMap metadata = {});
     virtual ~SciQLopHistogram2D() override;
 
     Q_SLOT virtual void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;
@@ -126,7 +126,7 @@ public:
     explicit SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                       SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                       const QString& name, int x_bins = 100, int y_bins = 100,
-                                      QVariantMap metaData = {});
+                                      QVariantMap metadata = {});
     ~SciQLopHistogram2DRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

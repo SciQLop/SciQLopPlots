@@ -38,12 +38,12 @@ void SciQLopNDProjectionPlot::set_theme(SciQLopTheme* theme)
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable callable,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type, GraphMarkerShape marker, QObject* sync_with, QVariantMap metaData)
+                                                          GraphType graph_type, GraphMarkerShape marker, QObject* sync_with, QVariantMap metadata)
 {
     if (graph_type != GraphType::ParametricCurve)
         throw_unsupported(factory_name(graph_type), *this);
     SciQLopGraphInterface* graph
-        = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels,metaData);
+        = new SciQLopNDProjectionCurvesFunction(this, this->m_plots, std::move(callable), labels,metadata);
 
     connect(this, &SciQLopPlot::time_axis_range_changed, graph,
             &SciQLopNDProjectionCurvesFunction::set_range);
@@ -52,10 +52,10 @@ SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(GetDataPyCallable call
 
 SciQLopGraphInterface* SciQLopNDProjectionPlot::plot_impl(const QList<SciQLopPyBuffer>& data,
                                                           QStringList labels, QList<QColor> colors,
-                                                          GraphType graph_type, GraphMarkerShape marker, QVariantMap metaData)
+                                                          GraphType graph_type, GraphMarkerShape marker, QVariantMap metadata)
 {
     SciQLopNDProjectionCurves::check_batch_size(m_plots.size(), data.size());
-    auto* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels, metaData);
+    auto* graph = new SciQLopNDProjectionCurves(this, this->m_plots, labels, metadata);
     graph->set_data(data);
     return _adopt(_styled(graph, colors, marker));
 }

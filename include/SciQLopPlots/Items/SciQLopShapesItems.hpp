@@ -43,7 +43,7 @@ class EllipseItem : public impl::SciQLopPlotItem<QCPItemEllipse>,
 public:
 
     inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+                       Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
             : impl::SciQLopPlotItem<QCPItemEllipse> { plot }
     {
         this->setMovable(movable);
@@ -61,12 +61,12 @@ public:
         }
         this->topLeft->setCoords(boundingRectangle.topLeft());
         this->bottomRight->setCoords(boundingRectangle.bottomRight());
-        this->setToolTip(toolTip);
+        this->setToolTip(tooltip);
     }
 
     inline EllipseItem(QCustomPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
                        const QBrush& brush, bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+                       Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
             : EllipseItem { plot, boundingRectangle, movable, coordinates }
     {
         this->setPen(pen);
@@ -111,7 +111,7 @@ public:
                           LineTermination startTerminator = LineTermination::NoneTermination,
                           LineTermination stopTerminator = LineTermination::Arrow,
                           Coordinates coordinates = Coordinates::Pixels,
-                          const QString& toolTip = "")
+                          const QString& tooltip = "")
             : SciQLopPlotItem<QCPItemCurve> { plot }
     {
         this->setMovable(false);
@@ -145,7 +145,7 @@ public:
         // from QCP doc : The head corresponds to the end position. ¯\_(ツ)_/¯
         this->setTail(to_qcp(startTerminator));
         this->setHead(to_qcp(stopTerminator));
-        this->setToolTip(toolTip);
+        this->setToolTip(tooltip);
     }
 
     virtual ~CurvedLineItem() = default;
@@ -210,37 +210,37 @@ public:
     /*!
      * \brief SciQLopEllipseItem
      * \param plot The plot to which the item will be added
-     * \param boundingRectangle The rectangle that contains the elipse
+     * \param rect The rectangle that contains the elipse
      * \param movable If the elipse can be moved by the user
      * \param coordinates The coordinates system in which the rectangle is defined (Pixels or Data)
      */
-    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& rect, bool movable = false,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
             : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
-            m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, movable, coordinates,
-                                     toolTip);
+            m_item = new EllipseItem(plot->qcp_plot(), rect, movable, coordinates,
+                                     tooltip);
         _follow_selection(m_item);
     }
 
-    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QPen& pen,
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& rect, const QPen& pen,
                        const QBrush& brush, bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+                       Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
             : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
-            m_item = new EllipseItem(plot->qcp_plot(), boundingRectangle, pen, brush, movable,
-                                     coordinates, toolTip);
+            m_item = new EllipseItem(plot->qcp_plot(), rect, pen, brush, movable,
+                                     coordinates, tooltip);
         _follow_selection(m_item);
     }
 
-    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& boundingRectangle, const QColor& lineColor,
-                       qreal lineWidth, const QColor& fillColor, bool movable = false,
-                       Coordinates coordinates = Coordinates::Pixels, const QString& toolTip = "")
+    SciQLopEllipseItem(SciQLopPlot* plot, const QRectF& rect, const QColor& line_color,
+                       qreal line_width, const QColor& fill_color, bool movable = false,
+                       Coordinates coordinates = Coordinates::Pixels, const QString& tooltip = "")
             : SciQLopPolygonItemInterface { SciQLopPlots::item_plot(plot, "SciQLopEllipseItem") }
     {
             m_item
-                = new EllipseItem(plot->qcp_plot(), boundingRectangle, QPen(lineColor, lineWidth),
-                                  QBrush(fillColor), movable, coordinates, toolTip);
+                = new EllipseItem(plot->qcp_plot(), rect, QPen(line_color, line_width),
+                                  QBrush(fill_color), movable, coordinates, tooltip);
         _follow_selection(m_item);
     }
 
@@ -291,10 +291,10 @@ public:
         return qptr_apply_or(m_item, [](auto&& item) { return item->tooltip(); });
     }
 
-    inline void set_tool_tip(const QString& toolTip) noexcept override
+    inline void set_tool_tip(const QString& tooltip) noexcept override
     {
-        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(toolTip));
-        qptr_apply(m_item, [toolTip](auto&& item) { item->setToolTip(toolTip); });
+        SCIQLOP_ON_OWNER_THREAD(set_tool_tip(tooltip));
+        qptr_apply(m_item, [tooltip](auto&& item) { item->setToolTip(tooltip); });
     }
 
     inline void set_movable(bool movable) noexcept override
@@ -350,14 +350,14 @@ class SciQLopCurvedLineItem : public SciQLopLineItemInterface
 
 public:
     SciQLopCurvedLineItem(SciQLopPlot* plot, const QPointF& start, const QPointF& stop,
-                          LineTermination startTerminator = LineTermination::NoneTermination,
-                          LineTermination stopTerminator = LineTermination::Arrow,
+                          LineTermination start_terminator = LineTermination::NoneTermination,
+                          LineTermination stop_terminator = LineTermination::Arrow,
                           Coordinates coordinates = Coordinates::Pixels,
-                          const QString& toolTip = "")
+                          const QString& tooltip = "")
             : SciQLopLineItemInterface { SciQLopPlots::item_plot(plot, "SciQLopCurvedLineItem") }
     {
-            m_item = new CurvedLineItem(plot->qcp_plot(), start, stop, startTerminator,
-                                        stopTerminator, coordinates, toolTip);
+            m_item = new CurvedLineItem(plot->qcp_plot(), start, stop, start_terminator,
+                                        stop_terminator, coordinates, tooltip);
         _follow_selection(m_item);
     }
 

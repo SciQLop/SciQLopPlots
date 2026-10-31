@@ -14,8 +14,8 @@
 SciQLopMultiGraphBase::SciQLopMultiGraphBase(const QString& type_label, QCustomPlot* parent,
                                              SciQLopPlotAxis* key_axis,
                                              SciQLopPlotAxis* value_axis,
-                                             const QStringList& labels, QVariantMap metaData)
-    : SQPQCPAbstractPlottableWrapper(type_label, metaData, parent)
+                                             const QStringList& labels, QVariantMap metadata)
+    : SQPQCPAbstractPlottableWrapper(type_label, metadata, parent)
     , _pendingLabels{labels}
     , _keyAxis{key_axis}
     , _valueAxis{value_axis}

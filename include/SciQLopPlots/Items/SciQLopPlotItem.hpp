@@ -168,7 +168,7 @@ public:
     inline virtual void set_coordinates(Coordinates coordinates) { WARN_ABSTRACT_METHOD; }
 
     [[nodiscard]] inline virtual QString tool_tip() const noexcept { return ""; }
-    inline virtual void set_tool_tip(const QString& toolTip) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_tool_tip(const QString& tooltip) noexcept { WARN_ABSTRACT_METHOD; }
 
 protected:
     inline virtual void replot() { WARN_ABSTRACT_METHOD; }

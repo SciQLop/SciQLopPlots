@@ -67,8 +67,8 @@ std::vector<int> remap(const SciQLopPyBuffer& codes, const QVector<int>& table)
 } // namespace
 
 SciQLopTimeline::SciQLopTimeline(QCustomPlot* plot, QCPLaneLayout* layout, SciQLopPlotAxis* yAxis,
-                                 QVariantMap metaData)
-        : SciQLopPlottableInterface(metaData, SciQLopPlots::on_owner_thread(plot, "SciQLopTimeline"))
+                                 QVariantMap metadata)
+        : SciQLopPlottableInterface(metadata, SciQLopPlots::on_owner_thread(plot, "SciQLopTimeline"))
         , _intervals(new QCPIntervals(plot->xAxis, plot->yAxis, layout))
         , _layout(layout)
         , _y_axis(yAxis)

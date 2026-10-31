@@ -36,8 +36,8 @@ void SciQLopColorMap::_cmap_got_destroyed()
 
 SciQLopColorMap::SciQLopColorMap(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                  SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
-                                 const QString& name, QVariantMap metaData)
-    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metaData), parent)
+                                 const QString& name, QVariantMap metadata)
+    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metadata), parent)
 {
     _cmap = new QCPColorMap2(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _cmap->setLayer(Constants::LayersNames::ColorMap);
@@ -297,8 +297,8 @@ SciQLopColorMapFunction::SciQLopColorMapFunction(QCustomPlot* parent, SciQLopPlo
 SciQLopColorMapRemote::SciQLopColorMapRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                              SciQLopPlotAxis* yAxis,
                                              SciQLopPlotColorScaleAxis* zAxis,
-                                             const QString& name, QVariantMap metaData)
-    : SciQLopColorMap{parent, xAxis, yAxis, zAxis, name, std::move(metaData)}
+                                             const QString& name, QVariantMap metadata)
+    : SciQLopColorMap{parent, xAxis, yAxis, zAxis, name, std::move(metadata)}
     , SciQLopRemoteGraph(this, 3)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

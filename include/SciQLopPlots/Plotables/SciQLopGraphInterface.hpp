@@ -74,7 +74,7 @@ public:
     Q_PROPERTY(QList<SciQLopPyBuffer> data READ data NOTIFY data_changed)
     Q_PROPERTY(bool busy READ busy WRITE set_busy NOTIFY busy_changed)
 
-    SciQLopPlottableInterface(QVariantMap metaData={},QObject* parent = nullptr);
+    SciQLopPlottableInterface(QVariantMap metadata={},QObject* parent = nullptr);
 
     virtual ~SciQLopPlottableInterface() = default;
 
@@ -244,7 +244,7 @@ class SciQLopGraphInterface : public SciQLopPlottableInterface
     Q_OBJECT
 
 public:
-    SciQLopGraphInterface(const QString& prefix = "Graph",QVariantMap metaData={}, QObject* parent = nullptr);
+    SciQLopGraphInterface(const QString& prefix = "Graph",QVariantMap metadata={}, QObject* parent = nullptr);
     virtual ~SciQLopGraphInterface() Q_DECL_OVERRIDE = default;
 
     //! Whether set_color_data (or a coloured batch) currently colours this graph.
@@ -331,7 +331,7 @@ class SciQLopColorMapInterface : public SciQLopPlottableInterface
     Q_OBJECT
 
 public:
-    SciQLopColorMapInterface(QVariantMap metaData={}, QObject* parent = nullptr);
+    SciQLopColorMapInterface(QVariantMap metadata={}, QObject* parent = nullptr);
     virtual ~SciQLopColorMapInterface() = default;
 
     inline virtual ColorGradient gradient() const noexcept

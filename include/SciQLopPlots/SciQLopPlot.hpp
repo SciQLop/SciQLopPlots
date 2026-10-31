@@ -312,36 +312,36 @@ protected:
     virtual SciQLopGraphInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
-              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QVariantMap metaData={}) override;
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QVariantMap metadata={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                 const SciQLopPyBuffer& z,
                                                 QString name = "ColorMap",
                                                 bool y_log_scale = false,
-                                                bool z_log_scale = false,QVariantMap metaData={}) override;
+                                                bool z_log_scale = false,QVariantMap metadata={}) override;
 
     virtual SciQLopGraphInterface*
     plot_impl(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
               ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
-              QObject* sync_with = nullptr,QVariantMap metaData={}) override;
+              QObject* sync_with = nullptr,QVariantMap metadata={}) override;
 
     virtual SciQLopColorMapInterface* plot_impl(GetDataPyCallable callable,
                                                 QString name = "ColorMap",
                                                 bool y_log_scale = false, bool z_log_scale = false,
-                                                QObject* sync_with = nullptr,QVariantMap metaData={}) override;
+                                                QObject* sync_with = nullptr,QVariantMap metadata={}) override;
 
     virtual SciQLopColorMapInterface*
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
               QString name = "Histogram2D", int x_bins = 100,
               int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
-              QVariantMap metaData = {}) override;
+              QVariantMap metadata = {}) override;
 
     virtual SciQLopColorMapInterface*
     plot_impl(GetDataPyCallable callable, QString name = "Histogram2D",
               int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
               bool y_bins_log = false, QObject* sync_with = nullptr,
-              QVariantMap metaData = {}) override;
+              QVariantMap metadata = {}) override;
 
     virtual void toggle_selected_objects_visibility() noexcept override;
 
@@ -450,13 +450,13 @@ public:
                                                   const QList<QColor>& colors = {});
 
     SciQLopLineGraphRemote* add_remote_line_graph(const QStringList& labels = QStringList(),
-                                                  QVariantMap metaData = {});
+                                                  QVariantMap metadata = {});
 
     SciQLopCurveRemote* add_remote_curve(const QStringList& labels = QStringList(),
-                                         QVariantMap metaData = {});
+                                         QVariantMap metadata = {});
 
     SciQLopWaterfallGraphRemote* add_remote_waterfall(const QStringList& labels = QStringList(),
-                                                      QVariantMap metaData = {});
+                                                      QVariantMap metadata = {});
 
     SciQLopColorMapRemote* add_remote_color_map(const QString& name);
 

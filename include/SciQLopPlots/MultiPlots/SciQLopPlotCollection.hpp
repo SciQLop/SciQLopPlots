@@ -89,7 +89,7 @@ protected:
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = PlotType::BasicXY,
               ::GraphType graph_type = GraphType::Line,
-              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, int index = -1,QVariantMap metaData={})
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, int index = -1,QVariantMap metadata={})
     {
         throw_unsupported(factory_name(graph_type), *this);
     }
@@ -97,7 +97,7 @@ protected:
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     plot_impl(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
-              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, int index = -1, QVariantMap metaData={})
+              ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, int index = -1, QVariantMap metadata={})
     {
         throw_unsupported("projection", *this);
     }
@@ -105,7 +105,7 @@ protected:
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
               QString name = "ColorMap", bool y_log_scale = false,
-              bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData={})
+              bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metadata={})
     {
         throw_unsupported("colormap", *this);
     }
@@ -115,7 +115,7 @@ protected:
               QList<QColor> colors = QList<QColor>(), ::GraphType graph_type = GraphType::Line,
               ::GraphMarkerShape marker = GraphMarkerShape::NoMarker,
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1, QVariantMap metaData={})
+              int index = -1, QVariantMap metadata={})
     {
         throw_unsupported(factory_name(graph_type), *this);
     }
@@ -124,7 +124,7 @@ protected:
     plot_impl(GetDataPyCallable callable, QString name = "ColorMap",
               bool y_log_scale = false, bool z_log_scale = false,
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1, QVariantMap metaData={})
+              int index = -1, QVariantMap metadata={})
     {
         throw_unsupported("colormap", *this);
     }
@@ -133,7 +133,7 @@ protected:
     plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = PlotType::BasicXY, int index = -1,
-              QVariantMap metaData = {})
+              QVariantMap metadata = {})
     {
         throw_unsupported("histogram2d", *this);
     }
@@ -142,7 +142,7 @@ protected:
     plot_impl(GetDataPyCallable callable, QString name, int x_bins, int y_bins,
               bool x_bins_log = false, bool y_bins_log = false,
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1, QVariantMap metaData = {})
+              int index = -1, QVariantMap metadata = {})
     {
         throw_unsupported("histogram2d", *this);
     }
@@ -276,53 +276,53 @@ public:
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     line(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = PlotType::BasicXY,
-         int index = -1, QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+         int index = -1, QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(x, y, labels, colors, plot_type, ::GraphType::Line,
-                         marker, index, metaData), name);
+                         marker, index, metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     scatter(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
             QList<QColor> colors = QList<QColor>(),
             ::GraphMarkerShape marker = GraphMarkerShape::Cross,
-            ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData = {}, QString name = QString())
+            ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metadata = {}, QString name = QString())
     {
-        return with_name(plot_impl(x, y, labels, colors, plot_type, ::GraphType::Scatter, marker, index, metaData), name);
+        return with_name(plot_impl(x, y, labels, colors, plot_type, ::GraphType::Scatter, marker, index, metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     parametric_curve(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
-                     ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+                     ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(x, y, labels, colors, plot_type, ::GraphType::ParametricCurve,
-                         marker, index, metaData), name);
+                         marker, index, metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     colormap(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z,
              QString name = "ColorMap", bool y_log_scale = false,
-             bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metaData={})
+             bool z_log_scale = false, ::PlotType plot_type = PlotType::BasicXY, int index = -1, QVariantMap metadata={})
     {
-        return plot_impl(x, y, z, name, y_log_scale, z_log_scale, plot_type, index,metaData);
+        return plot_impl(x, y, z, name, y_log_scale, z_log_scale, plot_type, index,metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     projection(const QList<SciQLopPyBuffer>& values, QStringList labels = QStringList(),
-               QList<QColor> colors = QList<QColor>(), int index = -1, QVariantMap metaData = {},
+               QList<QColor> colors = QList<QColor>(), int index = -1, QVariantMap metadata = {},
                ::GraphMarkerShape marker = GraphMarkerShape::NoMarker)
     {
-        return plot_impl(values, labels, colors, marker, index, metaData);
+        return plot_impl(values, labels, colors, marker, index, metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     line(GetDataPyCallable callable, QStringList labels = QStringList(),
          QList<QColor> colors = QList<QColor>(), ::PlotType plot_type = PlotType::BasicXY,
-         QObject* sync_with = nullptr, int index = -1, QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+         QObject* sync_with = nullptr, int index = -1, QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(callable, labels, colors, ::GraphType::Line, marker,
-                         plot_type, sync_with, index,metaData), name);
+                         plot_type, sync_with, index,metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
@@ -330,38 +330,38 @@ public:
             QList<QColor> colors = QList<QColor>(),
             ::GraphMarkerShape marker = GraphMarkerShape::Cross,
             ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-            int index = -1, QVariantMap metaData = {}, QString name = QString())
+            int index = -1, QVariantMap metadata = {}, QString name = QString())
     {
         return with_name(plot_impl(callable, labels, colors, ::GraphType::Scatter, marker, plot_type,
-                         sync_with, index,metaData), name);
+                         sync_with, index,metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     parametric_curve(GetDataPyCallable callable, QStringList labels = QStringList(),
                      QList<QColor> colors = QList<QColor>(),
                      ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-                     int index = -1, QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+                     int index = -1, QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(callable, labels, colors, ::GraphType::ParametricCurve,
-                         marker, plot_type, sync_with, index,metaData), name);
+                         marker, plot_type, sync_with, index,metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
     colormap(GetDataPyCallable callable, QString name = "ColorMap",
              bool y_log_scale = false, bool z_log_scale = false,
              ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-             int index = -1, QVariantMap metaData={})
+             int index = -1, QVariantMap metadata={})
     {
-        return plot_impl(callable, name, y_log_scale, z_log_scale, plot_type, sync_with, index,metaData);
+        return plot_impl(callable, name, y_log_scale, z_log_scale, plot_type, sync_with, index,metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     projection(GetDataPyCallable callable, QStringList labels = QStringList(),
                QList<QColor> colors = QList<QColor>(), QObject* sync_with = nullptr, int index = -1,
-               QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker)
+               QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker)
     {
         return plot_impl(callable, labels, colors, ::GraphType::ParametricCurve, marker,
-                         ::PlotType::Projections, sync_with, index, metaData);
+                         ::PlotType::Projections, sync_with, index, metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -369,10 +369,10 @@ public:
                 QString name = "Histogram2D", int x_bins = 100,
                 int y_bins = 100, bool x_bins_log = false, bool y_bins_log = false,
                 ::PlotType plot_type = PlotType::BasicXY,
-                int index = -1, QVariantMap metaData = {})
+                int index = -1, QVariantMap metadata = {})
     {
         return plot_impl(x, y, name, x_bins, y_bins, x_bins_log, y_bins_log, plot_type,
-                         index, metaData);
+                         index, metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopColorMapInterface*>
@@ -380,10 +380,10 @@ public:
                 int x_bins = 100, int y_bins = 100, bool x_bins_log = false,
                 bool y_bins_log = false,
                 ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-                int index = -1, QVariantMap metaData = {})
+                int index = -1, QVariantMap metadata = {})
     {
         return plot_impl(callable, name, x_bins, y_bins, x_bins_log, y_bins_log, plot_type,
-                         sync_with, index, metaData);
+                         sync_with, index, metadata);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopHistogram*>
@@ -415,20 +415,20 @@ public:
     waterfall(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::PlotType plot_type = PlotType::BasicXY, int index = -1,
-              QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+              QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(x, y, labels, colors, plot_type, ::GraphType::Waterfall,
-                         marker, index, metaData), name);
+                         marker, index, metadata), name);
     }
 
     inline virtual QPair<SciQLopPlotInterface*, SciQLopGraphInterface*>
     waterfall(GetDataPyCallable callable, QStringList labels = QStringList(),
               QList<QColor> colors = QList<QColor>(),
               ::PlotType plot_type = PlotType::BasicXY, QObject* sync_with = nullptr,
-              int index = -1, QVariantMap metaData = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
+              int index = -1, QVariantMap metadata = {}, ::GraphMarkerShape marker = GraphMarkerShape::NoMarker, QString name = QString())
     {
         return with_name(plot_impl(callable, labels, colors, ::GraphType::Waterfall,
-                         marker, plot_type, sync_with, index, metaData), name);
+                         marker, plot_type, sync_with, index, metadata), name);
     }
 };
 

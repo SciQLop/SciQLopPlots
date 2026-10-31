@@ -32,9 +32,9 @@
 
 #include <QDebug>
 
-SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metaData, QObject* parent)
+SciQLopPlottableInterface::SciQLopPlottableInterface(QVariantMap metadata, QObject* parent)
     : SciQLopDrawnObject(parent)
-    , m_metaData { std::move(metaData) }
+    , m_metaData { std::move(metadata) }
     , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
           this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
 {
@@ -92,8 +92,8 @@ void SciQLopGraphInterface::_legend_items_recreated()
         component->connect_legend_selection();
 }
 
-SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metaData, QObject* parent)
-        : SciQLopPlottableInterface(metaData, parent)
+SciQLopGraphInterface::SciQLopGraphInterface(const QString& prefix,QVariantMap metadata, QObject* parent)
+        : SciQLopPlottableInterface(metadata, parent)
 {
     setObjectName(UniqueNamesFactory::unique_name(prefix));
 }
@@ -186,8 +186,8 @@ QList<InspectorExtension*> SciQLopPlottableInterface::inspector_extensions() con
     return m_extension_holder->list();
 }
 
-SciQLopColorMapInterface::SciQLopColorMapInterface(QVariantMap metaData, QObject* parent)
-        : SciQLopPlottableInterface(metaData, parent)
+SciQLopColorMapInterface::SciQLopColorMapInterface(QVariantMap metadata, QObject* parent)
+        : SciQLopPlottableInterface(metadata, parent)
 {
     setObjectName(UniqueNamesFactory::unique_name("ColorMap"));
 }

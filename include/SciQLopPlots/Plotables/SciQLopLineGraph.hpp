@@ -64,7 +64,7 @@ public:
     explicit SciQLopLineGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                               SciQLopPlotAxis* value_axis,
                               const QStringList& labels = QStringList(),
-                              QVariantMap metaData = {});
+                              QVariantMap metadata = {});
     ~SciQLopLineGraph() override;
 
     //! A refresh of another length drops the colour values (a same-length one keeps them).
@@ -122,7 +122,7 @@ class SciQLopLineGraphFunction : public SciQLopLineGraph,
 public:
     explicit SciQLopLineGraphFunction(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                       SciQLopPlotAxis* value_axis, GetDataPyCallable&& callable,
-                                      const QStringList& labels, QVariantMap metaData = {});
+                                      const QStringList& labels, QVariantMap metadata = {});
     ~SciQLopLineGraphFunction() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
@@ -136,7 +136,7 @@ public:
     explicit SciQLopLineGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                     SciQLopPlotAxis* value_axis,
                                     const QStringList& labels = QStringList(),
-                                    QVariantMap metaData = {});
+                                    QVariantMap metadata = {});
     ~SciQLopLineGraphRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

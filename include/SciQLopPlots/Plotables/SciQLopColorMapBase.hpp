@@ -73,7 +73,7 @@ protected:
 public:
     SciQLopColorMapBase(SciQLopPlotAxis* keyAxis, SciQLopPlotAxis* valueAxis,
                         SciQLopPlotColorScaleAxis* colorScaleAxis,
-                        QVariantMap metaData, QObject* parent);
+                        QVariantMap metadata, QObject* parent);
     virtual ~SciQLopColorMapBase() override;
 
     inline virtual QString layer() const noexcept override

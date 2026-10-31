@@ -65,7 +65,7 @@ protected:
 public:
     explicit SciQLopMultiGraphBase(const QString& type_label, QCustomPlot* parent,
                                    SciQLopPlotAxis* key_axis, SciQLopPlotAxis* value_axis,
-                                   const QStringList& labels, QVariantMap metaData);
+                                   const QStringList& labels, QVariantMap metadata);
     ~SciQLopMultiGraphBase() override;
 
     Q_SLOT void set_data(SciQLopPyBuffer x, SciQLopPyBuffer y) override;

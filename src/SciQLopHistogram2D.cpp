@@ -32,8 +32,8 @@
 SciQLopHistogram2D::SciQLopHistogram2D(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                        SciQLopPlotAxis* yAxis, SciQLopPlotColorScaleAxis* zAxis,
                                        const QString& name, int x_bins, int y_bins,
-                                       QVariantMap metaData)
-    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metaData), parent)
+                                       QVariantMap metadata)
+    : SciQLopColorMapBase(xAxis, yAxis, zAxis, std::move(metadata), parent)
 {
     _hist = new QCPHistogram2D(_keyAxis->qcp_axis(), _valueAxis->qcp_axis());
     _hist->setLayer(Constants::LayersNames::ColorMap);
@@ -332,8 +332,8 @@ SciQLopHistogram2DRemote::SciQLopHistogram2DRemote(QCustomPlot* parent, SciQLopP
                                                    SciQLopPlotAxis* yAxis,
                                                    SciQLopPlotColorScaleAxis* zAxis,
                                                    const QString& name, int x_bins, int y_bins,
-                                                   QVariantMap metaData)
-    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins, std::move(metaData)}
+                                                   QVariantMap metadata)
+    : SciQLopHistogram2D{parent, xAxis, yAxis, zAxis, name, x_bins, y_bins, std::move(metadata)}
     , SciQLopRemoteGraph(this, 2)
 {
     // Same as SciQLopHistogram2DFunction: xAxis holds values, not the fetch window.

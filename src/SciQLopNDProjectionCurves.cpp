@@ -65,8 +65,8 @@ void SciQLopNDProjectionCurves::check_batch_size(qsizetype panes, qsizetype buff
 
 SciQLopNDProjectionCurves::SciQLopNDProjectionCurves(SciQLopPlotInterface* parent,
                                                      QList<SciQLopPlot*>& plots,
-                                                     const QStringList& labels, QVariantMap metaData)
-        : SciQLopGraphInterface("Projection",metaData, parent)
+                                                     const QStringList& labels, QVariantMap metadata)
+        : SciQLopGraphInterface("Projection",metadata, parent)
 {
     const auto names = pane_labels(plots.size(), labels, objectName());
     for (int i = 0; i < plots.size(); ++i)
@@ -168,8 +168,8 @@ void SciQLopNDProjectionCurves::_report_busy()
 SciQLopNDProjectionCurvesFunction::SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent,
                                                                      QList<SciQLopPlot*>& plots,
                                                                      GetDataPyCallable&& callable,
-                                                                     const QStringList& labels, QVariantMap metaData)
-        : SciQLopNDProjectionCurves { parent, plots, labels, metaData }
+                                                                     const QStringList& labels, QVariantMap metadata)
+        : SciQLopNDProjectionCurves { parent, plots, labels, metadata }
         , SciQLopFunctionGraph(std::move(callable),this, 4)
 {
     // Fetch for the range the plot already has, like the other function graphs:

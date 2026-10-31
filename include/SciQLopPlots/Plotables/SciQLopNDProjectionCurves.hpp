@@ -64,7 +64,7 @@ class SciQLopNDProjectionCurves : public SciQLopGraphInterface
 
 public:
     //! \throws std::invalid_argument if \a labels is neither empty nor one per plot.
-    explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metaData={});
+    explicit SciQLopNDProjectionCurves(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots, const QStringList& labels, QVariantMap metadata={});
     virtual ~SciQLopNDProjectionCurves() override;
 
     /*!
@@ -162,7 +162,7 @@ class SciQLopNDProjectionCurvesFunction :public SciQLopNDProjectionCurves, publi
 
 public:
     explicit SciQLopNDProjectionCurvesFunction(SciQLopPlotInterface* parent, QList<SciQLopPlot*>& plots,
-                                  GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metaData={});
+                                  GetDataPyCallable&& callable, const QStringList& labels, QVariantMap metadata={});
 
     virtual ~SciQLopNDProjectionCurvesFunction() override = default;
 

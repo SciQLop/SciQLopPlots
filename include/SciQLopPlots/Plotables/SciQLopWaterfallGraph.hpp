@@ -45,7 +45,7 @@ public:
     explicit SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                    SciQLopPlotAxis* value_axis,
                                    const QStringList& labels = QStringList(),
-                                   QVariantMap metaData = {});
+                                   QVariantMap metadata = {});
     ~SciQLopWaterfallGraph() override = default;
 
     Q_SLOT void set_offset_mode(WaterfallOffsetMode mode);
@@ -82,7 +82,7 @@ public:
                                            SciQLopPlotAxis* value_axis,
                                            GetDataPyCallable&& callable,
                                            const QStringList& labels = QStringList(),
-                                           QVariantMap metaData = {});
+                                           QVariantMap metadata = {});
     ~SciQLopWaterfallGraphFunction() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }
@@ -96,7 +96,7 @@ public:
     explicit SciQLopWaterfallGraphRemote(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                          SciQLopPlotAxis* value_axis,
                                          const QStringList& labels = QStringList(),
-                                         QVariantMap metaData = {});
+                                         QVariantMap metadata = {});
     ~SciQLopWaterfallGraphRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

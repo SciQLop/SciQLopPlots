@@ -1244,18 +1244,18 @@ SciQLopWaterfallGraphFunction* SciQLopPlot::add_waterfall(GetDataPyCallable call
 }
 
 SciQLopLineGraphRemote* SciQLopPlot::add_remote_line_graph(const QStringList& labels,
-                                                           QVariantMap metaData)
+                                                           QVariantMap metadata)
 {
-    auto* g = m_impl->add_plottable<SciQLopLineGraphRemote>(labels, metaData);
+    auto* g = m_impl->add_plottable<SciQLopLineGraphRemote>(labels, metadata);
     _configure_plotable(g, labels, {}, GraphType::Line, GraphMarkerShape::NoMarker);
     connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
             &SciQLopPlottableInterface::set_range);
     return g;
 }
 
-SciQLopCurveRemote* SciQLopPlot::add_remote_curve(const QStringList& labels, QVariantMap metaData)
+SciQLopCurveRemote* SciQLopPlot::add_remote_curve(const QStringList& labels, QVariantMap metadata)
 {
-    auto* g = m_impl->add_plottable<SciQLopCurveRemote>(labels, metaData);
+    auto* g = m_impl->add_plottable<SciQLopCurveRemote>(labels, metadata);
     _configure_plotable(g, labels, {}, GraphType::ParametricCurve, GraphMarkerShape::NoMarker);
     connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
             &SciQLopPlottableInterface::set_range);
@@ -1263,9 +1263,9 @@ SciQLopCurveRemote* SciQLopPlot::add_remote_curve(const QStringList& labels, QVa
 }
 
 SciQLopWaterfallGraphRemote* SciQLopPlot::add_remote_waterfall(const QStringList& labels,
-                                                               QVariantMap metaData)
+                                                               QVariantMap metadata)
 {
-    auto* g = m_impl->add_plottable<SciQLopWaterfallGraphRemote>(labels, metaData);
+    auto* g = m_impl->add_plottable<SciQLopWaterfallGraphRemote>(labels, metadata);
     _configure_plotable(g, labels, {}, GraphType::Waterfall, GraphMarkerShape::NoMarker);
     connect(this->x_axis(), &SciQLopPlotAxisInterface::range_changed, g,
             &SciQLopPlottableInterface::set_range);
@@ -1423,7 +1423,7 @@ void SciQLopPlot::replot(bool immediate)
 SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                               QStringList labels, QList<QColor> colors,
                                               GraphType graph_type, GraphMarkerShape marker,
-                                              QVariantMap metaData)
+                                              QVariantMap metadata)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -1431,13 +1431,13 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
         case GraphType::Line:
         case GraphType::Scatter:
             // One column too (#113): a one-component multigraph colours its line by a scalar.
-            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metaData);
+            plottable = m_impl->add_plottable<SciQLopLineGraph>(labels, metadata);
             break;
         case GraphType::ParametricCurve:
-            plottable = m_impl->add_plottable<SciQLopCurve>(labels, metaData);
+            plottable = m_impl->add_plottable<SciQLopCurve>(labels, metadata);
             break;
         case GraphType::Waterfall:
-            plottable = m_impl->add_plottable<SciQLopWaterfallGraph>(labels, metaData);
+            plottable = m_impl->add_plottable<SciQLopWaterfallGraph>(labels, metadata);
             break;
         default:
             throw std::runtime_error("Unsupported graph type");
@@ -1458,10 +1458,10 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
 
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                  const SciQLopPyBuffer& z, QString name, bool y_log_scale,
-                                                 bool z_log_scale, QVariantMap metaData)
+                                                 bool z_log_scale, QVariantMap metadata)
 {
     auto cm = the_only_color_map(m_impl->add_color_map(name, y_log_scale, z_log_scale));
-    cm->set_metadata(metaData);
+    cm->set_metadata(metadata);
     try
     {
         cm->set_data(std::move(x), std::move(y), std::move(z));
@@ -1549,7 +1549,7 @@ void SciQLopPlot::_connect_callable_sync(SciQLopPlottableInterface* plottable, Q
 SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStringList labels,
                                               QList<QColor> colors, GraphType graph_type,
                                               GraphMarkerShape marker, QObject* sync_with,
-                                              QVariantMap metaData)
+                                              QVariantMap metadata)
 {
     SQPQCPAbstractPlottableWrapper* plottable = nullptr;
     switch (graph_type)
@@ -1563,15 +1563,15 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
             // omitted. The per-component styling is (re)applied once those
             // components exist, see _configure_plotable.
             plottable = m_impl->add_plottable<SciQLopLineGraphFunction>(
-                std::move(callable), labels, metaData);
+                std::move(callable), labels, metadata);
             break;
         case GraphType::ParametricCurve:
             plottable = m_impl->add_plottable<SciQLopCurveFunction>(std::move(callable), labels,
-                                                                    metaData);
+                                                                    metadata);
             break;
         case GraphType::Waterfall:
             plottable = m_impl->add_plottable<SciQLopWaterfallGraphFunction>(
-                std::move(callable), labels, metaData);
+                std::move(callable), labels, metadata);
             break;
         default:
             break;
@@ -1586,13 +1586,13 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QStrin
 
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
                                                  bool y_log_scale, bool z_log_scale,
-                                                 QObject* sync_with, QVariantMap metaData)
+                                                 QObject* sync_with, QVariantMap metadata)
 {
     SciQLopColorMapInterface* plotable = nullptr;
     plotable = the_only_color_map(
         m_impl->add_color_map(std::move(callable), name, y_log_scale, z_log_scale));
     {
-        plotable->set_metadata(metaData);
+        plotable->set_metadata(metadata);
         _configure_color_map(plotable, y_log_scale, z_log_scale);
         _connect_callable_sync(plotable, sync_with);
     }
@@ -1602,12 +1602,12 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QSt
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
                                                   QString name, int x_bins, int y_bins,
                                                   bool x_bins_log, bool y_bins_log,
-                                                  QVariantMap metaData)
+                                                  QVariantMap metadata)
 {
     auto* hist = m_impl->add_histogram2d(name, x_bins, y_bins, x_bins_log, y_bins_log);
     if (hist)
     {
-        hist->set_metadata(metaData);
+        hist->set_metadata(metadata);
         _configure_color_map(hist, y_bins_log, false);
         hist->set_data(x, y);
     }
@@ -1617,13 +1617,13 @@ SciQLopColorMapInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const
 SciQLopColorMapInterface* SciQLopPlot::plot_impl(GetDataPyCallable callable, QString name,
                                                   int x_bins, int y_bins,
                                                   bool x_bins_log, bool y_bins_log,
-                                                  QObject* sync_with, QVariantMap metaData)
+                                                  QObject* sync_with, QVariantMap metadata)
 {
     auto* hist = m_impl->add_histogram2d(std::move(callable), name, x_bins, y_bins,
                                          x_bins_log, y_bins_log);
     if (hist)
     {
-        hist->set_metadata(metaData);
+        hist->set_metadata(metadata);
         _configure_color_map(hist, y_bins_log, false);
         start_on(hist, sync_with ? sync_with : time_axis());
     }

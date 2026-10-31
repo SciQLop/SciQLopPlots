@@ -54,7 +54,7 @@ class SciQLopHistogram : public SciQLopGraphInterface
 
 public:
     explicit SciQLopHistogram(QCustomPlot* parent, SciQLopPlotAxis* xAxis, SciQLopPlotAxis* yAxis,
-                              const QString& name, int bins = 64, QVariantMap metaData = {});
+                              const QString& name, int bins = 64, QVariantMap metadata = {});
     virtual ~SciQLopHistogram() override;
 
     //! Bins every column of y; x only has to match y's length.
@@ -140,7 +140,7 @@ class SciQLopHistogramRemote : public SciQLopHistogram, public SciQLopRemoteGrap
 public:
     explicit SciQLopHistogramRemote(QCustomPlot* parent, SciQLopPlotAxis* xAxis,
                                     SciQLopPlotAxis* yAxis, const QString& name, int bins = 64,
-                                    QVariantMap metaData = {});
+                                    QVariantMap metadata = {});
     ~SciQLopHistogramRemote() override = default;
 
     inline void invalidate_cache() noexcept override { invalidate_pipeline_cache(); }

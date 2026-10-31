@@ -25,8 +25,8 @@
 
 SciQLopWaterfallGraph::SciQLopWaterfallGraph(QCustomPlot* parent, SciQLopPlotAxis* key_axis,
                                              SciQLopPlotAxis* value_axis,
-                                             const QStringList& labels, QVariantMap metaData)
-    : SciQLopMultiGraphBase("Waterfall", parent, key_axis, value_axis, labels, metaData)
+                                             const QStringList& labels, QVariantMap metadata)
+    : SciQLopMultiGraphBase("Waterfall", parent, key_axis, value_axis, labels, metadata)
 {
     create_graphs(labels);
     if (auto* w = waterfall_graph())
@@ -167,8 +167,8 @@ SciQLopWaterfallGraphFunction::SciQLopWaterfallGraphFunction(QCustomPlot* parent
                                                              SciQLopPlotAxis* value_axis,
                                                              GetDataPyCallable&& callable,
                                                              const QStringList& labels,
-                                                             QVariantMap metaData)
-    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, metaData}
+                                                             QVariantMap metadata)
+    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, metadata}
     , SciQLopFunctionGraph(std::move(callable), this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});
@@ -178,8 +178,8 @@ SciQLopWaterfallGraphRemote::SciQLopWaterfallGraphRemote(QCustomPlot* parent,
                                                          SciQLopPlotAxis* key_axis,
                                                          SciQLopPlotAxis* value_axis,
                                                          const QStringList& labels,
-                                                         QVariantMap metaData)
-    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, std::move(metaData)}
+                                                         QVariantMap metadata)
+    : SciQLopWaterfallGraph{parent, key_axis, value_axis, labels, std::move(metadata)}
     , SciQLopRemoteGraph(this, 2)
 {
     this->set_range({parent->xAxis->range().lower, parent->xAxis->range().upper});

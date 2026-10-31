@@ -69,8 +69,8 @@ protected:
 #endif
 
 public:
-    SQPQCPAbstractPlottableWrapper(const QString& prefix, QVariantMap metaData, QCustomPlot* parent)
-            : SciQLopGraphInterface(prefix, metaData, parent)
+    SQPQCPAbstractPlottableWrapper(const QString& prefix, QVariantMap metadata, QCustomPlot* parent)
+            : SciQLopGraphInterface(prefix, metadata, parent)
     {
     }
 
