@@ -7,6 +7,7 @@ cached, so the scan runs in a fresh interpreter: an earlier test may already hav
 import inspect
 import json
 import subprocess
+import tempfile
 import sys
 import textwrap
 
@@ -41,7 +42,10 @@ _SCAN = textwrap.dedent("""
 
 @pytest.fixture(scope="module")
 def scan():
-    out = subprocess.run([sys.executable, "-c", _SCAN], capture_output=True, text=True, check=True)
+        # Neutral cwd: `python -c` puts the cwd on sys.path, and from the repo root the
+    # source package (no compiled bindings) would shadow the built one.
+    out = subprocess.run([sys.executable, "-c", _SCAN], capture_output=True, text=True, check=True,
+                         cwd=tempfile.gettempdir())
     return json.loads(out.stdout.strip().splitlines()[-1])
 
 

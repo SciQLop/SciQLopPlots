@@ -4,6 +4,7 @@ The failure is a segfault at interpreter level, so each scenario runs in a child
 """
 import os
 import subprocess
+import tempfile
 import sys
 
 import pytest
@@ -40,7 +41,8 @@ FACTORIES = {
 def run_scenario(factory, delete_panel):
     code = SCRIPT.format(factory=FACTORIES[factory], delete_panel=delete_panel)
     return subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
-                          timeout=120, env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
+                          timeout=120, cwd=tempfile.gettempdir(),
+                          env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
 
 
 @pytest.mark.parametrize("delete_panel", [False, True], ids=["del", "shiboken-delete"])
@@ -54,7 +56,7 @@ def test_deleting_a_factory_plot_then_the_panel_does_not_crash(factory, delete_p
 def test_python_built_plot_baseline_still_fine():
     code = SCRIPT.format(factory="(__import__('SciQLopPlots').SciQLopPlot(),)", delete_panel=False)
     code = code.replace("plot = result[0]", "plot = result[0]; panel.add_plot(plot)")
-    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120, cwd=tempfile.gettempdir(),
                           env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
     assert done.returncode == 0, done.stderr[-500:]
 
@@ -78,7 +80,7 @@ print("teardown ok")
 
 
 def test_a_plot_moved_between_panels_then_deleted_does_not_crash():
-    done = subprocess.run([sys.executable, "-c", MOVED], capture_output=True, text=True, timeout=120,
+    done = subprocess.run([sys.executable, "-c", MOVED], capture_output=True, text=True, timeout=120, cwd=tempfile.gettempdir(),
                           env={**os.environ, "QT_QPA_PLATFORM": "offscreen"})
     assert done.returncode == 0, (done.returncode, done.stderr[-500:])
     assert "teardown ok" in done.stdout

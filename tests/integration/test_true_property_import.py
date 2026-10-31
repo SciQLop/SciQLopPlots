@@ -1,5 +1,6 @@
 """Importing SciQLopPlots under true_property, after a QApplication exists, must not abort Python."""
 import subprocess
+import tempfile
 import sys
 import textwrap
 
@@ -16,6 +17,6 @@ SCRIPT = textwrap.dedent("""
 
 
 def test_import_after_qapplication_under_true_property():
-    run = subprocess.run([sys.executable, "-c", SCRIPT], capture_output=True, text=True, timeout=120,
+    run = subprocess.run([sys.executable, "-c", SCRIPT], capture_output=True, text=True, timeout=120, cwd=tempfile.gettempdir(),
                          env={**__import__("os").environ, "QT_QPA_PLATFORM": "offscreen"})
     assert (run.returncode, run.stdout.strip()) == (0, "ok"), run.stderr[-2000:]
