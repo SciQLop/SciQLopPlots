@@ -588,6 +588,9 @@ SciQLopMultiGraphBase* bound_line(int plot, const SciQLopPyBuffer& x, const SciQ
         colors = QList<QColor>(labels.size(), css_color(color.as<std::string>()));
     auto* graph = qobject_cast<SciQLopMultiGraphBase*>(
         get<SciQLopPlotInterface>(plot)->line(x, y, labels, colors));
+    if (graph == nullptr)   // a one-column y makes a plain line: sciqlopplots.mjs never passes one
+        throw std::invalid_argument("SciQLopPlots: band and error bars need "
+                                    + std::to_string(labels.size()) + " columns");
     if (auto name = option(options, "name"); !name.isUndefined())
         graph->set_name(qstring(name));
     return graph;
@@ -619,6 +622,9 @@ int error_bars(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val
 template <typename Enum>
 Enum named(const std::map<std::string, Enum>& names, val name, const char* what)
 {
+    if (!name.isString())
+        throw std::invalid_argument(std::string("SciQLopPlots: a histogram ") + what
+                                    + " is a string");
     const auto found = names.find(name.as<std::string>());
     if (found == names.end())
         throw std::invalid_argument(std::string("SciQLopPlots: no histogram ") + what + " '"
@@ -637,15 +643,19 @@ val histogram(int panel, const SciQLopPyBuffer& values, val options)
     const auto style = option(options, "style");
     const auto style_value = style.isUndefined() ? std::optional<HistogramStyle>()
                                                  : named(histogram_styles, style, "style");
-    const auto bins = option(options, "bins", val(64)).as<int>();
-    if (bins <= 0)
-        throw std::invalid_argument("SciQLopPlots: a histogram needs bins > 0, got "
-                                    + std::to_string(bins));
+    const auto bins_option = option(options, "bins", val(64));
+    if (!val::global("Number").call<bool>("isInteger", bins_option) || bins_option.as<int>() <= 0)
+        throw std::invalid_argument("SciQLopPlots: a histogram needs a whole number of bins > 0");
+    const auto bins = bins_option.as<int>();
+    const auto range = option(options, "range");
+    if (!range.isUndefined() && !(val::global("Array").call<bool>("isArray", range)
+                                  && range["length"].as<int>() == 2))
+        throw std::invalid_argument("SciQLopPlots: a histogram range is [lower, upper]");
     const auto [plot, hist] = get<SciQLopMultiPlotPanel>(panel)->histogram(
         values, qstring(option(options, "name", val("Histogram"))), bins);
     // Log first: the range check depends on it.
     hist->set_log_bins(option(options, "logBins", val(false)).as<bool>());
-    if (auto range = option(options, "range"); !range.isUndefined())
+    if (!range.isUndefined())
         hist->set_bin_range(range[0].as<double>(), range[1].as<double>());
     hist->set_normalization(normalization);
     if (style_value)
