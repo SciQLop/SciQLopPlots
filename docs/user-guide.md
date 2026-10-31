@@ -15,12 +15,16 @@ This guide goes from a first plot to live data, multi-plot panels, overlays and 
 - [Several plots in a panel](#several-plots-in-a-panel)
 - [Axes](#axes)
 - [Colours, names and themes](#colours-names-and-themes)
+- [Legends](#legends)
+- [Messages on a plot](#messages-on-a-plot)
 - [Overlays: spans, lines and text](#overlays-spans-lines-and-text)
 - [Interval timelines](#interval-timelines)
 - [Reactive pipelines](#reactive-pipelines)
 - [N-D projections](#n-d-projections)
 - [Signal processing](#signal-processing)
 - [Export](#export)
+- [Building an application](#building-an-application)
+- [Threads](#threads)
 - [Performance tips](#performance-tips)
 - [Troubleshooting](#troubleshooting)
 - [Changes in 0.53](#changes-in-053)
@@ -273,6 +277,36 @@ plot.plot(x, np.sin(x) + rng.normal(0, 0.1, 500), graph_type=GraphType.Scatter, 
 
 A scatter is a line graph with no lines and a marker: `plot.scatter(x, y)` makes the same `SciQLopLineGraph` as `plot.line(x, y, marker=...)` with its line style set to none, so every line-graph method applies.
 
+### Line and marker style
+
+A graph styles all its lines at once, or one column at a time. Each line is also a component you can style alone.
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor, QPen
+from SciQLopPlots import GraphLineStyle, GraphMarkerShape, SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 60)
+graph = plot.plot(x, np.column_stack([np.sin(x), np.cos(x), np.sin(2 * x)]), labels=["a", "b", "c"])
+
+graph.set_marker_shape(GraphMarkerShape.Circle)               # every line
+graph.set_marker_size(6)
+graph.set_column_marker_shape(1, GraphMarkerShape.Triangle)   # column 1 only
+graph.set_column_line_style(2, GraphLineStyle.StepLeft)       # a staircase
+graph.set_column_in_legend(2, False)                          # no legend row for column 2
+
+first = graph.component(0)                                    # one line, on its own
+first.set_line_width(2.5)
+first.set_pen(QPen(QColor("darkorange"), 2.5))
+first.set_marker_pen(QColor("black"))
+```
+
+- Line styles (`GraphLineStyle`): `Line` (the default), `NoLine`, and the steps `StepLeft`, `StepRight` and `StepCenter`. A step holds each value until the next sample, after it or around it.
+- Markers (`GraphMarkerShape`): `NoMarker` (the default for lines), `Dot`, `Circle`, `FilledCircle`, `Square`, `Triangle`, `InvertedTriangle`, `Diamond`, `Star`, `Plus`, `Cross`, and the combined `CrossedSquare`, `PlusSquare`, `CrossedCircle` and `PlusCircle`. `Custom` only reads back a shape set from C++ through NeoQCP: SciQLopPlots has no call that defines one.
+- `plot.line(x, y, marker=GraphMarkerShape.Circle)` sets the marker when the graph is made.
+- `graph.component(i)` is one line. It has the same setters as a whole graph (`set_line_style`, `set_marker_shape`, `set_marker_size`, `set_color`, `set_visible`, ...) plus `set_pen`, `set_line_width` and `set_marker_pen`.
+
 ### Colour maps (spectrograms)
 
 ```python
@@ -296,6 +330,24 @@ plot.set_title("Electron flux")
 `z` has one row per `x` value and one column per `y` value. `y` may also have `z`'s shape, when the y channels change over time (a varying energy table, for example).
 
 On a log colour scale, pixels that cover several samples are averaged in log space. So zoomed-out spectrograms look like the zoomed-in ones.
+
+When the colour range fits the data, a few extreme values can wash out the rest of the image. Fit it to percentiles of the visible values instead:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x, y = np.linspace(0, 100, 400), np.linspace(0, 1, 64)
+z = np.random.default_rng(0).random((400, 64))
+z[10, 10] = 1e6                            # one spike
+cmap = plot.plot(x, y, z)
+cmap.set_autoscale_percentile_low(1)       # ignore the lowest 1 %
+cmap.set_autoscale_percentile_high(99)     # and the highest 1 %
+plot.rescale_axes()                        # the colour range now spans about 0..1
+```
+
+The defaults, 0 and 100, fit the plain minimum and maximum. The inspector's colour map panel sets them too.
 
 Contour lines go over a colour map, at given levels or a number of automatic ones, and can carry their level:
 
@@ -333,6 +385,24 @@ plot.rescale_axes()
 
 ![A butterfly-shaped parametric curve](images/parametric-curve.png)
 
+A curve can also carry the time of each point, to colour it from the first time to the last and to find where it was at a given time:
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import GraphType, SciQLopPlot
+
+plot = SciQLopPlot()
+t = np.linspace(0, 100, 500)
+orbit = plot.plot(np.cos(t / 10), np.sin(t / 10), graph_type=GraphType.ParametricCurve)
+orbit.set_time_values(t)                                       # one time per point
+orbit.set_time_color_gradient(QColor("blue"), QColor("red"))   # first time .. last time
+orbit.set_time_color_enabled(True)
+print(orbit.position_at_time(50.0))                            # the point closest to t = 50
+```
+
+`position_at_time` gives `None` while the curve has no times. To colour by any other quantity, use `set_color_data` as for [lines](#colour-a-line-by-a-third-quantity).
+
 ### Waterfall
 
 Stacks each column of `y` with an offset, for channel stacks or seismic-style record sections:
@@ -353,6 +423,21 @@ wf.set_gain(2.0)   # change it later; the plot follows
 ```
 
 ![Eight stacked traces](images/waterfall.png)
+
+The offsets have two modes. `WaterfallOffsetMode.Uniform` spaces the traces evenly, `set_uniform_spacing(s)` apart. `WaterfallOffsetMode.Custom` places each trace at its own offset, from `set_offsets([...])`. The two are separate settings: `set_offsets` keeps the list, and it shows once the mode is `Custom`. The `offsets=` argument of `plot()` sets both.
+
+```python
+import numpy as np
+from SciQLopPlots import GraphType, SciQLopPlot, WaterfallOffsetMode
+
+plot = SciQLopPlot()
+t = np.linspace(0, 10, 2000)
+wf = plot.plot(t, np.column_stack([np.sin(t + i) for i in range(4)]), graph_type=GraphType.Waterfall)
+wf.set_offsets([0.0, 1.0, 3.0, 6.0])               # one per trace
+wf.set_offset_mode(WaterfallOffsetMode.Custom)
+wf.set_normalize(False)                            # keep the traces' own heights
+print(wf.raw_value_at(2, 5.0))                     # trace 2's data value at the sample nearest t = 5
+```
 
 ### 2-D histograms
 
@@ -378,6 +463,8 @@ A callable `plot.histogram2d(callback)` on a plain plot fetches nothing until `p
 ![A 2-D histogram](images/histogram2d.png)
 
 `hist.set_normalization(Histogram2DNormalization.PerColumn)` divides each column by its total, so every column adds up to 1; `Count` (the default) shows raw counts. The old `set_normalization(1)` still works but is deprecated.
+
+`hist.set_bins(x_bins, y_bins)` changes the bin counts later. `hist.set_x_bins_log(True)` and `set_y_bins_log(True)` make the bins of one axis equally wide in log space, for positive values.
 
 Like colour maps, a 2-D histogram takes `set_auto_scale_y(True)`, which fits the y axis to the bins that hold counts, and contour lines with their labels (see [Colour maps](#colour-maps-spectrograms)).
 
@@ -440,6 +527,24 @@ hist = plot.histogram(values, bins=60, log_bins=True,
 - `HistogramNormalization.Count`: the number of values in each bin. This is the default.
 - `HistogramNormalization.Density`: the count divided by the bin width. The area under the bars is 1.
 - `HistogramNormalization.Probability`: the count divided by the total. The heights add up to 1.
+
+Every argument can change later, and the histogram counts again:
+
+```python
+import numpy as np
+from SciQLopPlots import HistogramNormalization, HistogramStyle, SciQLopPlot
+
+plot = SciQLopPlot()
+hist = plot.histogram(np.random.default_rng(42).normal(0, 1, 10_000), bins=50)
+hist.set_bins(20)
+hist.set_bin_range(-2.0, 2.0)          # like range=; clear_bin_range() follows the data again
+hist.set_normalization(HistogramNormalization.Probability)
+hist.set_style(HistogramStyle.Step)
+edges = hist.bin_edges()               # 21 edges
+heights = hist.bin_heights()           # one list of 20 heights per column
+```
+
+`set_log_bins(True)` is `log_bins=True`. `bin_edges()` and `bin_heights()` read back what is drawn, once the first data is binned. Before that they are empty lists.
 
 Give `histogram` a function and it follows the time range. The function receives `(start, stop)` and returns `(t, values)` for that window, like any live data function.
 
@@ -525,7 +630,8 @@ Things to know:
 
 - **It runs in a background thread**, so the window stays responsive while it works. Don't touch widgets from it; just compute and return arrays.
 - **Calls are coalesced.** A fast drag does not queue up hundreds of calls; only the latest range is fetched.
-- **`graph.busy()`** is true while a fetch is in flight. When it lasts more than half a second, the graph fades slightly as a hint.
+- **`graph.busy()`** is true while a fetch is in flight. When it lasts more than half a second, the graph fades slightly as a hint. The theme sets the delay and the fade ([Colours, names and themes](#colours-names-and-themes)).
+- **A function that raises**, or returns data the graph can't take, changes nothing on the plot. `graph.fetch_failed` carries the traceback or the reason, for example to show it with `plot.overlay()` ([Messages on a plot](#messages-on-a-plot)).
 - **The same range is not fetched twice.** If your source changed (new parameters, fresh data), call `graph.invalidate_cache()` and the next request fetches again.
 
 ### Fetch a margin around the view
@@ -562,6 +668,8 @@ graph.set_color_data(np.cos(x), ColorGradient.Plasma)   # one value per x sample
 ![A sine coloured by cosine, with its colour scale](images/color-data.png)
 
 The plot shows a colour scale for it. `graph.clear_color_data()` (or an empty array) goes back to a plain line, and `graph.has_color_data()` tells whether the graph is coloured.
+
+All the coloured lines and curves of a plot share that one scale, so equal values get equal colours. `plot.set_curve_color_scale_enabled(False)` lets each one colour itself over its own range instead, with no scale shown. A colour map keeps its own scale either way.
 
 A data function can send the colour values with each batch:
 
@@ -615,6 +723,21 @@ Some things keep plain numbers. The `position` property of the old line classes 
 
 To convert yourself, `SciQLopPlots.to_epoch_seconds(value)` is the function all of this goes through. It returns a float for a scalar and a `float64` array for an array.
 
+A `SciQLopPlotRange` keeps its ends in order: `SciQLopPlotRange(2, 1)` is `1 .. 2`. It also does the usual range arithmetic:
+
+```python
+from SciQLopPlots import SciQLopPlotRange
+
+morning = SciQLopPlotRange("2025-04-12T00:00:00", "2025-04-12T06:00:00")
+overlap = morning.intersection_with(SciQLopPlotRange("2025-04-12T03:00:00", "2025-04-12T09:00:00"))
+both = morning.union_with(overlap)
+print(overlap.start(), overlap.size())        # epoch seconds, and 3 hours in seconds
+print(morning.start_date())                   # a QDateTime, in UTC
+print(SciQLopPlotRange(5, 5).is_empty(), SciQLopPlotRange().is_null(), morning.is_valid())
+```
+
+`is_null()` means unset (NaN ends), `is_empty()` means zero length, and `is_valid()` means neither.
+
 ## Several plots in a panel
 
 `SciQLopMultiPlotPanel` stacks plots vertically and keeps their x (or time) axes in sync. It's the usual layout for comparing several quantities over the same time range.
@@ -648,6 +771,55 @@ panel.set_time_range(start, start + 6 * 3600)   # every plot follows
 - `panel.set_time_range(start, stop)` and `panel.time_range()` drive and read the shared time, like on a time-series plot. `set_time_axis_range` and `time_axis_range` are the same methods under their older names.
 
 To add a graph to an existing plot of the panel, call `plot()` on that plot instead of on the panel.
+
+The panel's layout can change at any time:
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopTimeSeriesPlot
+
+panel = SciQLopMultiPlotPanel(synchronize_time=True)
+x = np.linspace(0, 10, 100)
+first, _ = panel.plot(x, np.sin(x), labels=["sin"])
+second, _ = panel.plot(x, np.cos(x), labels=["cos"])
+
+panel.move_plot(second, 0)                      # second is now on top
+panel.insert_plot(1, SciQLopTimeSeriesPlot())   # an empty plot in the middle
+panel.set_plot_stretch(first, 2)                # first is twice as tall
+panel.set_color_palette([QColor("#1b9e77"), QColor("#d95f02"), QColor("#7570b3")])
+
+inner = SciQLopMultiPlotPanel(synchronize_time=True)
+inner.plot(x, x, labels=["ramp"])
+panel.add_panel(inner)                          # a panel inside the panel
+```
+
+- `move_plot(plot_or_index, to)`, `insert_plot(index, plot)` and `remove_plot(plot)` arrange the plots. `plot_list_changed` follows them.
+- `set_color_palette(colors)` gives the colours new graphs take, in order. A plot has its own `set_color_palette` too.
+- `add_panel`, `insert_panel` and `move_panel` nest panels, to group plots that belong together.
+
+### Drop data on a panel
+
+A panel accepts drops from other widgets, such as a product list. Tell it which MIME type to accept, and what to do with it:
+
+```python
+import numpy as np
+from SciQLopPlots import PlotDragNDropCallback, SciQLopMultiPlotPanel
+
+class PlotDroppedNames(PlotDragNDropCallback):
+    def __init__(self, parent):
+        super().__init__("text/plain", True, parent)   # True: drop between plots makes a new one
+
+    def call(self, plot, mime_data):
+        name = mime_data.data("text/plain").data().decode()
+        x = np.linspace(0, 10, 100)
+        plot.plot(x, np.sin(x), labels=[name])
+
+panel = SciQLopMultiPlotPanel()
+panel.add_accepted_mime_type(PlotDroppedNames(panel))
+```
+
+`call` gets the plot under the drop and the dropped data. With the placeholder enabled, the panel also shows where a new plot would go, near the top or bottom edge of a plot. A drop there makes the new plot first and hands it to `call`. `tests/manual-tests/advanced/drag_and_drop.py` is a complete example.
 
 ### Other widgets in a panel
 
@@ -718,7 +890,7 @@ print(r.start(), r.stop(), r.size())
 ![Labelled axes, log y](images/axes.png)
 
 - `plot.rescale_axes()` fits every axis to the data.
-- A graph's first data fits the axes on its own. `plot.set_fit_first_data(False)` keeps the ranges you set instead; `rescale_axes()` still works.
+- A graph's first data fits the axes on its own. `plot.set_fit_first_data(False)` keeps the ranges you set instead; `rescale_axes()` still works. `plot.set_auto_scale(True)` goes further: every new batch of data fits the axes again.
 - Rescaling leaves a 5% margin on each side of a value axis, so ticks at the data's ends (0/1 flags, enum levels) keep their labels. `axis.set_autoscale_margin(0.1)` changes it at runtime (0 to 0.5; in decades on a log axis), and so does the axis's inspector panel. Time axes, key axes and axes holding a colormap or histogram are never padded.
 - `axis.set_min_range_size(s)` / `set_max_range_size(s)` limit how far a user can zoom.
 
@@ -744,6 +916,57 @@ ts.time_axis().set_date_format("yyyy-MM-dd hh:mm")   # a QDateTime format, in UT
 - `plot.axes()` lists every axis, `plot.axis(AxisType.XAxis2)` (or `YAxis2`) reaches the top and right ones by type, and `plot.data_range()` is the union of the plottables' key ranges, invalid while none holds data.
 - `plot.set_crosshair_enabled(True)` shows a crosshair that follows the mouse, with a tooltip of the values under it; `crosshair_enabled_changed` tells when it is turned on or off. `enable_cursor(...)` still works but is deprecated.
 
+Axes take their own text and style, and can be limited or tied to another axis:
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor, QFont
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+plot.plot(x, np.round(np.sin(x)), labels=["state"])
+
+y = plot.y_axis()
+y.set_tick_labels({-1.0: "low", 0.0: "off", 1.0: "high"})   # text at these values only
+y.set_label("mode")
+y.set_label_font(QFont("Sans", 12))
+y.set_label_color(QColor("darkblue"))
+y.set_tick_label_color(QColor("gray"))
+
+other = SciQLopPlot()
+other.plot(x, np.cos(x), labels=["cos"])
+plot.x_axis().couple_range_with(other.x_axis())   # each follows the other's range
+plot.x_axis().set_range(2, 4)                     # other's x axis is now 2 .. 4 too
+```
+
+- `set_tick_labels({value: text})` puts fixed text at fixed values, for flags and enumerations. `clear_tick_labels()` goes back to numbers.
+- `set_label_font`, `set_label_color`, `set_tick_label_font` and `set_tick_label_color` style the axis text. A theme sets the default colours.
+- `axis.set_tick_labels_visible(False)` hides the tick text, and `axis.set_visible(False)` the whole axis.
+- `couple_range_with(axis)` makes two axes, on any plots, follow each other. `decouple_range_from(axis)` undoes it. A panel does this for you along its shared x or time axis.
+- `axis.clamp_range(range)` returns the range the axis would accept, within the zoom limits of `set_min_range_size` and `set_max_range_size`.
+- `plot.set_scroll_factor(f)` sets how far one wheel step scrolls or zooms (1 by default).
+
+Plots define no keyboard shortcuts, so they never clash with your application's. They expose the actions as methods to bind to your own keys:
+
+```python
+from PySide6.QtGui import QKeySequence, QShortcut
+from SciQLopPlots import SciQLopMultiPlotPanel
+
+panel = SciQLopMultiPlotPanel()
+plot, _ = panel.plot(lambda start, stop: None, labels=["data"])
+QShortcut(QKeySequence("M"), plot, plot.rescale_hovered_or_selected_axes)
+QShortcut(QKeySequence("L"), plot, plot.toggle_log_scale_hovered_or_selected_axes)
+QShortcut(QKeySequence("H"), plot, plot.toggle_selected_objects_visibility)
+QShortcut(QKeySequence("O"), panel, panel.organize_plots)
+QShortcut(QKeySequence("Escape"), plot, plot.deselect_all)
+```
+
+- `rescale_hovered_or_selected_axes()` fits the axis under the mouse, else the selected axes, else all of them. `plot.freeze_axis(axis)` keeps an axis out of it.
+- `toggle_log_scale_hovered_or_selected_axes()` switches the same axes between linear and log.
+- `toggle_selected_objects_visibility()` hides or shows what is selected.
+- `panel.organize_plots()` evens out the plots' heights. `panel.set_plot_stretch(plot, n)` makes one plot `n` times taller than the others.
+
 ## Colours, names and themes
 
 ```python
@@ -766,6 +989,30 @@ plot.set_z_gradient(ColorGradient.Cividis)             # gradient for colour-cod
 ![A plot with the dark theme](images/dark-theme.png)
 
 Available gradients (`ColorGradient`): Viridis, Cividis, Magma, Inferno, Plasma and Turbo (perceptually uniform, colour-blind friendly), Coolwarm (diverging), plus the classic Jet, Hot, Cold, Grayscale, Spectrum, Thermal, Polar, Hues, Candy, Ion, Night and Geography.
+
+A theme is a set of colours you can change, starting from `light()` or `dark()`:
+
+```python
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopPlot, SciQLopTheme
+
+theme = SciQLopTheme.light()
+theme.set_background(QColor("#fdf6e3"))      # plot background
+theme.set_foreground(QColor("#073642"))      # axes, ticks and text
+theme.set_grid(QColor("#e0dccc"))
+theme.set_sub_grid(QColor("#eee8d5"))
+theme.set_selection(QColor("#d33682"))       # selected objects
+theme.set_legend_background(QColor(255, 255, 255, 200))
+theme.set_legend_border(QColor("#93a1a1"))
+theme.set_busy_indicator_symbol("⏳")       # in the legend while a fetch runs (default ⟳)
+theme.set_busy_show_delay_ms(800)            # only for fetches longer than this (default 500)
+theme.set_busy_fade_alpha(0.5)               # a busy graph's opacity (default 0.3)
+
+plot = SciQLopPlot()
+plot.set_theme(theme)
+```
+
+Every plot using the theme follows its changes. `set_busy_hide_delay_ms` keeps the indicator a moment after the fetch ends, so it does not flicker.
 
 A panel takes a theme too: `panel.set_theme(SciQLopTheme.dark(panel))`. One theme can style several plots and panels. A theme made without a parent lives as long as one of them uses it. A theme you give a parent stays with that parent: when it goes, so does the theme, and `theme_changed` tells every plot and panel that used it. Projections and widget plots do not take themes.
 
@@ -891,6 +1138,27 @@ panel.set_legend_visible(False)                 # every plot's legend, later one
 
 ![A legend with three entries side by side, placed inside the plot](images/legend-placement.png)
 
+## Messages on a plot
+
+Each plot has an overlay for a short message over its content: "no data for this range", a server error, a hint.
+
+```python
+from SciQLopPlots import OverlayLevel, OverlayPosition, OverlaySizeMode, SciQLopPlot
+
+plot = SciQLopPlot()
+overlay = plot.overlay()
+overlay.show_message("No data between these dates", OverlayLevel.Warning)
+overlay.show_message("Server error 503:\nretrying in 10 s", OverlayLevel.Error,
+                     OverlaySizeMode.FitContent, OverlayPosition.Bottom)
+overlay.set_collapsible(True)       # a handle folds it to its first line
+overlay.clear_message()
+```
+
+- The level (`Info`, `Warning`, `Error`) sets the colour.
+- The size: `Compact` (the default) is a one-line bar along an edge, `FitContent` grows to show the whole text, and `FullWidget` covers the plot.
+- The position is the edge: `Top` (the default), `Bottom`, `Left` or `Right`.
+- A new message replaces the old one. `message_changed` and `collapsed_changed` signal the changes. `set_opacity` and `set_font` style the overlay.
+
 ## Overlays: spans, lines and text
 
 ```python
@@ -928,6 +1196,7 @@ note = plot.text("peak", QPointF(1.57, 1.0), coordinates=Coordinates.Data)
 
 - A span bounds the key axis, the value axis or both: `plot.span(key_range=..., value_range=...)`. An axis left at `None` is unbounded, and `span.key_range()` / `span.value_range()` read `None` there. `plot.vertical_span(range)` and `plot.horizontal_span(range)` are the one-axis shorthands, with `span.range()`, `set_range()` and `range_changed` for the bounded axis. On a span bounding both axes, `range()` raises `ValueError`: use `key_range()` and `value_range()`.
 - A line is vertical or horizontal: `plot.straight_line(position, Qt.Orientation.Vertical)`, or the shorthands `plot.vertical_line(position)` and `plot.horizontal_line(position)`. Lines are read-only, so the user can't drag them, unless you pass `read_only=False`. Spans are editable unless you pass `read_only=True`.
+- `line.set_min_value(v)` and `line.set_max_value(v)` keep a draggable line between two data values, for a threshold the user may only move within limits. `clear_min_value()` and `clear_max_value()` lift them.
 - `coordinates=Coordinates.Pixels` keeps a span or a line in place on screen, measured from the plot area's top-left corner. `set_coordinates()` switches later and leaves the object where it is. `span.pixel_range()` (`pixel_key_range()`, `pixel_value_range()`) reads a span's position in pixels in either mode.
 - On a panel, the same factories draw one span or line across every plot, including plots added later: `panel.span(...)`, `panel.vertical_span(...)`, `panel.straight_line(...)`, `panel.vertical_line(...)` and the horizontal ones, with the same arguments. That's handy for marking an event in time. A drag, a click or the Delete key on one plot reaches all of them, and the panel object signals once. A bool in the colour slot raises `TypeError`. Panels have no `rectangular_span`: use `panel.span(key_range=..., value_range=...)`.
 - A panel span or line in `Coordinates.Pixels` takes its pixel numbers from the first plot. That is a known simplification: the plots are not asked to agree.
@@ -937,6 +1206,30 @@ note = plot.text("peak", QPointF(1.57, 1.0), coordinates=Coordinates.Data)
 - The other factories are `plot.ellipse(rect)`, `plot.pixmap(pixmap, rect)` and `plot.curved_line(start, stop)`. `plot.rectangular_span(key_range, value_range)` still works but is deprecated: use `plot.span(key_range=..., value_range=...)`.
 - The plot owns what its factories return. `plot.remove(item)` deletes one now. It raises `ValueError` for an object of another plot, for a panel-wide span or line (that one goes through `panel.remove`), for one plot's part of a panel-wide span or line, and for `None`, and `TypeError` for the legend or a graph component. `panel.remove(span_or_line)` deletes a panel-wide span or line and its parts now. `panel.remove(plot)` deletes the plot later, like `remove_plot`. `plot.clear()` removes everything `remove` takes, at once: graphs, groups, items, lines and spans. Axes, the legend and the parts of panel-wide objects stay.
 - Text, ellipse and pixmap items have `selected()` / `set_selected()` and `name()` / `set_name()` too. Text, pixmap and curved-line tooltips work. Text, ellipse and pixmap items are read-only (not draggable) unless made with `read_only=False` or switched with `set_read_only(False)`, like spans and lines.
+
+Text, ellipses and curved lines (arrows) are placed in pixels by default, from the plot area's top-left corner. Pass `coordinates=Coordinates.Data` to pin them to data values instead:
+
+```python
+from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtGui import QColor
+from SciQLopPlots import Coordinates, LineTermination, SciQLopPlot
+
+plot = SciQLopPlot()
+label = plot.text("bow shock", QPointF(40, 20))
+label.set_font_size(14)
+label.set_font_color(QColor("darkred"))
+
+arrow = plot.curved_line(QPointF(60, 40), QPointF(160, 120))   # an arrow head at the end
+arrow.set_start_termination(LineTermination.Circle)
+arrow.set_stop_termination(LineTermination.SpikeArrow)
+
+region = plot.ellipse(QRectF(2.0, 0.5, 3.0, 1.0), QColor("navy"), 1.5, QColor(0, 0, 128, 40),
+                      coordinates=Coordinates.Data)              # outline, width, fill
+```
+
+- Line ends (`LineTermination`): `NoneTermination`, `Arrow`, `SpikeArrow`, `LineArrow`, `Circle`, `Square`, `Diamond`, `Bar`, `HalfBar` and `SkewedBar`.
+- A curved line bends towards its two direction points, `set_start_dir_position` and `set_stop_dir_position`. By default it is straight.
+- Text also takes `set_text`, `set_font` and `set_font_family`. Ellipses take `set_brush`, `set_line_style` and `set_line_width`.
 
 `panel.vertical_line(position)` draws one vertical line across every plot of a panel, including plots added later. It makes a good time cursor:
 
@@ -1047,7 +1340,9 @@ tl.intervals_changed.connect(apply_edits)
 - Drag a block's end to resize it. A block too narrow to grab is resized from just outside its ends; pressing inside it moves it. Instant events (start == stop) only move.
 - Shift+drag on empty lane space makes a rubber-band selection; Ctrl-click toggles one interval; arrow keys nudge the selection; Escape cancels a drag in progress.
 - `tl.intervals_changed` fires with every edited interval as `[id, start, stop, lane_name]` — the pattern above folds them back into the arrays and calls `set_intervals` again. `tl.interval_created` fires with `(start, stop, lane_name)` when an interval is drawn on empty lane space, and `tl.interval_created_in` with `(start, stop, lane_name, category)`: the category of the row it was drawn in with `TimelineStack.Category`, else `""` (prefer it in new code: it says everything `interval_created` says, which stays for existing slots; one signal cannot take both forms in Python); `tl.delete_requested` fires with the list of selected ids when Delete or Backspace is pressed. Neither changes the data: add or drop the intervals in your arrays and call `set_intervals` again.
-- `tl.set_snap_to([t1, t2, ...])` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events.
+- `tl.set_snap_to([t1, t2, ...])` snaps dragged edges to those times only (epoch seconds or `datetime64`), e.g. orbit events. `set_snap_to` takes a step in seconds, `"edges"` (the other intervals' ends), a list of times, or `None` for no snapping, and `tl.snap_to()` reads it back the same way. The explicit forms are `set_snap_step(s)`, `set_snap_edges()`, `set_snap_times([...])` and `clear_snap()`, with `snap_mode()` giving `"step"`, `"edges"`, `"times"` or `"none"`.
+- `tl.set_lane_height(px)` changes the lane height after creation, like `lane_height=`.
+- `tl.pixel_of(t, lane)` gives the widget pixel of time `t` at the middle of a lane, to place a popup next to an interval. Its y is -1 for an unknown lane.
 - `tl.hovered` fires with the hovered interval's id (or `-1` when the mouse leaves it), and `tl.interval(id)` gives its details as a dict: `id`, `start`, `stop`, `duration`, `lane`, `category` and `label` (`None` for an unknown id); `tl.selected_intervals_changed`, `tl.selected_ids()` and `tl.select_ids([...])` track and drive the selection.
 - `tl.interval_at(x, y)` gives the id of the interval under a widget pixel, or `None`. The plot's crosshair tooltip lists the hovered interval: lane, label (category), start → stop; `plot.crosshair_text()` returns that tooltip's text.
 
@@ -1116,6 +1411,34 @@ proj.set_axis_labels(["X", "Y", "Z"])
 ![Three 2-D projections of an orbit](images/nd-projection.png)
 
 When the time comes first, the curves are coloured by time, and a time marker can follow a cursor on another plot. Pass only the dimensions (`[x, y, z]`) to skip that.
+
+```python
+import numpy as np
+from PySide6.QtGui import QColor
+from SciQLopPlots import SciQLopNDProjectionPlot, SciQLopPlotRange
+
+t = np.linspace(1.7e9, 1.7e9 + 86400, 5000)
+phase = np.linspace(0, 4 * np.pi, t.size)
+
+proj = SciQLopNDProjectionPlot(3)
+proj.reference_curve([t, np.cos(phase), np.sin(phase), 0.3 * np.sin(2 * phase)], label="orbit")
+proj.set_time_color_gradient(QColor("navy"), QColor("gold"))   # first time .. last time
+proj.set_time_marker(t[2500])                  # a dot where the orbit is at that time
+proj.time_marker_changed.connect(lambda when: print("marker at", when))
+
+def model(start, stop):                        # follows the plot's time range
+    tt = np.linspace(start, stop, 500)
+    p = np.linspace(0, 2 * np.pi, tt.size)
+    return [tt, 1.2 * np.cos(p), 1.2 * np.sin(p), np.zeros(tt.size)]
+
+model_curve = proj.model_curve(model, label="model")
+proj.time_axis().set_range(SciQLopPlotRange(t[0], t[-1]))
+```
+
+- `set_time_marker(t)` marks the point at time `t` in every pane, and `clear_time_marker()` removes it. Connect a panel's cursor line to it, `line.position_changed.connect(proj.set_time_marker)`, to see on the orbit where the cursor is.
+- `set_time_color_enabled(False)` draws plain curves. `set_time_color_gradient(start, end)` picks the time colours. The plot has one colour scale for every pane: `set_z_gradient(ColorGradient.Viridis)` or `set_z_gradient_colors(start, end)` sets it, for curves coloured by a value and by time alike.
+- `model_curve(function)` is a curve computed for the time range, like a [data function](#live-data-plot-a-function). It returns `[t, d0, d1, ...]`. It fetches nothing until `proj.time_axis()` has a range.
+- `set_linked_crosshairs(True)` turns the crosshair on in every pane.
 
 A projection needs at least 2 panes. On a 1-pane projection, `reference_curve` raises `ValueError`. A model or callback curve reports each batch through its `fetch_failed` signal instead.
 
@@ -1460,6 +1783,113 @@ instead, in any case (`"PNG"`, `".jpeg"`). Panels export all their plots togethe
 A save that fails raises `OSError` (a missing folder, say), an unknown format or extension `ValueError`.
 
 `plot.to_bytes("png", 800, 500)` returns the same image as bytes, without a file of yours, for a notebook, a web page or an e-mail. It takes the format first, then `save`'s width, height, scale and quality, on plots and panels alike.
+
+## Building an application
+
+SciQLopPlots also has the widgets SciQLop is built from: an inspector, a product browser, and graphs fed by another process. Use them to build your own application around the plots.
+
+### The inspector
+
+`PropertiesPanel` shows every panel, its plots and what they draw as a tree, with an editor for the selected object below it. Panels show up in it by themselves.
+
+```python
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDockWidget, QMainWindow
+from SciQLopPlots import PropertiesPanel, SciQLopMultiPlotPanel
+
+window = QMainWindow()
+window.setCentralWidget(SciQLopMultiPlotPanel())
+dock = QDockWidget("Properties", window)
+dock.setWidget(PropertiesPanel(dock))
+window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+```
+
+`InspectorView` is the tree alone. Selecting a row selects the object on its plot, and the Delete key removes it.
+
+Add your own section to an object's editor with an `InspectorExtension`:
+
+```python
+import numpy as np
+from PySide6.QtWidgets import QLabel
+from SciQLopPlots import InspectorExtension, SciQLopPlot
+
+class Provenance(InspectorExtension):
+    def section_title(self):
+        return "Provenance"
+
+    def build_widget(self, parent):
+        return QLabel("calibrated 2025-04-12, level 2", parent)
+
+plot = SciQLopPlot()
+x = np.linspace(0, 10, 100)
+graph = plot.plot(x, np.sin(x), labels=["B"])
+graph.add_inspector_extension(Provenance(graph))
+```
+
+Graphs, their components, plots, axes and panels take extensions. `priority()` orders the sections, lowest first. `remove_inspector_extension` takes one away.
+
+### Metadata
+
+Every graph keeps a dictionary of your own, for example where its data comes from: `plot.plot(..., metadata={"product": "amda/b_gse"})`, then `graph.metadata()` and `graph.set_metadata({...})`. The library does not read it.
+
+### The product browser
+
+`ProductsView` is a searchable tree of data products. Fill it through `ProductsModel.instance()`, and drag products from it onto a panel:
+
+```python
+import numpy as np
+from SciQLopPlots import (ParameterType, PlotDragNDropCallback, ProductsModel, ProductsModelNode,
+                          ProductsModelNodeType, ProductsView, SciQLopMultiPlotPanel)
+
+model = ProductsModel.instance()
+model.add_node([], ProductsModelNode("ACE"))                    # a folder
+model.add_node(["ACE"], ProductsModelNode(
+    "B_gse", "my_provider", {"units": "nT"},
+    ProductsModelNodeType.PARAMETER, ParameterType.Vector))      # a product in it
+
+browser = ProductsView()
+
+class PlotProducts(PlotDragNDropCallback):
+    def __init__(self, parent):
+        super().__init__(ProductsModel.mime_type(), True, parent)
+
+    def call(self, plot, mime_data):
+        for path in ProductsModel.decode_mime_data(mime_data):   # e.g. ["ACE", "B_gse"]
+            x = np.linspace(0, 10, 100)
+            plot.plot(x, np.sin(x), labels=["/".join(path)])
+
+panel = SciQLopMultiPlotPanel()
+panel.add_accepted_mime_type(PlotProducts(panel))
+```
+
+- The search box takes free text and `field:value` filters on the metadata.
+- Search results are ranked. `set_external_scores` adds a ranking of your own, such as how often each product is used, and `set_signal_weight` and `set_score_merge_strategy` set how the rankings combine. The [API reference](api.md) lists them.
+- `Icons.add_icon(name, icon)` registers an icon that nodes name in their `icon` argument.
+- `tests/manual-tests/advanced/products.py` loads a whole inventory from JSON.
+
+### Data from another process
+
+A remote graph asks for data with a signal and takes it from a slot, so the data can come from another thread, process or machine:
+
+```python
+import numpy as np
+from SciQLopPlots import SciQLopPlot
+
+plot = SciQLopPlot()
+graph = plot.add_remote_line_graph(["B"])
+channel = graph.remote_channel()
+
+def answer(requested):
+    x = np.linspace(requested.start(), requested.stop(), 1000)
+    channel.set_data(x, np.sin(x))     # or channel.request_done() when there is nothing
+
+channel.data_requested.connect(answer)
+plot.x_axis().set_range(0, 10)
+```
+
+- `add_remote_line_graph`, `add_remote_curve`, `add_remote_waterfall`, `add_remote_color_map` and `add_remote_histogram2d` make the remote kinds.
+- `data_requested` fires with the range to fetch, with the same coalescing, cache and [prefetch margin](#fetch-a-margin-around-the-view) as a data function.
+- Answer with `set_data(...)` (or `set_data_colored(data, color)`). If there is nothing to send, call `request_done()`, so the graph stops showing itself busy.
 
 ## Threads
 
