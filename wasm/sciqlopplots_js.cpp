@@ -9,6 +9,7 @@
 #include "SciQLopPlots/MultiPlots/MultiPlotsVSpan.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
+#include "SciQLopPlots/Plotables/SciQLopHistogram.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/SciQLopNDProjectionCurves.hpp"
 #include "SciQLopPlots/SciQLopNDProjectionPlot.hpp"
@@ -35,6 +36,7 @@
 #include <cstdio>
 #include <map>
 #include <numeric>
+#include <optional>
 
 using emscripten::val;
 
@@ -56,6 +58,17 @@ const std::map<std::string, ProjectionAxisLinking> axis_linkings {
     { "independent", ProjectionAxisLinking::Independent },
     { "linked", ProjectionAxisLinking::ByDimension },
     { "sameScale", ProjectionAxisLinking::SameScale },
+};
+
+// A histogram's normalization and style, by their JavaScript name.
+const std::map<std::string, HistogramNormalization> histogram_normalizations {
+    { "count", HistogramNormalization::Count },
+    { "density", HistogramNormalization::Density },
+    { "probability", HistogramNormalization::Probability },
+};
+const std::map<std::string, HistogramStyle> histogram_styles {
+    { "bars", HistogramStyle::Bars },
+    { "step", HistogramStyle::Step },
 };
 
 // Theme colours a page can set, by their JavaScript name.
@@ -555,6 +568,120 @@ int curve(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val opti
     return keep(graph);
 }
 
+// Columns that only shape another (a band's bounds, error bars' ends): no line, and in the
+// legend only the first.
+void hide_columns(SciQLopMultiGraphBase* graph, int count)
+{
+    for (int column = 0; column < count; ++column)
+    {
+        graph->set_column_line_style(column, GraphLineStyle::NoLine);
+        graph->set_column_in_legend(column, column == 0);
+    }
+}
+
+// A multi-column line for band and error_bars: labels, every column in the one colour if any.
+SciQLopMultiGraphBase* bound_line(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y,
+                                  QStringList labels, val options)
+{
+    QList<QColor> colors;
+    if (auto color = option(options, "color"); !color.isUndefined())
+        colors = QList<QColor>(labels.size(), css_color(color.as<std::string>()));
+    auto* graph = qobject_cast<SciQLopMultiGraphBase*>(
+        get<SciQLopPlotInterface>(plot)->line(x, y, labels, colors));
+    if (auto name = option(options, "name"); !name.isUndefined())
+        graph->set_name(qstring(name));
+    return graph;
+}
+
+// Python's band(): y holds the lower and upper bounds, filled between. options: name, color.
+int band(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val options)
+{
+    auto* graph = bound_line(plot, x, y,
+                             { qstring(option(options, "name", val("band"))), "upper" }, options);
+    hide_columns(graph, 2);
+    graph->set_fill_between(0, 1);
+    return keep(graph);
+}
+
+// Python's error_bars(): y holds the values, the lower and the upper ends.
+// options: name, color, capWidth (pixels, default 6).
+int error_bars(int plot, const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, val options)
+{
+    auto* graph = bound_line(plot, x, y,
+                             { qstring(option(options, "name", val("y"))), "lower", "upper" },
+                             options);
+    graph->set_column_marker_shape(0, GraphMarkerShape::Circle);
+    hide_columns(graph, 3);
+    graph->set_error_bars(0, 1, 2, option(options, "capWidth", val(6.)).as<double>());
+    return keep(graph);
+}
+
+template <typename Enum>
+Enum named(const std::map<std::string, Enum>& names, val name, const char* what)
+{
+    const auto found = names.find(name.as<std::string>());
+    if (found == names.end())
+        throw std::invalid_argument(std::string("SciQLopPlots: no histogram ") + what + " '"
+                                    + name.as<std::string>() + "'");
+    return found->second;
+}
+
+// A histogram in a new row of the panel: its x axis holds the values, so the time does not move
+// it. options: name, bins (default 64), range ([lower, upper]), logBins, normalization
+// ('count', 'density', 'probability'), style ('bars', 'step'), color. Returns { plot, histogram }.
+val histogram(int panel, const SciQLopPyBuffer& values, val options)
+{
+    // Read every option first: a bad one must throw before the row exists.
+    const auto normalization = named(histogram_normalizations,
+                                     option(options, "normalization", val("count")), "normalization");
+    const auto style = option(options, "style");
+    const auto style_value = style.isUndefined() ? std::optional<HistogramStyle>()
+                                                 : named(histogram_styles, style, "style");
+    const auto bins = option(options, "bins", val(64)).as<int>();
+    if (bins <= 0)
+        throw std::invalid_argument("SciQLopPlots: a histogram needs bins > 0, got "
+                                    + std::to_string(bins));
+    const auto [plot, hist] = get<SciQLopMultiPlotPanel>(panel)->histogram(
+        values, qstring(option(options, "name", val("Histogram"))), bins);
+    // Log first: the range check depends on it.
+    hist->set_log_bins(option(options, "logBins", val(false)).as<bool>());
+    if (auto range = option(options, "range"); !range.isUndefined())
+        hist->set_bin_range(range[0].as<double>(), range[1].as<double>());
+    hist->set_normalization(normalization);
+    if (style_value)
+        hist->set_style(*style_value);
+    if (auto color = option(options, "color"); !color.isUndefined())
+        hist->set_colors({ css_color(color.as<std::string>()) });
+    auto ids = val::object();
+    ids.set("plot", keep(plot));
+    ids.set("histogram", keep(hist));
+    return ids;
+}
+
+void set_histogram_values(int id, const SciQLopPyBuffer& values)
+{
+    get<SciQLopHistogram>(id)->set_values(values);
+}
+
+val numbers(const QList<double>& list)
+{
+    return val::array(std::vector<double>(list.begin(), list.end()));
+}
+
+val bin_edges(int id)
+{
+    return numbers(get<SciQLopHistogram>(id)->bin_edges());
+}
+
+// One array of heights per column.
+val bin_heights(int id)
+{
+    auto columns = val::array();
+    for (const auto& column : get<SciQLopHistogram>(id)->bin_heights())
+        columns.call<void>("push", numbers(column));
+    return columns;
+}
+
 // A [min, max] pair, checked here: indexing a missing one throws in JavaScript, past C++'s catch.
 SciQLopPlotRange range_of(val ranges, int dim)
 {
@@ -908,6 +1035,12 @@ EMSCRIPTEN_BINDINGS(sciqlopplots)
     function("line", &line);
     function("scatter", &scatter);
     function("curve", &curve);
+    function("band", &band);
+    function("errorBars", &error_bars);
+    function("histogram", &histogram);
+    function("setHistogramValues", &set_histogram_values);
+    function("binEdges", &bin_edges);
+    function("binHeights", &bin_heights);
     function("setLegendVisible", &set_legend_visible);
     function("addProjection", &add_projection);
     function("projectionPane", &projection_pane);

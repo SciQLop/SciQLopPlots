@@ -120,6 +120,7 @@ Qt starts once per page: later calls return the same object.
 |---|---|
 | `addPlot()` | A new `Plot` at the bottom of the panel. |
 | `addProjection({ pairs, labels, equalAspect, ranges, axes })` | A new `Projection` at the bottom of the panel. |
+| `histogram(values, { bins, range, logBins, normalization, style, color, name })` | A new row counting `values` into bins (default 64), as a `Histogram`. Its x axis holds the values, so the time does not move it: give it the values in view from `on('timeRangeChanged', …)`. `range`: fixed `[lower, upper]` edges, values outside are not counted; without it the edges follow the data and only widen. `logBins`: bins equally wide in log space (positive values). `normalization`: `'count'` (default), `'density'` (area 1) or `'probability'` (heights add up to 1). `style`: `'bars'` (default for one column) or `'step'` (default for several). |
 | `addElement(element, { onTimeRange })` | A new `ElementRow` at the bottom of the panel, showing `element`: see [Charts from other libraries](#charts-from-other-libraries). |
 | `plotAt(x, y)` | The plot under a point, in CSS pixels from the panel element's top-left corner (e.g. where something was dropped): `{ plot, index }`, where `plot` is a `Plot`, a `Projection` or an `ElementRow`, with the same `id` as the page's own handle. `null` between and outside plots. |
 | `acceptDrops(mimeType, (target, data) => …)` | Takes HTML5 drags whose `dataTransfer` holds `mimeType`, as SciQLop does on the desktop: dropped on a plot, `target.plot` is that plot; near a plot's top or bottom edge the panel shows where a new plot would go, and a drop there makes it (`target.newPlot` is `true`). `target.index` is the plot's place in the panel, `data` the dropped string. Set the data in your `dragstart`: `event.dataTransfer.setData(mimeType, data)`. |
@@ -138,6 +139,8 @@ Qt starts once per page: later calls return the same object.
 |---|---|
 | `line(t, values, { labels, colors, name, gapThreshold })` | A `Graph`: one line per column of `values`. |
 | `scatter(t, values, { labels, colors, name, gapThreshold })` | A `Graph` drawn with markers. |
+| `band(t, lower, upper, { name, color })` | A `Graph`: the area between `lower` and `upper` (arrays, or numbers for a constant bound), filled, without lines. |
+| `errorBars(t, y, err, { name, color, capWidth })` / `errorBars(t, y, errLow, errHigh, …)` | A `Graph`: markers at `y` with bars from `y - errLow` to `y + errHigh` (arrays or numbers). Bars need three cap widths (`capWidth`, default 6 px) between them: closer, they are drawn as a band. |
 | `colormap(t, y, z, { name, yLog, zLog, gradient })` | A `ColorMap` (spectrogram). `y`: the `m` channels, or `n × m` values when they change with time. `z`: `n × m` values, row-major (`z[i * m + j]` is time `i`, channel `j`). `gradient`: `'Jet'`, `'Viridis'`, `'Plasma'`, `'Inferno'`, `'Magma'`, `'Cividis'`, `'Turbo'`, `'Coolwarm'`, … |
 | `setAxis(which, { label, log, range })` | `which`: `'x'`, `'y'`, or `'z'` (a spectrogram's colour axis). `range`: `[min, max]`. |
 | `axisRange(which)` | `[min, max]` of that axis. |
@@ -167,6 +170,17 @@ A row of 2-D views of a 3-D trajectory: X-Y, Y-Z and Z-X by default. Axes showin
 | `setVisible(visible)` | Shows or hides it. |
 | `setGapThreshold(x)`, `gapThreshold` | Lines and scatters only. A time step longer than `x` times its neighbours breaks the line, as a data gap (default 1.5). `0` never breaks it: use it for keys that are uneven on purpose, like min/max resampled data. NaN values still break the line. |
 | `remove()` | Removes it from its plot. |
+
+### `Histogram`
+
+| Member | Description |
+|---|---|
+| `setValues(values)` | Counts new values: one column, or an array of columns (one step outline each). |
+| `binEdges`, `binHeights` | What is drawn, once the values are binned (empty before): `bins + 1` edges, and one array of heights per column. |
+| `plot` | The `Plot` of its row: label its axes with `setAxis`. |
+| `setVisible(visible)`, `remove()` | As for a `Graph`. |
+
+The [bands, error bars and histograms](https://sciqlop.github.io/SciQLopPlots/latest/gallery/bands-and-histograms.html) example draws all three, with a histogram that counts the values in view again after every pan or zoom.
 
 ### `Span`
 
