@@ -8,7 +8,7 @@ It is built for [SciQLop](https://github.com/SciQLop/SciQLop) but works in any P
 pip install SciQLopPlots
 ```
 
-Wheels exist for Python 3.11 to 3.14 on Linux, macOS and Windows.
+Wheels exist for Python 3.12 to 3.14 on Linux, macOS and Windows.
 
 ![A time series panel](images/panel.png)
 

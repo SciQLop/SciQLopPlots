@@ -36,7 +36,7 @@ pip install SciQLopPlots
 ```
 
 This pulls in NumPy and PySide6. PySide6 is pinned to an exact version, so installing replaces any other PySide6 in the environment.
-Wheels exist for Python 3.11 to 3.14, on Linux, macOS and Windows, x86-64 and ARM64.
+Wheels exist for Python 3.12 to 3.14, on Linux, macOS and Windows, x86-64 and ARM64.
 To plot in a web page instead, see [JavaScript (WebAssembly)](javascript.md).
 
 ## Your first plot
@@ -2006,6 +2006,7 @@ Or set `SCIQLOP_TRACE=/path/trace.json` in the environment to trace a whole run.
 - **Time values go through one conversion**: date strings must be ISO 8601, so `"2020-01-01 10:00:00 UTC"` now raises `ValueError` (drop the zone name, or write `+00:00`). An array of `dtype=object` must hold dates: an object array of numbers, as a mixed pandas column gives, raises `TypeError` (convert it with `.astype(float)`).
 - **Timeline state is methods**, like the rest of the API: `tl.style()`, `tl.set_style(TimelineStyle.Bars)`, and the same for `stack`, `edit_modes`, `editable`, `lanes`, `forbid_overlap`, `category_order` and `snap_to`. An old assignment (`tl.style = ...`) still works and warns, but reading `tl.style` without calling it gives the method, so `tl.style == TimelineStyle.Bars` is always false. `edit_modes()` is a list, not a set, and `set_style` / `set_stack` take only the enum members: a string raises `TypeError`.
 - **PySide6 6.12.0**: the wheel requires exactly PySide6 and shiboken6 6.12.0, the version PySide6-QtAds 5.1.1.1 requires. An environment that pins 6.11 cannot install it.
+- **Python 3.12 or later**: PySide6 6.12.0 crashes Python 3.11 (it drops a reference to `None` on every call that returns nothing, [PYSIDE-3474](https://bugreports.qt.io/browse/PYSIDE-3474)), so 0.53 has no wheel for 3.11. It comes back once PySide fixes the bug.
 - **`SciQLopPlotRange.datetime_start()` and `datetime_stop()` return UTC-aware datetimes.** They used to return naive datetimes in the machine's local time, which shifted a range by the UTC offset when fed back in. Compared with a naive datetime, `==` is now always false and `<` raises `TypeError`: compare with aware ones, such as `datetime(..., tzinfo=timezone.utc)`.
 - **Keywords are all snake_case**: `add_remote_line_graph(..., metadata=...)` and the other `add_remote_*` take `metadata=`, not `metaData=`, like `plot()`.
 - **A string where a SciQLopPlots method takes a list of strings is one item**: `set_lanes("MSA")` makes one lane and `plot(x, y, labels="Bx")` one label. Both used to split the string into letters.

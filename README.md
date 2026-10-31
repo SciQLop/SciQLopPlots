@@ -46,7 +46,7 @@ The **[user guide](https://sciqlopplots.readthedocs.io/en/latest/user-guide.html
 pip install SciQLopPlots
 ```
 
-Wheels exist for Python 3.11 to 3.14. They pin PySide6 to an exact version, so installing replaces any other PySide6 in the environment.
+Wheels exist for Python 3.12 to 3.14. They pin PySide6 to an exact version, so installing replaces any other PySide6 in the environment.
 
 ```python
 import numpy as np

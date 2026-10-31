@@ -23,20 +23,12 @@ python3 = pymod.find_installation('python3', modules:[f'PySide@pyside_version@',
                                                       f'shiboken@pyside_version@_generator',
                                                       'numpy'])
 python3_dep = python3.dependency(embed:false)
-# One abi3 wheel per platform: the buffer protocol we read arrays with joined the
-# stable ABI in Python 3.11. Everything linked into the modules must agree on it.
-py_limited_api = '3.11'
-py_limited_api_args = ['-DPy_LIMITED_API=0x030B0000']
-# Shiboken's headers need two typedefs that CPython 3.11 keeps out of the limited
-# API: supply them when building with 3.11 (see the header).
-if python3.language_version().version_compare('<3.12')
-    limited_api_compat = meson.current_source_dir() / 'bindings' / 'limited_api_311_compat.h'
-    if meson.get_compiler('cpp').get_argument_syntax() == 'msvc'
-        py_limited_api_args += ['/FI' + limited_api_compat]
-    else
-        py_limited_api_args += ['-include', limited_api_compat]
-    endif
-endif
+# One abi3 wheel per platform. Everything linked into the modules must agree on it.
+# 3.12, not 3.11 (where the buffer protocol joined the stable ABI): PySide6 6.12.0 drops a
+# reference to None on every call returning nothing, which aborts Python 3.11 (PYSIDE-3474).
+# Back to 3.11 once PySide is fixed: restore the 3.11 shim this commit removed.
+py_limited_api = '3.12'
+py_limited_api_args = ['-DPy_LIMITED_API=0x030C0000']
 
 qt_modules = ['QtCore','QtGui','QtWidgets']
 
