@@ -74,6 +74,7 @@
       assert(p.errorBars(t, sin, 0.1, { name: 'sin', capWidth: 4 }) instanceof Graph, 'a Graph');
       p.errorBars(t, cos, 0.1, cos.map(() => 0.3), { color: 'red' });
       throws(() => p.errorBars(t, sin, cos.subarray(1)), 'an error of the wrong length');
+      throws(() => p.errorBars(t, sin, 0.1, 0.3, 0.5), 'a stray argument');
     });
     await check('histogram: a row of the panel that counts values', async () => {
       const hist = b.histogram(sin, { bins: 20, name: 'sin values' });
@@ -93,6 +94,9 @@
       throws(() => b.histogram(sin, { normalization: 'nope' }), 'an unknown normalization');
       throws(() => b.histogram(sin, { style: 'nope' }), 'an unknown style');
       throws(() => b.histogram(sin, { bins: 0 }), 'zero bins');
+      throws(() => b.histogram(sin, { bins: 10.5 }), 'a fraction of a bin');
+      throws(() => b.histogram(sin, { range: 5 }), 'a range that is not [lower, upper]');
+      throws(() => b.histogram(sin, { normalization: 3 }), 'a normalization that is not a string');
     });
     await check('gap threshold: option, setter, 0 turns it off', () => {
       const p = b.addPlot();

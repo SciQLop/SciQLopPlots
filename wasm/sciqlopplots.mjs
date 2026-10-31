@@ -177,7 +177,9 @@ export class Plot extends Handle {
   // are numbers or arrays. options: name, color (CSS), capWidth (pixels, default 6).
   errorBars(t, y, errLow, ...rest) {
     const errHigh = rest.length && !isOptions(rest[0]) ? rest.shift() : errLow;
-    const options = rest[0] ?? {};
+    const options = rest.shift() ?? {};
+    if (rest.length || !isOptions(options))
+      throw new TypeError('SciQLopPlots: errorBars(t, y, err[, errHigh][, options]) takes no more arguments');
     const values = asBound(y, t.length, 'y');
     const low = asBound(errLow, t.length, 'errLow'), high = asBound(errHigh, t.length, 'errHigh');
     const columns = [values, values.map((v, i) => v - low[i]), values.map((v, i) => v + high[i])];
