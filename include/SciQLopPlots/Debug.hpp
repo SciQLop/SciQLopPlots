@@ -46,6 +46,12 @@ struct unsupported_call : std::runtime_error
 {
     using std::runtime_error::runtime_error;
 };
+
+//! A wrong-type argument. Bindings raise it as TypeError; a plain std::invalid_argument is a ValueError.
+struct type_error : std::invalid_argument
+{
+    using std::invalid_argument::invalid_argument;
+};
 }
 
 //! Throws sqp::unsupported_call: "<what> is not supported by <self's concrete class>".
