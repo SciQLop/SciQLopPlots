@@ -118,6 +118,11 @@ Rules for the loop:
 
 ## Fixing what we find
 
+**Every known violation is fixed in this campaign.** That includes crashes, hangs, swallowed errors,
+wrong exception classes and unhelpful messages. Nothing is deferred to a later pass. The campaign
+is done when the deep sweep and the deep story run report zero violations. Judgment calls are
+decided with the user and then fixed in the same campaign.
+
 - **Test first.** Every bug gets a reproducer test before its fix: a subprocess test for crashes, a
   `pytest.raises` with a match on the message for wrong or missing exceptions.
 - **Fix the shared code.** Fix the shared validation point, not each caller. Validation belongs where
