@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlotCollection.hpp"
 
 #include <QGridLayout>
@@ -37,7 +38,8 @@ class SciQLopPlotPanelInterface : public QScrollArea, public SciQLopPlotCollecti
     Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed FINAL)
 
 public:
-    SciQLopPlotPanelInterface(QWidget* parent = nullptr) : QScrollArea { parent }
+    SciQLopPlotPanelInterface(QWidget* parent = nullptr)
+            : QScrollArea { SciQLopPlots::on_gui_thread(parent, "a panel") }
     {
         connect(this, &QObject::objectNameChanged, this,
                 &SciQLopPlotPanelInterface::name_changed);

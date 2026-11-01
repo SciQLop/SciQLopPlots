@@ -332,6 +332,10 @@ if _raised:
     ("plot", "obj.bars(np.linspace(0.0, 1.0, 11), np.arange(10.0))", "deleted"),
     ("plot", "obj.add_remote_line_graph(['a'])", "deleted"),
     ("plot", "obj.overlay()", "deleted"),
+    ("panel", "obj.plot(X, np.sin(X))", "deleted"),
+    ("panel", "obj.histogram(np.sin(X))", "deleted"),
+    ("panel", "S.SciQLopPlot()", "deleted"),
+    ("panel", "S.SciQLopMultiPlotPanel()", "deleted"),
 ])
 def test_off_the_gui_thread(kind, call, expect):
     # "deleted" grades RuntimeError: here, the factory's refusal off-thread.
@@ -348,3 +352,14 @@ def test_off_the_gui_thread(kind, call, expect):
 ])
 def test_a_second_colour_map_of_any_kind_is_refused(first, second):
     assert_contract("plot", f"{first}\nimport pytest\nwith pytest.raises(RuntimeError, match='already has a colour map'):\n    {second}", "ok")
+
+
+# Found by opencode: a panel added inside itself, or inside a panel it holds, hung (a widget cycle).
+@pytest.mark.parametrize("call", [
+    "obj.add_panel(obj)",
+    "obj.insert_panel(0, obj)",
+    "inner = S.SciQLopMultiPlotPanel()\nobj.add_panel(inner)\ninner.add_panel(obj)",
+    "inner = S.SciQLopMultiPlotPanel()\nobj.add_panel(inner)\ninner.add_widget(obj)",
+])
+def test_a_panel_cannot_hold_itself(call):
+    assert_contract("panel", call, "value")
