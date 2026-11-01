@@ -156,3 +156,18 @@ def test_a_deleted_plot_leaves_the_list():
 ])
 def test_saving_without_a_file_name_is_a_value_error(kind, call):
     assert_contract(kind, call, "value", ("TypeError",))
+
+
+# F9: a call the axis can't honour raised nothing and only printed.
+@pytest.mark.parametrize("kind, call, expect", [
+    ("time_axis", "obj.set_log(True)", "value"),
+    ("x_axis", "obj.set_date_format('%H:%M')", "value"),
+    ("time_axis", "obj.set_tick_labels({1.0: 'one'})", "value"),
+    ("x_axis", "obj.couple_range_with(None)", "type"),
+    ("x_axis", "obj.decouple_range_from(None)", "type"),
+    ("time_axis", "obj.set_log(False)", "ok"),
+    ("time_axis", "obj.set_tick_labels({})", "ok"),
+    ("time_axis", "h.ts_plot.toggle_log_scale_hovered_or_selected_axes()", "ok"),
+])
+def test_axis_calls_it_cannot_honour_raise(kind, call, expect):
+    assert_contract(kind, call, expect)
