@@ -80,6 +80,10 @@ class DataProviderInterface : public QObject
     Q_SIGNAL void _state_changed();
 #endif
     Q_SLOT void _threaded_update();
+#ifndef BINDINGS_H
+    template <typename Update>
+    void _reporting_failures(Update&& update);
+#endif
 
     void _notify_new_data(const QList<SciQLopPyBuffer>& data);
     void _notify_new_data(const _Colored_data& batch);
