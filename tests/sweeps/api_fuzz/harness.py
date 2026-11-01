@@ -47,7 +47,7 @@ class Verdict:
 
 
 STDERR_ALLOW = [
-    (re.compile(r"^QRhiWidget: QRhi is not supported on this platform\.$"),
+    (re.compile(r"^QRhiWidget: (QRhi is not supported on this platform\.|No QRhi)$"),
      "offscreen platform has no QRhi: plots fall back to raster painting"),
     (re.compile(r"^This plugin does not support propagateSizeHints\(\)$"),
      "offscreen platform plugin notice on show()"),
@@ -146,13 +146,15 @@ def _run_child(cases: list[Case], per_case_s: float, batch_s: float):
         return decode(e.stdout), decode(e.stderr), None, True
 
 
-def run_batch(cases: list[Case], per_case_s: float = 20, batch_s: float = 120) -> list[Outcome]:
+def run_batch(cases: list[Case], per_case_s: float = 20, batch_s: float | None = None) -> list[Outcome]:
+    """batch_s is only a backstop (each case has its own per_case_s watchdog); by default it scales with the batch."""
     by_id = {c.id: c for c in cases}
     assert len(by_id) == len(cases), "case ids must be unique within a batch"
     outcomes: dict[str, Outcome] = {}
     pending = list(cases)
     while pending:
-        stdout, stderr, returncode, timed_out = _run_child(pending, per_case_s, batch_s)
+        stdout, stderr, returncode, timed_out = _run_child(pending, per_case_s,
+                                                           batch_s or per_case_s * len(pending) + 30)
         per_case, last, phase = _split_stderr(stderr)
         for line in stdout.splitlines():
             try:
