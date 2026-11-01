@@ -151,7 +151,11 @@ public:
     virtual ~SciQLopPlotInterface() = default;
 
     inline QString name() const { return objectName(); }
-    inline void set_name(const QString& name) { setObjectName(name); }
+    inline void set_name(const QString& name)
+    {
+        SCIQLOP_ON_OWNER_THREAD(set_name(name));
+        setObjectName(name);
+    }
 
     inline QUuid uuid() const noexcept
     {

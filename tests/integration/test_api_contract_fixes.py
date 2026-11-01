@@ -289,3 +289,50 @@ def test_a_provider_without_get_data_for_a_list_reports_instead_of_printing():
 ])
 def test_colour_names_and_font_families_are_checked(kind, call, expect):
     assert_contract(kind, call, expect)
+
+
+# Found by the story fuzzer: the helpers passed a strided x through, which the C++ conversion refuses.
+@pytest.mark.parametrize("call", ["obj.error_bars(X[::10], np.cos(X[::10]), 0.1)",
+                                  "obj.band(X[::2], np.sin(X[::2]) - 1, np.sin(X[::2]) + 1)",
+                                  "obj.error_bars(X, np.cos(X)[::-1], 0.1)"])
+def test_helpers_take_strided_views(call):
+    assert_contract("plot", call, "ok")
+
+
+# Found by the story fuzzer: an unknown keyword on a method raised AttributeError, not TypeError.
+@pytest.mark.parametrize("kind, call", [("plot", "obj.text('t', C.QPointF(1, 1), bogus=1)"),
+                                        ("plot", "obj.histogram(X, bogus=1)"),
+                                        ("ts_plot", "obj.histogram(X, bins=3)")])
+def test_an_unknown_keyword_is_a_type_error(kind, call):
+    assert_contract(kind, call, "type")
+
+
+# Off the GUI thread (SciQLop#147 policy): a mutator queues, a factory refuses with RuntimeError.
+OFF_THREAD = """import threading
+_raised = []
+def _run():
+    try:
+        CALL
+    except BaseException as e:
+        _raised.append(e)
+_t = threading.Thread(target=_run)
+_t.start()
+_t.join(10)
+if _raised:
+    raise _raised[0]
+"""
+
+
+@pytest.mark.parametrize("kind, call, expect", [
+    ("plot", "obj.set_name('renamed')", "ok"),
+    ("plot", "obj.configure_as_timeline(20)", "ok"),
+    ("plot", "obj.line(X, np.sin(X))", "deleted"),
+    ("plot", "obj.histogram(np.sin(X))", "deleted"),
+    ("plot", "obj.band(X, np.sin(X) - 1, np.sin(X) + 1)", "deleted"),
+    ("plot", "obj.bars(np.linspace(0.0, 1.0, 11), np.arange(10.0))", "deleted"),
+    ("plot", "obj.add_remote_line_graph(['a'])", "deleted"),
+    ("plot", "obj.overlay()", "deleted"),
+])
+def test_off_the_gui_thread(kind, call, expect):
+    # "deleted" grades RuntimeError: here, the factory's refusal off-thread.
+    assert_contract(kind, OFF_THREAD.replace("CALL", call), expect)

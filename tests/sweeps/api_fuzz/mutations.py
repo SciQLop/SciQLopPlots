@@ -83,6 +83,7 @@ POLYMORPHIC = {
     ("on_time_range", 0): "WidgetPlot's hook: forwards whatever it gets to the user's callable",
     ("on_time_range", 1): "WidgetPlot's hook: forwards whatever it gets to the user's callable",
     ("set_color_palette", 0): "WidgetPlot keeps any iterable of colours; it doesn't draw with them",
+    ("axis", 0): "an AxisType, an anchor, or an axis name: an unknown name is no axis (None)",
 }
 
 # Calls whose remaining arguments may match another overload or a default: they must not crash or swallow,
@@ -91,6 +92,27 @@ _COUNT_ALLOW = ("TypeError", "NotImplementedError")
 
 PREAMBLE = "import numpy as np\nimport shiboken6\n\n" \
            "def _read_only(a):\n    a.flags.writeable = False\n    return a\n\n"
+
+
+# The baseline from a plain Python thread (SciQLop#147): a mutator queues to the GUI thread, a factory
+# refuses with RuntimeError; nothing crashes or prints a Qt cross-thread warning.
+OFF_THREAD = """import threading
+_raised = []
+
+
+def _off_thread():
+    try:
+        obj.{name}(*args)
+    except BaseException as e:
+        _raised.append(e)
+
+
+_thread = threading.Thread(target=_off_thread)
+_thread.start()
+_thread.join(10)
+if _raised:
+    raise _raised[0]
+"""
 
 
 def _base_args(row: dict) -> str:
@@ -129,6 +151,7 @@ def cases_for(row: dict, receiver_deletable: bool) -> list[Case]:
     if kinds:
         out.append(_case(row, "too_few", base + "args = args[:-1]\n" + _invoke(row), "ok_or_value", _COUNT_ALLOW))
     out.append(_case(row, "too_many", base + "args = args + [object()]\n" + _invoke(row), "ok_or_value", _COUNT_ALLOW))
+    out.append(_case(row, "off_thread", base + OFF_THREAD.format(name=row["name"]), "ok_or_value", ("RuntimeError",)))
     if receiver_deletable:
         out.append(_case(row, "deleted_receiver", base + "shiboken6.delete(obj)\n" + _invoke(row), "deleted"))
     return out

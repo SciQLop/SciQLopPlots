@@ -79,6 +79,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     sqp::validation::require_array(x, "x");
     sqp::validation::require_array(y, "y");
     sqp::validation::require_array(z, "z");
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y, z));
     if (!_cmap)
         return;
 

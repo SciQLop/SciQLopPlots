@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/QCPAbstractPlottableWrapper.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
@@ -98,6 +99,7 @@ public:
 
     void set_busy(bool busy) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
         if (_multiGraph)
             _multiGraph->setBusy(busy);
     }

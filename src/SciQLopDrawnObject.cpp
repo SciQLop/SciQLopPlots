@@ -98,7 +98,12 @@ void apply_change(SciQLopDrawnObject* self, const char* setter, bool always_appl
 }
 }
 
-SciQLopDrawnObject::SciQLopDrawnObject(QObject* parent) : QObject(parent) { }
+// Every plottable and item starts here: built off its plot's thread it would be a cross-thread child
+// (Qt warns, and some crashed), so a factory called from another thread refuses (RuntimeError).
+SciQLopDrawnObject::SciQLopDrawnObject(QObject* parent)
+        : QObject(SciQLopPlots::on_owner_thread(parent, "creating a plottable or an item"))
+{
+}
 
 bool SciQLopDrawnObject::visible() const
 {

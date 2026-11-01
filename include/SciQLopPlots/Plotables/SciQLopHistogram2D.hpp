@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 #include "SciQLopPlots/Python/DtypeDispatch.hpp"
@@ -140,6 +141,7 @@ public:
     // where the base call is a no-op anyway).
     inline void set_busy(bool busy) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
         set_remote_busy(busy);
         {
             const QSignalBlocker blocker(this);
