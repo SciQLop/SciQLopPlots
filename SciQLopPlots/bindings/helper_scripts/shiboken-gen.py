@@ -104,6 +104,25 @@ CONVERSION_CHECK = re.compile(r'^(\s*)if \(Shiboken::Errors::occurred\(\) == nul
 FUNCTION_HEADER = re.compile(r'^static (?:PyObject \*|int )Sbk_(\w+?)(?:Func_(\w+)|_Init)\(', re.M)
 
 
+# Shiboken converts every argument before checking for an error: with one already pending, the next
+# conversion calls into the C API and Python turns that into SystemError. Convert only while none is.
+ARGUMENT_CONVERSION = re.compile(r'^(\s*)(pythonToCpp\[\d+\]\(pyArgs\[\d+\], &[^;]+\);)$', re.M)
+
+
+# A complex numpy array passes the sequence check for a list of doubles, and each element then converts
+# with a ComplexWarning, its imaginary part dropped: refuse it, so the call raises TypeError instead.
+REAL_LIST_CHECK = re.compile(r'(static PythonToCppFunc is_PySequence_PythonToCpp__Q\w+_(?:double|float)__Convertible\(PyObject \*pyIn\)\n\{\n)')
+
+
+def refuse_complex_arrays(source):
+    return REAL_LIST_CHECK.sub(r'\1    if (sqp::is_complex_array(pyIn))\n        return {};\n', source)
+
+
+def guard_argument_conversions(source):
+    # In braces: some conversions are the body of an if/else without braces, whose else must not move.
+    return ARGUMENT_CONVERSION.sub(r'\1{ if (!PyErr_Occurred()) \2 }', source)
+
+
 def name_conversion_errors(source):
     out, last = [], 0
     headers = list(FUNCTION_HEADER.finditer(source))
@@ -123,8 +142,10 @@ def patch_generated(output_directory):
             source = f.read()
         translated = GENERIC_CATCH.sub(r'\1sqp::python_error_type(e);', source)
         translated = translated.replace(UNCHECKED_ITER, CHECKED_ITER)
+        translated = guard_argument_conversions(translated)
+        translated = refuse_complex_arrays(translated)
         translated = name_conversion_errors(translated)
-        if 'sqp::python_error_type' in translated or 'sqp::name_conversion_error' in translated:
+        if any(f'sqp::{helper}' in translated for helper in ('python_error_type', 'name_conversion_error', 'is_complex_array')):
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
         if translated != source:

@@ -27,6 +27,28 @@ inline PyObject* python_error_type(const std::exception& e)
     return PyExc_RuntimeError;
 }
 
+//! A numpy array of complex numbers: its elements convert to double only by dropping the imaginary
+//! part (numpy warns and goes on), so a list-of-numbers argument refuses it as the wrong type.
+inline bool is_complex_array(PyObject* object)
+{
+    PyObject* dtype = PyObject_GetAttrString(object, "dtype");
+    if (dtype == nullptr)
+    {
+        PyErr_Clear();
+        return false;
+    }
+    PyObject* kind = PyObject_GetAttrString(dtype, "kind");
+    Py_DECREF(dtype);
+    if (kind == nullptr)
+    {
+        PyErr_Clear();
+        return false;
+    }
+    const bool complex = PyUnicode_Check(kind) && PyUnicode_CompareWithASCIIString(kind, "c") == 0;
+    Py_DECREF(kind);
+    return complex;
+}
+
 //! libshiboken raises a bare OverflowError (no message) when a number doesn't fit a C++ integer
 //! argument, NaN and infinity included. Give it one that says where and why.
 inline void name_conversion_error(const char* function)
