@@ -9,16 +9,17 @@ import pytest
 
 from tests.sweeps.api_fuzz.driver import run_folder, sweep
 
-CI_CLASSES: list[str] = []
+# Core classes the campaign made clean, swept in one call (building the receivers costs ~45 s).
+CI_CLASSES = ["SciQLopPlotRange", "SciQLopLineGraph", "SciQLopColorMap", "SciQLopHistogram",
+              "SciQLopVerticalSpan", "SciQLopPlotGroup", "MatchedXY"]
 
 
 def _failures(rows):
     return [f"{r['id']}: {r['status']}: {r['detail'][:300]}" for r in rows if r["status"] != "pass"]
 
 
-@pytest.mark.parametrize("cls", CI_CLASSES)
-def test_contract(cls):
-    assert _failures(sweep(classes=[cls])) == []
+def test_contract():
+    assert _failures(sweep(classes=CI_CLASSES)) == []
 
 
 @pytest.mark.skipif(os.environ.get("SCIQLOP_PLOTS_DEEP_FUZZ") != "1", reason="deep sweep: SCIQLOP_PLOTS_DEEP_FUZZ=1")
