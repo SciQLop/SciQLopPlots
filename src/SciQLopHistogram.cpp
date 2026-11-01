@@ -153,7 +153,8 @@ QCPPlottableLegendItem* SciQLopHistogram::_legend_item() const
 
 void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    if (!_hist || !y.is_valid())
+    sqp::validation::require_array(y, "y");
+    if (!_hist)
         return;
     if (x.is_valid())
         sqp::validation::validate_same_length(x, "x", y, "y");
@@ -170,7 +171,8 @@ void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 
 void SciQLopHistogram::set_values(SciQLopPyBuffer values)
 {
-    if (!_hist || !values.is_valid())
+    sqp::validation::require_array(values, "values");
+    if (!_hist)
         return;
     const QPointer self(this);
     _bin(SciQLopPyBuffer(), values);
