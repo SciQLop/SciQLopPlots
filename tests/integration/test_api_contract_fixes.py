@@ -171,3 +171,26 @@ def test_saving_without_a_file_name_is_a_value_error(kind, call):
 ])
 def test_axis_calls_it_cannot_honour_raise(kind, call, expect):
     assert_contract(kind, call, expect)
+
+
+# F16: move_panel did nothing (by index) or refused (by panel).
+CHILD_PANEL = "child = S.SciQLopMultiPlotPanel()\nobj.insert_panel(0, child)\nC.pump()\n"
+
+
+@pytest.mark.parametrize("call, expect", [
+    (CHILD_PANEL + "obj.move_panel(child, 2)\nassert obj.index_of(child) == 2", "ok"),
+    (CHILD_PANEL + "obj.move_panel(0, 2)\nassert obj.index_of(child) == 2", "ok"),
+    (CHILD_PANEL + "obj.move_panel(1, 0)", "value"),
+    (CHILD_PANEL + "obj.move_panel(99, 0)", "value"),
+    ("obj.move_panel(None, 0)", "type"),
+    ("obj.move_panel(S.SciQLopMultiPlotPanel(), 0)", "value"),
+])
+def test_move_panel(call, expect):
+    assert_contract("panel", call, expect)
+
+
+# J2 (user's answer): a deleted WidgetPlot raises like any deleted object.
+@pytest.mark.parametrize("call", ["obj.sizeHint()", "obj.widget", "obj.on_time_range(0.0, 1.0)", "obj.time_axis()",
+                                  "obj.x_axis()", "obj.color_palette()", "obj.set_color_palette([C.RED])"])
+def test_a_deleted_widget_plot_raises(call):
+    assert_contract("widget_plot", f"import shiboken6\nshiboken6.delete(obj)\n{call}", "deleted")
