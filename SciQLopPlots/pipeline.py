@@ -36,6 +36,24 @@ def _detect_call_style(func):
         return "event"
 
 
+def _gone(prop):
+    """True when prop's object was deleted: a RuntimeError then means "too late", not a failure."""
+    if prop is None:
+        return False
+    try:
+        obj = prop.qobject
+    except RuntimeError:
+        return True
+    import shiboken6
+    return isinstance(obj, shiboken6.Object) and not shiboken6.isValid(obj)
+
+
+def _raise_unless_gone(*props):
+    """Inside an except RuntimeError: drop it if an end of the pipeline was deleted, else re-raise."""
+    if not any(_gone(p) for p in props):
+        raise
+
+
 def _make_step(source_prop, transform, target_prop, alive):
     """value -> transform -> target, for one emission. Nothing reaches a pipeline no longer alive."""
     call_style = _detect_call_style(transform) if transform else None
@@ -58,8 +76,7 @@ def _make_step(source_prop, transform, target_prop, alive):
             if target_prop is not None and alive():
                 target_prop.value = result
         except RuntimeError:
-            # Source or target QObject may have been destroyed
-            pass
+            _raise_unless_gone(source_prop, target_prop)
 
     return step
 
@@ -73,6 +90,7 @@ def _make_dispatch(source_prop, transform, target_prop, run=None, alive=lambda: 
             # If signal fired with no args (e.g. data_changed()), fetch from getter
             value = source_prop.value if not args else args[0] if len(args) == 1 else args
         except RuntimeError:
+            _raise_unless_gone(source_prop)
             return
         if run is None:
             step(value, args)
