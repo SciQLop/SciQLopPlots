@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Plotables/SciQLopHistogram2D.hpp"
 #include <magic_enum/magic_enum.hpp>
 #include <stdexcept>
@@ -119,7 +120,9 @@ SciQLopHistogram2D::~SciQLopHistogram2D()
 
 void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    if (!_hist || !x.is_valid() || !y.is_valid())
+    sqp::validation::require_array(x, "x");
+    sqp::validation::require_array(y, "y");
+    if (!_hist)
         return;
     // NeoQCP's busy signal inside setDataSource, and data_changed, may reach a slot deleting this.
     const QPointer self(this);

@@ -395,16 +395,18 @@ class TestHistogramSignals:
         h.set_binned(np.array([0.0, 1.0, 2.0]), np.array([3.0, 4.0]))
         assert [list(a) for a in h.data()] == [[0.0, 1.0, 2.0], [3.0, 4.0]]
 
-    def test_an_invalid_set_data_changes_nothing(self, plot):
+    def test_an_invalid_set_data_raises_and_changes_nothing(self, plot):
         h = plot.histogram(np.arange(10.0))
         changes = _emissions(h.data_changed[()])
-        h.set_data(np.arange(3.0), None)
+        with pytest.raises(TypeError, match="y: expected an array, got None"):
+            h.set_data(np.arange(3.0), None)
         assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
 
-    def test_an_invalid_set_values_changes_nothing(self, plot):
+    def test_an_invalid_set_values_raises_and_changes_nothing(self, plot):
         h = plot.histogram(np.arange(10.0))
         changes = _emissions(h.data_changed[()])
-        h.set_values(None)
+        with pytest.raises(TypeError, match="values: expected an array, got None"):
+            h.set_values(None)
         assert changes == [] and [list(a) for a in h.data()] == [list(np.arange(10.0))]
 
     def test_only_the_first_result_asks_for_a_rescale(self, qtbot, plot):

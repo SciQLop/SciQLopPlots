@@ -29,8 +29,8 @@ def _called_shape(shape, kind_name):
 
 
 _FIRST_ANNOTATION = {"callback": lambda a: "Callable" in a,
-                     "list": lambda a: "Sequence[object]" in a,
-                     "arrays": lambda a: a == "<class 'object'>"}
+                     "list": lambda a: "Sequence[collections.abc.Buffer | None]" in a,
+                     "arrays": lambda a: a == "collections.abc.Buffer | None"}
 
 
 def _is_overload_for(shape, kind_name, overload):

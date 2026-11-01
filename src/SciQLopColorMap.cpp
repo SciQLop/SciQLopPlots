@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMap.hpp"
 #include "SciQLopPlots/PercentileMath.hpp"
 #include "SciQLopPlots/Profiling.hpp"
@@ -75,7 +76,10 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     _sz.add_arg("nx", static_cast<int64_t>(x.flat_size()));
     _sz.add_arg("ny", static_cast<int64_t>(y.flat_size()));
     _sz.add_arg("nz", static_cast<int64_t>(z.flat_size()));
-    if (!_cmap || !x.is_valid() || !y.is_valid() || !z.is_valid())
+    sqp::validation::require_array(x, "x");
+    sqp::validation::require_array(y, "y");
+    sqp::validation::require_array(z, "z");
+    if (!_cmap)
         return;
 
     if (x.format_code() != 'd')

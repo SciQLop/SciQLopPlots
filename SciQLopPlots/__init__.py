@@ -90,7 +90,9 @@ def _register_with_shiboken_signatures():
 
         mapping.namespace["SciQLopPlotsBindings"] = SciQLopPlotsBindings
         mapping.type_map.update({
-            "SciQLopPyBuffer": object,          # PyObject-backed buffer
+            # An array (anything exposing the buffer protocol) or None. Not `object`: shiboken's error
+            # handler calls a non-array argument a wrong *value* when every annotation matches it.
+            "SciQLopPyBuffer": collections.abc.Buffer | None,
             "GetDataPyCallable": collections.abc.Callable,
             "long": int,
             "std.nullopt": None, "std::nullopt": None,

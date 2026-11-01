@@ -216,7 +216,9 @@ void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     PROFILE_HERE_N("setdata.multigraph");
     ::SciQLopPlots::tracing::ScopedZone _sz("setdata.multigraph", "setdata");
     _sz.add_arg("n_points", static_cast<int64_t>(x.flat_size()));
-    if (!_multiGraph || !x.is_valid() || !y.is_valid())
+    sqp::validation::require_array(x, "x");
+    sqp::validation::require_array(y, "y");
+    if (!_multiGraph)
         return;
 
     if (x.format_code() != 'd')

@@ -13,6 +13,17 @@
 
 namespace sqp::validation {
 
+//! A required array argument: None (an empty buffer) is a TypeError, not a silent no-op.
+inline void require_array(const SciQLopPyBuffer& b, std::string_view name)
+{
+    if (!b.is_valid())
+    {
+        std::ostringstream os;
+        os << name << ": expected an array, got None";
+        throw sqp::type_error(os.str());
+    }
+}
+
 inline void validate_buffer(const SciQLopPyBuffer& b,
                             std::string_view name,
                             int expected_ndim = -1,

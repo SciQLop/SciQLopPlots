@@ -83,3 +83,18 @@ def test_bad_sizes_are_value_errors(kind, call):
                                         ("text", "obj.set_font_size(12.5)")])
 def test_good_sizes_still_work(kind, call):
     assert_contract(kind, call, "ok")
+
+
+# F11: a non-array, or None, where array data is required.
+@pytest.mark.parametrize("kind, call", [
+    ("line_graph", "obj.set_data(object(), X)"),
+    ("line_graph", "obj.set_data({'a': 1}, X)"),
+    ("colormap", "obj.set_data(X, object(), C.Z)"),
+    ("matched_xy", "S.MatchedXY.from_py(object(), X)"),
+    ("line_graph", "obj.set_data(None, X)"),
+    ("colormap", "obj.set_data(None, C.Y, C.Z)"),
+    ("histogram", "obj.set_values(None)"),
+    ("histogram2d", "obj.set_data(None, X)"),
+])
+def test_non_array_data_is_a_type_error(kind, call):
+    assert_contract(kind, call, "type")
