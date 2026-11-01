@@ -16,6 +16,7 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
+#include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/Plotables/SciQLopTimeline.hpp"
 #include <array>
 #include "SciQLopPlots/Plotables/CategoryPalette.hpp"
@@ -45,6 +46,7 @@ const std::pair<TimelineStack, QCPIntervals::StackMode> kStackModes[] = {
 
 std::vector<double> doubles(const SciQLopPyBuffer& b)
 {
+    sqp::validation::require_array(b, "timeline buffers");
     if (b.format_code() != 'd')
         throw std::invalid_argument("timeline buffers must be float64");
     return std::vector<double>(b.data(), b.data() + b.flat_size());

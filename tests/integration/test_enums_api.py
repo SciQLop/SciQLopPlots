@@ -99,9 +99,15 @@ def test_histogram2d_old_enum_members_are_named_in_the_warning(hist, old, name):
         hist.set_normalization(old)
 
 
-@pytest.mark.parametrize("value", [99, 2, -1, True, [1], "1", None])
+@pytest.mark.parametrize("value", [99, 2, -1])
 def test_histogram2d_unknown_normalization_raises_value_error(hist, value):
     with pytest.raises(ValueError, match="Histogram2DNormalization"):
+        hist.set_normalization(value)
+
+
+@pytest.mark.parametrize("value", [True, [1], "1", None])
+def test_histogram2d_normalization_of_the_wrong_type_raises_type_error(hist, value):
+    with pytest.raises(TypeError, match="Histogram2DNormalization"):
         hist.set_normalization(value)
 
 

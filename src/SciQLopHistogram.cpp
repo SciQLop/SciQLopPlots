@@ -198,6 +198,8 @@ void SciQLopHistogram::_bin(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y)
 
 void SciQLopHistogram::set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights)
 {
+    sqp::validation::require_array(edges, "edges");
+    sqp::validation::require_array(heights, "heights");
     if (!_hist)
         return;
     check_binned(edges, heights);
