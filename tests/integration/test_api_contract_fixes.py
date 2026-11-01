@@ -49,3 +49,17 @@ def test_none_for_a_required_object_is_a_type_error(kind, call):
 ])
 def test_zero_d_data_is_refused(kind, call):
     assert_contract(kind, call, "ok_or_value", ("TypeError",))
+
+
+# F3 / F5: bad plot indices, and non-finite or huge numbers for integer arguments.
+@pytest.mark.parametrize("kind, call, expect, allow", [
+    ("panel", "obj.move_plot(-1, 0)", "value", ()),
+    ("panel", "obj.move_plot(99, 0)", "value", ()),
+    ("panel", "obj.move_plot(None, 0)", "type", ()),
+    ("panel", "obj.insert_plot(float('inf'), S.SciQLopPlot())", "value", ("TypeError",)),
+    ("panel", "obj.move_plot(float('nan'), 0)", "value", ("TypeError",)),
+    ("x_axis", "obj.set_number_format('g', float('nan'))", "value", ("TypeError",)),
+    ("x_axis", "obj.set_number_format('g', 2**63)", "value", ()),
+])
+def test_bad_numbers_and_indices_are_refused_with_a_message(kind, call, expect, allow):
+    assert_contract(kind, call, expect, allow)

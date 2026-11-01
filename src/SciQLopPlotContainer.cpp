@@ -100,11 +100,17 @@ void SciQLopPlotContainer::add_plot(SciQLopPlotInterface* plot)
 
 void SciQLopPlotContainer::move_plot(int from, int to)
 {
-    move_plot(plot_at(from), to);
+    auto* plot = plot_at(from);
+    if (plot == nullptr)
+        throw std::invalid_argument("move_plot: no plot at index " + std::to_string(from) + " (the panel has "
+                                    + std::to_string(size()) + ")");
+    move_plot(plot, to);
 }
 
 void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
 {
+    if (indexOf(sqp::require_object(plot, "move_plot: plot")) == -1)
+        throw std::invalid_argument("move_plot: this plot is not in the panel");
     QSplitter::insertWidget(to, plot);
     emit plot_list_changed(plots());
     emit plot_moved(plot, to);
