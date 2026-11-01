@@ -16,6 +16,7 @@
 -- along with this program; if not, write to the Free Software
 -- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 -------------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Items/impl/SpanBase.hpp"
 
 namespace impl
@@ -49,6 +50,7 @@ QColor SpanBase::borders_color() const noexcept { return _span->borderPen().colo
 
 void SpanBase::set_line_width(double width)
 {
+    sqp::require_size(width, "set_line_width: width");
     auto pen = _span->borderPen();
     pen.setWidthF(width);
     _span->setBorderPen(pen);

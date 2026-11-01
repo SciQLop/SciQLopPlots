@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Python/Validation.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
@@ -143,6 +144,7 @@ void SciQLopGraphComponent::_apply_pen(const QPen& pen)
 
 void SciQLopGraphComponent::set_line_width(const qreal width)
 {
+    sqp::require_size(width, "set_line_width: width");
     SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
     if (m_plottable)
     {

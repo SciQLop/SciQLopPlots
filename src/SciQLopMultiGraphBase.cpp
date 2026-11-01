@@ -1,3 +1,4 @@
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Plotables/SciQLopMultiGraphBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
@@ -133,6 +134,7 @@ void SciQLopMultiGraphBase::apply_presets_to_all()
 
 void SciQLopMultiGraphBase::set_line_width(qreal width)
 {
+    sqp::require_size(width, "set_line_width: width");
     SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
     _graph_preset.line_width = width;
     apply_presets_to_all();

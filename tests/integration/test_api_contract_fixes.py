@@ -63,3 +63,23 @@ def test_zero_d_data_is_refused(kind, call):
 ])
 def test_bad_numbers_and_indices_are_refused_with_a_message(kind, call, expect, allow):
     assert_contract(kind, call, expect, allow)
+
+
+# F4: pen widths and font sizes.
+@pytest.mark.parametrize("kind, call", [
+    (kind, f"obj.{setter}({value})")
+    for kind, setter in [("vertical_line", "set_line_width"), ("vspan", "set_line_width"),
+                         ("line_graph", "set_line_width"), ("line_component", "set_line_width"),
+                         ("curve", "set_line_width"), ("nd_projection", "set_line_width"),
+                         ("colormap", "set_contour_width"), ("ellipse", "set_line_width"),
+                         ("curved_line", "set_line_width"), ("text", "set_font_size")]
+    for value in ("float('nan')", "float('inf')", "-1.0")
+])
+def test_bad_sizes_are_value_errors(kind, call):
+    assert_contract(kind, call, "value")
+
+
+@pytest.mark.parametrize("kind, call", [("vertical_line", "obj.set_line_width(0.0)"),
+                                        ("text", "obj.set_font_size(12.5)")])
+def test_good_sizes_still_work(kind, call):
+    assert_contract(kind, call, "ok")

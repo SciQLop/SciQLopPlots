@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Items/SciQLopStraightLines.hpp"
 
 #include "SciQLopPlots/Items/impl/LineTargets.hpp"
@@ -153,6 +154,7 @@ QColor StraightLine::color() const
 
 void StraightLine::set_line_width(double width)
 {
+    sqp::require_size(width, "set_line_width: width");
     auto pen = this->pen();
     pen.setWidthF(width);
     this->setPen(pen);
