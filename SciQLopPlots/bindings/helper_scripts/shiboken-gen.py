@@ -91,11 +91,19 @@ TRANSLATION_INCLUDE = '#include <SciQLopPlots/Python/ErrorTranslation.hpp>\n'
 GENERIC_CATCH = re.compile(r'(catch \(const std::exception &e\) \{\s*errorType = )PyExc_RuntimeError;')
 
 
-def translate_exceptions(output_directory):
+# Shiboken's sequence-to-container converters iterate without checking PyObject_GetIter: a 0-d numpy
+# array passes the sequence check, GetIter fails, and PyIter_Next(nullptr) segfaults. Stop instead: the
+# TypeError GetIter set ("iteration over a 0-d array") then aborts the call.
+UNCHECKED_ITER = 'Shiboken::AutoDecRef it(PyObject_GetIter(pyIn));\n'
+CHECKED_ITER = UNCHECKED_ITER + '    if (it.isNull())\n        return;\n'
+
+
+def patch_generated(output_directory):
     for path in glob(f'{output_directory}/**/*.cpp', recursive=True):
         with open(path) as f:
             source = f.read()
         translated = GENERIC_CATCH.sub(r'\1sqp::python_error_type(e);', source)
+        translated = translated.replace(UNCHECKED_ITER, CHECKED_ITER)
         if 'sqp::python_error_type' in translated:
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
@@ -104,7 +112,7 @@ def translate_exceptions(output_directory):
                 f.write(translated)
 
 
-translate_exceptions(args.output_directory)
+patch_generated(args.output_directory)
 print(r.stdout.decode())
 print(r.stderr.decode())
 sys.exit(r.returncode)
