@@ -27,6 +27,8 @@ def case(call, expect="ok", setup="", id=None):
     ("raise ValueError('x is negative')", "ok", "baseline_broken"),
     ("raise RuntimeError('Internal C++ object (SciQLopPlot) already deleted.')", "deleted", "pass"),
     ("import sys; sys.stderr.write('QRhiWidget: QRhi is not supported on this platform.\\n')", "ok", "pass"),
+    # A call that raised the right class is graded on its exception, not on what it also printed.
+    ("import sys; sys.stderr.write('warning\\n'); raise TypeError('x must be an array')", "type", "pass"),
 ])
 def test_status(call, expect, status):
     assert grade(case(call, expect)) == [status]

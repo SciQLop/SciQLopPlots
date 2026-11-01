@@ -191,9 +191,9 @@ def classify(case: Case, outcome: Outcome) -> Verdict:
     if outcome.kind == "setup_failed":
         return v("baseline_broken", f"setup raised {outcome.exc_type}: {outcome.message}")
     noise = _unexplained_stderr(outcome.stderr)
-    if noise:
+    if noise and outcome.kind == "returned":
         return v("swallowed", noise)
-    raised = f"{outcome.exc_type}: {outcome.message}"
+    raised = f"{outcome.exc_type}: {outcome.message}" + (f"\n(also printed: {noise})" if noise else "")
     if case.expect in ("ok", "script"):
         return v("pass") if outcome.kind == "returned" else v("baseline_broken", raised)
     if outcome.kind == "returned":
