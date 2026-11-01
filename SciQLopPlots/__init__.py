@@ -244,13 +244,19 @@ def _error_batch(x, y, *errors):
     return _float_array(x, "x"), _as_columns(y, *_error_bounds(y, *errors))
 
 
-def _wrapped_callback(callback, to_batch):
+def _arity_text(arity):
+    return f"{' or '.join(map(str, arity))} arrays"
+
+
+def _wrapped_callback(callback, to_batch, arity):
     def wrapped(start, stop):
         batch = callback(start, stop)
         if isinstance(batch, dict):
             raise TypeError("band()/error_bars() callbacks return arrays, not the {'data', 'color'} form")
         if batch is None or len(batch) == 0:
             return batch
+        if len(batch) not in arity:
+            raise TypeError(f"band()/error_bars() callbacks return {_arity_text(arity)}, got {len(batch)}")
         return to_batch(*batch)
     return wrapped
 
@@ -258,10 +264,10 @@ def _wrapped_callback(callback, to_batch):
 def _line_data(args, to_batch, arity):
     _dispatch.reject_callback_with_arrays(args)
     if len(args) == 1 and callable(args[0]):
-        return (_wrapped_callback(args[0], to_batch),)
+        return (_wrapped_callback(args[0], to_batch, arity),)
     if len(args) in arity:
         return to_batch(*args)
-    raise TypeError(f"expected a callback or {' or '.join(map(str, arity))} arrays, got {len(args)} arguments")
+    raise TypeError(f"expected a callback or {_arity_text(arity)}, got {len(args)} arguments")
 
 
 def _named(graph, name):

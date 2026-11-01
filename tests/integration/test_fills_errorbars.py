@@ -476,7 +476,7 @@ class TestEmptyFetchWindow:
 
 def test_wrapped_callback_rejects_an_empty_dict_too():
     import SciQLopPlots
-    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: {}, SciQLopPlots._band_batch)
+    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: {}, SciQLopPlots._band_batch, (3,))
     with pytest.raises(TypeError, match="not the"):
         wrapped(0.0, 1.0)
 
@@ -484,7 +484,7 @@ def test_wrapped_callback_rejects_an_empty_dict_too():
 @pytest.mark.parametrize("empty", [None, ()])
 def test_wrapped_callback_passes_an_empty_batch_through_untouched(empty):
     import SciQLopPlots
-    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: empty, SciQLopPlots._band_batch)
+    wrapped = SciQLopPlots._wrapped_callback(lambda a, b: empty, SciQLopPlots._band_batch, (3,))
     assert wrapped(0.0, 1.0) is empty
 
 
@@ -492,7 +492,7 @@ def test_wrapped_callback_passes_an_empty_batch_through_untouched(empty):
 def test_wrapped_callback_rejects_the_dict_batch_form(to_batch):
     import SciQLopPlots
     wrapped = SciQLopPlots._wrapped_callback(
-        lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, getattr(SciQLopPlots, to_batch))
+        lambda a, b: {"data": [np.arange(3.0)] * 3, "color": 1}, getattr(SciQLopPlots, to_batch), (3,))
     with pytest.raises(TypeError, match="not the"):
         wrapped(0.0, 1.0)
 
