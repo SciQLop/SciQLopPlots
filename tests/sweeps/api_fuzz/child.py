@@ -277,6 +277,8 @@ def arg_kind(a):
         return "buffer"
     if isinstance(a, str):
         return "str"
+    if isinstance(a, dict):
+        return "mapping"
     if isinstance(a, (list, tuple)):
         return "sequence"
     if isinstance(a, DELETABLE):

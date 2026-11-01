@@ -8,9 +8,13 @@ from tests.sweeps.api_fuzz.harness import Case
 
 NUMBERS = frozenset({"number"})
 BUFFERS = frozenset({"buffer"})
-NOT_STR = frozenset({"bool", "number", "buffer", "sequence", "qobject", "deletable", "value"})
+# bool parameters take any object by truthiness (PySide's convention): they get no wrong-type values.
+NOT_STR = frozenset({"number", "buffer", "sequence", "mapping", "qobject", "deletable", "value"})
 OBJECTS = frozenset({"qobject", "deletable"})
 SEQUENCES = frozenset({"sequence"})
+ITERABLES = frozenset({"sequence", "mapping"})  # a dict iterates: not a wrong type for these
+# A float for an int parameter is a wrong type: numbers may be refused as TypeError too.
+NUMBER_REFUSALS = ("TypeError",)
 
 
 @dataclass(frozen=True)
@@ -26,21 +30,21 @@ BAD_VALUES = [
     # Wrong types: always TypeError.
     BadValue("object", "object()", NOT_STR | {"str"}, "type"),
     # Positions and ranges also take date strings: an unparsable one is a bad value.
-    BadValue("str", "'not a number'", NOT_STR - SEQUENCES, "type", ("ValueError",)),
-    BadValue("dict", "{'a': 1}", NOT_STR | {"str"}, "type"),
-    BadValue("list_for_scalar", "[1.0]", frozenset({"bool", "number", "str", "value"}), "type"),
+    BadValue("str", "'not a number'", NOT_STR - ITERABLES, "type", ("ValueError",)),
+    BadValue("dict", "{'a': 1}", (NOT_STR - ITERABLES) | {"str"}, "type"),
+    BadValue("list_for_scalar", "[1.0]", frozenset({"number", "str", "value"}), "type"),
     BadValue("none", "None", NOT_STR - OBJECTS, "type"),
     # None where an object is expected may mean "no object": accepted, or refused as a type or value.
     BadValue("none_object", "None", OBJECTS, "ok_or_value", ("TypeError",)),
     BadValue("none_str", "None", frozenset({"str"}), "ok_or_value", ("TypeError",)),
     # Numbers: accepted, or refused as a bad value.
-    BadValue("nan", "float('nan')", NUMBERS, "ok_or_value"),
-    BadValue("inf", "float('inf')", NUMBERS, "ok_or_value"),
-    BadValue("minus_inf", "float('-inf')", NUMBERS, "ok_or_value"),
-    BadValue("zero", "0", NUMBERS, "ok_or_value"),
-    BadValue("minus_one", "-1", NUMBERS, "ok_or_value"),
-    BadValue("huge_int", "2**63", NUMBERS, "ok_or_value"),
-    BadValue("huge_float", "1e308", NUMBERS, "ok_or_value"),
+    BadValue("nan", "float('nan')", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("inf", "float('inf')", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("minus_inf", "float('-inf')", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("zero", "0", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("minus_one", "-1", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("huge_int", "2**63", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
+    BadValue("huge_float", "1e308", NUMBERS, "ok_or_value", NUMBER_REFUSALS),
     # Buffers: accepted, or refused; a dtype the library can't use is a wrong type.
     BadValue("empty", "np.array([], dtype=np.float64)", BUFFERS, "ok_or_value"),
     BadValue("zero_d", "np.array(1.0)", BUFFERS, "ok_or_value", ("TypeError",)),

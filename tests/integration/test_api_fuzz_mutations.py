@@ -47,3 +47,18 @@ def test_count_cases():
 def test_baseline_case_first():
     first = cases_for(row("number"), receiver_deletable=False)[0]
     assert first.expect == "ok" and first.id.endswith(":baseline")
+
+
+def test_numbers_may_be_refused_as_wrong_type():
+    nan = [c for c in cases_for(row("number"), receiver_deletable=False) if ":nan@0" in c.id]
+    assert nan and "TypeError" in nan[0].allow
+
+
+def test_bool_parameters_take_any_truthy_object():
+    assert not any(":object@" in c.id or ":dict@" in c.id
+                   for c in cases_for(row("bool"), receiver_deletable=False))
+
+
+def test_dicts_are_not_bad_mappings_or_sequences():
+    for kind in ("mapping", "sequence"):
+        assert not any(":dict@" in c.id for c in cases_for(row(kind), receiver_deletable=False))
