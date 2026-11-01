@@ -70,7 +70,6 @@ NONE_ACCEPTED = {
     ("set_color_data", 0): "None clears the colouring",
     ("set_data_and_color", 1): "None colour: the data alone, no colour axis",
     ("set_data_colored", 1): "None colour: the data alone, no colour axis",
-    ("set_callable", 0): "None removes the callback: the graph stops fetching",
     ("index", 0): "a plot the panel doesn't hold, None included, is at -1",
 }
 
