@@ -51,6 +51,8 @@ STDERR_ALLOW = [
      "offscreen platform has no QRhi: plots fall back to raster painting"),
     (re.compile(r"^This plugin does not support propagateSizeHints\(\)$"),
      "offscreen platform plugin notice on show()"),
+    (re.compile(r'^SciQLopPlots: ".*" cannot draw a colour axis: showing its data without the colour$'),
+     "documented degrade: a graph without a colour axis draws a coloured batch's data and says so once"),
 ]
 
 ACCEPTED = {
