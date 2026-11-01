@@ -127,8 +127,9 @@ class TestMetadataKeyword:  # task 4, finding 1.4
 
     def test_metaData_is_gone_and_the_error_says_why(self, plot):
         # Renamed outright: a Python shim would hide shiboken's signature listing on every bad
-        # call. Shiboken reports an unknown keyword as an AttributeError.
-        with pytest.raises(AttributeError, match="unsupported keyword 'metaData'"):
+        # call. An unknown keyword is a TypeError, as for any Python callable (shiboken's own
+        # AttributeError is translated, see shiboken-gen.py).
+        with pytest.raises(TypeError, match="unsupported keyword 'metaData'"):
             plot.line(X, X, metaData={"source": "mag"})
 
     def test_metadata_through_plot(self, plot):

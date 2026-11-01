@@ -114,6 +114,14 @@ ARGUMENT_CONVERSION = re.compile(r'^(\s*)(pythonToCpp\[\d+\]\(pyArgs\[\d+\], &[^
 REAL_LIST_CHECK = re.compile(r'(static PythonToCppFunc is_PySequence_PythonToCpp__Q\w+_(?:double|float)__Convertible\(PyObject \*pyIn\)\n\{\n)')
 
 
+# An unknown keyword on a method comes back from shiboken as AttributeError: make it TypeError.
+KEYWORD_ERROR = re.compile(r'return (Shiboken::returnWrongArguments\([^;]*, errInfo, [^;]*\));')
+
+
+def keyword_errors_as_type_errors(source):
+    return KEYWORD_ERROR.sub(r'return sqp::keyword_error_as_type_error(\1);', source)
+
+
 def refuse_complex_arrays(source):
     return REAL_LIST_CHECK.sub(r'\1    if (sqp::is_complex_array(pyIn))\n        return {};\n', source)
 
@@ -161,8 +169,10 @@ def patch_generated(output_directory):
         translated = name_conversion_errors(translated)
         translated = guard_argument_conversions(translated)
         translated = refuse_complex_arrays(translated)
+        translated = keyword_errors_as_type_errors(translated)
         if any(f'sqp::{helper}' in translated for helper in ('python_error_type', 'name_conversion_error', 'is_complex_array',
-                                                          'check_color_arg', 'check_font_arg')):
+                                                          'check_color_arg', 'check_font_arg',
+                                                          'keyword_error_as_type_error')):
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
         if translated != source:
