@@ -336,3 +336,15 @@ if _raised:
 def test_off_the_gui_thread(kind, call, expect):
     # "deleted" grades RuntimeError: here, the factory's refusal off-thread.
     assert_contract(kind, OFF_THREAD.replace("CALL", call), expect)
+
+
+# J4 (user's answer): one colour map of any kind per plot. histogram2d shares the colour scale.
+@pytest.mark.parametrize("first, second", [
+    ("obj.histogram2d(X, np.sin(X))", "obj.colormap(X, C.Y, C.Z)"),
+    ("obj.colormap(X, C.Y, C.Z)", "obj.histogram2d(X, np.sin(X))"),
+    ("obj.histogram2d(X, np.sin(X))", "obj.histogram2d(X, np.cos(X))"),
+    ("obj.histogram2d(X, np.sin(X))", "obj.add_remote_histogram2d('h')"),
+    ("obj.histogram2d(X, np.sin(X))", "obj.plot(lambda a, b: [X, np.sin(X)], graph_type=S.GraphType.Histogram2D)"),
+])
+def test_a_second_colour_map_of_any_kind_is_refused(first, second):
+    assert_contract("plot", f"{first}\nimport pytest\nwith pytest.raises(RuntimeError, match='already has a colour map'):\n    {second}", "ok")

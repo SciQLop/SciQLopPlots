@@ -225,6 +225,7 @@ protected:
     }
 
     void _register_plottable_wrapper(SciQLopPlottableInterface* plottable);
+    bool _holds_color_map() const;
 
     //! Hide the left axis while no plottable is scaled to it (colormaps use yAxis2).
     void _update_value_axis_visibility();

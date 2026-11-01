@@ -39,8 +39,12 @@ def test_the_y_log_signal_follows_a_new_y_axis(plot):
     assert seen == [True]
 
 
-def test_gradient_is_observable(plot):
-    source, target = MAKERS["colormap"](plot), MAKERS["histogram2d"](plot)
+def test_gradient_is_observable(plot, qtbot):
+    # A plot holds one colour map of any kind: the 2-D histogram goes on a second plot.
+    from SciQLopPlots import SciQLopPlot
+    other = SciQLopPlot()
+    qtbot.addWidget(other)
+    source, target = MAKERS["colormap"](plot), MAKERS["histogram2d"](other)
     source.on.gradient >> target.on.gradient
     source.set_gradient(ColorGradient.Hot)
     assert target.gradient() == ColorGradient.Hot
