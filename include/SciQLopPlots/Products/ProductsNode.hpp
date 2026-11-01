@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/enums.hpp"
 #include <QIcon>
 #include <QMap>
@@ -83,7 +84,7 @@ public:
     //! O(1): views ask for rows constantly, and folders can hold ~100k products.
     inline int child_row(ProductsModelNode* child)
     {
-        return child->parent() == this ? child->m_row : -1;
+        return sqp::require_object(child, "child_row: child")->parent() == this ? child->m_row : -1;
     }
 
     inline ProductsModelNode* take_child(int row)

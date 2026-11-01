@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include <QIODevice>
@@ -37,6 +38,7 @@ QModelIndex ProductsModel::make_index(ProductsModelNode* node)
 
 void ProductsModel::node_data_changed(ProductsModelNode* node, const QList<int>& roles)
 {
+    sqp::require_object(node, "node_data_changed: node");
     if (QThread::currentThread() != thread())
     {
         QMetaObject::invokeMethod(
@@ -209,6 +211,7 @@ QMimeData* ProductsModel::mimeData(const QModelIndexList& indexes) const
 
 QList<QStringList> ProductsModel::decode_mime_data(const QMimeData* mime_data)
 {
+    sqp::require_object(mime_data, "decode_mime_data: mime_data");
     QList<QStringList> data;
     if (mime_data->hasFormat(mime_type()))
     {
@@ -226,6 +229,7 @@ QList<QStringList> ProductsModel::decode_mime_data(const QMimeData* mime_data)
 
 bool ProductsModel::add_node(QStringList path, ProductsModelNode* obj)
 {
+    sqp::require_object(obj, "add_node: node");
     // Filter models purge dangling nodes from synchronous begin/endRemoveRows
     // signals; emitted from another thread they would arrive queued, after
     // _insert_node already deleted the replaced node. Queue instead of blocking:

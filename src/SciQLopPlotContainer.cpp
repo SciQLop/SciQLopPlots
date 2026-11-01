@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/SciQLopPlot.hpp"
 
 #include "SciQLopPlots/MultiPlots/SciQLopPlotContainer.hpp"
@@ -52,6 +53,7 @@ SciQLopPlotContainer::~SciQLopPlotContainer()
 
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
+    sqp::require_object(widget, "insert: widget");
     QSplitter::insertWidget(index, widget);
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget))
     {
@@ -129,6 +131,7 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
 
 void SciQLopPlotContainer::removeWidget(QWidget* widget, bool destroy)
 {
+    sqp::require_object(widget, "remove: widget");
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget); plot)
         remove_plot(plot, destroy);
     else
@@ -182,6 +185,7 @@ std::size_t SciQLopPlotContainer::content_width() const
 SciQLopPlotCollectionBehavior*
 SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
 {
+    sqp::require_object(behavior, "register_behavior: behavior");
     behavior->setParent(this);
     _behaviors[behavior->metaObject()->className()] = behavior;
     behavior->updatePlotList(plots());

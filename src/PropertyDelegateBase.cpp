@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Inspector/PropertyDelegateBase.hpp"
 #include "SciQLopPlots/Inspector/InspectorExtension.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopMultiPlotPanel.hpp"
@@ -135,6 +136,7 @@ static void refit_combo(QComboBox* combo)
 
 void PropertyDelegateBase::fit_combo_to_content(QComboBox* combo)
 {
+    sqp::require_object(combo, "fit_combo_to_content: combo");
     refit_combo(combo);
     auto* model = combo->model();
     auto refit = [combo] { refit_combo(combo); };
