@@ -59,8 +59,8 @@ def test_import_does_not_mute_signature_warnings(scan):
 
 # A type_map entry that stops matching shiboken's spelling goes silent, it does not warn.
 @pytest.mark.parametrize("func, expected", [
-    (lambda: MultiPlotsVSpanCollection.spans, "List[SciQLopPlotsBindings.MultiPlotsVerticalSpanPtr]"),
-    (lambda: SciQLopMultiPlotPanel.plots, "List[SciQLopPlotsBindings.SciQLopPlotInterfacePtr]"),
+    (lambda: MultiPlotsVSpanCollection.spans, "List[SciQLopPlotsBindings.MultiPlotsVerticalSpan]"),
+    (lambda: SciQLopMultiPlotPanel.plots, "List[SciQLopPlotsBindings.SciQLopPlotInterface]"),
     (lambda: inspect.unwrap(MultiPlotsVerticalSpan.__init__), "*, range: SciQLopPlotsBindings.SciQLopPlotRange"),
 ])
 def test_type_map_entries_resolve(func, expected):

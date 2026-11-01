@@ -31,7 +31,7 @@ FACTORIES = {
     "timeseries": "panel.plot(x, x, plot_type=PlotType.TimeSeries)",
     "colormap": "panel.plot(x, np.arange(8.0), np.random.rand(200, 8))",
     "inserted": "(panel.plot(x, x), panel.plot(x, x, index=0))[1]",
-    "plots_list": "(panel.plot(x, x), (panel.plots()[0].data(),))[1]",
+    "plots_list": "(panel.plot(x, x), (panel.plots()[0],))[1]",
     "find_children": "(panel.plot(x, x), (panel.findChildren(SciQLopPlotInterface)[0],))[1]",
     "histogram": "panel.histogram(x)",
     "projection": "panel.plot(x, np.column_stack([np.sin(x), np.cos(x), x]), plot_type=PlotType.Projections)",

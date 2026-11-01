@@ -104,5 +104,10 @@ public:
 
     QList<QPointer<MultiPlotsVerticalSpan>> spans_in_range(SciQLopPlotRange horizontal_range) const;
 
+    //! spans() and spans_in_range() as Python sees them (bound under those names): the spans
+    //! themselves, not QPointer handles. A span deleted since is left out.
+    QList<MultiPlotsVerticalSpan*> span_objects() const;
+    QList<MultiPlotsVerticalSpan*> span_objects_in_range(SciQLopPlotRange horizontal_range) const;
+
     QPointer<MultiPlotsVerticalSpan> span(const QString& id) const;
 };

@@ -102,12 +102,9 @@ class TestOverloadErrorMessage:
             pytest.fail(f"shiboken signature formatter raised NameError: {e}")
 
 
-class TestInterfacePtrAutoDeref:
-    """``panel.plots()`` returns ``SciQLopPlotInterfacePtr`` (QPointer) wrappers.
-    Passing one where a plot pointer is expected used to require a manual
-    ``ptr.data()`` — shiboken doesn't implicitly deref the smart pointer
-    (finding #3). A Python-level wrapper in ``SciQLopPlots/__init__.py`` now
-    auto-dereferences the Ptr before calling the bound API."""
+class TestPlotsAreRealPlots:
+    """``panel.plots()`` used to return ``SciQLopPlotInterfacePtr`` (QPointer) handles that callers
+    had to unwrap with ``.data()`` (finding #3). The C++ keeps QPointer; Python gets the plots."""
 
     def _panel_with_plot(self, qtbot):
         panel = SciQLopMultiPlotPanel()
@@ -116,28 +113,18 @@ class TestInterfacePtrAutoDeref:
         panel.plot(x, np.sin(x))
         return panel
 
-    def test_ptr_accepted_by_item_ctor(self, qtbot):
+    def test_a_plots_item_is_accepted_by_an_item_ctor(self, qtbot):
         panel = self._panel_with_plot(qtbot)
-        ptr = panel.plots()[0]
         # SciQLopVerticalLine(SciQLopPlot*, ...) — derived-pointer param
         with pytest.warns(DeprecationWarning):
-            line = SciQLopVerticalLine(ptr, 5.0)
+            line = SciQLopVerticalLine(panel.plots()[0], 5.0)
         assert line is not None
 
-    def test_ptr_accepted_by_base_interface_param(self, qtbot):
+    def test_a_plots_item_is_accepted_by_a_base_interface_param(self, qtbot):
         panel = self._panel_with_plot(qtbot)
-        ptr = panel.plots()[0]
         # remove_plot(SciQLopPlotInterface*) — base-pointer param
-        panel.remove_plot(ptr)
+        panel.remove_plot(panel.plots()[0])
         assert len(panel.plots()) == 0
-
-    def test_raw_plot_still_accepted(self, qtbot):
-        panel = self._panel_with_plot(qtbot)
-        raw = panel.plots()[0].data()
-        with pytest.warns(DeprecationWarning):
-            line = SciQLopVerticalLine(raw, 5.0)
-        assert line is not None
-
 
 class TestRangeStringParsing:
     """SciQLopPlotRange('garbage', 'dates') used to produce NaN bounds with a

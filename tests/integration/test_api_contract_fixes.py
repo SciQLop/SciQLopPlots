@@ -113,3 +113,35 @@ def test_non_array_data_is_a_type_error(kind, call):
 ])
 def test_argument_errors_have_the_argument_class(kind, call, expect):
     assert_contract(kind, call, expect)
+
+
+# F15: what panel.plots() returns is accepted wherever a plot is.
+@pytest.mark.parametrize("kind, call", [
+    ("panel", "obj.index_of(obj.plots()[0])"),
+    ("panel", "obj.indexOf(obj.plots()[0])"),
+    ("panel", "obj.plot_stretch(obj.plots()[0])"),
+    ("panel", "obj.set_plot_stretch(obj.plots()[0], 2)"),
+    ("panel", "obj.remove_widget(obj.plots()[0])"),
+    ("x_sync", "obj.plotAdded(h.panel.plots()[0])"),
+    ("x_sync", "obj.resynchronize(h.panel.plots()[0])"),
+    ("vplots_align", "obj.plotAdded(h.panel.plots()[0])"),
+    ("collection_behavior", "obj.plotRemoved(h.panel.plots()[0])"),
+])
+def test_plots_from_plots_are_accepted(kind, call):
+    assert_contract(kind, call, "ok")
+
+
+
+def test_plots_returns_plot_objects():
+    assert_contract("panel", "assert all(isinstance(p, S.SciQLopPlotInterface) for p in obj.plots())", "ok")
+
+
+def test_spans_returns_span_objects():
+    assert_contract("panel_span_collection",
+                    "obj.create_span(R(1.0, 2.0))\nassert all(isinstance(s, S.MultiPlotsVerticalSpan) for s in obj.spans())",
+                    "ok")
+
+
+def test_a_deleted_plot_leaves_the_list():
+    assert_contract("panel", "import shiboken6\nshiboken6.delete(obj.plot_at(0))\nC.pump()\n"
+                             "assert None not in obj.plots() and len(obj.plots()) == 1", "ok")

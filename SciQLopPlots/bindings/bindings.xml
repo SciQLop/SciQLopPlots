@@ -1486,6 +1486,9 @@
     <object-type name="SciQLopCurvedLineItem" parent-management="yes"/>
 
     <object-type name="SciQLopPlotCollectionInterface" parent-management="no">
+        <!-- Python's plots() lists the plots themselves; the QPointer handles stay C++-side (cc30b076). -->
+        <modify-function signature="plots()const" remove="all"/>
+        <modify-function signature="plot_objects()const" rename="plots"/>
         <!-- Redeclared here: see SciQLopMovableItemInterface. -->
         <modify-function signature="^histogram\(.*$" access="final"/>
         <modify-function signature="line(const SciQLopPyBuffer&amp;,const SciQLopPyBuffer&amp;,QStringList,QList&lt;QColor&gt;,PlotType,int,QVariantMap,GraphMarkerShape,QString)">
@@ -1896,6 +1899,7 @@
     </object-type>
 
     <object-type name="SciQLopMultiPlotPanel" parent-management="yes">
+        <modify-function signature="plots()const" remove="all"/>
         <!-- Redeclared here: see SciQLopMovableItemInterface. -->
         <modify-function signature="^(histogram|save_[a-z]+)\(.*$" access="final"/>
         <inject-code class="native" position="beginning">
@@ -2172,6 +2176,10 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
         <property name="read_only" type="bool" get="read_only" set="set_read_only" generate-getsetdef="yes"/>
     </object-type>
     <object-type name="MultiPlotsVSpanCollection" parent-management="yes">
+        <modify-function signature="spans()const" remove="all"/>
+        <modify-function signature="spans_in_range(SciQLopPlotRange)const" remove="all"/>
+        <modify-function signature="span_objects()const" rename="spans"/>
+        <modify-function signature="span_objects_in_range(SciQLopPlotRange)const" rename="spans_in_range"/>
         <modify-function signature="create_span(SciQLopPlotRange,QColor,bool,QString,QString)">
           <modify-argument index="2">
               <rename to="color"/>
