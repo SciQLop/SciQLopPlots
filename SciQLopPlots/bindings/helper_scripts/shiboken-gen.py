@@ -98,13 +98,33 @@ UNCHECKED_ITER = 'Shiboken::AutoDecRef it(PyObject_GetIter(pyIn));\n'
 CHECKED_ITER = UNCHECKED_ITER + '    if (it.isNull())\n        return;\n'
 
 
+# libshiboken's integer conversion raises OverflowError without a message: name it right after the
+# argument conversions, where each generated function checks for a conversion error.
+CONVERSION_CHECK = re.compile(r'^(\s*)if \(Shiboken::Errors::occurred\(\) == nullptr\) \{', re.M)
+FUNCTION_HEADER = re.compile(r'^static (?:PyObject \*|int )Sbk_(\w+?)(?:Func_(\w+)|_Init)\(', re.M)
+
+
+def name_conversion_errors(source):
+    out, last = [], 0
+    headers = list(FUNCTION_HEADER.finditer(source))
+    for header, end in zip(headers, headers[1:] + [None]):
+        stop = end.start() if end else len(source)
+        name = f"{header.group(1)}.{header.group(2) or '__init__'}"
+        body = CONVERSION_CHECK.sub(lambda m: f'{m.group(1)}sqp::name_conversion_error("{name}");\n{m.group(0)}',
+                                    source[header.start():stop])
+        out += [source[last:header.start()], body]
+        last = stop
+    return ''.join(out) + source[last:]
+
+
 def patch_generated(output_directory):
     for path in glob(f'{output_directory}/**/*.cpp', recursive=True):
         with open(path) as f:
             source = f.read()
         translated = GENERIC_CATCH.sub(r'\1sqp::python_error_type(e);', source)
         translated = translated.replace(UNCHECKED_ITER, CHECKED_ITER)
-        if 'sqp::python_error_type' in translated:
+        translated = name_conversion_errors(translated)
+        if 'sqp::python_error_type' in translated or 'sqp::name_conversion_error' in translated:
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
         if translated != source:

@@ -26,4 +26,29 @@ inline PyObject* python_error_type(const std::exception& e)
         return PyExc_MemoryError;
     return PyExc_RuntimeError;
 }
+
+//! libshiboken raises a bare OverflowError (no message) when a number doesn't fit a C++ integer
+//! argument, NaN and infinity included. Give it one that says where and why.
+inline void name_conversion_error(const char* function)
+{
+    if (!PyErr_Occurred() || !PyErr_ExceptionMatches(PyExc_OverflowError))
+        return;
+    PyObject *type, *value, *traceback;
+    PyErr_Fetch(&type, &value, &traceback);
+    // Python >= 3.12 hands back a normalized instance even for PyErr_SetObject(type, nullptr): look at its text.
+    PyObject* text = value != nullptr ? PyObject_Str(value) : nullptr;
+    const bool has_message = text != nullptr && PyUnicode_GetLength(text) > 0;
+    Py_XDECREF(text);
+    if (has_message)
+    {
+        PyErr_Restore(type, value, traceback);
+        return;
+    }
+    Py_XDECREF(type);
+    Py_XDECREF(value);
+    Py_XDECREF(traceback);
+    PyErr_Format(PyExc_OverflowError,
+                 "%s: an integer argument is out of range (NaN, infinite, or too large for a C int)",
+                 function);
+}
 }
