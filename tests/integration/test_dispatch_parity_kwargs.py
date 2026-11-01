@@ -33,7 +33,7 @@ def test_factories_take_name(qtbot, request, host, factory):
 def test_waterfall_takes_metadata_not_metaData(qtbot, request, host):
     target = request.getfixturevalue(host)
     assert _graph(target.waterfall(X, Z, metadata={"k": 1})) is not None
-    with pytest.raises(AttributeError, match="metaData"):
+    with pytest.raises(TypeError, match="metaData"):
         target.waterfall(X, Z, metaData={"k": 1})
 
 

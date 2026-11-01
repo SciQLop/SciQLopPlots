@@ -10,6 +10,7 @@
 
 #include <new>
 #include <stdexcept>
+#include <string_view>
 
 namespace sqp
 {
@@ -82,6 +83,29 @@ inline void check_font_arg(PyObject* arg, const char* function)
             return;
         }
     }
+}
+
+//! Shiboken reports an unknown keyword on a method as AttributeError ("unsupported keyword"); Python
+//! says TypeError for an unexpected keyword argument. \a result is what returnWrongArguments returned.
+inline PyObject* keyword_error_as_type_error(PyObject* result)
+{
+    if (!PyErr_Occurred() || !PyErr_ExceptionMatches(PyExc_AttributeError))
+        return result;
+    PyObject *type, *value, *traceback;
+    PyErr_Fetch(&type, &value, &traceback);
+    PyObject* text = value != nullptr ? PyObject_Str(value) : nullptr;
+    const char* message = text != nullptr ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
+    if (message != nullptr && std::string_view(message).find("unsupported keyword") != std::string_view::npos)
+    {
+        PyErr_SetString(PyExc_TypeError, message);
+        Py_XDECREF(type);
+        Py_XDECREF(value);
+        Py_XDECREF(traceback);
+    }
+    else
+        PyErr_Restore(type, value, traceback);
+    Py_XDECREF(text);
+    return result;
 }
 
 //! libshiboken raises a bare OverflowError (no message) when a number doesn't fit a C++ integer
