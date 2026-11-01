@@ -205,8 +205,8 @@ OVERRIDES = {
     "add_accepted_mime_type": lambda h, obj: [(S.PlotDragNDropCallback("text/plain", False, obj),)],
     "set_dimension_pairs": lambda h, obj: [([(0, 1), (1, 2), (0, 2)],)],
     "set_pane_names": lambda h, obj: [(["a", "b", "c"],), (["a", "b"],), (["a"],)],
-    "add_model_curve": lambda h, obj: [(lambda x: [x, x],)],
-    "model_curve": lambda h, obj: [(lambda x: [x, x],)],
+    "add_model_curve": lambda h, obj: [(lambda start, stop: [X, X, np.sin(X), np.cos(X)],)],
+    "model_curve": lambda h, obj: [(lambda start, stop: [X, X, np.sin(X), np.cos(X)],)],
     "set_number_format": lambda h, obj: [("g", 3)],
     "set_tick_labels": lambda h, obj: [({1.0: "one"},)],
     "couple_range_with": lambda h, obj: [(h.ts_plot.x_axis(),), (h.plot.y_axis(),)],
@@ -281,6 +281,8 @@ def arg_kind(a):
         return "mapping"
     if isinstance(a, (list, tuple)):
         return "sequence"
+    if isinstance(a, C.QFont):
+        return "font"
     if isinstance(a, DELETABLE):
         return "deletable"
     if isinstance(a, QObject):
