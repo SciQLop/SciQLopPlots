@@ -262,6 +262,12 @@ def candidate_args(kind, obj, name, h):
     return out
 
 
+# Objects users delete through the public API (a removed plot, a panel, a graph, an item): a deleted one
+# passed back in must raise RuntimeError. Owned parts (axes, components, legends) are not in the contract.
+DELETABLE = (S.SciQLopPlotInterface, S.SciQLopPlotPanelInterface, S.SciQLopPlottableInterface,
+             S.SciQLopItemInterface, S.SciQLopPlotGroup)
+
+
 def arg_kind(a):
     if isinstance(a, bool):
         return "bool"
@@ -273,6 +279,8 @@ def arg_kind(a):
         return "str"
     if isinstance(a, (list, tuple)):
         return "sequence"
+    if isinstance(a, DELETABLE):
+        return "deletable"
     if isinstance(a, QObject):
         return "qobject"
     return "value"
