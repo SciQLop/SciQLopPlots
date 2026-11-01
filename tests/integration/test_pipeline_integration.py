@@ -119,3 +119,19 @@ class TestThreadedPipeline:
         qtbot.waitUntil(lambda: np.allclose(np.asarray(target.data()[1]), 2 * np.cos(x)), timeout=3000)
         assert threads[-1] is not threading.main_thread()
         pipe.disconnect()
+
+
+# Found reading the pipeline for opencode round 2: every RuntimeError was taken for "an object was
+# deleted" and dropped, including the user's own error with both objects alive.
+def test_a_runtime_error_with_both_objects_alive_is_not_swallowed(qtbot, plot):
+    from SciQLopPlots import SciQLopPlotRange
+    source = plot.vertical_span(SciQLopPlotRange(1.0, 2.0))
+
+    def failing(event):
+        raise RuntimeError("transform failed")
+
+    pipeline = source.on.range >> failing
+    with qtbot.capture_exceptions() as raised:
+        source.set_range(SciQLopPlotRange(2.0, 3.0))
+    assert any("transform failed" in str(error) for _, error, _ in raised), raised
+    pipeline.disconnect()
