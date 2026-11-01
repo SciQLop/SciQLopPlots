@@ -120,7 +120,22 @@ def refuse_complex_arrays(source):
 
 def guard_argument_conversions(source):
     # In braces: some conversions are the body of an if/else without braces, whose else must not move.
-    return ARGUMENT_CONVERSION.sub(r'\1{ if (!PyErr_Occurred()) \2 }', source)
+    source = ARGUMENT_CONVERSION.sub(r'\1{ if (!PyErr_Occurred()) \2 }', source)
+    return SINGLE_ARGUMENT_CONVERSION.sub(r'\1{ if (!PyErr_Occurred()) \2 }', source)
+
+
+# PySide's QColor and QFont conversions pass bad input on silently (an unparsable colour name) or with a
+# printed error per item (non-str font families): check this module's colour and font arguments first.
+CHECKED_ARGUMENT = re.compile(r'^(\s*)::(QColor|QFont) cppArg(\d+)(?:_local)?\b[^;*]*;\n', re.M)
+SINGLE_ARGUMENT_CONVERSION = re.compile(r'^(\s*)(pythonToCpp\(pyArg, &[^;]+\);)$', re.M)
+
+
+def check_arguments(body, name):
+    single = 'PyObject *pyArg)' in body.split('\n', 1)[0]
+    check = {"QColor": "check_color_arg", "QFont": "check_font_arg"}
+    return CHECKED_ARGUMENT.sub(
+        lambda m: f'{m.group(0)}{m.group(1)}sqp::{check[m.group(2)]}('
+                  f'{"pyArg" if single else f"pyArgs[{m.group(3)}]"}, "{name}");\n', body)
 
 
 def name_conversion_errors(source):
@@ -129,8 +144,9 @@ def name_conversion_errors(source):
     for header, end in zip(headers, headers[1:] + [None]):
         stop = end.start() if end else len(source)
         name = f"{header.group(1)}.{header.group(2) or '__init__'}"
+        body = check_arguments(source[header.start():stop], name)
         body = CONVERSION_CHECK.sub(lambda m: f'{m.group(1)}sqp::name_conversion_error("{name}");\n{m.group(0)}',
-                                    source[header.start():stop])
+                                    body)
         out += [source[last:header.start()], body]
         last = stop
     return ''.join(out) + source[last:]
@@ -142,10 +158,11 @@ def patch_generated(output_directory):
             source = f.read()
         translated = GENERIC_CATCH.sub(r'\1sqp::python_error_type(e);', source)
         translated = translated.replace(UNCHECKED_ITER, CHECKED_ITER)
+        translated = name_conversion_errors(translated)
         translated = guard_argument_conversions(translated)
         translated = refuse_complex_arrays(translated)
-        translated = name_conversion_errors(translated)
-        if any(f'sqp::{helper}' in translated for helper in ('python_error_type', 'name_conversion_error', 'is_complex_array')):
+        if any(f'sqp::{helper}' in translated for helper in ('python_error_type', 'name_conversion_error', 'is_complex_array',
+                                                          'check_color_arg', 'check_font_arg')):
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
         if translated != source:

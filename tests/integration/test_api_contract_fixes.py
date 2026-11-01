@@ -271,3 +271,21 @@ def test_widths_past_qt_range_are_value_errors(kind, call):
 
 def test_a_provider_without_get_data_for_a_list_reports_instead_of_printing():
     assert_contract("data_provider", "obj.set_data([X, X])\nC.pump(30)", "ok")
+
+
+# J3 (user's answer): this module's colour and font arguments refuse what PySide passes on silently.
+@pytest.mark.parametrize("kind, call, expect", [
+    ("x_axis", "obj.set_label_color('not a colour')", "value"),
+    ("line_component", "obj.set_color('not a colour')", "value"),
+    ("vspan", "obj.set_color('not a colour')", "value"),
+    ("theme", "obj.set_background('not a colour')", "value"),
+    ("plot", "obj.vertical_line(1.0, color='not a colour')", "value"),
+    ("x_axis", "obj.set_label_font([1.0])", "type"),
+    ("text", "obj.set_font([1.0, 'Sans'])", "type"),
+    ("x_axis", "obj.set_label_color('red')", "ok"),
+    ("x_axis", "obj.set_label_color('#00ff00')", "ok"),
+    ("x_axis", "obj.set_label_font('Sans')", "ok"),
+    ("x_axis", "obj.set_label_font(['Sans', 'Serif'])", "ok"),
+])
+def test_colour_names_and_font_families_are_checked(kind, call, expect):
+    assert_contract(kind, call, expect)
