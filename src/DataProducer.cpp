@@ -51,6 +51,21 @@ double non_negative_or_zero(double v)
 }
 
 
+// A failed fetch runs on the worker, where nobody can catch it: print it and tell the graph (fetch_failed).
+template <typename Update>
+void DataProviderInterface::_reporting_failures(Update&& update)
+{
+    try
+    {
+        update();
+    }
+    catch (const std::exception& e)
+    {
+        qWarning() << "SciQLopPlots: data provider failed:" << e.what();
+        Q_EMIT fetch_failed(QString::fromUtf8(e.what()));
+    }
+}
+
 void DataProviderInterface::_threaded_update()
 {
     SciQLopPlotRange range;
@@ -74,15 +89,16 @@ void DataProviderInterface::_threaded_update()
     }
 
     if (do_range)
-        _range_based_update(range);
+        _reporting_failures([&] { _range_based_update(range); });
     if (do_data)
+        _reporting_failures([&] {
         std::visit(
             [this](auto&& d)
             {
                 if constexpr (!std::is_same_v<std::decay_t<decltype(d)>, std::monostate>)
                     _data_based_update(d);
             },
-            data);
+            data); });
 
     bool idle = false;
     {
@@ -235,20 +251,17 @@ DataProviderInterface::DataProviderInterface(QObject* parent) : QObject(parent)
 
 QList<SciQLopPyBuffer> DataProviderInterface::get_data(double lower, double upper)
 {
-    WARN_ABSTRACT_METHOD;
-    return { {}, {}, {} };
+    throw_unsupported("get_data(lower, upper)", *this);
 }
 
 QList<SciQLopPyBuffer> DataProviderInterface::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    WARN_ABSTRACT_METHOD;
-    return { {}, {}, {} };
+    throw_unsupported("get_data(x, y)", *this);
 }
 
 QList<SciQLopPyBuffer> DataProviderInterface::get_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
 {
-    WARN_ABSTRACT_METHOD;
-    return { {}, {}, {} };
+    throw_unsupported("get_data(x, y, z)", *this);
 }
 
 QList<SciQLopPyBuffer> DataProviderInterface::get_data(QList<SciQLopPyBuffer> values)
