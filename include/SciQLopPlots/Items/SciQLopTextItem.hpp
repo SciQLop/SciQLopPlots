@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 
 #include "SciQLopPlotItem.hpp"
@@ -156,6 +157,7 @@ public:
 
     void set_font_size(double size)
     {
+        sqp::require_positive(size, "set_font_size: size");
         SCIQLOP_ON_OWNER_THREAD(set_font_size(size));
         qptr_apply(m_item,
                    [size](auto& item)

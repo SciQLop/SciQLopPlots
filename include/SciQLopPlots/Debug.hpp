@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <QDebug>
+#include <cmath>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
@@ -52,6 +53,24 @@ struct type_error : std::invalid_argument
 {
     using std::invalid_argument::invalid_argument;
 };
+
+//! \a value, or std::invalid_argument when it isn't a finite number >= 0 (a pen width).
+inline double require_size(double value, const char* what)
+{
+    if (!std::isfinite(value) || value < 0)
+        throw std::invalid_argument(std::string(what) + " must be a finite number >= 0, got "
+                                    + std::to_string(value));
+    return value;
+}
+
+//! \a value, or std::invalid_argument when it isn't a finite number > 0 (a font size).
+inline double require_positive(double value, const char* what)
+{
+    if (!std::isfinite(value) || value <= 0)
+        throw std::invalid_argument(std::string(what) + " must be a finite number > 0, got "
+                                    + std::to_string(value));
+    return value;
+}
 
 //! \a pointer, or sqp::type_error "<what> must not be None" when it is null and the caller needs an object.
 template <typename T>

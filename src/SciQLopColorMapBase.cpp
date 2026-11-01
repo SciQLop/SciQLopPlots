@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Plotables/SciQLopColorMapBase.hpp"
 #include "SciQLopPlots/Plotables/AxisHelpers.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
@@ -270,6 +271,7 @@ QColor SciQLopColorMapBase::contour_color() const
 
 void SciQLopColorMapBase::set_contour_width(double width)
 {
+    sqp::require_size(width, "set_contour_width: width");
     SCIQLOP_ON_OWNER_THREAD(set_contour_width(width));
     auto pen = contour_pen();
     pen.setWidthF(width);

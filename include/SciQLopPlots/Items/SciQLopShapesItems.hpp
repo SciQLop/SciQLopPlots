@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/ThreadGuard.hpp"
 
 #include "SciQLopPlotItem.hpp"
@@ -308,8 +309,9 @@ public:
         return qptr_apply_or(m_item, [](auto&& item) { return item->movable(); }, false);
     }
 
-    inline void set_line_width(double width) noexcept
+    inline void set_line_width(double width)
     {
+        sqp::require_size(width, "set_line_width: width");
         SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
         auto p = pen();
         p.setWidthF(width);
@@ -454,6 +456,7 @@ protected:
 public:
     inline void set_line_width(double width) override
     {
+        sqp::require_size(width, "set_line_width: width");
         SCIQLOP_ON_OWNER_THREAD(set_line_width(width));
         qptr_apply(m_item, [width](auto&& item) { item->setWidth(width); });
     }
