@@ -75,7 +75,15 @@ bool save_widget(QWidget* w, const QString& filename, int width, int height, dou
 // when `format` is empty. Throws std::invalid_argument for anything else.
 QString resolve_save_format(const QString& filename, const QString& format);
 
-// A failed save throws (OSError in Python, ValueError for an unknown format): a False return
-// was easy to miss.
+//! Runs \a save, or throws: std::invalid_argument for an empty file name, checked first (Qt would only
+//! warn and fail), std::runtime_error when the write fails (bound as OSError).
+void require_file_name(const QString& filename);
 bool saved_or_throw(bool saved, const QString& filename);
+
+template <typename Save>
+bool save_or_throw(const QString& filename, Save&& save)
+{
+    require_file_name(filename);
+    return saved_or_throw(save(), filename);
+}
 [[noreturn]] void throw_unknown_save_format(const QString& filename);

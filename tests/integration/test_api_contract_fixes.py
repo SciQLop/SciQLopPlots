@@ -145,3 +145,14 @@ def test_spans_returns_span_objects():
 def test_a_deleted_plot_leaves_the_list():
     assert_contract("panel", "import shiboken6\nshiboken6.delete(obj.plot_at(0))\nC.pump()\n"
                              "assert None not in obj.plots() and len(obj.plots()) == 1", "ok")
+
+
+# F6: save with no file name.
+@pytest.mark.parametrize("kind, call", [
+    (kind, f"obj.{method}({name})")
+    for kind in ("plot", "panel")
+    for method in ("save_png", "save_pdf", "save_svg", "save_jpg", "save_bmp", "save")
+    for name in ("''", "None")
+])
+def test_saving_without_a_file_name_is_a_value_error(kind, call):
+    assert_contract(kind, call, "value", ("TypeError",))
