@@ -11,7 +11,8 @@ BUFFERS = frozenset({"buffer"})
 # bool parameters take any object by truthiness (PySide's convention): they get no wrong-type values.
 # A QFont parameter takes a str or a sequence of family names (PySide builds the font): only
 # non-iterables are wrong types for it.
-NOT_STR = frozenset({"number", "buffer", "sequence", "mapping", "qobject", "deletable", "value", "font"})
+NOT_STR = frozenset({"number", "buffer", "sequence", "mapping", "qobject", "deletable", "value", "font",
+                     "callable"})
 OBJECTS = frozenset({"qobject", "deletable"})
 SEQUENCES = frozenset({"sequence"})
 ITERABLES = frozenset({"sequence", "mapping"})  # a dict iterates: not a wrong type for these
@@ -71,6 +72,17 @@ NONE_ACCEPTED = {
     ("set_data_and_color", 1): "None colour: the data alone, no colour axis",
     ("set_data_colored", 1): "None colour: the data alone, no colour axis",
     ("index", 0): "a plot the panel doesn't hold, None included, is at -1",
+    ("span", 0): "None is 'no key range'; with no value range either, ValueError says to give one",
+    ("set_intervals", 1): "None stop: instants, stop = start",
+    ("set_snap_to", 0): "None: no snapping",
+}
+
+# Arguments that take several kinds of value on purpose: no bad-value cases for them, by (method, position).
+POLYMORPHIC = {
+    ("set_snap_to", 0): "'edges', a step in seconds, or a list of times",
+    ("on_time_range", 0): "WidgetPlot's hook: forwards whatever it gets to the user's callable",
+    ("on_time_range", 1): "WidgetPlot's hook: forwards whatever it gets to the user's callable",
+    ("set_color_palette", 0): "WidgetPlot keeps any iterable of colours; it doesn't draw with them",
 }
 
 # Calls whose remaining arguments may match another overload or a default: they must not crash or swallow,
@@ -102,7 +114,7 @@ def cases_for(row: dict, receiver_deletable: bool) -> list[Case]:
     kinds = found["arg_kinds"]
     for i, kind in enumerate(kinds):
         for bad in BAD_VALUES:
-            if kind in bad.applies_to:
+            if kind in bad.applies_to and (row["name"], i) not in POLYMORPHIC:
                 expect, allow = bad.expect, bad.allow
                 if bad.source == "None" and (row["name"], i) in NONE_ACCEPTED:
                     expect, allow = "ok_or_value", ("TypeError",)

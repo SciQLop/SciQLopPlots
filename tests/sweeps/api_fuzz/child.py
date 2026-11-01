@@ -283,6 +283,8 @@ def arg_kind(a):
         return "sequence"
     if isinstance(a, C.QFont):
         return "font"
+    if callable(a) and not isinstance(a, (type, QObject)):
+        return "callable"
     if isinstance(a, DELETABLE):
         return "deletable"
     if isinstance(a, QObject):

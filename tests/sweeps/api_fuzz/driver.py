@@ -34,14 +34,17 @@ def _run(cases: list[Case], jobs: int, chunk: int = CHUNK) -> list[dict]:
 
 
 def _discovery_rows(found: list[dict]) -> list[dict]:
-    """Discovery probes that crashed, hung or printed errors are findings too."""
+    """Discovery probes that crashed or hung are findings too. Printed noise isn't: the probes try
+    arguments that raise on purpose, and their own cases grade the noise."""
     return [{"id": f"discover:{r['kind']}:{r['cls']}.{r['name']}", "status": r["status"], "detail": r["detail"],
              "expect": "ok", "call": f"find_baseline({r['kind']!r}, {r['name']!r})"}
-            for r in found if r["status"] != "pass"]
+            for r in found if r["status"] in ("crash", "hang")]
 
 
 def sweep(classes: list[str] | None = None, jobs: int = 4) -> list[dict]:
     methods = [m for m in cat.public_methods() if classes is None or m.cls in classes]
+    # A static method doesn't touch its receiver: deleting it first raises nothing, rightly.
+    static = {(m.cls, m.name) for m in methods if m.signatures and not any("self" in s for s in m.signatures)}
     mros = cat.receiver_mros(cat.kinds())
     found = cat.discover_all(methods, mros, jobs)
     cases, mutated = [], set()
@@ -53,7 +56,8 @@ def sweep(classes: list[str] | None = None, jobs: int = 4) -> list[dict]:
             cases += cases_for(r, receiver_deletable=False)[:1]  # the baseline alone on other receivers
             continue
         mutated.add(key)
-        cases += cases_for(r, receiver_deletable=bool(DELETABLE & set(mros[r["kind"]] or [])))
+        deletable = bool(DELETABLE & set(mros[r["kind"]] or [])) and key not in static
+        cases += cases_for(r, receiver_deletable=deletable)
     return _discovery_rows(found) + _run(cases, jobs)
 
 
