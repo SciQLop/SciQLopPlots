@@ -83,7 +83,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
         return;
 
     if (x.format_code() != 'd')
-        throw std::runtime_error("Keys (x) must be float64");
+        throw sqp::type_error(std::string("x: keys must be float64 (got dtype code '") + x.format_code() + "')");
 
     const std::size_t nx_sz = x.flat_size();
     const std::size_t ny_sz = y.flat_size();
@@ -112,14 +112,14 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     //   2D y:  ny == nz        (per-cell y, e.g. a spectrogram whose
     //                           frequency axis varies per timestamp)
     if (nz_sz % nx_sz != 0)
-        throw std::runtime_error(
+        throw std::invalid_argument(
             "ColorMap.set_data: z size must be a multiple of x size");
 
     const std::size_t y_size_per_row = nz_sz / nx_sz;
     const bool valid_1d_y = (ny_sz == y_size_per_row);
     const bool valid_2d_y = (ny_sz == nz_sz);
     if (!valid_1d_y && !valid_2d_y)
-        throw std::runtime_error(
+        throw std::invalid_argument(
             "ColorMap.set_data: y size must equal len(z)/len(x) (1D y) "
             "or len(z) (2D y)");
 
@@ -128,7 +128,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     // QCPSoADataSource2D indexes the raw buffer as row-major, so every cell
     // would be wrong with no warning. Reject rather than misrender.
     if ((y.ndim() >= 2 && !y.row_major()) || (z.ndim() >= 2 && !z.row_major()))
-        throw std::runtime_error(
+        throw std::invalid_argument(
             "ColorMap.set_data: y/z must be row-major (C-order); pass "
             "np.ascontiguousarray(arr) for a transposed/Fortran-order array");
 
@@ -138,7 +138,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     // to a negative size instead of throwing, so reject here first.
     constexpr auto max_dim = static_cast<std::size_t>(std::numeric_limits<int>::max());
     if (nx_sz > max_dim || ny_sz > max_dim || nz_sz > max_dim)
-        throw std::runtime_error(
+        throw std::invalid_argument(
             "ColorMap.set_data: buffer size exceeds INT_MAX (2^31-1) elements per dimension");
 
     // A single key sample can't define a cell span: QCPColorMap2's
@@ -148,7 +148,7 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     // plottable-colormap2.cpp `if (src.xSize() < 2) return nullptr;`).
     // Reject here instead of shipping a data source that renders nothing.
     if (nx_sz == 1)
-        throw std::runtime_error(
+        throw std::invalid_argument(
             "ColorMap.set_data: needs at least 2 time/key samples to render, got 1");
 
     const auto* x_ptr = static_cast<const double*>(x.raw_data());

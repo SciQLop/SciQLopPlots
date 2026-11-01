@@ -144,7 +144,7 @@ class TestColormapData:
         assert huge.flags["C_CONTIGUOUS"]
         tiny_x = np.zeros(1, dtype=np.float64)  # nx=1 keeps the 1D-y match: ny == nz/nx == nz
 
-        with pytest.raises(RuntimeError, match="INT_MAX"):
+        with pytest.raises(ValueError, match="INT_MAX"):
             cmap.set_data(tiny_x, huge, huge)
 
         del huge
@@ -162,7 +162,7 @@ class TestColormapData:
         cmap = plot.colormap(x, y, z)
         single_x = np.zeros(1, dtype=np.float64)
         single_z = np.ascontiguousarray(z[:, :1])
-        with pytest.raises(RuntimeError, match="at least 2"):
+        with pytest.raises(ValueError, match="at least 2"):
             cmap.set_data(single_x, y, single_z)
 
 

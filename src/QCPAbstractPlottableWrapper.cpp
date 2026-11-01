@@ -130,7 +130,9 @@ void SQPQCPAbstractPlottableWrapper::set_labels(const QStringList& labels)
 {
     SCIQLOP_ON_OWNER_THREAD(set_labels(labels));
     if (std::size(labels) != std::size(m_components))
-        throw std::runtime_error("Invalid number of labels");
+        throw std::invalid_argument("set_labels: expected " + std::to_string(std::size(m_components))
+                                    + " labels, one per component, got "
+                                    + std::to_string(std::size(labels)));
     const auto apply = [&labels](auto& component, qsizetype i) { component.set_name(labels[i]); };
     if (for_each_part_while_alive(this, m_components, apply))
         Q_EMIT labels_changed(labels);
@@ -140,7 +142,9 @@ void SQPQCPAbstractPlottableWrapper::set_colors(const QList<QColor>& colors)
 {
     SCIQLOP_ON_OWNER_THREAD(set_colors(colors));
     if (std::size(colors) != std::size(m_components))
-        throw std::runtime_error("Invalid number of colors");
+        throw std::invalid_argument("set_colors: expected " + std::to_string(std::size(m_components))
+                                    + " colours, one per component, got "
+                                    + std::to_string(std::size(colors)));
     const auto apply = [&colors](auto& component, qsizetype i) { component.set_color(colors[i]); };
     if (for_each_part_while_alive(this, m_components, apply))
         Q_EMIT colors_changed(colors);

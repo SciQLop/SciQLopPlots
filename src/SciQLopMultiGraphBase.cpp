@@ -222,7 +222,7 @@ void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         return;
 
     if (x.format_code() != 'd')
-        throw std::runtime_error("Keys (x) must be float64");
+        throw sqp::type_error(std::string("x: keys must be float64 (got dtype code '") + x.format_code() + "')");
     // Length/ndim/dtype guard: y spans are built with x's length below, so a
     // shorter y would be read out of bounds at render time.
     sqp::validation::validate_xy(x, y);

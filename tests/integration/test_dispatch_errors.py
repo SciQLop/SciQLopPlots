@@ -67,7 +67,7 @@ def test_unsupported_kinds_on_a_projections_panel_raise(qtbot, panel, call, mess
 
 
 def test_a_failing_histogram2d_leaves_no_empty_plot(qtbot, panel):
-    with pytest.raises(RuntimeError, match="same length"):
+    with pytest.raises(ValueError, match="same length"):
         panel.histogram2d(X, X[:5])
     assert panel.plot_count() == 0
 
@@ -75,7 +75,7 @@ def test_a_failing_histogram2d_leaves_no_empty_plot(qtbot, panel):
 @pytest.mark.parametrize("call, error", [
     (lambda p: p.line(X, X[:5]), ValueError),
     (lambda p: p.plot(X, X[:5]), ValueError),
-    (lambda p: p.colormap(X, X, np.zeros((3, 3))), RuntimeError),
+    (lambda p: p.colormap(X, X, np.zeros((3, 3))), ValueError),
     (lambda p: p.waterfall(X, np.zeros((3, 4))), ValueError),
 ])
 def test_a_failing_factory_leaves_no_empty_plot(qtbot, panel, call, error):

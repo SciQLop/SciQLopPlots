@@ -98,3 +98,18 @@ def test_good_sizes_still_work(kind, call):
 ])
 def test_non_array_data_is_a_type_error(kind, call):
     assert_contract(kind, call, "type")
+
+
+# F12: argument errors that C++ threw as std::runtime_error.
+@pytest.mark.parametrize("kind, call, expect", [
+    ("line_graph", "obj.set_data(np.arange(C.N, dtype=np.int8), C.LINES)", "type"),
+    ("colormap", "obj.set_data(np.arange(C.N, dtype=np.int8), C.Y, C.Z)", "type"),
+    ("colormap", "obj.set_data(X, C.Y[:-1], C.Z)", "value"),
+    ("colormap", "obj.set_data(X[:-1], C.Y, C.Z)", "value"),
+    ("colormap", "obj.set_data(X, C.Y, np.asfortranarray(C.Z))", "value"),
+    ("histogram2d", "obj.set_data(X, X[:-1])", "value"),
+    ("line_graph", "obj.set_labels(['a'])", "value"),
+    ("line_graph", "obj.set_colors([C.RED])", "value"),
+])
+def test_argument_errors_have_the_argument_class(kind, call, expect):
+    assert_contract(kind, call, expect)
