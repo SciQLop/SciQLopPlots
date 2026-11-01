@@ -10,6 +10,7 @@
 
 #include <new>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 
 namespace sqp
@@ -85,25 +86,58 @@ inline void check_font_arg(PyObject* arg, const char* function)
     }
 }
 
-//! Shiboken reports an unknown keyword on a method as AttributeError ("unsupported keyword"); Python
-//! says TypeError for an unexpected keyword argument. \a result is what returnWrongArguments returned.
-inline PyObject* keyword_error_as_type_error(PyObject* result)
+//! "bins=str, name=int": each keyword argument with its type's name.
+inline std::string keyword_types(PyObject* kwds)
 {
-    if (!PyErr_Occurred() || !PyErr_ExceptionMatches(PyExc_AttributeError))
-        return result;
-    PyObject *type, *value, *traceback;
-    PyErr_Fetch(&type, &value, &traceback);
-    PyObject* text = value != nullptr ? PyObject_Str(value) : nullptr;
-    const char* message = text != nullptr ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
-    if (message != nullptr && std::string_view(message).find("unsupported keyword") != std::string_view::npos)
+    std::string listed;
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    while (PyDict_Next(kwds, &pos, &key, &value))
     {
-        PyErr_SetString(PyExc_TypeError, message);
-        Py_XDECREF(type);
-        Py_XDECREF(value);
-        Py_XDECREF(traceback);
+        PyObject* type_name = PyType_GetName(Py_TYPE(value));
+        const char* k = PyUnicode_AsUTF8AndSize(key, nullptr);
+        const char* t = type_name != nullptr ? PyUnicode_AsUTF8AndSize(type_name, nullptr) : nullptr;
+        listed += (listed.empty() ? "" : ", ") + std::string(k ? k : "?") + "=" + (t ? t : "?");
+        Py_XDECREF(type_name);
+    }
+    PyErr_Clear(); // a failed name lookup above must not replace the error being reported
+    return listed;
+}
+
+//! Two shiboken argument errors that don't say why, made into TypeErrors that do. \a result is what
+//! returnWrongArguments returned, \a kwds the call's keyword arguments.
+//! - An unknown keyword is an AttributeError ("unsupported keyword"); Python says TypeError.
+//! - A keyword of the wrong type says "f((args,)) is wrong (missing signature)": the positional
+//!   arguments matched, so the culprit is a keyword. Name them with their types.
+inline PyObject* keyword_error_as_type_error(PyObject* result, PyObject* kwds = nullptr)
+{
+    const bool attribute = PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_AttributeError);
+    const bool type = PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_TypeError);
+    if (!attribute && !type)
+        return result;
+    PyObject *exc_type, *value, *traceback;
+    PyErr_Fetch(&exc_type, &value, &traceback);
+    PyObject* text = value != nullptr ? PyObject_Str(value) : nullptr;
+    const char* raw = text != nullptr ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
+    const std::string_view message = raw != nullptr ? raw : "";
+    const bool has_keywords = kwds != nullptr && PyDict_Check(kwds) && PyDict_Size(kwds) > 0;
+    if (attribute && message.find("unsupported keyword") != std::string_view::npos)
+        PyErr_SetString(PyExc_TypeError, raw);
+    else if (type && has_keywords && message.find("(missing signature)") != std::string_view::npos)
+    {
+        const std::string function(message.substr(0, message.find('(')));
+        PyErr_Format(PyExc_TypeError, "%s: a keyword argument has the wrong type (%s); see help(%s)",
+                     function.c_str(), keyword_types(kwds).c_str(), function.c_str());
     }
     else
-        PyErr_Restore(type, value, traceback);
+    {
+        PyErr_Restore(exc_type, value, traceback);
+        Py_XDECREF(text);
+        return result;
+    }
+    Py_XDECREF(exc_type);
+    Py_XDECREF(value);
+    Py_XDECREF(traceback);
     Py_XDECREF(text);
     return result;
 }

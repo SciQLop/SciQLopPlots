@@ -1,5 +1,7 @@
 """Reproducers for the API fuzz findings (docs/plans/2026-11-01-api-fuzzing-findings.md), run out of process."""
+import numpy as np
 import pytest
+from PySide6.QtCore import QPointF
 
 from tests.sweeps.api_fuzz.catalogue import setup_source
 from tests.sweeps.api_fuzz.harness import Case, classify, run_batch
@@ -305,6 +307,20 @@ def test_helpers_take_strided_views(call):
                                         ("ts_plot", "obj.histogram(X, bins=3)")])
 def test_an_unknown_keyword_is_a_type_error(kind, call):
     assert_contract(kind, call, "type")
+
+
+# Found by opencode (round 2): a keyword of the wrong type said "histogram((array,)) is wrong (missing
+# signature)", naming neither the keyword nor the type.
+@pytest.mark.parametrize("call, names", [
+    (lambda plot: plot.histogram(np.arange(10.0), bins="x"), ("bins=str",)),
+    (lambda plot: plot.histogram(np.arange(10.0), name=3, bins=[1]), ("name=int", "bins=list")),
+    (lambda plot: plot.text("t", QPointF(1, 1), coordinates="pixels"), ("coordinates=str",)),
+])
+def test_a_keyword_of_the_wrong_type_is_named(plot, call, names):
+    with pytest.raises(TypeError) as error:
+        call(plot)
+    assert all(n in str(error.value) for n in names), str(error.value)
+    assert "missing signature" not in str(error.value)
 
 
 # Off the GUI thread (SciQLop#147 policy): a mutator queues, a factory refuses with RuntimeError.
