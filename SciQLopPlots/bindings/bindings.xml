@@ -203,11 +203,32 @@
             Shiboken::AutoDecRef oneItem(Py_BuildValue("[O]", pyIn));
             Shiboken::Conversions::pythonToCppCopy(pysideStringList, oneItem, cppOut);
         };
+        // PySide's own check takes any sequence and its conversion prints an error per non-str item:
+        // only a sequence of strs is a string list here, anything else is the wrong type.
+        static constexpr auto allStrs = [](PyObject *pyIn) {
+            const Py_ssize_t size = PySequence_Check(pyIn) ? PySequence_Size(pyIn) : -1;
+            if (size &lt; 0)
+            {
+                PyErr_Clear();
+                return false;
+            }
+            for (Py_ssize_t i = 0; i &lt; size; ++i)
+            {
+                Shiboken::AutoDecRef item(PySequence_GetItem(pyIn, i));
+                if (item.isNull() || !PyUnicode_Check(item.object()))
+                {
+                    PyErr_Clear();
+                    return false;
+                }
+            }
+            return true;
+        };
         Shiboken::Conversions::addPythonToCppValueConversion(
             stringList, strAsOneItem, [](PyObject *pyIn) -> PythonToCppFunc {
-                return PyUnicode_Check(pyIn)
-                    ? strAsOneItem
-                    : Shiboken::Conversions::isPythonToCppConvertible(pysideStringList, pyIn);
+                if (PyUnicode_Check(pyIn))
+                    return strAsOneItem;
+                return allStrs(pyIn) ? Shiboken::Conversions::isPythonToCppConvertible(pysideStringList, pyIn)
+                                     : nullptr;
             });
         qtCoreConverters[SBK_QStringList_IDX] = stringList;
         SbkPySide6_QtCoreTypeConverters = qtCoreConverters;

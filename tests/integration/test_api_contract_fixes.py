@@ -239,3 +239,11 @@ def test_a_projection_plot_saving_without_a_file_name_is_a_value_error(call):
                                         ("colormap", "obj.set_contour_width(1e39)")])
 def test_widths_past_float_range_are_value_errors(kind, call):
     assert_contract(kind, call, "value")
+
+
+# A list of strings given numbers: PySide's converter printed an error per item and carried on.
+@pytest.mark.parametrize("kind, call", [("line_graph", "obj.set_labels([1.0, 2.0, 3.0])"),
+                                        ("line_graph", "obj.set_labels(np.arange(3.0))"),
+                                        ("timeline", "obj.set_lanes([1, 2])")])
+def test_numbers_for_a_list_of_strings_are_a_type_error(kind, call):
+    assert_contract(kind, call, "type")
