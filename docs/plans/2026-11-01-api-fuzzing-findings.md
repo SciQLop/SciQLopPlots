@@ -216,6 +216,20 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 - Off the GUI thread: plot.set_name segfaulted; factories built cross-thread children (bars crashed);
   set_data and set_busy ran on the caller's thread. Fixed dfefc737.
 
+## Found by the opencode scripts (round 1)
+
+opencode wrote 47 adversarial scripts. Most of the failures were mistakes in the scripts: wrong method
+names, expecting `deleteLater` to run inside `processEvents()`, or counting one `fetch_failed` per provider
+when each new range fetches again. The real bugs:
+
+- Putting a panel inside itself, or inside a panel it holds, hung in layout. ValueError since dfaf473a.
+- `panel.plot()` from a worker thread built the plot widget on that thread. Plots and panels raise
+  RuntimeError off the GUI thread since dfaf473a.
+- A provider returning something other than a list or tuple of arrays was dropped without a word. It
+  emits `fetch_failed` with the reason since 57105ddc.
+- A band or error_bars callback returning the wrong number of arrays gave an internal "missing positional
+  argument" message. It says what it expects since 57105ddc.
+
 ## Harness corrections after the first sweep
 
 These are Claude's calls.
