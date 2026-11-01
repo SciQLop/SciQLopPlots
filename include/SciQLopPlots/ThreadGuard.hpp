@@ -22,6 +22,7 @@
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
+#include <QCoreApplication>
 #include <QThread>
 
 #include <stdexcept>
@@ -83,6 +84,18 @@ inline void require_owner_thread(const QObject* owner, const char* what)
         throw std::runtime_error(std::string(what)
                                  + " must be called from the thread the plot lives in (the GUI "
                                    "thread); call it there, e.g. via a queued invocation");
+}
+
+//! \a parent, if this runs on the GUI thread: for a widget's first base-class initializer. A plot or a
+//! panel built on another thread is a widget off the GUI thread, which Qt doesn't support.
+template <typename Parent>
+Parent* on_gui_thread(Parent* parent, const char* what)
+{
+    if (auto* app = QCoreApplication::instance(); app && QThread::currentThread() != app->thread())
+        throw std::runtime_error(std::string(what)
+                                 + " must be created on the GUI thread: it is a widget; build it there, "
+                                   "e.g. via a queued invocation");
+    return parent;
 }
 
 //! \a owner, after require_owner_thread: for a constructor's first base-class initializer, so

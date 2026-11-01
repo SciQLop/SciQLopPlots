@@ -54,6 +54,9 @@ SciQLopPlotContainer::~SciQLopPlotContainer()
 void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 {
     sqp::require_object(widget, "insert: widget");
+    // A panel inside itself, or inside a panel it holds, is a widget cycle: Qt loops on it.
+    if (widget == this || widget->isAncestorOf(this))
+        throw std::invalid_argument("insert: a panel can't hold itself or a panel that holds it");
     QSplitter::insertWidget(index, widget);
     if (auto* plot = qobject_cast<SciQLopPlotInterface*>(widget))
     {

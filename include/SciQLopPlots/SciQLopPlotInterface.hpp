@@ -137,7 +137,7 @@ public:
     Q_PROPERTY(QString name READ name WRITE set_name NOTIFY name_changed FINAL)
 
     SciQLopPlotInterface(QWidget* parent = nullptr, const QString& name = "")
-            : QFrame(parent), m_uuid(QUuid::createUuid())
+            : QFrame(SciQLopPlots::on_gui_thread(parent, "a plot")), m_uuid(QUuid::createUuid())
             , m_extension_holder { std::make_unique<InspectorExtensionHolder>(
                   this, [this]() { Q_EMIT inspector_extensions_changed(); }) }
     {
