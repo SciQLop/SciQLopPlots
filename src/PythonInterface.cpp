@@ -660,7 +660,9 @@ inline void _warn_dropped_batch(const std::string& why)
         PyErr_Clear();
 }
 
-inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
+// None is "no data for this range". Anything else that can't be used sets \a why: the range path
+// reports it as fetch_failed (J1), the others only warn.
+inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res, std::string& why)
 {
     std::vector<SciQLopPyBuffer> data;
     Py_ssize_t size = 0;
@@ -676,7 +678,18 @@ inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
         getitem = PyTuple_GetItem;
     }
     else
+    {
+        if (res != Py_None)
+        {
+            PyObject* type_name = PyType_GetName(Py_TYPE(res));
+            const char* name = type_name ? PyUnicode_AsUTF8AndSize(type_name, nullptr) : nullptr;
+            why = std::string("expected a list or tuple of arrays, got ") + (name ? name : "another type");
+            Py_XDECREF(type_name);
+            PyErr_Clear();
+            _warn_dropped_batch(why);
+        }
         return data;
+    }
     try
     {
         data.reserve(static_cast<std::size_t>(size));
@@ -685,37 +698,59 @@ inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
     }
     catch (const std::exception& e)
     {
-        _warn_dropped_batch(std::string("an unsupported buffer: ") + e.what());
+        why = std::string("an unsupported buffer: ") + e.what();
+        _warn_dropped_batch(why);
         data.clear();
     }
     return data;
 }
 
+inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res)
+{
+    std::string why;
+    return _collect_buffers(res, why);
+}
+
 // A plain list/tuple, or {"data": [...], "color": c} for a batch that carries its
 // own colour axis. The dict names the colour, so nothing is guessed from the
 // number of buffers.
+inline SciQLopPyDataBatch _dropped(std::string why)
+{
+    SciQLopPyDataBatch batch;
+    batch.error = "SciQLopPlots data provider returned " + why;
+    return batch;
+}
+
 inline SciQLopPyDataBatch _collect_batch(PyObject* res)
 {
+    std::string why;
     if (!PyDict_Check(res))
-        return { _collect_buffers(res), {} };
+    {
+        auto buffers = _collect_buffers(res, why);
+        return why.empty() ? SciQLopPyDataBatch { std::move(buffers), {}, {} } : _dropped(why);
+    }
     PyObject* data = PyDict_GetItemString(res, "data"); // borrowed
     PyObject* color = PyDict_GetItemString(res, "color"); // borrowed
     if (data == nullptr || color == nullptr)
     {
-        _warn_dropped_batch("a dict without both 'data' and 'color' keys");
-        return {};
+        why = "a dict without both 'data' and 'color' keys";
+        _warn_dropped_batch(why);
+        return _dropped(why);
     }
-    auto buffers = _collect_buffers(data);
+    auto buffers = _collect_buffers(data, why);
+    if (!why.empty())
+        return _dropped(why);
     if (buffers.empty())
         return {};
     try
     {
-        return { std::move(buffers), SciQLopPyBuffer(color) };
+        return { std::move(buffers), SciQLopPyBuffer(color), {} };
     }
     catch (const std::exception& e)
     {
-        _warn_dropped_batch(std::string("an unsupported colour buffer: ") + e.what());
-        return {};
+        why = std::string("an unsupported colour buffer: ") + e.what();
+        _warn_dropped_batch(why);
+        return _dropped(why);
     }
 }
 

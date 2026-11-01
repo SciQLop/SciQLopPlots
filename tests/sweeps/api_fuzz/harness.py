@@ -53,7 +53,9 @@ STDERR_ALLOW = [
      "offscreen platform plugin notice on show()"),
     (re.compile(r'^SciQLopPlots: ".*" cannot draw a colour axis: showing its data without the colour$'),
      "documented degrade: a graph without a colour axis draws a coloured batch's data and says so once"),
-    (re.compile(r'^SciQLopPlots: (dropping data batch from provider for .*|data provider failed: .*)$'),
+    (re.compile(r'^(SciQLopPlots: (dropping data batch from provider for .*|data provider failed: .*)'
+                r'|\[GetDataPyCallable\] dropping data provider result: .*'
+                r'|.*RuntimeWarning: SciQLopPlots data provider returned .*\(dropping batch\))$'),
      "J1: data arriving later can't raise to the caller; it is printed once and emitted as fetch_failed"),
 ]
 
