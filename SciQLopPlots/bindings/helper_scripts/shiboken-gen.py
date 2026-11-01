@@ -8,6 +8,7 @@ from glob import glob
 import subprocess
 import json
 import platform
+import re
 
 parser = argparse.ArgumentParser(description='PySide/shiboken generator wrapper')
 parser.add_argument('--input-header')
@@ -82,6 +83,28 @@ except subprocess.CalledProcessError as e:
     print(e.stderr.decode())
     sys.exit(e.returncode)
 
+# Shiboken's exception-handling turns every C++ exception into RuntimeError. Ask
+# sqp::python_error_type (ErrorTranslation.hpp) instead, so a bad value is a ValueError.
+# The hand-written catch ladders in bindings.xml call it too.
+MODULE_INCLUDE = '#include "sciqlopplotsbindings_python.h"\n'
+TRANSLATION_INCLUDE = '#include <SciQLopPlots/Python/ErrorTranslation.hpp>\n'
+GENERIC_CATCH = re.compile(r'(catch \(const std::exception &e\) \{\s*errorType = )PyExc_RuntimeError;')
+
+
+def translate_exceptions(output_directory):
+    for path in glob(f'{output_directory}/**/*.cpp', recursive=True):
+        with open(path) as f:
+            source = f.read()
+        translated = GENERIC_CATCH.sub(r'\1sqp::python_error_type(e);', source)
+        if 'sqp::python_error_type' in translated:
+            # Not in bindings.h: shiboken's own parser fails on Python.h.
+            translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
+        if translated != source:
+            with open(path, 'w') as f:
+                f.write(translated)
+
+
+translate_exceptions(args.output_directory)
 print(r.stdout.decode())
 print(r.stderr.decode())
 sys.exit(r.returncode)

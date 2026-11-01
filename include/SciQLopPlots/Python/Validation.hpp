@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SciQLopPlots/Debug.hpp>
 #include <SciQLopPlots/Python/PythonInterface.hpp>
 
 #include <QList>
@@ -21,7 +22,7 @@ inline void validate_buffer(const SciQLopPyBuffer& b,
     {
         std::ostringstream os;
         os << name << ": invalid or null buffer";
-        throw std::domain_error(os.str());
+        throw sqp::type_error(os.str());
     }
 
     const char fmt = b.format_code();
@@ -30,7 +31,7 @@ inline void validate_buffer(const SciQLopPyBuffer& b,
     {
         std::ostringstream os;
         os << name << ": dtype must be numeric (got '" << fmt << "')";
-        throw std::invalid_argument(os.str());
+        throw sqp::type_error(os.str());
     }
 
     if (expected_ndim >= 0 && static_cast<int>(b.ndim()) != expected_ndim)
