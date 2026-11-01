@@ -337,7 +337,8 @@ public:
         else
             axes = selected_axes();
         for (auto ax : axes)
-            ax->set_log(not ax->log());
+            if (!ax->is_time_axis())  // a time axis has no log scale to toggle
+                ax->set_log(not ax->log());
     }
 
     inline virtual SciQLopGraphInterface*

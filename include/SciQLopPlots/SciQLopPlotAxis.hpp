@@ -85,7 +85,7 @@ public:
         WARN_ABSTRACT_METHOD;
     }
 
-    inline virtual void set_log(bool log) noexcept
+    inline virtual void set_log(bool log)
     {
         Q_UNUSED(log);
         WARN_ABSTRACT_METHOD;
@@ -132,7 +132,7 @@ public:
 
     //! Text labels at fixed values (e.g. timeline lanes) instead of numbers.
     //! An empty map goes back to automatic ticks. Not available on time axes.
-    inline virtual void set_tick_labels(const QMap<double, QString>& labels) noexcept
+    inline virtual void set_tick_labels(const QMap<double, QString>& labels)
     {
         Q_UNUSED(labels);
         WARN_ABSTRACT_METHOD;
@@ -252,11 +252,11 @@ public:
     inline virtual QString number_format() const noexcept { return QStringLiteral("g"); }
     inline virtual int number_precision() const noexcept { return 6; }
     //! Time axes only: a QDateTime format (e.g. "yyyy-MM-dd hh:mm"), in UTC.
-    inline virtual void set_date_format(const QString& format) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_date_format(const QString& format) { WARN_ABSTRACT_METHOD; }
     inline virtual QString date_format() const noexcept { return {}; }
 
-    void couple_range_with(SciQLopPlotAxisInterface* other) noexcept;
-    void decouple_range_from(SciQLopPlotAxisInterface* other) noexcept;
+    void couple_range_with(SciQLopPlotAxisInterface* other);
+    void decouple_range_from(SciQLopPlotAxisInterface* other);
 
     void add_inspector_extension(InspectorExtension* extension)
     {
@@ -360,13 +360,13 @@ public:
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
-    void set_log(bool log) noexcept override;
+    void set_log(bool log) override;
     void set_reversed(bool reversed) noexcept override;
     void set_is_time_axis(bool is_time_axis) noexcept override;
     void set_number_format(const QString& format, int precision) override;
     QString number_format() const noexcept override;
     int number_precision() const noexcept override;
-    void set_date_format(const QString& format) noexcept override;
+    void set_date_format(const QString& format) override;
     QString date_format() const noexcept override { return m_date_format; }
     void set_label(const QString& label) noexcept override;
     void set_tick_labels_visible(bool visible) noexcept override;
@@ -374,7 +374,7 @@ public:
     void set_label_color(const QColor& color) noexcept override;
     void set_tick_label_font(const QFont& font) noexcept override;
     void set_tick_label_color(const QColor& color) noexcept override;
-    void set_tick_labels(const QMap<double, QString>& labels) noexcept override;
+    void set_tick_labels(const QMap<double, QString>& labels) override;
     QMap<double, QString> tick_labels() const noexcept override { return m_tick_labels; }
     void set_selected(bool selected) noexcept override;
     SciQLopPlotRange range() const noexcept override;
@@ -444,7 +444,7 @@ public:
 
     void set_range(const SciQLopPlotRange& range) noexcept override;
     void set_visible(bool visible) noexcept override;
-    void set_log(bool log) noexcept override;
+    void set_log(bool log) override;
     void set_label(const QString& label) noexcept override;
     void set_color_gradient(const ColorGradient gradient) noexcept;
     //! A gradient that is not one of the presets. Forgets the tracked preset, so

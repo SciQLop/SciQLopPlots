@@ -138,7 +138,8 @@ def test_time_axis_keeps_its_ticker(qtbot, tmp_path):
     plot.time_axis().set_range(SciQLopPlotRange(1.8e9, 1.8e9 + 3600))
     dates = _render(plot, tmp_path, "dates")
 
-    plot.time_axis().set_tick_labels({1.8e9: "start"})
+    with pytest.raises(ValueError, match="not supported on a time axis"):
+        plot.time_axis().set_tick_labels({1.8e9: "start"})
 
     assert plot.time_axis().tick_labels() == {}
     assert _render(plot, tmp_path, "after") == dates

@@ -18,7 +18,8 @@ def timed(ts_plot):
 
 
 def test_a_time_axis_keeps_its_dates_after_a_log_switch(timed):
-    timed.time_axis().set_log(True)
+    with pytest.raises(ValueError, match="can't be logarithmic"):
+        timed.time_axis().set_log(True)
     timed.time_axis().set_log(False)
     assert not timed.time_axis().log() and _svg(timed).count(b"2023/") > 0
 

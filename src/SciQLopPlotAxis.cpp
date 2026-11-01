@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 
 #include "SciQLopPlots/PercentileMath.hpp"
@@ -118,12 +119,13 @@ void SciQLopPlotAxis::set_visible(bool visible) noexcept
     }
 }
 
-void SciQLopPlotAxis::set_log(bool log) noexcept
+void SciQLopPlotAxis::set_log(bool log)
 {
     SCIQLOP_ON_OWNER_THREAD(set_log(log));
     if (is_time_axis())
     {
-        qWarning() << "A time axis can't be logarithmic";
+        if (log)
+            throw std::invalid_argument("set_log: a time axis can't be logarithmic");
         return;
     }
     if (!m_axis.isNull() && (m_axis->scaleType() == QCPAxis::stLogarithmic) != log)
@@ -199,14 +201,11 @@ int SciQLopPlotAxis::number_precision() const noexcept
     return m_axis.isNull() ? 6 : m_axis->numberPrecision();
 }
 
-void SciQLopPlotAxis::set_date_format(const QString& format) noexcept
+void SciQLopPlotAxis::set_date_format(const QString& format)
 {
     SCIQLOP_ON_OWNER_THREAD(set_date_format(format));
     if (!is_time_axis())
-    {
-        qWarning() << "set_date_format: not a time axis";
-        return;
-    }
+        throw std::invalid_argument("set_date_format: not a time axis");
     if (format == m_date_format)
         return;
     m_date_format = format;
@@ -594,12 +593,13 @@ void SciQLopPlotAxis::rescale() noexcept
     m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
 }
 
-void SciQLopPlotAxis::set_tick_labels(const QMap<double, QString>& labels) noexcept
+void SciQLopPlotAxis::set_tick_labels(const QMap<double, QString>& labels)
 {
     SCIQLOP_ON_OWNER_THREAD(set_tick_labels(labels));
     if (is_time_axis())
     {
-        qWarning() << "Text tick labels are not supported on a time axis";
+        if (!labels.isEmpty())
+            throw std::invalid_argument("set_tick_labels: text tick labels are not supported on a time axis");
         return;
     }
     auto* axis = qcp_axis();
@@ -724,7 +724,7 @@ void SciQLopPlotColorScaleAxis::set_visible(bool visible) noexcept
     }
 }
 
-void SciQLopPlotColorScaleAxis::set_log(bool log) noexcept
+void SciQLopPlotColorScaleAxis::set_log(bool log)
 {
     SCIQLOP_ON_OWNER_THREAD(set_log(log));
     if (!m_axis.isNull() && (m_axis->dataScaleType() == QCPAxis::stLogarithmic) != log)
@@ -863,16 +863,18 @@ QCPAxis* SciQLopPlotColorScaleAxis::qcp_axis() const noexcept
     return m_axis->axis();
 }
 
-void SciQLopPlotAxisInterface::couple_range_with(SciQLopPlotAxisInterface* other) noexcept
+void SciQLopPlotAxisInterface::couple_range_with(SciQLopPlotAxisInterface* other)
 {
+    sqp::require_object(other, "couple_range_with: other");
     QObject::connect(this, &SciQLopPlotAxisInterface::range_changed, other,
                      QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
     QObject::connect(other, &SciQLopPlotAxisInterface::range_changed, this,
                      QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
 }
 
-void SciQLopPlotAxisInterface::decouple_range_from(SciQLopPlotAxisInterface* other) noexcept
+void SciQLopPlotAxisInterface::decouple_range_from(SciQLopPlotAxisInterface* other)
 {
+    sqp::require_object(other, "decouple_range_from: other");
     QObject::disconnect(
         this, &SciQLopPlotAxisInterface::range_changed, other,
         QOverload<const SciQLopPlotRange&>::of(&SciQLopPlotAxisInterface::set_range));
