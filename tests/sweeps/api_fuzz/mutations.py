@@ -9,7 +9,9 @@ from tests.sweeps.api_fuzz.harness import Case
 NUMBERS = frozenset({"number"})
 BUFFERS = frozenset({"buffer"})
 # bool parameters take any object by truthiness (PySide's convention): they get no wrong-type values.
-NOT_STR = frozenset({"number", "buffer", "sequence", "mapping", "qobject", "deletable", "value"})
+# A QFont parameter takes a str or a sequence of family names (PySide builds the font): only
+# non-iterables are wrong types for it.
+NOT_STR = frozenset({"number", "buffer", "sequence", "mapping", "qobject", "deletable", "value", "font"})
 OBJECTS = frozenset({"qobject", "deletable"})
 SEQUENCES = frozenset({"sequence"})
 ITERABLES = frozenset({"sequence", "mapping"})  # a dict iterates: not a wrong type for these
@@ -30,9 +32,10 @@ BAD_VALUES = [
     # Wrong types: always TypeError.
     BadValue("object", "object()", NOT_STR | {"str"}, "type"),
     # Positions and ranges also take date strings: an unparsable one is a bad value.
-    BadValue("str", "'not a number'", NOT_STR - ITERABLES, "type", ("ValueError",)),
-    BadValue("dict", "{'a': 1}", (NOT_STR - ITERABLES) | {"str"}, "type"),
+    BadValue("str", "'not a number'", NOT_STR - ITERABLES - {"font"}, "type", ("ValueError",)),
+    BadValue("dict", "{'a': 1}", (NOT_STR - ITERABLES - {"font"}) | {"str"}, "type"),
     BadValue("list_for_scalar", "[1.0]", frozenset({"number", "str", "value"}), "type"),
+    BadValue("list_of_numbers_for_font", "[1.0]", frozenset({"font"}), "type"),
     BadValue("none", "None", NOT_STR - OBJECTS, "type"),
     # None where an object is expected may mean "no object": accepted, or refused as a type or value.
     BadValue("none_object", "None", OBJECTS, "ok_or_value", ("TypeError",)),
@@ -61,6 +64,15 @@ BAD_VALUES = [
     BadValue("empty_list", "[]", SEQUENCES, "ok_or_value"),
     BadValue("list_of_none", "[None]", SEQUENCES, "ok_or_value", ("TypeError",)),
 ]
+
+# None that a method takes on purpose, by (method, argument position): its meaning, not a mistake.
+NONE_ACCEPTED = {
+    ("set_color_data", 0): "None clears the colouring",
+    ("set_data_and_color", 1): "None colour: the data alone, no colour axis",
+    ("set_data_colored", 1): "None colour: the data alone, no colour axis",
+    ("set_callable", 0): "None removes the callback: the graph stops fetching",
+    ("index", 0): "a plot the panel doesn't hold, None included, is at -1",
+}
 
 # Calls whose remaining arguments may match another overload or a default: they must not crash or swallow,
 # and a refusal must be a type or value error (or the class's own "not supported").
@@ -92,8 +104,11 @@ def cases_for(row: dict, receiver_deletable: bool) -> list[Case]:
     for i, kind in enumerate(kinds):
         for bad in BAD_VALUES:
             if kind in bad.applies_to:
+                expect, allow = bad.expect, bad.allow
+                if bad.source == "None" and (row["name"], i) in NONE_ACCEPTED:
+                    expect, allow = "ok_or_value", ("TypeError",)
                 out.append(_case(row, f"{bad.name}@{i}", base + f"args[{i}] = {bad.source}\n" + _invoke(row),
-                                 bad.expect, bad.allow))
+                                 expect, allow))
         if kind == "deletable":
             out.append(_case(row, f"deleted@{i}", base + f"shiboken6.delete(args[{i}])\n" + _invoke(row), "deleted"))
     buffers = [i for i, k in enumerate(kinds) if k == "buffer"]
