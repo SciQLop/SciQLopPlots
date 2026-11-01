@@ -156,6 +156,17 @@ public:
         return {};
     }
 
+    //! plots() as Python sees it (bound as "plots"): the plots themselves, not QPointer handles that
+    //! other methods refuse. A plot deleted since is left out.
+    inline QList<SciQLopPlotInterface*> plot_objects() const
+    {
+        QList<SciQLopPlotInterface*> objects;
+        for (const auto& plot : plots())
+            if (plot)
+                objects.append(plot.data());
+        return objects;
+    }
+
     inline virtual QList<QWidget*> child_widgets() const
     {
         WARN_ABSTRACT_METHOD;

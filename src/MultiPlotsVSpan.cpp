@@ -91,6 +91,26 @@ QList<QPointer<MultiPlotsVerticalSpan>> MultiPlotsVSpanCollection::spans() const
     return _spans;
 }
 
+static QList<MultiPlotsVerticalSpan*> live(const QList<QPointer<MultiPlotsVerticalSpan>>& spans)
+{
+    QList<MultiPlotsVerticalSpan*> objects;
+    for (const auto& span : spans)
+        if (span)
+            objects.append(span.data());
+    return objects;
+}
+
+QList<MultiPlotsVerticalSpan*> MultiPlotsVSpanCollection::span_objects() const
+{
+    return live(spans());
+}
+
+QList<MultiPlotsVerticalSpan*>
+MultiPlotsVSpanCollection::span_objects_in_range(SciQLopPlotRange horizontal_range) const
+{
+    return live(spans_in_range(horizontal_range));
+}
+
 QList<QPointer<MultiPlotsVerticalSpan>>
 MultiPlotsVSpanCollection::spans_in_range(SciQLopPlotRange horizontal_range) const
 {
