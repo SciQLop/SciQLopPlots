@@ -154,7 +154,17 @@ void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface* panel)
     Q_EMIT panel_removed(panel);
 }
 
-void SciQLopMultiPlotPanel::move_panel(int from, int to) { }
+void SciQLopMultiPlotPanel::move_panel(int from, int to)
+{
+    SCIQLOP_ON_OWNER_THREAD(move_panel(from, to));
+    _container->move_panel(from, to);
+}
+
+void SciQLopMultiPlotPanel::move_panel(SciQLopPlotPanelInterface* panel, int to)
+{
+    SCIQLOP_ON_OWNER_THREAD_WITH(panel, move_panel(panel, to));
+    _container->move_panel(panel, to);
+}
 
 void SciQLopMultiPlotPanel::add_plot(SciQLopPlotInterface* plot)
 {

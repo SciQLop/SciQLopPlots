@@ -116,6 +116,22 @@ void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
     emit plot_moved(plot, to);
 }
 
+void SciQLopPlotContainer::move_panel(int from, int to)
+{
+    auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(QSplitter::widget(from));
+    if (panel == nullptr)
+        throw std::invalid_argument("move_panel: no panel at index " + std::to_string(from));
+    move_panel(panel, to);
+}
+
+void SciQLopPlotContainer::move_panel(SciQLopPlotPanelInterface* panel, int to)
+{
+    if (indexOf(sqp::require_object(panel, "move_panel: panel")) == -1)
+        throw std::invalid_argument("move_panel: this panel is not in the panel");
+    QSplitter::insertWidget(to, panel);
+    emit panel_moved(panel, to);
+}
+
 void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot)
 {
     remove_plot(plot, true);
