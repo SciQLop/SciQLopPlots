@@ -211,7 +211,8 @@ def _float_array(value, name):
     a = np.asarray(value)
     if a.dtype.kind not in "biuf":
         raise TypeError(f"{name}: expected real numbers, got dtype {a.dtype}")
-    return a.astype(np.float64, copy=False)
+    # Contiguous: the C++ side refuses strided or reversed views, and these are our own arrays to build.
+    return a.astype(np.float64, order="C", copy=False)
 
 
 def _as_columns(*columns):
@@ -240,7 +241,7 @@ def _band_batch(x, lower, upper):
 
 
 def _error_batch(x, y, *errors):
-    return x, _as_columns(y, *_error_bounds(y, *errors))
+    return _float_array(x, "x"), _as_columns(y, *_error_bounds(y, *errors))
 
 
 def _wrapped_callback(callback, to_batch):
