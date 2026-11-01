@@ -300,10 +300,7 @@
     <primitive-type name="GetDataPyCallable" target-lang-api-name="PyObject"  allow-thread="yes">
         <conversion-rule>
             <target-to-native>
-                <add-conversion type="Py_None">
-                    SBK_UNUSED(%in)
-                    %out = %OUTTYPE();
-                </add-conversion>
+                <!-- No None: every callback a graph takes is required (None built a graph that never fetched). -->
                 <add-conversion type="PyObject" check="PyCallable_Check(%in)">
                     %out = %OUTTYPE(%in);
                 </add-conversion>
@@ -1307,6 +1304,19 @@
         </modify-function>
     </object-type>
     <object-type name="SciQLopCurve" parent-management="yes">
+        <!-- Required from Python. The projection plot builds its curves with empty buffers, from C++. -->
+        <modify-function signature="set_data(SciQLopPyBuffer,SciQLopPyBuffer)">
+            <inject-code class="target" position="beginning">
+                try {
+                    sqp::validation::require_array(%1, "x");
+                    sqp::validation::require_array(%2, "y");
+                    %CPPSELF.%FUNCTION_NAME(%1, %2);
+                } catch (const std::exception&amp; e) {
+                    PyErr_SetString(sqp::python_error_type(e), e.what());
+                    return nullptr;
+                }
+            </inject-code>
+        </modify-function>
         <modify-function signature="set_color_data(SciQLopPyBuffer,ColorGradient)">
             <inject-code class="target" position="beginning">
                 // This code replaces the call, and with it the base class's conversion rule.
