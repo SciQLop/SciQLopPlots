@@ -205,6 +205,17 @@ Each finding group below is a root cause, not a single method. Status is `open` 
   - **User's answer (2026-11-01): fix both here.** Fixed 4a200ce7: the generator checks each colour and font
     argument of this module before PySide converts it.
 
+- **J4. One colour map per plot, or not?** A second `colormap()` was refused, but `histogram2d` (same colour
+  scale) wasn't counted, so they stacked. Found by the story fuzzer.
+  - **User's answer (2026-11-01): one colour map of any kind.** Fixed cea90658.
+
+## Found by the story fuzzer and the off-thread sweep (Task 8)
+
+- Strided x in band/error_bars refused by the C++ conversion: fixed d17d940d.
+- An unknown keyword on a method raised AttributeError: TypeError since 1b5dfec5.
+- Off the GUI thread: plot.set_name segfaulted; factories built cross-thread children (bars crashed);
+  set_data and set_busy ran on the caller's thread. Fixed dfefc737.
+
 ## Harness corrections after the first sweep
 
 These are Claude's calls.
