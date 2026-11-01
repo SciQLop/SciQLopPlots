@@ -325,6 +325,7 @@ DataProviderWorker::~DataProviderWorker()
 
 void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
 {
+    sqp::require_object(data_provider, "set_data_provider: data_provider");
     data_provider->setParent(nullptr);
     m_data_provider = data_provider;
     m_data_provider->moveToThread(m_worker_thread);

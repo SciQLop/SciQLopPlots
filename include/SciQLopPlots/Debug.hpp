@@ -52,6 +52,15 @@ struct type_error : std::invalid_argument
 {
     using std::invalid_argument::invalid_argument;
 };
+
+//! \a pointer, or sqp::type_error "<what> must not be None" when it is null and the caller needs an object.
+template <typename T>
+T* require_object(T* pointer, const char* what)
+{
+    if (pointer == nullptr)
+        throw type_error(std::string(what) + " must not be None");
+    return pointer;
+}
 }
 
 //! Throws sqp::unsupported_call: "<what> is not supported by <self's concrete class>".

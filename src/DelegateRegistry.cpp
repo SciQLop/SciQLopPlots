@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Inspector/Model/DelegateRegistry.hpp"
 
 DelegateRegistry& DelegateRegistry::instance()
@@ -35,6 +36,7 @@ void DelegateRegistry::register_type(
 
 QWidget* DelegateRegistry::create_delegate(QObject* obj, QWidget* parent) const
 {
+    sqp::require_object(obj, "create_delegate: obj");
     auto metaObject = obj->metaObject();
     while (metaObject != nullptr)
     {

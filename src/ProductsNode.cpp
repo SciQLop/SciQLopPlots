@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/Products/ProductsNode.hpp"
 #include "SciQLopPlots/Products/ProductsModel.hpp"
 #include "SciQLopPlots/Icons/icons.hpp"
@@ -68,6 +69,7 @@ ProductsModelNode::ProductsModelNode(const QString& name, const QString& provide
 // (begin/endRemoveRows) — _insert_node handles the re-publish case.
 bool ProductsModelNode::add_child(ProductsModelNode* child)
 {
+    sqp::require_object(child, "add_child: child");
     // Qt refuses to parent across threads, which would leave the child listed but unowned.
     if (child->thread() != thread())
     {

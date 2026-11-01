@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include "SciQLopPlots/Debug.hpp"
 #include "SciQLopPlots/MultiPlots/AxisSynchronizer.hpp"
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
@@ -46,6 +47,7 @@ void AxisSynchronizer::_unfollow(SciQLopPlotInterface* plot)
 
 void AxisSynchronizer::resynchronize(SciQLopPlotInterface* plot)
 {
+    sqp::require_object(plot, "resynchronize: plot");
     _unfollow(plot);
     _follow(plot);
     if (_last_range.is_valid())
@@ -76,6 +78,7 @@ void AxisSynchronizer::updatePlotList(const QList<QPointer<SciQLopPlotInterface>
 
 void AxisSynchronizer::plotAdded(SciQLopPlotInterface* plot)
 {
+    sqp::require_object(plot, "plotAdded: plot");
     _set_axis_range(_last_range, plot, m_sync_axis);
 }
 
