@@ -130,6 +130,7 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
     // The resampler converts x/y from any numeric dtype to double. Reject
     // unsupported dtypes here (at the Python boundary) so the worker thread only
     // ever sees dtypes dispatch_dtype can handle.
@@ -427,6 +428,7 @@ qreal SciQLopCurve::line_width() const
 
 void SciQLopCurve::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_data(values, gradient));
     QVector<double> colors;
     if (values.is_valid() && values.flat_size() > 0)
     {

@@ -152,6 +152,7 @@ bool SciQLopNDProjectionCurves::busy() const noexcept
 
 void SciQLopNDProjectionCurves::set_busy(bool busy) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
     m_fetching = busy;
     _report_busy();
 }

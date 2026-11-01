@@ -226,6 +226,8 @@ void SciQLopMultiGraphBase::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     // Length/ndim/dtype guard: y spans are built with x's length below, so a
     // shorter y would be read out of bounds at render time.
     sqp::validation::validate_xy(x, y);
+    // Off the GUI thread the components it builds would be cross-thread children: hop there.
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
 
     _x = x;
     _y = y;

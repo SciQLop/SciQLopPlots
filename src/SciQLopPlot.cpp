@@ -1130,6 +1130,7 @@ SciQLopTimeline* SciQLopPlot::add_timeline(int lane_height)
 
 void SciQLopPlot::configure_as_timeline(int lane_height)
 {
+    SCIQLOP_ON_OWNER_THREAD(configure_as_timeline(lane_height));
     auto* layout = lane_layout();
     layout->setLaneHeight(lane_height);
     layout->setPlacement(QCPLaneLayout::plLanes);
@@ -1301,7 +1302,10 @@ SciQLopHistogram2DRemote* SciQLopPlot::add_remote_histogram2d(const QString& nam
 SciQLopOverlay* SciQLopPlot::overlay()
 {
     if (!m_overlay)
+    {
+        SciQLopPlots::require_owner_thread(this, "SciQLopPlot::overlay");
         m_overlay = new SciQLopOverlay(m_impl->overlay(), this);
+    }
     return m_overlay;
 }
 

@@ -62,3 +62,8 @@ def test_bool_parameters_take_any_truthy_object():
 def test_dicts_are_not_bad_mappings_or_sequences():
     for kind in ("mapping", "sequence"):
         assert not any(":dict@" in c.id for c in cases_for(row(kind), receiver_deletable=False))
+
+
+def test_every_baseline_runs_off_the_gui_thread_too():
+    off = [c for c in cases_for(row("number"), receiver_deletable=False) if c.id.endswith(":off_thread")]
+    assert len(off) == 1 and "threading.Thread" in off[0].call and "RuntimeError" in off[0].allow

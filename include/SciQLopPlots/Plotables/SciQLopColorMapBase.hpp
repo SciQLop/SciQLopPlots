@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotAxis.hpp"
 #include <QPointer>
@@ -121,6 +122,7 @@ public:
 
     virtual void set_busy(bool busy) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
         if (auto* p = plottable(); p)
             p->setBusy(busy);
     }

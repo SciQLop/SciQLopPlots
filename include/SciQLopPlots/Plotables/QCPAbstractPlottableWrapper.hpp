@@ -21,6 +21,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphComponent.hpp"
 #include "SciQLopPlots/Plotables/SciQLopGraphInterface.hpp"
 #include "SciQLopPlots/SciQLopPlotInterface.hpp"
@@ -133,6 +134,7 @@ public:
 
     virtual void set_busy(bool busy) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
         // A busy_changed slot may delete this graph and its components: walk a snapshot.
         const QPointer<QObject> self(this);
         const auto parts = m_components;

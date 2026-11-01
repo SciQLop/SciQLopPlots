@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Python/PythonInterface.hpp"
 
 #include "QCPAbstractPlottableWrapper.hpp"
@@ -213,6 +214,7 @@ public:
     inline bool busy() const noexcept override { return remote_busy(); }
     inline void set_busy(bool busy) noexcept override
     {
+        SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
         set_remote_busy(busy);
         {
             const QSignalBlocker blocker(this);

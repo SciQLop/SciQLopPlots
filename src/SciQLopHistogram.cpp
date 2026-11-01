@@ -154,6 +154,7 @@ QCPPlottableLegendItem* SciQLopHistogram::_legend_item() const
 void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     sqp::validation::require_array(y, "y");
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
     if (!_hist)
         return;
     if (x.is_valid())
@@ -172,6 +173,7 @@ void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 void SciQLopHistogram::set_values(SciQLopPyBuffer values)
 {
     sqp::validation::require_array(values, "values");
+    SCIQLOP_ON_OWNER_THREAD(set_values(values));
     if (!_hist)
         return;
     const QPointer self(this);
@@ -200,6 +202,7 @@ void SciQLopHistogram::set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights
 {
     sqp::validation::require_array(edges, "edges");
     sqp::validation::require_array(heights, "heights");
+    SCIQLOP_ON_OWNER_THREAD(set_binned(edges, heights));
     if (!_hist)
         return;
     check_binned(edges, heights);
@@ -396,6 +399,7 @@ bool SciQLopHistogram::busy() const noexcept
 
 void SciQLopHistogram::set_busy(bool busy) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_busy(busy));
     if (_hist)
         _hist->setBusy(busy);
 }

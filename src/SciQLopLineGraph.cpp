@@ -115,6 +115,7 @@ void SciQLopLineGraph::push_color_values()
 
 void SciQLopLineGraph::set_color_data(SciQLopPyBuffer values, ::ColorGradient gradient)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_color_data(values, gradient));
     check_color_length(values, _x.is_valid() ? _x.flat_size() : 0);
     _gradient_preset = gradient;
     _color_gradient = QCPColorGradient(to_qcp(gradient));
