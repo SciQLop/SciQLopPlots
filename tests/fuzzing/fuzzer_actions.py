@@ -14,6 +14,11 @@ from tests.fuzzing.callback_actions import (
     add_slow_callback_line, add_flaky_callback_line, add_flaky_callback_spectrogram,
     swap_callback,
 )
+from tests.fuzzing.api_actions import (
+    add_histogram, add_histogram2d, add_bars, add_band, add_error_bars, group_two_graphs, add_item,
+    toggle_legend, switch_theme, save_panel_png, observe_x_range, failing_provider,
+    projection_plot_round_trip, poke_random_method,
+)
 from tests.fuzzing.torture_actions import (
     rapid_zoom_burst, rapid_pan_burst, rescale_y, rapid_log_toggle,
     set_panel_time_range, zoom_pan_zoom, resize_panel, rapid_resize_burst,
@@ -32,6 +37,10 @@ FUZZER_ACTIONS = [
     add_callback_line_3c, add_callback_line_1c, add_callback_spectrogram,
     add_slow_callback_line, add_flaky_callback_line, add_flaky_callback_spectrogram,
     swap_callback,
+    # The rest of the API (2026-11-01 campaign)
+    add_histogram, add_histogram2d, add_bars, add_band, add_error_bars, group_two_graphs, add_item,
+    toggle_legend, switch_theme, save_panel_png, observe_x_range, failing_provider,
+    projection_plot_round_trip, poke_random_method,
     # Viewport torture
     rapid_zoom_burst, rapid_pan_burst, rescale_y, rapid_log_toggle,
     set_panel_time_range, zoom_pan_zoom, resize_panel, rapid_resize_burst,

@@ -190,8 +190,13 @@ class ActionRegistry:
                 last = self._story.steps[-1]
                 if last.error is not None:
                     _dump_story(self._story)
-            self.__class__.panel.clear()
+            panel = self.__class__.panel
+            panel.clear()
             settle()
+            # The next story starts from an empty panel: one left behind is this story's finding.
+            if left := len(panel.plots()):
+                _dump_story(self._story)
+                raise AssertionError(f"panel.clear() left {left} plot(s) behind")
 
         class_dict["teardown"] = teardown
 
