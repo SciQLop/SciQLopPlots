@@ -119,7 +119,8 @@ KEYWORD_ERROR = re.compile(r'return (Shiboken::returnWrongArguments\([^;]*, errI
 
 
 def keyword_errors_as_type_errors(source):
-    return KEYWORD_ERROR.sub(r'return sqp::keyword_error_as_type_error(\1);', source)
+    # Every function that reaches this has kwds in scope (checked over all wrappers, 2026-11-02).
+    return KEYWORD_ERROR.sub(r'return sqp::keyword_error_as_type_error(\1, kwds);', source)
 
 
 def refuse_complex_arrays(source):
