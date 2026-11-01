@@ -203,28 +203,39 @@ def _graph_of(result):
     return result[1] if isinstance(result, tuple) else result
 
 
+def _float_array(value, name):
+    """`value` as float64 data, or TypeError: None, complex numbers and non-numbers are the wrong type."""
+    import numpy as np
+    if value is None:
+        raise TypeError(f"{name}: expected an array, got None")
+    a = np.asarray(value)
+    if a.dtype.kind not in "biuf":
+        raise TypeError(f"{name}: expected real numbers, got dtype {a.dtype}")
+    return a.astype(np.float64, copy=False)
+
+
 def _as_columns(*columns):
     import numpy as np
-    return np.column_stack([np.asarray(c, dtype=np.float64) for c in columns])
+    return np.column_stack([_float_array(c, "column") for c in columns])
 
 
 def _as_bound(reference, bound):
     import numpy as np
-    bound = np.asarray(bound, dtype=np.float64)
+    bound = _float_array(bound, "bound")
     if bound.ndim != 0 and bound.shape != np.shape(reference):
         raise ValueError(f"expected a scalar or an array of x's length ({len(reference)}), got shape {bound.shape}")
     return np.broadcast_to(bound, np.shape(reference))
 
 
 def _error_bounds(y, err_minus, err_plus=None):
-    import numpy as np
-    y = np.asarray(y, dtype=np.float64)
+    y = _float_array(y, "y")
     em = _as_bound(y, err_minus)
     ep = em if err_plus is None else _as_bound(y, err_plus)
     return y - em, y + ep
 
 
 def _band_batch(x, lower, upper):
+    x = _float_array(x, "x")
     return x, _as_columns(_as_bound(x, lower), _as_bound(x, upper))
 
 
@@ -304,9 +315,8 @@ def _configure_histogram(hist, range, log_bins, normalization, style):
 
 
 def _as_values(values_or_callback):
-    import numpy as np
-    if isinstance(values_or_callback, (list, tuple)):
-        return np.asarray(values_or_callback, dtype=np.float64)
+    if values_or_callback is None or isinstance(values_or_callback, (list, tuple)):
+        return _float_array(values_or_callback, "values")
     return values_or_callback
 
 
@@ -776,6 +786,8 @@ def _array_seconds(values, allow_nat):
         return seconds
     if a.dtype.kind in "OUS":
         return np.array([_element_seconds(v) for v in a.ravel()], dtype=np.float64).reshape(a.shape)
+    if a.dtype.kind == "c":
+        raise TypeError(f"expected times or real numbers, got dtype {a.dtype}")
     return np.ascontiguousarray(a, dtype=np.float64)
 
 
@@ -898,8 +910,9 @@ def _set_snap_to(self, value):
     elif isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
         self.set_snap_step(float(value))
     else:
-        raise ValueError("snap_to must be 'edges', a positive number of seconds, "
-                         "a non-empty list of times, or None")
+        bad = ValueError if isinstance(value, (str, int, float)) else TypeError
+        raise bad("snap_to must be 'edges', a positive number of seconds, "
+                  "a non-empty list of times, or None")
 
 
 SciQLopTimeline.snap_to = _snap_to
@@ -978,8 +991,9 @@ def _enum_normalization(method):
         if not isinstance(value, Histogram2DNormalization):
             if isinstance(value, bool) or not isinstance(value, int) \
                     or value not in _HISTOGRAM2D_NORMALIZATION_INTS:
-                raise ValueError("normalization must be Histogram2DNormalization.Count or "
-                                 f"Histogram2DNormalization.PerColumn, not {value!r}")
+                bad = ValueError if isinstance(value, int) and not isinstance(value, bool) else TypeError
+                raise bad("normalization must be Histogram2DNormalization.Count or "
+                          f"Histogram2DNormalization.PerColumn, not {value!r}")
             given = f"{type(value).__name__}.{value.name}" if isinstance(value, enum.Enum) else int(value)
             value = _HISTOGRAM2D_NORMALIZATION_INTS[value]
             _warn_deprecated(f"set_normalization({given}) is deprecated: use Histogram2DNormalization.{value.name}")

@@ -90,6 +90,8 @@ inline void validate_same_length(const SciQLopPyBuffer& a, std::string_view name
 
 inline void validate_xy(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y)
 {
+    require_array(x, "x");
+    require_array(y, "y");
     validate_buffer(x, "x", 1);
     if (y.ndim() != 1 && y.ndim() != 2)
     {

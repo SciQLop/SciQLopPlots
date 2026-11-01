@@ -636,33 +636,33 @@ void SciQLopNDProjectionPlot::export_paint(QPainter* painter, const QRect& targe
 bool SciQLopNDProjectionPlot::save(const QString& filename, int width, int height, double scale,
                                    int quality, const QString& format)
 {
-    return saved_or_throw(save_widget(this, filename, width, height, scale, quality, format), filename);
+    return save_or_throw(filename, [&] { return save_widget(this, filename, width, height, scale, quality, format); });
 }
 
 bool SciQLopNDProjectionPlot::save_pdf(const QString& filename, int width, int height)
 {
-    return saved_or_throw(save_widget_pdf(this, filename, width, height), filename);
+    return save_or_throw(filename, [&] { return save_widget_pdf(this, filename, width, height); });
 }
 
 bool SciQLopNDProjectionPlot::save_svg(const QString& filename, int width, int height)
 {
-    return saved_or_throw(save_widget_svg(this, filename, width, height), filename);
+    return save_or_throw(filename, [&] { return save_widget_svg(this, filename, width, height); });
 }
 
 bool SciQLopNDProjectionPlot::save_png(const QString& filename, int width, int height,
                                        double scale, int quality)
 {
-    return saved_or_throw(save_widget_raster(this, filename, "PNG", width, height, scale, quality), filename);
+    return save_or_throw(filename, [&] { return save_widget_raster(this, filename, "PNG", width, height, scale, quality); });
 }
 
 bool SciQLopNDProjectionPlot::save_jpg(const QString& filename, int width, int height,
                                        double scale, int quality)
 {
-    return saved_or_throw(save_widget_raster(this, filename, "JPG", width, height, scale, quality), filename);
+    return save_or_throw(filename, [&] { return save_widget_raster(this, filename, "JPG", width, height, scale, quality); });
 }
 
 bool SciQLopNDProjectionPlot::save_bmp(const QString& filename, int width, int height,
                                        double scale)
 {
-    return saved_or_throw(save_widget_raster(this, filename, "BMP", width, height, scale, -1), filename);
+    return save_or_throw(filename, [&] { return save_widget_raster(this, filename, "BMP", width, height, scale, -1); });
 }

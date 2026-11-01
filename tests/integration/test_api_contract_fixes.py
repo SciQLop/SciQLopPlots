@@ -194,3 +194,48 @@ def test_move_panel(call, expect):
                                   "obj.x_axis()", "obj.color_palette()", "obj.set_color_palette([C.RED])"])
 def test_a_deleted_widget_plot_raises(call):
     assert_contract("widget_plot", f"import shiboken6\nshiboken6.delete(obj)\n{call}", "deleted")
+
+
+# A failed conversion of one argument left its error pending while the next one converted: SystemError.
+@pytest.mark.parametrize("call", ["obj.set_column_line_style(float('inf'), S.GraphLineStyle.Line)",
+                                  "obj.set_column_marker_shape(2**63, S.GraphMarkerShape.Circle)"])
+def test_a_bad_first_argument_is_reported_not_a_system_error(call):
+    assert_contract("line_graph", call, "value", ("TypeError",))
+
+
+# The Python helpers: None, complex and non-array data are wrong types.
+@pytest.mark.parametrize("kind, call", [
+    ("plot", "obj.band(X, None, np.sin(X))"),
+    ("plot", "obj.band(X, {'a': 1}, np.sin(X))"),
+    ("plot", "obj.band(None, np.sin(X), np.cos(X))"),
+    ("plot", "obj.band(X, np.zeros(C.N, dtype=complex), np.sin(X))"),
+    ("plot", "obj.error_bars(X, np.sin(X), None)"),
+    ("plot", "obj.error_bars(X, np.zeros(C.N, dtype=complex), 0.1)"),
+    ("plot", "obj.histogram(None)"),
+    ("plot", "obj.bars(None, np.arange(10.0))"),
+    ("histogram", "obj.set_binned(np.linspace(0, 1, 11), None)"),
+    ("timeline", "obj.set_intervals_coded(None, np.array([30.0]), np.array([0.0]), ['A'], np.array([0.0]), ['x'], ['l'], np.array([7.0]))"),
+    ("matched_xy", "S.MatchedXY.from_py(X, None)"),
+    ("curve", "obj.set_time_values(np.zeros(C.N, dtype=complex))"),
+    ("histogram2d", "obj.set_normalization(object())"),
+    ("timeline", "obj.snap_to = object()"),
+])
+def test_helpers_call_bad_data_a_type_error(kind, call):
+    assert_contract(kind, call, "type")
+
+
+@pytest.mark.parametrize("kind, call", [("histogram2d", "obj.set_normalization(7)"), ("timeline", "obj.snap_to = -1.0"),
+                                        ("timeline", "obj.snap_to = 'middle'")])
+def test_helpers_call_bad_values_a_value_error(kind, call):
+    assert_contract(kind, call, "value")
+
+
+@pytest.mark.parametrize("call", [f"obj.{m}('')" for m in ("save", "save_png", "save_pdf", "save_svg", "save_jpg", "save_bmp")])
+def test_a_projection_plot_saving_without_a_file_name_is_a_value_error(call):
+    assert_contract("nd_plot", call, "value")
+
+
+@pytest.mark.parametrize("kind, call", [("vertical_line", "obj.set_line_width(1e308)"),
+                                        ("colormap", "obj.set_contour_width(1e39)")])
+def test_widths_past_float_range_are_value_errors(kind, call):
+    assert_contract(kind, call, "value")
