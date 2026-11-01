@@ -43,4 +43,9 @@ def test_deep_story_fuzz():
            "QT_QPA_PLATFORM": os.environ.get("QT_QPA_PLATFORM", "offscreen")}
     done = subprocess.run([sys.executable, "-m", "pytest", f"{__file__}::test_ui_fuzzing", "-q", "-p", "no:cacheprovider"],
                           capture_output=True, text=True, env=env, cwd=tempfile.gettempdir(), timeout=3600)
-    assert done.returncode == 0, (done.stdout + done.stderr)[-6000:]
+    reports = os.environ.get("SCIQLOP_PLOTS_TEST_REPORTS", "test-reports")
+    os.makedirs(reports, exist_ok=True)
+    log = os.path.abspath(os.path.join(reports, "deep_story_fuzz.log"))
+    with open(log, "w") as f:
+        f.write(done.stdout + done.stderr)
+    assert done.returncode == 0, f"full output in {log}\n" + (done.stdout + done.stderr)[-3000:]
