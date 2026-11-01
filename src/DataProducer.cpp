@@ -266,8 +266,7 @@ QList<SciQLopPyBuffer> DataProviderInterface::get_data(SciQLopPyBuffer x, SciQLo
 
 QList<SciQLopPyBuffer> DataProviderInterface::get_data(QList<SciQLopPyBuffer> values)
 {
-    WARN_ABSTRACT_METHOD;
-    return { {}, {}, {} , {} };
+    throw_unsupported("get_data(values)", *this);
 }
 
 void DataProviderInterface::set_range(SciQLopPlotRange new_state) noexcept

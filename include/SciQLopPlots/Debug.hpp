@@ -54,12 +54,11 @@ struct type_error : std::invalid_argument
     using std::invalid_argument::invalid_argument;
 };
 
-//! \a value, or std::invalid_argument when it isn't a finite number >= 0 (a pen width).
+//! \a value, or std::invalid_argument when it isn't a pen width Qt takes: from 0 to 32767.
 inline double require_size(double value, const char* what)
 {
-    // Qt keeps pen widths as float: a double past FLT_MAX would be infinite there.
-    if (!std::isfinite(static_cast<float>(value)) || value < 0)
-        throw std::invalid_argument(std::string(what) + " must be a finite number >= 0, got "
+    if (!std::isfinite(value) || value < 0 || value >= 32768.0)
+        throw std::invalid_argument(std::string(what) + " must be a number from 0 to 32767, got "
                                     + std::to_string(value));
     return value;
 }

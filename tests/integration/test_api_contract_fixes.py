@@ -247,3 +247,27 @@ def test_widths_past_float_range_are_value_errors(kind, call):
                                         ("timeline", "obj.set_lanes([1, 2])")])
 def test_numbers_for_a_list_of_strings_are_a_type_error(kind, call):
     assert_contract(kind, call, "type")
+
+
+# None where a callback is required built a graph that never fetched.
+@pytest.mark.parametrize("kind, call", [
+    ("plot", "obj.line(None)"), ("plot", "obj.colormap(None)"), ("plot", "obj.scatter(None)"),
+    ("panel", "obj.line(None)"), ("nd_plot", "obj.model_curve(None)"), ("line_graph_fn", "obj.set_callable(None)"),
+    ("plot", "obj.plot(None)"), ("panel", "obj.plot(None)"), ("plot", "obj.error_bars(None, X, 0.1)"),
+])
+def test_none_for_a_callback_or_data_is_a_type_error(kind, call):
+    assert_contract(kind, call, "type")
+
+
+def test_a_curve_given_none_data_is_a_type_error():
+    assert_contract("curve", "obj.set_data(None, np.column_stack([X, X]))", "type")
+
+
+@pytest.mark.parametrize("kind, call", [("vertical_line", "obj.set_line_width(2**63)"),
+                                        ("colormap", "obj.set_contour_width(2**40)")])
+def test_widths_past_qt_range_are_value_errors(kind, call):
+    assert_contract(kind, call, "value")
+
+
+def test_a_provider_without_get_data_for_a_list_reports_instead_of_printing():
+    assert_contract("data_provider", "obj.set_data([X, X])\nC.pump(30)", "ok")
