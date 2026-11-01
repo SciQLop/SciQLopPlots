@@ -10,6 +10,13 @@ from __future__ import annotations
 import time
 import numpy as np
 
+# A story may zoom out to a range of centuries: a real provider returns a bounded batch then, not 15e9 points.
+MAX_POINTS = 100_000
+
+
+def _point_count(start: float, stop: float, points_per_second: float) -> int:
+    return min(max(int((stop - start) * points_per_second), 2), MAX_POINTS)
+
 
 def make_timeseries(n_components: int = 3, points_per_second: float = 10.0):
     """Return a callback ``(start, stop) -> (x, y)`` for a multi-component line graph."""
@@ -17,7 +24,7 @@ def make_timeseries(n_components: int = 3, points_per_second: float = 10.0):
     def provider(start: float, stop: float):
         if stop <= start:
             return None
-        n = max(int((stop - start) * points_per_second), 2)
+        n = _point_count(start, stop, points_per_second)
         x = np.linspace(start, stop, n, dtype=np.float64)
         cols = [np.sin(x * (i + 1) * 0.1 + i) * (10 ** i) for i in range(n_components)]
         y = np.column_stack(cols).astype(np.float64)
@@ -35,7 +42,7 @@ def make_spectrogram(n_channels: int = 32, points_per_second: float = 1.0):
     def provider(start: float, stop: float):
         if stop <= start:
             return None
-        n = max(int((stop - start) * points_per_second), 2)
+        n = _point_count(start, stop, points_per_second)
         x = np.linspace(start, stop, n, dtype=np.float64)
         z = np.random.default_rng(seed=int(start) & 0xFFFF).random(
             (n, n_channels), dtype=np.float64
