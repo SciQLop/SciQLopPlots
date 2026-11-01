@@ -107,9 +107,9 @@ def test_a_bad_call_from_a_worker_raises_there_as_on_the_gui_thread(qtbot, name)
 
 
 STATE_CASES = {
-    "labels count": (_graph, lambda g: g.set_labels(["only one"]), "Invalid number of labels"),
+    "labels count": (_graph, lambda g: g.set_labels(["only one"]), "expected 3 labels, one per component, got 1"),
     "colors count": (_graph, lambda g: g.set_colors([QColor("red")]),
-                     "Invalid number of colors"),
+                     "expected 3 colours, one per component, got 1"),
     "column past the last": (_graph, lambda g: g.set_fill_between(0, 9), "invalid columns"),
     "component of another graph": (
         _two_graphs_components, lambda pair: pair[0][0].set_fill_between(pair[1][1]),

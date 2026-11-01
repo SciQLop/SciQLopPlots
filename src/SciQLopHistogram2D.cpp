@@ -128,8 +128,9 @@ void SciQLopHistogram2D::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     const QPointer self(this);
 
     if (x.flat_size() != y.flat_size())
-        throw std::runtime_error(
-            "Histogram2D.set_data: x and y must have the same length");
+        throw std::invalid_argument("Histogram2D.set_data: x and y must have the same length (got "
+                                    + std::to_string(x.flat_size()) + " and "
+                                    + std::to_string(y.flat_size()) + ")");
 
     dispatch_dtype(x.format_code(), [&](auto x_tag) {
         dispatch_dtype(y.format_code(), [&](auto y_tag) {

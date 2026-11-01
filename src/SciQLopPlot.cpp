@@ -1440,7 +1440,7 @@ SciQLopGraphInterface* SciQLopPlot::plot_impl(const SciQLopPyBuffer& x, const Sc
             plottable = m_impl->add_plottable<SciQLopWaterfallGraph>(labels, metadata);
             break;
         default:
-            throw std::runtime_error("Unsupported graph type");
+            throw std::invalid_argument("plot: unsupported graph type");
             break;
     }
     if (plottable)

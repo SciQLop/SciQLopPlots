@@ -143,7 +143,7 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
         }
         catch (const std::invalid_argument&)
         {
-            throw std::runtime_error(std::string("Curve.set_data: ") + name
+            throw sqp::type_error(std::string("Curve.set_data: ") + name
                                      + " has an unsupported (non-numeric) dtype");
         }
     };
