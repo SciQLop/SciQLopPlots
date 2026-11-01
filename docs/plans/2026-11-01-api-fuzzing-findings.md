@@ -230,6 +230,21 @@ when each new range fetches again. The real bugs:
 - A band or error_bars callback returning the wrong number of arrays gave an internal "missing positional
   argument" message. It says what it expects since 57105ddc.
 
+## Found by the opencode scripts (round 2)
+
+34 scripts on timelines, `.on` pipelines, projection plots, histograms, colour maps and items. None crashed,
+aborted or hung. 23 failed, almost all on wrong method names or wrong expectations: `intervals_changed`
+reports user edits only, a pipeline step returning `None` drops the value, and a plain string is accepted
+as a one-item path. The real bugs:
+
+- A keyword argument of the wrong type said "f((args,)) is wrong (missing signature)". It names the
+  keyword and its type since cc01ba8a.
+- Seen while reading the pipeline code: a pipeline dropped every RuntimeError as "object deleted",
+  the user's own errors included. Since 69bed508 it drops one only when an end was deleted.
+
+The deep story run also failed once, but in the test's fake provider: zoomed out to centuries, it asked
+numpy for 118 GiB. It caps at 100k points since 6aa6ec38. The library reported that error correctly.
+
 ## Harness corrections after the first sweep
 
 These are Claude's calls.
