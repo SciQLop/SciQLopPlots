@@ -5,6 +5,9 @@
 // shiboken's Python.h wrapper: Python.h after Qt headers breaks on the "slots" macro.
 #include <sbkpython.h>
 
+#include <QColor>
+#include <QString>
+
 #include <new>
 #include <stdexcept>
 
@@ -47,6 +50,38 @@ inline bool is_complex_array(PyObject* object)
     const bool complex = PyUnicode_Check(kind) && PyUnicode_CompareWithASCIIString(kind, "c") == 0;
     Py_DECREF(kind);
     return complex;
+}
+
+//! A colour argument given as a str: PySide turns a name it can't parse into an invalid QColor, which
+//! several setters read as "automatic". Raise instead. A QColor() passed or defaulted is not a str.
+inline void check_color_arg(PyObject* arg, const char* function)
+{
+    if (arg == nullptr || PyErr_Occurred() || !PyUnicode_Check(arg))
+        return;
+    Py_ssize_t size = 0;
+    const char* text = PyUnicode_AsUTF8AndSize(arg, &size);
+    if (text != nullptr && !QColor::isValidColorName(QString::fromUtf8(text, size)))
+        PyErr_Format(PyExc_ValueError, "%s: '%s' is not a colour name", function, text);
+}
+
+//! A font argument given as a list of family names: PySide prints an error for each non-str item and
+//! goes on. Raise instead.
+inline void check_font_arg(PyObject* arg, const char* function)
+{
+    if (arg == nullptr || PyErr_Occurred() || PyUnicode_Check(arg) || !(PyList_Check(arg) || PyTuple_Check(arg)))
+        return;
+    const Py_ssize_t size = PySequence_Size(arg);
+    for (Py_ssize_t i = 0; i < size; ++i)
+    {
+        PyObject* item = PySequence_GetItem(arg, i);
+        const bool is_str = item != nullptr && PyUnicode_Check(item);
+        Py_XDECREF(item);
+        if (!is_str)
+        {
+            PyErr_Format(PyExc_TypeError, "%s: font family names must be strs", function);
+            return;
+        }
+    }
 }
 
 //! libshiboken raises a bare OverflowError (no message) when a number doesn't fit a C++ integer
