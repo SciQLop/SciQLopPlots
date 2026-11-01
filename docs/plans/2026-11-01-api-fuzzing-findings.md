@@ -144,7 +144,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F14. Invalid colour names are accepted
 
-- **Status:** open, judgment call: the str-to-QColor conversion is PySide's own, shared by every module (QColor is a PySide type, not in this module's converter table); a library-side check would have to tell an invalid colour name from QColor() meaning 'automatic'
+- **Status:** fixed 4a200ce7 (J3)
 - **Problem:** `set_color("not a number")` and similar return normally with an invalid `QColor`.
 
 ### F15. `panel.plots()` returns wrappers that the panel's own methods refuse
@@ -202,6 +202,8 @@ Each finding group below is a root cause, not a single method. Status is `open` 
   Both happen in PySide's QtGui converters, shared by every module. A fix here would mean replacing those
   converters for this module (as was done for string lists) and telling an invalid colour from `QColor()`
   meaning "automatic". This is about 40 sweep cases (F14 and part of F7).
+  - **User's answer (2026-11-01): fix both here.** Fixed 4a200ce7: the generator checks each colour and font
+    argument of this module before PySide converts it.
 
 ## Harness corrections after the first sweep
 
