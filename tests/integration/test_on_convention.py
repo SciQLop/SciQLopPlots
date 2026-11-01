@@ -224,8 +224,10 @@ def test_timeline_state_drives_a_pipeline(qtbot):
 
 def test_a_normalization_pipeline_raises_no_deprecation_of_its_own(plot, qtbot):
     import warnings
+    other = sp.SciQLopPlot()  # one colour map of any kind per plot
+    qtbot.addWidget(other)
     source = plot.add_histogram2d("a", 4, 4)
-    target = plot.add_histogram2d("b", 4, 4)
+    target = other.add_histogram2d("b", 4, 4)
     pipeline = source.on.normalization >> target.on.normalization
     with warnings.catch_warnings():
         warnings.simplefilter("error", DeprecationWarning)

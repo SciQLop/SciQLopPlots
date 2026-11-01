@@ -63,9 +63,9 @@ def add_histogram(panel, model, plot_index):
 
 @_with_plot("Added a 2-D histogram to plot {plot_index}")
 def add_histogram2d(panel, model, plot_index):
-    # Unlike colormap, a 2-D histogram is taken next to a colour map (J4 in the findings).
+    from tests.fuzzing.graph_actions import colormap_or_refusal
     if plot := _plot(panel, plot_index):
-        plot.histogram2d(X, np.sin(X))
+        colormap_or_refusal(plot, lambda: plot.histogram2d(X, np.sin(X)))
 
 
 @_with_plot("Added bars to plot {plot_index}")

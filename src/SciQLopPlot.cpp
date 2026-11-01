@@ -54,13 +54,19 @@
 
 namespace
 {
-// A plot holds one colour map; a second used to come back as None.
+// A plot holds one colour map of any kind (colormap, histogram2d): they share its colour scale.
+// A second used to come back as None, or stacked silently for a 2-D histogram.
+[[noreturn]] void refuse_second_color_map()
+{
+    throw std::runtime_error("this plot already has a colour map and holds only one: remove "
+                             "it first (plot.remove) or put the new one on another plot");
+}
+
 template <typename ColorMap>
 ColorMap* the_only_color_map(ColorMap* created)
 {
     if (!created)
-        throw std::runtime_error("this plot already has a colour map and holds only one: remove "
-                                 "it first (plot.remove) or put the new one on another plot");
+        refuse_second_color_map();
     return created;
 }
 }
@@ -173,7 +179,7 @@ const QList<SciQLopPlottableInterface*>& SciQLopPlot::sqp_plottables() const
 
 SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scale, bool z_log_scale)
 {
-    if (m_color_map == nullptr)
+    if (!_holds_color_map())
     {
         m_color_map = new SciQLopColorMap(
             this, this->m_axes[0], this->m_axes[3],
@@ -188,6 +194,8 @@ SciQLopColorMap* SciQLopPlot::add_color_map(const QString& name, bool y_log_scal
 SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int x_bins, int y_bins,
                                                   bool x_bins_log, bool y_bins_log)
 {
+    if (_holds_color_map())
+        refuse_second_color_map();
     auto hist = new SciQLopHistogram2D(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, x_bins, y_bins);
@@ -203,6 +211,8 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
                                                           int y_bins, bool x_bins_log,
                                                           bool y_bins_log)
 {
+    if (_holds_color_map())
+        refuse_second_color_map();
     auto hist = new SciQLopHistogram2DFunction(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable), name,
@@ -241,7 +251,7 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
                                                     const QString& name, bool y_log_scale,
                                                     bool z_log_scale)
 {
-    if (m_color_map == nullptr)
+    if (!_holds_color_map())
     {
         m_color_map = new SciQLopColorMapFunction(
             this, this->m_axes[0], this->m_axes[3],
@@ -256,7 +266,7 @@ SciQLopColorMapFunction* SciQLopPlot::add_color_map(GetDataPyCallable&& callable
 
 SciQLopColorMapRemote* SciQLopPlot::add_remote_color_map(const QString& name)
 {
-    if (m_color_map == nullptr)
+    if (!_holds_color_map())
     {
         auto* cmap = new SciQLopColorMapRemote(
             this, this->m_axes[0], this->m_axes[3],
@@ -272,6 +282,8 @@ SciQLopColorMapRemote* SciQLopPlot::add_remote_color_map(const QString& name)
 SciQLopHistogram2DRemote* SciQLopPlot::add_remote_histogram2d(const QString& name, int x_bins,
                                                                int y_bins)
 {
+    if (_holds_color_map())
+        refuse_second_color_map();
     auto* hist = new SciQLopHistogram2DRemote(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, x_bins, y_bins);
@@ -621,6 +633,12 @@ void SciQLopPlot::_update_value_axis_visibility()
         m_value_axis_hidden_here = false;
         m_axes[1]->set_visible(true);
     }
+}
+
+bool SciQLopPlot::_holds_color_map() const
+{
+    return std::any_of(m_plottables.cbegin(), m_plottables.cend(), [](SciQLopPlottableInterface* p)
+                       { return dynamic_cast<SciQLopColorMapInterface*>(p) != nullptr; });
 }
 
 void SciQLopPlot::_register_plottable_wrapper(SciQLopPlottableInterface* plottable)
