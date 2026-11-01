@@ -20,7 +20,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F1. `None` for an object argument dereferences a null pointer
 
-- **Status:** open
+- **Status:** fixed 681433cb
 - **Affects** about 25 methods:
   - `add_panel`, `insert_panel`, `remove_panel`;
   - `add_widget`, `addWidget`, `remove_widget`, `removeWidget`;
@@ -37,7 +37,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F2. A 0-d array as data segfaults
 
-- **Status:** open
+- **Status:** fixed f4a0f6a6 (root cause: shiboken container converter, 29 sites)
 - **Affects:** `SciQLopNDProjectionPlot.add_reference_curve`, `reference_curve`;
   `SciQLopCurve.set_color_values`, `set_time_values`; `RemoteDataPipeline.set_data`;
   `DataProviderWorker.set_data`.
@@ -46,7 +46,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F3. `move_plot` with a bad index
 
-- **Status:** open
+- **Status:** fixed 60fae97a
 - **Crash:** `panel.move_plot(None, 0)` and `panel.move_plot(-1, 0)` segfault.
 - **Empty message:** `insert_plot` and `move_plot` with an infinite index raise `OverflowError` with
   an empty message.
@@ -54,7 +54,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F4. Pen and font sizes are not validated
 
-- **Status:** open
+- **Status:** fixed 32cce9ff
 - **Crash:** `set_line_width(nan)` aborts on a Qt assertion (`!std::isnan`).
 - **Swallowed:** inf, -1 and huge widths print `QPen::setWidthF: ... out of range`
   (`set_line_width`, `set_contour_width` and others, 40 cases). A font size ≤ 0 prints
@@ -66,7 +66,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F5. Numbers out of an integer's range
 
-- **Status:** open
+- **Status:** fixed 60fae97a
 - **Problem:** passing a huge or non-finite number for an `int` parameter prints shiboken's
   `RuntimeWarning: libshiboken: Overflow` (204 cases). The call then goes on with a truncated value.
 - **To check:** which of these calls also raise afterwards. The first sweep counted those as swallowed;
@@ -74,26 +74,26 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F6. `save` with an empty or missing file name
 
-- **Status:** open
+- **Status:** fixed bd5c2fba
 - **Problem:** it prints `QFSFileEngine::open: No file name specified` or
   `QPainter::begin(): Returned false` and returns `False`.
 - **Expected:** `ValueError` for an empty name, `OSError` for a write that fails.
 
 ### F7. shiboken copy-conversion errors are printed, not raised
 
-- **Status:** open
+- **Status:** fixed b5293543 for this module's string lists; a list of numbers given as QFont families still prints from PySide's own QtGui converter (J3)
 - **Problem:** `_pythonToCppCopy: Cannot copy-convert ... to C++` (26 cases), for example `set_labels`
   given numpy floats or `set_label_font([1.0])`.
 
 ### F8. A Python traceback printed from inside a call
 
-- **Status:** open
+- **Status:** fixed by 58252984 + 60fae97a: the call raises a named OverflowError; libshiboken still prints its own warning line
 - **Problem:** `TypeError: only integer scalar arrays can be converted to a scalar index` (10 cases),
   seen in `plottable()` probes.
 
 ### F9. Calls that need a particular axis or plot only warn and do nothing
 
-- **Status:** open
+- **Status:** fixed 47f24dd4 for the axis calls; \"cannot draw a colour axis\" kept as a documented degrade (data still drawn, warned once, also reached by provider batches)
 - **Examples:**
   - "A time axis can't be logarithmic";
   - "set_date_format: not a time axis";
@@ -105,7 +105,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F10. A complex dtype is silently cast to real
 
-- **Status:** open
+- **Status:** fixed 6cf056c2 (helpers) and 58252984 (lists of doubles)
 - **Problem:** `band` and `set_color_values` print numpy's `ComplexWarning`, then drop the imaginary
   part.
 - **Expected:** `TypeError`.
@@ -114,7 +114,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F11. The buffer converter calls a non-array a bad value
 
-- **Status:** open
+- **Status:** fixed 07bb7d67, curve set_data(None) 88d0329e
 - **Problem:** `object()` or a dict where array data is expected raises `ValueError` ("called with wrong
   argument values"), 74 cases. It should be `TypeError`.
 - **Related:** `None` as array data is accepted without any error (66 cases: `set_data`,
@@ -123,7 +123,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F12. Argument errors thrown as `std::runtime_error`
 
-- **Status:** open
+- **Status:** fixed ecbb4ae3
 - **Examples:**
   - "Keys (x) must be float64", for int8 keys (`SciQLopMultiGraphBase.cpp`, `SciQLopColorMap.cpp`):
     should be `TypeError`;
@@ -134,7 +134,7 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F13. Other wrong classes
 
-- **Status:** open
+- **Status:** fixed 6cf056c2
 - **Examples:**
   - `bars(None, h)` says "edges must be 1-D" (`ValueError`): it should be `TypeError`.
   - `set_normalization(object())` raises `ValueError`: it should be `TypeError`.
@@ -144,21 +144,44 @@ Each finding group below is a root cause, not a single method. Status is `open` 
 
 ### F14. Invalid colour names are accepted
 
-- **Status:** open
+- **Status:** open, judgment call: the str-to-QColor conversion is PySide's own, shared by every module (QColor is a PySide type, not in this module's converter table); a library-side check would have to tell an invalid colour name from QColor() meaning 'automatic'
 - **Problem:** `set_color("not a number")` and similar return normally with an invalid `QColor`.
 
 ### F15. `panel.plots()` returns wrappers that the panel's own methods refuse
 
-- **Status:** open
+- **Status:** fixed 4cfb8344 (user's choice: Python gets real plots; history in the commit)
 - **Problem:** `index_of`, `plot_stretch` and `set_plot_stretch`, and `XAxisSynchronizer.plotAdded`
   and `resynchronize`, raise `TypeError` for the `SciQLopPlotInterfacePtr` items that `plots()`
   returns.
 
 ### F16. `move_panel` is never implemented
 
-- **Status:** open
+- **Status:** fixed 0ec2afb6
 - **Problem:** `SciQLopMultiPlotPanel.move_panel` raises `NotImplementedError` ("not supported by
   SciQLopMultiPlotPanel").
+
+### F17. Two async tests fail under machine load
+
+- **Status:** open (observed 2026-11-01, load average about 4–5; both pass on a quiet machine, and the
+  first passed 6/6 on the same build afterwards)
+- `test_drawn_aggregates::test_a_slot_deleting_the_projection_mid_colouring_does_not_crash`: the slot
+  on `data_changed` had not run after one event pump. "No crash" held every time.
+- `test_fit_keeps_caller_view::test_a_first_fit_survives_a_linking_change_before_it_runs[2-0]`: pane 0
+  was not fitted. This could be a real lost-fit race. Look into it under stress (story fuzzer, deep run).
+- `test_panel_span::test_a_rectangular_part_edit_reaches_both_axes`: found one part instead of two, at load
+  average 23; it passes 5/5 alone.
+
+### F18. `findChildren` on a temporary plot wrapper invalidates what it found
+
+- **Status:** open, recorded 2026-11-01
+- **Problem:** PySide makes the found children's wrappers children of the wrapper `findChildren` was
+  called on. When that is a temporary (`panel.plot_at(0).findChildren(...)`), dropping it invalidates
+  them while the C++ objects live on: "already deleted".
+- **Why it doesn't show today:** the `add_plot` wrapper in `__init__.py` (a Python override of a C++
+  virtual, added in June to unwrap handles) keeps every plot's wrapper alive with its panel. That makes
+  this safe by accident, and the suite depends on it. Removing that wrapper broke 58 tests.
+- **Next:** decide whether to keep it deliberately (and document why) or keep plot wrappers alive
+  some other way.
 
 ## Judgment calls (for the user)
 
@@ -168,9 +191,17 @@ Each finding group below is a root cause, not a single method. Status is `open` 
   of arrays.
   - **User's answer (2026-11-01): print the traceback once and also emit `fetch_failed` with the
     message.** The plot stays usable, and the sweep treats this as correct.
+  - **Checked 2026-11-01:** callback graphs and model curves already did this (sys.excepthook + fetch_failed).
+    A bare `DataProviderInterface` didn't, and now does (e5976604).
 - **J2. Python-only methods of a deleted `WidgetPlot`.** Methods such as `color_palette` and
   `on_time_range` keep answering from Python state after the C++ side is gone.
-  - **User's answer (2026-11-01): raise `RuntimeError`,** like every other deleted object.
+  - **User's answer (2026-11-01): raise `RuntimeError`,** like every other deleted object. Fixed 70fa972c.
+
+- **J3. Conversions PySide owns.** An invalid colour name (`set_color("not a colour")`) becomes an invalid
+  QColor with no error. A list of numbers given as QFont family names prints one PySide error per item.
+  Both happen in PySide's QtGui converters, shared by every module. A fix here would mean replacing those
+  converters for this module (as was done for string lists) and telling an invalid colour from `QColor()`
+  meaning "automatic". This is about 40 sweep cases (F14 and part of F7).
 
 ## Harness corrections after the first sweep
 
