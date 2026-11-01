@@ -1708,30 +1708,30 @@ QList<SciQLopPlottableInterface*> SciQLopPlot::plottables() const noexcept
 
 bool SciQLopPlot::save_pdf(const QString& filename, int width, int height)
 {
-    return saved_or_throw(m_impl->savePdf(filename, width, height), filename);
+    return save_or_throw(filename, [&] { return m_impl->savePdf(filename, width, height); });
 }
 
 bool SciQLopPlot::save_svg(const QString& filename, int width, int height)
 {
-    return saved_or_throw(save_widget_svg(this, filename, width, height), filename);
+    return save_or_throw(filename, [&] { return save_widget_svg(this, filename, width, height); });
 }
 
 bool SciQLopPlot::save_png(const QString& filename, int width, int height,
                            double scale, int quality)
 {
-    return saved_or_throw(m_impl->savePng(filename, width, height, scale, quality), filename);
+    return save_or_throw(filename, [&] { return m_impl->savePng(filename, width, height, scale, quality); });
 }
 
 bool SciQLopPlot::save_jpg(const QString& filename, int width, int height,
                            double scale, int quality)
 {
-    return saved_or_throw(m_impl->saveJpg(filename, width, height, scale, quality), filename);
+    return save_or_throw(filename, [&] { return m_impl->saveJpg(filename, width, height, scale, quality); });
 }
 
 bool SciQLopPlot::save_bmp(const QString& filename, int width, int height,
                            double scale)
 {
-    return saved_or_throw(m_impl->saveBmp(filename, width, height, scale), filename);
+    return save_or_throw(filename, [&] { return m_impl->saveBmp(filename, width, height, scale); });
 }
 
 bool SciQLopPlot::save(const QString& filename, int width, int height,

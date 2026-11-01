@@ -232,6 +232,12 @@ bool save_widget(QWidget* w, const QString& filename, int width, int height, dou
     return save_widget_raster(w, filename, "BMP", width, height, scale, -1);
 }
 
+void require_file_name(const QString& filename)
+{
+    if (filename.isEmpty())
+        throw std::invalid_argument("save: the file name is empty");
+}
+
 bool saved_or_throw(bool saved, const QString& filename)
 {
     if (!saved)
