@@ -252,10 +252,7 @@ public:
     virtual void remove_panel(SciQLopPlotPanelInterface* panel) Q_DECL_OVERRIDE;
     virtual void move_panel(int from, int to) Q_DECL_OVERRIDE;
 
-    virtual inline void move_panel(SciQLopPlotPanelInterface* panel, int to) Q_DECL_OVERRIDE
-    {
-        WARN_ABSTRACT_METHOD
-    }
+    virtual void move_panel(SciQLopPlotPanelInterface* panel, int to) Q_DECL_OVERRIDE;
 
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;

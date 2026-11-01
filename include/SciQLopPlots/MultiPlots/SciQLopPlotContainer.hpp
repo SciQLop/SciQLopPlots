@@ -61,6 +61,9 @@ public:
     void add_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void move_plot(int from, int to) Q_DECL_OVERRIDE;
     void move_plot(SciQLopPlotInterface* plot, int to) Q_DECL_OVERRIDE;
+    //! \a from and \a to are widget indices, as insert_panel takes.
+    void move_panel(int from, int to);
+    void move_panel(SciQLopPlotPanelInterface* panel, int to);
     void remove_plot(SciQLopPlotInterface* plot) Q_DECL_OVERRIDE;
     void remove_plot(SciQLopPlotInterface* plot, bool destroy);
     void removeWidget(QWidget* widget, bool destroy);
