@@ -437,6 +437,41 @@ def test_a_bad_argument_from_a_worker_raises_in_the_worker(make, call):
     assert_contract("plot", make + "\n" + OFF_THREAD.replace("CALL", call), "value")
 
 
+# Plot indexes count plots, as plot_at and plot_count do, even with a nested panel among them.
+def test_plot_indexes_skip_nested_panels(qtbot):
+    from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlot
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    panel.add_panel(SciQLopMultiPlotPanel())
+    a, _ = panel.plot(np.arange(3.0), np.arange(3.0))
+    b, _ = panel.plot(np.arange(3.0), np.arange(3.0))
+    panel.move_plot(0, 1)
+    assert [panel.plot_at(0), panel.plot_at(1)] == [b, a]
+    panel.move_plot(1, 0)
+    assert [panel.plot_at(0), panel.plot_at(1)] == [a, b]
+    c = SciQLopPlot()
+    panel.insert_plot(1, c)
+    assert [panel.plot_at(i) for i in range(3)] == [a, c, b]
+
+
+def test_set_plot_stretch_refuses_none(qtbot):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    with pytest.raises(TypeError):
+        panel.set_plot_stretch(None, 2)
+
+
+@pytest.mark.parametrize("make", ["S.SciQLopPlot()", "S.SciQLopMultiPlotPanel()"])
+def test_a_widget_before_the_application_is_a_runtime_error(make):
+    """Qt aborts the process for a widget built before QApplication: refuse it first."""
+    import subprocess, sys, tempfile
+    script = f"import SciQLopPlots as S\ntry:\n    {make}\nexcept RuntimeError as e:\n    print('REFUSED', e)\n"
+    done = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=60,
+                          cwd=tempfile.gettempdir())
+    assert done.returncode == 0 and "REFUSED" in done.stdout, done.stderr[-400:]
+
+
 # The full sweep's off-thread cases (Task 10): classes the plot-only pass hadn't reached. Same call and
 # grading as the sweep: work (queued to the GUI thread) or raise RuntimeError; no crash, no Qt warning.
 SWEPT_OFF_THREAD = [  # (kind, method, the sweep's argument index: the candidate discovery found working)

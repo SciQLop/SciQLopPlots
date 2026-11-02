@@ -22,6 +22,7 @@
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QThread>
 
@@ -91,7 +92,11 @@ inline void require_owner_thread(const QObject* owner, const char* what)
 template <typename Parent>
 Parent* on_gui_thread(Parent* parent, const char* what)
 {
-    if (auto* app = QCoreApplication::instance(); app && QThread::currentThread() != app->thread())
+    // Qt aborts the process for a widget built with no QApplication: refuse it first.
+    if (!qobject_cast<QApplication*>(QCoreApplication::instance()))
+        throw std::runtime_error(std::string(what)
+                                 + " is a widget: create the QApplication first (QApplication([]))");
+    if (auto* app = QCoreApplication::instance(); QThread::currentThread() != app->thread())
         throw std::runtime_error(std::string(what)
                                  + " must be created on the GUI thread: it is a widget; build it there, "
                                    "e.g. via a queued invocation");

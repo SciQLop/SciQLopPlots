@@ -35,7 +35,7 @@ def test_a_model_curve_with_the_wrong_signature_reports_fetch_failed(qtbot):
 
 
 @pytest.mark.parametrize("result, why", [
-    (lambda X: np.sin(X), "list or tuple"),
+    (lambda X: np.sin(X), "returned an object of type ndarray, not a list or tuple of arrays"),
     (lambda X: (np.array(["a"] * len(X)), np.array(["b"] * len(X))), "unsupported buffer"),
     (lambda X: {"x": X}, "'data' and 'color'"),
 ])
