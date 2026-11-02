@@ -40,7 +40,7 @@ template <typename Plot>
 Plot* item_plot(Plot* plot, const char* what)
 {
     if (plot == nullptr)
-        throw std::invalid_argument(std::string(what) + ": plot cannot be None");
+        throw sqp::type_error(std::string(what) + ": plot cannot be None");
     return on_owner_thread(plot, what);
 }
 }
