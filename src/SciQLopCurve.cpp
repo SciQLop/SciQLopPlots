@@ -130,7 +130,6 @@ SciQLopCurve::~SciQLopCurve()
 
 void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
-    SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
     // The resampler converts x/y from any numeric dtype to double. Reject
     // unsupported dtypes here (at the Python boundary) so the worker thread only
     // ever sees dtypes dispatch_dtype can handle.
@@ -150,11 +149,14 @@ void SciQLopCurve::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
     };
     require_numeric(x, "x");
     require_numeric(y, "y");
+    if (x.is_valid() && y.is_valid())
+        sqp::validation::validate_xy(x, y);
+    // The checks above read only the arguments: in the caller, so a worker's bad call raises there.
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
     // component_list_changed and busy_changed slots may delete this curve.
     const QPointer self(this);
     if (x.is_valid() && y.is_valid())
     {
-        sqp::validation::validate_xy(x, y);
         // A labelled curve's component count is a contract — one y column per
         // label, and short data would have the worker read past the buffer. An
         // unlabelled curve (line_count() == 0, an invariant _sync_component_count
