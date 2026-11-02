@@ -385,11 +385,14 @@ std::size_t SciQLopMultiPlotPanel::content_width() const
 
 void SciQLopMultiPlotPanel::addWidget(QWidget* widget)
 {
+    sqp::require_object(widget, "addWidget: widget");
+    SCIQLOP_ON_OWNER_THREAD_WITH(widget, addWidget(widget));
     _container->addWidget(widget);
 }
 
 void SciQLopMultiPlotPanel::removeWidget(QWidget* widget)
 {
+    SCIQLOP_ON_OWNER_THREAD_WITH(widget, removeWidget(widget));
     _container->removeWidget(widget, true);
 }
 
@@ -480,6 +483,7 @@ void SciQLopMultiPlotPanel::set_plot_stretch(SciQLopPlotInterface* plot, int fac
 {
     if (!plot)
         return;
+    SCIQLOP_ON_OWNER_THREAD_WITH(plot, set_plot_stretch(plot, factor));
     auto policy = plot->sizePolicy();
     policy.setVerticalStretch(static_cast<uchar>(std::clamp(factor, 1, 255)));
     plot->setSizePolicy(policy);
@@ -981,6 +985,7 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 
 void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_span_creation_enabled(enabled));
     if (m_span_creation_enabled == enabled)
         return;
     m_span_creation_enabled = enabled;

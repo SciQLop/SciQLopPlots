@@ -20,6 +20,7 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include "SciQLopPlots/DataProducer/DataProducer.hpp"
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -338,6 +339,14 @@ DataProviderWorker::~DataProviderWorker()
 void DataProviderWorker::set_data_provider(DataProviderInterface* data_provider)
 {
     sqp::require_object(data_provider, "set_data_provider: data_provider");
+    // moveToThread runs on the provider's own thread, whichever thread called this.
+    if (::SciQLopPlots::posted_to_owner_thread(
+            data_provider, [worker = QPointer(this), data_provider]
+            {
+                if (worker)
+                    worker->set_data_provider(data_provider);
+            }))
+        return;
     data_provider->setParent(nullptr);
     m_data_provider = data_provider;
     m_data_provider->moveToThread(m_worker_thread);

@@ -94,6 +94,9 @@ PREAMBLE = "import numpy as np\nimport shiboken6\n\n" \
            "def _read_only(a):\n    a.flags.writeable = False\n    return a\n\n"
 
 
+# Pure virtuals the user implements in Python: off-thread, only the harness's own implementation runs.
+USER_IMPLEMENTED = {("InspectorExtension", "build_widget")}
+
 # The baseline from a plain Python thread (SciQLop#147): a mutator queues to the GUI thread, a factory
 # refuses with RuntimeError; nothing crashes or prints a Qt cross-thread warning.
 OFF_THREAD = """import threading
@@ -151,7 +154,9 @@ def cases_for(row: dict, receiver_deletable: bool) -> list[Case]:
     if kinds:
         out.append(_case(row, "too_few", base + "args = args[:-1]\n" + _invoke(row), "ok_or_value", _COUNT_ALLOW))
     out.append(_case(row, "too_many", base + "args = args + [object()]\n" + _invoke(row), "ok_or_value", _COUNT_ALLOW))
-    out.append(_case(row, "off_thread", base + OFF_THREAD.format(name=row["name"]), "ok_or_value", ("RuntimeError",)))
+    if (row["cls"], row["name"]) not in USER_IMPLEMENTED:
+        out.append(_case(row, "off_thread", base + OFF_THREAD.format(name=row["name"]), "ok_or_value",
+                         ("RuntimeError",)))
     if receiver_deletable:
         out.append(_case(row, "deleted_receiver", base + "shiboken6.delete(obj)\n" + _invoke(row), "deleted"))
     return out
