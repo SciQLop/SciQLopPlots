@@ -372,7 +372,7 @@ class TestSpanCollectionCulling:
 
 
 @pytest.mark.parametrize("call", ["panel.add_plot(None)", "panel.insert_plot(0, None)"])
-def test_adding_none_as_a_plot_raises_value_error_instead_of_crashing(call):
+def test_adding_none_as_a_plot_raises_type_error_instead_of_crashing(call):
     """A subprocess: the bug is a segfault in the container."""
     script = textwrap.dedent(f"""
         import sys
@@ -382,12 +382,12 @@ def test_adding_none_as_a_plot_raises_value_error_instead_of_crashing(call):
         panel = SciQLopMultiPlotPanel()
         try:
             {call}
-        except ValueError as e:
-            print("VALUEERROR", e)
+        except TypeError as e:
+            print("TYPEERROR", e)
     """)
     result = subprocess.run([sys.executable, "-c", script], capture_output=True, timeout=30,
                             cwd=tempfile.gettempdir())
-    assert (result.returncode, b"VALUEERROR" in result.stdout) == (0, True), \
+    assert (result.returncode, b"TYPEERROR" in result.stdout) == (0, True), \
         result.stderr.decode(errors="replace")[-400:]
 
 

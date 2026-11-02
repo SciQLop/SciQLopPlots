@@ -474,7 +474,7 @@ def _deprecated_constructor(cls, factory, needs_plot):
         if type(self) is cls:  # the guard silences the warning entirely for a Python subclass of an item class
             _warn_deprecated(message)
         if needs_plot and plot is None:
-            raise ValueError(f"{type(self).__name__}: plot cannot be None")
+            raise TypeError(f"{type(self).__name__}: plot cannot be None")
         return init(self, plot, *args, **kwargs)
     return wrapper
 
@@ -917,7 +917,7 @@ def _set_snap_to(self, value):
     elif isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
         self.set_snap_step(float(value))
     else:
-        bad = ValueError if isinstance(value, (str, int, float)) else TypeError
+        bad = ValueError if isinstance(value, (str, int, float)) and not isinstance(value, bool) else TypeError
         raise bad("snap_to must be 'edges', a positive number of seconds, "
                   "a non-empty list of times, or None")
 

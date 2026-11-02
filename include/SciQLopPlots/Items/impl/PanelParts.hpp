@@ -27,6 +27,8 @@
 #include <QPointer>
 #include <functional>
 #include <stdexcept>
+#include "SciQLopPlots/Debug.hpp"
+
 #include <string>
 #include <utility>
 
@@ -36,7 +38,7 @@ namespace impl
 inline SciQLopMultiPlotPanel* panel_host(SciQLopMultiPlotPanel* panel, const char* what)
 {
     if (panel == nullptr)
-        throw std::invalid_argument(std::string(what) + ": panel cannot be None");
+        throw sqp::type_error(std::string(what) + ": panel cannot be None");
     return SciQLopPlots::on_owner_thread(panel, what);
 }
 

@@ -47,7 +47,7 @@ def test_constructor_parents_the_item_to_its_plot(plot, kind):
 
 @pytest.mark.parametrize("kind", CONSTRUCTORS)
 def test_constructor_rejects_a_null_plot(kind):
-    with pytest.raises(ValueError, match="plot cannot be None"):
+    with pytest.raises(TypeError, match="plot cannot be None"):
         construct(kind, None)
 
 
