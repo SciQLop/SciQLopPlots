@@ -31,6 +31,8 @@
     <rejection class="*" field-name="m_min_range_size"/>
     <rejection class="*" field-name="m_observer_connections"/>
     <rejection class="*" field-name="m_overlay"/>
+    <rejection class="AxisSynchronizer" field-name="m_sync_axis"/>
+    <rejection class="AxisSynchronizer" field-name="m_propagating"/>
     <rejection class="*" field-name="m_pane_names"/>
     <rejection class="*" field-name="m_pipeline"/>
     <rejection class="*" field-name="m_plots"/>
@@ -2108,10 +2110,12 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
                 PyErr_SetString(PyExc_ValueError, "add_plot: plot cannot be None");
                 return nullptr;
             }
+            // A slot on plot_added may delete the panel, and the plot with it.
+            QPointer&lt;QObject&gt; sqp_added_plot(%1);
           </inject-code>
           <inject-code class="target" position="end">
-            if (!PyErr_Occurred())
-                unlink_wrapper_when_destroyed(%1);
+            if (!PyErr_Occurred() &amp;&amp; sqp_added_plot)
+                unlink_wrapper_when_destroyed(sqp_added_plot);
           </inject-code>
         </modify-function>
         <modify-function signature="insert_plot(int, SciQLopPlotInterface*)">
@@ -2123,10 +2127,12 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
                 PyErr_SetString(PyExc_ValueError, "insert_plot: plot cannot be None");
                 return nullptr;
             }
+            // A slot on plot_added may delete the panel, and the plot with it.
+            QPointer&lt;QObject&gt; sqp_added_plot(%2);
           </inject-code>
           <inject-code class="target" position="end">
-            if (!PyErr_Occurred())
-                unlink_wrapper_when_destroyed(%2);
+            if (!PyErr_Occurred() &amp;&amp; sqp_added_plot)
+                unlink_wrapper_when_destroyed(sqp_added_plot);
           </inject-code>
         </modify-function>
         <modify-function signature="addWidget(QWidget*)">
@@ -2235,7 +2241,20 @@ static void unlink_wrapper_when_destroyed(QObject* plot)
             </modify-argument>
         </modify-function>
     </object-type>
+    <!-- XAxisSynchronizer's base: without it Python saw a bare Shiboken object, not a behavior. -->
+    <object-type name="AxisSynchronizer" parent-management="yes">
+        <modify-function signature="AxisSynchronizer(AxisType,QObject*)">
+            <modify-argument index="this">
+                <parent index="2" action="add"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
     <object-type name="XAxisSynchronizer" parent-management="yes">
+        <modify-function signature="XAxisSynchronizer(QObject*)">
+            <modify-argument index="this">
+                <parent index="1" action="add"/>
+            </modify-argument>
+        </modify-function>
     </object-type>
     <object-type name="VPlotsAlign" parent-management="yes">
         <modify-function signature="VPlotsAlign(QObject*)">
