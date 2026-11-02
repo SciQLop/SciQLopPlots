@@ -512,3 +512,172 @@ def test_a_second_colour_map_of_any_kind_is_refused(first, second):
 ])
 def test_a_panel_cannot_hold_itself(call):
     assert_contract("panel", call, "value")
+
+
+# --- Found by the final whole-branch review (Task 10) ---
+
+# I1: argument-only checks of the colour map and the coded timeline run in a worker's own thread.
+@pytest.mark.parametrize("make, call", [
+    ("g = obj.colormap(X, np.linspace(0.0, 1.0, 5), np.random.rand(len(X), 5))",
+     "g.set_data(X, np.linspace(0.0, 1.0, 5), np.random.rand(3, 5))"),
+    ("import SciQLopPlots as S\nts = S.SciQLopTimeSeriesPlot()\ntl = ts.add_timeline()",
+     "tl.set_intervals_coded(np.arange(3.0), np.arange(2.0), np.zeros(3), ['a'], np.zeros(3), ['c'], "
+     "['', '', ''], np.arange(3.0))"),
+], ids=["colormap.set_data", "timeline.set_intervals_coded"])
+def test_final_review_bad_argument_from_a_worker_raises_in_the_worker(make, call):
+    assert_contract("plot", make + "\n" + OFF_THREAD.replace("CALL", call), "value")
+
+
+# M1: None given to a queued mutator from a worker raises there, not dropped on the GUI thread.
+@pytest.mark.parametrize("call", ["obj.add_panel(None)", "obj.insert_panel(0, None)", "obj.remove_panel(None)",
+                                  "obj.remove_plot(None)", "obj.move_plot(None, 0)", "obj.removeWidget(None)"])
+def test_final_review_none_from_a_worker_is_a_type_error(call):
+    assert_contract("panel", OFF_THREAD.replace("CALL", call), "type")
+
+
+# M2: remove_plot(None) on the GUI thread raises too, as the release notes promise.
+def test_final_review_remove_plot_none_is_a_type_error(qtbot):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    with pytest.raises(TypeError):
+        panel.remove_plot(None)
+
+
+# I3: band and error_bars take times on x, as the user guide says.
+@pytest.mark.parametrize("times", [
+    lambda: np.arange("2020-01-01T00:00", "2020-01-01T00:20", dtype="datetime64[m]"),
+    lambda: np.array([__import__("datetime").datetime(2020, 1, 1, 0, m, tzinfo=__import__("datetime").timezone.utc)
+                      for m in range(20)], dtype=object),
+], ids=["datetime64", "datetime objects"])
+@pytest.mark.parametrize("factory", ["band", "error_bars"])
+def test_final_review_band_and_error_bars_take_times(qtbot, times, factory):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    t, y = times(), np.sin(np.arange(20.0))
+    graph = ts.band(t, y - 1, y + 1) if factory == "band" else ts.error_bars(t, y, 0.1)
+    x = np.asarray(graph.data()[0])
+    assert x[0] == pytest.approx(1577836800.0) and len(x) == 20
+
+
+# I4: a refused histogram2d leaves nothing behind, so the one-colour-map rule still holds.
+def test_final_review_a_refused_histogram2d_leaves_nothing(qtbot):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    from SciQLopPlots import SciQLopHistogram2D
+    before = len(ts.plottables())
+    with pytest.raises(ValueError):
+        ts.histogram2d(np.arange(10.0), np.arange(10.0), x_bins_log=True)
+    # An unregistered leftover is invisible to plottables(): count the children too.
+    assert len(ts.plottables()) == before and not ts.findChildren(SciQLopHistogram2D)
+    ts.histogram2d(np.arange(10.0), np.arange(10.0))
+    with pytest.raises(RuntimeError, match="already has a colour map"):
+        ts.histogram2d(np.arange(10.0), np.arange(10.0))
+
+
+# I5: valid arrays in a non-native byte order or with strides work.
+@pytest.mark.parametrize("arrange", [
+    lambda a: a.astype(">f8"), lambda a: a.astype("<f8"), lambda a: a[::-1], lambda a: np.repeat(a, 2)[::2],
+], ids=["big-endian", "little-endian", "reversed", "strided"])
+def test_final_review_unusual_valid_arrays_work(plot, arrange):
+    x = np.arange(10.0)
+    graph = plot.line(arrange(x), arrange(np.sin(x)))
+    np.testing.assert_allclose(sorted(np.asarray(graph.data()[0])), sorted(arrange(x).astype(float)))
+
+
+# I6, I7: property assignment gets the checks and the deleted-object error of the method form.
+# The generated Python properties live on the older panel-wide line and span classes.
+def _old_panel_line(qtbot):
+    import warnings
+    from SciQLopPlots import MultiPlotsVerticalLine, SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    panel.plot(np.arange(5.0), np.arange(5.0))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        return panel, MultiPlotsVerticalLine(panel, 1.0)  # the panel too: it owns the line
+
+
+def test_final_review_a_colour_property_checks_the_name(qtbot):
+    panel, line = _old_panel_line(qtbot)
+    with pytest.raises(ValueError):
+        line.color = "not a colour"
+    line.color = "red"
+
+
+def test_final_review_assigning_a_property_of_a_deleted_object_raises_there(qtbot):
+    import shiboken6
+    panel, line = _old_panel_line(qtbot)
+    shiboken6.delete(line)
+    with pytest.raises(RuntimeError):
+        line.position = 3.0
+    assert sum(range(3)) == 3  # nothing left pending to surface later
+
+
+# M4: a Python factory whose follow-up configuration raises leaves nothing behind.
+@pytest.mark.parametrize("build", [
+    lambda p: p.histogram(np.sin(np.arange(50.0)), range=(5.0, 1.0)),
+    lambda p: p.plot(np.arange(5.0), np.column_stack([np.arange(5.0)] * 3), graph_type=__import__("SciQLopPlots").GraphType.Waterfall,
+                     offsets=[0.0, 1.0]),
+], ids=["histogram range", "waterfall offsets"])
+def test_final_review_a_refused_python_factory_leaves_nothing(plot, build):
+    before = len(plot.plottables())
+    with pytest.raises(ValueError):
+        build(plot)
+    assert len(plot.plottables()) == before
+
+
+# M5: None in a group's member list is the wrong type; a deleted member says it was deleted.
+def test_final_review_group_members(plot):
+    import shiboken6
+    g = plot.plot(np.arange(5.0), np.arange(5.0))
+    with pytest.raises(TypeError):
+        plot.group("g", [g, None])
+    gone = plot.plot(np.arange(5.0), np.arange(5.0))
+    shiboken6.delete(gone)
+    with pytest.raises(RuntimeError):
+        plot.group("g", [g, gone])
+
+
+# M6: a log scale on an axis made a time axis raises, it doesn't end the process.
+def test_final_review_colour_map_log_scale_on_a_time_axis(plot):
+    cmap = plot.colormap(np.arange(5.0), np.arange(1.0, 6.0), np.random.rand(5, 5))
+    cmap.y_axis().set_is_time_axis(True)
+    with pytest.raises(ValueError):
+        cmap.set_y_log_scale(True)
+
+
+# M9: a NaN or huge lane code is out of range, checked before the cast.
+@pytest.mark.parametrize("code", [float("nan"), 1e300, -1e300])
+def test_final_review_bad_lane_codes(qtbot, code):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    with pytest.raises(ValueError, match="out of range"):
+        ts.add_timeline().set_intervals_coded(np.array([0.0]), np.array([1.0]), np.array([code]), ["a"],
+                                              np.array([0.0]), ["c"], [""], np.array([1.0]))
+
+
+# M10: plot_moved reports where the plot landed.
+def test_final_review_plot_moved_reports_the_landing_index(qtbot):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    a, _ = panel.plot(np.arange(3.0), np.arange(3.0))
+    panel.plot(np.arange(3.0), np.arange(3.0))
+    seen = []
+    panel.plot_moved.connect(lambda plot, at: seen.append(at))
+    panel.move_plot(a, 99)
+    assert seen == [1] and panel.plot_at(1) is a
+
+
+@pytest.mark.parametrize("bad_id", [float("nan"), 1e300])
+def test_final_review_bad_interval_ids(qtbot, bad_id):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    with pytest.raises(ValueError, match="ids"):
+        ts.add_timeline().set_intervals_coded(np.array([0.0]), np.array([1.0]), np.array([0.0]), ["a"],
+                                              np.array([0.0]), ["c"], [""], np.array([bad_id]))

@@ -118,13 +118,16 @@ protected:
     auto _add_and_fill(int index, T* plot, Make&& make) -> QPair<T*, decltype(make(plot))>
     {
         QPointer<SciQLopMultiPlotPanel> alive(this);
+        QPointer<T> added(plot);
         if (index == -1)
             add_plot(plot);
         else
             insert_plot(index, plot);
-        // A slot on plot_added may delete this panel, and the new plot with it.
+        // A slot on plot_added may delete this panel, and the new plot with it, or the plot alone.
         if (!alive)
             throw std::runtime_error("the panel was deleted while the plot was being added");
+        if (!added)
+            throw std::runtime_error("the plot was deleted while it was being added");
         try
         {
             return { plot, make(plot) };

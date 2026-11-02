@@ -145,7 +145,7 @@ public:
             _colorScaleAxis->set_color_gradient(gradient);
     }
 
-    inline virtual void set_y_log_scale(bool y_log_scale) noexcept override
+    inline virtual void set_y_log_scale(bool y_log_scale) override
     {
         if (_valueAxis)
             _valueAxis->set_log(y_log_scale);
@@ -156,7 +156,7 @@ public:
         return _valueAxis ? _valueAxis->log() : false;
     }
 
-    inline virtual void set_z_log_scale(bool z_log_scale) noexcept override
+    inline virtual void set_z_log_scale(bool z_log_scale) override
     {
         if (_colorScaleAxis)
             _colorScaleAxis->set_log(z_log_scale);

@@ -219,6 +219,10 @@ public:
 signals:
 #endif
     Q_SIGNAL void plot_list_changed(const QList<QPointer<SciQLopPlotInterface>>& plots);
+    //! The library's own per-plot setup (behaviors, panel legend, theme, span creator), emitted
+    //! before any public signal: a user slot may delete the plot, and later receivers of the same
+    //! signal would get a dangling pointer.
+    Q_SIGNAL void plot_joined(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_added(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_removed(SciQLopPlotInterface* plot);
     Q_SIGNAL void plot_moved(SciQLopPlotInterface* plot, int to);

@@ -69,44 +69,20 @@ SciQLopColorMap::~SciQLopColorMap()
     }
 }
 
-void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
+namespace
 {
-    PROFILE_HERE_N("setdata.colormap");
-    ::SciQLopPlots::tracing::ScopedZone _sz("setdata.colormap", "setdata");
-    _sz.add_arg("nx", static_cast<int64_t>(x.flat_size()));
-    _sz.add_arg("ny", static_cast<int64_t>(y.flat_size()));
-    _sz.add_arg("nz", static_cast<int64_t>(z.flat_size()));
-    sqp::validation::require_array(x, "x");
-    sqp::validation::require_array(y, "y");
-    sqp::validation::require_array(z, "z");
-    SCIQLOP_ON_OWNER_THREAD(set_data(x, y, z));
-    if (!_cmap)
-        return;
-
+// Everything here reads only the arguments: set_data runs it in the caller, before the hop to the
+// GUI thread, so a worker's bad call raises there.
+void check_colormap_arguments(const SciQLopPyBuffer& x, const SciQLopPyBuffer& y, const SciQLopPyBuffer& z)
+{
     if (x.format_code() != 'd')
         throw sqp::type_error(std::string("x: keys must be float64 (got dtype code '") + x.format_code() + "')");
 
     const std::size_t nx_sz = x.flat_size();
     const std::size_t ny_sz = y.flat_size();
     const std::size_t nz_sz = z.flat_size();
-    // No data to plot ⇒ clear and bail. Speasy returns a "well-formed
-    // empty" spectrogram (time=0, freq=N, values=(0,N)) for windows
-    // with no samples; QCPSoADataSource2D asserts nx > 0 && nz > 0 so
-    // we must not construct it on any empty input.
     if (nx_sz == 0 || nz_sz == 0)
-    {
-        _dataHolder.reset();
-        set_data_range(SciQLopPlotRange());
-        // NeoQCP's busy signal and data_changed may reach a slot deleting this colour map.
-        const QPointer self(this);
-        _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
-        if (!self)
-            return;
-        Q_EMIT data_changed(x, y, z);
-        if (self)
-            Q_EMIT data_changed();
-        return;
-    }
+        return; // empty: set_data clears the colour map
 
     // QCPSoADataSource2D accepts both 1D and 2D y axes:
     //   1D y:  ny == nz / nx   (one y value per row)
@@ -151,6 +127,45 @@ void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBu
     if (nx_sz == 1)
         throw std::invalid_argument(
             "ColorMap.set_data: needs at least 2 time/key samples to render, got 1");
+
+}
+} // namespace
+
+void SciQLopColorMap::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y, SciQLopPyBuffer z)
+{
+    PROFILE_HERE_N("setdata.colormap");
+    ::SciQLopPlots::tracing::ScopedZone _sz("setdata.colormap", "setdata");
+    _sz.add_arg("nx", static_cast<int64_t>(x.flat_size()));
+    _sz.add_arg("ny", static_cast<int64_t>(y.flat_size()));
+    _sz.add_arg("nz", static_cast<int64_t>(z.flat_size()));
+    sqp::validation::require_array(x, "x");
+    sqp::validation::require_array(y, "y");
+    sqp::validation::require_array(z, "z");
+    check_colormap_arguments(x, y, z);
+    SCIQLOP_ON_OWNER_THREAD(set_data(x, y, z));
+    if (!_cmap)
+        return;
+
+    const std::size_t nx_sz = x.flat_size();
+    const std::size_t nz_sz = z.flat_size();
+    // No data to plot ⇒ clear and bail. Speasy returns a "well-formed
+    // empty" spectrogram (time=0, freq=N, values=(0,N)) for windows
+    // with no samples; QCPSoADataSource2D asserts nx > 0 && nz > 0 so
+    // we must not construct it on any empty input.
+    if (nx_sz == 0 || nz_sz == 0)
+    {
+        _dataHolder.reset();
+        set_data_range(SciQLopPlotRange());
+        // NeoQCP's busy signal and data_changed may reach a slot deleting this colour map.
+        const QPointer self(this);
+        _cmap->setDataSource(std::shared_ptr<QCPAbstractDataSource2D>{});
+        if (!self)
+            return;
+        Q_EMIT data_changed(x, y, z);
+        if (self)
+            Q_EMIT data_changed();
+        return;
+    }
 
     const auto* x_ptr = static_cast<const double*>(x.raw_data());
     const int nx = static_cast<int>(nx_sz);

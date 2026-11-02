@@ -342,9 +342,9 @@ public:
 
     inline virtual void set_gradient(ColorGradient gradient) noexcept { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_y_log_scale(bool y_log_scale) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_y_log_scale(bool y_log_scale) { WARN_ABSTRACT_METHOD; }
 
-    inline virtual void set_z_log_scale(bool z_log_scale) noexcept { WARN_ABSTRACT_METHOD; }
+    inline virtual void set_z_log_scale(bool z_log_scale) { WARN_ABSTRACT_METHOD; }
 
     inline virtual bool y_log_scale() const noexcept
     {

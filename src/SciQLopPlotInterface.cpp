@@ -65,7 +65,12 @@ SciQLopPlotGroup* SciQLopPlotInterface::group(const QString& name,
     SciQLopPlots::require_owner_thread(this, "SciQLopPlotInterface::group");
     std::unique_ptr<SciQLopPlotGroup> group { new SciQLopPlotGroup(name, this) };
     for (auto* member : members)
+    {
+        // The list's converter refuses None (TypeError): a null in it is a member deleted from Python.
+        if (!member)
+            throw std::runtime_error("group: a member was deleted");
         group->add(member);
+    }
     return group.release();
 }
 

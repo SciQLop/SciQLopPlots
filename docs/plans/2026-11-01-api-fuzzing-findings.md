@@ -275,6 +275,42 @@ set_name crashed, and the waterfall, panel and projection setters touched widget
 thread. All queue since 56357093. `InspectorExtension.build_widget` is a pure virtual the user writes, so
 off-thread only the harness's own code ran: the sweep skips it.
 
+## Found by the final whole-branch review (Task 10)
+
+A fresh reviewer read the whole campaign. No critical finding. Fixed (each with a reproducer):
+
+- I1: the colour map's and the coded timeline's argument checks ran after the hop to the GUI thread.
+- I2: a Python provider whose `get_data` raised printed and returned nothing, the range marked loaded:
+  it now emits `fetch_failed` and fetches again (generator patch on the provider's overrides).
+- I3 (regression): `band()`/`error_bars()` refused datetime64 and datetime x.
+- I4 (regression): a refused `histogram2d(..., x_bins_log=True)` on a time axis left an unregistered
+  2-D histogram on the plot.
+- I5: strided, reversed and big-endian arrays were refused as TypeError; they are converted now, and a
+  broadcast view is a ValueError (its copy may be huge).
+- I6, I7: Python property setters skipped the colour-name check, and on a deleted object returned success
+  with the error left pending.
+- M1, M2: None given to a queued mutator from a worker was dropped; `remove_plot(None)` did nothing.
+  The hop macro refuses None now, for every queued mutator.
+- M3: a `plot_added` slot deleting the new plot left later receivers of the same signal with a dangling
+  pointer. The library's own per-plot setup now runs on an internal `plot_joined`, before any public
+  signal.
+- M4: a Python factory whose configuration raised left its object behind.
+- M5: a deleted group member was a ValueError "can't be None"; None to `group.add` is a TypeError.
+- M6: `set_y_log_scale` / `set_z_log_scale` were noexcept around a throwing call (std::terminate).
+- M9: a NaN or huge lane code or id was cast to an integer before the range check (undefined behaviour).
+- M10: `plot_moved` reported the requested index, not where the plot landed.
+
+Deferred polish: M8 (`to_bytes` names its temporary path in an error), M11 (an unusable callback result
+prints a warning and a RuntimeWarning before fetch_failed).
+
+### F19. A QObject subclass defined in a function, then collected, can leave a stale wrapper
+
+Seen once in the full suite: a later object came back typed as a `QMetaObject`, after a test that
+defined a `DataProviderInterface` subclass inside the test function. With the class at module level the
+suite is green. The likely cause is PySide's heap-allocated dynamic meta-object outliving its wrapper's
+registration (address reuse); not confirmed with a PySide-only reproducer. **Open**, worth reporting
+upstream once reduced.
+
 ## Behaviour changes users will notice (for the release notes)
 
 Calls that used to work, or fail differently, and now raise:
@@ -296,6 +332,14 @@ Calls that used to work, or fail differently, and now raise:
 - A plot or panel built before the `QApplication`: `RuntimeError` (was a Qt abort).
 - `insert_plot` and `move_plot` count plots only, like `plot_at`, when nested panels sit among them
   (they counted widgets).
+- `plots()`, `spans()` and `spans_in_range()` return the plots and spans themselves, not
+  `SciQLopPlotInterfacePtr` / `MultiPlotsVerticalSpanPtr` handles: code calling `.data()` on them breaks.
+- Strided, reversed and big-endian arrays are plotted (they raised TypeError); a broadcast view is a
+  ValueError asking for an explicit copy.
+- `band()` and `error_bars()` take datetime64 or datetime x, like every other x.
+- `plot_moved` reports where the plot landed, not the index asked for.
+- A Python `DataProviderInterface.get_data` that raises emits `fetch_failed` and is called again for
+  that range (it returned no data and the range counted as loaded).
 
 ## Harness corrections after the first sweep
 

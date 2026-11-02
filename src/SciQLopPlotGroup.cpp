@@ -87,7 +87,7 @@ QList<SciQLopPlottableInterface*> SciQLopPlotGroup::members() const
 void SciQLopPlotGroup::check_member(SciQLopPlottableInterface* member) const
 {
     if (!member)
-        throw std::invalid_argument("Group: a member can't be None");
+        throw sqp::type_error("Group: a member must not be None");
     auto* owner = owner_of(member);
     auto* projection = qobject_cast<SciQLopNDProjectionPlot*>(m_plot);
     const bool in_a_pane = projection && owner && owner->parentWidget() == projection;
