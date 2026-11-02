@@ -100,6 +100,16 @@ inline void check_font_arg(PyObject* arg, const char* function)
     }
 }
 
+//! The name of \a type, for messages.
+inline std::string type_name_of(PyTypeObject* type)
+{
+    PyObject* name = PyType_GetName(type);
+    const char* text = name != nullptr ? PyUnicode_AsUTF8AndSize(name, nullptr) : nullptr;
+    std::string result = text != nullptr ? text : "?";
+    Py_XDECREF(name);
+    return result;
+}
+
 //! The name of \a object's type, for messages.
 inline std::string type_name(PyObject* object)
 {
@@ -130,6 +140,35 @@ inline std::string argument_types(PyObject* args, bool args_is_tuple, PyObject* 
     }
     PyErr_Clear(); // a failed lookup above must not replace the error being reported
     return listed;
+}
+
+//! A Python override of a data provider's get_data raised. Shiboken would print the traceback and
+//! return an empty list, so the provider marked the range as loaded and reported nothing. Print it
+//! once, as shiboken would, then throw: the provider emits fetch_failed and fetches the range again.
+[[noreturn]] inline void throw_provider_override_error(const char* owner, const char* function)
+{
+    PyObject *type, *value, *traceback;
+    PyErr_Fetch(&type, &value, &traceback);
+    std::string text = std::string(owner) + "." + function + "() raised ";
+    text += type != nullptr ? type_name_of(reinterpret_cast<PyTypeObject*>(type)) : std::string("?");
+    if (PyObject* message = value != nullptr ? PyObject_Str(value) : nullptr)
+    {
+        if (const char* raw = PyUnicode_AsUTF8AndSize(message, nullptr))
+            text += std::string(": ") + raw;
+        Py_DECREF(message);
+    }
+    PyErr_Clear();
+    PyErr_Restore(type, value, traceback);
+    PyErr_Print();
+    throw std::runtime_error(text);
+}
+
+//! Same, for an override that returned something the provider can't use.
+[[noreturn]] inline void throw_provider_override_result(const char* owner, const char* function,
+                                                        const char* expected, const char* got)
+{
+    throw type_error(std::string(owner) + "." + function + "() must return a " + expected + ", got "
+                     + got);
 }
 
 //! Shiboken's argument errors that don't say why, made into TypeErrors that do. \a result is what

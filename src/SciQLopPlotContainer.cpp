@@ -88,18 +88,22 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
 void SciQLopPlotContainer::announce_plot(SciQLopPlotInterface* plot, int index)
 {
     QPointer<SciQLopPlotContainer> alive(this);
-    emit plot_list_changed(plots());
-    if (alive)
+    QPointer<SciQLopPlotInterface> added(plot); // a slot may delete the plot itself, too
+    emit plot_joined(plot);
+    if (alive && added)
+        emit plot_list_changed(plots());
+    if (alive && added)
         emit plot_added(plot);
-    if (alive)
+    if (alive && added)
         emit plot_inserted(plot, index);
 }
 
 void SciQLopPlotContainer::announce_panel(SciQLopPlotPanelInterface* panel, int index)
 {
     QPointer<SciQLopPlotContainer> alive(this);
+    QPointer<SciQLopPlotPanelInterface> added(panel);
     emit panel_added(panel);
-    if (alive)
+    if (alive && added)
         emit panel_inserted(panel, index);
 }
 
@@ -145,10 +149,12 @@ void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
     const int last = static_cast<int>(plots().size()) - 1;
     QSplitter::insertWidget(widget_position(to < 0 ? last : std::min(to, last)), plot);
     // A slot on the first signal may delete this container (its panel).
+    const auto now = plots();
+    const auto landed = static_cast<int>(now.indexOf(plot)); // where it went, not what was asked
     QPointer<SciQLopPlotContainer> alive(this);
-    emit plot_list_changed(plots());
+    emit plot_list_changed(now);
     if (alive)
-        emit plot_moved(plot, to);
+        emit plot_moved(plot, landed);
 }
 
 void SciQLopPlotContainer::move_panel(int from, int to)
@@ -174,6 +180,7 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot)
 
 void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
 {
+    sqp::require_object(plot, "remove_plot: plot");
     if (indexOf(plot) != -1)
     {
         plot->setParent(nullptr);
@@ -252,7 +259,7 @@ SciQLopPlotContainer::register_behavior(SciQLopPlotCollectionBehavior* behavior)
     behavior->updatePlotList(plots());
     connect(this, &SciQLopPlotContainer::plot_list_changed, behavior,
             &SciQLopPlotCollectionBehavior::updatePlotList);
-    connect(this, &SciQLopPlotContainer::plot_added, behavior,
+    connect(this, &SciQLopPlotContainer::plot_joined, behavior,
             &SciQLopPlotCollectionBehavior::plotAdded);
     connect(this, &SciQLopPlotContainer::plot_removed, behavior,
             &SciQLopPlotCollectionBehavior::plotRemoved);

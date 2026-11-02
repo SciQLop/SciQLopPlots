@@ -177,6 +177,20 @@ def _apply_post(name, shape, host, result, post):
         _POST[name](shape, host, result, post)
 
 
+def _configured(host, result, configure):
+    """result, after configure(); if that raises, what the factory made goes too: a refused call
+    leaves nothing behind. On a panel the factory made a plot holding the graph."""
+    try:
+        configure()
+    except BaseException:
+        if isinstance(result, tuple):
+            host.remove_plot(result[0])
+        else:
+            host.remove(result)
+        raise
+    return result
+
+
 def plot(self, *args, graph_type=None, **kwargs):
     name, kind, shape = _dispatch.resolve(type(self), args, graph_type, kwargs)
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -187,10 +201,12 @@ def plot(self, *args, graph_type=None, **kwargs):
     factory = getattr(self, kind.factory[_dispatch.host_class(type(self))])
     args = (_projection_buffers(args),) if name == "projection" else args
     result = factory(*args, **kwargs)
-    _apply_post(name, shape, self, result, post)
-    if label is not None:
-        _graph_of(result).set_name(label)
-    return result
+
+    def configure():
+        _apply_post(name, shape, self, result, post)
+        if label is not None:
+            _graph_of(result).set_name(label)
+    return _configured(self, result, configure)
 
 
 def _patch_sciqlop_plot(cls):
@@ -235,13 +251,23 @@ def _error_bounds(y, err_minus, err_plus=None):
     return y - em, y + ep
 
 
+def _x_values(value):
+    """x for band() and error_bars(): real numbers, or times (datetime64, datetime objects) as UTC epoch
+    seconds, as the C++ buffer converter takes them for every other x."""
+    if value is not None:
+        a = np.asarray(value)
+        if a.dtype.kind == "M" or a.dtype == object:
+            return np.ascontiguousarray(to_epoch_seconds(a, allow_nat=True), dtype=np.float64)
+    return _float_array(value, "x")
+
+
 def _band_batch(x, lower, upper):
-    x = _float_array(x, "x")
+    x = _x_values(x)
     return x, _as_columns(_as_bound(x, lower), _as_bound(x, upper))
 
 
 def _error_batch(x, y, *errors):
-    return _float_array(x, "x"), _as_columns(y, *_error_bounds(y, *errors))
+    return _x_values(x), _as_columns(y, *_error_bounds(y, *errors))
 
 
 def _arity_text(arity):
@@ -333,8 +359,8 @@ def _histogram_calling(cpp_histogram):
         if name is not None:
             kwargs["name"] = name
         result = cpp_histogram(self, _as_values(values_or_callback), bins=bins, **kwargs)
-        _configure_histogram(_graph_of(result), range, log_bins, normalization, style)
-        return result
+        return _configured(self, result,
+                           lambda: _configure_histogram(_graph_of(result), range, log_bins, normalization, style))
     histogram.__doc__ = cpp_histogram.__doc__
     return histogram
 
@@ -796,6 +822,17 @@ def _array_seconds(values, allow_nat):
     if a.dtype.kind == "c":
         raise TypeError(f"expected times or real numbers, got dtype {a.dtype}")
     return np.ascontiguousarray(a, dtype=np.float64)
+
+
+def _native_contiguous(a):
+    """For the C++ buffer converter: a strided or non-native byte-order numeric array as a C-contiguous
+    copy in this machine's byte order (0-d stays 0-d); anything else as is, for the converter to refuse."""
+    if isinstance(a, np.ndarray) and a.dtype.kind in "biuf":
+        if a.size > 1 and 0 in a.strides:
+            # A broadcast view: tiny in memory, its copy may not be (broadcast_to(a, (2**31,))).
+            raise ValueError("a broadcast view (a zero stride): pass np.array(view) to copy it on purpose")
+        return np.require(a, dtype=a.dtype.newbyteorder("="), requirements="C")
+    return a
 
 
 def to_epoch_seconds(value, allow_nat=False):

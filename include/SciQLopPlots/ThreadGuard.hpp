@@ -18,6 +18,8 @@
 -------------------------------------------------------------------------------*/
 #pragma once
 
+#include "SciQLopPlots/Debug.hpp"
+
 #include <QDebug>
 #include <QMetaObject>
 #include <QObject>
@@ -121,8 +123,10 @@ Owner* on_owner_thread(Owner* owner, const char* what)
     return
 
 //! SCIQLOP_ON_OWNER_THREAD for a mutator taking the QObject* \a arg: the queued call holds it in
-//! a QPointer and is skipped if \a arg is deleted before it runs.
+//! a QPointer and is skipped if \a arg is deleted before it runs. None for \a arg is a TypeError in
+//! the caller: queued, it would be dropped without a word.
 #define SCIQLOP_ON_OWNER_THREAD_WITH(arg, call)                                                    \
+    ::sqp::require_object(arg, (std::string(__func__) + ": " #arg).c_str());                       \
     if (::SciQLopPlots::posted_to_owner_thread(                                                    \
             this, [=, this, guarded = QPointer(arg)] {                                             \
                 if (auto* arg = guarded.data())                                                    \

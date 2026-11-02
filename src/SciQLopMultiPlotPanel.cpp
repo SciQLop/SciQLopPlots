@@ -62,7 +62,7 @@ SciQLopMultiPlotPanel::SciQLopMultiPlotPanel(QWidget* parent, bool synchronize_x
     connect(_container, &SciQLopPlotContainer::plot_added, this,
             &SciQLopMultiPlotPanel::plot_added);
     // Only a hidden panel legend is imposed: a plot keeps a legend its owner hid.
-    connect(_container, &SciQLopPlotContainer::plot_added, this,
+    connect(_container, &SciQLopPlotContainer::plot_joined, this,
             [this](SciQLopPlotInterface* plot)
             {
                 if (auto* legend = plot ? plot->legend() : nullptr; legend && !m_legend_visible)
@@ -137,8 +137,9 @@ void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface* panel)
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(panel, add_panel(panel));
     QPointer<SciQLopMultiPlotPanel> alive(this); // a slot of the insertion may delete this panel
+    QPointer<SciQLopPlotPanelInterface> added(panel);  // ... or the panel being added
     _container->addWidget(panel);
-    if (alive)
+    if (alive && added)
         Q_EMIT panel_added(panel);
 }
 
@@ -146,8 +147,9 @@ void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface* p
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(panel, insert_panel(index, panel));
     QPointer<SciQLopMultiPlotPanel> alive(this); // a slot of the insertion may delete this panel
+    QPointer<SciQLopPlotPanelInterface> added(panel);  // ... or the panel being added
     _container->insertWidget(index, panel);
-    if (alive)
+    if (alive && added)
         Q_EMIT panel_added(panel);
 }
 
@@ -962,7 +964,7 @@ void SciQLopMultiPlotPanel::set_theme(SciQLopTheme* theme)
 
     if (theme)
     {
-        m_theme_connections << connect(this, &SciQLopMultiPlotPanel::plot_added, this,
+        m_theme_connections << connect(_container, &SciQLopPlotContainer::plot_joined, this,
             [this](SciQLopPlotInterface* plot)
             {
                 if (m_theme && plot)
@@ -997,7 +999,7 @@ void SciQLopMultiPlotPanel::set_span_creation_enabled(bool enabled)
                 _install_span_creator(sp);
         }
         m_creation_connections.append(
-            connect(this, &SciQLopMultiPlotPanel::plot_added, this,
+            connect(_container, &SciQLopPlotContainer::plot_joined, this,
                 [this](SciQLopPlotInterface* plot)
                 {
                     if (m_span_creation_enabled)

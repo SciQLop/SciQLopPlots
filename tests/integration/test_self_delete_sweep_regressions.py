@@ -218,3 +218,24 @@ def test_a_slot_deleting_the_panel_between_two_emits_does_not_crash(qapp, signal
     act(panel)
     _pump()
     assert fired and not shiboken6.isValid(panel)
+
+
+# M3 (final review): a plot_added slot deleting the new plot itself, not the panel.
+def test_a_slot_deleting_the_new_plot_from_plot_added_does_not_crash(qapp):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    panel.show()
+    deleted = []
+
+    def slot(plot):
+        if not deleted:
+            deleted.append(1)
+            shiboken6.delete(plot)
+    panel.plot_added.connect(slot)
+    try:
+        panel.plot(X, np.sin(X))
+    except RuntimeError:
+        pass  # the plot is gone before the call can return it: refusing is fine
+    _pump()
+    assert deleted and shiboken6.isValid(panel)
+    shiboken6.delete(panel)

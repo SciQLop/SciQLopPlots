@@ -502,11 +502,11 @@ ONE_LINE = {
     "curve (not a multigraph)": lambda plot: plot.parametric_curve(X, np.sin(X)).components()[0],
 }
 
-BAD_PARTNERS = {
-    "missing fill partner": (lambda c: c.set_fill_between(None), "missing"),
-    "fill against itself": (lambda c: c.set_fill_between(c), "against itself"),
-    "missing error bound": (lambda c: c.set_error_bars(None, c), "missing"),
-    "error bars on itself": (lambda c: c.set_error_bars(c, c), "three distinct"),
+BAD_PARTNERS = {  # None is the wrong type (TypeError); the component itself is a bad value
+    "missing fill partner": (lambda c: c.set_fill_between(None), TypeError, "must not be None"),
+    "fill against itself": (lambda c: c.set_fill_between(c), ValueError, "against itself"),
+    "missing error bound": (lambda c: c.set_error_bars(None, c), TypeError, "must not be None"),
+    "error bars on itself": (lambda c: c.set_error_bars(c, c), ValueError, "three distinct"),
 }
 
 
@@ -515,8 +515,8 @@ BAD_PARTNERS = {
 def test_a_missing_or_identical_partner_raises_on_any_component(plot, kind, bad):
     """Before the off-thread checks, a curve component only warned "unsupported" here."""
     component = ONE_LINE[kind](plot)
-    call, message = BAD_PARTNERS[bad]
-    with pytest.raises(ValueError, match=message):
+    call, error, message = BAD_PARTNERS[bad]
+    with pytest.raises(error, match=message):
         call(component)
 
 

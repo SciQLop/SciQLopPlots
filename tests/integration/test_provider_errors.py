@@ -68,3 +68,30 @@ def test_a_band_or_error_bars_callback_with_the_wrong_count_says_what_it_expects
     plot.x_axis().set_range(SciQLopPlotRange(0.0, 10.0))
     qtbot.waitUntil(lambda: bool(failures), timeout=3000)
     assert why in failures[0], failures[0]
+
+
+# I2 (final review): a Python provider whose get_data raises reports fetch_failed, and the range is
+# fetched again later rather than marked as loaded.
+# At module level on purpose: a QObject subclass defined in a test and collected afterwards leaves
+# PySide's heap-allocated dynamic QMetaObject wrapper behind, and a later object at that address
+# came back typed as a QMetaObject (seen in the full suite, 2026-11-02; a PySide issue, see findings).
+class _FailingProvider(DataProviderInterface):
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+
+    def get_data(self, start, stop):
+        self.calls.append((start, stop))
+        raise IOError("server down")
+
+
+def test_a_python_provider_that_raises_reports_fetch_failed_and_retries(qtbot):
+    provider = _FailingProvider()
+    calls = provider.calls
+    failures = []
+    provider.fetch_failed.connect(failures.append)
+    provider.set_range(SciQLopPlotRange(0.0, 1.0))
+    qtbot.waitUntil(lambda: bool(failures), timeout=3000)
+    assert "server down" in failures[0]
+    provider.set_range(SciQLopPlotRange(0.0, 1.0001))
+    qtbot.waitUntil(lambda: len(calls) >= 2, timeout=3000)

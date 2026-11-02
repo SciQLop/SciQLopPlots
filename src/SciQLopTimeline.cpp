@@ -24,6 +24,7 @@
 #include "SciQLopPlots/ThreadGuard.hpp"
 #include <QMouseEvent>
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <utility>
 
@@ -52,18 +53,61 @@ std::vector<double> doubles(const SciQLopPyBuffer& b)
     return std::vector<double>(b.data(), b.data() + b.flat_size());
 }
 
-std::vector<int> remap(const SciQLopPyBuffer& codes, const QVector<int>& table)
+//! \a codes as ints, each a finite whole index into \a size names: checked before the cast, which
+//! is undefined for NaN or a huge float.
+std::vector<int> checked_codes(const SciQLopPyBuffer& codes, qsizetype size)
 {
     std::vector<int> out;
     out.reserve(codes.flat_size());
     for (double code : doubles(codes))
     {
-        const auto i = static_cast<qsizetype>(code);
-        if (i < 0 || i >= table.size())
+        if (!(std::isfinite(code) && code >= 0 && code < static_cast<double>(size)))
             throw std::invalid_argument("lane or category code out of range");
-        out.push_back(table[i]);
+        out.push_back(static_cast<int>(code));
     }
     return out;
+}
+
+//! \a ids as int64, each finite and in range: checked before the cast, as for the codes.
+std::vector<qint64> checked_ids(const SciQLopPyBuffer& ids)
+{
+    std::vector<qint64> out;
+    out.reserve(ids.flat_size());
+    for (double id : doubles(ids))
+    {
+        // 2^63 is the first double past int64; the lowest int64 is exactly -2^63.
+        if (!(std::isfinite(id) && id >= -9223372036854775808.0 && id < 9223372036854775808.0))
+            throw std::invalid_argument("interval ids must be finite and fit in 64 bits");
+        out.push_back(static_cast<qint64>(id));
+    }
+    return out;
+}
+
+std::vector<int> remap(const SciQLopPyBuffer& codes, const QVector<int>& table)
+{
+    auto out = checked_codes(codes, table.size());
+    for (auto& code : out)
+        code = table[code];
+    return out;
+}
+
+//! Everything set_intervals_coded can check from its arguments alone: in the caller, before the hop
+//! to the GUI thread, so a worker's bad call raises there.
+void check_coded_columns(const SciQLopPyBuffer& start, const SciQLopPyBuffer& stop,
+                         const SciQLopPyBuffer& lane_codes, const QStringList& lane_names,
+                         const SciQLopPyBuffer& category_codes, const QStringList& category_names,
+                         const QStringList& labels, const SciQLopPyBuffer& ids)
+{
+    qcp::intervals::Columns columns;
+    columns.start = doubles(start);
+    columns.stop = doubles(stop);
+    columns.lane = checked_codes(lane_codes, lane_names.size());
+    columns.category = checked_codes(category_codes, category_names.size());
+    for (qint64 id : checked_ids(ids))
+        columns.ids.push_back(id);
+    columns.labels = labels;
+    if (auto error = qcp::intervals::invalidColumns(columns))
+        throw std::invalid_argument(*error);
 }
 
 } // namespace
@@ -150,6 +194,7 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
                                           const QStringList& category_names,
                                           const QStringList& labels, SciQLopPyBuffer ids)
 {
+    check_coded_columns(start, stop, lane_codes, lane_names, category_codes, category_names, labels, ids);
     SCIQLOP_ON_OWNER_THREAD(set_intervals_coded(start, stop, lane_codes, lane_names,
                                                 category_codes, category_names, labels, ids));
     QVector<int> lane_table;
@@ -163,8 +208,8 @@ void SciQLopTimeline::set_intervals_coded(SciQLopPyBuffer start, SciQLopPyBuffer
     columns.stop = doubles(stop);
     columns.lane = remap(lane_codes, lane_table);
     columns.category = remap(category_codes, category_table);
-    for (double id : doubles(ids))
-        columns.ids.push_back(static_cast<qint64>(id));
+    for (qint64 id : checked_ids(ids))
+        columns.ids.push_back(id);
     columns.labels = labels;
     // setData() also re-selects by id and emits selectionChanged when one vanished.
     if (!_survives([&] { _intervals->setData(std::move(columns)); }))

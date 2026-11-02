@@ -170,6 +170,45 @@ def name_conversion_errors(source):
     return ''.join(out) + source[last:]
 
 
+# A Python subclass of DataProviderInterface whose get_data raises, or returns something unusable:
+# shiboken prints and returns an empty list, so the range counted as loaded and nothing reported it.
+# Throw instead: the provider emits fetch_failed and fetches the range again (J1).
+PROVIDER_FILE = 'dataproviderinterface_wrapper.cpp'
+PROVIDER_ERROR = re.compile(r'Shiboken::Errors::storePythonOverrideErrorOrPrint\(ownerClassName, funcName\);\n(\s*)return \{\};')
+PROVIDER_RESULT = re.compile(r'Shiboken::Warnings::warnInvalidReturnValue\(ownerClassName, funcName, ("[^"]*"), ([^;]*)\);\n(\s*)return \{\};')
+
+
+def provider_override_errors(path, source):
+    if not path.endswith(PROVIDER_FILE):
+        return source
+    source = PROVIDER_ERROR.sub(r'sqp::throw_provider_override_error(ownerClassName, funcName);', source)
+    return PROVIDER_RESULT.sub(r'sqp::throw_provider_override_result(ownerClassName, funcName, \1, \2);', source)
+
+
+# Python property setters (<property generate-getsetdef>): a deleted object returned 0, success with a
+# RuntimeError pending that surfaced later elsewhere; a QColor property skipped the colour-name check
+# the method form makes (J3).
+SETTER = re.compile(r'^static int Sbk_(\w+?)_set_(\w+)\(PyObject \*self, PyObject \*pyIn[^\n]*\n\{\n', re.M)
+SETTER_DELETED = '    if (!Shiboken::Object::isValid(self))\n        return 0;\n'
+SETTER_NONE_CHECK_END = '        return -1;\n    }\n'
+
+
+def property_setters(source):
+    out, last = [], 0
+    for header in SETTER.finditer(source):
+        end = source.find('\n}\n', header.end())
+        body = source[header.end():end]
+        body = body.replace(SETTER_DELETED, SETTER_DELETED.replace('return 0;', 'return -1;'), 1)
+        if 'SBK_QColor_IDX' in body:
+            at = body.find(SETTER_NONE_CHECK_END) + len(SETTER_NONE_CHECK_END)
+            check = (f'    sqp::check_color_arg(pyIn, "{header.group(1)}.{header.group(2)}");\n'
+                     '    if (PyErr_Occurred())\n        return -1;\n')
+            body = body[:at] + check + body[at:]
+        out += [source[last:header.end()], body]
+        last = end
+    return ''.join(out) + source[last:]
+
+
 # What each patch leaves in the output. Patches match generated text: a shiboken update that changes it
 # turns a patch into a silent no-op, so the build fails instead when one left no trace at all.
 PATCH_MARKERS = {
@@ -183,6 +222,10 @@ PATCH_MARKERS = {
     "CHECKED_ARGUMENT QFont": "sqp::check_font_arg(",
     "CHECKED_ARGUMENT QList<QColor>": "sqp::check_color_list_arg(",
     "WRONG_ARGUMENTS": "sqp::wrong_arguments(",
+    "PROVIDER_ERROR": "sqp::throw_provider_override_error(",
+    "PROVIDER_RESULT": "sqp::throw_provider_override_result(",
+    "SETTER_DELETED": "    if (!Shiboken::Object::isValid(self))\n        return -1;\n",
+    "SETTER colour": 'sqp::check_color_arg(pyIn, "',
 }
 
 
@@ -203,6 +246,8 @@ def patch_generated(output_directory):
         translated = guard_argument_conversions(translated)
         translated = refuse_complex_arrays(translated)
         translated = wrong_arguments(translated)
+        translated = provider_override_errors(path, translated)
+        translated = property_setters(translated)
         if 'sqp::' in translated:
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)

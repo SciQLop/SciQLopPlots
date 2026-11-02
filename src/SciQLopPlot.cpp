@@ -71,6 +71,26 @@ ColorMap* the_only_color_map(ColorMap* created)
 }
 }
 
+namespace
+{
+// set_log refuses a log scale on a time axis: the half-built histogram goes, so nothing unregistered
+// stays on the plot (a second colour map nobody can reach).
+template <typename Histogram2D>
+void set_bins_log_or_delete(Histogram2D* hist, bool x_bins_log, bool y_bins_log)
+{
+    try
+    {
+        hist->set_x_bins_log(x_bins_log);
+        hist->set_y_bins_log(y_bins_log);
+    }
+    catch (...)
+    {
+        delete hist;
+        throw;
+    }
+}
+} // namespace
+
 namespace _impl
 {
 
@@ -199,8 +219,7 @@ SciQLopHistogram2D* SciQLopPlot::add_histogram2d(const QString& name, int x_bins
     auto hist = new SciQLopHistogram2D(
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), name, x_bins, y_bins);
-    hist->set_x_bins_log(x_bins_log);
-    hist->set_y_bins_log(y_bins_log);
+    set_bins_log_or_delete(hist, x_bins_log, y_bins_log);
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;
@@ -217,8 +236,7 @@ SciQLopHistogram2DFunction* SciQLopPlot::add_histogram2d(GetDataPyCallable&& cal
         this, this->m_axes[0], this->m_axes[1],
         static_cast<SciQLopPlotColorScaleAxis*>(this->m_axes[4]), std::move(callable), name,
         x_bins, y_bins);
-    hist->set_x_bins_log(x_bins_log);
-    hist->set_y_bins_log(y_bins_log);
+    set_bins_log_or_delete(hist, x_bins_log, y_bins_log);
     _ensure_colorscale_is_visible(hist);
     _register_plottable_wrapper(hist);
     return hist;

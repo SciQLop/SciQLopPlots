@@ -57,8 +57,10 @@ BAD_VALUES = [
     BadValue("bool_dtype", "np.zeros(N, dtype=bool)", BUFFERS, "ok_or_value", ("TypeError",)),
     BadValue("int8", "np.arange(N, dtype=np.int8)", BUFFERS, "ok_or_value", ("TypeError",)),
     BadValue("object_dtype", "np.array([1.0] * N, dtype=object)", BUFFERS, "ok_or_value", ("TypeError",)),
-    BadValue("strided", "np.linspace(0.0, 1.0, 2 * N)[::2]", BUFFERS, "ok_or_value", ("TypeError",)),
-    BadValue("big_endian", "np.linspace(0.0, 1.0, N).astype('>f8')", BUFFERS, "ok_or_value", ("TypeError",)),
+    # Valid arrays: they work, or a ValueError says why (review focus 2; the final review undid a
+    # TypeError allowance that hid their refusal).
+    BadValue("strided", "np.linspace(0.0, 1.0, 2 * N)[::2]", BUFFERS, "ok_or_value"),
+    BadValue("big_endian", "np.linspace(0.0, 1.0, N).astype('>f8')", BUFFERS, "ok_or_value"),
     BadValue("read_only", "_read_only(np.linspace(0.0, 1.0, N))", BUFFERS, "ok_or_value", ("TypeError",)),
     BadValue("nan_buffer", "np.full(N, np.nan)", BUFFERS, "ok_or_value"),
     # Sequences.

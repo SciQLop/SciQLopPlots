@@ -334,16 +334,29 @@ PyObject* create_memoryview_from_ptr(T* ptr, std::vector<std::size_t> shape)
 
 
 // GIL held. SciQLopPlots.to_epoch_seconds, looked up once: set_position runs in drag loops.
-static PyObject* _to_epoch_seconds_function()
+// GIL held. SciQLopPlots.<name>, looked up once into \a cache, never released on purpose: it lives
+// as long as the process.
+static PyObject* _package_function(const char* name, PyObject*& cache)
 {
-    static PyObject* function = nullptr; // never released, on purpose: it lives as long as the process
-    if (!function)
+    if (!cache)
     {
         PyObject* module = PyImport_ImportModule("SciQLopPlots");
-        function = module ? PyObject_GetAttrString(module, "to_epoch_seconds") : nullptr;
+        cache = module ? PyObject_GetAttrString(module, name) : nullptr;
         Py_XDECREF(module);
     }
-    return function;
+    return cache;
+}
+
+static PyObject* _to_epoch_seconds_function()
+{
+    static PyObject* function = nullptr;
+    return _package_function("to_epoch_seconds", function);
+}
+
+static PyObject* _native_contiguous_function()
+{
+    static PyObject* function = nullptr;
+    return _package_function("_native_contiguous", function);
 }
 
 static bool _is_datetime_or_object_array(PyObject* obj)
@@ -437,9 +450,14 @@ struct _PyBuffer_impl
             return;
         }
         static constexpr std::string_view numeric_formats = "bBhHiIlLqQfd";
-        numeric_type = this->buffer.format != nullptr
-            && numeric_formats.find(this->buffer.format[0]) != std::string_view::npos;
-        if (!numeric_type)
+        static constexpr std::string_view byte_orders = "@=<>!";
+        const char* format = this->buffer.format;
+        // A byte-order prefix ('>d': numpy's non-native order) is numeric but read as a plain native
+        // code downstream: it goes through _native_contiguous first, like a strided view.
+        const bool ordered = format != nullptr && byte_orders.find(format[0]) != std::string_view::npos;
+        const char code = format == nullptr ? '\0' : (ordered ? format[1] : format[0]);
+        numeric_type = code != '\0' && numeric_formats.find(code) != std::string_view::npos;
+        if (!numeric_type || ordered)
         {
             // Release while we still hold the GIL: the ctor throws before
             // ~_PyBuffer_impl() ever runs, so this is the only chance to drop
@@ -448,6 +466,31 @@ struct _PyBuffer_impl
             PyBuffer_Release(&this->buffer);
             this->is_valid = false;
         }
+    }
+
+    // GIL held. A strided or non-native byte-order numeric array: work on a C-contiguous native
+    // copy (numpy makes it), as the datetime path works on epoch seconds.
+    inline void acquire_native_copy(PyObject* obj, bool& numeric_type)
+    {
+        PyObject* function = _native_contiguous_function();
+        PyObject* copy = function ? PyObject_CallFunctionObjArgs(function, obj, nullptr) : nullptr;
+        if (function && !copy)
+        {
+            // It refused the array (a broadcast view): its message says why.
+            const auto refused = _fetch_error();
+            if (refused.is_value_error)
+                throw std::invalid_argument(refused.message);
+            throw std::runtime_error(refused.message);
+        }
+        PyErr_Clear();
+        if (copy == nullptr || copy == obj)
+        {
+            Py_XDECREF(copy);
+            return;
+        }
+        this->py_obj.set_obj(copy);
+        Py_DECREF(copy);
+        this->acquire(this->py_obj.py_object(), numeric_type);
     }
 
     inline void init_buffer(PyObject* obj)
@@ -475,6 +518,8 @@ struct _PyBuffer_impl
                     throw std::runtime_error(converter_error.message);
                 }
             }
+            if (!this->is_valid && numeric_type)
+                this->acquire_native_copy(obj, numeric_type);
             if (!this->is_valid && numeric_type && _is_strided_buffer(obj))
                 throw std::runtime_error(
                     "array is not contiguous (a strided or reversed view): pass "
