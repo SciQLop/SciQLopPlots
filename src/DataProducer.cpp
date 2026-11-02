@@ -65,6 +65,11 @@ void DataProviderInterface::_reporting_failures(Update&& update)
         qWarning() << "SciQLopPlots: data provider failed:" << e.what();
         Q_EMIT fetch_failed(QString::fromUtf8(e.what()));
     }
+    catch (...) // on a worker thread: anything escaping here would end the process
+    {
+        qWarning() << "SciQLopPlots: data provider failed with a non-standard exception";
+        Q_EMIT fetch_failed(QStringLiteral("data provider failed with a non-standard exception"));
+    }
 }
 
 void DataProviderInterface::_threaded_update()

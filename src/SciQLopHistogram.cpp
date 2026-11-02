@@ -154,11 +154,12 @@ QCPPlottableLegendItem* SciQLopHistogram::_legend_item() const
 void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 {
     sqp::validation::require_array(y, "y");
+    check_binnable(y);
+    if (x.is_valid())
+        sqp::validation::validate_same_length(x, "x", y, "y");
     SCIQLOP_ON_OWNER_THREAD(set_data(x, y));
     if (!_hist)
         return;
-    if (x.is_valid())
-        sqp::validation::validate_same_length(x, "x", y, "y");
     // NeoQCP's busy and ready signals inside _bin, and data_changed, may reach a slot deleting this.
     const QPointer self(this);
     _bin(x, y);
@@ -173,6 +174,7 @@ void SciQLopHistogram::set_data(SciQLopPyBuffer x, SciQLopPyBuffer y)
 void SciQLopHistogram::set_values(SciQLopPyBuffer values)
 {
     sqp::validation::require_array(values, "values");
+    check_binnable(values);
     SCIQLOP_ON_OWNER_THREAD(set_values(values));
     if (!_hist)
         return;
@@ -202,10 +204,10 @@ void SciQLopHistogram::set_binned(SciQLopPyBuffer edges, SciQLopPyBuffer heights
 {
     sqp::validation::require_array(edges, "edges");
     sqp::validation::require_array(heights, "heights");
+    check_binned(edges, heights);
     SCIQLOP_ON_OWNER_THREAD(set_binned(edges, heights));
     if (!_hist)
         return;
-    check_binned(edges, heights);
     auto split = split_columns(heights);
     const int bars = static_cast<int>(edges.flat_size()) - 1;
     _apply_default_style(split.size());

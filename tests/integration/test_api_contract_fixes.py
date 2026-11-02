@@ -423,6 +423,20 @@ def test_off_the_gui_thread(kind, call, expect):
     assert_contract(kind, OFF_THREAD.replace("CALL", call), expect)
 
 
+# Found by opencode's branch review (Task 10): checks on the arguments alone run in the caller, before
+# the hop to the GUI thread. After it, a worker's bad call only printed a warning.
+@pytest.mark.parametrize("make, call", [
+    ("g = obj.parametric_curve(X, np.sin(X))", "g.set_data(X, np.sin(X[:-3]))"),
+    ("g = obj.histogram(np.sin(X))", "g.set_data(X, np.sin(X[:-3]))"),
+    ("g = obj.histogram(np.sin(X))", "g.set_values(np.zeros((2, 2, 2)))"),
+    ("g = obj.histogram(np.sin(X))", "g.set_binned(np.arange(3.0), np.arange(5.0))"),
+    ("g = obj.histogram2d(X, np.sin(X))", "g.set_data(X, np.sin(X[:-3]))"),
+], ids=["curve.set_data", "histogram.set_data", "histogram.set_values", "histogram.set_binned",
+        "histogram2d.set_data"])
+def test_a_bad_argument_from_a_worker_raises_in_the_worker(make, call):
+    assert_contract("plot", make + "\n" + OFF_THREAD.replace("CALL", call), "value")
+
+
 # The full sweep's off-thread cases (Task 10): classes the plot-only pass hadn't reached. Same call and
 # grading as the sweep: work (queued to the GUI thread) or raise RuntimeError; no crash, no Qt warning.
 SWEPT_OFF_THREAD = [  # (kind, method, the sweep's argument index: the candidate discovery found working)
