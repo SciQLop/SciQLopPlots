@@ -117,10 +117,14 @@ protected:
     template <typename T, typename Make>
     auto _add_and_fill(int index, T* plot, Make&& make) -> QPair<T*, decltype(make(plot))>
     {
+        QPointer<SciQLopMultiPlotPanel> alive(this);
         if (index == -1)
             add_plot(plot);
         else
             insert_plot(index, plot);
+        // A slot on plot_added may delete this panel, and the new plot with it.
+        if (!alive)
+            throw std::runtime_error("the panel was deleted while the plot was being added");
         try
         {
             return { plot, make(plot) };

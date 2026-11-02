@@ -136,15 +136,19 @@ void SciQLopMultiPlotPanel::replot(bool immediate)
 void SciQLopMultiPlotPanel::add_panel(SciQLopPlotPanelInterface* panel)
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(panel, add_panel(panel));
+    QPointer<SciQLopMultiPlotPanel> alive(this); // a slot of the insertion may delete this panel
     _container->addWidget(panel);
-    Q_EMIT panel_added(panel);
+    if (alive)
+        Q_EMIT panel_added(panel);
 }
 
 void SciQLopMultiPlotPanel::insert_panel(int index, SciQLopPlotPanelInterface* panel)
 {
     SCIQLOP_ON_OWNER_THREAD_WITH(panel, insert_panel(index, panel));
+    QPointer<SciQLopMultiPlotPanel> alive(this); // a slot of the insertion may delete this panel
     _container->insertWidget(index, panel);
-    Q_EMIT panel_added(panel);
+    if (alive)
+        Q_EMIT panel_added(panel);
 }
 
 void SciQLopMultiPlotPanel::remove_panel(SciQLopPlotPanelInterface* panel)

@@ -100,7 +100,8 @@ void SciQLopPlotAxis::set_range(const SciQLopPlotRange& range) noexcept
         if (m_axis->range().lower != clamped.start() || m_axis->range().upper != clamped.stop())
         {
             m_last_valid_range = clamped;
-            m_axis->setRange(clamped.start(), clamped.stop());
+            if (!survives([&] { m_axis->setRange(clamped.start(), clamped.stop()); }))
+                return;
             m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         }
         if (clamped != range)
@@ -233,11 +234,11 @@ void SciQLopPlotAxis::set_selected(bool selected) noexcept
     SCIQLOP_ON_OWNER_THREAD(set_selected(selected));
     if (!m_axis.isNull() && (this->selected() != selected))
     {
-        if (selected)
-            m_axis->setSelectedParts(QCPAxis::spAxis | QCPAxis::spTickLabels
-                                     | QCPAxis::spAxisLabel);
-        else
-            m_axis->setSelectedParts(QCPAxis::spNone);
+        const auto parts = selected
+            ? QCPAxis::SelectableParts(QCPAxis::spAxis | QCPAxis::spTickLabels | QCPAxis::spAxisLabel)
+            : QCPAxis::SelectableParts(QCPAxis::spNone);
+        if (!survives([&] { m_axis->setSelectedParts(parts); }))
+            return;
         m_axis->parentPlot()->replot(QCustomPlot::rpQueuedReplot);
         Q_EMIT selection_changed(selected);
     }
