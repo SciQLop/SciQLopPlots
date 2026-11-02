@@ -47,6 +47,8 @@ class SciQLopPlotContainer : public QSplitter,
     };
     SciQLopPlotRange _time_axis_range { std::nan(""), std::nan(""), true };
     SciQLopPlotRange _x_axis_range;
+    void announce_plot(SciQLopPlotInterface* plot, int index);
+    void announce_panel(SciQLopPlotPanelInterface* panel, int index);
 
 
 public:

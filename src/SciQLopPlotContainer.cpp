@@ -62,9 +62,6 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
     {
         if (plot->color_palette().empty())
             plot->set_color_palette(_color_palette);
-        emit plot_list_changed(plots());
-        emit plot_added(plot);
-        emit plot_inserted(plot, index);
         // A destroyed plot has already left the splitter. Not remove_plot(plot): by the time
         // a queued call runs, a new plot may live at that address, and it would be deleted.
         connect(
@@ -78,12 +75,29 @@ void SciQLopPlotContainer::insertWidget(int index, QWidget* widget)
                         if (previous == 0 || sp->height() <= previous)
                             set_widget_height(sp, natural);
                     });
+        announce_plot(plot, index);
     }
     else if (auto* panel = qobject_cast<SciQLopPlotPanelInterface*>(widget))
-    {
-        emit panel_added(panel);
+        announce_panel(panel, index);
+}
+
+// Last thing insertWidget does: a slot may delete this container (its panel) at any of these.
+void SciQLopPlotContainer::announce_plot(SciQLopPlotInterface* plot, int index)
+{
+    QPointer<SciQLopPlotContainer> alive(this);
+    emit plot_list_changed(plots());
+    if (alive)
+        emit plot_added(plot);
+    if (alive)
+        emit plot_inserted(plot, index);
+}
+
+void SciQLopPlotContainer::announce_panel(SciQLopPlotPanelInterface* panel, int index)
+{
+    QPointer<SciQLopPlotContainer> alive(this);
+    emit panel_added(panel);
+    if (alive)
         emit panel_inserted(panel, index);
-    }
 }
 
 void SciQLopPlotContainer::addWidget(QWidget* widget)

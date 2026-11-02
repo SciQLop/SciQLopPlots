@@ -334,6 +334,15 @@ class SciQLopPlotAxis : public SciQLopPlotAxisInterface
     QMap<double, QString> m_tick_labels;
     friend class _impl::SciQLopPlot;
     void set_padded_range(double lower, double upper, bool pad);
+    //! Runs \a change, which may emit into a slot that deletes this axis or its plot: true if both
+    //! are still there afterwards, so the caller may go on using them.
+    template <typename Change>
+    bool survives(Change&& change)
+    {
+        QPointer<SciQLopPlotAxis> alive(this);
+        change();
+        return !alive.isNull() && !m_axis.isNull();
+    }
 
 protected:
 #ifndef BINDINGS_H

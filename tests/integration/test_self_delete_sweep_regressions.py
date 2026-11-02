@@ -169,3 +169,33 @@ def test_a_slot_deleting_a_projection_from_a_pane_curve_replot_does_not_crash(qt
     _pump()
     assert fired
     assert not shiboken6.isValid(proj)
+
+
+# Found by opencode (round 3): deletions the sweep's (setter, signal) pairs didn't reach.
+def test_a_slot_deleting_the_plot_from_its_x_axis_range_signal_does_not_crash(qapp):
+    from SciQLopPlots import SciQLopPlot
+    plot = SciQLopPlot()  # not a fixture: the test deletes it
+    plot.show()
+    plot.line(X, np.sin(X))
+    _pump()
+    slot, fired = _delete_once(plot)
+    plot.x_axis_range_changed.connect(slot)
+    plot.x_axis().set_range(SciQLopPlotRange(2.0, 5.0))
+    _pump()
+    assert fired and not shiboken6.isValid(plot)
+
+
+def test_a_slot_deleting_the_panel_from_plot_added_does_not_crash(qapp):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()
+    panel.show()
+    _pump()
+    slot, fired = _delete_once(panel)
+    panel.plot_added.connect(slot)
+    try:
+        panel.plot(X, np.sin(X))
+    except RuntimeError:
+        pass  # the panel is gone before the call can return its plot: refusing is fine
+    _pump()
+    assert fired and not shiboken6.isValid(panel)
+
