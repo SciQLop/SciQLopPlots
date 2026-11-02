@@ -245,6 +245,36 @@ as a one-item path. The real bugs:
 The deep story run also failed once, but in the test's fake provider: zoomed out to centuries, it asked
 numpy for 118 GiB. It caps at 100k points since 6aa6ec38. The library reported that error correctly.
 
+## Found by the opencode scripts (round 3)
+
+34 scripts on deleting objects from their own signals, re-entrant setters, Python subclasses, extreme
+numbers and garbage collection. Three crashed. The real bugs:
+
+- A slot deleting the plot from its x-axis range signal: the axis went on using itself. Fixed 9610f792.
+- A slot deleting the panel from `plot_added`: insertion went on using the dead panel, then filled the
+  dead plot. Fixed 9610f792 and 47b0080b (the injected unlink code). `panel.plot()` raises RuntimeError.
+- `XAxisSynchronizer` was bound without its base class, so `register_behavior` refused it. Fixed 47b0080b.
+- **Not fixed here: deleting a plot-owned part.** The axes, the legend and the colour axis can be
+  deleted from Python (`shiboken6.delete` or `deleteLater()`); the plot crashes later. Shiboken can't
+  refuse a delete: with a private destructor it calls a null destructor and segfaults inside its own
+  library. Qt only copes for `QMainWindow.statusBar()`/`menuBar()` (a guarded pointer, rebuilt on access);
+  `QScrollArea` scroll bars and `QTabWidget.tabBar()` crash the same way. **User's decision (2026-11-02):**
+  fix it with a NeoQCP 3.0 ownership redesign and a joint spec for both repos. Reproducer kept aside until
+  then.
+
+The rest were script mistakes: `lanes_changed` and `resized` carry no arguments, lanes are shared and stay
+after their last interval, unknown ids select nothing, and `remove_plot` takes one argument.
+
+## Final sweep (Task 10)
+
+All 92 classes, 12261 cases, after fixing what it found: zero non-pass. GPU line graphs under xvfb: 1046
+cases, zero non-pass. Deep story run (100 x 50): green.
+
+The full sweep's off-thread pass reached classes the earlier pass hadn't: panel add/removeWidget and
+set_name crashed, and the waterfall, panel and projection setters touched widgets and timers off their
+thread. All queue since 56357093. `InspectorExtension.build_widget` is a pure virtual the user writes, so
+off-thread only the harness's own code ran: the sweep skips it.
+
 ## Harness corrections after the first sweep
 
 These are Claude's calls.
