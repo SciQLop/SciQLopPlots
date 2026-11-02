@@ -353,3 +353,54 @@ These are Claude's calls.
   because it iterates.
 - **Printed noise.** stderr noise fails a case as "swallowed" only when the call returned normally. A
   call that raised the right class is graded on its exception, and the noise is kept in the detail.
+
+## Rulings made during the campaign
+
+Decisions the executor took without asking, in order, each with what it costs if wrong. Copied from
+the plan ledger before its workspace was deleted.
+
+- Task 1: Ruling: dropped test_type_error_class and test_out_of_range_is_index_error — the buffer converter already raises TypeError before validate_buffer's dtype check, and no auto-on path throws out_of_range (validate_index has its own ladder); translator still maps both — cost if wrong: an unexercised branch
+- Task 1: Ruling: sqp::type_error lives in Debug.hpp (not Validation.hpp) — core C++ without Python headers must be able to throw it — cost if wrong: one move
+- Task 1: Ruling: RED not observed for test_invalid_argument_is_value_error (rebuilt before writing it); evidence = old generated catch hard-coded PyExc_RuntimeError — cost if wrong: test may not discriminate
+- Task 2: Ruling: after a crash the remaining cases continue as a new batch (not one per process) — each crash removes exactly one culprit, so the result is the same with fewer processes — cost if wrong: none
+- Task 2: Ruling: Case gained allow=() and Outcome gained exc_mro, kind 'setup_failed' — needed for per-method refusals and subclass matching — cost if wrong: field rename
+- Task 2: Ruling: any unexplained stderr fails a case as 'swallowed', even when it also raised — strict reading of 'never swallow' — cost if wrong: some double-report cases flagged
+- Task 3: Ruling: RECEIVERS computed from each kind's runtime MRO instead of a hand table; class -> list of kinds (interfaces swept on every concrete receiver) — cost if wrong: more cases
+- Task 3: Ruling: baselines are (kind, method, candidate index) resolved in the child at run time, not literal call source — argument objects (arrays, axes, plots) can't be serialised — cost if wrong: candidate order must stay deterministic
+- Task 3: Ruling: Qt event-handler overrides (paintEvent, dropEvent, eventFilter, ...) are in SKIP — Qt calls them with real events, users don't — cost if wrong: unswept handlers
+- Task 3: Ruling: methods whose every receiver raises NotImplementedError are recorded as refusals, not missing baselines — deliberate per-class refusals — cost if wrong: none
+- Task 4: Ruling: mutations run on one receiver per (class, method); the baseline alone runs on every receiver — ~20k cases instead of ~80k — cost if wrong: receiver-specific bad-argument bugs found only by stories/opencode
+- Task 4: Ruling: expectations widened via Case.allow (None for objects/str, dtype/shape buffers, str for dates, wrong counts) instead of new expect kinds — those inputs may legitimately be accepted or refused as type OR value — cost if wrong: a few lenient verdicts
+- Task 4: Ruling: deleted-object cases only for user-deletable classes (plots, panels, plottables, items, groups) — owned parts (axes, components) are deleted by their owner, not users — cost if wrong: unswept owned-part deletions
+- Task 5: Ruling: folder mode drops the 'last stdout line is ok' check — a script that returns without raising or printing errors is the same signal, and the harness already parses stdout as JSON — cost if wrong: none
+- Task 6: Ruling: sweep run as 10 sequential foreground class chunks (<300 s each) instead of one call — tool calls cap at 10 min, backgrounding was ruled out by the one-run-at-a-time rule — cost if wrong: none
+- Task 7: Ruling: harness corrections (raise graded on exception; numbers allow TypeError; bool no type-wrong values; dict = mapping kind) — committed 93112799 — cost if wrong: lenient verdicts on those inputs
+- Task 7: second sweep 11119 cases: 234 non-pass, 0 crash. Fixed: SystemError chain + complex lists 58252984; helpers/None/complex/nd save/float widths 6cf056c2. Ruling: guard wraps conversions in braces (dangling-else broke 211 tests when unbraced)
+- Task 7: Ruling: harness allowances — QFont kind (str/sequence = families), NONE_ACCEPTED table (clear/absent meanings), J1 provider notices allow-listed — cost if wrong: lenient verdicts on those
+- Task 9: Ruling: regressions went into the existing test files of each area (test_api_contract_fixes, test_provider_errors, test_pipeline_integration, test_self_delete_sweep_regressions, test_fills_errorbars), not a new test_api_fuzz_regressions.py — each sits beside the tests of the code it guards — cost if wrong: one file to grep instead of five
+- Task 9: Ruling: the scripts were run without reading each one first (step 3). They ran from /tmp with no network; I read the failing ones while triaging — cost if wrong: a script touching files outside the scratchpad would have gone unnoticed
+- Task 9: Ruling: round-3 owned-part deletion (axes, legend, colour axis deleted from Python crash the plot later) is NOT fixed here — shiboken can't refuse a delete (private dtor = null-dtor segfault, verified), and the user chose a NeoQCP 3.0 ownership redesign with a joint spec; reproducer kept in the scratchpad (pending_axis_test.py) — cost if wrong: a known crash ships until 3.0
+- Task 10: Ruling: InspectorExtension.build_widget skipped off-thread (USER_IMPLEMENTED) — a pure virtual the user writes; only the harness's own Python ran — cost if wrong: none in the library
+- Task 10: Ruling: F8 pipeline liveness probe can race in threaded() mode — the worst case prints a RuntimeError that should have been dropped, never a crash or a lost error — cost if wrong: a spurious traceback
+- Task 10: Ruling: F12 skipped conversions leave locals unassigned, but shiboken checks for an error before any use — cost if wrong: UB nobody reads
+- Task 10: Ruling: F13 sets and generators of strings stay TypeError where a list of str is taken — a set has no order (lanes, labels), and a generator can't be checked without consuming it; the message names the signatures — cost if wrong: users write list(...)
+- Task 10: Ruling: F14/F15 None for a callback / histogram values is a TypeError — the campaign's contract; listed in the findings' behaviour changes — cost if wrong: callers that passed None as 'no provider yet' get a TypeError
+- Task 10: Ruling: an unknown keyword on a Qt object's constructor stays AttributeError ("not a Qt property or a signal") — PySide's own convention (QLabel(bogus=1) does the same) — cost if wrong: one class differs from Python's TypeError
+- Task 10: Ruling: F5's catch(...) has no reproducer — shiboken turns every Python exception into a std::exception subclass, so nothing reachable from Python takes that arm — cost if wrong: an untested branch
+- Task 10: Ruling: F2 set_busy stays noexcept with the hop — an allocation failure in invokeMethod ends the process as it would anywhere in Qt — cost if wrong: an abort on out-of-memory
+- Task 10: Ruling: F4 an unimplemented get_data shape reports fetch_failed ('get_data(x, y, z) is not supported by X') instead of returning nothing — the silent empty result was the swallowed error — cost if wrong: providers relying on the silence see fetch_failed
+- Task 10: Ruling: F6 posted_to_owner_thread trusts invokeMethod — a dropped post needs an owner thread without an event loop, which plot objects never have — cost if wrong: a setter silently lost on such a thread
+- Task 10: Ruling: F7 busy from a worker is queued — set_busy and set_data queue on the same receiver in order, so they arrive in order — cost if wrong: none observed
+- Task 10: Ruling: F2 axis set_range/set_visible/set_selected stay noexcept with the hop — same as F2 of part 2 — cost if wrong: an abort on out-of-memory
+- Task 10: Ruling: F3 axis-kind checks (time axis or not) and label/colour counts stay after the hop — they read the object's state, which a worker must not read (the thread rule from SciQLop#147); off-thread they warn — cost if wrong: a worker's bad call only warns
+- Task 10: Ruling: F6's parentless item off-thread is not reachable — items and plottables need a plot or panel (None is a TypeError) — cost if wrong: none
+- Task 10: Ruling: F8 set_date_format on a numeric axis raises ValueError — intended, listed in the behaviour changes — cost if wrong: loops over all axes stop
+- Final: Ruling: I6/I7 reproducers were corrected after the build already had the patch, so RED was not observed on the corrected tests — evidence of the old behaviour is the generated setter code (return 0 on a deleted object, no colour check) — cost if wrong: the tests may not discriminate
+- Final: Ruling: M9 has no RED — on x86 the NaN cast happens to give a negative index that the old range check caught; the fix removes the undefined behaviour, which no test can show — cost if wrong: none
+- Final: Ruling: I5 a broadcast view (a zero stride) is a ValueError, not converted — its copy may be far larger than its memory (broadcast_to(a, (2**31,))) — cost if wrong: users write np.array(view)
+- Final: Ruling: the sweep's strided/big_endian expectations no longer allow TypeError (reviewer's disagreement with the Task 4 widening accepted)
+
+## Deferred minors
+
+- Final: minor (deferred): M8 to_bytes names its temporary path in an error
+- Final: minor (deferred): M11 an unusable callback result prints a qWarning and a RuntimeWarning before fetch_failed
