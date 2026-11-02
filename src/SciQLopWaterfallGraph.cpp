@@ -19,6 +19,7 @@
 /*-- Author : Alexis Jeandet
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "SciQLopPlots/ThreadGuard.hpp"
 #include "SciQLopPlots/Plotables/SciQLopWaterfallGraph.hpp"
 #include <algorithm>
 #include <cmath>
@@ -49,6 +50,7 @@ static WaterfallOffsetMode from_qcp(QCPWaterfallGraph::OffsetMode mode)
 
 void SciQLopWaterfallGraph::set_offset_mode(WaterfallOffsetMode mode)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_offset_mode(mode));
     if (auto* w = waterfall_graph())
     {
         if (from_qcp(w->offsetMode()) == mode)
@@ -66,6 +68,7 @@ void SciQLopWaterfallGraph::set_offset_mode(WaterfallOffsetMode mode)
 
 void SciQLopWaterfallGraph::set_uniform_spacing(double spacing)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_uniform_spacing(spacing));
     if (auto* w = waterfall_graph())
     {
         if (w->uniformSpacing() == spacing)
@@ -83,6 +86,7 @@ void SciQLopWaterfallGraph::set_uniform_spacing(double spacing)
 
 void SciQLopWaterfallGraph::set_offsets(const QVector<double>& offsets)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_offsets(offsets));
     if (auto* w = waterfall_graph())
     {
         const auto n = static_cast<int>(line_count());
@@ -104,6 +108,7 @@ void SciQLopWaterfallGraph::set_offsets(const QVector<double>& offsets)
 
 void SciQLopWaterfallGraph::set_normalize(bool enabled)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_normalize(enabled));
     if (auto* w = waterfall_graph())
     {
         if (w->normalize() == enabled)
@@ -121,6 +126,7 @@ void SciQLopWaterfallGraph::set_normalize(bool enabled)
 
 void SciQLopWaterfallGraph::set_gain(double gain)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_gain(gain));
     if (auto* w = waterfall_graph())
     {
         if (w->gain() == gain)

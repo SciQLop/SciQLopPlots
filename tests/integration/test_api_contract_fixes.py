@@ -370,6 +370,25 @@ def test_off_the_gui_thread(kind, call, expect):
     assert_contract(kind, OFF_THREAD.replace("CALL", call), expect)
 
 
+# The full sweep's off-thread cases (Task 10): classes the plot-only pass hadn't reached. Same call and
+# grading as the sweep: work (queued to the GUI thread) or raise RuntimeError; no crash, no Qt warning.
+SWEPT_OFF_THREAD = [  # (kind, method, the sweep's argument index: the candidate discovery found working)
+    ("panel", "addWidget", 0), ("panel", "add_widget", 0), ("panel", "removeWidget", 0),
+    ("panel", "remove_widget", 0), ("panel", "set_plot_stretch", 0), ("panel", "set_span_creation_enabled", 0),
+    ("panel", "set_name", 0), ("waterfall", "set_gain", 0), ("waterfall", "set_normalize", 0),
+    ("waterfall", "set_offset_mode", 0), ("waterfall", "set_offsets", 38), ("waterfall", "set_uniform_spacing", 0),
+    ("nd_plot", "set_axis_linking", 0), ("nd_plot", "set_linked_axes", 0), ("nd_plot", "set_time_marker", 1),
+    ("data_provider_worker", "set_data_provider", 0),
+]
+
+
+@pytest.mark.parametrize("kind, name, index", SWEPT_OFF_THREAD, ids=[f"{k}.{n}" for k, n, _ in SWEPT_OFF_THREAD])
+def test_swept_calls_off_the_gui_thread(kind, name, index):
+    call = (f"args = list(candidate_args({kind!r}, obj, {name!r}, h)[{index}])\n"
+            + OFF_THREAD.replace("CALL", f"obj.{name}(*args)"))
+    assert_contract(kind, call, "ok_or_value", allow=("RuntimeError",))
+
+
 # J4 (user's answer): one colour map of any kind per plot. histogram2d shares the colour scale.
 @pytest.mark.parametrize("first, second", [
     ("obj.histogram2d(X, np.sin(X))", "obj.colormap(X, C.Y, C.Z)"),

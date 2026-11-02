@@ -236,6 +236,7 @@ void SciQLopNDProjectionPlot::_link_axes(bool linked)
 
 void SciQLopNDProjectionPlot::set_axis_linking(ProjectionAxisLinking linking) noexcept
 {
+    SCIQLOP_ON_OWNER_THREAD(set_axis_linking(linking));
     if (m_axis_linking == linking)
         return;
     const bool was_linked = linked_axes();
@@ -486,6 +487,7 @@ void SciQLopNDProjectionPlot::_ensure_marker_layer()
 
 void SciQLopNDProjectionPlot::set_time_marker(double t)
 {
+    SCIQLOP_ON_OWNER_THREAD(set_time_marker(t));
     if (std::isnan(t))
     {
         clear_time_marker();
@@ -531,6 +533,7 @@ void SciQLopNDProjectionPlot::_place_time_markers()
 
 void SciQLopNDProjectionPlot::clear_time_marker()
 {
+    SCIQLOP_ON_OWNER_THREAD(clear_time_marker());
     const bool was_set = !std::isnan(m_time_marker_key);
     m_time_marker_key = std::numeric_limits<double>::quiet_NaN();
     for (auto* marker : m_time_markers)
