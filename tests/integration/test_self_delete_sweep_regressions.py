@@ -199,3 +199,22 @@ def test_a_slot_deleting_the_panel_from_plot_added_does_not_crash(qapp):
     _pump()
     assert fired and not shiboken6.isValid(panel)
 
+
+
+# Found by opencode's branch review (Task 10): two emits in a row, the panel deleted by the first slot.
+@pytest.mark.parametrize("signal, act", [
+    ("plot_removed", lambda panel: panel.remove_plot(panel.plot_at(0))),
+    ("plot_list_changed", lambda panel: panel.move_plot(0, 1)),
+], ids=["remove_plot", "move_plot"])
+def test_a_slot_deleting_the_panel_between_two_emits_does_not_crash(qapp, signal, act):
+    from SciQLopPlots import SciQLopMultiPlotPanel
+    panel = SciQLopMultiPlotPanel()  # not a fixture: the test deletes it
+    panel.show()
+    panel.plot(X, np.sin(X))
+    panel.plot(X, np.cos(X))
+    _pump()
+    slot, fired = _delete_once(panel)
+    getattr(panel, signal).connect(slot)
+    act(panel)
+    _pump()
+    assert fired and not shiboken6.isValid(panel)

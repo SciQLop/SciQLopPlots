@@ -27,6 +27,9 @@
 #include "SciQLopPlots/MultiPlots/SciQLopPlotPanelInterface.hpp"
 
 #include <QCoreApplication>
+#include <QPointer>
+
+#include <algorithm>
 
 SciQLopPlotContainer::SciQLopPlotContainer(QWidget* parent, Qt::Orientation orientation)
         : QSplitter(orientation, parent)
@@ -105,9 +108,18 @@ void SciQLopPlotContainer::addWidget(QWidget* widget)
     insertWidget(QSplitter::count(), widget);
 }
 
+// A plot index counts plots only, as plot_at does: the widget position of the plot at \a index, or
+// the end past the last plot. Nested panels sit among the plots in the splitter.
+int SciQLopPlotContainer::widget_position(int index) const
+{
+    if (auto* plot = index >= 0 ? plot_at(index) : nullptr)
+        return indexOf(plot);
+    return QSplitter::count();
+}
+
 void SciQLopPlotContainer::insert_plot(int index, SciQLopPlotInterface* plot)
 {
-    insertWidget(index, plot);
+    insertWidget(widget_position(index), plot);
 }
 
 void SciQLopPlotContainer::add_plot(SciQLopPlotInterface* plot)
@@ -128,9 +140,15 @@ void SciQLopPlotContainer::move_plot(SciQLopPlotInterface* plot, int to)
 {
     if (indexOf(sqp::require_object(plot, "move_plot: plot")) == -1)
         throw std::invalid_argument("move_plot: this plot is not in the panel");
-    QSplitter::insertWidget(to, plot);
+    // Negative or past the last plot (Qt's "append"): the last plot's position, which this plot takes
+    // as the others move up.
+    const int last = static_cast<int>(plots().size()) - 1;
+    QSplitter::insertWidget(widget_position(to < 0 ? last : std::min(to, last)), plot);
+    // A slot on the first signal may delete this container (its panel).
+    QPointer<SciQLopPlotContainer> alive(this);
     emit plot_list_changed(plots());
-    emit plot_moved(plot, to);
+    if (alive)
+        emit plot_moved(plot, to);
 }
 
 void SciQLopPlotContainer::move_panel(int from, int to)
@@ -163,7 +181,11 @@ void SciQLopPlotContainer::remove_plot(SciQLopPlotInterface* plot, bool destroy)
             plot->deleteLater();
         if (empty())
             setProperty("empty", true);
+        // A slot on plot_removed may delete this container (its panel).
+        QPointer<SciQLopPlotContainer> alive(this);
         emit plot_removed(plot);
+        if (!alive)
+            return;
     }
     emit plot_list_changed(plots());
 }

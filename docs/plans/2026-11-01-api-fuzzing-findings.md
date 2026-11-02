@@ -291,6 +291,11 @@ Calls that used to work, or fail differently, and now raise:
   "(missing signature)"); a constructor's wrong-type keyword is `TypeError` (was `ValueError`).
 - A set or a generator where a list of strings is expected: `TypeError`.
 - A `.on` pipeline re-raises a RuntimeError when both ends are alive (was dropped).
+- `set_date_format` on an axis that isn't a time axis: `ValueError` (was a warning), so a loop over
+  every axis stops at the first numeric one.
+- A plot or panel built before the `QApplication`: `RuntimeError` (was a Qt abort).
+- `insert_plot` and `move_plot` count plots only, like `plot_at`, when nested panels sit among them
+  (they counted widgets).
 
 ## Harness corrections after the first sweep
 

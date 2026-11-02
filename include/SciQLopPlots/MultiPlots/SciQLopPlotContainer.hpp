@@ -49,6 +49,7 @@ class SciQLopPlotContainer : public QSplitter,
     SciQLopPlotRange _x_axis_range;
     void announce_plot(SciQLopPlotInterface* plot, int index);
     void announce_panel(SciQLopPlotPanelInterface* panel, int index);
+    int widget_position(int index) const;
 
 
 public:

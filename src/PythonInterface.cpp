@@ -683,7 +683,7 @@ inline std::vector<SciQLopPyBuffer> _collect_buffers(PyObject* res, std::string&
         {
             PyObject* type_name = PyType_GetName(Py_TYPE(res));
             const char* name = type_name ? PyUnicode_AsUTF8AndSize(type_name, nullptr) : nullptr;
-            why = std::string("expected a list or tuple of arrays, got ") + (name ? name : "another type");
+            why = std::string("an object of type ") + (name ? name : "?") + ", not a list or tuple of arrays";
             Py_XDECREF(type_name);
             PyErr_Clear();
             _warn_dropped_batch(why);

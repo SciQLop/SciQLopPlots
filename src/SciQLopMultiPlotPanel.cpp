@@ -481,8 +481,7 @@ void SciQLopMultiPlotPanel::organize_plots()
 
 void SciQLopMultiPlotPanel::set_plot_stretch(SciQLopPlotInterface* plot, int factor)
 {
-    if (!plot)
-        return;
+    sqp::require_object(plot, "set_plot_stretch: plot");
     SCIQLOP_ON_OWNER_THREAD_WITH(plot, set_plot_stretch(plot, factor));
     auto policy = plot->sizePolicy();
     policy.setVerticalStretch(static_cast<uchar>(std::clamp(factor, 1, 255)));
