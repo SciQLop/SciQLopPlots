@@ -114,13 +114,22 @@ ARGUMENT_CONVERSION = re.compile(r'^(\s*)(pythonToCpp\[\d+\]\(pyArgs\[\d+\], &[^
 REAL_LIST_CHECK = re.compile(r'(static PythonToCppFunc is_PySequence_PythonToCpp__Q\w+_(?:double|float)__Convertible\(PyObject \*pyIn\)\n\{\n)')
 
 
-# An unknown keyword on a method comes back from shiboken as AttributeError: make it TypeError.
-KEYWORD_ERROR = re.compile(r'return (Shiboken::returnWrongArguments\([^;]*, errInfo, [^;]*\));')
+# Shiboken's argument errors that don't say why (an unknown keyword as AttributeError, "(missing
+# signature)" or a constructor's "wrong argument values" when keywords were given): sqp::wrong_arguments
+# makes them TypeErrors naming the types. _MinusOne is the constructors' variant.
+WRONG_ARGUMENTS = re.compile(r'return (Shiboken::returnWrongArguments(?:_MinusOne)?\((\w+), [^;]*\));')
 
 
-def keyword_errors_as_type_errors(source):
-    # Every function that reaches this has kwds in scope (checked over all wrappers, 2026-11-02).
-    return KEYWORD_ERROR.sub(r'return sqp::keyword_error_as_type_error(\1, kwds);', source)
+def wrong_arguments(source):
+    def wrap(m):
+        # The enclosing function's header: its first two lines ("static int" alone on the first, for
+        # a constructor).
+        start = source.rfind('\nstatic ', 0, m.start()) + 1
+        header = source[start:source.find('\n', source.find('\n', start) + 1)]
+        keywords = 'kwds' if 'PyObject *kwds' in header else 'nullptr'
+        positional = 'true' if m.group(2) == 'args' else 'false'  # args: a tuple; pyArg: the only one
+        return f'return sqp::wrong_arguments({m.group(1)}, {m.group(2)}, {positional}, {keywords});'
+    return WRONG_ARGUMENTS.sub(wrap, source)
 
 
 def refuse_complex_arrays(source):
@@ -135,13 +144,13 @@ def guard_argument_conversions(source):
 
 # PySide's QColor and QFont conversions pass bad input on silently (an unparsable colour name) or with a
 # printed error per item (non-str font families): check this module's colour and font arguments first.
-CHECKED_ARGUMENT = re.compile(r'^(\s*)::(QColor|QFont) cppArg(\d+)(?:_local)?\b[^;*]*;\n', re.M)
+CHECKED_ARGUMENT = re.compile(r'^(\s*)::(QColor|QFont|QList<QColor>) cppArg(\d+)(?:_local)?\b[^;*]*;\n', re.M)
 SINGLE_ARGUMENT_CONVERSION = re.compile(r'^(\s*)(pythonToCpp\(pyArg, &[^;]+\);)$', re.M)
 
 
 def check_arguments(body, name):
     single = 'PyObject *pyArg)' in body.split('\n', 1)[0]
-    check = {"QColor": "check_color_arg", "QFont": "check_font_arg"}
+    check = {"QColor": "check_color_arg", "QFont": "check_font_arg", "QList<QColor>": "check_color_list_arg"}
     return CHECKED_ARGUMENT.sub(
         lambda m: f'{m.group(0)}{m.group(1)}sqp::{check[m.group(2)]}('
                   f'{"pyArg" if single else f"pyArgs[{m.group(3)}]"}, "{name}");\n', body)
@@ -161,7 +170,30 @@ def name_conversion_errors(source):
     return ''.join(out) + source[last:]
 
 
+# What each patch leaves in the output. Patches match generated text: a shiboken update that changes it
+# turns a patch into a silent no-op, so the build fails instead when one left no trace at all.
+PATCH_MARKERS = {
+    "GENERIC_CATCH": "sqp::python_error_type(e);",
+    "UNCHECKED_ITER": CHECKED_ITER,
+    "CONVERSION_CHECK": "sqp::name_conversion_error(",
+    "ARGUMENT_CONVERSION": "{ if (!PyErr_Occurred()) pythonToCpp[",
+    "SINGLE_ARGUMENT_CONVERSION": "{ if (!PyErr_Occurred()) pythonToCpp(pyArg,",
+    "REAL_LIST_CHECK": "sqp::is_complex_array(pyIn)",
+    "CHECKED_ARGUMENT QColor": "sqp::check_color_arg(",
+    "CHECKED_ARGUMENT QFont": "sqp::check_font_arg(",
+    "CHECKED_ARGUMENT QList<QColor>": "sqp::check_color_list_arg(",
+    "WRONG_ARGUMENTS": "sqp::wrong_arguments(",
+}
+
+
+def require_every_patch(patched_sources):
+    missing = [name for name, marker in PATCH_MARKERS.items() if not any(marker in s for s in patched_sources)]
+    if missing:
+        sys.exit(f"shiboken-gen.py: these patches matched nothing in the generated code: {', '.join(missing)}")
+
+
 def patch_generated(output_directory):
+    patched_sources = []
     for path in glob(f'{output_directory}/**/*.cpp', recursive=True):
         with open(path) as f:
             source = f.read()
@@ -170,15 +202,15 @@ def patch_generated(output_directory):
         translated = name_conversion_errors(translated)
         translated = guard_argument_conversions(translated)
         translated = refuse_complex_arrays(translated)
-        translated = keyword_errors_as_type_errors(translated)
-        if any(f'sqp::{helper}' in translated for helper in ('python_error_type', 'name_conversion_error', 'is_complex_array',
-                                                          'check_color_arg', 'check_font_arg',
-                                                          'keyword_error_as_type_error')):
+        translated = wrong_arguments(translated)
+        if 'sqp::' in translated:
             # Not in bindings.h: shiboken's own parser fails on Python.h.
             translated = translated.replace(MODULE_INCLUDE, MODULE_INCLUDE + TRANSLATION_INCLUDE, 1)
+        patched_sources.append(translated)
         if translated != source:
             with open(path, 'w') as f:
                 f.write(translated)
+    require_every_patch(patched_sources)
 
 
 patch_generated(args.output_directory)
