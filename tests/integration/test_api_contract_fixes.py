@@ -335,6 +335,59 @@ def test_an_x_axis_synchronizer_is_a_behavior_a_panel_takes(qtbot):
     panel.plot(np.arange(10.0), np.arange(10.0))
 
 
+# Found by opencode's branch review (Task 10).
+# None for the plot or panel an object belongs to is the wrong type, as for every other object argument.
+@pytest.mark.parametrize("kind, call", [
+    ("panel", "obj.add_plot(None)"), ("panel", "obj.insert_plot(0, None)"),
+    ("panel", "S.SciQLopVerticalSpan(None, S.SciQLopPlotRange(0.0, 1.0))"),
+])
+def test_none_for_an_owner_is_a_type_error(kind, call):
+    assert_contract(kind, "import warnings\nwarnings.simplefilter('ignore', DeprecationWarning)\n" + call, "type")
+
+
+# Arguments of the wrong type in any position say which types were given, never "(missing signature)".
+@pytest.mark.parametrize("call, given", [
+    (lambda plot: plot.histogram(5), "int"),
+    (lambda plot: plot.histogram("bad", bins=3), "str"),
+    (lambda plot: plot.text(5, QPointF(1, 1), coordinates="pixels"), "int"),
+])
+def test_a_positional_argument_of_the_wrong_type_is_named(plot, call, given):
+    with pytest.raises(TypeError) as error:
+        call(plot)
+    assert given in str(error.value) and "missing signature" not in str(error.value), str(error.value)
+
+
+# Constructors: the same two errors, from shiboken's constructor path.
+@pytest.mark.parametrize("make, given", [
+    (lambda: __import__("SciQLopPlots").SciQLopPlotRange(1.0, 2.0, bogus=1), "bogus"),
+    (lambda: __import__("SciQLopPlots").SciQLopPlot(parent=5), "parent=int"),
+    (lambda: __import__("SciQLopPlots").SciQLopNDProjectionPlot(3, parent=5), "parent=int"),
+])
+def test_a_constructor_argument_of_the_wrong_type_is_a_type_error(qapp, make, given):
+    with pytest.raises(TypeError) as error:
+        make()
+    assert given in str(error.value), str(error.value)
+
+
+# A list of colours is checked like a single colour: an unparsable name is a ValueError, not "no colour".
+@pytest.mark.parametrize("bad", ["", "no-such-colour", "hsv(120,100%,50%)"])
+def test_an_invalid_colour_in_a_list_is_a_value_error(plot, bad):
+    with pytest.raises(ValueError):
+        plot.set_color_palette(["red", bad])
+    graph = plot.line(np.arange(5.0), np.column_stack([np.arange(5.0)] * 2))
+    with pytest.raises(ValueError):
+        graph.set_colors(["red", bad])
+    plot.set_color_palette(["red", "#ff000080"])  # valid names still work
+
+
+def test_snap_to_a_bool_is_a_type_error(qtbot):
+    from SciQLopPlots import SciQLopTimeSeriesPlot
+    ts = SciQLopTimeSeriesPlot()
+    qtbot.addWidget(ts)
+    with pytest.raises(TypeError):
+        ts.add_timeline().set_snap_to(True)
+
+
 # Off the GUI thread (SciQLop#147 policy): a mutator queues, a factory refuses with RuntimeError.
 OFF_THREAD = """import threading
 _raised = []

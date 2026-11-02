@@ -66,6 +66,20 @@ inline void check_color_arg(PyObject* arg, const char* function)
         PyErr_Format(PyExc_ValueError, "%s: '%s' is not a colour name", function, text);
 }
 
+//! A list of colours: each name in it is checked like a single colour argument.
+inline void check_color_list_arg(PyObject* arg, const char* function)
+{
+    if (arg == nullptr || PyErr_Occurred() || !(PyList_Check(arg) || PyTuple_Check(arg)))
+        return;
+    const Py_ssize_t size = PySequence_Size(arg);
+    for (Py_ssize_t i = 0; i < size && !PyErr_Occurred(); ++i)
+    {
+        PyObject* item = PySequence_GetItem(arg, i);
+        check_color_arg(item, function);
+        Py_XDECREF(item);
+    }
+}
+
 //! A font argument given as a list of family names: PySide prints an error for each non-str item and
 //! goes on. Raise instead.
 inline void check_font_arg(PyObject* arg, const char* function)
@@ -86,57 +100,82 @@ inline void check_font_arg(PyObject* arg, const char* function)
     }
 }
 
-//! "bins=str, name=int": each keyword argument with its type's name.
-inline std::string keyword_types(PyObject* kwds)
+//! The name of \a object's type, for messages.
+inline std::string type_name(PyObject* object)
+{
+    PyObject* name = PyType_GetName(Py_TYPE(object));
+    const char* text = name != nullptr ? PyUnicode_AsUTF8AndSize(name, nullptr) : nullptr;
+    std::string result = text != nullptr ? text : "?";
+    Py_XDECREF(name);
+    return result;
+}
+
+//! "int, str, bins=int": a call's argument types. \a args is the tuple of positional arguments when
+//! \a args_is_tuple, else the only one.
+inline std::string argument_types(PyObject* args, bool args_is_tuple, PyObject* kwds)
 {
     std::string listed;
+    const auto add = [&listed](const std::string& item) { listed += (listed.empty() ? "" : ", ") + item; };
+    if (args != nullptr && args_is_tuple && PyTuple_Check(args))
+        for (Py_ssize_t i = 0; i < PyTuple_Size(args); ++i)
+            add(type_name(PyTuple_GetItem(args, i)));
+    else if (args != nullptr && !args_is_tuple)
+        add(type_name(args));
     PyObject *key, *value;
     Py_ssize_t pos = 0;
-    while (PyDict_Next(kwds, &pos, &key, &value))
+    while (kwds != nullptr && PyDict_Check(kwds) && PyDict_Next(kwds, &pos, &key, &value))
     {
-        PyObject* type_name = PyType_GetName(Py_TYPE(value));
         const char* k = PyUnicode_AsUTF8AndSize(key, nullptr);
-        const char* t = type_name != nullptr ? PyUnicode_AsUTF8AndSize(type_name, nullptr) : nullptr;
-        listed += (listed.empty() ? "" : ", ") + std::string(k ? k : "?") + "=" + (t ? t : "?");
-        Py_XDECREF(type_name);
+        add(std::string(k != nullptr ? k : "?") + "=" + type_name(value));
     }
-    PyErr_Clear(); // a failed name lookup above must not replace the error being reported
+    PyErr_Clear(); // a failed lookup above must not replace the error being reported
     return listed;
 }
 
-//! Two shiboken argument errors that don't say why, made into TypeErrors that do. \a result is what
-//! returnWrongArguments returned, \a kwds the call's keyword arguments.
+//! Shiboken's argument errors that don't say why, made into TypeErrors that do. \a result is what
+//! returnWrongArguments returned; \a args and \a kwds are the call's arguments.
 //! - An unknown keyword is an AttributeError ("unsupported keyword"); Python says TypeError.
-//! - A keyword of the wrong type says "f((args,)) is wrong (missing signature)": the positional
-//!   arguments matched, so the culprit is a keyword. Name them with their types.
-inline PyObject* keyword_error_as_type_error(PyObject* result, PyObject* kwds = nullptr)
+//! - With keywords given, shiboken can't print the signatures: "f((args,)) is wrong (missing
+//!   signature)", or for a constructor a ValueError "called with wrong argument values" when a
+//!   keyword doesn't convert. Name the types that were given instead.
+template <typename Result>
+Result wrong_arguments(Result result, PyObject* args, bool args_is_tuple, PyObject* kwds)
 {
     const bool attribute = PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_AttributeError);
     const bool type = PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_TypeError);
-    if (!attribute && !type)
+    const bool value = PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_ValueError);
+    const bool has_keywords = kwds != nullptr && PyDict_Check(kwds) && PyDict_Size(kwds) > 0;
+    if (!attribute && !type && !(value && has_keywords))
         return result;
-    PyObject *exc_type, *value, *traceback;
-    PyErr_Fetch(&exc_type, &value, &traceback);
-    PyObject* text = value != nullptr ? PyObject_Str(value) : nullptr;
+    PyObject *exc_type, *exc_value, *traceback;
+    PyErr_Fetch(&exc_type, &exc_value, &traceback);
+    PyObject* text = exc_value != nullptr ? PyObject_Str(exc_value) : nullptr;
     const char* raw = text != nullptr ? PyUnicode_AsUTF8AndSize(text, nullptr) : nullptr;
     const std::string_view message = raw != nullptr ? raw : "";
-    const bool has_keywords = kwds != nullptr && PyDict_Check(kwds) && PyDict_Size(kwds) > 0;
+    const auto quoted_function = [&message]
+    {
+        // "'pkg.Class.__init__' called with ...": the name between the first two quotes.
+        const auto first = message.find('\'');
+        return std::string(message.substr(first + 1, message.find('\'', first + 1) - first - 1));
+    };
     if (attribute && message.find("unsupported keyword") != std::string_view::npos)
         PyErr_SetString(PyExc_TypeError, raw);
-    else if (type && has_keywords && message.find("(missing signature)") != std::string_view::npos)
+    else if ((type && message.find("(missing signature)") != std::string_view::npos)
+             || (value && message.find("called with wrong argument values") != std::string_view::npos))
     {
-        const std::string function(message.substr(0, message.find('(')));
-        PyErr_Format(PyExc_TypeError, "%s: a keyword argument has the wrong type (%s); see help(%s)",
-                     function.c_str(), keyword_types(kwds).c_str(), function.c_str());
+        const std::string function = value ? quoted_function() : std::string(message.substr(0, message.find('(')));
+        const std::string given = argument_types(args, args_is_tuple, kwds);
+        PyErr_Format(PyExc_TypeError, "%s: no signature takes (%s); see help(%s)", function.c_str(),
+                     given.c_str(), function.c_str());
     }
     else
     {
-        PyErr_Restore(exc_type, value, traceback);
+        PyErr_Restore(exc_type, exc_value, traceback);
         Py_XDECREF(text);
         return result;
     }
     Py_XDECREF(exc_type);
-    Py_XDECREF(value);
+    Py_XDECREF(exc_value);
     Py_XDECREF(traceback);
     Py_XDECREF(text);
     return result;
