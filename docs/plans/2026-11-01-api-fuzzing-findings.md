@@ -275,6 +275,23 @@ set_name crashed, and the waterfall, panel and projection setters touched widget
 thread. All queue since 56357093. `InspectorExtension.build_widget` is a pure virtual the user writes, so
 off-thread only the harness's own code ran: the sweep skips it.
 
+## Behaviour changes users will notice (for the release notes)
+
+Calls that used to work, or fail differently, and now raise:
+
+- `None` where a callback, a plot or a panel is expected: `TypeError` (was a graph that never fetched,
+  or `ValueError` for `add_plot(None)` and the item constructors).
+- `None` as histogram or bars values: `TypeError` (was an empty histogram).
+- An unparsable colour name, alone or in a list: `ValueError` (was "no colour").
+- A second colour map of any kind on one plot, `histogram2d` included: `RuntimeError`.
+- Plot, panel and plottable factories called off the GUI thread: `RuntimeError`. Setters called off the
+  GUI thread now run later, on the GUI thread.
+- An unknown keyword on a method or a non-Qt constructor: `TypeError` (was `AttributeError`).
+- A keyword or positional argument of the wrong type: the message names the given types (was
+  "(missing signature)"); a constructor's wrong-type keyword is `TypeError` (was `ValueError`).
+- A set or a generator where a list of strings is expected: `TypeError`.
+- A `.on` pipeline re-raises a RuntimeError when both ends are alive (was dropped).
+
 ## Harness corrections after the first sweep
 
 These are Claude's calls.
