@@ -39,6 +39,8 @@ BUILDERS = {
     "SciQLopPlotDummyAxis": [lambda parent: sqp.SciQLopPlotDummyAxis(parent)],
     "SciQLopPlotCollectionBehavior": [lambda parent: sqp.SciQLopPlotCollectionBehavior(parent)],
     "VPlotsAlign": [lambda parent: sqp.VPlotsAlign(parent)],
+    "AxisSynchronizer": [lambda parent: sqp.AxisSynchronizer(sqp.AxisType.XAxis, parent)],
+    "XAxisSynchronizer": [lambda parent: sqp.XAxisSynchronizer(parent)],
     "DataProviderInterface": [lambda parent: sqp.DataProviderInterface(parent)],
     "RemoteDataPipeline": [lambda parent: sqp.RemoteDataPipeline(parent)],
     "DataProviderWorker": [lambda parent: sqp.DataProviderWorker(parent)],

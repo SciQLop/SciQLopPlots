@@ -323,6 +323,18 @@ def test_a_keyword_of_the_wrong_type_is_named(plot, call, names):
     assert "missing signature" not in str(error.value)
 
 
+# Found by opencode (round 3): XAxisSynchronizer was bound without its base class, so Python saw a
+# bare Shiboken object that register_behavior refused.
+def test_an_x_axis_synchronizer_is_a_behavior_a_panel_takes(qtbot):
+    from SciQLopPlots import SciQLopMultiPlotPanel, SciQLopPlotCollectionBehavior, XAxisSynchronizer
+    panel = SciQLopMultiPlotPanel()
+    qtbot.addWidget(panel)
+    sync = XAxisSynchronizer(panel)
+    assert isinstance(sync, SciQLopPlotCollectionBehavior)
+    panel.register_behavior(sync)
+    panel.plot(np.arange(10.0), np.arange(10.0))
+
+
 # Off the GUI thread (SciQLop#147 policy): a mutator queues, a factory refuses with RuntimeError.
 OFF_THREAD = """import threading
 _raised = []
