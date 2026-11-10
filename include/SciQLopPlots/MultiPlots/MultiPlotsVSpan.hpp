@@ -98,6 +98,8 @@ public:
                  bool read_only = false, const QString tooltip = "", const QString id = "");
 
     void delete_span(QPointer<MultiPlotsVerticalSpan> vspan);
+    //! What spans() returns in Python: the span itself. None is a TypeError.
+    void delete_span(MultiPlotsVerticalSpan* vspan);
     void delete_span(const QString& id);
 
     QList<QPointer<MultiPlotsVerticalSpan>> spans() const;

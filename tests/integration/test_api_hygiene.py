@@ -145,6 +145,19 @@ class TestMetadataKeyword:  # task 4, finding 1.4
         with pytest.raises(AttributeError):
             graph.on.meta_data
 
+    # SciQLop found these on PR #146: the old spelling worked on line graphs only, so code written
+    # against a line graph silently lost its context on a colour map.
+    @pytest.mark.parametrize("make", [
+        lambda plot: plot.colormap(X, X, np.outer(X, X)),
+        lambda plot: plot.histogram2d(X, np.sin(X)),
+    ], ids=["colormap", "histogram2d"])
+    def test_the_meta_data_spelling_works_on_every_plottable(self, plot, make):
+        graph = make(plot)
+        with pytest.warns(DeprecationWarning, match=r"set_meta_data\(\.\.\.\) is deprecated"):
+            graph.set_meta_data({"source": "mag"})
+        with pytest.warns(DeprecationWarning, match=r"meta_data\(\.\.\.\) is deprecated"):
+            assert graph.meta_data()["source"] == "mag"
+
     def test_metadata_on_a_panel(self, qtbot):
         panel = SciQLopMultiPlotPanel()
         qtbot.addWidget(panel)
