@@ -18,6 +18,8 @@ def _failures(rows):
     return [f"{r['id']}: {r['status']}: {r['detail'][:300]}" for r in rows if r["status"] != "pass"]
 
 
+# The sweep has its own per-case watchdog, so the CI-wide 60 s per-test limit only cuts it short on slow runners.
+@pytest.mark.timeout(600)
 def test_contract():
     assert _failures(sweep(classes=CI_CLASSES)) == []
 
