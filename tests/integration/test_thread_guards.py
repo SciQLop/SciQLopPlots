@@ -290,6 +290,30 @@ def test_delete_span_object_lands_on_gui_thread(vspans):
     assert len(vspans.spans()) == 0
 
 
+def test_delete_span_takes_what_spans_returns(vspans):
+    # SciQLop found this on PR #146: spans() returns the spans themselves, delete_span took handles.
+    vspans.create_span(R(1.0, 2.0))
+    vspans.create_span(R(3.0, 4.0))
+    for span in vspans.spans():
+        vspans.delete_span(span)
+    assert vspans.spans() == []
+
+
+def test_delete_span_of_a_span_object_lands_on_gui_thread(vspans):
+    vspans.create_span(R(1.0, 2.0))
+    span = vspans.spans()[0]
+    _settle()
+    _in_thread(lambda: vspans.delete_span(span))
+    assert len(vspans.spans()) == 1
+    _settle()
+    assert len(vspans.spans()) == 0
+
+
+def test_delete_span_refuses_none(vspans):
+    with pytest.raises(TypeError):
+        vspans.delete_span(None)
+
+
 def test_create_span_refuses_off_thread(vspans):
     out = _in_thread(lambda: vspans.create_span(R(1.0, 2.0)))
     assert isinstance(out.get("error"), RuntimeError)

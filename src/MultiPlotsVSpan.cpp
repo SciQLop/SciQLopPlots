@@ -86,6 +86,12 @@ void MultiPlotsVSpanCollection::delete_span(QPointer<MultiPlotsVerticalSpan> vsp
     delete vspan;
 }
 
+void MultiPlotsVSpanCollection::delete_span(MultiPlotsVerticalSpan* vspan)
+{
+    SCIQLOP_ON_OWNER_THREAD_WITH(vspan, delete_span(vspan));
+    delete_span(QPointer<MultiPlotsVerticalSpan>(vspan));
+}
+
 QList<QPointer<MultiPlotsVerticalSpan>> MultiPlotsVSpanCollection::spans() const
 {
     return _spans;

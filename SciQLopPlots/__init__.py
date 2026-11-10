@@ -1110,11 +1110,12 @@ for (_cls, _old), _new in _DEPRECATED_CAMEL_CASE.items():
     setattr(_cls, _old, _deprecated_call(f"{_old}(...) is deprecated: use {_new}(...)", getattr(_cls, _old)))
 
 # Review 1.4: one spelling, metadata, like the metadata= keyword and the products tree.
+# On the plottable base, where metadata() lives, so colour maps keep the old spelling too.
 for _old, _new in (("meta_data", "metadata"), ("set_meta_data", "set_metadata")):
-    setattr(SciQLopPlotsBindings.SciQLopGraphInterface, _old,
+    setattr(SciQLopPlotsBindings.SciQLopPlottableInterface, _old,
             _deprecated_call(f"{_old}(...) is deprecated: use graph.{_new}(...)",
-                             getattr(SciQLopPlotsBindings.SciQLopGraphInterface, _new)))
-register_hidden(SciQLopPlotsBindings.SciQLopGraphInterface, "meta_data")
+                             getattr(SciQLopPlotsBindings.SciQLopPlottableInterface, _new)))
+register_hidden(SciQLopPlotsBindings.SciQLopPlottableInterface, "meta_data")
 
 
 def _public_names():
