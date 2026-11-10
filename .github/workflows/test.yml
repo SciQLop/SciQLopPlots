@@ -29,7 +29,9 @@ jobs:
         run: PYTHONPATH=../../SciQLopPlots pytest -v --ignore-glob='test_dsp*.py'
 
   integration-tests:
-    runs-on: ubuntu-latest
+    # ubuntu-26.04 renamed libxml2.so.2 to libxml2.so.16 and the shiboken6 wheel can't start there.
+    # Back to ubuntu-latest once PYSIDE-3504 ships: https://bugreports.qt.io/browse/PYSIDE-3504
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
