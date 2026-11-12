@@ -46,13 +46,15 @@ resources_files = qtmod.compile_resources(sources: sciqlopplots_resources)
 # The products search runs on it; the Python build gets it through the DSP module.
 thread_pool_dep = dependency('bshoshany-thread-pool',
     fallback: ['thread-pool', 'bshoshany_thread_pool_dep'])
+# The stale-QRhi workaround in sciqlopplots_js.cpp (QTBUG-151834) reads QRhiWidgetPrivate.
+qt_widgets_private_dep = dependency(qt_sdk, modules: ['Widgets'], private_headers: true)
 
 executable('sciqlopplots',
     'sciqlopplots_js.cpp', 'python_interface.cpp', '../src/UnsupportedCall.cpp',
     sciqlopplots_sources, moc_files, resources_files,
     include_directories: sciqlopplots_includes,
     dependencies: [qtdeps, NeoQCP_dep, cpp_utils_dep, hedley_dep, fmt_dep, magic_enum_dep,
-                    thread_pool_dep],
+                    thread_pool_dep, qt_widgets_private_dep],
     cpp_args: '-DSCIQLOPPLOTS_VERSION="@0@"'.format(meson.project_version()),
     link_args: qt_static_link + emscripten_link_args)
 

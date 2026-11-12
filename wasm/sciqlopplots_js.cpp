@@ -24,6 +24,7 @@
 #include <QPointer>
 #include <QRhiWidget>
 #include <QScreen>
+#include <QtWidgets/private/qrhiwidget_p.h>
 #include <qpa/qplatformbackingstore.h>
 #include <rhi/qrhi.h>
 
@@ -211,14 +212,27 @@ void make_context_current(QWidget* panel)
         context->makeCurrent(window);
 }
 
+// When its window's QRhi is rebuilt (a resize can do it), a QRhiWidget unhooks from the old QRhi
+// but keeps pointing at it. Reparented or deleted before its next paint, it calls the destroyed
+// QRhi: a trap. Drop the pointer once the window has changed, as Qt's own fix does.
+// simplify: QTBUG-151834, fixed in Qt after 6.12.0 (qtbase ff7c81d4a7); drop with the Qt bump.
+void forget_replaced_rhi(QRhiWidget* plot)
+{
+    auto* d = static_cast<QRhiWidgetPrivate*>(QObjectPrivate::get(plot));
+    if (d->rhi != d->offscreenRenderer.rhi())
+        d->rhi = nullptr;
+}
+
 struct OwnContextFirst : QObject
 {
     using QObject::QObject;
     bool eventFilter(QObject* watched, QEvent* event) override
     {
-        if (event->type() == QEvent::Paint)
-            if (auto* plot = qobject_cast<QRhiWidget*>(watched))
-                make_context_current(plot->window());
+        auto* plot = qobject_cast<QRhiWidget*>(watched);
+        if (plot && event->type() == QEvent::Paint)
+            make_context_current(plot->window());
+        if (plot && event->type() == QEvent::WindowChangeInternal)
+            forget_replaced_rhi(plot);
         return false;
     }
 };
