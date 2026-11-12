@@ -36,7 +36,7 @@ jobs:
 
       - name: Cache Qt
         id: cache-qt
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: Qt
           key: qt-${{ env.QT_VERSION }}-wasm-multithread
@@ -50,7 +50,7 @@ jobs:
 
       - name: Cache Emscripten
         id: cache-emsdk
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/emsdk
           key: emsdk-${{ env.EMSDK_VERSION }}
@@ -63,7 +63,7 @@ jobs:
 
       # Most pushes touch the gallery or the JS, not the C++: ccache skips recompiling it.
       - name: Cache ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ccache
           key: ccache-wasm-${{ env.QT_VERSION }}-${{ env.EMSDK_VERSION }}-${{ hashFiles('src/**', 'include/**', 'wasm/*.cpp', 'meson.build', 'subprojects/*.wrap') }}
