@@ -36,7 +36,7 @@ pip install SciQLopPlots
 ```
 
 This pulls in NumPy and PySide6. PySide6 is pinned to an exact version, so installing replaces any other PySide6 in the environment.
-Wheels exist for Python 3.12 to 3.15, on Linux, macOS and Windows, x86-64 and ARM64.
+Wheels exist for Python 3.12 to 3.14, on Linux, macOS and Windows, x86-64 and ARM64.
 To plot in a web page instead, see [JavaScript (WebAssembly)](javascript.md).
 
 ## Your first plot
