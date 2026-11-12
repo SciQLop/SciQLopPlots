@@ -116,7 +116,7 @@ _register_with_shiboken_signatures()
 from . import tracing  # noqa: E402,F401  -- runtime tracer facade
 from . import _dispatch  # noqa: E402
 
-__version__ = '0.52.0'
+__version__ = '0.53.0'
 
 def _apply_waterfall_kwargs(result, offsets=None, normalize=True, gain=1.0):
     import numpy as np
