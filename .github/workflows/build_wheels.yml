@@ -158,7 +158,7 @@ jobs:
           # The wheel is abi3 (requires-python >= 3.12): cibuildwheel builds it
           # once, for cp312, then installs and tests that same wheel on every
           # later Python instead of rebuilding.
-          CIBW_SKIP: "*-win32 *i686 *39-* *musllinux* *314t*"
+          CIBW_SKIP: "*-win32 *i686 *39-* *musllinux* *314t* *315t*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCH: ${{ matrix.arch }}
           # Smoke test: install the freshly-repaired wheel and import it. This
